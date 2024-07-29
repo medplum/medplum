@@ -79,7 +79,7 @@ export function App(): JSX.Element | null {
               <Route path="/" element={profile ? <Navigate to="/Schedule" /> : <LandingPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/Schedule" element={schedule ? <Navigate to={`/Schedule/${schedule.id}`} /> : <Loading />} />
-              <Route path="/Schedule/:id" element={<SchedulePage />} />
+              <Route path="/Schedule/:id" element={schedule ? <SchedulePage /> : <Loading />} />
               <Route path="/Patient/:id/*" element={<PatientPage />} />
               <Route path="/Appointment/upcoming" element={<AppointmentsPage />} />
               <Route path="/Appointment/past" element={<AppointmentsPage />} />
