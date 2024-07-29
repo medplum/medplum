@@ -201,7 +201,7 @@ WHERE (
   AND c.code = ?
   AND cp.value IS NOT NULL
   AND property.system IS NOT NULL
-)
+);
 ```
 
 ### `ValueSet/$expand`
@@ -246,3 +246,31 @@ WHERE (
 )
 LIMIT 21;
 ```
+
+### `CodeSystem/$import`
+
+Medplum supports a [non-standard Operation][import-operation] to load codes into the database for large code systems.
+It generates bulk inserts for codes and their properties:
+
+```sql
+-- Get CodeSystem by URL
+SELECT id, content FROM "CodeSystem" WHERE url = ?;
+
+-- Import codes
+INSERT INTO "Coding" (system, code, display) VALUES
+  (?, '8867-4', 'Heart rate'),
+  (?, '8302-2', 'Body height')
+  ON CONFLICT (system, code) DO UPDATE
+  SET display = EXCLUDED.display;
+
+-- Get property by system and code
+SELECT id FROM "CodeSystem_Property" WHERE system = ? AND code = ?;
+
+-- Import properties
+INSERT INTO "Coding_Property" (coding, property, value, target) VALUES
+  (1, 12, 'LP415671-9', 2),
+  (1, 21, 'Qn', null)
+  ON CONFLICT DO NOTHING;
+```
+
+[import-operation]: https://github.com/medplum/medplum/blob/78cf54ff8bc2fbc3bfecb0c73be1c581179fae2d/packages/server/src/fhir/operations/codesystemimport.ts#L11-L38
