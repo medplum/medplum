@@ -541,7 +541,7 @@ export function clampEstimateCount(
   const pageSize = searchRequest.count ?? DEFAULT_SEARCH_COUNT;
   const startIndex = searchRequest.offset ?? 0;
   const minCount = rowCount > 0 ? startIndex + rowCount : 0;
-  const maxCount = startIndex + Math.min(pageSize, rowCount);
+  const maxCount = rowCount < pageSize ? startIndex + rowCount : Number.MAX_SAFE_INTEGER;
   return Math.max(minCount, Math.min(maxCount, estimateCount));
 }
 

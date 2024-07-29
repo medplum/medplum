@@ -129,6 +129,15 @@ describe('FHIR Search', () => {
       // 10 actual rows, 0 estimated rows => we know count is at least 10
       expect(clampEstimateCount({ resourceType: 'Patient' }, 10, 0)).toEqual(10);
 
+      // count = 20, offset = 0, rowCount = 10, estimate = 0 => 10 (estimate is too low)
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 10, 0)).toEqual(10);
+
+      // count = 20, offset = 0, rowCount = 20, estimate = 20 => 20 (estimate accurate)
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 20, 20)).toEqual(20);
+
+      // count = 20, offset = 0, rowCount = 20, estimate = 1000 => 1000 (estimate could be correct)
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 20, 1000)).toEqual(1000);
+
       // On page 2
       // count = 20, offset = 20, rowCount = 0, estimate = 20 => 20 (estimate is correct)
       expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 0, 20)).toEqual(20);
@@ -144,6 +153,12 @@ describe('FHIR Search', () => {
 
       // count = 20, offset = 20, rowCount = 1, estimate = 200 => 20 (estimate is too high)
       expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 1, 200)).toEqual(21);
+
+      // count = 20, offset = 20, rowCount = 1, estimate = 200 => 20 (estimate is too high)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 1, 200)).toEqual(21);
+
+      // count = 20, offset = 20, rowCount = 20, estimate = 200 => 200 (estimate could be correct)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 20, 200)).toEqual(200);
     });
 
     test('Search _summary', () =>
