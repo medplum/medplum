@@ -47,6 +47,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
+import { clampEstimateCount } from './search';
 
 jest.mock('hibp');
 
@@ -117,6 +118,33 @@ describe('FHIR Search', () => {
         expect(result1.link).toBeDefined();
         expect(result1.link?.length).toBe(1);
       }));
+
+    test('clampEstimateCount', () => {
+      expect(clampEstimateCount({ resourceType: 'Patient' }, undefined, 0)).toEqual(0);
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 0, 0)).toEqual(0);
+
+      // 0 actual rows, 10 estimated rows => we know count is 0
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 0, 10)).toEqual(0);
+
+      // 10 actual rows, 0 estimated rows => we know count is at least 10
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 10, 0)).toEqual(10);
+
+      // On page 2
+      // count = 20, offset = 20, rowCount = 0, estimate = 20 => 20 (estimate is correct)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 0, 20)).toEqual(20);
+
+      // count = 20, offset = 20, rowCount = 0, estimate = 0 => 20 (estimate is too low, but rowCount is 0)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 0, 0)).toEqual(0);
+
+      // count = 20, offset = 20, rowCount = 1, estimate = 0 => 21 (estimate is too low)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 1, 0)).toEqual(21);
+
+      // count = 20, offset = 20, rowCount = 0, estimate = 200 => 20 (estimate is too high)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 0, 200)).toEqual(20);
+
+      // count = 20, offset = 20, rowCount = 1, estimate = 200 => 20 (estimate is too high)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 1, 200)).toEqual(21);
+    });
 
     test('Search _summary', () =>
       withTestContext(async () => {
