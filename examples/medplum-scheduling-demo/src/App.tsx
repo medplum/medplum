@@ -1,7 +1,7 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconUser, IconClipboard } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
 import { AppointmentsPage } from './pages/AppointmentsPage';
@@ -76,9 +76,10 @@ export function App(): JSX.Element | null {
         <ErrorBoundary>
           <Suspense fallback={<Loading />}>
             <Routes>
-              <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
+              <Route path="/" element={profile ? <Navigate to="/Schedule" /> : <LandingPage />} />
               <Route path="/signin" element={<SignInPage />} />
-              <Route path="/Schedule" element={<SchedulePage />} />
+              <Route path="/Schedule" element={schedule ? <Navigate to={`/Schedule/${schedule.id}`} /> : <Loading />} />
+              <Route path="/Schedule/:id" element={<SchedulePage />} />
               <Route path="/Patient/:id/*" element={<PatientPage />} />
               <Route path="/Appointment/upcoming" element={<AppointmentsPage />} />
               <Route path="/Appointment/past" element={<AppointmentsPage />} />
