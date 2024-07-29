@@ -8,7 +8,7 @@ import { useContext } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
-interface CreateSlotProps {
+interface CreateUpdateSlotProps {
   event: Event | undefined;
   readonly opened: boolean;
   readonly handlers: {
@@ -18,7 +18,7 @@ interface CreateSlotProps {
   };
 }
 
-export function CreateSlot(props: CreateSlotProps): JSX.Element {
+export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
   const { event, opened, handlers } = props;
   const medplum = useMedplum();
   const { schedule } = useContext(ScheduleContext);

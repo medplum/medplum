@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser, IconClipboard } from '@tabler/icons-react';
+import { IconUser, IconClipboard, IconCalendar } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { LandingPage } from './pages/LandingPage';
@@ -63,6 +63,11 @@ export function App(): JSX.Element | null {
         {
           title: 'Schedule',
           links: [
+            {
+              icon: <IconCalendar />,
+              label: 'Schedule',
+              href: '/Schedule',
+            },
             {
               icon: <IconClipboard />,
               label: 'Appointments',

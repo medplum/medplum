@@ -3,7 +3,7 @@ import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useCallback, useContext, useState } from 'react';
 import dayjs from 'dayjs';
-import { CreateSlot } from '../components/CreateSlot';
+import { CreateUpdateSlot } from '../components/CreateUpdateSlot';
 import { useDisclosure } from '@mantine/hooks';
 import { ScheduleContext } from '../Schedule.context';
 import { getReferenceString } from '@medplum/core';
@@ -37,7 +37,7 @@ export function SchedulePage(): JSX.Element {
 
   return (
     <Document width={1000}>
-      <CreateSlot event={selectedEvent} opened={createSlotOpened} handlers={createSlotHandlers} />
+      <CreateUpdateSlot event={selectedEvent} opened={createSlotOpened} handlers={createSlotHandlers} />
       <Calendar
         localizer={dayjsLocalizer(dayjs)}
         events={events}
