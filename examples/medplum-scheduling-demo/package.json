@@ -31,20 +31,20 @@
     "@medplum/eslint-config": "3.2.2",
     "@medplum/fhirtypes": "3.2.2",
     "@medplum/react": "3.2.2",
-    "@tabler/icons-react": "3.10.0",
-    "@types/node": "20.14.10",
+    "@tabler/icons-react": "3.11.0",
+    "@types/node": "22.0.0",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
     "chart.js": "4.4.3",
     "esbuild": "0.23.0",
-    "postcss": "8.4.39",
-    "postcss-preset-mantine": "1.15.0",
+    "postcss": "8.4.40",
+    "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-chartjs-2": "5.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.24.1",
-    "typescript": "5.5.3",
-    "vite": "5.3.3"
+    "react-router-dom": "6.25.1",
+    "typescript": "5.5.4",
+    "vite": "5.3.5"
   }
 }
