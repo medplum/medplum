@@ -96,7 +96,7 @@ flowchart LR
   cp -->|target| c2
 ```
 
-::: note
+:::note
 
 While FHIR supports specifying hierarchical relationships with either `parent` or `child` properties, Medplum currently
 only supports `parent` for simplicity, since the two are inversely equivalent.
