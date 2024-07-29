@@ -1,6 +1,7 @@
 import { Modal } from '@mantine/core';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse, Schedule } from '@medplum/fhirtypes';
+import { Questionnaire, QuestionnaireResponse, Schedule, Slot } from '@medplum/fhirtypes';
+import { Event } from 'react-big-calendar';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
 import { ScheduleContext } from '../Schedule.context';
 import { useContext } from 'react';
@@ -8,8 +9,7 @@ import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 interface CreateSlotProps {
-  start?: string | undefined;
-  end?: string | undefined;
+  event: Event | undefined;
   readonly opened: boolean;
   readonly handlers: {
     readonly open: () => void;
@@ -19,9 +19,11 @@ interface CreateSlotProps {
 }
 
 export function CreateSlot(props: CreateSlotProps): JSX.Element {
-  const { start, end, opened, handlers } = props;
+  const { event, opened, handlers } = props;
   const medplum = useMedplum();
   const { schedule } = useContext(ScheduleContext);
+
+  const editingSlot: Slot = event?.resource;
 
   async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
     if (!schedule) {
@@ -31,18 +33,26 @@ export function CreateSlot(props: CreateSlotProps): JSX.Element {
     const answers = getQuestionnaireAnswers(formData);
 
     try {
-      await medplum.createResource({
-        resourceType: 'Slot',
-        status: 'free',
-        start: answers['start-date'].valueDateTime as string,
-        end: answers['end-date'].valueDateTime as string,
-        schedule: createReference(schedule as Schedule),
-      });
+      if (!editingSlot) {
+        await medplum.createResource({
+          resourceType: 'Slot',
+          status: 'free',
+          start: answers['start-date'].valueDateTime as string,
+          end: answers['end-date'].valueDateTime as string,
+          schedule: createReference(schedule as Schedule),
+        });
+      } else {
+        await medplum.updateResource({
+          ...editingSlot,
+          start: answers['start-date'].valueDateTime as string,
+          end: answers['end-date'].valueDateTime as string,
+        });
+      }
 
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
-        message: 'Slot created',
+        message: editingSlot ? 'Slot updated' : 'Slot created',
       });
     } catch (err) {
       showNotification({
@@ -56,10 +66,12 @@ export function CreateSlot(props: CreateSlotProps): JSX.Element {
     handlers.close();
   }
 
+  const formTitle = editingSlot ? 'Update Slot' : 'Create a Slot';
+
   const appointmentQuestionnaire: Questionnaire = {
     resourceType: 'Questionnaire',
     status: 'active',
-    title: 'Create a Slot',
+    title: formTitle,
     id: 'new-appointment',
     item: [
       {
@@ -67,21 +79,21 @@ export function CreateSlot(props: CreateSlotProps): JSX.Element {
         type: 'dateTime',
         text: 'Start date',
         required: true,
-        initial: [{ valueDateTime: start }],
+        initial: [{ valueDateTime: event?.start?.toISOString() }],
       },
       {
         linkId: 'end-date',
         type: 'dateTime',
         text: 'End date',
         required: true,
-        initial: [{ valueDateTime: end }],
+        initial: [{ valueDateTime: event?.end?.toISOString() }],
       },
     ],
   };
 
   return (
     <Modal opened={opened} onClose={handlers.close}>
-      <p>Create a Slot</p>
+      <p>{formTitle}</p>
       <QuestionnaireForm questionnaire={appointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>
   );

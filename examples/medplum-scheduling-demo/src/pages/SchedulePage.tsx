@@ -1,5 +1,5 @@
 import { Document, useSearchResources } from '@medplum/react';
-import { Calendar, dayjsLocalizer, SlotInfo } from 'react-big-calendar';
+import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useCallback, useContext, useState } from 'react';
 import dayjs from 'dayjs';
@@ -11,32 +11,39 @@ import { Schedule } from '@medplum/fhirtypes';
 
 export function SchedulePage(): JSX.Element {
   const [createSlotOpened, createSlotHandlers] = useDisclosure(false);
-  const [[start, end], setStartEnd] = useState<[string | undefined, string | undefined]>([undefined, undefined]);
+  const [selectedEvent, setSelectedEvent] = useState<Event>();
   const { schedule } = useContext(ScheduleContext);
   const [slots] = useSearchResources('Slot', { schedule: getReferenceString(schedule as Schedule) });
 
-  const events = (slots ?? []).map((slot) => ({
+  const events: Event[] = (slots ?? []).map((slot) => ({
     title: 'Available',
     start: new Date(slot.start),
     end: new Date(slot.end),
+    resource: slot,
   }));
 
   const handleSelectSlot = useCallback(
-    ({ start, end }: SlotInfo) => {
-      setStartEnd([start.toISOString(), end.toISOString()]);
+    (event: Event) => {
+      setSelectedEvent(event);
       createSlotHandlers.open();
     },
     [createSlotHandlers]
   );
 
+  const handleSelectEvent = useCallback((event: Event) => {
+    setSelectedEvent(event);
+    createSlotHandlers.open();
+  }, []);
+
   return (
     <Document width={1000}>
-      <CreateSlot start={start} end={end} opened={createSlotOpened} handlers={createSlotHandlers} />
+      <CreateSlot event={selectedEvent} opened={createSlotOpened} handlers={createSlotHandlers} />
       <Calendar
         localizer={dayjsLocalizer(dayjs)}
         events={events}
-        style={{ height: 600 }}
         onSelectSlot={handleSelectSlot}
+        onSelectEvent={handleSelectEvent}
+        style={{ height: 600 }}
         selectable
       />
     </Document>
