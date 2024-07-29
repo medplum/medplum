@@ -4,6 +4,7 @@ import {
   DEFAULT_SEARCH_COUNT,
   forbidden,
   getResourceTypes,
+  Logger,
   LRUCache,
   normalizeOperationOutcome,
   OperationOutcomeError,
@@ -11,11 +12,13 @@ import {
 import { Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import DataLoader from 'dataloader';
 import {
+  ArgumentNode,
   ASTNode,
   ASTVisitor,
   DocumentNode,
   execute,
   ExecutionResult,
+  FieldNode,
   GraphQLError,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
@@ -29,6 +32,8 @@ import {
   GraphQLResolveInfo,
   GraphQLSchema,
   GraphQLString,
+  Kind,
+  OperationDefinitionNode,
   parse,
   specifiedRules,
   validate,
@@ -101,7 +106,7 @@ export async function graphqlHandler(
   }
 
   const schema = getRootSchema();
-  const validationRules = [...specifiedRules, MaxDepthRule(req.config?.graphqlMaxDepth)];
+  const validationRules = [...specifiedRules, MaxDepthRule(req.config?.graphqlMaxDepth), QueryCostRule(router)];
   const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
     return [invalidRequest(validationErrors)];
@@ -464,3 +469,126 @@ const MaxDepthRule =
       }
     },
   });
+
+const DEFAULT_MAX_COST = 10_000;
+
+type QueryCostRuleOptions = {
+  logger?: Logger;
+  maxCost?: number;
+  debug?: boolean;
+};
+
+const QueryCostRule =
+  (router: FhirRouter, options?: QueryCostRuleOptions) =>
+  (context: ValidationContext): ASTVisitor =>
+    new QueryCostVisitor(context, router, options) as ASTVisitor;
+
+class QueryCostVisitor {
+  private context: ValidationContext;
+  private maxCost: number;
+  private debug: boolean;
+  private router: FhirRouter;
+  private fragmentCosts: Record<string, number>;
+
+  constructor(context: ValidationContext, router: FhirRouter, options?: QueryCostRuleOptions) {
+    this.context = context;
+    this.maxCost = options?.maxCost ?? DEFAULT_MAX_COST;
+    this.debug = options?.debug ?? false;
+    this.router = router;
+    this.fragmentCosts = Object.create(null);
+  }
+
+  OperationDefinition(node: OperationDefinitionNode): void {
+    let cost = 0;
+    for (const child of node.selectionSet.selections) {
+      const startTime = process.hrtime.bigint();
+      const childCost = this.calculateCost(child);
+      cost += childCost;
+      this.log(child.kind, 'node has final cost', childCost, '(', process.hrtime.bigint() - startTime, 'ns)');
+
+      if (cost > this.maxCost) {
+        // this.context.reportError(
+        //   new GraphQLError('Query too complex', {
+        //     extensions: { cost, limit: this.maxCost },
+        //   })
+        // );
+        this.router.log('warn', 'GraphQL query too complex', {
+          cost,
+          limit: this.maxCost,
+          query: node.loc?.source?.body,
+        });
+      }
+    }
+  }
+
+  private calculateCost(...nodes: ASTNode[]): number {
+    let cost = 0;
+    for (const node of nodes) {
+      if (node.kind === Kind.FIELD && node.selectionSet) {
+        let baseCost = 0;
+        let branchingFactor = 1;
+        if (isSearchField(node)) {
+          this.log('Found search field', node.name.value);
+          baseCost = 8;
+          branchingFactor = this.getCount(node.arguments) ?? 20;
+        } else if (isLinkedResource(node)) {
+          this.log('Found linked resource');
+          baseCost = 1;
+          branchingFactor = 2;
+        }
+
+        const fieldCost = baseCost + branchingFactor * this.calculateCost(...node.selectionSet.selections);
+        if (fieldCost) {
+          this.log('Field', node.name.value, 'costs', fieldCost);
+        }
+        cost += fieldCost;
+      } else if (node.kind === Kind.FRAGMENT_SPREAD) {
+        const fragmentName = node.name.value;
+        const fragment = this.context.getFragment(fragmentName);
+        const cachedCost = this.fragmentCosts[fragmentName];
+
+        if (cachedCost !== undefined) {
+          this.log('Fragment', fragmentName, 'costs', cachedCost, '(cached)');
+          cost += cachedCost;
+        } else if (fragment) {
+          const fragmentCost = this.calculateCost(...fragment.selectionSet.selections);
+          this.fragmentCosts[fragmentName] = fragmentCost;
+          this.log('Fragment', fragmentName, 'costs', fragmentCost);
+          cost += fragmentCost;
+        }
+      } else if (node.kind === Kind.INLINE_FRAGMENT) {
+        const fragmentCost = this.calculateCost(...node.selectionSet.selections);
+        this.log('Inline fragment on', node.typeCondition?.name.value, 'costs', fragmentCost);
+        cost += fragmentCost;
+      }
+
+      if (cost > this.maxCost) {
+        return cost; // Short circuit return, no need to keep processing
+      }
+    }
+
+    return cost;
+  }
+
+  getCount(args?: readonly ArgumentNode[]): number | undefined {
+    const countArg = args?.find((arg) => arg.name.value === '_count');
+    if (countArg?.value.kind === Kind.INT) {
+      return parseInt(countArg.value.value, 10);
+    }
+    return undefined;
+  }
+
+  log(...args: any[]): void {
+    if (this.debug) {
+      console.log(...args);
+    }
+  }
+}
+
+function isSearchField(node: FieldNode): boolean {
+  return node.name.value.endsWith('List');
+}
+
+function isLinkedResource(node: FieldNode): boolean {
+  return node.name.value === 'resource';
+}
