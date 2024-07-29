@@ -21,20 +21,20 @@
     "@medplum/fhirtypes": "3.2.3",
     "@medplum/react": "3.2.3",
     "@tabler/icons-react": "3.11.0",
-    "@types/node": "20.14.11",
+    "@types/node": "22.0.0",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
     "chart.js": "4.4.3",
     "esbuild": "0.23.0",
-    "postcss": "8.4.39",
+    "postcss": "8.4.40",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-chartjs-2": "5.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.25.1",
     "rimraf": "5.0.9",
-    "typescript": "5.5.3",
-    "vite": "5.3.4"
+    "typescript": "5.5.4",
+    "vite": "5.3.5"
   }
 }
