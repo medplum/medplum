@@ -56,6 +56,53 @@ code per CodeSystem.
 There is a covering unique index on `Coding_Property`; each row must be fully unique. It is valid for a Coding to have
 multiple values for a given property.
 
+## CodeSystem Hierarchies
+
+Many code systems define parent-child relationships between their codes, to denote that one code is a more general
+category and the other a more specific instance of that category. These relationships are stored as properties of the
+related codes: the properties are marked with a special `uri` (e.g. `http://hl7.org/fhir/concept-properties#parent` or
+`http://hl7.org/fhir/concept-properties#child`), and the `target` of the `Coding_Property` row points to the other Coding.
+
+For example, two codes might be related as follows:
+
+```mermaid
+flowchart LR
+  c1(["`Coding
+    id: 1
+    code: '78012-2'
+  `"])
+  cs(["`CodeSystem
+    id: 434f1042-6962...
+    url: 'http://loinc.org'
+  `"])
+  c2(["`Coding
+    id: 2
+    code: 'LP376020-6'
+  `"])
+
+  csp(["`CodeSystem_Property
+    id: 12
+    code: 'parent'
+    uri: 'http://...#parent'
+  `"])
+  cp([Coding_Property])
+
+  c1 -->|system| cs
+  c2 -->|system| cs
+  csp -->|system| cs
+
+  cp -->|coding| c1
+  cp -->|property| csp
+  cp -->|target| c2
+```
+
+::: note
+
+While FHIR supports specifying hierarchical relationships with either `parent` or `child` properties, Medplum currently
+only supports `parent` for simplicity, since the two are inversely equivalent.
+
+:::
+
 ## Terminology Operations
 
 FHIR specifies a suite of Operation endpoints to interact with terminology information, which Medplum implements on top
@@ -93,4 +140,65 @@ FROM "Coding"
   LEFT JOIN "Coding_Property" AS cp ON "Coding".id = cp.coding
   LEFT JOIN "CodeSystem_Property" AS property ON cp.property = property.id
 WHERE "Coding".code = ? AND "Coding".system = ?;
+```
+
+### `CodeSystem/$subsumes`
+
+Subsumption testing involves checking whether one code is related to another through a hierarchy defined by the code
+system. For example, one might want to check whether the code for "amoxicillin" descends from the code for "antibiotics".
+
+The `parent` properties from each code are recursively traversed to check if either is an ancestor of the other:
+
+```sql
+-- Get CodeSystem by URL
+SELECT id, content FROM "CodeSystem" WHERE url = ?;
+
+-- Check if codeA is an ancestor of codeB; this query is performed once in each direction
+WITH RECURSIVE "cte_ancestors" AS (
+    SELECT id, code, display FROM "Coding"
+    WHERE system = ? AND code = ?
+  UNION
+      SELECT c.id, c.code, c.display FROM "Coding" c
+        INNER JOIN "Coding_Property" AS cp ON c.id = cp.target
+        INNER JOIN "CodeSystem_Property" AS property ON (
+          cp.property = property.id
+          AND property.code = ?
+        )
+        INNER JOIN "cte_ancestors" AS ancestor ON cp.coding = ancestor.id
+      WHERE
+        c.system = ?
+)
+SELECT code, display FROM "cte_ancestors"
+WHERE code = ?
+LIMIT 1;
+```
+
+### `ValueSet/$validate-code`
+
+FHIR ValueSets [define which codes should be used](/docs/terminology#defining-and-using-code-systems) from specific code
+systems for some use case. Determining if a given code is in the ValueSet is one of the core FHIR terminology operations,
+and is designed to be used in resource validation.
+
+For each `ValueSet.compose.include` that matches the `system` of the coding to be validated, the server checks if the
+given code satisfies the inclusion criteria. If there is `filter`, the database is queried to check if the required
+properties are present. For hierarchical `is-a` filters, the above recursive ancestor query is used; otherwise, a
+generic property filter is applied:
+
+```sql
+SELECT  c.id, c.code, c.display FROM "Coding" c
+  LEFT JOIN "Coding_Property" AS cp ON (
+    c.id = cp.coding
+    AND cp.value = ?
+  )
+  LEFT JOIN "CodeSystem_Property" AS property ON (
+    c.system = property.system
+    AND property.id = cp.property
+    AND property.code = ?
+  )
+WHERE (
+  c.system = ?
+  AND c.code = ?
+  AND cp.value IS NOT NULL
+  AND property.system IS NOT NULL
+)
 ```
