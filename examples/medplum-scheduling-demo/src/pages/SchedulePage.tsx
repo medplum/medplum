@@ -17,7 +17,7 @@ export function SchedulePage(): JSX.Element {
 
   // Converts Slot resources to big-calendar Event objects
   const events: Event[] = (slots ?? []).map((slot) => ({
-    title: 'Available',
+    title: slot.status === 'free' ? 'Available' : 'Blocked',
     start: new Date(slot.start),
     end: new Date(slot.end),
     resource: slot,
@@ -45,8 +45,9 @@ export function SchedulePage(): JSX.Element {
     <Document width={1000}>
       <CreateUpdateSlot event={selectedEvent} opened={createSlotOpened} handlers={createSlotHandlers} />
       <Calendar
+        defaultView="week"
         localizer={dayjsLocalizer(dayjs)}
-        events={events}
+        backgroundEvents={events} // Background events don't show in the month view
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectEvent}
         style={{ height: 600 }}

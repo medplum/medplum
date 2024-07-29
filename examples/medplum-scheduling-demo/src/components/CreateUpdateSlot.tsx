@@ -1,4 +1,4 @@
-import { Button, Modal } from '@mantine/core';
+import { Button, Modal, Group, Radio } from '@mantine/core';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse, Schedule, Slot } from '@medplum/fhirtypes';
 import { Event } from 'react-big-calendar';
@@ -7,6 +7,7 @@ import { ScheduleContext } from '../Schedule.context';
 import { useContext } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useToggle } from '@mantine/hooks';
 
 interface CreateUpdateSlotProps {
   event: Event | undefined;
@@ -22,6 +23,7 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
   const { event, opened, handlers } = props;
   const medplum = useMedplum();
   const { schedule } = useContext(ScheduleContext);
+  const [availableToggle, toggleAvailable] = useToggle([true, false]);
 
   const editingSlot: Slot = event?.resource;
 
@@ -38,7 +40,7 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
         // Create new slot
         await medplum.createResource({
           resourceType: 'Slot',
-          status: 'free',
+          status: availableToggle ? 'free' : 'busy-unavailable',
           start: answers['start-date'].valueDateTime as string,
           end: answers['end-date'].valueDateTime as string,
           schedule: createReference(schedule as Schedule),
@@ -125,7 +127,12 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
         <Button onClick={handleDeleteSlot} fullWidth color="red">
           Delete Schedule
         </Button>
-      ) : null}
+      ) : (
+        <Group>
+          <Radio checked={availableToggle} onChange={() => toggleAvailable()} label="Avaliable" />
+          <Radio checked={!availableToggle} onChange={() => toggleAvailable()} label="Block" />
+        </Group>
+      )}
       <p>{formTitle}</p>
       <QuestionnaireForm questionnaire={appointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>
