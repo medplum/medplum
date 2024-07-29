@@ -129,7 +129,7 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
         </Button>
       ) : (
         <Group>
-          <Radio checked={availableToggle} onChange={() => toggleAvailable()} label="Avaliable" />
+          <Radio checked={availableToggle} onChange={() => toggleAvailable()} label="Available" />
           <Radio checked={!availableToggle} onChange={() => toggleAvailable()} label="Block" />
         </Group>
       )}
