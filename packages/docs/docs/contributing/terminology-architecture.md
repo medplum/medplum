@@ -117,7 +117,8 @@ Validating whether a CodeSystem contains any of a set of codes is a simple query
 SELECT id, content FROM "CodeSystem" WHERE url = ?;
 
 -- Check whether codes exist
-SELECT id, code, display FROM "Coding" WHERE code IN (?, ?) AND system = ?;
+SELECT id, code, display FROM "Coding"
+WHERE code IN (?, ?) AND system = ?;
 ```
 
 ### `CodeSystem/$lookup`
@@ -201,4 +202,47 @@ WHERE (
   AND cp.value IS NOT NULL
   AND property.system IS NOT NULL
 )
+```
+
+### `ValueSet/$expand`
+
+ValueSet expansion is similar to the `$validate-code` operation, but rather than checking a single code it returns an
+(optionally-filtered) list of codes that are contained in the ValueSet. This is often used to support typeahead queries
+in user interfaces.
+
+For each `ValueSet.compose.include`, codes from the given system are added to the expansion. If a `filter` parameter is
+passed to the `$expand` operation, this is used to constraint the returned set of codes:
+
+```sql
+-- Expand a hierarchy, starting from the parent code
+WITH RECURSIVE "cte_descendants" AS (
+    SELECT id, code, display FROM "Coding"
+    WHERE system = ? AND code = ?
+  UNION
+      SELECT c.id, c.code, c.display FROM "Coding" c
+        INNER JOIN "Coding_Property" AS cp ON c.id = cp.coding AND cp.property = ?
+        INNER JOIN "cte_descendants" AS descendant ON cp.target = descendant.id
+)
+SELECT id, code, display FROM "cte_descendants"
+LIMIT 101;
+
+-- When a text filter is present, apply it first
+-- and then check whether those codes are in the hierarchy
+SELECT id, code, display FROM "Coding"
+WHERE (
+    system = ?
+    AND to_tsvector('english', display) @@ to_tsquery('english', ?)
+    AND EXISTS(
+      WITH RECURSIVE "cte_ancestors" AS (
+          SELECT origin.id, origin.code, origin.display FROM "Coding" origin
+          WHERE origin.system = ? AND origin.code = "Coding".code
+        UNION
+          SELECT c.id, c.code, c.display FROM "Coding" c
+            INNER JOIN "Coding_Property" AS cp ON c.id = cp.target AND cp.property = ?
+            INNER JOIN "cte_ancestors" AS ancestor ON cp.coding = ancestor.id
+      )
+      SELECT 1 FROM "cte_ancestors" WHERE code = ?
+    )
+)
+LIMIT 21;
 ```
