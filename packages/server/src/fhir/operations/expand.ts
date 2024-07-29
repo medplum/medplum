@@ -1,13 +1,27 @@
 import { allOk, badRequest, OperationOutcomeError } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { CodeSystem, Coding, ValueSet, ValueSetComposeInclude, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import {
+  CodeSystem,
+  Coding,
+  ValueSet,
+  ValueSetComposeInclude,
+  ValueSetComposeIncludeFilter,
+  ValueSetExpansionContains,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { Column, Condition, Conjunction, Disjunction, Expression, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, Disjunction, Exists, Expression, SelectQuery } from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
-import { abstractProperty, addDescendants, addPropertyFilter, findTerminologyResource } from './utils/terminology';
+import {
+  abstractProperty,
+  addDescendants,
+  addPropertyFilter,
+  findAncestor,
+  findTerminologyResource,
+  getParentProperty,
+} from './utils/terminology';
 import { addExpandJob } from '../../workers/expand';
 import { requireSuperAdmin } from '../../admin/super';
 
@@ -361,20 +375,39 @@ async function getPrecomputedExpansion(
   }));
 }
 
+const hierarchyOps: ValueSetComposeIncludeFilter['op'][] = ['is-a', 'is-not-a', 'descendent-of'];
+
 async function includeInExpansion(
   include: ValueSetComposeInclude,
   expansion: ValueSetExpansionContains[],
   codeSystem: CodeSystem,
   params: ValueSetExpandParameters
 ): Promise<void> {
-  const ctx = getAuthenticatedContext();
+  const db = getAuthenticatedContext().repo.getDatabaseClient(DatabaseMode.READER);
+
+  const hierarchyFilter = include.filter?.find((f) => hierarchyOps.includes(f.op));
+  if (hierarchyFilter) {
+    // Hydrate parent property ID to optimize expensive DB queries for hierarchy expansion
+    const parentProp = getParentProperty(codeSystem);
+    const propId = (
+      await new SelectQuery('CodeSystem_Property')
+        .column('id')
+        .where('system', '=', codeSystem.id)
+        .where('code', '=', parentProp.code)
+        .execute(db)
+    )[0]?.id;
+    if (propId) {
+      parentProp.id = propId;
+      codeSystem.property?.unshift?.(parentProp);
+    }
+  }
 
   const query = expansionQuery(include, codeSystem, params);
   if (!query) {
     return;
   }
 
-  const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));
+  const results = await query.execute(db);
   const system = codeSystem.url;
   for (const { code, display } of results) {
     expansion.push({ system, code, display });
@@ -397,10 +430,22 @@ export function expansionQuery(
     for (const condition of include.filter) {
       switch (condition.op) {
         case 'is-a':
-          query = addDescendants(query, codeSystem, condition.value);
-          break;
         case 'descendent-of':
-          query = addDescendants(query, codeSystem, condition.value).where('code', '!=', condition.value);
+          if (params?.filter) {
+            const base = new SelectQuery('Coding', undefined, 'origin')
+              .column('id')
+              .column('code')
+              .column('display')
+              .where(new Column('origin', 'system'), '=', codeSystem.id)
+              .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
+            const ancestorQuery = findAncestor(base, codeSystem, condition.value);
+            query.whereExpr(new Exists(ancestorQuery));
+          } else {
+            query = addDescendants(query, codeSystem, condition.value);
+          }
+          if (condition.op !== 'is-a') {
+            query.where('code', '!=', condition.value);
+          }
           break;
         case '=':
           query = addPropertyFilter(query, condition.property, condition.value, true);
