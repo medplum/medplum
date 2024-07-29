@@ -524,7 +524,7 @@ async function getEstimateCount(
 /**
  * Returns a "clamped" estimate count based on the actual row count.
  * @param searchRequest - The search request.
- * @param rowCount - The number of matching results if found.
+ * @param rowCount - The number of matching results if found. Value can be up to one more than the requested count.
  * @param estimateCount - The estimated number of matching results.
  * @returns The clamped estimate count.
  */
@@ -541,7 +541,7 @@ export function clampEstimateCount(
   const pageSize = searchRequest.count ?? DEFAULT_SEARCH_COUNT;
   const startIndex = searchRequest.offset ?? 0;
   const minCount = rowCount > 0 ? startIndex + rowCount : 0;
-  const maxCount = rowCount < pageSize ? startIndex + rowCount : Number.MAX_SAFE_INTEGER;
+  const maxCount = rowCount <= pageSize ? startIndex + rowCount : Number.MAX_SAFE_INTEGER;
   return Math.max(minCount, Math.min(maxCount, estimateCount));
 }
 
