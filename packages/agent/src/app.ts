@@ -55,7 +55,6 @@ export class App {
   readonly channels = new Map<string, Channel>();
   readonly hl7Queue: AgentMessage[] = [];
   readonly hl7Clients = new Map<string, Hl7Client>();
-  readonly pendingTransmitRequests = new Map<string, AgentTransmitRequest>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
   private reconnectTimer?: NodeJS.Timeout;
@@ -211,14 +210,6 @@ export class App {
             if (!command.callback) {
               throw new Error('Transmit response missing callback');
             }
-            const request = this.pendingTransmitRequests.get(command.callback);
-            // If there was no corresponding request, throw an error
-            if (!request) {
-              throw new Error(
-                `Could not find corresponding transmit request for response with callback ${command.callback}`
-              );
-            }
-            this.pendingTransmitRequests.delete(command.callback);
             if (this.config?.status !== 'active') {
               this.sendAgentDisabledError(command);
               // We check the existence of a statusCode for backwards compat
@@ -227,12 +218,6 @@ export class App {
             } else {
               // Log error
               this.log.error(`Error during handling transmit request: ${command.body}`);
-              // Build ack and send back to HL7 client
-              this.addToHl7Queue({
-                ...command,
-                contentType: ContentType.HL7_V2,
-                body: Hl7Message.parse(request.body).buildAck().toString(),
-              });
             }
             break;
           }
@@ -476,9 +461,6 @@ export class App {
   }
 
   addToWebSocketQueue(message: AgentMessage): void {
-    if (message.type === 'agent:transmit:request' && message.callback) {
-      this.pendingTransmitRequests.set(message.callback, message);
-    }
     this.webSocketQueue.push(message);
     this.startWebSocketWorker();
   }

@@ -4,7 +4,6 @@ import {
   allOk,
   ContentType,
   createReference,
-  getReferenceString,
   Hl7Message,
   LogLevel,
   sleep,
@@ -13,7 +12,6 @@ import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
-import { randomUUID } from 'node:crypto';
 import { App } from './app';
 
 const medplum = new MockClient();
@@ -170,7 +168,7 @@ describe('HL7', () => {
       port: 57000,
     });
 
-    const response = await client.sendAndWait(
+    await client.send(
       Hl7Message.parse(
         'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
           'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
@@ -178,11 +176,8 @@ describe('HL7', () => {
           'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
       )
     );
-    expect(response).toBeDefined();
-    expect(response.header.getComponent(9, 1)).toBe('ACK');
-    expect(response.segments).toHaveLength(2);
-    expect(response.segments[1].name).toBe('MSA');
 
+    await sleep(150);
     expect(console.log).toHaveBeenCalledWith(
       expect.stringContaining('Error during handling transmit request: Something bad happened')
     );
@@ -263,86 +258,6 @@ describe('HL7', () => {
 
     await sleep(150);
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Transmit response missing callback'));
-
-    client.close();
-    await app.stop();
-    mockServer.stop();
-    console.log = originalConsoleLog;
-  });
-
-  test('Send and receive -- no pending request for callback', async () => {
-    const originalConsoleLog = console.log;
-    console.log = jest.fn();
-
-    const mockServer = new Server('wss://example.com/ws/agent');
-
-    mockServer.on('connection', (socket) => {
-      socket.on('message', (data) => {
-        const command = JSON.parse((data as Buffer).toString('utf8'));
-        if (command.type === 'agent:connect:request') {
-          socket.send(
-            Buffer.from(
-              JSON.stringify({
-                type: 'agent:connect:response',
-              })
-            )
-          );
-        }
-
-        if (command.type === 'agent:transmit:request') {
-          const hl7Message = Hl7Message.parse(command.body);
-          const ackMessage = hl7Message.buildAck();
-          socket.send(
-            Buffer.from(
-              JSON.stringify({
-                type: 'agent:transmit:response',
-                channel: command.channel,
-                remote: command.remote,
-                contentType: ContentType.HL7_V2,
-                statusCode: 200,
-                callback: getReferenceString(agent) + '-' + randomUUID(), // new callback
-                body: ackMessage.toString(),
-              } satisfies AgentTransmitResponse)
-            )
-          );
-        }
-      });
-    });
-
-    const agent = await medplum.createResource<Agent>({
-      resourceType: 'Agent',
-      name: 'Test Agent',
-      status: 'active',
-      channel: [
-        {
-          name: 'test',
-          endpoint: createReference(endpoint),
-          targetReference: createReference(bot),
-        },
-      ],
-    });
-
-    const app = new App(medplum, agent.id as string, LogLevel.INFO);
-    await app.start();
-
-    const client = new Hl7Client({
-      host: 'localhost',
-      port: 57000,
-    });
-
-    await client.send(
-      Hl7Message.parse(
-        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
-          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
-          'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
-          'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
-      )
-    );
-
-    await sleep(150);
-    expect(console.log).toHaveBeenCalledWith(
-      expect.stringContaining('Could not find corresponding transmit request for response with callback')
-    );
 
     client.close();
     await app.stop();
