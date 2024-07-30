@@ -130,15 +130,10 @@ class BatchProcessor {
         return buildBundleResponse(allOk, matchingResource);
       }
 
-      const event: LogEvent = {
-        type: 'warn',
-        message: 'Conditional mutation in batch',
-        data: {
-          method: request.method,
-          url: request.url,
-        },
-      };
-      this.router.dispatchEvent(event);
+      this.router.log('warn', 'Conditional mutation in batch', {
+        method: request.method,
+        url: request.url,
+      });
     }
 
     let body = entry.resource;

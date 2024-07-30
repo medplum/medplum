@@ -711,6 +711,23 @@
         "expression": "Subscription.meta.author",
         "target": ["Patient", "Practitioner", "RelatedPerson", "ClientApplication", "Bot"]
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Location-physical-type",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Location-physical-type",
+        "url": "https://medplum.com/fhir/SearchParameter/Location-physical-type",
+        "version": "4.0.1",
+        "name": "physical-type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The physical type of the Location resource",
+        "code": "physical-type",
+        "base": ["Location"],
+        "type": "token",
+        "expression": "Location.physicalType"
+      }
     }
   ]
 }

@@ -51,6 +51,7 @@ import {
   BundleEntry,
   Meta,
   OperationOutcome,
+  Project,
   Reference,
   Resource,
   ResourceType,
@@ -94,7 +95,6 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { buildSearchExpression, searchImpl } from './search';
 import {
   Condition,
   DeleteQuery,
@@ -106,6 +106,7 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
+import { buildSearchExpression, searchImpl } from './search';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -139,6 +140,9 @@ export interface RepositoryContext {
    * This value will be included in every resource as meta.project.
    */
   projects?: string[];
+
+  /** Current Project of the authenticated user, or none for the system repository. */
+  currentProject?: Project;
 
   /**
    * Optional compartment restriction.
@@ -247,6 +251,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   setMode(mode: RepositoryMode): void {
     this.mode = mode;
+  }
+
+  currentProject(): Project | undefined {
+    return this.context.currentProject;
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
@@ -1143,7 +1151,12 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = parseSearchRequest(policy.criteria);
-          const accessPolicyExpression = buildSearchExpression(builder, searchRequest.resourceType, searchRequest);
+          const accessPolicyExpression = buildSearchExpression(
+            this,
+            builder,
+            searchRequest.resourceType,
+            searchRequest
+          );
           if (accessPolicyExpression) {
             expressions.push(accessPolicyExpression);
           }
