@@ -1,6 +1,6 @@
 import { Paper, Tabs } from '@mantine/core';
 import { Filter, getReferenceString, Operator, SearchRequest } from '@medplum/core';
-import { MemoizedSearchControl, useMedplum, useMedplumProfile } from '@medplum/react';
+import { MemoizedSearchControl, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CreateAppointment } from '../components/CreateAppointment';
