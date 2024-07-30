@@ -518,10 +518,31 @@ async function getEstimateCount(
     }
   }
 
-  // Apply some logic to avoid obviously incorrect estimates
-  const startIndex = (searchRequest.offset ?? 0) * (searchRequest.count ?? DEFAULT_SEARCH_COUNT);
-  const minCount = rowCount === undefined ? startIndex : startIndex + rowCount;
-  return Math.max(minCount, result);
+  return clampEstimateCount(searchRequest, rowCount, result);
+}
+
+/**
+ * Returns a "clamped" estimate count based on the actual row count.
+ * @param searchRequest - The search request.
+ * @param rowCount - The number of matching results if found. Value can be up to one more than the requested count.
+ * @param estimateCount - The estimated number of matching results.
+ * @returns The clamped estimate count.
+ */
+export function clampEstimateCount(
+  searchRequest: SearchRequest,
+  rowCount: number | undefined,
+  estimateCount: number
+): number {
+  if (searchRequest.count === 0 || rowCount === undefined) {
+    // If "count only" or rowCount is undefined, then the estimate is the best we can do
+    return estimateCount;
+  }
+
+  const pageSize = searchRequest.count ?? DEFAULT_SEARCH_COUNT;
+  const startIndex = searchRequest.offset ?? 0;
+  const minCount = rowCount > 0 ? startIndex + rowCount : 0;
+  const maxCount = rowCount <= pageSize ? startIndex + rowCount : Number.MAX_SAFE_INTEGER;
+  return Math.max(minCount, Math.min(maxCount, estimateCount));
 }
 
 /**
