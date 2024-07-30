@@ -57,12 +57,6 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
   }
 
   const lookup = new SelectQuery('Coding');
-  const codeSystemTable = lookup.getNextJoinAlias();
-  lookup.innerJoin(
-    'CodeSystem',
-    codeSystemTable,
-    new Condition(new Column('Coding', 'system'), '=', new Column(codeSystemTable, 'id'))
-  );
   const propertyTable = lookup.getNextJoinAlias();
   lookup.leftJoin(
     'Coding_Property',
@@ -76,14 +70,13 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
     new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropTable, 'id'))
   );
   lookup
-    .column(new Column(codeSystemTable, 'title'))
-    .column(new Column('Coding', 'display'))
+    .column('display')
     .column(new Column(csPropTable, 'code'))
     .column(new Column(csPropTable, 'type'))
     .column(new Column(csPropTable, 'description'))
     .column(new Column(propertyTable, 'value'))
-    .where(new Column(codeSystemTable, 'id'), '=', codeSystem.id)
-    .where(new Column('Coding', 'code'), '=', coding.code);
+    .where('code', '=', coding.code)
+    .where('system', '=', codeSystem.id);
 
   const db = getDatabasePool(DatabaseMode.READER);
   const result = await lookup.execute(db);
@@ -93,7 +86,7 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
   }
 
   const output: CodeSystemLookupOutput = {
-    name: resolved.title,
+    name: codeSystem.title ?? codeSystem.name ?? (codeSystem.url as string),
     display: resolved.display ?? '',
   };
   for (const property of result) {
