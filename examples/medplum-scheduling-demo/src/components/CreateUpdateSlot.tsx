@@ -1,4 +1,4 @@
-import { Button, Modal, Group, Radio } from '@mantine/core';
+import { Button, Modal } from '@mantine/core';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import { Questionnaire, QuestionnaireItem, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { Event } from 'react-big-calendar';
@@ -7,7 +7,6 @@ import { ScheduleContext } from '../Schedule.context';
 import { useContext } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useToggle } from '@mantine/hooks';
 
 interface CreateUpdateSlotProps {
   event: Event | undefined;
