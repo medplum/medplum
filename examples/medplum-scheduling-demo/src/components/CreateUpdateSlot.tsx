@@ -93,6 +93,7 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
   const appointmentQuestionnaire: Questionnaire = {
     resourceType: 'Questionnaire',
     status: 'active',
+    title: editingSlot ? 'Update Slot' : 'Create a Slot',
     id: 'new-appointment',
     item: [
       {
@@ -133,7 +134,6 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
           Delete Slot
         </Button>
       ) : null}
-      <h2>{editingSlot ? 'Update Slot' : 'Create a Slot'}</h2>
       <QuestionnaireForm
         questionnaire={appointmentQuestionnaire}
         subject={createReference(schedule)}

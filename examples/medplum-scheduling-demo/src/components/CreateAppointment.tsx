@@ -70,7 +70,6 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
 
   return (
     <Modal opened={opened} onClose={handlers.close}>
-      <p>Create an Appointment</p>
       <QuestionnaireForm questionnaire={appointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>
   );
