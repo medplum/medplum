@@ -8,8 +8,9 @@
     "build:bots": "npm run clean && npm run lint && tsc --project tsconfig-bots.json && node --loader ts-node/esm src/scripts/deploy-bots.ts",
     "clean": "rimraf dist",
     "dev": "vite",
+    "preview": "vite preview",
     "lint": "eslint src/",
-    "preview": "vite preview"
+    "test": "vitest run"
   },
   "prettier": {
     "printWidth": 120,
