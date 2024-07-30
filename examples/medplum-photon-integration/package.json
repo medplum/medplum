@@ -1,18 +1,6 @@
 {
   "name": "medplum-photon-integration",
-<<<<<<< HEAD
-<<<<<<< HEAD
   "version": "3.2.4",
-=======
-<<<<<<< HEAD
-  "version": "3.2.3",
-=======
-  "version": "3.2.1",
->>>>>>> cc4827196 (Update dev dependencies to fix eslint mock issue)
->>>>>>> 30fdbe6d1 (Update dev dependencies to fix eslint mock issue)
-=======
-  "version": "3.2.3",
->>>>>>> 10ab35676 (Install to fix build)
   "private": true,
   "type": "module",
   "scripts": {
@@ -38,8 +26,6 @@
     "@mantine/core": "7.11.2",
     "@mantine/hooks": "7.11.2",
     "@mantine/notifications": "7.11.2",
-<<<<<<< HEAD
-<<<<<<< HEAD
     "@medplum/core": "3.2.4",
     "@medplum/eslint-config": "3.2.4",
     "@medplum/fhirtypes": "3.2.4",
@@ -47,31 +33,7 @@
     "@photonhealth/elements": "0.10.6",
     "@tabler/icons-react": "3.11.0",
     "@types/node": "22.0.0",
-=======
-<<<<<<< HEAD
-=======
->>>>>>> 10ab35676 (Install to fix build)
-    "@medplum/core": "3.2.3",
-    "@medplum/eslint-config": "3.2.3",
-    "@medplum/fhirtypes": "3.2.3",
-    "@medplum/react": "3.2.3",
-    "@photonhealth/elements": "0.10.5",
-    "@tabler/icons-react": "3.11.0",
-    "@types/node": "20.14.11",
-<<<<<<< HEAD
-=======
-    "@medplum/core": "3.2.1",
-    "@medplum/eslint-config": "3.2.1",
-    "@medplum/fhirtypes": "3.2.1",
     "@medplum/mock": "3.2.1",
-    "@medplum/react": "3.2.1",
-    "@photonhealth/elements": "0.10.3",
-    "@tabler/icons-react": "3.10.0",
-    "@types/node": "20.14.10",
->>>>>>> cc4827196 (Update dev dependencies to fix eslint mock issue)
->>>>>>> 30fdbe6d1 (Update dev dependencies to fix eslint mock issue)
-=======
->>>>>>> 10ab35676 (Install to fix build)
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
@@ -80,21 +42,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.25.1",
-<<<<<<< HEAD
     "typescript": "5.5.4",
     "vite": "5.3.5"
-=======
-    "typescript": "5.5.3",
-    "vite": "5.3.4"
-<<<<<<< HEAD
-=======
-    "react-router-dom": "6.24.1",
-    "typescript": "5.5.3",
-    "vite": "5.3.3",
-    "vitest": "2.0.3"
->>>>>>> cc4827196 (Update dev dependencies to fix eslint mock issue)
->>>>>>> 30fdbe6d1 (Update dev dependencies to fix eslint mock issue)
-=======
->>>>>>> 10ab35676 (Install to fix build)
   }
 }
