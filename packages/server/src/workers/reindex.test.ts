@@ -184,7 +184,8 @@ describe('Reindex Worker', () => {
       const queue = getReindexQueue() as any;
       queue.add.mockClear();
 
-      const name = 'Sam' + randomUUID();
+      const idSystem = 'http://example.com/mrn';
+      const mrn = randomUUID();
 
       let asyncJob = await repo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
@@ -195,16 +196,16 @@ describe('Reindex Worker', () => {
       await repo.createResource<Patient>({
         resourceType: 'Patient',
         gender: 'unknown',
-        name: [{ given: [name + 'antha'], family: 'Yates' }],
+        identifier: [{ system: idSystem, value: mrn }],
       });
       await repo.createResource<Practitioner>({
         resourceType: 'Practitioner',
         gender: 'unknown',
-        name: [{ given: [name + 'url'], family: 'Urtz' }],
+        identifier: [{ system: idSystem, value: mrn }],
       });
 
       const resourceTypes = ['Patient', 'Practitioner'] as ResourceType[];
-      const searchFilter = parseSearchRequest(`Person?name=${name}&gender=unknown`);
+      const searchFilter = parseSearchRequest(`Person?identifier=${idSystem}|${mrn}&gender=unknown`);
 
       await addReindexJob(resourceTypes, asyncJob, searchFilter);
       expect(queue.add).toHaveBeenCalledWith(
