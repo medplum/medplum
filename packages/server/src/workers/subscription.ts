@@ -26,13 +26,13 @@ import { MedplumServerConfig } from '../config';
 import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
-import { Repository, getSystemRepo } from '../fhir/repo';
+import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { createAuditEvent, findProjectMembership, getPreviousResource, isJobSuccessful } from './utils';
+import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -205,13 +205,15 @@ async function satisfiesAccessPolicy(
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the subscription.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource.
  * @param context - The background job context.
- * @param verbose - If true, log verbose output.
+ * @param options - The resend subscriptions options.
  */
 export async function addSubscriptionJobs(
   resource: Resource,
+  previousVersion: Resource | undefined,
   context: BackgroundJobContext,
-  verbose = false
+  options?: ResendSubscriptionsOptions
 ): Promise<void> {
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
@@ -220,7 +222,7 @@ export async function addSubscriptionJobs(
 
   const ctx = tryGetRequestContext();
   const logger = getLogger();
-  const logFn = verbose ? logger.info : logger.debug;
+  const logFn = options?.verbose ? logger.info : logger.debug;
   const systemRepo = getSystemRepo();
   let project: Project | undefined;
   try {
@@ -247,7 +249,11 @@ export async function addSubscriptionJobs(
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
 
   for (const subscription of subscriptions) {
-    const criteria = await matchesCriteria(resource, subscription, context);
+    if (options?.subscription && options.subscription !== getReferenceString(subscription)) {
+      logFn('Subscription does not match options.subscription');
+      continue;
+    }
+    const criteria = await matchesCriteria(resource, previousVersion, subscription, context);
     logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${criteria}`);
     if (criteria) {
       if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
@@ -268,7 +274,7 @@ export async function addSubscriptionJobs(
         requestTime,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
-        verbose,
+        verbose: options?.verbose,
       });
     }
   }
@@ -281,16 +287,19 @@ export async function addSubscriptionJobs(
 /**
  * Determines if the resource matches the subscription criteria.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource.
  * @param subscription - The subscription.
  * @param context - Background job context.
  * @returns True if the resource matches the subscription criteria.
  */
 async function matchesCriteria(
   resource: Resource,
+  previousVersion: Resource | undefined,
   subscription: Subscription,
   context: BackgroundJobContext
 ): Promise<boolean> {
   const ctx = getRequestContext();
+  const getPreviousResource = async (): Promise<Resource | undefined> => previousVersion;
   return resourceMatchesSubscriptionCriteria({
     resource,
     subscription,
@@ -473,18 +482,7 @@ async function sendRestHook(
     return;
   }
 
-  const headers = buildRestHookHeaders(subscription, resource) as Record<string, string>;
-  if (interaction === 'delete') {
-    headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
-  }
-  const traceId = job.data.traceId;
-  if (traceId) {
-    headers['x-trace-id'] = traceId;
-    if (parseTraceparent(traceId)) {
-      headers['traceparent'] = traceId;
-    }
-  }
-
+  const headers = buildRestHookHeaders(job, subscription, resource, interaction);
   const body = interaction === 'delete' ? '{}' : stringify(resource);
   let error: Error | undefined = undefined;
 
@@ -524,14 +522,27 @@ async function sendRestHook(
 
 /**
  * Builds a collection of HTTP request headers for the rest-hook subscription.
+ * @param job - The subscription job.
  * @param subscription - The subscription resource.
  * @param resource - The trigger resource.
+ * @param interaction - The interaction type.
  * @returns The HTTP request headers.
  */
-function buildRestHookHeaders(subscription: Subscription, resource: Resource): HeadersInit {
+function buildRestHookHeaders(
+  job: Job<SubscriptionJobData>,
+  subscription: Subscription,
+  resource: Resource,
+  interaction: BackgroundJobInteraction
+): HeadersInit {
   const headers: HeadersInit = {
     'Content-Type': ContentType.FHIR_JSON,
+    'X-Medplum-Subscription': subscription.id as string,
+    'X-Medplum-Interaction': interaction,
   };
+
+  if (interaction === 'delete') {
+    headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
+  }
 
   if (subscription.channel?.header) {
     for (const header of subscription.channel.header) {
@@ -549,6 +560,14 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
   if (secret && isString(secret)) {
     const body = stringify(resource);
     headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
+  }
+
+  const traceId = job.data.traceId;
+  if (traceId) {
+    headers['x-trace-id'] = traceId;
+    if (parseTraceparent(traceId)) {
+      headers['traceparent'] = traceId;
+    }
   }
 
   return headers;

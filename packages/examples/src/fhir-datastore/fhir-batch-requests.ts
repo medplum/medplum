@@ -212,6 +212,56 @@ const internalReference: Bundle =
   };
 // end-block internalReference
 
+const externalReference: Bundle =
+  // start-block externalReference
+  {
+    resourceType: 'Bundle',
+    type: 'transaction',
+    entry: [
+      {
+        resource: {
+          resourceType: 'Patient',
+          name: [
+            {
+              prefix: ['Ms.'],
+              family: 'Doe',
+              given: ['Jane'],
+            },
+          ],
+          gender: 'female',
+          birthDate: '1970-01-01',
+          // highlight-next-line
+          generalPractitioner: [{ reference: 'Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|1234567893' }],
+        },
+        request: {
+          method: 'POST',
+          url: 'Patient',
+        },
+      },
+      {
+        resource: {
+          resourceType: 'Patient',
+          name: [
+            {
+              prefix: ['Mr.'],
+              family: 'Doe',
+              given: ['John'],
+            },
+          ],
+          gender: 'male',
+          birthDate: '1972-12-31',
+          // highlight-next-line
+          generalPractitioner: [{ reference: 'Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|1234567893' }],
+        },
+        request: {
+          method: 'POST',
+          url: 'Patient',
+        },
+      },
+    ],
+  };
+// end-block externalReference
+
 const conditional: Bundle =
   // start-block conditionalCreate
   {
@@ -321,4 +371,4 @@ patientsToCreate.push(
 await Promise.all(patientsToCreate);
 // end-block autobatchingCorrect
 
-console.log(batchCreate, history, internalReference, conditional);
+console.log(batchCreate, history, internalReference, externalReference, conditional);

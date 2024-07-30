@@ -224,7 +224,7 @@ function getBaseSelectQueryForResourceType(
   }
   repo.addDeletedFilter(builder);
   repo.addSecurityFilters(builder, resourceType);
-  addSearchFilters(builder, resourceType, searchRequest);
+  addSearchFilters(repo, builder, resourceType, searchRequest);
   return builder;
 }
 
@@ -518,26 +518,54 @@ async function getEstimateCount(
     }
   }
 
-  // Apply some logic to avoid obviously incorrect estimates
-  const startIndex = (searchRequest.offset ?? 0) * (searchRequest.count ?? DEFAULT_SEARCH_COUNT);
-  const minCount = rowCount === undefined ? startIndex : startIndex + rowCount;
-  return Math.max(minCount, result);
+  return clampEstimateCount(searchRequest, rowCount, result);
+}
+
+/**
+ * Returns a "clamped" estimate count based on the actual row count.
+ * @param searchRequest - The search request.
+ * @param rowCount - The number of matching results if found. Value can be up to one more than the requested count.
+ * @param estimateCount - The estimated number of matching results.
+ * @returns The clamped estimate count.
+ */
+export function clampEstimateCount(
+  searchRequest: SearchRequest,
+  rowCount: number | undefined,
+  estimateCount: number
+): number {
+  if (searchRequest.count === 0 || rowCount === undefined) {
+    // If "count only" or rowCount is undefined, then the estimate is the best we can do
+    return estimateCount;
+  }
+
+  const pageSize = searchRequest.count ?? DEFAULT_SEARCH_COUNT;
+  const startIndex = searchRequest.offset ?? 0;
+  const minCount = rowCount > 0 ? startIndex + rowCount : 0;
+  const maxCount = rowCount <= pageSize ? startIndex + rowCount : Number.MAX_SAFE_INTEGER;
+  return Math.max(minCount, Math.min(maxCount, estimateCount));
 }
 
 /**
  * Adds all search filters as "WHERE" clauses to the query builder.
+ * @param repo - The repository.
  * @param selectQuery - The select query builder.
  * @param resourceType - The type of resources requested.
  * @param searchRequest - The search request.
  */
-function addSearchFilters(selectQuery: SelectQuery, resourceType: ResourceType, searchRequest: SearchRequest): void {
-  const expr = buildSearchExpression(selectQuery, resourceType, searchRequest);
+function addSearchFilters(
+  repo: Repository,
+  selectQuery: SelectQuery,
+  resourceType: ResourceType,
+  searchRequest: SearchRequest
+): void {
+  const expr = buildSearchExpression(repo, selectQuery, resourceType, searchRequest);
   if (expr) {
     selectQuery.predicate.expressions.push(expr);
   }
 }
 
 export function buildSearchExpression(
+  repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   searchRequest: SearchRequest
@@ -548,9 +576,9 @@ export function buildSearchExpression(
       let expr: Expression | undefined;
       if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
         const chain = parseChainedParameter(searchRequest.resourceType, filter.code, filter.value);
-        expr = buildChainedSearch(selectQuery, searchRequest.resourceType, chain);
+        expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
       } else {
-        expr = buildSearchFilterExpression(selectQuery, resourceType, resourceType, filter);
+        expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
       }
 
       if (expr) {
@@ -569,6 +597,7 @@ export function buildSearchExpression(
 
 /**
  * Builds a single search filter as "WHERE" clause to the query builder.
+ * @param repo - The repository.
  * @param selectQuery - The select query builder.
  * @param resourceType - The type of resources requested.
  * @param table - The resource table.
@@ -576,6 +605,7 @@ export function buildSearchExpression(
  * @returns The search query where expression
  */
 function buildSearchFilterExpression(
+  repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
@@ -587,10 +617,10 @@ function buildSearchFilterExpression(
 
   if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
     const chain = parseChainedParameter(resourceType, filter.code, filter.value);
-    return buildChainedSearch(selectQuery, resourceType, chain);
+    return buildChainedSearch(repo, selectQuery, resourceType, chain);
   }
 
-  const specialParamExpression = trySpecialSearchParameter(selectQuery, resourceType, table, filter);
+  const specialParamExpression = trySpecialSearchParameter(repo, selectQuery, resourceType, table, filter);
   if (specialParamExpression) {
     return specialParamExpression;
   }
@@ -615,13 +645,14 @@ function buildSearchFilterExpression(
   }
 
   // Not any special cases, just a normal search parameter.
-  return buildNormalSearchFilterExpression(resourceType, table, param, filter);
+  return buildNormalSearchFilterExpression(repo, resourceType, table, param, filter);
 }
 
 /**
  * Builds a search filter expression for a normal search parameter.
  *
  * Not any special cases, just a normal search parameter.
+ * @param repo - The repository.
  * @param resourceType - The FHIR resource type.
  * @param table - The resource table.
  * @param param - The FHIR search parameter.
@@ -629,6 +660,7 @@ function buildSearchFilterExpression(
  * @returns A SQL "WHERE" clause expression.
  */
 function buildNormalSearchFilterExpression(
+  repo: Repository,
   resourceType: string,
   table: string,
   param: SearchParameter,
@@ -666,6 +698,7 @@ function buildNormalSearchFilterExpression(
  * Returns true if the search parameter code is a special search parameter.
  *
  * See: https://www.hl7.org/fhir/search.html#all
+ * @param repo - The repository.
  * @param selectQuery - The select query builder.
  * @param resourceType - The type of resources requested.
  * @param table - The resource table.
@@ -673,6 +706,7 @@ function buildNormalSearchFilterExpression(
  * @returns True if the search parameter is a special code.
  */
 function trySpecialSearchParameter(
+  repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
@@ -697,49 +731,52 @@ function trySpecialSearchParameter(
         splitSearchOnComma(filter.value)
       );
     case '_filter':
-      return buildFilterParameterExpression(selectQuery, resourceType, table, parseFilterParameter(filter.value));
+      return buildFilterParameterExpression(repo, selectQuery, resourceType, table, parseFilterParameter(filter.value));
     default:
       return undefined;
   }
 }
 
 function buildFilterParameterExpression(
+  repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filterExpression: FhirFilterExpression
 ): Expression {
   if (filterExpression instanceof FhirFilterNegation) {
-    return new Negation(buildFilterParameterExpression(selectQuery, resourceType, table, filterExpression.child));
+    return new Negation(buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterExpression.child));
   } else if (filterExpression instanceof FhirFilterConnective) {
-    return buildFilterParameterConnective(selectQuery, resourceType, table, filterExpression);
+    return buildFilterParameterConnective(repo, selectQuery, resourceType, table, filterExpression);
   } else if (filterExpression instanceof FhirFilterComparison) {
-    return buildFilterParameterComparison(selectQuery, resourceType, table, filterExpression);
+    return buildFilterParameterComparison(repo, selectQuery, resourceType, table, filterExpression);
   } else {
     throw new OperationOutcomeError(badRequest('Unknown filter expression type'));
   }
 }
 
 function buildFilterParameterConnective(
+  repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filterConnective: FhirFilterConnective
 ): Expression {
   const expressions = [
-    buildFilterParameterExpression(selectQuery, resourceType, table, filterConnective.left),
-    buildFilterParameterExpression(selectQuery, resourceType, table, filterConnective.right),
+    buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.left),
+    buildFilterParameterExpression(repo, selectQuery, resourceType, table, filterConnective.right),
   ];
   return filterConnective.keyword === 'and' ? new Conjunction(expressions) : new Disjunction(expressions);
 }
 
 function buildFilterParameterComparison(
+  repo: Repository,
   selectQuery: SelectQuery,
   resourceType: ResourceType,
   table: string,
   filterComparison: FhirFilterComparison
 ): Expression {
-  return buildSearchFilterExpression(selectQuery, resourceType, table, {
+  return buildSearchFilterExpression(repo, selectQuery, resourceType, table, {
     code: filterComparison.path,
     operator: filterComparison.operator as Operator,
     value: filterComparison.value,
@@ -1005,16 +1042,27 @@ function buildEqualityCondition(
   }
 }
 
-function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, param: ChainedSearchParameter): Expression {
+function buildChainedSearch(
+  repo: Repository,
+  selectQuery: SelectQuery,
+  resourceType: string,
+  param: ChainedSearchParameter
+): Expression {
   if (param.chain.length > 3) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
   }
 
-  if (getConfig().chainedSearchWithReferenceTables) {
-    return buildChainedSearchUsingReferenceTable(selectQuery, resourceType, param);
+  if (usesReferenceLookupTable(repo)) {
+    return buildChainedSearchUsingReferenceTable(repo, selectQuery, resourceType, param);
   } else {
-    return buildChainedSearchUsingReferenceStrings(selectQuery, resourceType, param);
+    return buildChainedSearchUsingReferenceStrings(repo, selectQuery, resourceType, param);
   }
+}
+
+function usesReferenceLookupTable(repo: Repository): boolean {
+  return !!(
+    getConfig().chainedSearchWithReferenceTables || repo.currentProject()?.features?.includes('reference-lookups')
+  );
 }
 
 /**
@@ -1022,12 +1070,14 @@ function buildChainedSearch(selectQuery: SelectQuery, resourceType: string, para
  * This is the preferred technique for chained searches.
  * However, reference tables were only populated after Medplum version 2.2.0.
  * Self-hosted servers need to run a full re-index before this technique can be used.
+ * @param repo - The repository.
  * @param selectQuery - The select query builder.
  * @param resourceType - The top level resource type.
  * @param param - The chained search parameter.
  * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceTable(
+  repo: Repository,
   selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
@@ -1070,7 +1120,13 @@ function buildChainedSearchUsingReferenceTable(
     currentResourceType = link.resourceType;
 
     if (link.filter) {
-      return buildSearchFilterExpression(selectQuery, link.resourceType as ResourceType, nextTableAlias, link.filter);
+      return buildSearchFilterExpression(
+        repo,
+        selectQuery,
+        link.resourceType as ResourceType,
+        nextTableAlias,
+        link.filter
+      );
     }
   }
   throw new OperationOutcomeError(badRequest('Unterminated chained search'));
@@ -1082,12 +1138,14 @@ function buildChainedSearchUsingReferenceTable(
  * This is very slow and inefficient, but it is the only way to support chained searches with reference strings.
  * This technique is deprecated and intended for removal.
  * The preferred technique is to use reference tables.
+ * @param repo - The repository.
  * @param selectQuery - The select query builder.
  * @param resourceType - The top level resource type.
  * @param param - The chained search parameter.
  * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceStrings(
+  repo: Repository,
   selectQuery: SelectQuery,
   resourceType: string,
   param: ChainedSearchParameter
@@ -1103,7 +1161,7 @@ function buildChainedSearchUsingReferenceStrings(
     currentResourceType = link.resourceType;
 
     if (link.filter) {
-      return buildSearchFilterExpression(selectQuery, link.resourceType as ResourceType, nextTable, link.filter);
+      return buildSearchFilterExpression(repo, selectQuery, link.resourceType as ResourceType, nextTable, link.filter);
     }
   }
   throw new OperationOutcomeError(badRequest('Unterminated chained search'));

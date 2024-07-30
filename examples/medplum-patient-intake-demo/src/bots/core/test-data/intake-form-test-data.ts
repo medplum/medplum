@@ -1,20 +1,36 @@
-import { createReference } from '@medplum/core';
-import { Patient, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { createReference, getReferenceString } from '@medplum/core';
+import { Organization, Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import coreBundle from '../../../../data/core/patient-intake-questionnaire.json';
 
 export const intakePatient: Patient = {
   resourceType: 'Patient',
-  id: '1ea87e76-85e3-4126-8595-7a8b98e31e35',
+  id: 'patient-id',
   name: [
     {
-      given: ['Michael'],
+      given: ['John', 'Doe'],
       family: 'Carvalho',
     },
   ],
 };
 
+export const payorOrganization1: Organization = {
+  resourceType: 'Organization',
+  id: 'org-id-1',
+  name: 'First Insurance Provider',
+};
+
+export const payorOrganization2: Organization = {
+  resourceType: 'Organization',
+  id: 'org-id-2',
+  name: 'Second Insurance Provider',
+};
+
+export const intakeQuestionnaire: Questionnaire = coreBundle.entry[1].resource as Questionnaire;
+intakeQuestionnaire.id = 'intake-questionnaire-id';
+
 export const intakeResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
-  questionnaire: 'Questionnaire/28a16ce3-f894-4585-860a-344e591410b0',
+  questionnaire: getReferenceString(intakeQuestionnaire),
   status: 'completed',
   subject: createReference(intakePatient),
   item: [
@@ -132,7 +148,9 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Insurance Provider',
           answer: [
             {
-              valueString: 'Some Insurance Provider',
+              valueReference: {
+                reference: getReferenceString(payorOrganization1),
+              },
             },
           ],
         },
@@ -142,7 +160,43 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Subscriber ID',
           answer: [
             {
-              valueString: 'insurance-provider-id',
+              valueString: 'first-provider-id',
+            },
+          ],
+        },
+        {
+          id: 'id-47',
+          linkId: 'relationship-to-subscriber',
+          text: 'Relationship to Subscriber',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
+                code: 'BP',
+                display: 'Billing contact person',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-45',
+          linkId: 'insurance-provider',
+          text: 'Insurance Provider',
+          answer: [
+            {
+              valueReference: {
+                reference: getReferenceString(payorOrganization2),
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-46',
+          linkId: 'subscriber-id',
+          text: 'Subscriber ID',
+          answer: [
+            {
+              valueString: 'second-provider-id',
             },
           ],
         },
@@ -202,6 +256,28 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueBoolean: true,
+            },
+          ],
+        },
+        {
+          linkId: 'pregnancy-status',
+          text: 'Pregnancy Status',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '77386006',
+                display: 'Pregnancy (finding)',
+              },
+            },
+          ],
+        },
+        {
+          linkId: 'estimated-delivery-date',
+          text: 'Estimated Delivery Date',
+          answer: [
+            {
+              valueDate: '2025-04-01',
             },
           ],
         },
@@ -328,31 +404,6 @@ export const intakeResponse: QuestionnaireResponse = {
       item: [
         {
           id: 'id-65',
-          linkId: 'acknowledgement-for-advance-directives-choice',
-          text: 'An Advance Medical Directive is a document by which a person makes provision for health care decisions in the event that, in the future, he/she becomes unable to make those decisions.\nPlease select one option below:',
-          answer: [
-            {
-              valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0532',
-                code: 'Y',
-                display:
-                  'Yes, I do have an Advance Directive / Living Will / Durable Power of Attorney for medical or health care decisions.',
-              },
-            },
-          ],
-        },
-        {
-          id: 'id-66',
-          linkId: 'acknowledgement-for-advance-directives-email',
-          text: 'If you do have an Advance Directive, please make sure to send a copy to us, in person or by mail.',
-          answer: [
-            {
-              valueBoolean: true,
-            },
-          ],
-        },
-        {
-          id: 'id-67',
           linkId: 'acknowledgement-for-advance-directives-signature',
           text: 'I acknowledge I have received information about Advance Directives.',
           answer: [
@@ -362,7 +413,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-68',
+          id: 'id-66',
           linkId: 'acknowledgement-for-advance-directives-date',
           text: 'Date',
           answer: [

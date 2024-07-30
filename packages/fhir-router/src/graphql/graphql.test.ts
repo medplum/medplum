@@ -1133,6 +1133,33 @@ describe('GraphQL', () => {
     });
   });
 
+  test('Connection API without edges field', async () => {
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        PatientConnection(name: "Smith") {
+          count
+        }
+      }
+    `,
+      },
+    };
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res[1] as any).data;
+    expect(data.PatientConnection).toBeDefined();
+    expect(data.PatientConnection.count).toBe(1);
+    expect(data.PatientConnection.edges).toBeUndefined();
+  });
+
   test('Create Patient Record', async () => {
     const request: FhirRequest = {
       method: 'POST',
@@ -1474,5 +1501,49 @@ describe('GraphQL', () => {
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
     expect((res[1] as any).errors).toBeUndefined();
+  });
+
+  test('Fragment inclusion', async () => {
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+        query Visit {
+          Encounter(id: "${encounter1.id}") {
+            id
+            meta {
+              lastUpdated
+            }
+            subject {
+              reference
+              resource {
+                ...PatientInfo
+              }
+            }
+          }
+
+        }
+
+        fragment PatientInfo on Patient {
+          id name { given family }
+        }
+    `,
+      },
+    };
+
+    const fhirRouter = new FhirRouter();
+    const result = await graphqlHandler(request, repo, fhirRouter);
+    expect(result).toBeDefined();
+    expect(result.length).toBe(2);
+    expect(result[0]).toMatchObject(allOk);
+
+    const data = (result[1] as any).data;
+    expect(data.Encounter.id).toEqual(encounter1.id);
+    expect(data.Encounter.subject.resource).toBeDefined();
+    expect(data.Encounter.subject.resource.id).toEqual(patient.id);
+    expect(data.Encounter.subject.resource.name[0].given[0]).toEqual('Alice');
   });
 });

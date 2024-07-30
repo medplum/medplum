@@ -37,6 +37,7 @@ export async function getRepoForLogin(authState: AuthState, extendedMode?: boole
 
   return new Repository({
     projects: allowedProjects,
+    currentProject: project,
     author: membership.profile as Reference,
     remoteAddress: login.remoteAddress,
     superAdmin: project.superAdmin,
@@ -117,6 +118,7 @@ export async function buildAccessPolicy(membership: ProjectMembership): Promise<
 
   return {
     resourceType: 'AccessPolicy',
+    basedOn: access.map((a) => a.policy),
     compartment,
     resource: resourcePolicies,
     ipAccessRule: ipAccessRules,

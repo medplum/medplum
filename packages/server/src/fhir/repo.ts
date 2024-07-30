@@ -1,6 +1,7 @@
 import {
   AccessPolicyInteraction,
   BackgroundJobInteraction,
+  DEFAULT_MAX_SEARCH_COUNT,
   OperationOutcomeError,
   Operator,
   PropertyType,
@@ -50,6 +51,7 @@ import {
   BundleEntry,
   Meta,
   OperationOutcome,
+  Project,
   Reference,
   Resource,
   ResourceType,
@@ -93,7 +95,6 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
-import { buildSearchExpression, searchImpl } from './search';
 import {
   Condition,
   DeleteQuery,
@@ -105,6 +106,7 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
+import { buildSearchExpression, searchImpl } from './search';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -138,6 +140,9 @@ export interface RepositoryContext {
    * This value will be included in every resource as meta.project.
    */
   projects?: string[];
+
+  /** Current Project of the authenticated user, or none for the system repository. */
+  currentProject?: Project;
 
   /**
    * Optional compartment restriction.
@@ -199,6 +204,7 @@ export interface ReadResourceOptions extends InteractionOptions {
 
 export interface ResendSubscriptionsOptions extends InteractionOptions {
   interaction?: BackgroundJobInteraction;
+  subscription?: string;
 }
 
 /**
@@ -245,6 +251,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   setMode(mode: RepositoryMode): void {
     this.mode = mode;
+  }
+
+  currentProject(): Project | undefined {
+    return this.context.currentProject;
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
@@ -410,9 +420,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * See: https://www.hl7.org/fhir/http.html#history
    * @param resourceType - The FHIR resource type.
    * @param id - The FHIR resource ID.
+   * @param limit - The maximum number of results to return.
    * @returns Operation outcome and a history bundle.
    */
-  async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string): Promise<Bundle<T>> {
+  async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string, limit = 100): Promise<Bundle<T>> {
     try {
       let resource: T | undefined = undefined;
       try {
@@ -430,7 +441,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         .column('lastUpdated')
         .where('id', '=', id)
         .orderBy('lastUpdated', true)
-        .limit(100)
+        .limit(Math.min(limit, DEFAULT_MAX_SEARCH_COUNT))
         .execute(this.getDatabaseClient(DatabaseMode.READER));
 
       const entries: BundleEntry<T>[] = [];
@@ -627,7 +638,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     await this.handleBinaryUpdate(existing, result);
     await this.handleStorage(result, create);
-    await addBackgroundJobs(result, { interaction: create ? 'create' : 'update' });
+    await addBackgroundJobs(result, existing, { interaction: create ? 'create' : 'update' });
     this.removeHiddenFields(result);
     return result;
   }
@@ -917,7 +928,18 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
 
     const resource = await this.readResourceImpl<T>(resourceType, id);
-    return addSubscriptionJobs(resource, { interaction: options?.interaction ?? 'update' }, options?.verbose);
+    const interaction = options?.interaction ?? 'update';
+    let previousVersion: T | undefined;
+
+    if (interaction === 'update') {
+      const history = await this.readHistory(resourceType, id, 2);
+      if (history.entry?.[0]?.resource?.meta?.versionId !== resource.meta?.versionId) {
+        throw new OperationOutcomeError(preconditionFailed);
+      }
+      previousVersion = history.entry?.[1]?.resource;
+    }
+
+    return addSubscriptionJobs(resource, previousVersion, { interaction }, options);
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
@@ -974,7 +996,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
       });
 
-      await addSubscriptionJobs(resource, { interaction: 'delete' });
+      await addSubscriptionJobs(resource, resource, { interaction: 'delete' });
     } catch (err) {
       this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;
@@ -1129,7 +1151,12 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         } else if (policy.criteria) {
           // Add subquery for access policy criteria.
           const searchRequest = parseSearchRequest(policy.criteria);
-          const accessPolicyExpression = buildSearchExpression(builder, searchRequest.resourceType, searchRequest);
+          const accessPolicyExpression = buildSearchExpression(
+            this,
+            builder,
+            searchRequest.resourceType,
+            searchRequest
+          );
           if (accessPolicyExpression) {
             expressions.push(accessPolicyExpression);
           }

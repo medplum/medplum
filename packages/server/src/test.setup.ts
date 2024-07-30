@@ -127,6 +127,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
       if (options?.withRepo) {
         repo = new Repository({
           projects: [project.id as string],
+          currentProject: project,
           author: createReference(client),
           superAdmin: options?.superAdmin,
           projectAdmin: options?.membership?.admin,

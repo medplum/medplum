@@ -13,10 +13,6 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
-import { execExpandJob, getExpandQueue } from '../../workers/expand';
-import { Job } from 'bullmq';
-import { DeleteQuery, SelectQuery } from '../sql';
-import { DatabaseMode, getDatabasePool } from '../../database';
 
 describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }])('Expand with %j', (projectProps) => {
   const app = express();
@@ -485,7 +481,7 @@ describe('Updated implementation', () => {
   test('Subsumption', async () => {
     const res = await request(app)
       .get(
-        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=100`
+        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=200`
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toEqual(200);
@@ -790,68 +786,56 @@ describe('Updated implementation', () => {
     expect(expansion.contains?.[0]?.code).toEqual('ERECCAP');
   });
 
-  test('Precomputation', async () => {
-    const queue = getExpandQueue() as any;
-    queue.add.mockClear();
+  test('Reference to other ValueSet', async () => {
+    const valueSetResource: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'http://example.com/ValueSet/reference-' + randomUUID(),
+      compose: {
+        include: [
+          { valueSet: ['http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype'] },
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+            filter: [
+              {
+                property: 'concept',
+                op: 'is-a',
+                value: 'RESPRSN',
+              },
+            ],
+          },
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+            concept: [{ code: 'SEE' }],
+          },
+        ],
+      },
+    };
+    const valueSetRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSetResource);
+    expect(valueSetRes.status).toEqual(201);
+    const valueSet = valueSetRes.body as ValueSet;
 
-    await new DeleteQuery('ValueSet_Membership').execute(getDatabasePool(DatabaseMode.WRITER));
-
-    const superAdminAccessToken = await initTestAuth({ project: { superAdmin: true, features: ['terminology'] } });
     const res = await request(app)
-      .get(
-        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&filter=adopt&count=200&_precompute=true`
-      )
-      .set('Authorization', 'Bearer ' + superAdminAccessToken);
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&count=200`)
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    const expandedCodes = expansion.contains?.map((coding) => coding.code);
-    expect(expandedCodes).toHaveLength(6);
-    expect(expandedCodes).toEqual(
-      expect.arrayContaining(['ADOPTP', 'ADOPTF', 'ADOPTM', 'CHLDADOPT', 'DAUADOPT', 'SONADOPT'])
-    );
+    expect(
+      expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v2-0131')
+    ).toHaveLength(12);
+    expect(
+      expansion.contains?.filter((c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode')
+    ).toHaveLength(119);
 
-    expect(queue.add).toHaveBeenCalledWith(
-      'ExpandJobData',
-      expect.objectContaining({
-        valueSet: expect.objectContaining<Partial<ValueSet>>({
-          url: 'http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype',
-        }),
-      })
-    );
-
-    await withTestContext(() => execExpandJob({ data: queue.add.mock.calls[0][1] } as Job));
-    queue.add.mockClear();
-
-    const precomputeResults = await new SelectQuery('ValueSet_Membership')
-      .column('coding')
-      .where('valueSet', '=', res.body.id)
-      .execute(getDatabasePool(DatabaseMode.READER));
-    expect(precomputeResults).toHaveLength(122);
-
-    const res2 = await request(app)
-      .get(
-        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&filter=adopt&count=200&_precompute=true`
-      )
-      .set('Authorization', 'Bearer ' + superAdminAccessToken);
-
-    expect(res2.status).toEqual(200);
-    const precomputedExpansion = (res2.body.expansion as ValueSetExpansion).contains?.map((coding) => coding.code);
-
-    expect(precomputedExpansion).toHaveLength(6);
-    expect(precomputedExpansion).toEqual(
-      expect.arrayContaining(['ADOPTP', 'ADOPTF', 'ADOPTM', 'CHLDADOPT', 'DAUADOPT', 'SONADOPT'])
-    );
-    expect(queue.add).not.toHaveBeenCalled();
-  });
-
-  test('Precomputation without Super Admin', async () => {
-    await new DeleteQuery('ValueSet_Membership').execute(getDatabasePool(DatabaseMode.WRITER));
-    const res = await request(app)
-      .get(
-        `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&_precompute=true`
-      )
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(403);
+    const abstractCode = expansion.contains?.find((c) => c.code === '_PersonalRelationshipRoleType');
+    expect(abstractCode).toBeDefined();
+    const filterCode = expansion.contains?.find((c) => c.code === 'HPOWATT');
+    expect(filterCode?.display).toEqual('healthcare power of attorney');
+    const explicitCode = expansion.contains?.find((c) => c.code === 'SEE');
+    expect(explicitCode?.display).toEqual('Seeing');
   });
 });

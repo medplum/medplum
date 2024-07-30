@@ -5,6 +5,8 @@ import {
   forbidden,
   getResourceTypes,
   OperationOutcomeError,
+  parseSearchRequest,
+  SearchRequest,
   validateResourceType,
 } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
@@ -82,12 +84,18 @@ superAdminRouter.post(
     for (const resourceType of resourceTypes) {
       validateResourceType(resourceType);
     }
-    const systemRepo = getSystemRepo();
 
+    let searchFilter: SearchRequest | undefined;
+    const filter = req.body.filter as string;
+    if (filter) {
+      searchFilter = parseSearchRequest((resourceTypes[0] ?? '') + '?' + filter);
+    }
+
+    const systemRepo = getSystemRepo();
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob);
+      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter);
     });
 
     const { baseUrl } = getConfig();
