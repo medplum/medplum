@@ -1,6 +1,7 @@
 import { AgentTransmitResponse, ContentType, Hl7Message, Logger, normalizeErrorString } from '@medplum/core';
 import { AgentChannel, Endpoint } from '@medplum/fhirtypes';
 import { Hl7Connection, Hl7MessageEvent, Hl7Server } from '@medplum/hl7';
+import { randomUUID } from 'node:crypto';
 import { App } from './app';
 import { BaseChannel } from './channel';
 
@@ -84,6 +85,7 @@ export class AgentHl7ChannelConnection {
         remote: this.remote,
         contentType: ContentType.HL7_V2,
         body: event.message.toString(),
+        callback: `Agent/${this.channel.app.agentId}-${randomUUID()}`,
       });
     } catch (err) {
       this.channel.log.error(`HL7 error: ${normalizeErrorString(err)}`);

@@ -1,5 +1,5 @@
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
-import os, { platform } from 'node:os';
+import os from 'node:os';
 import { resolve } from 'node:path';
 import {
   GITHUB_RELEASES_URL,
@@ -419,7 +419,6 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
 
       await downloadRelease('3.1.6', resolve(__dirname, 'tmp', 'test-release-binary'));
       expect(fetchSpy).toHaveBeenNthCalledWith(1, `${GITHUB_RELEASES_URL}/tags/v3.1.6`);
-      console.log(platform());
       expect(fetchSpy).toHaveBeenLastCalledWith(`https://example.com/${_platform}`);
       expect(readFileSync(resolve(__dirname, 'tmp', 'test-release-binary'), { encoding: 'utf-8' })).toEqual(
         'Hello, Medplum!'
