@@ -1,8 +1,8 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { createAllergyInputs, createMedHistoryInputs, formatPhotonInput, handler } from './sync-patient';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import { createAllergyInputs, createMedHistoryInputs, handler } from './sync-patient';
 
 describe('Sync patient', async () => {
   beforeAll(() => {

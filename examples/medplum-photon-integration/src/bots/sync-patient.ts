@@ -1,5 +1,5 @@
 import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { AllergyIntolerance, Identifier, MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
+import { AllergyIntolerance, Identifier, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 import { CreatePatientVariables, PhotonAllergenInput, PhotonMedHistoryInput, PhotonPatient } from '../photon-types';
 import { formatAWSDate, formatPhotonAddress, getSexType, getTelecom, handlePhotonAuth } from './utils';
@@ -163,7 +163,6 @@ export async function createAllergyInputs(
   medplum: MedplumClient,
   authToken: string
 ): Promise<PhotonAllergenInput[]> {
-  debugger;
   const allergyInputs: PhotonAllergenInput[] = [];
   const allergies = await medplum.searchResources('AllergyIntolerance', {
     patient: getReferenceString(patient),
