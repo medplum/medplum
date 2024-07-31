@@ -63,12 +63,15 @@ function ensureHeartbeatHandler(): void {
         ws.close();
       }
       outstandingPings.clear();
-      for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
-        ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
-        outstandingPings.add(ws);
-      }
-      setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, METRIC_OPTIONS);
-      setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, METRIC_OPTIONS);
+      // We want to have all the `onDisconnect` callbacks run before we send out the next wave of heartbeats
+      process.nextTick(() => {
+        for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
+          ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
+          outstandingPings.add(ws);
+        }
+        setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, METRIC_OPTIONS);
+        setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, METRIC_OPTIONS);
+      });
     };
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
   }
