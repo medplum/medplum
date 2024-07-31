@@ -134,11 +134,8 @@ export class SubscriptionManager {
 
     ws.addEventListener('message', (event) => {
       try {
-        const parsedData = JSON.parse(event.data) as { type: 'ping' } | { type: 'pong' } | Bundle;
-        if (parsedData.type === 'ping') {
-          ws.send(JSON.stringify({ type: 'pong' }));
-          return;
-        } else if (parsedData.type === 'pong') {
+        const parsedData = JSON.parse(event.data) as { type: 'pong' } | Bundle;
+        if (parsedData.type === 'pong') {
           this.waitingForPong = false;
           return;
         }
@@ -226,7 +223,7 @@ export class SubscriptionManager {
       if (!this.pingInterval) {
         this.pingInterval = setInterval(() => {
           if (this.waitingForPong) {
-            ws.close();
+            ws.reconnect();
             return;
           }
           ws.send(JSON.stringify({ type: 'ping' }));

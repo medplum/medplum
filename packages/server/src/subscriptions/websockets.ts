@@ -29,12 +29,11 @@ export interface UnbindFromTokenMsg extends BaseSubscriptionClientMsg {
   payload: { token: string };
 }
 
-export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg | { type: 'ping' } | { type: 'pong' };
+export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg | { type: 'ping' };
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
 
-const outstandingPings = new Set<ws.WebSocket>();
 const wsToSubLookup = new Map<ws.WebSocket, Set<string>>();
 const subToWsLookup = new Map<string, Set<ws.WebSocket>>();
 let redisSubscriber: Redis | undefined;
@@ -58,21 +57,11 @@ async function setupSubscriptionHandler(): Promise<void> {
 function ensureHeartbeatHandler(): void {
   if (!heartbeatHandler) {
     heartbeatHandler = (): void => {
-      // Close all WS that we didn't get a pong back for
-      for (const ws of outstandingPings.values()) {
-        ws.close();
+      for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
+        ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
       }
-      outstandingPings.clear();
-      // We want to wait for the `onDisconnect` callbacks to get fired and so that `wsToSubLookup` is cleaned up before continuing
-      process.nextTick(() => {
-        for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
-          ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
-          ws.send(JSON.stringify({ type: 'ping' }));
-          outstandingPings.add(ws);
-        }
-        setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, METRIC_OPTIONS);
-        setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, METRIC_OPTIONS);
-      });
+      setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, METRIC_OPTIONS);
+      setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, METRIC_OPTIONS);
     };
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
   }
@@ -210,11 +199,7 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
     if (msg.type === 'ping') {
       // Mark WS as having sent ping recently
-      outstandingPings.delete(socket);
       socket.send(JSON.stringify({ type: 'pong' }));
-    } else if (msg.type === 'pong') {
-      // Mark WS as having responded to ping
-      outstandingPings.delete(socket);
     } else if (['bind-with-token', 'unbind-from-token'].includes(msg.type)) {
       const token = msg?.payload?.token;
       if (!token) {
