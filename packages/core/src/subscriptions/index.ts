@@ -223,6 +223,7 @@ export class SubscriptionManager {
       if (!this.pingInterval) {
         this.pingInterval = setInterval(() => {
           if (this.waitingForPong) {
+            this.waitingForPong = false;
             ws.reconnect();
             return;
           }
