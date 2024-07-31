@@ -502,7 +502,7 @@ export class BackEnd extends Construct {
           certificateArn: config.apiSslCertArn,
         },
       ],
-      sslPolicy: elbv2.SslPolicy.FORWARD_SECRECY_TLS12_RES_GCM,
+      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
       defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
     });
 
