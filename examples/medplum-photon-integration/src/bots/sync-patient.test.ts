@@ -1,7 +1,7 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
 import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { formatPhotonInput, handler } from './sync-patient';
+import { createAllergyInputs, createMedHistoryInputs, formatPhotonInput, handler } from './sync-patient';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 
 describe('Sync patient', async () => {
@@ -47,7 +47,7 @@ describe('Sync patient', async () => {
       identifier: 'https://example.org|homer-simpson',
     })) as Patient;
 
-    const inputs = await formatPhotonInput(patient, medplum, 'authToken', 'AllergyIntolerance');
+    const inputs = await createAllergyInputs(patient, medplum, 'authToken');
 
     expect(inputs).toBeDefined();
     expect(inputs?.length).toBe(2);
@@ -60,8 +60,7 @@ describe('Sync patient', async () => {
       identifier: 'https://example.org|marge-simpson',
     })) as Patient;
 
-    const inputs = await formatPhotonInput(patient, medplum, 'authToken', 'MedicationRequest');
-    console.log(inputs);
+    const inputs = await createMedHistoryInputs(patient, medplum, 'authToken');
 
     expect(inputs).toBeDefined();
     expect(inputs?.length).toBe(2);

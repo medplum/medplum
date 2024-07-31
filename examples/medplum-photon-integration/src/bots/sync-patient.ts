@@ -1,5 +1,5 @@
 import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { AllergyIntolerance, Identifier, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { AllergyIntolerance, Identifier, MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
 import fetch from 'node-fetch';
 import { CreatePatientVariables, PhotonAllergenInput, PhotonMedHistoryInput, PhotonPatient } from '../photon-types';
 import { formatAWSDate, formatPhotonAddress, getSexType, getTelecom, handlePhotonAuth } from './utils';
@@ -57,18 +57,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
 
   const email = getTelecom('email', patient);
   const address = formatPhotonAddress(patient.address?.[0]);
-  const allergies = (await formatPhotonInput(
-    patient,
-    medplum,
-    PHOTON_AUTH_TOKEN,
-    'AllergyIntolerance'
-  )) as PhotonAllergenInput[];
-  const medicationHistory = (await formatPhotonInput(
-    patient,
-    medplum,
-    PHOTON_AUTH_TOKEN,
-    'MedicationRequest'
-  )) as PhotonMedHistoryInput[];
+  const allergies = await createAllergyInputs(patient, medplum, PHOTON_AUTH_TOKEN);
+  const medicationHistory = await createMedHistoryInputs(patient, medplum, PHOTON_AUTH_TOKEN);
 
   if (email) {
     variables.email = email;
@@ -142,27 +132,66 @@ async function updatePatient(medplum: MedplumClient, patient: Patient, result: a
   }
 }
 
-export async function formatPhotonInput(
+export async function createMedHistoryInputs(
   patient: Patient,
   medplum: MedplumClient,
-  authToken: string,
-  inputType: 'AllergyIntolerance' | 'MedicationRequest'
-): Promise<(PhotonAllergenInput | PhotonMedHistoryInput)[] | undefined> {
-  const inputs: (PhotonAllergenInput | PhotonMedHistoryInput)[] = [];
-  const resources = await medplum.searchResources(inputType, {
+  authToken: string
+): Promise<PhotonMedHistoryInput[]> {
+  const medicationRequests = await medplum.searchResources('MedicationRequest', {
     patient: getReferenceString(patient),
   });
 
-  if (resources.length === 0) {
-    return undefined;
+  if (medicationRequests.length === 0) {
+    return [];
   }
 
-  for (const resource of resources) {
-    const photonId = await getPhotonId(resource, authToken);
-    if (!photonId) {
+  const resourceIds: [MedicationRequest, string][] = [];
+
+  for (const medicationRequest of medicationRequests) {
+    const photonMedicationId = await getPhotonMedicationId(medicationRequest, authToken);
+    if (photonMedicationId) {
+      resourceIds.push([medicationRequest, photonMedicationId]);
+    }
+  }
+
+  const medHistory = (await formatPhotonInput(resourceIds)) as PhotonMedHistoryInput[];
+  return medHistory;
+}
+
+export async function createAllergyInputs(
+  patient: Patient,
+  medplum: MedplumClient,
+  authToken: string
+): Promise<PhotonAllergenInput[]> {
+  debugger;
+  const allergyInputs: PhotonAllergenInput[] = [];
+  const allergies = await medplum.searchResources('AllergyIntolerance', {
+    patient: getReferenceString(patient),
+  });
+
+  if (allergies.length === 0) {
+    return [];
+  }
+
+  for (const allergy of allergies) {
+    const photonAllergyId = await getPhotonAllergyId(allergy, authToken);
+    if (!photonAllergyId) {
       continue;
     }
 
+    const allergyInput = createInput(allergy, photonAllergyId) as PhotonAllergenInput;
+    allergyInputs.push(allergyInput);
+  }
+
+  return allergyInputs;
+}
+
+export async function formatPhotonInput(
+  resources: [AllergyIntolerance | MedicationRequest, string][]
+): Promise<(PhotonAllergenInput | PhotonMedHistoryInput)[] | undefined> {
+  const inputs: (PhotonAllergenInput | PhotonMedHistoryInput)[] = [];
+
+  for (const [resource, photonId] of resources) {
     const input = createInput(resource, photonId);
     inputs.push(input);
   }
@@ -194,25 +223,51 @@ function createInput(
   }
 }
 
-async function getPhotonId(
-  resource: AllergyIntolerance | MedicationRequest,
-  authToken: string
-): Promise<string | undefined> {
-  const photonId = resource.identifier?.find((id) => id.system === 'https://neutron.health')?.value;
+async function getPhotonAllergyId(allergy: AllergyIntolerance, authToken: string): Promise<string | undefined> {
+  const photonId = getIdentifier(allergy.identifier);
   if (photonId) {
     return photonId;
   }
 
-  const code = resource.resourceType === 'AllergyIntolerance' ? resource.code : resource.medicationCodeableConcept;
-  const rxcui = code?.coding?.find((code) => code.system === 'http://www.nlm.nih.gov/research/umls/rxnorm')?.code;
+  const rxcui = allergy.code?.coding?.find(
+    (code) => code.system === 'http://www.nlm.nih.gov/research/umls/rxnorm'
+  )?.code;
   if (!rxcui) {
     return undefined;
   }
-  const body = formatRequestBody(resource.resourceType, rxcui);
+
+  const body = formatRequestBody(allergy.resourceType, rxcui);
   const result = await photonGraphqlFetch(body, authToken);
-  const id =
-    resource.resourceType === 'AllergyIntolerance' ? result.data.allergens?.[0]?.id : result.data.medications?.[0]?.id;
+  const id = result.data.allergens?.[0]?.id as string;
   return id;
+}
+
+async function getPhotonMedicationId(medication: MedicationRequest, authToken: string): Promise<string | undefined> {
+  const photonId = getIdentifier(medication.identifier);
+  if (photonId) {
+    return photonId;
+  }
+
+  const rxcui = medication.medicationCodeableConcept?.coding?.find(
+    (code) => code.system === 'http://www.nlm.nih.gov/research/umls/rxnorm'
+  )?.code;
+  if (!rxcui) {
+    return undefined;
+  }
+
+  const body = formatRequestBody(medication.resourceType, rxcui);
+  const result = await photonGraphqlFetch(body, authToken);
+  const id = result.data.medications?.[0]?.id as string;
+  return id;
+}
+
+function getIdentifier(identifiers?: Identifier[]): string | undefined {
+  if (!identifiers) {
+    return undefined;
+  }
+
+  const photonId = identifiers.find((id) => id.system === 'https://neutron.health')?.value;
+  return photonId;
 }
 
 function formatRequestBody(resourceType: 'AllergyIntolerance' | 'MedicationRequest', rxcui: string): string {
