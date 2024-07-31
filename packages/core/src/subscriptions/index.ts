@@ -14,6 +14,8 @@ import {
   ReconnectingWebSocket,
 } from '../websockets/reconnecting-websocket';
 
+const PING_INTERVAL_MS = 5_000;
+
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
   disconnect: { type: 'disconnect'; payload: { subscriptionId: string } };
@@ -102,6 +104,8 @@ export class SubscriptionManager {
   private criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
   private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
+  private pingInterval: ReturnType<typeof setInterval> | undefined = undefined;
+  private waitingForPong = false;
 
   constructor(medplum: MedplumClient, wsUrl: URL | string, options?: SubManagerOptions) {
     if (!(medplum instanceof MedplumClient)) {
@@ -130,7 +134,15 @@ export class SubscriptionManager {
 
     ws.addEventListener('message', (event) => {
       try {
-        const bundle = JSON.parse(event.data) as Bundle;
+        const parsedData = JSON.parse(event.data) as { type: 'ping' } | { type: 'pong' } | Bundle;
+        if (parsedData.type === 'ping') {
+          ws.send(JSON.stringify({ type: 'pong' }));
+          return;
+        } else if (parsedData.type === 'pong') {
+          this.waitingForPong = false;
+          return;
+        }
+        const bundle = parsedData;
         // Get criteria for event
         const status = bundle?.entry?.[0]?.resource as SubscriptionStatus;
 
@@ -188,6 +200,11 @@ export class SubscriptionManager {
         emitter.dispatchEvent({ ...closeEvent });
       }
 
+      if (this.pingInterval) {
+        clearInterval(this.pingInterval);
+        this.pingInterval = undefined;
+      }
+
       if (this.wsClosed) {
         this.criteriaEntries.clear();
         this.criteriaEntriesBySubscriptionId.clear();
@@ -205,6 +222,17 @@ export class SubscriptionManager {
       // We are reconnecting
       // So we refresh all current subscriptions
       this.refreshAllSubscriptions().catch(console.error);
+
+      if (!this.pingInterval) {
+        this.pingInterval = setInterval(() => {
+          if (this.waitingForPong) {
+            ws.reconnect();
+            return;
+          }
+          ws.send(JSON.stringify({ type: 'ping' }));
+          this.waitingForPong = true;
+        }, PING_INTERVAL_MS);
+      }
     });
   }
 
