@@ -63,10 +63,11 @@ function ensureHeartbeatHandler(): void {
         ws.close();
       }
       outstandingPings.clear();
-      // We want to have all the `onDisconnect` callbacks run before we send out the next wave of heartbeats
+      // We want to wait for the `onDisconnect` callbacks to get fired and so that `wsToSubLookup` is cleaned up before continuing
       process.nextTick(() => {
         for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
           ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
+          ws.send(JSON.stringify({ type: 'ping' }));
           outstandingPings.add(ws);
         }
         setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, METRIC_OPTIONS);
@@ -208,6 +209,8 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     globalLogger.debug('[WS] received data', { data: rawDataStr });
     const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
     if (msg.type === 'ping') {
+      // Mark WS as having sent ping recently
+      outstandingPings.delete(socket);
       socket.send(JSON.stringify({ type: 'pong' }));
     } else if (msg.type === 'pong') {
       // Mark WS as having responded to ping

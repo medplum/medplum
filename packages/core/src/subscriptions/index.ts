@@ -226,7 +226,7 @@ export class SubscriptionManager {
       if (!this.pingInterval) {
         this.pingInterval = setInterval(() => {
           if (this.waitingForPong) {
-            ws.reconnect();
+            ws.close();
             return;
           }
           ws.send(JSON.stringify({ type: 'ping' }));
