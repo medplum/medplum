@@ -776,10 +776,12 @@
       "resource": {
         "resourceType": "CodeSystem",
         "url": "http://loinc.org",
+        "name": "LOINC_stub",
         "version": "0.0.0",
         "status": "active",
         "hierarchyMeaning": "is-a",
         "content": "example",
+        "description": "Stub version of LOINC code system",
         "concept": [
           {
             "code": "LA28865-6",
@@ -821,6 +823,106 @@
             "code": "3151-8",
             "display": "Inhaled oxygen flow rate"
           }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/cpt-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://www.ama-assn.org/go/cpt",
+        "name": "CPT_stub",
+        "version": "0000",
+        "status": "active",
+        "hierarchyMeaning": "is-a",
+        "content": "not-present",
+        "description": "Stub version of CPT code system"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/rxnorm-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://www.nlm.nih.gov/research/umls/rxnorm",
+        "name": "RxNorm_stub",
+        "version": "00000000",
+        "status": "active",
+        "hierarchyMeaning": "is-a",
+        "content": "not-present",
+        "description": "Stub version of RxNorm code system"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/ucum-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://unitsofmeasure.org",
+        "name": "UCUM_stub",
+        "status": "active",
+        "content": "example",
+        "description": "Stub version of UCUM code system",
+        "concept": [
+          { "code" : "s", "display" : "second" },
+          { "code" : "min", "display" : "minute" },
+          { "code" : "h", "display" : "hour" },
+          { "code" : "d", "display" : "day" },
+          { "code" : "wk", "display" : "week" },
+          { "code" : "mo", "display" : "month" },
+          { "code" : "a", "display" : "year" }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/icd10-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://hl7.org/fhir/sid/icd-10",
+        "name": "ICD10_stub",
+        "status": "active",
+        "content": "example",
+        "description": "Stub version of ICD10 code system",
+        "concept" : [{
+          "code" : "123456",
+          "display" : "DIAG-1"
+        },
+        {
+          "code" : "123457",
+          "display" : "DIAG-1a"
+        },
+        {
+          "code" : "987654",
+          "display" : "DIAG-2"
+        },
+        {
+          "code" : "123987",
+          "display" : "DIAG-3"
+        },
+        {
+          "code" : "112233",
+          "display" : "DIAG-4"
+        },
+        {
+          "code" : "997755",
+          "display" : "DIAG-5"
+        },
+        {
+          "code" : "321789",
+          "display" : "DIAG-6"
+        }]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/cvx-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "http://hl7.org/fhir/sid/cvx",
+        "name": "CVX_stub",
+        "version": "00000000",
+        "status": "active",
+        "content": "example",
+        "description": "Stub version of CVX code system",
+        "concept": [
+          { "code": "213", "display": "SARS-COV-2 (COVID-19) vaccine, UNSPECIFIED" }
         ]
       }
     }
