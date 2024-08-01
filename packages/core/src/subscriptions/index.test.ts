@@ -1001,7 +1001,7 @@ describe('SubscriptionManager', () => {
       expect(closeEvent.type).toEqual('close');
     });
 
-    test.only('should NOT emit close if server responds with pong', async () => {
+    test('should NOT emit close if server responds with pong', async () => {
       wsServer.on('connection', (socket) => {
         socket.on('message', (msg) => {
           const data = JSON.parse(msg as string) as { type?: string };
