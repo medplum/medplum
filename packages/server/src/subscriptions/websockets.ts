@@ -198,7 +198,6 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     globalLogger.debug('[WS] received data', { data: rawDataStr });
     const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
     if (msg.type === 'ping') {
-      // Mark WS as having sent ping recently
       socket.send(JSON.stringify({ type: 'pong' }));
     } else if (['bind-with-token', 'unbind-from-token'].includes(msg.type)) {
       const token = msg?.payload?.token;
