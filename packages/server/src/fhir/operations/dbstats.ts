@@ -25,6 +25,7 @@ export async function dbStatsHandler(_req: FhirRequest): Promise<FhirResponse> {
   const sql = `SELECT * FROM (
     SELECT
       i.relname AS table_name,
+      pg_total_relation_size(relid) AS raw_size,
       pg_size_pretty(pg_total_relation_size(relid)) AS total_size,
       pg_size_pretty(pg_relation_size(relid)) AS table_size,
       pg_size_pretty(pg_indexes_size(relid)) AS all_indexes_size,
@@ -35,9 +36,9 @@ export async function dbStatsHandler(_req: FhirRequest): Promise<FhirResponse> {
       idx_tup_read AS index_entries_read,
       idx_tup_fetch AS index_rows_fetched
     FROM pg_stat_user_indexes i JOIN pg_class c ON i.relid = c.oid
-    WHERE pg_total_relation_size(relid) > 0
   ) t
-  ORDER BY table_size DESC, table_name ASC`;
+  WHERE raw_size > 0
+  ORDER BY raw_size DESC, table_name ASC`;
 
   const results = await client.query(sql);
 
