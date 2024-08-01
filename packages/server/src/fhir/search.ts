@@ -43,6 +43,7 @@ import {
 } from '@medplum/fhirtypes';
 import validator from 'validator';
 import { getConfig } from '../config';
+import { getLogger } from '../context';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
@@ -59,6 +60,7 @@ import {
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
+  SqlBuilder,
   Union,
 } from './sql';
 
@@ -160,11 +162,13 @@ async function getSearchEntries<T extends Resource>(
 
   addSortRules(builder, searchRequest);
 
+  const startTime = Date.now();
   const count = searchRequest.count as number;
   builder.limit(count + 1); // Request one extra to test if there are more results
   builder.offset(searchRequest.offset || 0);
 
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  const endTime = Date.now();
   const rowCount = rows.length;
   const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
@@ -184,6 +188,18 @@ async function getSearchEntries<T extends Resource>(
       continue;
     }
     removeResourceFields(entry.resource, repo, searchRequest);
+  }
+
+  const duration = endTime - startTime;
+  const threshold = getConfig().slowQueryThresholdMilliseconds;
+  if (threshold !== undefined && duration > threshold) {
+    const logger = getLogger();
+    builder.explain = true;
+    const sqlBuilder = new SqlBuilder();
+    const sql = builder.buildSql(sqlBuilder);
+    const explainRows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+    const explain = explainRows.map((row) => row['QUERY PLAN']).join('\n');
+    logger.warn('Slow search query', { duration, searchRequest, sql, explain });
   }
 
   return {
