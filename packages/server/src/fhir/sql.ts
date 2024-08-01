@@ -385,6 +385,7 @@ export abstract class BaseQuery {
   readonly tableName: string;
   readonly predicate: Conjunction;
   explain = false;
+  analyzeBuffers = false;
   readonly alias?: string;
 
   constructor(tableName: string, alias?: string) {
@@ -499,6 +500,9 @@ export class SelectQuery extends BaseQuery implements Expression {
   buildSql(sql: SqlBuilder): void {
     if (this.explain) {
       sql.append('EXPLAIN ');
+      if (this.analyzeBuffers) {
+        sql.append('(ANALYZE, BUFFERS) ');
+      }
     }
     if (this.with) {
       sql.append('WITH ');
