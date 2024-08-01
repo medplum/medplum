@@ -1,7 +1,15 @@
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import { Coding, Patient, Practitioner, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import {
+  Appointment,
+  Coding,
+  Patient,
+  Practitioner,
+  Questionnaire,
+  QuestionnaireResponse,
+  Reference,
+} from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
@@ -27,6 +35,8 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
 
   async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
     const answers = getQuestionnaireAnswers(formData);
+
+    await medplum.executeBot('e63beaf0-60e8-4414-9392-a47787d210bd', { resourceType: 'Appointment' } as Appointment);
 
     // If a patient is provided to the component, use that patient, otherwise use the patient from the form
     const appointmentPatient = patient
