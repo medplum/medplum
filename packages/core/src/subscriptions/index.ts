@@ -14,7 +14,7 @@ import {
   ReconnectingWebSocket,
 } from '../websockets/reconnecting-websocket';
 
-const PING_INTERVAL_MS = 5_000;
+const DEFAULT_PING_INTERVAL_MS = 5_000;
 
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
@@ -94,7 +94,8 @@ class CriteriaEntry {
 type CriteriaMapEntry = { bareCriteria?: CriteriaEntry; criteriaWithProps: CriteriaEntry[] };
 
 export interface SubManagerOptions {
-  ReconnectingWebSocket: IReconnectingWebSocketCtor;
+  ReconnectingWebSocket?: IReconnectingWebSocketCtor;
+  pingIntervalMs?: number;
 }
 
 export class SubscriptionManager {
@@ -104,7 +105,8 @@ export class SubscriptionManager {
   private criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
   private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
-  private pingInterval: ReturnType<typeof setInterval> | undefined = undefined;
+  private pingTimer: ReturnType<typeof setInterval> | undefined = undefined;
+  private pingIntervalMs: number;
   private waitingForPong = false;
 
   constructor(medplum: MedplumClient, wsUrl: URL | string, options?: SubManagerOptions) {
@@ -125,6 +127,7 @@ export class SubscriptionManager {
     this.criteriaEntries = new Map<string, CriteriaMapEntry>();
     this.criteriaEntriesBySubscriptionId = new Map<string, CriteriaEntry>();
     this.wsClosed = false;
+    this.pingIntervalMs = options?.pingIntervalMs ?? DEFAULT_PING_INTERVAL_MS;
 
     this.setupWebSocketListeners();
   }
@@ -197,9 +200,9 @@ export class SubscriptionManager {
         emitter.dispatchEvent({ ...closeEvent });
       }
 
-      if (this.pingInterval) {
-        clearInterval(this.pingInterval);
-        this.pingInterval = undefined;
+      if (this.pingTimer) {
+        clearInterval(this.pingTimer);
+        this.pingTimer = undefined;
       }
 
       if (this.wsClosed) {
@@ -220,8 +223,8 @@ export class SubscriptionManager {
       // So we refresh all current subscriptions
       this.refreshAllSubscriptions().catch(console.error);
 
-      if (!this.pingInterval) {
-        this.pingInterval = setInterval(() => {
+      if (!this.pingTimer) {
+        this.pingTimer = setInterval(() => {
           if (this.waitingForPong) {
             this.waitingForPong = false;
             ws.reconnect();
@@ -229,7 +232,7 @@ export class SubscriptionManager {
           }
           ws.send(JSON.stringify({ type: 'ping' }));
           this.waitingForPong = true;
-        }, PING_INTERVAL_MS);
+        }, this.pingIntervalMs);
       }
     });
   }

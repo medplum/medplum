@@ -374,6 +374,16 @@ describe('WebSockets Subscriptions', () => {
         .close()
         .expectClosed();
     }));
+
+  test('Should respond with a pong if sent a ping', () =>
+    withTestContext(async () => {
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'ping' })
+        .expectJson({ type: 'pong' })
+        .close()
+        .expectClosed();
+    }));
 });
 
 describe('Subscription Heartbeat', () => {

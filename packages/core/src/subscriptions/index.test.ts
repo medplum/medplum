@@ -972,6 +972,72 @@ describe('SubscriptionManager', () => {
       const receivedEvent7 = await receivedEvent7Promise;
       expect(receivedEvent7.type).toEqual('message');
     }, 30000);
+
+    test('should emit close when pong not received from server within time limit', async () => {
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
+        pingIntervalMs: 500,
+      });
+      const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        manager.getMasterEmitter().addEventListener('open', (event) => {
+          resolve(event);
+        });
+      });
+
+      await wsServer.connected;
+
+      const receivedEvent1 = await receivedEvent1Promise;
+      expect(receivedEvent1?.type).toEqual('open');
+
+      // Wait for ping to be received
+      await expect(wsServer).toReceiveMessage({ type: 'ping' });
+
+      const receivedEvent3Promise = new Promise<SubscriptionEventMap['close']>((resolve) => {
+        manager.getMasterEmitter().addEventListener('close', (event) => {
+          resolve(event);
+        });
+      });
+
+      const closeEvent = await receivedEvent3Promise;
+      expect(closeEvent.type).toEqual('close');
+    });
+
+    test.only('should NOT emit close if server responds with pong', async () => {
+      wsServer.on('connection', (socket) => {
+        socket.on('message', (msg) => {
+          const data = JSON.parse(msg as string) as { type?: string };
+          if (data?.type === 'ping') {
+            socket.send(JSON.stringify({ type: 'pong' }));
+          }
+        });
+      });
+
+      const manager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4', {
+        pingIntervalMs: 500,
+      });
+      const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        manager.getMasterEmitter().addEventListener('open', (event) => {
+          resolve(event);
+        });
+      });
+
+      await wsServer.connected;
+
+      const receivedEvent1 = await receivedEvent1Promise;
+      expect(receivedEvent1?.type).toEqual('open');
+
+      // Wait for ping to be received
+      await expect(wsServer).toReceiveMessage({ type: 'ping' });
+
+      let receivedClose = false;
+      manager.getMasterEmitter().addEventListener('close', () => {
+        receivedClose = true;
+      });
+
+      // Then wait for potential close
+      await sleep(1500);
+
+      expect(receivedClose).toEqual(false);
+    });
   });
 });
 

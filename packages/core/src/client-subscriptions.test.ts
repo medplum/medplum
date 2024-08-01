@@ -122,7 +122,6 @@ describe('MedplumClient -- Subscriptions', () => {
 
   test('unsubscribeFromCriteria() -- SubscriptionManager exists', async () => {
     const emitter = medplum.subscribeToCriteria('Communication');
-    console.log('CONNECTING');
 
     const connectEventPromise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
       emitter.addEventListener('connect', (event) => {
