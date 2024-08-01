@@ -13,6 +13,7 @@ import { SchedulePage } from './pages/SchedulePage';
 import { Practitioner, Schedule } from '@medplum/fhirtypes';
 import { createReference, getReferenceString } from '@medplum/core';
 import { ScheduleContext } from './Schedule.context';
+import { UploadDataPage } from './pages/UploadDataPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -90,6 +91,7 @@ export function App(): JSX.Element | null {
               <Route path="/Appointment/upcoming" element={<AppointmentsPage />} />
               <Route path="/Appointment/past" element={<AppointmentsPage />} />
               <Route path="/Appointment/:id/*" element={<AppointmentDetailPage />} />
+              <Route path="/upload/:dataType" element={<UploadDataPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
             </Routes>
