@@ -3,6 +3,7 @@ import { loadTestConfig } from './config';
 import {
   RequestContext,
   buildTracingExtension,
+  extractAmazonTraceId,
   getAuthenticatedContext,
   getRequestContext,
   getTraceId,
@@ -140,6 +141,23 @@ describe('RequestContext', () => {
         );
       }
     );
+  });
+
+  test('x-amzn-trace-id', () => {
+    const amzn = '1-67891233-abcdef012345678912345678';
+    expect(getTraceId(mockRequest({ 'x-amzn-trace-id': `Root=${amzn}` }))).toEqual(amzn);
+
+    // x-trace-id should take precedence
+    const uuid = '00000000-0000-0000-0000-000000000000';
+    expect(getTraceId(mockRequest({ 'x-amzn-trace-id': amzn, 'x-trace-id': uuid }))).toEqual(uuid);
+  });
+
+  test('extractAmazonTraceId', () => {
+    expect(extractAmazonTraceId('')).toBeUndefined();
+    expect(extractAmazonTraceId('Root=foo')).toBe('foo');
+    expect(extractAmazonTraceId('Self=foo')).toBe('foo');
+    expect(extractAmazonTraceId('Root=foo;Self=bar')).toBe('foo');
+    expect(extractAmazonTraceId('Custom=x;Root=foo;Self=bar')).toBe('foo');
   });
 });
 
