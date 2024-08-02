@@ -8,6 +8,8 @@ jobs:
   assign-pull-request:
     name: Assign pull request
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - name: Assign pull request
         uses: actions/github-script@v7

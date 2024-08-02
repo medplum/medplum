@@ -1,6 +1,6 @@
 import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
 import { getAuthenticatedContext } from '../../../context';
-import { CodeSystem, CodeSystemConceptProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
+import { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
 import { SelectQuery, Conjunction, Condition, Column, Union } from '../../sql';
 import { getSystemRepo } from '../../repo';
 
@@ -86,11 +86,15 @@ export function addPropertyFilter(query: SelectQuery, property: string, value: s
     'CodeSystem_Property',
     csPropertyTable,
     new Conjunction([
-      new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+      new Condition(new Column('Coding', 'system'), '=', new Column(csPropertyTable, 'system')),
+      new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyTable, 'property')),
       new Condition(new Column(csPropertyTable, 'code'), '=', property),
     ])
   );
-  query.where(new Column(csPropertyTable, 'id'), isEqual ? '!=' : '=', null);
+
+  query
+    .where(new Column(propertyTable, 'value'), isEqual ? '!=' : '=', null)
+    .where(new Column(csPropertyTable, 'system'), isEqual ? '!=' : '=', null);
   return query;
 }
 
@@ -135,7 +139,7 @@ export function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestor
     .limit(1);
 }
 
-export function getParentProperty(codeSystem: CodeSystem): CodeSystemConceptProperty {
+export function getParentProperty(codeSystem: CodeSystem): CodeSystemProperty {
   if (codeSystem.hierarchyMeaning !== 'is-a') {
     throw new OperationOutcomeError(
       badRequest(`Invalid filter: CodeSystem ${codeSystem.url} does not have an is-a hierarchy`)
@@ -147,4 +151,65 @@ export function getParentProperty(codeSystem: CodeSystem): CodeSystemConceptProp
     property = { code: codeSystem.hierarchyMeaning ?? 'parent', uri: parentProperty, type: 'code' };
   }
   return property;
+}
+
+/**
+ * Extends a query to select descendants of a given coding.
+ * @param query - The query to extend.
+ * @param codeSystem - The CodeSystem to query within
+ * @param parentCode - The ancestor code, whose descendants are selected.
+ * @returns The extended SELECT query.
+ */
+export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, parentCode: string): SelectQuery {
+  const property = getParentProperty(codeSystem);
+
+  const base = new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .column('display')
+    .where('system', '=', codeSystem.id)
+    .where('code', '=', parentCode);
+
+  const propertyTable = query.getNextJoinAlias();
+  const propertyJoinCondition = new Conjunction([
+    new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'coding')),
+  ]);
+  if (property.id) {
+    propertyJoinCondition.where(new Column(propertyTable, 'property'), '=', property.id);
+  }
+  query.innerJoin('Coding_Property', propertyTable, propertyJoinCondition);
+
+  if (!property.id) {
+    const csPropertyTable = query.getNextJoinAlias();
+    query.innerJoin(
+      'CodeSystem_Property',
+      csPropertyTable,
+      new Conjunction([
+        new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropertyTable, 'id')),
+        new Condition(new Column(csPropertyTable, 'code'), '=', property.code),
+      ])
+    );
+  }
+
+  const recursiveCTE = 'cte_descendants';
+  const recursiveTable = query.getNextJoinAlias();
+  query.innerJoin(
+    recursiveCTE,
+    recursiveTable,
+    new Condition(new Column(propertyTable, 'target'), '=', new Column(recursiveTable, 'id'))
+  );
+
+  // Move limit and offset to outer query
+  const limit = query.limit_;
+  query.limit(0);
+  const offset = query.offset_;
+  query.offset(0);
+
+  return new SelectQuery('cte_descendants')
+    .column('id')
+    .column('code')
+    .column('display')
+    .withRecursive('cte_descendants', new Union(base, query))
+    .limit(limit)
+    .offset(offset);
 }

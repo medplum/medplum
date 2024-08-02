@@ -2,7 +2,7 @@ import {
   CloudFormationClient,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
-  ListStacksCommand,
+  paginateListStacks,
   Stack,
   StackResource,
   StackSummary,
@@ -43,12 +43,46 @@ export const tagKey = 'medplum:environment';
  * @returns List of AWS CloudFormation stacks.
  */
 export async function getAllStacks(): Promise<(StackSummary & { StackName: string })[]> {
-  const listResult = await cloudFormationClient.send(new ListStacksCommand({}));
-  return (
-    (listResult.StackSummaries?.filter((s) => s.StackName && s.StackStatus !== 'DELETE_COMPLETE') as (StackSummary & {
-      StackName: string;
-    })[]) || []
+  const listResult = [] as StackSummary[];
+  const paginator = paginateListStacks(
+    { client: cloudFormationClient },
+    {
+      StackStatusFilter: [
+        'CREATE_COMPLETE',
+        'CREATE_FAILED',
+        'CREATE_IN_PROGRESS',
+        'DELETE_FAILED',
+        'DELETE_IN_PROGRESS',
+        'IMPORT_COMPLETE',
+        'IMPORT_IN_PROGRESS',
+        'IMPORT_ROLLBACK_COMPLETE',
+        'IMPORT_ROLLBACK_FAILED',
+        'IMPORT_ROLLBACK_IN_PROGRESS',
+        'REVIEW_IN_PROGRESS',
+        'ROLLBACK_COMPLETE',
+        'ROLLBACK_FAILED',
+        'ROLLBACK_IN_PROGRESS',
+        'UPDATE_COMPLETE',
+        'UPDATE_COMPLETE_CLEANUP_IN_PROGRESS',
+        'UPDATE_FAILED',
+        'UPDATE_IN_PROGRESS',
+        'UPDATE_ROLLBACK_COMPLETE',
+        'UPDATE_ROLLBACK_COMPLETE_CLEANUP_IN_PROGRESS',
+        'UPDATE_ROLLBACK_FAILED',
+        'UPDATE_ROLLBACK_IN_PROGRESS',
+      ],
+    }
   );
+
+  for await (const page of paginator) {
+    if (page.StackSummaries) {
+      for (const stack of page.StackSummaries) {
+        listResult.push(stack);
+      }
+    }
+  }
+
+  return listResult as (StackSummary & { StackName: string })[];
 }
 
 /**

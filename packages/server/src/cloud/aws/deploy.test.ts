@@ -1,5 +1,6 @@
 import {
   CreateFunctionCommand,
+  CreateFunctionRequest,
   GetFunctionCommand,
   GetFunctionConfigurationCommand,
   LambdaClient,
@@ -139,7 +140,7 @@ describe('Deploy', () => {
     });
     expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
       FunctionName: name,
-    });
+    } as CreateFunctionRequest);
     mockLambdaClient.resetHistory();
 
     // Step 3: Deploy again to trigger the update path
@@ -215,7 +216,7 @@ describe('Deploy', () => {
     });
     expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
       FunctionName: name,
-    });
+    } as CreateFunctionRequest);
     mockLambdaClient.resetHistory();
 
     // Step 3: Simulate releasing a new version of the lambda layer

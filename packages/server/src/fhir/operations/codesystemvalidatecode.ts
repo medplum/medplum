@@ -2,7 +2,7 @@ import { allOk, badRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { getDatabasePool } from '../../database';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -88,12 +88,12 @@ export async function validateCodings(codeSystem: CodeSystem, codings: Coding[])
       .where('code', 'IN', codesToQuery)
       .where('system', '=', codeSystem.id);
 
-    const db = getDatabasePool();
+    const db = getDatabasePool(DatabaseMode.READER);
     result = await query.execute(db);
   }
 
   return codings.map((c, idx) => {
     const row = eligible[idx] && result?.find((r: any) => r.code === c.code);
-    return row ? { id: row.id, system: codeSystem.url, code: c.code, display: row.display } : undefined;
+    return row ? { id: row.id, system: codeSystem.url, code: c.code, display: c.display ?? row.display } : undefined;
   });
 }

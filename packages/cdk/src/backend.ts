@@ -19,7 +19,7 @@ import {
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
-import { awsManagedRules } from './waf';
+import { buildWafConfig } from './waf';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -220,6 +220,7 @@ export class BackEnd extends Construct {
     // ECS Cluster
     this.ecsCluster = new ecs.Cluster(this, 'Cluster', {
       vpc: this.vpc,
+      containerInsights: config.containerInsights,
     });
 
     // Task Policies
@@ -501,22 +502,16 @@ export class BackEnd extends Construct {
           certificateArn: config.apiSslCertArn,
         },
       ],
-      sslPolicy: elbv2.SslPolicy.FORWARD_SECRECY_TLS12_RES_GCM,
+      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
       defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
     });
 
     // WAF
-    this.waf = new wafv2.CfnWebACL(this, 'BackEndWAF', {
-      defaultAction: { allow: {} },
-      scope: 'REGIONAL',
-      name: `${config.stackName}-BackEndWAF`,
-      rules: awsManagedRules,
-      visibilityConfig: {
-        cloudWatchMetricsEnabled: true,
-        metricName: `${config.stackName}-BackEndWAF-Metric`,
-        sampledRequestsEnabled: false,
-      },
-    });
+    this.waf = new wafv2.CfnWebACL(
+      this,
+      'BackEndWAF',
+      buildWafConfig(`${config.stackName}-BackEndWAF`, 'REGIONAL', config.apiWafIpSetArn)
+    );
 
     // Create an association between the load balancer and the WAF
     this.wafAssociation = new wafv2.CfnWebACLAssociation(this, 'LoadBalancerAssociation', {

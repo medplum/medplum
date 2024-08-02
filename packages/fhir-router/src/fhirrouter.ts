@@ -16,7 +16,7 @@ import {
 } from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
 import { Operation } from 'rfc6902';
-import { processBatch } from './batch';
+import { LogEvent, processBatch } from './batch';
 import { graphqlHandler } from './graphql';
 import { CreateResourceOptions, FhirRepository, UpdateResourceOptions } from './repo';
 import { HttpMethod, RouteResult, Router } from './urlrouter';
@@ -28,6 +28,13 @@ export type FhirRequest = {
   params: Record<string, string>;
   query: Record<string, string>;
   headers?: IncomingHttpHeaders;
+  config?: FhirRequestConfig;
+};
+
+export type FhirRequestConfig = {
+  graphqlMaxDepth?: number;
+  graphqlMaxPageSize?: number;
+  graphqlMaxSearches?: number;
 };
 
 export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
@@ -275,6 +282,11 @@ export class FhirRouter extends EventTarget {
     } catch (err) {
       return [normalizeOperationOutcome(err)];
     }
+  }
+
+  log(level: string, message: string, data?: Record<string, any>): void {
+    const event: LogEvent = { type: level, message, data };
+    this.dispatchEvent(event);
   }
 }
 

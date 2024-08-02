@@ -698,14 +698,14 @@ describe('AccessPolicy', () => {
 
       // Create a repo for the ClientApplication
       // Use getRepoForLogin to generate the synthetic access policy
-      const clientRepo = await getRepoForLogin(
-        {
+      const clientRepo = await getRepoForLogin({
+        login: {
           resourceType: 'Login',
           user: createReference(clientApplication),
           authMethod: 'client',
           authTime: new Date().toISOString(),
         },
-        {
+        membership: {
           resourceType: 'ProjectMembership',
           project: {
             reference: 'Project/' + testProject.id,
@@ -714,8 +714,8 @@ describe('AccessPolicy', () => {
           accessPolicy: createReference(accessPolicy),
           user: createReference(clientApplication),
         },
-        testProject
-      );
+        project: testProject,
+      });
 
       // Create a Patient using the ClientApplication
       const patient = await clientRepo.createResource<Patient>({
@@ -803,14 +803,14 @@ describe('AccessPolicy', () => {
       expect(clientApplication).toBeDefined();
 
       // Create a repo for the ClientApplication
-      const clientRepo = await getRepoForLogin(
-        {
+      const clientRepo = await getRepoForLogin({
+        login: {
           resourceType: 'Login',
           user: createReference(clientApplication),
           authMethod: 'client',
           authTime: new Date().toISOString(),
         },
-        {
+        membership: {
           resourceType: 'ProjectMembership',
           project: {
             reference: 'Project/' + testProject.id,
@@ -819,8 +819,8 @@ describe('AccessPolicy', () => {
           accessPolicy: createReference(accessPolicy),
           user: createReference(clientApplication),
         },
-        testProject
-      );
+        project: testProject,
+      });
 
       // Create a Patient using the ClientApplication
       const patient = await clientRepo.createResource<Patient>({
@@ -1677,7 +1677,11 @@ describe('AccessPolicy', () => {
         ],
       });
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, testProject);
+      const repo2 = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project: testProject,
+      });
 
       const check1 = await repo2.readResource<Patient>('Patient', p1.id as string);
       expect(check1.id).toBe(p1.id);
@@ -1729,7 +1733,11 @@ describe('AccessPolicy', () => {
         ],
       });
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, testProject);
+      const repo2 = await getRepoForLogin({
+        login: { resourceType: 'Login' } as Login,
+        membership,
+        project: testProject,
+      });
 
       const check1 = await repo2.readResource<Task>('Task', t1.id as string);
       expect(check1.id).toBe(t1.id);
@@ -1791,7 +1799,7 @@ describe('AccessPolicy', () => {
         sendEmail: false,
       });
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
+      const repo2 = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project });
 
       const check1 = await repo2.readResource<Patient>('Patient', patient.id as string);
       expect(check1.id).toBe(patient.id);
@@ -1835,7 +1843,7 @@ describe('AccessPolicy', () => {
         admin: true,
       });
 
-      const repo2 = await getRepoForLogin({ resourceType: 'Login' } as Login, membership, project, true);
+      const repo2 = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project }, true);
 
       const check1 = await repo2.readResource<Project>('Project', project.id as string);
       expect(check1.id).toEqual(project.id);
@@ -1917,8 +1925,14 @@ describe('AccessPolicy', () => {
         admin: false,
       });
 
-      const adminRepo = await getRepoForLogin({ resourceType: 'Login' } as Login, adminMembership, project, true);
-      const nonAdminRepo = await getRepoForLogin({ resourceType: 'Login' } as Login, nonAdminMembership, project, true);
+      const adminRepo = await getRepoForLogin(
+        { login: { resourceType: 'Login' } as Login, membership: adminMembership, project },
+        true
+      );
+      const nonAdminRepo = await getRepoForLogin(
+        { login: { resourceType: 'Login' } as Login, membership: nonAdminMembership, project },
+        true
+      );
       const account1 = randomUUID();
       const account2 = randomUUID();
 
@@ -2115,7 +2129,7 @@ describe('AccessPolicy', () => {
       });
 
       // Get a repo for the user
-      const repo = await getRepoForLogin(login, updatedMembership, project, true);
+      const repo = await getRepoForLogin({ login, membership: updatedMembership, project }, true);
 
       // Try to search for StructureDefinitions, should succeed
       const bundle1 = await repo.search<StructureDefinition>({ resourceType: 'StructureDefinition' });
@@ -2225,7 +2239,7 @@ describe('AccessPolicy', () => {
         password: randomUUID(),
       });
       expect(project.link).toBeUndefined();
-      const repo = await getRepoForLogin(login, membership, project, true);
+      const repo = await getRepoForLogin({ login, membership, project }, true);
 
       project.link = [{ project: { reference: 'Project/foo' } }, { project: { reference: 'Project/bar' } }];
 
@@ -2277,7 +2291,7 @@ describe('AccessPolicy', () => {
       });
 
       // Repo for project admin
-      const projAdminRepo = await getRepoForLogin(login, membership, project, true);
+      const projAdminRepo = await getRepoForLogin({ login, membership, project }, true);
 
       // Repos for the test user
 

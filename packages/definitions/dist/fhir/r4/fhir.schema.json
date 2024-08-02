@@ -59348,7 +59348,8 @@
               "google-auth-required",
               "graphql-introspection",
               "terminology",
-              "websocket-subscriptions"
+              "websocket-subscriptions",
+              "reference-lookups"
             ]
           },
           "type": "array"
@@ -60252,6 +60253,13 @@
         "name": {
           "description": "A name associated with the AccessPolicy.",
           "$ref": "#/definitions/string"
+        },
+        "basedOn": {
+          "description": "Other access policies used to derive this access policy.",
+          "items": {
+            "$ref": "#/definitions/Reference"
+          },
+          "type": "array"
         },
         "compartment": {
           "description": "Optional compartment for newly created resources.  If this field is set, any resources created by a user with this access policy will automatically be included in the specified compartment.",

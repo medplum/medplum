@@ -47,6 +47,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
+import { clampEstimateCount } from './search';
 
 jest.mock('hibp');
 
@@ -117,6 +118,48 @@ describe('FHIR Search', () => {
         expect(result1.link).toBeDefined();
         expect(result1.link?.length).toBe(1);
       }));
+
+    test('clampEstimateCount', () => {
+      expect(clampEstimateCount({ resourceType: 'Patient' }, undefined, 0)).toEqual(0);
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 0, 0)).toEqual(0);
+
+      // 0 actual rows, 10 estimated rows => we know count is 0
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 0, 10)).toEqual(0);
+
+      // 10 actual rows, 0 estimated rows => we know count is at least 10
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 10, 0)).toEqual(10);
+
+      // count = 20, offset = 0, rowCount = 10, estimate = 0 => 10 (estimate is too low)
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 10, 0)).toEqual(10);
+
+      // count = 20, offset = 0, rowCount = 20, estimate = 20 => 20 (estimate accurate)
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 20, 20)).toEqual(20);
+
+      // count = 20, offset = 0, rowCount = 21, estimate = 1000 => 1000 (estimate could be correct)
+      expect(clampEstimateCount({ resourceType: 'Patient' }, 21, 1000)).toEqual(1000);
+
+      // On page 2
+      // count = 20, offset = 20, rowCount = 0, estimate = 20 => 20 (estimate is correct)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 0, 20)).toEqual(20);
+
+      // count = 20, offset = 20, rowCount = 0, estimate = 0 => 20 (estimate is too low, but rowCount is 0)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 0, 0)).toEqual(0);
+
+      // count = 20, offset = 20, rowCount = 1, estimate = 0 => 21 (estimate is too low)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 1, 0)).toEqual(21);
+
+      // count = 20, offset = 20, rowCount = 0, estimate = 200 => 20 (estimate is too high)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 0, 200)).toEqual(20);
+
+      // count = 20, offset = 20, rowCount = 1, estimate = 200 => 20 (estimate is too high)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 1, 200)).toEqual(21);
+
+      // count = 20, offset = 20, rowCount = 1, estimate = 200 => 20 (estimate is too high)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 1, 200)).toEqual(21);
+
+      // count = 20, offset = 20, rowCount = 21, estimate = 200 => 200 (estimate could be correct)
+      expect(clampEstimateCount({ resourceType: 'Patient', offset: 20 }, 21, 200)).toEqual(200);
+    });
 
     test('Search _summary', () =>
       withTestContext(async () => {
@@ -1863,6 +1906,34 @@ describe('FHIR Search', () => {
         expect(repo.search(parseSearchRequest(searchString))).rejects.toEqual(new Error(errorMsg))
       );
     });
+
+    test('Chained search with modifier', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+        // Create linked resources
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+        const encounter = await repo.createResource<Encounter>({
+          resourceType: 'Encounter',
+          status: 'finished',
+          class: { system: 'http://example.com/appt-type', code },
+        });
+        await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'Throat culture' },
+          subject: createReference(patient),
+          encounter: createReference(encounter),
+        });
+
+        const result = await repo.search(
+          parseSearchRequest(
+            `Patient?_has:Observation:subject:encounter:Encounter.class=${code}&_has:Observation:subject:encounter:Encounter.status:not=cancelled`
+          )
+        );
+        expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
+      }));
 
     test('Include references success', () =>
       withTestContext(async () => {
@@ -3679,6 +3750,39 @@ describe('FHIR Search', () => {
           expect(bundleContains(bundle5, resource)).toBeTruthy();
         }));
     });
+
+    test('Reference search patterns', async () =>
+      withTestContext(async () => {
+        const uuid = randomUUID();
+        const patient1 = await repo.createResource<Patient>({ resourceType: 'Patient', identifier: [{ value: uuid }] });
+        const patient2 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: uuid }],
+          link: [{ type: 'refer', other: createReference(patient1) }],
+        });
+
+        const refStr = getReferenceString(patient1);
+
+        const basicEqualsResult = await repo.search(parseSearchRequest(`Patient?identifier=${uuid}&link=${refStr}`));
+        expect(basicEqualsResult.entry).toHaveLength(1);
+        expect(basicEqualsResult.entry?.[0]?.resource?.id).toEqual(patient2.id);
+
+        const notEqualsResult = await repo.search(parseSearchRequest(`Patient?identifier=${uuid}&link:not=${refStr}`));
+        expect(notEqualsResult.entry).toHaveLength(1);
+        expect(notEqualsResult.entry?.[0]?.resource?.id).toEqual(patient1.id);
+
+        const filterEqualsResult = await repo.search(
+          parseSearchRequest(`Patient?_filter=identifier eq "${uuid}" and link re "${refStr}"`)
+        );
+        expect(filterEqualsResult.entry).toHaveLength(1);
+        expect(filterEqualsResult.entry?.[0]?.resource?.id).toEqual(patient2.id);
+
+        const filterNotEqualsResult = await repo.search(
+          parseSearchRequest(`Patient?_filter=identifier eq "${uuid}" and link ne "${refStr}"`)
+        );
+        expect(filterNotEqualsResult.entry).toHaveLength(1);
+        expect(filterNotEqualsResult.entry?.[0]?.resource?.id).toEqual(patient1.id);
+      }));
   });
 
   describe('systemRepo', () => {

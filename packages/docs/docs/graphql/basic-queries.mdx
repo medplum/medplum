@@ -17,6 +17,10 @@ The GraphQL API also allows you to request specific elements, rather than full r
 
 To experiment with the API, you can use Medplum's interactive GraphQL environment at [graphiql.medplum.com](https://graphiql.medplum.com/). You can log in with your Medplum credentials, and run these example queries in the GraphiQL IDE.
 
+:::note Schema Introspection
+Schema introspection is supported on Mepdlum, but for security and performance reasons, it is disabled by default. To enable it, you will need to enable the `introspectionEnabled` flag in your server config.
+:::
+
 ## How to perform basic GraphQL queries
 
 GraphQL queries allow you to request specific resourced fields. In a FHIR GraphQL query, you will use the resource type as the root, followed by the ID in parentheses. The requested fields are enclosed in curly braces.
@@ -62,7 +66,7 @@ GraphQL also allows you to [alias returned fields](https://devinschulz.com/renam
 
 :::warning Warning
 
-In FHIR GraphQL, the search parameter names use **snake_case** instead of the **kebab-case** commonly used in the FHIR REST API.
+When using FHIR GraphQL, you must still use [FHIR search parameters](/docs/search/basic-search#search-parameters); however, the search parameter names use **snake_case** instead of the **kebab-case** commonly used in the FHIR REST API.
 
 :::
 

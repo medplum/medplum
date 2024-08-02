@@ -43,7 +43,7 @@ graph BT
 
 ## Modeling Care Teams
 
-At the bottom of the hierarchy, you may have teams of providers that work closely together to provide care. We advising using the the `CareTeam` resource to model these provider teams.
+At the bottom of the hierarchy, you may have teams of providers that work closely together to provide care. We advise using the the `CareTeam` resource to model these provider teams.
 
 The `CareTeam` resource enables you to easily specify members of a team through the `participant` field and assign roles within the team. The US Core guidelines recommend that `CareTeam.participant.role` be selected from the [Care Team Member Function](https://vsac.nlm.nih.gov/valueset/2.16.840.1.113762.1.4.1099.30/expansion) ValueSet, which is a subset of the SNOMED CT code system.
 

@@ -26,6 +26,11 @@ export type UpdateResourceOptions = {
   ifMatch?: string;
 };
 
+export enum RepositoryMode {
+  READER = 'reader',
+  WRITER = 'writer',
+}
+
 /**
  * The FhirRepository abstract class defines the methods that are required to implement a FHIR repository.
  * A FHIR repository is responsible for storing and retrieving FHIR resources.
@@ -37,6 +42,16 @@ export type UpdateResourceOptions = {
  * abstract basic operations.
  */
 export abstract class FhirRepository<TClient = unknown> {
+  /**
+   * Sets the repository mode.
+   * In general, it is assumed that repositories will start in "reader" mode,
+   * and that the mode will be changed to "writer" as needed.
+   * It is recommended that the repository use "reader" opportunistically,
+   * but after using "writer" once it should use "writer" exclusively.
+   * @param mode - The repository mode.
+   */
+  abstract setMode(mode: RepositoryMode): void;
+
   /**
    * Creates a FHIR resource.
    *
@@ -294,6 +309,10 @@ export class MemoryRepository extends FhirRepository {
   clear(): void {
     this.resources.clear();
     this.history.clear();
+  }
+
+  setMode(_mode: RepositoryMode): void {
+    // MockRepository ignores reader/writer mode
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {

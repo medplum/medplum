@@ -1,5 +1,5 @@
 import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
-import { FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
+import { FhirRequest, FhirRouter, HttpMethod, RepositoryMode } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -39,6 +39,7 @@ import { structureDefinitionExpandProfileHandler } from './operations/structured
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
+import { ResendSubscriptionsOptions } from './repo';
 import { sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
@@ -139,7 +140,9 @@ function getInternalFhirRouter(): FhirRouter {
  * @returns A new FHIR router with all the internal operations.
  */
 function initInternalFhirRouter(): FhirRouter {
-  const router = new FhirRouter({ introspectionEnabled: getConfig().introspectionEnabled });
+  const router = new FhirRouter({
+    introspectionEnabled: getConfig().introspectionEnabled,
+  });
 
   // Project $export
   router.add('GET', '/$export', bulkExportHandler);
@@ -254,7 +257,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/:resourceType/:id/$resend', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
     const { resourceType, id } = req.params as { resourceType: ResourceType; id: string };
-    await ctx.repo.resendSubscriptions(resourceType, id);
+    const options = req.body as ResendSubscriptionsOptions | undefined;
+    await ctx.repo.resendSubscriptions(resourceType, id, options);
     return [allOk];
   });
 
@@ -270,9 +274,10 @@ function initInternalFhirRouter(): FhirRouter {
     const ctx = getAuthenticatedContext();
     const projectId = ctx.project.id;
 
-    recordHistogramValue('medplum.batch.entries', count, { bundleType, projectId });
-    recordHistogramValue('medplum.batch.errors', errors, { bundleType, projectId });
-    recordHistogramValue('medplum.batch.size', size, { bundleType, projectId });
+    const batchMetricOptions = { attributes: { bundleType, projectId } };
+    recordHistogramValue('medplum.batch.entries', count, batchMetricOptions);
+    recordHistogramValue('medplum.batch.errors', errors, batchMetricOptions);
+    recordHistogramValue('medplum.batch.size', size, batchMetricOptions);
 
     if (errors > 0 && bundleType === 'transaction') {
       ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: projectId });
@@ -295,7 +300,19 @@ protectedRoutes.use(
       query: req.query as Record<string, string>,
       body: req.body,
       headers: req.headers,
+      config: {
+        graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
+        graphqlMaxPageSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxPageSize')?.valueInteger,
+        graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
+      },
     };
+
+    if (request.pathname.includes('$graphql')) {
+      // If this is a GraphQL request, mark the repository as eligible for "reader" mode.
+      // Inside the GraphQL handler, the repository will be set to "writer" mode if needed.
+      // At the time of this writing, the GraphQL handler is the only place where we consider "reader" mode.
+      ctx.repo.setMode(RepositoryMode.READER);
+    }
 
     const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
     if (result.length === 1) {

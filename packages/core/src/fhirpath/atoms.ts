@@ -5,6 +5,7 @@ import {
   booleanToTypedValue,
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
+  fhirPathArrayNotEquals,
   fhirPathIs,
   fhirPathNot,
   getTypedPropertyValue,
@@ -268,7 +269,7 @@ export class NotEqualsAtom extends BooleanInfixOperatorAtom {
   eval(context: AtomContext, input: TypedValue[]): TypedValue[] {
     const leftValue = this.left.eval(context, input);
     const rightValue = this.right.eval(context, input);
-    return fhirPathNot(fhirPathArrayEquals(leftValue, rightValue));
+    return fhirPathArrayNotEquals(leftValue, rightValue);
   }
 }
 

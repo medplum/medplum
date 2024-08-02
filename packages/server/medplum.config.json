@@ -42,5 +42,6 @@
     "removeOnFail": { "count": 1 },
     "removeOnComplete": { "count": 1 }
   },
-  "shutdownTimeoutMilliseconds": 30000
+  "shutdownTimeoutMilliseconds": 30000,
+  "chainedSearchWithReferenceTables": true
 }
