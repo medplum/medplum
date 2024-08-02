@@ -4,7 +4,6 @@ import {
   ContentType,
   OperationOutcomeError,
   badRequest,
-  serverError,
 } from '@medplum/core';
 import { OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
@@ -112,7 +111,7 @@ async function pushToAgent(req: Request): Promise<[OperationOutcome] | [Operatio
   }
 
   if (response.type === 'agent:error' || (response?.statusCode && response?.statusCode >= 400)) {
-    return [serverError(new Error(response.body))];
+    return [badRequest(response.body)];
   }
 
   return [outcome, response];

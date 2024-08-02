@@ -468,13 +468,12 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     );
 
     const res = await deferredResponse;
-    expect(res.status).toEqual(500);
+    expect(res.status).toEqual(400);
 
     const body = res.body as OperationOutcome;
     expect(body).toBeDefined();
     expect(body.issue[0].severity).toEqual('error');
-    expect(body.issue[0]?.details?.text).toEqual(expect.stringMatching(/internal server error/i));
-    expect(body.issue[0]?.diagnostics).toEqual(expect.stringMatching(/unable to ping/i));
+    expect(body.issue[0]?.details?.text).toEqual(expect.stringContaining('Error: Unable to ping "8.8.8.8"'));
 
     publishSpy.mockRestore();
   });
