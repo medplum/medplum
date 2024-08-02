@@ -140,6 +140,27 @@ export function getTraceId(req: Request): string | undefined {
     return traceparent;
   }
 
+  const amznTraceId = req.header('x-amzn-trace-id');
+  if (amznTraceId) {
+    return extractAmazonTraceId(amznTraceId);
+  }
+
+  return undefined;
+}
+
+export function extractAmazonTraceId(amznTraceId: string): string | undefined {
+  // https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-request-tracing.html
+  // Definition: Field=version-time-id
+  // Example header: X-Amzn-Trace-Id: Root=1-67891233-abcdef012345678912345678
+  // Example header: X-Amzn-Trace-Id: Self=1-67891233-12456789abcdef012345678;Root=1-67891233-abcdef012345678912345678
+  // Example in Athena: "TID_e0fbe3c75b3c5a45ab84fb156906649b"
+  const parts = amznTraceId.split(';');
+  for (const part of parts) {
+    const [key, value] = part.split('=');
+    if (key === 'Root' || key === 'Self') {
+      return value;
+    }
+  }
   return undefined;
 }
 
