@@ -92,10 +92,18 @@ async function runMigrations(pool: Pool): Promise<void> {
     client = await pool.connect();
     await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
     await migrate(client);
+  } catch (err: any) {
+    globalLogger.error('Database schema migration error', err);
+    if (client) {
+      await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
+      client.release(err);
+      client = undefined;
+    }
   } finally {
     if (client) {
       await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
       client.release();
+      client = undefined;
     }
   }
 }
