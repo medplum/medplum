@@ -91,6 +91,7 @@ async function runMigrations(pool: Pool): Promise<void> {
   try {
     client = await pool.connect();
     await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
+    await client.query(`SET statement_timeout TO 0`); // Disable timeout for migrations AFTER getting lock
     await migrate(client);
   } catch (err: any) {
     globalLogger.error('Database schema migration error', err);
