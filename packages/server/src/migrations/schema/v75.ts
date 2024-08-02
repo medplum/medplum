@@ -172,8 +172,8 @@ const resourceTypes = [
 
 export async function run(client: PoolClient): Promise<void> {
   for (const resourceType of resourceTypes) {
-    await client.query(`DROP INDEX IF EXISTS "${resourceType}_Token_code_idx"`);
-    await client.query(`DROP INDEX IF EXISTS "${resourceType}_Token_system_idx"`);
-    await client.query(`DROP INDEX IF EXISTS "${resourceType}_Token_value_idx"`);
+    await client.query(`DROP INDEX CONCURRENTLY IF EXISTS "${resourceType}_Token_code_idx"`);
+    await client.query(`DROP INDEX CONCURRENTLY IF EXISTS "${resourceType}_Token_system_idx"`);
+    await client.query(`DROP INDEX CONCURRENTLY IF EXISTS "${resourceType}_Token_value_idx"`);
   }
 }
