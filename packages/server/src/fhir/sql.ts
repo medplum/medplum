@@ -145,7 +145,8 @@ export class Column {
   constructor(
     readonly tableName: string | undefined,
     readonly columnName: string,
-    readonly raw?: boolean
+    readonly raw?: boolean,
+    readonly alias?: string
   ) {}
 }
 
@@ -310,6 +311,10 @@ export class SqlBuilder {
         this.append('.');
       }
       this.appendIdentifier(column.columnName);
+    }
+    if (column.alias) {
+      this.append(' AS ');
+      this.appendIdentifier(column.alias);
     }
     return this;
   }
