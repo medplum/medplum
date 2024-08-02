@@ -9,7 +9,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Form } from '../Form/Form';
 import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../utils/questionnaire';
 import { QuestionnaireFormContext } from './QuestionnaireForm.context';
@@ -19,8 +19,11 @@ export interface QuestionnaireFormProps {
   readonly questionnaire: Questionnaire | Reference<Questionnaire>;
   readonly subject?: Reference;
   readonly encounter?: Reference<Encounter>;
+  readonly disablePagination?: boolean;
+  readonly excludeButtons?: boolean;
   readonly submitButtonText?: string;
-  readonly onSubmit: (response: QuestionnaireResponse) => void;
+  readonly onChange?: (response: QuestionnaireResponse) => void;
+  readonly onSubmit?: (response: QuestionnaireResponse) => void;
 }
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
@@ -30,6 +33,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [activePage, setActivePage] = useState(0);
+  const { onChange } = props;
 
   useEffect(() => {
     medplum
@@ -43,21 +47,34 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
   }, [questionnaire]);
 
-  function setItems(newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void {
-    const currentItems = response?.item ?? [];
-    const mergedItems = mergeItems(
-      currentItems,
-      Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
-    );
+  const setItems = useCallback(
+    (newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void => {
+      setResponse((prevResponse) => {
+        const currentItems = prevResponse?.item ?? [];
+        const mergedItems = mergeItems(
+          currentItems,
+          Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
+        );
 
-    const newResponse: QuestionnaireResponse = {
-      resourceType: 'QuestionnaireResponse',
-      status: 'in-progress',
-      item: mergedItems,
-    };
+        const newResponse: QuestionnaireResponse = {
+          resourceType: 'QuestionnaireResponse',
+          status: 'in-progress',
+          item: mergedItems,
+        };
 
-    setResponse(newResponse);
-  }
+        if (onChange) {
+          try {
+            onChange(newResponse);
+          } catch (e) {
+            console.error('Error invoking QuestionnaireForm.onChange callback', e);
+          }
+        }
+
+        return newResponse;
+      });
+    },
+    [onChange]
+  );
 
   function checkForQuestionEnabled(item: QuestionnaireItem): boolean {
     return isQuestionEnabled(item, response?.item ?? []);
@@ -93,9 +110,10 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
           items={questionnaire.item ?? []}
           response={response}
           onChange={setItems}
-          renderPages={numberOfPages > 1}
+          renderPages={!props.disablePagination && numberOfPages > 1}
           activePage={activePage}
           numberOfPages={numberOfPages}
+          excludeButtons={props.excludeButtons}
           submitButtonText={props.submitButtonText}
           checkForQuestionEnabled={checkForQuestionEnabled}
           nextStep={nextStep}

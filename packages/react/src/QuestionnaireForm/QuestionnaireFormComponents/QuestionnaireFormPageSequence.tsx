@@ -10,6 +10,7 @@ interface QuestionnairePageSequenceProps {
   readonly renderPages: boolean;
   readonly activePage?: number;
   readonly numberOfPages: number;
+  readonly excludeButtons?: boolean;
   readonly submitButtonText?: string;
   readonly checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
   readonly onChange: (items: QuestionnaireResponseItem | QuestionnaireResponseItem[]) => void;
@@ -28,6 +29,7 @@ export function QuestionnairePageSequence(props: QuestionnairePageSequenceProps)
     numberOfPages,
     renderPages,
     submitButtonText,
+    excludeButtons,
     checkForQuestionEnabled,
   } = props;
 
@@ -71,13 +73,15 @@ export function QuestionnairePageSequence(props: QuestionnairePageSequenceProps)
         </Stepper>
       )}
       {!renderPages && <Stack>{form}</Stack>}
-      <ButtonGroup
-        activePage={activePage ?? 0}
-        numberOfPages={numberOfPages}
-        nextStep={nextStep}
-        prevStep={prevStep}
-        submitButtonText={submitButtonText}
-      />
+      {!excludeButtons && (
+        <ButtonGroup
+          activePage={activePage ?? 0}
+          numberOfPages={numberOfPages}
+          nextStep={nextStep}
+          prevStep={prevStep}
+          submitButtonText={submitButtonText}
+        />
+      )}
     </>
   );
 }
