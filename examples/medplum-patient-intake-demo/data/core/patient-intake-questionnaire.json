@@ -86,6 +86,26 @@
                 "type": "date"
               },
               {
+                "linkId": "street",
+                "text": "Street",
+                "type": "string"
+              },
+              {
+                "linkId": "city",
+                "text": "City",
+                "type": "string"
+              },
+              {
+                "linkId": "state",
+                "text": "State",
+                "type": "string"
+              },
+              {
+                "linkId": "zip",
+                "text": "Zip",
+                "type": "string"
+              },
+              {
                 "linkId": "race",
                 "text": "Race",
                 "type": "choice",

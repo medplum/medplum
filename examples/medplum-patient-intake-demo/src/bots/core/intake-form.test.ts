@@ -69,6 +69,14 @@ describe('Intake form', async () => {
       expect(patient.name?.[0].family).toEqual('LastName');
       expect(patient.gender).toEqual('33791000087105');
       expect(patient.birthDate).toEqual('2000-01-01');
+      expect(patient.address?.[0]).toEqual({
+        use: 'home',
+        type: 'physical',
+        line: ['123 Happy St'],
+        city: 'Springfield',
+        state: 'IL',
+        postalCode: '44444',
+      });
     });
 
     test("Doesn't change patient name if not provided", async () => {

@@ -80,6 +80,42 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          linkId: 'street',
+          text: 'Street',
+          answer: [
+            {
+              valueString: '123 Happy St',
+            },
+          ],
+        },
+        {
+          linkId: 'city',
+          text: 'City',
+          answer: [
+            {
+              valueString: 'Springfield',
+            },
+          ],
+        },
+        {
+          linkId: 'state',
+          text: 'State',
+          answer: [
+            {
+              valueString: 'IL',
+            },
+          ],
+        },
+        {
+          linkId: 'zip',
+          text: 'Zip',
+          answer: [
+            {
+              valueString: '44444',
+            },
+          ],
+        },
+        {
           id: 'id-40',
           linkId: 'race',
           text: 'Race',
