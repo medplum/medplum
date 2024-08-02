@@ -50,6 +50,22 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   patient.telecom = answers['phone']?.valueString
     ? [{ system: 'phone', value: answers['phone'].valueString }]
     : patient.telecom;
+  patient.identifier = answers['ssn']?.valueString
+    ? [
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'SS',
+              },
+            ],
+          },
+          system: 'http://hl7.org/fhir/sid/us-ssn',
+          value: answers['ssn'].valueString,
+        },
+      ]
+    : patient.identifier;
 
   setExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race']);
   setExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity']);

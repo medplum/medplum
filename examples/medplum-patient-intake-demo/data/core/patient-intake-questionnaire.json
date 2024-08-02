@@ -111,6 +111,11 @@
                 "type": "string"
               },
               {
+                "linkId": "ssn",
+                "text": "Social Security Number",
+                "type": "string"
+              },
+              {
                 "linkId": "race",
                 "text": "Race",
                 "type": "choice",

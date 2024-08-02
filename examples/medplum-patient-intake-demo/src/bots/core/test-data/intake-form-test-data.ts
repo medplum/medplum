@@ -125,6 +125,15 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          linkId: 'ssn',
+          text: 'Social Security Number',
+          answer: [
+            {
+              valueString: '518225060',
+            },
+          ],
+        },
+        {
           id: 'id-40',
           linkId: 'race',
           text: 'Race',

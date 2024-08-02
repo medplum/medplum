@@ -81,6 +81,18 @@ describe('Intake form', async () => {
         system: 'phone',
         value: '555-555-5555',
       });
+      expect(patient.identifier?.[0]).toEqual({
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+              code: 'SS',
+            },
+          ],
+        },
+        system: 'http://hl7.org/fhir/sid/us-ssn',
+        value: '518225060',
+      });
     });
 
     test("Doesn't change patient name if not provided", async () => {
