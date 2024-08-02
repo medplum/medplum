@@ -115,10 +115,11 @@ describe('App', () => {
   test('Database timeout', async () => {
     const app = express();
     const config = await loadTestConfig();
-    config.database.queryTimeout = 1;
     await initApp(app, config);
     const accessToken = await initTestAuth({ project: { superAdmin: true } });
 
+    config.database.queryTimeout = 1;
+    await initApp(app, config);
     const res = await request(app)
       .get(`/fhir/R4/SearchParameter?base=Observation`)
       .set('Authorization', 'Bearer ' + accessToken);
