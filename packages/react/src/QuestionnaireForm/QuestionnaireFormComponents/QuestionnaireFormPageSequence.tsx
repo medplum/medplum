@@ -77,8 +77,9 @@ export function QuestionnairePageSequence(props: QuestionnairePageSequenceProps)
         <ButtonGroup
           activePage={activePage ?? 0}
           numberOfPages={numberOfPages}
-          nextStep={nextStep}
-          prevStep={prevStep}
+          nextStep={renderPages ? nextStep : undefined}
+          prevStep={renderPages ? prevStep : undefined}
+          renderPages={renderPages}
           submitButtonText={submitButtonText}
         />
       )}
@@ -89,15 +90,16 @@ export function QuestionnairePageSequence(props: QuestionnairePageSequenceProps)
 interface ButtonGroupProps {
   readonly activePage: number;
   readonly numberOfPages: number;
+  readonly renderPages: boolean;
   readonly submitButtonText?: string;
-  readonly nextStep: () => void;
-  readonly prevStep: () => void;
+  readonly nextStep?: () => void;
+  readonly prevStep?: () => void;
 }
 
 function ButtonGroup(props: ButtonGroupProps): JSX.Element {
-  const showBackButton = props.activePage > 0;
-  const showNextButton = props.activePage < props.numberOfPages - 1;
-  const showSubmitButton = props.activePage === props.numberOfPages - 1;
+  const showBackButton = props.renderPages && props.activePage > 0;
+  const showNextButton = props.renderPages && props.activePage < props.numberOfPages - 1;
+  const showSubmitButton = !props.renderPages || props.activePage === props.numberOfPages - 1;
 
   return (
     <Group justify="flex-end" mt="xl" gap="xs">
@@ -106,7 +108,7 @@ function ButtonGroup(props: ButtonGroupProps): JSX.Element {
         <Button
           onClick={(e) => {
             const form = e.currentTarget.closest('form') as HTMLFormElement;
-            if (form.reportValidity()) {
+            if (props.nextStep && form.reportValidity()) {
               props.nextStep();
             }
           }}
