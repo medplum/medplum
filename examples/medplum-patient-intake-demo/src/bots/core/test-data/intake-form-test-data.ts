@@ -116,6 +116,15 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          linkId: 'phone',
+          text: 'Phone',
+          answer: [
+            {
+              valueString: '555-555-5555',
+            },
+          ],
+        },
+        {
           id: 'id-40',
           linkId: 'race',
           text: 'Race',

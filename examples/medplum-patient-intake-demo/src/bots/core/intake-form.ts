@@ -47,6 +47,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const patientAddress = getPatientAddress(answers);
   patient.address = patientAddress ? [patientAddress] : patient.address;
   patient.gender = (answers['gender-identity']?.valueCoding?.code as Patient['gender']) || patient.gender;
+  patient.telecom = answers['phone']?.valueString
+    ? [{ system: 'phone', value: answers['phone'].valueString }]
+    : patient.telecom;
 
   setExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race']);
   setExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity']);
@@ -203,5 +206,6 @@ function getPatientAddress(answers: Record<string, QuestionnaireResponseItemAnsw
     patientAddress.postalCode = answers['zip'].valueString;
   }
 
+  // To simplify the demo, we're assuming the address is always a home address
   return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
 }

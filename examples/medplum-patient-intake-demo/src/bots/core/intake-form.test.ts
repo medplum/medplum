@@ -77,6 +77,10 @@ describe('Intake form', async () => {
         state: 'IL',
         postalCode: '44444',
       });
+      expect(patient.telecom?.[0]).toEqual({
+        system: 'phone',
+        value: '555-555-5555',
+      });
     });
 
     test("Doesn't change patient name if not provided", async () => {
