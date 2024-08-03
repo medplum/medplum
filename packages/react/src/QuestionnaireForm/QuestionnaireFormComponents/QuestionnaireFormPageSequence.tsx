@@ -10,6 +10,7 @@ interface QuestionnairePageSequenceProps {
   readonly renderPages: boolean;
   readonly activePage?: number;
   readonly numberOfPages: number;
+  readonly excludeButtons?: boolean;
   readonly submitButtonText?: string;
   readonly checkForQuestionEnabled: (item: QuestionnaireItem) => boolean;
   readonly onChange: (items: QuestionnaireResponseItem | QuestionnaireResponseItem[]) => void;
@@ -28,6 +29,7 @@ export function QuestionnairePageSequence(props: QuestionnairePageSequenceProps)
     numberOfPages,
     renderPages,
     submitButtonText,
+    excludeButtons,
     checkForQuestionEnabled,
   } = props;
 
@@ -71,13 +73,16 @@ export function QuestionnairePageSequence(props: QuestionnairePageSequenceProps)
         </Stepper>
       )}
       {!renderPages && <Stack>{form}</Stack>}
-      <ButtonGroup
-        activePage={activePage ?? 0}
-        numberOfPages={numberOfPages}
-        nextStep={nextStep}
-        prevStep={prevStep}
-        submitButtonText={submitButtonText}
-      />
+      {!excludeButtons && (
+        <ButtonGroup
+          activePage={activePage ?? 0}
+          numberOfPages={numberOfPages}
+          nextStep={renderPages ? nextStep : undefined}
+          prevStep={renderPages ? prevStep : undefined}
+          renderPages={renderPages}
+          submitButtonText={submitButtonText}
+        />
+      )}
     </>
   );
 }
@@ -85,15 +90,16 @@ export function QuestionnairePageSequence(props: QuestionnairePageSequenceProps)
 interface ButtonGroupProps {
   readonly activePage: number;
   readonly numberOfPages: number;
+  readonly renderPages: boolean;
   readonly submitButtonText?: string;
-  readonly nextStep: () => void;
-  readonly prevStep: () => void;
+  readonly nextStep?: () => void;
+  readonly prevStep?: () => void;
 }
 
 function ButtonGroup(props: ButtonGroupProps): JSX.Element {
-  const showBackButton = props.activePage > 0;
-  const showNextButton = props.activePage < props.numberOfPages - 1;
-  const showSubmitButton = props.activePage === props.numberOfPages - 1;
+  const showBackButton = props.renderPages && props.activePage > 0;
+  const showNextButton = props.renderPages && props.activePage < props.numberOfPages - 1;
+  const showSubmitButton = !props.renderPages || props.activePage === props.numberOfPages - 1;
 
   return (
     <Group justify="flex-end" mt="xl" gap="xs">
@@ -102,7 +108,7 @@ function ButtonGroup(props: ButtonGroupProps): JSX.Element {
         <Button
           onClick={(e) => {
             const form = e.currentTarget.closest('form') as HTMLFormElement;
-            if (form.reportValidity()) {
+            if (props.nextStep && form.reportValidity()) {
               props.nextStep();
             }
           }}
