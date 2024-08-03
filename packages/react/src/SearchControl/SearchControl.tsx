@@ -10,7 +10,14 @@ import {
   Text,
   UnstyledButton,
 } from '@mantine/core';
-import { DEFAULT_SEARCH_COUNT, Filter, SearchRequest, formatSearchQuery, isDataTypeLoaded } from '@medplum/core';
+import {
+  DEFAULT_SEARCH_COUNT,
+  Filter,
+  SearchRequest,
+  formatSearchQuery,
+  isDataTypeLoaded,
+  normalizeOperationOutcome,
+} from '@medplum/core';
 import { Bundle, OperationOutcome, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import {
@@ -25,6 +32,7 @@ import {
 } from '@tabler/icons-react';
 import { ChangeEvent, MouseEvent, memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
+import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
 import { SearchFieldEditor } from '../SearchFieldEditor/SearchFieldEditor';
 import { SearchFilterEditor } from '../SearchFilterEditor/SearchFilterEditor';
@@ -102,7 +110,6 @@ interface SearchControlState {
  */
 export function SearchControl(props: SearchControlProps): JSX.Element {
   const medplum = useMedplum();
-  const [loadingSchema, setLoadingSchema] = useState<string>();
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
 
@@ -122,12 +129,14 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const loadResults = useCallback(
     (options?: RequestInit) => {
       setOutcome(undefined);
-
       medplum
-        .search(
-          search.resourceType as ResourceType,
-          formatSearchQuery({ ...search, total, fields: undefined }),
-          options
+        .requestSchema(search.resourceType as ResourceType)
+        .then(() =>
+          medplum.search(
+            search.resourceType as ResourceType,
+            formatSearchQuery({ ...search, total, fields: undefined }),
+            options
+          )
         )
         .then((response) => {
           setState({ ...stateRef.current, searchResponse: response });
@@ -137,7 +146,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         })
         .catch((reason) => {
           setState({ ...stateRef.current, searchResponse: undefined });
-          setOutcome(reason);
+          setOutcome(normalizeOperationOutcome(reason));
         });
     },
     [medplum, search, total, onLoad]
@@ -239,15 +248,11 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     return !!(props.onExport ?? props.onExportCsv ?? props.onExportTransactionBundle);
   }
 
-  useEffect(() => {
-    setLoadingSchema(props.search.resourceType);
-    medplum
-      .requestSchema(props.search.resourceType as ResourceType)
-      .catch(console.error)
-      .finally(() => setLoadingSchema(undefined));
-  }, [medplum, props.search.resourceType]);
+  if (outcome) {
+    return <OperationOutcomeAlert outcome={outcome} />;
+  }
 
-  if (!isDataTypeLoaded(props.search.resourceType) || loadingSchema === props.search.resourceType) {
+  if (!isDataTypeLoaded(props.search.resourceType)) {
     return (
       <Center style={{ width: '100%', height: '100%' }}>
         <Loader />
@@ -473,11 +478,6 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
             }}
           />
         </Center>
-      )}
-      {outcome && (
-        <div data-testid="search-error">
-          <pre style={{ textAlign: 'left' }}>{JSON.stringify(outcome, undefined, 2)}</pre>
-        </div>
       )}
       <SearchFieldEditor
         search={props.search}
