@@ -33,6 +33,7 @@ const options = {
     '@medplum/core',
     '@medplum/fhir-router',
     '@medplum/mock',
+    '@medplum/react-hooks',
     'prop-types',
     'react',
     'react-dom',
