@@ -14,6 +14,7 @@ import {
   DEFAULT_SEARCH_COUNT,
   Filter,
   SearchRequest,
+  deepEquals,
   formatSearchQuery,
   isDataTypeLoaded,
   normalizeOperationOutcome,
@@ -113,6 +114,16 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { search, onLoad } = props;
 
+  const [memoizedSearch, setMemoizedSearch] = useState(search);
+
+  // We know that eventually search should stabilize to deepEquals the memoized one
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!deepEquals(search, memoizedSearch)) {
+      setMemoizedSearch(search);
+    }
+  });
+
   const [state, setState] = useState<SearchControlState>({
     selected: {},
     fieldEditorVisible: false,
@@ -124,17 +135,17 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   const stateRef = useRef<SearchControlState>(state);
   stateRef.current = state;
 
-  const total = search.total ?? 'accurate';
+  const total = memoizedSearch.total ?? 'accurate';
 
   const loadResults = useCallback(
     (options?: RequestInit) => {
       setOutcome(undefined);
       medplum
-        .requestSchema(search.resourceType as ResourceType)
+        .requestSchema(memoizedSearch.resourceType as ResourceType)
         .then(() =>
           medplum.search(
-            search.resourceType as ResourceType,
-            formatSearchQuery({ ...search, total, fields: undefined }),
+            memoizedSearch.resourceType as ResourceType,
+            formatSearchQuery({ ...memoizedSearch, total, fields: undefined }),
             options
           )
         )
@@ -149,7 +160,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           setOutcome(normalizeOperationOutcome(reason));
         });
     },
-    [medplum, search, total, onLoad]
+    [medplum, memoizedSearch, total, onLoad]
   );
 
   const refreshResults = useCallback(() => {
@@ -252,7 +263,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
     return <OperationOutcomeAlert outcome={outcome} />;
   }
 
-  if (!isDataTypeLoaded(props.search.resourceType)) {
+  if (!isDataTypeLoaded(memoizedSearch.resourceType)) {
     return (
       <Center style={{ width: '100%', height: '100%' }}>
         <Loader />
@@ -261,8 +272,8 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   }
 
   const checkboxColumn = props.checkboxesEnabled;
-  const fields = getFieldDefinitions(search);
-  const resourceType = search.resourceType;
+  const fields = getFieldDefinitions(memoizedSearch);
+  const resourceType = memoizedSearch.resourceType;
   const lastResult = state.searchResponse;
   const entries = lastResult?.entry;
   const resources = entries?.map((e) => e.resource);
@@ -345,9 +356,10 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
           <Group gap={2}>
             {lastResult && (
               <Text size="xs" c="dimmed" data-testid="count-display">
-                {getStart(search, lastResult).toLocaleString()}-{getEnd(search, lastResult).toLocaleString()}
+                {getStart(memoizedSearch, lastResult).toLocaleString()}-
+                {getEnd(memoizedSearch, lastResult).toLocaleString()}
                 {lastResult.total !== undefined &&
-                  ` of ${search.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
+                  ` of ${memoizedSearch.total === 'estimate' ? '~' : ''}${lastResult.total?.toLocaleString()}`}
               </Text>
             )}
             <ActionIcon variant={buttonVariant} color={buttonColor} title="Refresh" onClick={refreshResults}>
@@ -385,7 +397,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     </UnstyledButton>
                   </Menu.Target>
                   <SearchPopupMenu
-                    search={props.search}
+                    search={memoizedSearch}
                     searchParams={field.searchParams}
                     onPrompt={(searchParam, filter) => {
                       setState({
@@ -412,7 +424,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
                     <FilterDescription
                       resourceType={resourceType}
                       searchParams={field.searchParams}
-                      filters={props.search.filters}
+                      filters={memoizedSearch.filters}
                     />
                   )}
                 </Table.Th>
@@ -463,9 +475,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
       {lastResult && (
         <Center m="md" p="md">
           <Pagination
-            value={getPage(search)}
-            total={getTotalPages(search, lastResult)}
-            onChange={(newPage) => emitSearchChange(setPage(search, newPage))}
+            value={getPage(memoizedSearch)}
+            total={getTotalPages(memoizedSearch, lastResult)}
+            onChange={(newPage) => emitSearchChange(setPage(memoizedSearch, newPage))}
             getControlProps={(control) => {
               switch (control) {
                 case 'previous':
@@ -480,7 +492,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         </Center>
       )}
       <SearchFieldEditor
-        search={props.search}
+        search={memoizedSearch}
         visible={stateRef.current.fieldEditorVisible}
         onOk={(result) => {
           emitSearchChange(result);
@@ -497,7 +509,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         }}
       />
       <SearchFilterEditor
-        search={props.search}
+        search={memoizedSearch}
         visible={stateRef.current.filterEditorVisible}
         onOk={(result) => {
           emitSearchChange(result);
@@ -533,7 +545,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
         filter={state.filterDialogFilter}
         defaultValue=""
         onOk={(filter) => {
-          emitSearchChange(addFilter(props.search, filter.code, filter.operator, filter.value));
+          emitSearchChange(addFilter(memoizedSearch, filter.code, filter.operator, filter.value));
           setState({
             ...stateRef.current,
             filterDialogVisible: false,
