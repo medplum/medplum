@@ -50,7 +50,7 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   let body: ExternalAuthState;
   try {
     body = JSON.parse(state);
-  } catch (err) {
+  } catch (_err) {
     sendOutcome(res, badRequest('Invalid state'));
     return;
   }

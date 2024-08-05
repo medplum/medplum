@@ -24,7 +24,7 @@ storageRouter.get(
       const stream = await getBinaryStorage().readBinary(binary);
       res.status(200).contentType(binary.contentType as string);
       stream.pipe(res);
-    } catch (err) {
+    } catch (_err) {
       res.sendStatus(404);
     }
   })

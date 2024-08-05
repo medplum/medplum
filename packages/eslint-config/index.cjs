@@ -115,8 +115,13 @@ module.exports = {
       {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
+        caughtErrors: 'all',
+        caughtErrorsIgnorePattern: '^_',
       },
     ],
+
+    // React Hooks
+    'react-hooks/exhaustive-deps': 'error',
 
     // React Refresh
     'react-refresh/only-export-components': 'warn',
@@ -129,6 +134,7 @@ module.exports = {
     '@typescript-eslint/prefer-nullish-coalescing': 'off',
     '@typescript-eslint/no-unnecessary-condition': 'off',
     '@typescript-eslint/no-dynamic-delete': 'off',
+    '@typescript-eslint/no-empty-object-type': 'off',
 
     // JSDoc
     'jsdoc/check-tag-names': [

@@ -29,6 +29,7 @@ import { AgentHl7Channel } from './hl7';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 
 jest.mock('node:process', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   return new (class MockProcess extends require('node:events') {
     send = jest.fn().mockImplementation((msg) => {
       this.emit('childSend', msg);

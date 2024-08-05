@@ -713,7 +713,7 @@ export class MockFetchClient {
     if (options.body) {
       try {
         body = JSON.parse(options.body);
-      } catch (err) {
+      } catch (_err) {
         body = options.body;
       }
     }

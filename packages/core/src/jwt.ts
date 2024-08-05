@@ -45,7 +45,7 @@ export function isMedplumAccessToken(accessToken: string): boolean {
   try {
     const payload = parseJWTPayload(accessToken);
     return typeof payload.login_id === 'string';
-  } catch (err) {
+  } catch (_err) {
     return false;
   }
 }
@@ -63,7 +63,7 @@ export function tryGetJwtExpiration(token: string): number | undefined {
       return exp * 1000;
     }
     return undefined;
-  } catch (err) {
+  } catch (_err) {
     return undefined;
   }
 }
