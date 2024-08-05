@@ -1,4 +1,11 @@
 import { TypedEventTarget } from '../eventtarget';
+import { Event as EventPolyfill } from '../polyfills/event/event';
+
+const root = ((typeof globalThis !== 'undefined' && globalThis) ||
+  (typeof self !== 'undefined' && self) ||
+  (typeof global !== 'undefined' && global)) as typeof globalThis;
+
+const Event = (typeof root.Event !== 'undefined' ? root.Event : EventPolyfill) as unknown as typeof EventPolyfill;
 
 /*!
  * Reconnecting WebSocket
@@ -506,6 +513,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     }
     this._debug('removeListeners');
     this._ws.removeEventListener('open', this._handleOpen);
+    // @ts-expect-error we need to fix event/listener types
     this._ws.removeEventListener('close', this._handleClose);
     this._ws.removeEventListener('message', this._handleMessage);
     // @ts-expect-error we need to fix event/listener types
@@ -518,6 +526,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     }
     this._debug('addListeners');
     this._ws.addEventListener('open', this._handleOpen);
+    // @ts-expect-error we need to fix event/listener types
     this._ws.addEventListener('close', this._handleClose);
     this._ws.addEventListener('message', this._handleMessage);
     // @ts-expect-error we need to fix event/listener types

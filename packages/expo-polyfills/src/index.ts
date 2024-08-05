@@ -5,7 +5,6 @@ import expoWebCrypto from 'expo-standard-web-crypto';
 import { Platform } from 'react-native';
 import { setupURLPolyfill } from 'react-native-url-polyfill';
 import { TextDecoder, TextEncoder } from 'text-encoding';
-import { polyfillEvent } from './polyfills/event';
 
 export { ExpoClientStorage, type IExpoClientStorage } from './storage';
 
@@ -32,7 +31,7 @@ export function cleanupMedplumWebAPIs(): void {
   if (Platform.OS === 'web' || !polyfilled) {
     return;
   }
-  if (window.crypto) {
+  if (typeof window.crypto !== 'undefined') {
     Object.defineProperty(window, 'crypto', {
       configurable: true,
       enumerable: true,
@@ -46,42 +45,39 @@ export function cleanupMedplumWebAPIs(): void {
     originalCrypto = undefined;
     originalCryptoIsSet = false;
   }
-  if (window.location) {
+  if (typeof window.location !== 'undefined') {
     Object.defineProperty(window, 'location', { configurable: true, enumerable: true, value: undefined });
   }
-  if (window.sessionStorage) {
+  if (typeof window.sessionStorage !== 'undefined') {
     Object.defineProperty(window, 'sessionStorage', {
       configurable: true,
       enumerable: true,
       value: undefined,
     });
   }
-  if (window.TextEncoder) {
+  if (typeof window.TextEncoder !== 'undefined') {
     Object.defineProperty(window, 'TextEncoder', {
       configurable: true,
       enumerable: true,
       value: undefined,
     });
   }
-  if (window.TextDecoder) {
+  if (typeof window.TextDecoder !== 'undefined') {
     Object.defineProperty(window, 'TextDecoder', {
       configurable: true,
       enumerable: true,
       value: undefined,
     });
   }
-  // @ts-expect-error Typescript thinks `btoa` is always defined
-  if (window.btoa) {
+  if (typeof window.btoa !== 'undefined') {
     Object.defineProperty(window, 'btoa', { configurable: true, enumerable: true, value: undefined });
   }
-  // @ts-expect-error Typescript thinks `atob` is always defined
-  if (window.atob) {
+  if (typeof window.atob !== 'undefined') {
     Object.defineProperty(window, 'atob', { configurable: true, enumerable: true, value: undefined });
   }
-
-  if (window.Event) {
-    Object.defineProperty(window, 'Event', { configurable: true, enumerable: true, value: undefined });
-  }
+  // if (typeof window.Event !== 'undefined') {
+  //   Object.defineProperty(window, 'Event', { configurable: true, enumerable: true, value: undefined });
+  // }
 
   polyfilled = false;
 }
@@ -173,9 +169,9 @@ export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
     });
   }
 
-  if (config?.event !== false && typeof window.Event === 'undefined') {
-    polyfillEvent();
-  }
+  // if (config?.event !== false && typeof window.Event === 'undefined') {
+  //   polyfillEvent();
+  // }
 
   polyfilled = true;
 }
