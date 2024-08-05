@@ -73,9 +73,9 @@ describe('Intake form', async () => {
         use: 'home',
         type: 'physical',
         line: ['123 Happy St'],
-        city: 'Springfield',
-        state: 'IL',
-        postalCode: '44444',
+        city: 'Sunnyvale',
+        state: 'CA',
+        postalCode: '95008',
       });
       expect(patient.telecom?.[0]).toEqual({
         system: 'phone',

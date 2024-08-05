@@ -95,7 +95,7 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'City',
           answer: [
             {
-              valueString: 'Springfield',
+              valueString: 'Sunnyvale',
             },
           ],
         },
@@ -105,7 +105,11 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'State',
           answer: [
             {
-              valueString: 'IL',
+              valueCoding: {
+                system: 'https://www.usps.com/',
+                code: 'CA',
+                display: 'California',
+              },
             },
           ],
         },
@@ -115,7 +119,7 @@ export const intakeResponse: QuestionnaireResponse = {
           text: 'Zip',
           answer: [
             {
-              valueString: '44444',
+              valueString: '95008',
             },
           ],
         },

@@ -98,7 +98,8 @@
               {
                 "linkId": "state",
                 "text": "State",
-                "type": "string"
+                "type": "choice",
+                "answerValueSet": "http://hl7.org/fhir/us/core/ValueSet/us-core-usps-state"
               },
               {
                 "linkId": "zip",

@@ -214,8 +214,8 @@ function getPatientAddress(answers: Record<string, QuestionnaireResponseItemAnsw
     patientAddress.city = answers['city'].valueString;
   }
 
-  if (answers['state']?.valueString) {
-    patientAddress.state = answers['state'].valueString;
+  if (answers['state']?.valueCoding?.code) {
+    patientAddress.state = answers['state'].valueCoding.code;
   }
 
   if (answers['zip']?.valueString) {
