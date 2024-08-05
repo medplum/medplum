@@ -149,6 +149,68 @@ describe('Intake form', async () => {
     });
   });
 
+  describe('Allergies', async () => {
+    test('add allergies', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      const allergies = await medplum.searchResources('AllergyIntolerance', { patient: getReferenceString(patient) });
+
+      expect(allergies.length).toEqual(2);
+
+      console.log('addAllergy', JSON.stringify(allergies, null, 2));
+
+      expect(allergies[0].code?.coding?.[0].code).toEqual('111088007');
+      expect(allergies[0].clinicalStatus?.coding?.[0].code).toEqual('active');
+      expect(allergies[0].reaction?.[0].manifestation?.[0].text).toEqual('Skin rash');
+      expect(allergies[0].onsetDateTime).toEqual('2000-07-01T00:00:00Z');
+
+      expect(allergies[1].code?.coding?.[0].code).toEqual('763875007');
+      expect(allergies[1].clinicalStatus?.coding?.[0].code).toEqual('active');
+      expect(allergies[1].reaction?.[0].manifestation?.[0].text).toEqual('Skin rash');
+      expect(allergies[1].onsetDateTime).toEqual('2020-01-01T00:00:00Z');
+    });
+
+    test('does not duplicate existing allergies', async () => {
+      await medplum.createResource({
+        resourceType: 'AllergyIntolerance',
+        patient: createReference(patient),
+        code: {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '111088007',
+              display: 'Latex (substance)',
+            },
+          ],
+        },
+        clinicalStatus: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+              code: 'active',
+            },
+          ],
+        },
+        reaction: [
+          {
+            manifestation: [
+              {
+                text: 'Skin rash',
+              },
+            ],
+          },
+        ],
+        onsetDateTime: '2000-07-01T00:00:00Z',
+      });
+
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      const allergies = await medplum.searchResources('AllergyIntolerance', { patient: getReferenceString(patient) });
+
+      expect(allergies.length).toEqual(2);
+    });
+  });
+
   describe('Language information', async () => {
     test('add languages', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });

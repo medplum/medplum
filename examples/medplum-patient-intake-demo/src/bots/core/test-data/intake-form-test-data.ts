@@ -202,6 +202,116 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
+      id: 'id-82',
+      linkId: 'allergies',
+      text: 'Allergies',
+      item: [
+        {
+          id: 'id-83',
+          linkId: 'allergy-substance',
+          text: 'Type',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '111088007',
+                display: 'Latex (substance)',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-84',
+          linkId: 'allergy-reaction',
+          text: 'Reaction',
+          answer: [
+            {
+              valueString: 'Skin rash',
+            },
+          ],
+        },
+        {
+          id: 'id-85',
+          linkId: 'allergy-clinical-status',
+          text: 'Clinical Status',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+                code: 'active',
+                display: 'Active',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-86',
+          linkId: 'allergy-onset',
+          text: 'Onset',
+          answer: [
+            {
+              valueDateTime: '2000-07-01T00:00:00Z',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-93',
+      linkId: 'allergies',
+      text: 'Allergies',
+      item: [
+        {
+          id: 'id-94',
+          linkId: 'allergy-substance',
+          text: 'Substance',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '763875007',
+                display: 'Product containing sulfonamide (product)',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-95',
+          linkId: 'allergy-reaction',
+          text: 'Reaction',
+          answer: [
+            {
+              valueString: 'Skin rash',
+            },
+          ],
+        },
+        {
+          id: 'id-96',
+          linkId: 'allergy-clinical-status',
+          text: 'Clinical Status',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+                code: 'active',
+                display: 'Active',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-97',
+          linkId: 'allergy-onset',
+          text: 'Onset',
+          answer: [
+            {
+              valueDateTime: '2020-01-01T00:00:00Z',
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: 'id-50',
       linkId: 'coverage-information',
       text: 'Coverage Information',
@@ -242,6 +352,13 @@ export const intakeResponse: QuestionnaireResponse = {
             },
           ],
         },
+      ],
+    },
+    {
+      id: 'id-100',
+      linkId: 'coverage-information',
+      text: 'Coverage Information',
+      item: [
         {
           id: 'id-54',
           linkId: 'insurance-provider',

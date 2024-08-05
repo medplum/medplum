@@ -143,6 +143,36 @@
             ]
           },
           {
+            "linkId": "allergies",
+            "text": "Allergies",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "allergy-substance",
+                "text": "Substance",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1186.8"
+              },
+              {
+                "linkId": "allergy-reaction",
+                "text": "Reaction",
+                "type": "string"
+              },
+              {
+                "linkId": "allergy-clinical-status",
+                "text": "Clinical Status",
+                "type": "choice",
+                "answerValueSet": "http://hl7.org/fhir/ValueSet/allergyintolerance-clinical"
+              },
+              {
+                "linkId": "allergy-onset",
+                "text": "Onset",
+                "type": "dateTime"
+              }
+            ]
+          },
+          {
             "linkId": "coverage-information",
             "text": "Coverage Information",
             "type": "group",

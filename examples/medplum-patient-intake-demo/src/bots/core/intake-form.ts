@@ -1,4 +1,4 @@
-import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, getAllQuestionnaireAnswers, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
   Address,
   HumanName,
@@ -9,6 +9,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import {
+  addAllergy,
   addConsent,
   addCoverage,
   addLanguage,
@@ -123,15 +124,22 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     { valueDateTime: convertDateToDateTime(answers['estimated-delivery-date']?.valueDate) }
   );
 
-  // Handle coverage
-
   if (!response.questionnaire) {
     throw new Error('Missing questionnaire');
   }
 
   const questionnaire: Questionnaire = await medplum.readReference({ reference: response.questionnaire });
-  const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
 
+  // Handle allergies
+
+  const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
+  for (const allergy of allergies) {
+    await addAllergy(medplum, patient, allergy);
+  }
+
+  // Handle coverage
+
+  const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
   }
