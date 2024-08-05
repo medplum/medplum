@@ -5,6 +5,7 @@ import expoWebCrypto from 'expo-standard-web-crypto';
 import { Platform } from 'react-native';
 import { setupURLPolyfill } from 'react-native-url-polyfill';
 import { TextDecoder, TextEncoder } from 'text-encoding';
+import { polyfillEvent } from './polyfills/event';
 
 export { ExpoClientStorage, type IExpoClientStorage } from './storage';
 
@@ -75,9 +76,9 @@ export function cleanupMedplumWebAPIs(): void {
   if (typeof window.atob !== 'undefined') {
     Object.defineProperty(window, 'atob', { configurable: true, enumerable: true, value: undefined });
   }
-  // if (typeof window.Event !== 'undefined') {
-  //   Object.defineProperty(window, 'Event', { configurable: true, enumerable: true, value: undefined });
-  // }
+  if (typeof window.Event !== 'undefined') {
+    Object.defineProperty(window, 'Event', { configurable: true, enumerable: true, value: undefined });
+  }
 
   polyfilled = false;
 }
@@ -169,9 +170,9 @@ export function polyfillMedplumWebAPIs(config?: PolyfillEnabledConfig): void {
     });
   }
 
-  // if (config?.event !== false && typeof window.Event === 'undefined') {
-  //   polyfillEvent();
-  // }
+  if (config?.event !== false && typeof window.Event === 'undefined') {
+    polyfillEvent();
+  }
 
   polyfilled = true;
 }
