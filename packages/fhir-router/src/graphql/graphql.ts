@@ -19,7 +19,6 @@ import {
   execute,
   ExecutionResult,
   FieldNode,
-  GraphQLError,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
   GraphQLFloat,
@@ -105,7 +104,7 @@ export async function graphqlHandler(
   }
 
   const schema = getRootSchema();
-  const validationRules = [...specifiedRules, MaxDepthRule(req.config?.graphqlMaxDepth), QueryCostRule(router)];
+  const validationRules = [...specifiedRules, MaxDepthRule(router, req.config?.graphqlMaxDepth), QueryCostRule(router)];
   const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
     return [invalidRequest(validationErrors)];
@@ -441,13 +440,14 @@ const DEFAULT_MAX_DEPTH = 12;
 
 /**
  * Custom GraphQL rule that enforces max depth constraint.
+ * @param router - The FHIR router.
  * @param maxDepth - The maximum allowed depth.
  * @returns A function that is an ASTVisitor that validates the maximum depth rule.
  */
 const MaxDepthRule =
-  (maxDepth: number = DEFAULT_MAX_DEPTH) =>
+  (router: FhirRouter, maxDepth: number = DEFAULT_MAX_DEPTH) =>
   (context: ValidationContext): ASTVisitor =>
-    new MaxDepthVisitor(context, maxDepth);
+    new MaxDepthVisitor(context, router, maxDepth);
 
 type DepthRecord = { depth: number; node?: FieldNode };
 
@@ -455,9 +455,11 @@ class MaxDepthVisitor {
   private context: ValidationContext;
   private maxDepth: number;
   private fragmentDepths: Record<string, DepthRecord>;
+  private router: FhirRouter;
 
-  constructor(context: ValidationContext, maxDepth: number) {
+  constructor(context: ValidationContext, router: FhirRouter, maxDepth: number) {
     this.context = context;
+    this.router = router;
     this.fragmentDepths = Object.create(null);
     this.maxDepth = maxDepth;
   }
@@ -465,14 +467,19 @@ class MaxDepthVisitor {
   OperationDefinition(node: OperationDefinitionNode): void {
     const result = this.getDepth(...node.selectionSet.selections);
     if (result.depth > this.maxDepth) {
-      this.context.reportError(
-        new GraphQLError(
-          `Field "${result.node?.name.value}" exceeds max depth (depth=${result.depth}, max=${this.maxDepth})`,
-          {
-            nodes: result.node,
-          }
-        )
-      );
+      // this.context.reportError(
+      //   new GraphQLError(
+      //     `Field "${result.node?.name.value}" exceeds max depth (depth=${result.depth}, max=${this.maxDepth})`,
+      //     {
+      //       nodes: result.node,
+      //     }
+      //   )
+      // );
+      this.router.log('warn', 'Query max depth too high', {
+        depth: result.depth,
+        limit: this.maxDepth,
+        query: node.loc?.source?.body,
+      });
     }
   }
 

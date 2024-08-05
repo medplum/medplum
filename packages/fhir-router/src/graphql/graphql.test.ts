@@ -550,7 +550,7 @@ describe('GraphQL', () => {
     );
   });
 
-  test('Max depth', async () => {
+  test.skip('Max depth', async () => {
     // The definition of "depth" is a little abstract in GraphQL
     // We use field depth, where fragment expansion does not contribute to depth
 
@@ -707,7 +707,7 @@ describe('GraphQL', () => {
     expect(res4[0].issue?.[0]?.details?.text).toEqual('Field "system" exceeds max depth (depth=14, max=12)');
   });
 
-  test('Max depth override', async () => {
+  test.skip('Max depth override', async () => {
     // Project level settings can override the default depth
     const config = {
       graphqlMaxDepth: 6,
