@@ -31,7 +31,7 @@ import {
   IconTableExport,
   IconTrash,
 } from '@tabler/icons-react';
-import { ChangeEvent, MouseEvent, memo, useCallback, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, MouseEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '../Container/Container';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { SearchExportDialog } from '../SearchExportDialog/SearchExportDialog';
@@ -116,13 +116,9 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
 
   const [memoizedSearch, setMemoizedSearch] = useState(search);
 
-  // We know that eventually search should stabilize to deepEquals the memoized one
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    if (!deepEquals(search, memoizedSearch)) {
-      setMemoizedSearch(search);
-    }
-  });
+  if (!deepEquals(search, memoizedSearch)) {
+    setMemoizedSearch(search);
+  }
 
   const [state, setState] = useState<SearchControlState>({
     selected: {},
@@ -562,7 +558,7 @@ export function SearchControl(props: SearchControlProps): JSX.Element {
   );
 }
 
-export const MemoizedSearchControl = memo(SearchControl);
+export const MemoizedSearchControl = SearchControl;
 
 interface FilterDescriptionProps {
   readonly resourceType: string;
