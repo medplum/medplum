@@ -15,7 +15,7 @@ export async function handler(_medplum: MedplumClient, event: BotEvent<PhotonWeb
 }
 
 // Verify the event per the Photon docs: https://docs.photon.health/docs/webhook-signature-verification#verifying-the-webhook
-function verifyEvent(photonEvent: PhotonWebhook, secret: string): boolean {
+export function verifyEvent(photonEvent: PhotonWebhook, secret: string): boolean {
   const signature = photonEvent.headers['X-Photon-Signature'];
   const body = photonEvent.body;
 
