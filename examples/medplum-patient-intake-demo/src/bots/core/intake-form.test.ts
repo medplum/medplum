@@ -131,7 +131,7 @@ describe('Intake form', async () => {
       expect(Object.keys(patientName)).not.toContain('family');
     });
 
-    test('Race and etinicity', async () => {
+    test('Race and ethnicity', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
