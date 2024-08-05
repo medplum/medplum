@@ -80,6 +80,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          id: 'id-40',
           linkId: 'street',
           text: 'Street',
           answer: [
@@ -89,6 +90,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          id: 'id-41',
           linkId: 'city',
           text: 'City',
           answer: [
@@ -98,6 +100,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          id: 'id-42',
           linkId: 'state',
           text: 'State',
           answer: [
@@ -107,6 +110,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          id: 'id-43',
           linkId: 'zip',
           text: 'Zip',
           answer: [
@@ -116,6 +120,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          id: 'id-44',
           linkId: 'phone',
           text: 'Phone',
           answer: [
@@ -125,6 +130,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          id: 'id-45',
           linkId: 'ssn',
           text: 'Social Security Number',
           answer: [
@@ -134,7 +140,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-40',
+          id: 'id-46',
           linkId: 'race',
           text: 'Race',
           answer: [
@@ -148,7 +154,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-41',
+          id: 'id-47',
           linkId: 'ethnicity',
           text: 'Ethnicity',
           answer: [
@@ -162,7 +168,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-42',
+          id: 'id-48',
           linkId: 'gender-identity',
           text: 'Gender Identity',
           answer: [
@@ -176,7 +182,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-43',
+          id: 'id-49',
           linkId: 'sexual-orientation',
           text: 'Sexual Orientation',
           answer: [
@@ -192,12 +198,12 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
-      id: 'id-44',
+      id: 'id-50',
       linkId: 'coverage-information',
       text: 'Coverage Information',
       item: [
         {
-          id: 'id-45',
+          id: 'id-51',
           linkId: 'insurance-provider',
           text: 'Insurance Provider',
           answer: [
@@ -209,7 +215,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-46',
+          id: 'id-52',
           linkId: 'subscriber-id',
           text: 'Subscriber ID',
           answer: [
@@ -219,7 +225,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-47',
+          id: 'id-53',
           linkId: 'relationship-to-subscriber',
           text: 'Relationship to Subscriber',
           answer: [
@@ -233,7 +239,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-45',
+          id: 'id-54',
           linkId: 'insurance-provider',
           text: 'Insurance Provider',
           answer: [
@@ -245,7 +251,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-46',
+          id: 'id-55',
           linkId: 'subscriber-id',
           text: 'Subscriber ID',
           answer: [
@@ -255,7 +261,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-47',
+          id: 'id-56',
           linkId: 'relationship-to-subscriber',
           text: 'Relationship to Subscriber',
           answer: [
@@ -271,12 +277,12 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
-      id: 'id-48',
+      id: 'id-57',
       linkId: 'social-determinants-of-health',
       text: 'Social Determinants of Health',
       item: [
         {
-          id: 'id-49',
+          id: 'id-58',
           linkId: 'housing-status',
           text: 'Housing Status',
           answer: [
@@ -290,7 +296,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-50',
+          id: 'id-59',
           linkId: 'education-level',
           text: 'Education Level',
           answer: [
@@ -304,7 +310,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-51',
+          id: 'id-60',
           linkId: 'veteran-status',
           text: 'Veteran Status',
           answer: [
@@ -314,6 +320,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          id: 'id-61',
           linkId: 'pregnancy-status',
           text: 'Pregnancy Status',
           answer: [
@@ -327,6 +334,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
+          id: 'id-62',
           linkId: 'estimated-delivery-date',
           text: 'Estimated Delivery Date',
           answer: [
@@ -338,7 +346,7 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
-      id: 'id-52',
+      id: 'id-63',
       linkId: 'languages-spoken',
       text: 'Languages Spoken',
       answer: [
@@ -352,7 +360,7 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
-      id: 'id-53',
+      id: 'id-64',
       linkId: 'preferred-language',
       text: 'Preferred Language',
       answer: [
@@ -366,12 +374,12 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
-      id: 'id-54',
+      id: 'id-65',
       linkId: 'consent-for-treatment',
       text: 'Consent for Treatment',
       item: [
         {
-          id: 'id-55',
+          id: 'id-66',
           linkId: 'consent-for-treatment-signature',
           text: 'I the undersigned patient (or authorized representative, or parent/guardian), consent to and authorize the performance of any treatments, examinations, medical services, surgical or diagnostic procedures, including lab and radiographic studies, as ordered by this office and it’s healthcare providers.',
           answer: [
@@ -381,7 +389,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-56',
+          id: 'id-67',
           linkId: 'consent-for-treatment-date',
           text: 'Date',
           answer: [
@@ -393,12 +401,12 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
-      id: 'id-57',
+      id: 'id-68',
       linkId: 'agreement-to-pay-for-treatment',
       text: 'Agreement to Pay for Treatment',
       item: [
         {
-          id: 'id-58',
+          id: 'id-69',
           linkId: 'agreement-to-pay-for-treatment-help',
           text: 'I, the responsible party, hereby agree to pay all the charges submitted by this office during the course of treatment for the patient. If the patient has insurance coverage with a managed care organization, with which this office has a contractual agreement, I agree to pay all applicable co‐payments, co‐insurance and deductibles, which arise during the course of treatment for the patient. The responsible party also agrees to pay for treatment rendered to the patient, which is not considered to be a covered service by my insurer and/or a third party insurer or other payor. I understand that Bay Area Community Health (BACH) provides charges on a sliding fee; based on family size and household annual income, and that services will not be refused due to inability to pay at the time of the visit.',
           answer: [
@@ -408,7 +416,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-59',
+          id: 'id-70',
           linkId: 'agreement-to-pay-for-treatment-date',
           text: 'Date',
           answer: [
@@ -420,17 +428,17 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
-      id: 'id-60',
+      id: 'id-71',
       linkId: 'notice-of-privacy-practices',
       text: 'Notice of Privacy Practices',
       item: [
         {
-          id: 'id-61',
+          id: 'id-72',
           linkId: 'notice-of-privacy-practices-help',
           text: 'Bay Area Community Health (BACH) Notice of Privacy Practices gives information about how BACH may use and release protected health information (PHI) about you. I understand that:\n- I have the right to receive a copy of BACH’s Notice of Privacy Practices.\n- I may request a copy at any time.\n- BACH‘s Notice of Privacy Practices may be revised.',
         },
         {
-          id: 'id-62',
+          id: 'id-73',
           linkId: 'notice-of-privacy-practices-signature',
           text: 'I acknowledge the above and that I have received a copy of BACH’s Notice of Privacy Practices.',
           answer: [
@@ -440,7 +448,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-63',
+          id: 'id-74',
           linkId: 'notice-of-privacy-practices-date',
           text: 'Date',
           answer: [
@@ -452,12 +460,12 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
-      id: 'id-64',
+      id: 'id-75',
       linkId: 'acknowledgement-for-advance-directives',
       text: 'Acknowledgement for Advance Directives',
       item: [
         {
-          id: 'id-65',
+          id: 'id-76',
           linkId: 'acknowledgement-for-advance-directives-signature',
           text: 'I acknowledge I have received information about Advance Directives.',
           answer: [
@@ -467,7 +475,7 @@ export const intakeResponse: QuestionnaireResponse = {
           ],
         },
         {
-          id: 'id-66',
+          id: 'id-77',
           linkId: 'acknowledgement-for-advance-directives-date',
           text: 'Date',
           answer: [
