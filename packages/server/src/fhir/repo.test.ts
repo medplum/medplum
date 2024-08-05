@@ -1007,13 +1007,14 @@ describe('FHIR Repo', () => {
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
+      const conditionalReference = {
+        reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
+      };
 
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
-        meta: { account: createReference(practitioner) },
-        generalPractitioner: [
-          { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
-        ],
+        meta: { account: conditionalReference },
+        generalPractitioner: [conditionalReference],
       });
       expect(patient.generalPractitioner?.[0]?.reference).toEqual(getReferenceString(practitioner));
       expect(patient.meta?.account?.reference).toEqual(getReferenceString(practitioner));
