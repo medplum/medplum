@@ -1010,11 +1010,13 @@ describe('FHIR Repo', () => {
 
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
+        meta: { account: createReference(practitioner) },
         generalPractitioner: [
           { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
         ],
       });
       expect(patient.generalPractitioner?.[0]?.reference).toEqual(getReferenceString(practitioner));
+      expect(patient.meta?.account?.reference).toEqual(getReferenceString(practitioner));
     }));
 
   test('Conditional reference resolution failure', async () =>

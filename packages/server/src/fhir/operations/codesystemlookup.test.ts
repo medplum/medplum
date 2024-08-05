@@ -124,7 +124,6 @@ describe('CodeSystem lookup', () => {
           { name: 'code', valueCode: '2' },
         ],
       } as Parameters);
-    console.log(res.body.issue);
     expect(res.status).toEqual(200);
     expect(res.body).toMatchObject<Parameters>({
       resourceType: 'Parameters',
