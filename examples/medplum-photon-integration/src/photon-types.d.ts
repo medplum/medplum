@@ -335,7 +335,10 @@ interface PrescriptionCreatedData extends PrescriptionData {
   expirationDate: string;
   prescriberId: string;
   medicationId: string;
-  patientId: string;
+  patient: {
+    id: string;
+    externalId: string;
+  };
   notes: string;
 }
 
