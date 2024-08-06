@@ -55,6 +55,7 @@ export interface MedplumServerConfig {
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
   slowQueryThresholdMilliseconds?: number;
+  slowQuerySampleRate?: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?:
     | (
