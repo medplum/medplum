@@ -312,6 +312,68 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
+      id: 'id-78',
+      linkId: 'medications',
+      text: 'Current medications',
+      item: [
+        {
+          id: 'id-79',
+          linkId: 'medication-code',
+          text: 'Medication Name',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                code: '1156277',
+                display: 'ibuprofen Oral Product',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-80',
+          linkId: 'medication-note',
+          text: 'Note',
+          answer: [
+            {
+              valueString: 'I take it to manage my chronic back pain.',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-81',
+      linkId: 'medications',
+      text: 'Current medications',
+      item: [
+        {
+          id: 'id-82',
+          linkId: 'medication-code',
+          text: 'Medication Name',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                code: '1161610',
+                display: 'metformin Oral Product',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-83',
+          linkId: 'medication-note',
+          text: 'Note',
+          answer: [
+            {
+              valueString: 'I take it to manage my diabetes.',
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: 'id-50',
       linkId: 'coverage-information',
       text: 'Coverage Information',

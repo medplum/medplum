@@ -308,7 +308,6 @@ export async function addAllergy(
   answers: Record<string, QuestionnaireResponseItemAnswer>
 ): Promise<void> {
   const code = answers['allergy-substance']?.valueCoding;
-  // console.log('addAllergy', code, answers);
 
   if (!code) {
     return;
@@ -329,6 +328,42 @@ export async function addAllergy(
     },
     {
       patient: getReferenceString(patient),
+      code: `${code.system}|${code.code}`,
+    }
+  );
+}
+
+/**
+ * Adds a MedicationStatement resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the medication
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
+ *                 medication (see getGroupRepeatedAnswers)
+ */
+export async function addMedication(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const code = answers['medication-code']?.valueCoding;
+
+  if (!code) {
+    return;
+  }
+
+  const note = answers['medication-note']?.valueString;
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'MedicationStatement',
+      subject: createReference(patient),
+      status: 'active',
+      medicationCodeableConcept: { coding: [code] },
+      note: note ? [{ text: note }] : undefined,
+    },
+    {
+      subject: getReferenceString(patient),
       code: `${code.system}|${code.code}`,
     }
   );

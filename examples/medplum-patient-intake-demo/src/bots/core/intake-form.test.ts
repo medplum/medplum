@@ -157,8 +157,6 @@ describe('Intake form', async () => {
 
       expect(allergies.length).toEqual(2);
 
-      console.log('addAllergy', JSON.stringify(allergies, null, 2));
-
       expect(allergies[0].code?.coding?.[0].code).toEqual('111088007');
       expect(allergies[0].clinicalStatus?.coding?.[0].code).toEqual('active');
       expect(allergies[0].reaction?.[0].manifestation?.[0].text).toEqual('Skin rash');
@@ -183,31 +181,68 @@ describe('Intake form', async () => {
             },
           ],
         },
-        clinicalStatus: {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-              code: 'active',
-            },
-          ],
-        },
-        reaction: [
-          {
-            manifestation: [
-              {
-                text: 'Skin rash',
-              },
-            ],
-          },
-        ],
-        onsetDateTime: '2000-07-01T00:00:00Z',
       });
+
+      let allergies = await medplum.searchResources('AllergyIntolerance', { patient: getReferenceString(patient) });
+
+      expect(allergies.length).toEqual(1);
 
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      const allergies = await medplum.searchResources('AllergyIntolerance', { patient: getReferenceString(patient) });
+      allergies = await medplum.searchResources('AllergyIntolerance', { patient: getReferenceString(patient) });
 
       expect(allergies.length).toEqual(2);
+    });
+  });
+
+  describe('Current medications', async () => {
+    test('add medications', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      const medications = await medplum.searchResources('MedicationStatement', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(medications.length).toEqual(2);
+
+      expect(medications[0].medicationCodeableConcept?.coding?.[0].code).toEqual('1156277');
+      expect(medications[0].status).toEqual('active');
+      expect(medications[0].note?.[0].text).toEqual('I take it to manage my chronic back pain.');
+
+      expect(medications[1].medicationCodeableConcept?.coding?.[0].code).toEqual('1161610');
+      expect(medications[1].status).toEqual('active');
+      expect(medications[1].note?.[0].text).toEqual('I take it to manage my diabetes.');
+    });
+
+    test('does not duplicate existing medications', async () => {
+      await medplum.createResource({
+        resourceType: 'MedicationStatement',
+        subject: createReference(patient),
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+              code: '1156277',
+              display: 'ibuprofen Oral Product',
+            },
+          ],
+        },
+        status: 'active',
+      });
+
+      let medications = await medplum.searchResources('MedicationStatement', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(medications.length).toEqual(1);
+
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      medications = await medplum.searchResources('MedicationStatement', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(medications.length).toEqual(2);
     });
   });
 

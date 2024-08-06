@@ -1,4 +1,4 @@
-import { BotEvent, getAllQuestionnaireAnswers, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
   Address,
   HumanName,
@@ -13,6 +13,7 @@ import {
   addConsent,
   addCoverage,
   addLanguage,
+  addMedication,
   consentCategoryMapping,
   consentPolicyRuleMapping,
   consentScopeMapping,
@@ -135,6 +136,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
   for (const allergy of allergies) {
     await addAllergy(medplum, patient, allergy);
+  }
+
+  // Handle medications
+  const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
+  for (const medication of medications) {
+    await addMedication(medplum, patient, medication);
   }
 
   // Handle coverage
