@@ -120,7 +120,7 @@ export function getNameString(name: HumanName): string {
 }
 
 function getTokens(input: string): Set<string> {
-  if (!input) {
+  if (!input || typeof input !== 'string') {
     return new Set();
   }
 
