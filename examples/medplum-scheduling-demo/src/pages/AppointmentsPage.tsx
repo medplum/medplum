@@ -1,11 +1,11 @@
 import { Paper, Tabs } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { Filter, getReferenceString, Operator, SearchRequest } from '@medplum/core';
-import { MemoizedSearchControl, useMedplumProfile } from '@medplum/react';
+import { Practitioner } from '@medplum/fhirtypes';
+import { SearchControl, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CreateAppointment } from '../components/CreateAppointment';
-import { useDisclosure } from '@mantine/hooks';
-import { Practitioner } from '@medplum/fhirtypes';
 
 export function AppointmentsPage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;
@@ -85,7 +85,7 @@ export function AppointmentsPage(): JSX.Element {
           ))}
         </Tabs.List>
       </Tabs>
-      <MemoizedSearchControl
+      <SearchControl
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
