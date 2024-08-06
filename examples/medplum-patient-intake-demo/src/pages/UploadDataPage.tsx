@@ -6,9 +6,9 @@ import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useContext, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import exampleBotData from '../../data/core/example-bots.json';
 import coreData from '../../data/core/patient-intake-questionnaire.json';
 import exampleData from '../../data/example/example-patient-data.json';
-import exampleBotData from '../../data/core/example-bots.json';
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
 type UploadFunction = (medplum: MedplumClient, profile: Practitioner, questionnaire: Questionnaire) => Promise<void>;
@@ -57,7 +57,7 @@ export function UploadDataPage(): JSX.Element {
         });
       })
       .finally(() => setPageDisabled(false));
-  }, [medplum, profile, dataType, navigate]);
+  }, [medplum, profile, questionnaire, dataType, navigate]);
 
   return (
     <Document>

@@ -140,7 +140,7 @@ async function lambdaExists(client: LambdaClient, name: string): Promise<boolean
     const command = new GetFunctionCommand({ FunctionName: name });
     const response = await client.send(command);
     return response.Configuration?.FunctionName === name;
-  } catch (err) {
+  } catch (_err) {
     return false;
   }
 }

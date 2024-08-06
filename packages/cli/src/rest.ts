@@ -51,7 +51,7 @@ function parseBody(input: string | undefined): any {
   }
   try {
     return JSON.parse(input);
-  } catch (err) {
+  } catch (_err) {
     return input;
   }
 }

@@ -67,7 +67,7 @@ async function authenticateBasicAuth(req: IncomingMessage, token: string): Promi
   let client: ClientApplication;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
-  } catch (err) {
+  } catch (_err) {
     return undefined;
   }
 

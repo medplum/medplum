@@ -13,7 +13,7 @@ type SubscriptionControllerEvents = {
 };
 
 jest.mock('@medplum/react-hooks', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { TypedEventTarget } = require('@medplum/core');
   const _subscriptionController = new TypedEventTarget() as TypedEventTarget<SubscriptionControllerEvents>;
   const original = jest.requireActual('@medplum/react-hooks');

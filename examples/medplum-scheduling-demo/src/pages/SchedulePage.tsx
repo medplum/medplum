@@ -1,14 +1,14 @@
-import { Document, useMedplumProfile, useSearchResources } from '@medplum/react';
-import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { useCallback, useContext, useState } from 'react';
-import dayjs from 'dayjs';
-import { CreateUpdateSlot } from '../components/CreateUpdateSlot';
 import { useDisclosure } from '@mantine/hooks';
-import { ScheduleContext } from '../Schedule.context';
 import { getReferenceString } from '@medplum/core';
 import { Practitioner, Schedule } from '@medplum/fhirtypes';
+import { Document, useMedplumProfile, useSearchResources } from '@medplum/react';
+import dayjs from 'dayjs';
+import { useCallback, useContext, useState } from 'react';
+import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
+import { CreateUpdateSlot } from '../components/CreateUpdateSlot';
+import { ScheduleContext } from '../Schedule.context';
 
 export function SchedulePage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;
@@ -67,7 +67,7 @@ export function SchedulePage(): JSX.Element {
         navigate(`/Appointment/${event.resource.id}`);
       }
     },
-    [createSlotHandlers]
+    [createSlotHandlers, navigate]
   );
 
   return (
