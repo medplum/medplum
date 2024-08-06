@@ -57,7 +57,7 @@ export function LandingPage(): JSX.Element {
                 <h3>Infinitely programmable, forever</h3>
                 <p>
                   Medplum enables any application, any automation, any integration you can imagine, and lets you
-                  seamlessy operate in the wider healthcare ecosystem of today, tomorrow, and every day after.
+                  seamlessly operate in the wider healthcare ecosystem of today, tomorrow, and every day after.
                 </p>
               </Card>
               <Card>
@@ -174,7 +174,7 @@ export function LandingPage(): JSX.Element {
             <CardContainer>
               <Card>
                 <h2>
-                  You can't build for tommorrow
+                  You can't build for tomorrow
                   <br />
                   on yesterday's tech.
                 </h2>

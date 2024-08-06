@@ -389,7 +389,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   let membership = undefined;
   try {
     membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-  } catch (err) {
+  } catch (_err) {
     throw new OperationOutcomeError(badRequest('Profile not found'));
   }
   if (membership.user?.reference !== login.user?.reference) {
@@ -814,7 +814,7 @@ export async function getLoginForAccessToken(accessToken: string): Promise<AuthS
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
   try {
     verifyResult = await verifyJwt(accessToken);
-  } catch (err) {
+  } catch (_err) {
     return undefined;
   }
 
@@ -824,7 +824,7 @@ export async function getLoginForAccessToken(accessToken: string): Promise<AuthS
   let login = undefined;
   try {
     login = await systemRepo.readResource<Login>('Login', claims.login_id);
-  } catch (err) {
+  } catch (_err) {
     return undefined;
   }
 
