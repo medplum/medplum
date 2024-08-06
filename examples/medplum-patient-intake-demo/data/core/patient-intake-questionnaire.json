@@ -143,6 +143,34 @@
             ]
           },
           {
+            "linkId": "emergency-contact",
+            "text": "Emergency Contact",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "emergency-contact-first-name",
+                "text": "First Name",
+                "type": "string"
+              },
+              {
+                "linkId": "emergency-contact-middle-name",
+                "text": "Middle Name",
+                "type": "string"
+              },
+              {
+                "linkId": "emergency-contact-last-name",
+                "text": "Last Name",
+                "type": "string"
+              },
+              {
+                "linkId": "emergency-contact-phone",
+                "text": "Phone",
+                "type": "string"
+              }
+            ]
+          },
+          {
             "linkId": "allergies",
             "text": "Allergies",
             "type": "group",

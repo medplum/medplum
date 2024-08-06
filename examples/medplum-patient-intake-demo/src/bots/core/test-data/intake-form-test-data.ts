@@ -257,6 +257,48 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
+      id: 'id-87',
+      linkId: 'emergency-contact',
+      text: 'Emergency Contact',
+      item: [
+        {
+          id: 'id-88',
+          linkId: 'emergency-contact-first-name',
+          text: 'First Name',
+          answer: [
+            {
+              valueString: 'Marge',
+            },
+          ],
+        },
+        {
+          id: 'id-89',
+          linkId: 'emergency-contact-middle-name',
+          text: 'Middle Name',
+        },
+        {
+          id: 'id-90',
+          linkId: 'emergency-contact-last-name',
+          text: 'Last Name',
+          answer: [
+            {
+              valueString: 'Simpson',
+            },
+          ],
+        },
+        {
+          id: 'id-91',
+          linkId: 'emergency-contact-phone',
+          text: 'Phone',
+          answer: [
+            {
+              valueString: '111-222-5555',
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: 'id-93',
       linkId: 'allergies',
       text: 'Allergies',

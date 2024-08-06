@@ -93,6 +93,29 @@ describe('Intake form', async () => {
         system: 'http://hl7.org/fhir/sid/us-ssn',
         value: '518225060',
       });
+      expect(patient.contact?.[0]).toEqual({
+        relationship: [
+          {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
+                code: 'EP',
+                display: 'Emergency contact person',
+              },
+            ],
+          },
+        ],
+        name: {
+          family: 'Simpson',
+          given: ['Marge'],
+        },
+        telecom: [
+          {
+            system: 'phone',
+            value: '111-222-5555',
+          },
+        ],
+      });
     });
 
     test("Doesn't change patient name if not provided", async () => {
