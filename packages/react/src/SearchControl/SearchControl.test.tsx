@@ -21,16 +21,15 @@ describe('SearchControl', () => {
   async function setup(
     props: SearchControlProps,
     returnVal?: Bundle,
-    medplum?: MockClient
+    medplum: MockClient = new MockClient()
   ): Promise<{ rerender: (props: SearchControlProps) => Promise<void> }> {
-    const defaultMedplum = new MockClient();
     if (returnVal) {
       medplum.search = jest.fn().mockResolvedValue(returnVal);
     }
     const { rerender: _rerender } = await act(async () =>
       render(<SearchControl {...props} />, ({ children }) => (
         <MemoryRouter>
-          <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
+          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
         </MemoryRouter>
       ))
     );
@@ -99,7 +98,7 @@ describe('SearchControl', () => {
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
-  test.only('Rerender triggers `loadResult` when `search` does is not deep equal to `memoizedSearch`', async () => {
+  test('Rerender triggers `loadResult` when `search` does is not deep equal to `memoizedSearch`', async () => {
     const search = {
       resourceType: 'Patient',
       filters: [
