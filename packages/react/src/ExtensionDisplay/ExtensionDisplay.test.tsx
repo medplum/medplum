@@ -47,7 +47,7 @@ describe('ExtensionDisplay', () => {
       if (!sd) {
         fail(`could not find structure definition for ${url}`);
       }
-      loadDataType(sd, sd.url);
+      loadDataType(sd);
     }
     const schema = tryGetProfile(profileUrl);
     const slice = schema?.elements['extension'].slicing?.slices.find((slice) => slice.name === 'race');

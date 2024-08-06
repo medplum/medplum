@@ -78,13 +78,11 @@ describe('ResourceTable', () => {
       if (!sd) {
         fail(`could not find structure definition for ${url}`);
       }
-      loadDataType(sd, sd.url);
+      loadDataType(sd);
     }
 
     const mockedMedplum = new MockClient();
-    const fakeRequestProfileSchema = jest.fn(async (profileUrl: string) => {
-      return [profileUrl];
-    });
+    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
     mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
 
     const value = HomerSimpsonUSCorePatient;

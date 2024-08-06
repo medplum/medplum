@@ -54,7 +54,7 @@ export async function prepareSlices({
 
     const supportedSlices: SliceDefinitionWithTypes[] = [];
     const profileUrls: (string | undefined)[] = [];
-    const promises: Promise<string[]>[] = [];
+    const promises: Promise<void>[] = [];
     for (const slice of property.slicing.slices) {
       if (!isSliceDefinitionWithTypes(slice)) {
         console.debug('Unsupported slice definition', slice);
@@ -72,8 +72,6 @@ export async function prepareSlices({
       profileUrls.push(profileUrl);
       if (profileUrl) {
         promises.push(medplum.requestProfileSchema(profileUrl));
-      } else {
-        promises.push(Promise.resolve([]));
       }
     }
 

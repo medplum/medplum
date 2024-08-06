@@ -287,15 +287,13 @@ describe('ResourceForm', () => {
       if (!sd) {
         fail(`could not find structure definition for ${url}`);
       }
-      loadDataType(sd, sd.url);
+      loadDataType(sd);
     }
 
     const onSubmit = jest.fn();
 
     const mockedMedplum = new MockClient();
-    const fakeRequestProfileSchema = jest.fn(async (profileUrl: string) => {
-      return [profileUrl];
-    });
+    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
     mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
     await setup({ defaultValue: { resourceType: 'Device' }, profileUrl, onSubmit }, mockedMedplum);
 
@@ -313,16 +311,14 @@ describe('ResourceForm', () => {
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
     ];
-    const fakeRequestProfileSchema = jest.fn(async (profileUrl: string) => {
-      return [profileUrl];
-    });
+    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
     beforeAll(() => {
       for (const url of profileUrls) {
         const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
         if (!sd) {
           fail(`could not find structure definition for ${url}`);
         }
-        loadDataType(sd, sd.url);
+        loadDataType(sd);
       }
     });
 

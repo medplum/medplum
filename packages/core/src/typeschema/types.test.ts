@@ -364,7 +364,7 @@ describe('FHIR resource and data type representations', () => {
     expect(sd.url).toEqual(profileUrl);
     expect(sd.name).toEqual(profileName);
     expect(sd.type).toEqual(profileType);
-    indexStructureDefinitionBundle([sd], profileUrl);
+    indexStructureDefinitionBundle([sd]);
 
     expect(isProfileLoaded(profileUrl)).toBe(true);
     expect(tryGetProfile(profileUrl)).toBeDefined();

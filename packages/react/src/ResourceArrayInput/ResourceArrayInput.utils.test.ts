@@ -40,7 +40,7 @@ describe('assignValuesIntoSlices', () => {
         if (!sd) {
           fail(`could not find structure definition for ${url}`);
         }
-        loadDataType(sd, sd.url);
+        loadDataType(sd);
       }
       expect(isProfileLoaded(profileUrl)).toBe(true);
       patientSchema = tryGetProfile(profileUrl) as InternalTypeSchema;
@@ -125,7 +125,7 @@ describe('assignValuesIntoSlices', () => {
     beforeAll(() => {
       bpSD = USCoreStructureDefinitions.find((sd) => sd.url === profileUrl) as StructureDefinition;
       expect(bpSD).toBeDefined();
-      loadDataType(bpSD, bpSD.url);
+      loadDataType(bpSD);
       expect(isProfileLoaded(profileUrl)).toBe(true);
       bpSchema = tryGetProfile(profileUrl) as InternalTypeSchema;
       expect(bpSchema).toBeDefined();

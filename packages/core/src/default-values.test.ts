@@ -14,7 +14,6 @@ import {
   SliceDefinition,
   SlicingRules,
   indexStructureDefinitionBundle,
-  loadDataType,
   tryGetProfile,
 } from './typeschema/types';
 import { isPopulated } from './utils';
@@ -68,9 +67,7 @@ describe('apply default values', () => {
 
     expect(sds.length).toEqual(profileUrls.length);
 
-    for (const sd of sds) {
-      loadDataType(sd, sd?.url);
-    }
+    indexStructureDefinitionBundle(sds);
   }
 
   describe('US Blood Pressure', () => {
