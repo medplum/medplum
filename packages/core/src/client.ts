@@ -3804,7 +3804,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           window.location.reload();
         }
       });
-    } catch (err) {
+    } catch (_err) {
       // Silently ignore if this environment does not support storage events
     }
   }

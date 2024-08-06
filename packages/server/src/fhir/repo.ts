@@ -95,6 +95,7 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
+import { buildSearchExpression, searchImpl } from './search';
 import {
   Condition,
   DeleteQuery,
@@ -106,7 +107,6 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
-import { buildSearchExpression, searchImpl } from './search';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -406,7 +406,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     let parts: [T['resourceType'], string];
     try {
       parts = parseReference(reference);
-    } catch (err) {
+    } catch (_err) {
       throw new OperationOutcomeError(badRequest('Invalid reference'));
     }
     return this.readResource(parts[0], parts[1]);
@@ -1352,7 +1352,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       try {
         const date = new Date(value);
         return date.toISOString().substring(0, 10);
-      } catch (ex) {
+      } catch (_err) {
         // Silent ignore
       }
     }
@@ -1371,7 +1371,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       try {
         const date = new Date(value);
         return date.toISOString();
-      } catch (ex) {
+      } catch (_err) {
         // Silent ignore
       }
     } else if (typeof value === 'object') {

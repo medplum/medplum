@@ -21,6 +21,7 @@ module.exports = {
     'no-promise-executor-return': 'error',
     'no-self-compare': 'error',
     'no-template-curly-in-string': 'error',
+    'no-throw-literal': 'error',
     'no-unmodified-loop-condition': 'error',
     'no-unreachable-loop': 'error',
     'no-unused-private-class-members': 'error',
@@ -104,9 +105,6 @@ module.exports = {
     '@typescript-eslint/prefer-ts-expect-error': 'off', // We must use @ts-ignore for optional dependencies in type definitions
     '@typescript-eslint/switch-exhaustiveness-check': 'error',
     '@typescript-eslint/unified-signatures': 'error',
-    // TypeScript extensions for base rules
-    'no-throw-literal': 'off',
-    '@typescript-eslint/no-throw-literal': 'error',
 
     'no-useless-constructor': 'off',
     '@typescript-eslint/no-useless-constructor': 'error',
@@ -117,8 +115,13 @@ module.exports = {
       {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
+        caughtErrors: 'all',
+        caughtErrorsIgnorePattern: '^_',
       },
     ],
+
+    // React Hooks
+    'react-hooks/exhaustive-deps': 'error',
 
     // React Refresh
     'react-refresh/only-export-components': 'warn',
@@ -131,6 +134,7 @@ module.exports = {
     '@typescript-eslint/prefer-nullish-coalescing': 'off',
     '@typescript-eslint/no-unnecessary-condition': 'off',
     '@typescript-eslint/no-dynamic-delete': 'off',
+    '@typescript-eslint/no-empty-object-type': 'off',
 
     // JSDoc
     'jsdoc/check-tag-names': [

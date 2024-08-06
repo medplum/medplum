@@ -22,7 +22,7 @@ export async function setPasswordHandler(req: Request, res: Response): Promise<v
   // PasswordChangeRequest is deprecated but still supported. When it is removed, this try/catch can be removed
   try {
     securityRequest = await systemRepo.readResource<UserSecurityRequest>('UserSecurityRequest', req.body.id);
-  } catch (err) {
+  } catch (_err) {
     securityRequest = await systemRepo.readResource<PasswordChangeRequest>('PasswordChangeRequest', req.body.id);
   }
 

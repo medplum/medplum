@@ -12,10 +12,7 @@ import type {
 import { getConfig } from './config';
 import { getJsonSchemaDefinitions } from './fhir/jsonschema';
 
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type OpenAPIObjectWithPaths = OpenAPIObject & { paths: PathsObject };
-
-// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 type SchemaMap = { [schema: string]: SchemaObject | ReferenceObject };
 
 let cachedSpec: OpenAPIObjectWithPaths;

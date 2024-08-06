@@ -1,6 +1,6 @@
 import { Button } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { PatchOperation } from '@medplum/core';
+import { normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Task } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
@@ -36,7 +36,7 @@ export function PauseResumeTask({ task, onChange }: PauseResumeTaskProps): JSX.E
         color: 'red',
         icon: <IconCircleOff />,
         title: 'Error',
-        message: 'Another user modified this task.',
+        message: normalizeErrorString(error),
       });
     }
   };
