@@ -375,12 +375,12 @@
             "item": [
               {
                 "linkId": "notice-of-privacy-practices-help",
-                "text": "Sample Hospital Notice of Privacy Practices gives information about how Sample Hospital may use and release protected health information (PHI) about you. I understand that:\n- I have the right to receive a copy of BACH’s Notice of Privacy Practices.\n- I may request a copy at any time.\n- BACH‘s Notice of Privacy Practices may be revised.",
+                "text": "Sample Hospital Notice of Privacy Practices gives information about how Sample Hospital may use and release protected health information (PHI) about you. I understand that:\n- I have the right to receive a copy of Sample Hospital’s Notice of Privacy Practices.\n- I may request a copy at any time.\n- Sample Hospital‘s Notice of Privacy Practices may be revised.",
                 "type": "display"
               },
               {
                 "linkId": "notice-of-privacy-practices-signature",
-                "text": "I acknowledge the above and that I have received a copy of BACH’s Notice of Privacy Practices.",
+                "text": "I acknowledge the above and that I have received a copy of Sample Hospital’s Notice of Privacy Practices.",
                 "type": "boolean"
               },
               {
