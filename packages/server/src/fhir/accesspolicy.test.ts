@@ -37,7 +37,7 @@ import { getSystemRepo, Repository } from './repo';
 
 describe('AccessPolicy', () => {
   let testProject: Project;
-  const systemRepo = getSystemRepo();
+  let systemRepo: Repository;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
@@ -46,6 +46,7 @@ describe('AccessPolicy', () => {
 
   beforeEach(async () => {
     testProject = (await createTestProject()).project;
+    systemRepo = getSystemRepo();
   });
 
   afterAll(async () => {
