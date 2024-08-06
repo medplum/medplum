@@ -36,18 +36,14 @@ export const Operator = {
     }
   },
   LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
-    sql.append('LOWER(');
     sql.appendColumn(column);
-    sql.append(')');
-    sql.append(' LIKE ');
-    sql.param((parameter as string).toLowerCase());
+    sql.append(' ILIKE ');
+    sql.param(parameter);
   },
   NOT_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
-    sql.append('LOWER(');
     sql.appendColumn(column);
-    sql.append(')');
-    sql.append(' NOT LIKE ');
-    sql.param((parameter as string).toLowerCase());
+    sql.append(' NOT ILIKE ');
+    sql.param(parameter);
   },
   '<': simpleBinaryOperator('<'),
   '<=': simpleBinaryOperator('<='),

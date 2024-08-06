@@ -136,13 +136,13 @@ describe('SqlBuilder', () => {
   test('Select where like', () => {
     const sql = new SqlBuilder();
     new SelectQuery('MyTable').column('id').where('name', 'LIKE', 'x').buildSql(sql);
-    expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") LIKE $1');
+    expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" ILIKE $1');
   });
 
   test('Select where not like', () => {
     const sql = new SqlBuilder();
     new SelectQuery('MyTable').column('id').where('name', 'NOT_LIKE', 'x').buildSql(sql);
-    expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE LOWER("MyTable"."name") NOT LIKE $1');
+    expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" NOT ILIKE $1');
   });
 
   test('Select missing columns', () => {
