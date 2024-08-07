@@ -25,7 +25,7 @@ export const payorOrganization2: Organization = {
   name: 'Second Insurance Provider',
 };
 
-export const intakeQuestionnaire: Questionnaire = coreBundle.entry[1].resource as Questionnaire;
+export const intakeQuestionnaire: Questionnaire = coreBundle.entry[2].resource as Questionnaire;
 intakeQuestionnaire.id = 'intake-questionnaire-id';
 
 export const intakeResponse: QuestionnaireResponse = {
@@ -710,6 +710,20 @@ export const intakeResponse: QuestionnaireResponse = {
                 system: 'http://terminology.hl7.org/CodeSystem/v3-EducationLevel',
                 code: 'BD',
                 display: 'College or baccalaureate degree complete',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-11',
+          linkId: 'smoking-status',
+          text: 'Smoking Status',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '428041000124106',
+                display: 'Occasional tobacco smoker',
               },
             },
           ],

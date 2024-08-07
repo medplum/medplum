@@ -48,6 +48,62 @@
       }
     },
     {
+      "fullUrl": "urn:uuid:183a569a-7f6d-41f9-97d8-57691fbc2876",
+      "request": {
+        "method": "PUT",
+        "url": "ValueSet?name=smoking-status-codes"
+      },
+      "resource": {
+        "resourceType": "ValueSet",
+        "status": "active",
+        "url": "http://example.com/smoking-status",
+        "name": "smoking-status-codes",
+        "title": "Smoking Status Codes",
+        "description": "These codes are used to indicate smoking status.",
+        "compose": {
+          "include": [
+            {
+              "system": "http://snomed.info/sct",
+              "concept": [
+                {
+                  "code": "266919005",
+                  "display": "Never smoked tobacco"
+                },
+                {
+                  "code": "266927001",
+                  "display": "Tobacco smoking consumption unknown"
+                },
+                {
+                  "code": "428041000124106",
+                  "display": "Occasional tobacco smoker"
+                },
+                {
+                  "code": "428061000124105",
+                  "display": "Light tobacco smoker"
+                },
+                {
+                  "code": "428071000124103",
+                  "display": "Heavy tobacco smoker"
+                },
+                {
+                  "code": "449868002",
+                  "display": "Smokes tobacco daily"
+                },
+                {
+                  "code": "77176002",
+                  "display": "Smoker"
+                },
+                {
+                  "code": "8517006",
+                  "display": "Ex-smoker"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "urn:uuid:f508b2b8-b796-4931-ac92-de3817d71fc1",
       "request": {
         "method": "PUT",
@@ -327,6 +383,12 @@
                 "text": "Education Level",
                 "type": "choice",
                 "answerValueSet": "http://terminology.hl7.org/ValueSet/v3-EducationLevel"
+              },
+              {
+                "linkId": "smoking-status",
+                "text": "Smoking Status",
+                "type": "choice",
+                "answerValueSet": "http://example.com/smoking-status"
               },
               {
                 "linkId": "veteran-status",

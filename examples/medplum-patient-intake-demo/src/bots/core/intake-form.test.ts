@@ -468,6 +468,19 @@ describe('Intake form', async () => {
       expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('M');
     });
 
+    test('Smoking status', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const observation = await medplum.searchOne('Observation', {
+        code: '72166-2',
+        subject: getReferenceString(patient),
+      });
+
+      expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('428041000124106');
+    });
+
     test('Education Level', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 

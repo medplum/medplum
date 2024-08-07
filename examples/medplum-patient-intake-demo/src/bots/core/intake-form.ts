@@ -112,6 +112,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   await upsertObservation(
     medplum,
     patient,
+    observationCodeMapping.smokingStatus,
+    observationCategoryMapping.socialHistory,
+    'valueCodeableConcept',
+    answers['smoking-status']?.valueCoding
+  );
+
+  await upsertObservation(
+    medplum,
+    patient,
     observationCodeMapping.pregnancyStatus,
     observationCategoryMapping.socialHistory,
     'valueCodeableConcept',
