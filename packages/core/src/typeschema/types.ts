@@ -4,7 +4,6 @@ import {
   ElementDefinition,
   ElementDefinitionBinding,
   Resource,
-  ResourceType,
   StructureDefinition,
 } from '@medplum/fhirtypes';
 import { DataTypesMap, inflateBaseSchema } from '../base-schema';
@@ -19,10 +18,10 @@ import { capitalize, getExtension, isEmpty } from '../utils';
  */
 export interface InternalTypeSchema {
   name: string;
+  type: string;
   title?: string;
   url?: string;
   kind?: string;
-  type?: string;
   description?: string;
   elements: Record<string, InternalSchemaElement>;
   constraints?: Constraint[];
@@ -97,37 +96,39 @@ const PROFILE_SCHEMAS_BY_URL: { [profileUrl: string]: InternalTypeSchema } = Obj
 // is maintained per profile URL
 const PROFILE_DATA_TYPES: { [profileUrl: string]: DataTypesMap } = Object.create(null);
 
-function getDataTypesMap(profileUrl?: string): DataTypesMap {
+// Special case names for StructureDefinitions that are technically "profiles", but are used as base types.
+// This is for backwards compatibility with R4 StructureDefinitions that are used as base types.
+// MoneyQuantity and SimpleQuantity are technically "profiles" on Quantity, but we allow them to be used as base types.
+// ViewDefinition is a special case for SQL-on-FHIR.
+// We can add more types here in the future as necessary, when we want them to be used as base types.
+// For example, exporting new types in "@medplum/fhirtypes".
+const TYPE_SPECIAL_CASES: { [url: string]: string } = {
+  'http://hl7.org/fhir/StructureDefinition/MoneyQuantity': 'MoneyQuantity',
+  'http://hl7.org/fhir/StructureDefinition/SimpleQuantity': 'SimpleQuantity',
+  'http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition': 'ViewDefinition',
+};
+
+function getDataTypesMap(profileUrl: string): DataTypesMap {
   let dataTypes: DataTypesMap;
-
-  if (profileUrl) {
-    dataTypes = PROFILE_DATA_TYPES[profileUrl];
-    if (!dataTypes) {
-      dataTypes = PROFILE_DATA_TYPES[profileUrl] = Object.create(null);
-    }
-  } else {
-    dataTypes = DATA_TYPES;
+  dataTypes = PROFILE_DATA_TYPES[profileUrl];
+  if (!dataTypes) {
+    dataTypes = PROFILE_DATA_TYPES[profileUrl] = Object.create(null);
   }
-
   return dataTypes;
 }
 
 /**
  * Parses and indexes structure definitions
  * @param bundle - Bundle or array of structure definitions to be parsed and indexed
- * @param profileUrl - (optional) URL of the profile the SDs are related to
  */
-export function indexStructureDefinitionBundle(
-  bundle: StructureDefinition[] | Bundle,
-  profileUrl?: string | undefined
-): void {
+export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
   const sds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource as StructureDefinition) ?? []);
   for (const sd of sds) {
-    loadDataType(sd, profileUrl);
+    loadDataType(sd);
   }
 }
 
-export function loadDataType(sd: StructureDefinition, profileUrl?: string | undefined): void {
+export function loadDataType(sd: StructureDefinition): void {
   if (!sd?.name) {
     throw new Error(`Failed loading StructureDefinition from bundle`);
   }
@@ -135,19 +136,37 @@ export function loadDataType(sd: StructureDefinition, profileUrl?: string | unde
     return;
   }
   const schema = parseStructureDefinition(sd);
+  const specialCase = TYPE_SPECIAL_CASES[sd.url];
+  let dataTypes: DataTypesMap;
+  let typeName: string;
 
-  const dataTypes = getDataTypesMap(profileUrl);
-
-  dataTypes[sd.name] = schema;
-
-  if (profileUrl && sd.url === profileUrl) {
-    PROFILE_SCHEMAS_BY_URL[profileUrl] = schema;
+  if (specialCase) {
+    // Special cases by "name"
+    // These are StructureDefinitions that are technically "profiles", but are used as base types
+    dataTypes = DATA_TYPES;
+    typeName = specialCase;
+  } else if (
+    // By default, only index by "type" for "official" FHIR types
+    sd.url === `http://hl7.org/fhir/StructureDefinition/${sd.type}` ||
+    sd.url === `https://medplum.com/fhir/StructureDefinition/${sd.type}` ||
+    sd.type?.startsWith('http://') ||
+    sd.type?.startsWith('https://')
+  ) {
+    dataTypes = DATA_TYPES;
+    typeName = sd.type;
+  } else {
+    dataTypes = getDataTypesMap(sd.url);
+    typeName = sd.type;
   }
+
+  dataTypes[typeName] = schema;
 
   for (const inner of schema.innerTypes) {
     inner.parentType = schema;
     dataTypes[inner.name] = inner;
   }
+
+  PROFILE_SCHEMAS_BY_URL[sd.url] = schema;
 }
 
 export function getAllDataTypes(): DataTypesMap {
@@ -159,12 +178,14 @@ export function isDataTypeLoaded(type: string): boolean {
 }
 
 export function tryGetDataType(type: string, profileUrl?: string): InternalTypeSchema | undefined {
-  let result: InternalTypeSchema | undefined = getDataTypesMap(profileUrl)[type];
-  if (!result && profileUrl) {
-    // Fallback to base schema if no result found in profileUrl namespace
-    result = getDataTypesMap()[type];
+  if (profileUrl) {
+    const profileType = getDataTypesMap(profileUrl)[type];
+    if (profileType) {
+      return profileType;
+    }
   }
-  return result;
+  // Fallback to base schema if no result found in profileUrl namespace
+  return DATA_TYPES[type];
 }
 
 export function getDataType(type: string, profileUrl?: string): InternalTypeSchema {
@@ -233,7 +254,7 @@ class StructureDefinitionParser {
     this.elementIndex = Object.create(null);
     this.index = 0;
     this.resourceSchema = {
-      name: sd.name as ResourceType,
+      name: sd.name as string,
       title: sd.title,
       type: sd.type,
       url: sd.url as string,
@@ -320,9 +341,11 @@ class StructureDefinitionParser {
       this.innerTypes.push(this.backboneContext.type);
       this.backboneContext = this.backboneContext.parent;
     }
+    const typeName = getElementDefinitionTypeName(element);
     this.backboneContext = {
       type: {
-        name: getElementDefinitionTypeName(element),
+        name: typeName,
+        type: typeName,
         title: element.label,
         description: element.definition,
         elements: {},

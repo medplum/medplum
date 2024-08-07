@@ -365,18 +365,10 @@ describe('FHIR Mapper transform', () => {
     // https://build.fhir.org/mapping-tutorial.html#step10
     // Many/most trees are fully and strongly typed. In these cases, the mapping language can make use of the typing system to simplify the mapping statements.
 
-    createType('TLeft', 'http://hl7.org/fhir/StructureDefinition/tutorial-left', [
-      { name: 'aa', type: 'TLeftInner', min: 0, max: '*' },
-    ]);
-    createType('TLeftInner', 'http://hl7.org/fhir/StructureDefinition/tutorial-left-inner', [
-      { name: 'ab', type: 'code', min: 0, max: '1' },
-    ]);
-    createType('TRight', 'http://hl7.org/fhir/StructureDefinition/tutorial-right', [
-      { name: 'aa', type: 'TRightInner', min: 0, max: '*' },
-    ]);
-    createType('TRightInner', 'http://hl7.org/fhir/StructureDefinition/tutorial-right-inner', [
-      { name: 'ac', type: 'code', min: 0, max: '1' },
-    ]);
+    createType('TLeft', [{ name: 'aa', type: 'TLeftInner', min: 0, max: '*' }]);
+    createType('TLeftInner', [{ name: 'ab', type: 'code', min: 0, max: '1' }]);
+    createType('TRight', [{ name: 'aa', type: 'TRightInner', min: 0, max: '*' }]);
+    createType('TRightInner', [{ name: 'ac', type: 'code', min: 0, max: '1' }]);
 
     const map = `
       uses "http://hl7.org/fhir/StructureDefinition/tutorial-left" as source
@@ -487,19 +479,14 @@ describe('FHIR Mapper transform', () => {
  * Creates a StructureDefinition object for the mapping tutorial.
  * Loads the StructureDefinition into the type schema.
  * @param name - The name of the type.
- * @param url - The URL of the type.
  * @param elements - Shorthand representation of the elements in the type.
  */
-function createType(
-  name: string,
-  url: string,
-  elements: { name: string; type: string; min: number; max: string }[]
-): void {
+function createType(name: string, elements: { name: string; type: string; min: number; max: string }[]): void {
   loadDataType({
     resourceType: 'StructureDefinition',
     id: name,
     name,
-    url,
+    url: `http://hl7.org/fhir/StructureDefinition/${name}`,
     status: 'active',
     kind: 'resource',
     type: name,
