@@ -118,14 +118,16 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     answers['pregnancy-status']?.valueCoding
   );
 
-  await upsertObservation(
-    medplum,
-    patient,
-    observationCodeMapping.estimatedDeliveryDate,
-    observationCategoryMapping.socialHistory,
-    'valueDateTime',
-    { valueDateTime: convertDateToDateTime(answers['estimated-delivery-date']?.valueDate) }
-  );
+  if (answers['estimated-delivery-date']?.valueDate) {
+    await upsertObservation(
+      medplum,
+      patient,
+      observationCodeMapping.estimatedDeliveryDate,
+      observationCategoryMapping.socialHistory,
+      'valueDateTime',
+      { valueDateTime: convertDateToDateTime(answers['estimated-delivery-date'].valueDate) }
+    );
+  }
 
   if (!response.questionnaire) {
     throw new Error('Missing questionnaire');
