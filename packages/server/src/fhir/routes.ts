@@ -1,5 +1,5 @@
 import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
-import { FhirRequest, FhirRouter, HttpMethod, RepositoryMode } from '@medplum/fhir-router';
+import { BatchEvent, FhirRequest, FhirRouter, HttpMethod, RepositoryMode } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -270,10 +270,11 @@ function initInternalFhirRouter(): FhirRouter {
     ctx.logger.warn(e.message, { ...e.data, project: ctx.project.id });
   });
 
-  router.addEventListener('batch', ({ count, errors, size, bundleType }: any) => {
+  router.addEventListener('batch', (event: any) => {
     const ctx = getAuthenticatedContext();
     const projectId = ctx.project.id;
 
+    const { count, errors, size, bundleType } = event as BatchEvent;
     const batchMetricOptions = { attributes: { bundleType, projectId } };
     if (count !== undefined) {
       recordHistogramValue('medplum.batch.entries', count, batchMetricOptions);
