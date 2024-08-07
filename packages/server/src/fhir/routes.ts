@@ -275,12 +275,18 @@ function initInternalFhirRouter(): FhirRouter {
     const projectId = ctx.project.id;
 
     const batchMetricOptions = { attributes: { bundleType, projectId } };
-    recordHistogramValue('medplum.batch.entries', count, batchMetricOptions);
-    recordHistogramValue('medplum.batch.errors', errors, batchMetricOptions);
-    recordHistogramValue('medplum.batch.size', size, batchMetricOptions);
+    if (count !== undefined) {
+      recordHistogramValue('medplum.batch.entries', count, batchMetricOptions);
+    }
+    if (errors !== undefined) {
+      recordHistogramValue('medplum.batch.errors', errors, batchMetricOptions);
 
-    if (errors > 0 && bundleType === 'transaction') {
-      ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: projectId });
+      if (errors > 0 && bundleType === 'transaction') {
+        ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: projectId });
+      }
+    }
+    if (size !== undefined) {
+      recordHistogramValue('medplum.batch.size', size, batchMetricOptions);
     }
   });
 
