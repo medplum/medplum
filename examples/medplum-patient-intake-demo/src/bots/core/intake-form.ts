@@ -10,8 +10,10 @@ import {
 } from '@medplum/fhirtypes';
 import {
   addAllergy,
+  addCondition,
   addConsent,
   addCoverage,
+  addFamilyMemberHistory,
   addLanguage,
   addMedication,
   consentCategoryMapping,
@@ -164,6 +166,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
   for (const medication of medications) {
     await addMedication(medplum, patient, medication);
+  }
+
+  // Handle medical history
+
+  const medicalHistory = getGroupRepeatedAnswers(questionnaire, response, 'medical-history');
+  for (const history of medicalHistory) {
+    await addCondition(medplum, patient, history);
+  }
+
+  const familyMemberHistory = getGroupRepeatedAnswers(questionnaire, response, 'family-member-history');
+  for (const history of familyMemberHistory) {
+    await addFamilyMemberHistory(medplum, patient, history);
   }
 
   // Handle coverage

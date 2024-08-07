@@ -370,6 +370,82 @@ export async function addMedication(
 }
 
 /**
+ * Adds a Condition resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the condition
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
+ *                 condition (see getGroupRepeatedAnswers)
+ */
+export async function addCondition(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const code = answers['medical-history-problem']?.valueCoding;
+
+  if (!code) {
+    return;
+  }
+
+  const clinicalStatus = answers['medical-history-clinical-status']?.valueCoding;
+  const onsetDateTime = answers['medical-history-onset']?.valueDateTime;
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'Condition',
+      subject: createReference(patient),
+      code: { coding: [code] },
+      clinicalStatus: clinicalStatus ? { coding: [clinicalStatus] } : undefined,
+      onsetDateTime: onsetDateTime,
+    },
+    {
+      subject: getReferenceString(patient),
+      code: `${code?.system}|${code?.code}`,
+    }
+  );
+}
+
+/**
+ * Adds a FamilyMemberHistory resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the family member history
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
+ *                 family member history (see getGroupRepeatedAnswers)
+ */
+export async function addFamilyMemberHistory(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const condition = answers['family-member-history-problem']?.valueCoding;
+  const relationship = answers['family-member-history-relationship']?.valueCoding;
+
+  if (!condition || !relationship) {
+    return;
+  }
+
+  const deceased = answers['family-member-history-deceased']?.valueBoolean;
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'FamilyMemberHistory',
+      patient: createReference(patient),
+      status: 'completed',
+      relationship: { coding: [relationship] },
+      condition: [{ code: { coding: [condition] } }],
+      deceasedBoolean: deceased,
+    },
+    {
+      patient: getReferenceString(patient),
+      condition: `${condition.system}|${condition.code}`,
+      relationship: `${relationship.system}|${relationship.code}`,
+    }
+  );
+}
+
+/**
  * Adds a Coverage resource
  *
  * @param medplum - The Medplum client

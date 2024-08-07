@@ -220,6 +220,56 @@
             ]
           },
           {
+            "linkId": "medical-history",
+            "text": "Medical History",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "medical-history-problem",
+                "text": "Problem",
+                "type": "choice",
+                "answerValueSet": "http://hl7.org/fhir/us/core/ValueSet/us-core-condition-code"
+              },
+              {
+                "linkId": "medical-history-clinical-status",
+                "text": "Status",
+                "type": "choice",
+                "answerValueSet": "http://hl7.org/fhir/ValueSet/condition-clinical"
+              },
+              {
+                "linkId": "medical-history-onset",
+                "text": "Onset",
+                "type": "dateTime"
+              }
+            ]
+          },
+          {
+            "linkId": "family-member-history",
+            "text": "Family Member History",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "family-member-history-problem",
+                "text": "Problem",
+                "type": "choice",
+                "answerValueSet": "http://hl7.org/fhir/us/core/ValueSet/us-core-condition-code"
+              },
+              {
+                "linkId": "family-member-history-relationship",
+                "text": "Relationship",
+                "type": "choice",
+                "answerValueSet": "http://terminology.hl7.org/ValueSet/v3-FamilyMember"
+              },
+              {
+                "linkId": "family-member-history-deceased",
+                "text": "Deceased",
+                "type": "boolean"
+              }
+            ]
+          },
+          {
             "linkId": "coverage-information",
             "text": "Coverage Information",
             "type": "group",
