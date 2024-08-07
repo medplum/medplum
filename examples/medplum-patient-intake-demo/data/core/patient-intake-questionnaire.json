@@ -62,7 +62,7 @@
         "item": [
           {
             "linkId": "patient-demographics",
-            "text": "Patient Demographics",
+            "text": "Demographics",
             "type": "group",
             "item": [
               {

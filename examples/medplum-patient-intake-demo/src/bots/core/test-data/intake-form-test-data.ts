@@ -37,7 +37,7 @@ export const intakeResponse: QuestionnaireResponse = {
     {
       id: 'id-35',
       linkId: 'patient-demographics',
-      text: 'Patient Demographics',
+      text: 'Demographics',
       item: [
         {
           id: 'id-36',

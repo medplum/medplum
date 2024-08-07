@@ -10,6 +10,7 @@ import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
 
 import '@photonhealth/elements';
+import { PHOTON_CLIENT_ID, PHOTON_ORG_ID } from './config';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -20,7 +21,7 @@ export function App(): JSX.Element | null {
   }
 
   return (
-    <photon-client>
+    <photon-client id={PHOTON_CLIENT_ID} org={PHOTON_ORG_ID} dev-mode="true" auto-login="true">
       <AppShell
         logo={<Logo size={24} />}
         menus={[

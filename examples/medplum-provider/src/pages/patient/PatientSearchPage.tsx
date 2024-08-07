@@ -1,6 +1,6 @@
 import { Paper } from '@mantine/core';
 import { DEFAULT_SEARCH_COUNT, formatSearchQuery, parseSearchRequest, SearchRequest } from '@medplum/core';
-import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
+import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { usePatient } from '../../hooks/usePatient';
@@ -40,7 +40,7 @@ export function PatientSearchPage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs">
-      <MemoizedSearchControl
+      <SearchControl
         checkboxesEnabled={true}
         search={search}
         onClick={(e) => navigate(`/Patient/${patient.id}/${e.resource.resourceType}/${e.resource.id}`)}

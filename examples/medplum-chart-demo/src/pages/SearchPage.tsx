@@ -2,7 +2,7 @@ import { Paper } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Filter, formatSearchQuery, parseSearchRequest, SearchRequest, SortRule } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
-import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
+import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { CreateEncounter } from '../components/actions/CreateEncounter';
@@ -46,7 +46,7 @@ export function SearchPage(): JSX.Element {
   return (
     <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
       <CreateEncounter opened={opened} handlers={handlers} />
-      <MemoizedSearchControl
+      <SearchControl
         checkboxesEnabled={false}
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
