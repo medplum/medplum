@@ -2,6 +2,28 @@ import { normalizeErrorString } from '@medplum/core';
 import { Address, ContactPoint, Patient } from '@medplum/fhirtypes';
 import { PhotonAddress } from '../photon-types';
 
+export async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {
+  try {
+    const response = await fetch('https://api.neutron.health/graphql', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + authToken,
+        'Content-Type': 'application/json',
+      },
+      body,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP Error! Status: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
+}
+
 export function formatAWSDate(date?: string): string {
   if (!date) {
     return '1970-01-01';
