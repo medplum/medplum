@@ -334,7 +334,7 @@ export async function addAllergy(
 }
 
 /**
- * Adds a MedicationStatement resource
+ * Adds a MedicationRequest resource
  *
  * @param medplum - The Medplum client
  * @param patient - The patient beneficiary of the medication
@@ -356,9 +356,11 @@ export async function addMedication(
 
   await medplum.upsertResource(
     {
-      resourceType: 'MedicationStatement',
+      resourceType: 'MedicationRequest',
       subject: createReference(patient),
       status: 'active',
+      intent: 'order',
+      requester: createReference(patient),
       medicationCodeableConcept: { coding: [code] },
       note: note ? [{ text: note }] : undefined,
     },

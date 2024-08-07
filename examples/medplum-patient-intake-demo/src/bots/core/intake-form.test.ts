@@ -222,7 +222,7 @@ describe('Intake form', async () => {
     test('add medications', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      const medications = await medplum.searchResources('MedicationStatement', {
+      const medications = await medplum.searchResources('MedicationRequest', {
         subject: getReferenceString(patient),
       });
 
@@ -239,7 +239,7 @@ describe('Intake form', async () => {
 
     test('does not duplicate existing medications', async () => {
       await medplum.createResource({
-        resourceType: 'MedicationStatement',
+        resourceType: 'MedicationRequest',
         subject: createReference(patient),
         medicationCodeableConcept: {
           coding: [
@@ -251,9 +251,10 @@ describe('Intake form', async () => {
           ],
         },
         status: 'active',
+        intent: 'order',
       });
 
-      let medications = await medplum.searchResources('MedicationStatement', {
+      let medications = await medplum.searchResources('MedicationRequest', {
         subject: getReferenceString(patient),
       });
 
@@ -261,7 +262,7 @@ describe('Intake form', async () => {
 
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      medications = await medplum.searchResources('MedicationStatement', {
+      medications = await medplum.searchResources('MedicationRequest', {
         subject: getReferenceString(patient),
       });
 

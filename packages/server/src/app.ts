@@ -243,7 +243,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
     }
 
     ctx.logger.info('Request served', {
-      duration: `${duration} ms`,
+      durationMs: duration,
       ip: req.ip,
       method: req.method,
       path: req.originalUrl,
