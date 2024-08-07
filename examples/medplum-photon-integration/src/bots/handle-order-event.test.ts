@@ -1,5 +1,5 @@
 import { PhotonWebhook } from '../photon-types';
-import { verifyEvent } from './handle-webhooks';
+import { verifyEvent } from './handle-order-event';
 
 test.skip('Verify photon signature', async () => {
   const result = verifyEvent(exampleWebhookEvent, 'example-secret');
