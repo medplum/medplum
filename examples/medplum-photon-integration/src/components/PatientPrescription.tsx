@@ -14,6 +14,7 @@ export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.
   const medplum = useMedplum();
 
   const patientSynced = patient.identifier?.find((id) => id.system === 'https://neutron.health/patients');
+  const patientPhotonId = patientSynced?.value;
   const [syncDisabled, setSyncDisabled] = useState<boolean>(!!patientSynced);
 
   async function testConnection(): Promise<void> {
@@ -68,7 +69,7 @@ export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.
         <Button onClick={testConnection}>Test Connection</Button>
         {syncDisabled ? null : <Button onClick={syncPatient}>Sync Patient to Photon Health</Button>}
       </Group>
-      <photon-prescribe-workflow />
+      <photon-prescribe-workflow patient-id={patientPhotonId} />
     </Document>
   );
 }
