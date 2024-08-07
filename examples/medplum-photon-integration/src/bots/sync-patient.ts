@@ -1,8 +1,14 @@
-import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { BotEvent, getReferenceString, MedplumClient, PatchOperation } from '@medplum/core';
 import { AllergyIntolerance, Identifier, MedicationRequest, Patient } from '@medplum/fhirtypes';
-import fetch from 'node-fetch';
 import { CreatePatientVariables, PhotonAllergenInput, PhotonMedHistoryInput, PhotonPatient } from '../photon-types';
-import { formatAWSDate, formatPhotonAddress, getSexType, getTelecom, handlePhotonAuth } from './utils';
+import {
+  formatAWSDate,
+  formatPhotonAddress,
+  getSexType,
+  getTelecom,
+  handlePhotonAuth,
+  photonGraphqlFetch,
+} from './utils';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<PhotonPatient> {
   const patient = event.input;
@@ -80,28 +86,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   const result = await photonGraphqlFetch(body, PHOTON_AUTH_TOKEN);
   await updatePatient(medplum, patient, result);
   return result.data.createPatient;
-}
-
-async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {
-  try {
-    const response = await fetch('https://api.neutron.health/graphql', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + authToken,
-        'Content-Type': 'application/json',
-      },
-      body,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP Error! Status: ${response.status} ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    return result;
-  } catch (err) {
-    throw new Error(normalizeErrorString(err));
-  }
 }
 
 async function updatePatient(medplum: MedplumClient, patient: Patient, result: any): Promise<void> {

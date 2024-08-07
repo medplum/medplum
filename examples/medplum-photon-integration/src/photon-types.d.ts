@@ -347,7 +347,7 @@ interface PrescriptionCreatedEvent extends BasePhotonEvent {
   data: PrescriptionCreatedData;
 }
 
-interface PrescriptionDepletedEvent extends BasePhotonEvent {
+export interface PrescriptionDepletedEvent extends BasePhotonEvent {
   type: 'photon:prescription:depleted';
   data: PrescriptionData;
 }
