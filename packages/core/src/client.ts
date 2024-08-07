@@ -1730,6 +1730,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         kind,
         description,
         type,
+        url,
         snapshot {
           element {
             id,
