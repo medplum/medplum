@@ -18,10 +18,10 @@ import { capitalize, getExtension, isEmpty } from '../utils';
  */
 export interface InternalTypeSchema {
   name: string;
+  type: string;
   title?: string;
   url?: string;
   kind?: string;
-  type?: string;
   description?: string;
   elements: Record<string, InternalSchemaElement>;
   constraints?: Constraint[];
@@ -341,9 +341,11 @@ class StructureDefinitionParser {
       this.innerTypes.push(this.backboneContext.type);
       this.backboneContext = this.backboneContext.parent;
     }
+    const typeName = getElementDefinitionTypeName(element);
     this.backboneContext = {
       type: {
-        name: getElementDefinitionTypeName(element),
+        name: typeName,
+        type: typeName,
         title: element.label,
         description: element.definition,
         elements: {},
