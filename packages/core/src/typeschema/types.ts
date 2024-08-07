@@ -103,10 +103,9 @@ const PROFILE_DATA_TYPES: { [profileUrl: string]: DataTypesMap } = Object.create
 // We can add more types here in the future as necessary, when we want them to be used as base types.
 // For example, exporting new types in "@medplum/fhirtypes".
 const TYPE_SPECIAL_CASES: { [url: string]: string } = {
-  'http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition': 'ViewDefinition',
-  'http://hl7.org/fhir/StructureDefinition/Quantity': 'Quantity',
   'http://hl7.org/fhir/StructureDefinition/MoneyQuantity': 'MoneyQuantity',
   'http://hl7.org/fhir/StructureDefinition/SimpleQuantity': 'SimpleQuantity',
+  'http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition': 'ViewDefinition',
 };
 
 function getDataTypesMap(profileUrl: string): DataTypesMap {
@@ -130,7 +129,6 @@ export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | B
 }
 
 export function loadDataType(sd: StructureDefinition): void {
-  const profileUrl = sd.url;
   if (!sd?.name) {
     throw new Error(`Failed loading StructureDefinition from bundle`);
   }
@@ -139,35 +137,36 @@ export function loadDataType(sd: StructureDefinition): void {
   }
   const schema = parseStructureDefinition(sd);
   const specialCase = TYPE_SPECIAL_CASES[sd.url];
+  let dataTypes: DataTypesMap;
+  let typeName: string;
+
   if (specialCase) {
     // Special cases by "name"
     // These are StructureDefinitions that are technically "profiles", but are used as base types
-    DATA_TYPES[specialCase] = schema;
+    dataTypes = DATA_TYPES;
+    typeName = specialCase;
+  } else if (
+    // By default, only index by "type" for "official" FHIR types
+    sd.url === `http://hl7.org/fhir/StructureDefinition/${sd.type}` ||
+    sd.url === `https://medplum.com/fhir/StructureDefinition/${sd.type}` ||
+    sd.type?.startsWith('http://') ||
+    sd.type?.startsWith('https://')
+  ) {
+    dataTypes = DATA_TYPES;
+    typeName = sd.type;
   } else {
-    let dataTypes: DataTypesMap;
-
-    if (
-      // By default, only index by "type" for "official" FHIR types
-      // Note that if profileUrl is provided, then dataTypes will be PROFILE_DATA_TYPES[profileUrl].
-      sd.url === `http://hl7.org/fhir/StructureDefinition/${sd.type}` ||
-      sd.url === `https://medplum.com/fhir/StructureDefinition/${sd.type}` ||
-      sd.type?.startsWith('http://') ||
-      sd.type?.startsWith('https://')
-    ) {
-      dataTypes = DATA_TYPES;
-    } else {
-      dataTypes = getDataTypesMap(profileUrl);
-    }
-
-    for (const inner of schema.innerTypes) {
-      inner.parentType = schema;
-      dataTypes[inner.name] = inner;
-    }
-
-    dataTypes[sd.type] = schema;
+    dataTypes = getDataTypesMap(sd.url);
+    typeName = sd.type;
   }
 
-  PROFILE_SCHEMAS_BY_URL[profileUrl] = schema;
+  dataTypes[typeName] = schema;
+
+  for (const inner of schema.innerTypes) {
+    inner.parentType = schema;
+    dataTypes[inner.name] = inner;
+  }
+
+  PROFILE_SCHEMAS_BY_URL[sd.url] = schema;
 }
 
 export function getAllDataTypes(): DataTypesMap {

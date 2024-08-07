@@ -22,7 +22,7 @@ describe('ProfilesPage', () => {
     }
     medplum.requestProfileSchema = jest.fn((profileUrl) => {
       if (loadedProfileUrls.includes(profileUrl)) {
-        return Promise.resolve([profileUrl]);
+        return Promise.resolve();
       } else {
         throw new Error('unexpected profileUrl');
       }
