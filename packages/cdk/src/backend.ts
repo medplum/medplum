@@ -99,6 +99,7 @@ export class BackEnd extends Construct {
       const defaultInstanceProps: rds.ProvisionedClusterInstanceProps = {
         enablePerformanceInsights: true,
         isFromLegacyInstanceProps: true,
+        caCertificate: rds.CaCertificate.RDS_CA_RSA2048_G1,
       };
 
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
