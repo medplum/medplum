@@ -1,5 +1,4 @@
 import {
-  CloseEvent,
   deepEquals,
   IReconnectingWebSocket,
   MedplumClient,
@@ -15,7 +14,7 @@ export class MockReconnectingWebSocket extends TypedEventTarget<WebSocketEventMa
   readyState: WebSocket['OPEN'] | WebSocket['CLOSED'] = WebSocket.OPEN;
   close(code?: number, reason?: string): void {
     this.readyState = WebSocket.CLOSED;
-    this.dispatchEvent(new CloseEvent(code ?? 1000, reason ?? 'unknown reason', undefined));
+    this.dispatchEvent(new CloseEvent('close', { code: code ?? 1000, reason: reason ?? 'unknown reason' }));
   }
   send(): void {
     // Not implemented -- this is a mock

@@ -1,4 +1,4 @@
-import { EventTarget } from '../../eventtarget'; // Used as only type, so no circular.
+import { EventTarget } from '@medplum/core/src/eventtarget'; // Used as only type, so no circular.
 import { Global } from './global';
 import { assertType } from './misc';
 import {

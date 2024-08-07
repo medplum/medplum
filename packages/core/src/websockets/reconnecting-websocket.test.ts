@@ -1,6 +1,6 @@
 import WS from 'jest-websocket-mock';
 import { sleep } from '../utils';
-import { assert, cloneEventNode, ErrorEvent, ReconnectingWebSocket } from './reconnecting-websocket';
+import { assert, ReconnectingWebSocket } from './reconnecting-websocket';
 
 describe('ReconnectingWebSocket', () => {
   let wsServer: WS;
@@ -221,13 +221,6 @@ describe('ReconnectingWebSocket', () => {
 
     globalThis.WebSocket = originalWebSocket;
     console.error = originalConsoleError;
-  });
-
-  test('cloneEventNode', async () => {
-    const originalEvent = new ErrorEvent(new Error('Error event'), undefined);
-    const clonedEvent = cloneEventNode(originalEvent);
-    expect(clonedEvent).toEqual(originalEvent);
-    expect(clonedEvent).not.toBe(originalEvent);
   });
 
   test('assert', () => {

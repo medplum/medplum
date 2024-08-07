@@ -1,11 +1,4 @@
 import { TypedEventTarget } from '../eventtarget';
-import { Event as EventPolyfill } from '../polyfills/event/event';
-
-const root = ((typeof globalThis !== 'undefined' && globalThis) ||
-  (typeof self !== 'undefined' && self) ||
-  (typeof global !== 'undefined' && global)) as typeof globalThis;
-
-const Event = (typeof root.Event !== 'undefined' ? root.Event : EventPolyfill) as unknown as typeof EventPolyfill;
 
 /*!
  * Reconnecting WebSocket
@@ -28,27 +21,17 @@ export interface IReconnectingWebSocketCtor {
   new (url: string, protocols?: ProtocolsProvider, options?: Options): IReconnectingWebSocket;
 }
 
-export class ErrorEvent extends Event {
-  public message: string;
-  public error: Error;
-  constructor(error: Error, target: any) {
-    super('error', target);
-    this.message = error.message;
-    this.error = error;
-  }
+export interface ErrorEvent extends globalThis.Event {
+  message: string;
+  error: Error;
 }
 
-export class CloseEvent extends Event {
-  public code: number;
-  public reason: string;
-  public wasClean = true;
-  // eslint-disable-next-line default-param-last
-  constructor(code = 1000, reason = '', target: any) {
-    super('close', target);
-    this.code = code;
-    this.reason = reason;
-  }
+export interface CloseEvent extends globalThis.Event {
+  code: number;
+  reason: string;
+  wasClean: boolean;
 }
+
 export type WebSocketEventMap = {
   close: CloseEvent;
   error: ErrorEvent;
@@ -57,10 +40,44 @@ export type WebSocketEventMap = {
 };
 
 const Events = {
-  Event,
-  ErrorEvent,
-  CloseEvent,
+  Event: (typeof globalThis.Event !== 'undefined' ? globalThis.Event : undefined) as
+    | typeof globalThis.Event
+    | undefined,
+  ErrorEvent: undefined as any,
+  CloseEvent: undefined as any,
 };
+
+let eventsInitialized = false;
+
+function lazyInitEvents(): void {
+  if (typeof globalThis.Event === 'undefined') {
+    throw new Error('Unable to lazy init events for ReconnectingWebSocket. globalThis.Event is not defined yet');
+  }
+
+  Events.Event = globalThis.Event;
+
+  Events.ErrorEvent = class ErrorEvent extends Event implements ErrorEvent {
+    public message: string;
+    public error: Error;
+    constructor(error: Error, target: any) {
+      super('error', target);
+      this.message = error.message;
+      this.error = error;
+    }
+  } as unknown as typeof globalThis.ErrorEvent;
+
+  Events.CloseEvent = class CloseEvent extends Event implements CloseEvent {
+    public code: number;
+    public reason: string;
+    public wasClean = true;
+    // eslint-disable-next-line default-param-last
+    constructor(code = 1000, reason = '', target: any) {
+      super('close', target);
+      this.code = code;
+      this.reason = reason;
+    }
+  } as unknown as typeof globalThis.CloseEvent;
+}
 
 export function assert(condition: unknown, msg?: string): asserts condition {
   if (!condition) {
@@ -68,40 +85,9 @@ export function assert(condition: unknown, msg?: string): asserts condition {
   }
 }
 
-function cloneEventBrowser(e: Event): Event {
-  return new (e as any).constructor(e.type, e) as Event;
+function cloneEvent(e: Event): Event {
+  return new (e as any).constructor(e.type, e);
 }
-
-export function cloneEventNode(e: Event): Event {
-  if ('data' in e) {
-    const evt = new MessageEvent(e.type, e);
-    return evt;
-  }
-
-  if ('code' in e || 'reason' in e) {
-    const evt = new CloseEvent(
-      // @ts-expect-error we need to fix event/listener types
-      (e.code || 1999) as number,
-      // @ts-expect-error we need to fix event/listener types
-      (e.reason || 'unknown reason') as string,
-      e
-    );
-    return evt;
-  }
-
-  if ('error' in e) {
-    const evt = new ErrorEvent(e.error as Error, e);
-    return evt;
-  }
-
-  const evt = new Event(e.type, e);
-  return evt;
-}
-
-const isNode =
-  typeof process !== 'undefined' && typeof process.versions?.node !== 'undefined' && typeof document === 'undefined';
-
-export const cloneEvent = isNode ? cloneEventNode : cloneEventBrowser;
 
 export type Options = {
   WebSocket?: any;
@@ -153,6 +139,12 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
   protected _options: Options;
 
   constructor(url: string, protocols?: ProtocolsProvider, options: Options = {}) {
+    // Initialize all events if they haven't been created yet
+    if (!eventsInitialized) {
+      lazyInitEvents();
+      eventsInitialized = true;
+    }
+
     super();
     this._url = url;
     this._protocols = protocols;
@@ -440,7 +432,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     try {
       this._ws.close(code, reason);
       this._handleClose(new Events.CloseEvent(code, reason, this));
-    } catch (error) {
+    } catch (_error) {
       // ignore
     }
   }
@@ -513,7 +505,6 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     }
     this._debug('removeListeners');
     this._ws.removeEventListener('open', this._handleOpen);
-    // @ts-expect-error we need to fix event/listener types
     this._ws.removeEventListener('close', this._handleClose);
     this._ws.removeEventListener('message', this._handleMessage);
     // @ts-expect-error we need to fix event/listener types
@@ -526,7 +517,6 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     }
     this._debug('addListeners');
     this._ws.addEventListener('open', this._handleOpen);
-    // @ts-expect-error we need to fix event/listener types
     this._ws.addEventListener('close', this._handleClose);
     this._ws.addEventListener('message', this._handleMessage);
     // @ts-expect-error we need to fix event/listener types

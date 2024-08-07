@@ -97,7 +97,6 @@ describe('ReconnectingWebSocket', () => {
     await wsServer.connected;
     const receivedEvent = await new Promise<ErrorEvent>((resolve) => {
       reconnectingWebSocket.addEventListener('error', (event) => {
-        // @ts-expect-error Need to fix this type mismatch
         resolve(event as ErrorEvent);
       });
       wsServer.error();

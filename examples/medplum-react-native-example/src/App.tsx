@@ -3,10 +3,14 @@ import { ExpoClientStorage, polyfillMedplumWebAPIs } from '@medplum/expo-polyfil
 import { MedplumProvider } from '@medplum/react-hooks';
 import Home from './Home';
 
+// This is a module to get the Medplum client working on React Native by polyfilling a few Web APIs that are missing from the React Native runtime
+// On web, the polyfill function is loaded but nothing is replaced
+polyfillMedplumWebAPIs();
+
 const medplum = new MedplumClient({
   // Enter your Medplum connection details here
   // See MedplumClient docs for more details
-  baseUrl: 'http://localhost:8103',
+  baseUrl: 'http://10.14.49.51:8103',
   // ------------------------------------------------------------------------------
   // If you are testing this out with your physical Android / iOS device and not an emulator,
   // you will need to put your computer's local IP address here, for example:
@@ -18,10 +22,6 @@ const medplum = new MedplumClient({
   // projectId: 'MY_PROJECT_ID',
   storage: new ExpoClientStorage(),
 });
-
-// This is a module to get the Medplum client working on React Native by polyfilling a few Web APIs that are missing from the React Native runtime
-// On web, the polyfill function is loaded but nothing is replaced
-polyfillMedplumWebAPIs();
 
 export default function App(): JSX.Element {
   return (
