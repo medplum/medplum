@@ -160,17 +160,18 @@ export class SubscriptionManager {
         // Handle handshake
         if (status.type === 'handshake') {
           const subscriptionId = resolveId(status.subscription) as string;
-          this.masterSubEmitter?.dispatchEvent({
+          const connectEvent = {
             type: 'connect',
             payload: { subscriptionId },
-          });
+          } as const;
+          this.masterSubEmitter?.dispatchEvent(connectEvent);
           const criteriaEntry = this.criteriaEntriesBySubscriptionId.get(subscriptionId);
           if (!criteriaEntry) {
             console.warn('Received handshake for criteria the SubscriptionManager is not listening for yet');
             return;
           }
-          this.emitConnect(criteriaEntry);
           criteriaEntry.connecting = false;
+          criteriaEntry.emitter.dispatchEvent({ ...connectEvent });
           return;
         }
 
@@ -246,15 +247,6 @@ export class SubscriptionManager {
         }, this.pingIntervalMs);
       }
     });
-  }
-
-  private emitConnect(criteriaEntry: CriteriaEntry): void {
-    const connectEvent = {
-      type: 'connect',
-      payload: { subscriptionId: criteriaEntry.subscriptionId as string },
-    } as SubscriptionEventMap['connect'];
-    this.masterSubEmitter?.dispatchEvent(connectEvent);
-    criteriaEntry.emitter.dispatchEvent({ ...connectEvent });
   }
 
   private emitError(criteriaEntry: CriteriaEntry, error: Error): void {
