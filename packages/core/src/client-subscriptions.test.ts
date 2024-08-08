@@ -4,6 +4,7 @@ import { FetchLike, MedplumClient } from './client';
 import { createFakeJwt, mockFetchWithStatus } from './client-test-utils';
 import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from './subscriptions';
 import { sendHandshakeBundle } from './subscriptions/test-utils';
+import { sleep } from './utils';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
@@ -80,6 +81,7 @@ describe('MedplumClient -- Subscriptions', () => {
     console.warn = originalWarn;
     wsServer.close();
     await wsServer.closed;
+    WS.clean();
   });
 
   // This should be a no-op
@@ -113,6 +115,7 @@ describe('MedplumClient -- Subscriptions', () => {
       type: 'bind-with-token',
       payload: { token: 'token-123' },
     });
+    await sleep(50);
     sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
     const connectEvent = await connectEventPromise;
@@ -133,6 +136,7 @@ describe('MedplumClient -- Subscriptions', () => {
       type: 'bind-with-token',
       payload: { token: 'token-123' },
     });
+    await sleep(50);
     sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
     const connectEvent = await connectEventPromise;
@@ -186,6 +190,7 @@ describe('MedplumClient -- More Subscription Tests', () => {
       type: 'bind-with-token',
       payload: { token: 'token-123' },
     });
+    await sleep(50);
     sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
     const connectEvent = await connectEventPromise;

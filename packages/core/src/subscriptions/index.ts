@@ -390,11 +390,7 @@ export class SubscriptionManager {
 
   private async subscribeToCriteria(criteriaEntry: CriteriaEntry): Promise<void> {
     // We check to see if the WebSocket is open first, since if it's not, we will automatically refresh this later when it opens
-    if (
-      this.ws.readyState === WebSocket.CLOSING ||
-      this.ws.readyState === WebSocket.CLOSED ||
-      criteriaEntry.connecting
-    ) {
+    if (this.ws.readyState !== WebSocket.OPEN || criteriaEntry.connecting) {
       return;
     }
     // Set connecting flag to true so other incoming subscription requests to this criteria don't try to subscribe also
