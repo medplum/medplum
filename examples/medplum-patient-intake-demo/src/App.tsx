@@ -2,6 +2,7 @@ import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile }
 import {
   IconDatabaseImport,
   IconFilePencil,
+  IconForms,
   IconHealthRecognition,
   IconPencil,
   IconQuestionMark,
@@ -52,7 +53,10 @@ export function App(): JSX.Element | null {
       menus={[
         {
           title: 'Charts',
-          links: [{ icon: <IconUser />, label: 'Patients', href: '/Patient' }],
+          links: [
+            { icon: <IconUser />, label: 'Patients', href: '/Patient' },
+            { icon: <IconForms />, label: 'Responses', href: '/QuestionnaireResponse' },
+          ],
         },
         {
           title: 'Onboarding',
@@ -90,6 +94,7 @@ export function App(): JSX.Element | null {
               <Route path="/Patient/:id/*" element={<PatientPage />} />
               <Route path="/Patient/:patientId/intake/:responseId" element={<IntakeResponsePage />} />
               <Route path="/onboarding" element={<IntakeFormPage />} />
+              <Route path="/QuestionnaireResponse/:responseId" element={<IntakeResponsePage />} />
               <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/upload/:dataType" element={<UploadDataPage />} />
