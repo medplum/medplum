@@ -77,7 +77,9 @@ describe('AttachmentDisplay', () => {
   });
 
   test('Renders plain text', async () => {
-    await setup({ value: { contentType: 'text/plain', url: 'https://example.com/test.txt' } });
+    await setup({
+      value: { contentType: 'text/plain', url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL' },
+    });
     expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
@@ -92,7 +94,7 @@ describe('AttachmentDisplay', () => {
     await setup({
       value: {
         contentType: 'text/plain',
-        url: 'https://example.com/test.txt',
+        url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL',
         title: 'test.txt',
       },
     });
@@ -104,7 +106,7 @@ describe('AttachmentDisplay', () => {
     await setup({
       value: {
         contentType: 'text/plain',
-        url: 'https://example.com/test.txt',
+        url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL',
       },
     });
     expect(await screen.findByTestId('attachment-details')).toBeInTheDocument();
