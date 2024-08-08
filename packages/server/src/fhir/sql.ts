@@ -476,18 +476,13 @@ export class SelectQuery extends BaseQuery implements Expression {
     return `T${this.joinCount}`;
   }
 
-  innerJoin(
+  join(
+    joinType: 'INNER JOIN' | 'INNER JOIN LATERAL' | 'LEFT JOIN',
     joinItem: SelectQuery | string,
     joinAlias: string,
-    onExpression: Expression,
-    lateral: boolean = false
+    onExpression: Expression
   ): this {
-    this.joins.push(new Join(lateral ? 'INNER JOIN LATERAL' : 'INNER JOIN', joinItem, joinAlias, onExpression));
-    return this;
-  }
-
-  leftJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
-    this.joins.push(new Join('LEFT JOIN', joinItem, joinAlias, onExpression));
+    this.joins.push(new Join(joinType, joinItem, joinAlias, onExpression));
     return this;
   }
 

@@ -148,7 +148,7 @@ export async function searchByReferenceImpl<T extends Resource>(
       referenceValues.map((r) => [r])
     )
   );
-  builder.innerJoin(searchQuery, 'results', new Literal('true'), true);
+  builder.join('INNER JOIN LATERAL', searchQuery, 'results', new Literal('true'));
   builder.column(new Column('results', 'id')).column(new Column('results', 'content')).column(referenceColumn);
 
   const rows: {
@@ -1213,7 +1213,8 @@ function buildChainedSearchUsingReferenceTable(
     }
 
     const referenceTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.leftJoin(
+    selectQuery.join(
+      'LEFT JOIN',
       referenceTableName,
       referenceTableAlias,
       new Conjunction([
@@ -1223,7 +1224,8 @@ function buildChainedSearchUsingReferenceTable(
     );
 
     const nextTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.leftJoin(
+    selectQuery.join(
+      'LEFT JOIN',
       link.resourceType,
       nextTableAlias,
       new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
@@ -1268,7 +1270,7 @@ function buildChainedSearchUsingReferenceStrings(
   for (const link of param.chain) {
     const nextTable = selectQuery.getNextJoinAlias();
     const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
-    selectQuery.leftJoin(link.resourceType, nextTable, joinCondition);
+    selectQuery.join('LEFT JOIN', link.resourceType, nextTable, joinCondition);
 
     currentTable = nextTable;
     currentResourceType = link.resourceType;
