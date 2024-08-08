@@ -245,10 +245,6 @@ export async function addReindexJob(
   const currentTimestamp = new Date(0).toISOString(); // Beginning of epoch time
   const endTimestamp = new Date(Date.now() + 1000 * 60 * 5).toISOString(); // Five minutes in the future
 
-  if (searchFilter) {
-    searchFilter.filters = searchFilter.filters?.filter((f) => f.code !== '_lastUpdated');
-  }
-
   return addReindexJobData({
     resourceTypes,
     currentTimestamp,

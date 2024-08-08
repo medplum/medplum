@@ -2,7 +2,7 @@ import { AsyncJob, Parameters, ParametersParameter, Patient, Practitioner, Resou
 import { Job } from 'bullmq';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { Repository } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { ReindexJobData, addReindexJob, closeReindexWorker, execReindexJob, getReindexQueue } from './reindex';
 import { randomUUID } from 'crypto';
@@ -290,6 +290,68 @@ describe('Reindex Worker', () => {
             name: 'result',
             part: expect.arrayContaining([
               expect.objectContaining({ name: 'resourceType', valueCode: 'Practitioner' }),
+              expect.objectContaining({ name: 'count', valueInteger: 1 }),
+            ]),
+          },
+        ],
+      });
+    }));
+
+  test('Reindex with _lastUpdated filter', () =>
+    withTestContext(async () => {
+      const queue = getReindexQueue() as any;
+      queue.add.mockClear();
+
+      const idSystem = 'http://example.com/mrn';
+      const mrn = randomUUID();
+
+      const systemRepo = getSystemRepo();
+
+      let asyncJob = await systemRepo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+      await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { lastUpdated: '1999-12-31T00:00:00Z' },
+        identifier: [{ system: idSystem, value: mrn }],
+      });
+      await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { lastUpdated: '2001-12-31T00:00:00Z' },
+        identifier: [{ system: idSystem, value: mrn }],
+      });
+
+      const resourceTypes = ['Patient'] as ResourceType[];
+      const searchFilter = parseSearchRequest(
+        `Patient?identifier=${idSystem}|${mrn}&_lastUpdated=gt2000-01-01T00:00:00Z`
+      );
+
+      await addReindexJob(resourceTypes, asyncJob, searchFilter);
+      expect(queue.add).toHaveBeenCalledWith(
+        'ReindexJobData',
+        expect.objectContaining<Partial<ReindexJobData>>({
+          resourceTypes: ['Patient'],
+          asyncJob,
+          searchFilter,
+        })
+      );
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      queue.add.mockClear();
+      await execReindexJob(job);
+
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id as string);
+      expect(asyncJob.status).toEqual('completed');
+      expect(asyncJob.output).toMatchObject<Parameters>({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'result',
+            part: expect.arrayContaining([
+              expect.objectContaining({ name: 'resourceType', valueCode: 'Patient' }),
               expect.objectContaining({ name: 'count', valueInteger: 1 }),
             ]),
           },
