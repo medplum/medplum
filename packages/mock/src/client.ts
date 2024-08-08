@@ -203,9 +203,11 @@ export class MockClient extends MedplumClient {
     this.activeLoginOverride = activeLoginOverride;
   }
 
-  setProfile(profile: ProfileResource | undefined): void {
+  setProfile(profile: ProfileResource | undefined, emitEvent = true): void {
     this.profile = profile;
-    this.dispatchEvent({ type: 'change' });
+    if (emitEvent) {
+      this.dispatchEvent({ type: 'change' });
+    }
   }
 
   getActiveLogin(): LoginState | undefined {

@@ -8,8 +8,8 @@ import {
   sleep,
 } from '@medplum/core';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
-import { MockClient, MockFetchClient } from '@medplum/mock';
-import { act, render, screen } from '@testing-library/react';
+import { DrAliceSmith, MockClient, MockFetchClient } from '@medplum/mock';
+import { act, render, renderHook, screen } from '@testing-library/react';
 import { MedplumProvider } from './MedplumProvider';
 import { useMedplum, useMedplumContext, useMedplumNavigate, useMedplumProfile } from './MedplumProvider.context';
 
@@ -383,6 +383,26 @@ describe('MedplumProvider', () => {
       expect(dispatchEventSpy).not.toHaveBeenCalledWith<[MedplumClientEventMap['storageInitialized']]>({
         type: 'storageInitialized',
       });
+    });
+
+    test('useMedplumProfile() does not go to undefined while refreshing profile', async () => {
+      const medplum = new MockClient();
+
+      const { result } = renderHook(() => useMedplumProfile(), {
+        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+      });
+
+      // Make sure expected profile present
+      expect(result.current).toEqual(DrAliceSmith);
+
+      act(() => {
+        medplum.setProfile(undefined, false);
+        medplum.dispatchEvent({ type: 'profileRefreshing' });
+      });
+
+      // Previously this would result in `undefined` due to `getProfile` returning `undefined` once sessionDetails were cleared during the `profileRefreshing` phase
+      // This test failed in the previous version before explicit check for `event.type === 'profileRefreshing'` was added
+      expect(result.current).toEqual(DrAliceSmith);
     });
   });
 });

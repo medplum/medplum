@@ -35,7 +35,14 @@ export function MedplumProvider(props: MedplumProviderProps): JSX.Element {
   });
 
   useEffect(() => {
-    function eventListener(): void {
+    function eventListener(event: MedplumClientEventMap[keyof MedplumClientEventMap]): void {
+      if (event.type === 'profileRefreshing') {
+        setState((s) => ({
+          ...s,
+          loading: medplum.isLoading(),
+        }));
+        return;
+      }
       setState((s) => ({
         ...s,
         profile: medplum.getProfile(),
