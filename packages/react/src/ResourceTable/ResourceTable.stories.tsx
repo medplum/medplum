@@ -1,10 +1,14 @@
+import { MedplumClient, RequestProfileSchemaOptions, deepClone, loadDataType } from '@medplum/core';
+import { StructureDefinition } from '@medplum/fhirtypes';
 import {
   HomerObservation1,
   HomerSimpson,
   HomerSimpsonUSCorePatient,
   USCoreStructureDefinitionList,
 } from '@medplum/mock';
+import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Document } from '../Document/Document';
 import {
   Covid19NasalSpecimen,
@@ -13,10 +17,6 @@ import {
   Covid19ReviewReport,
 } from '../stories/covid19';
 import { ResourceTable } from './ResourceTable';
-import { MedplumClient, RequestProfileSchemaOptions, deepClone, loadDataType } from '@medplum/core';
-import { StructureDefinition } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react-hooks';
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 
 export default {
   title: 'Medplum/ResourceTable',
@@ -70,7 +70,7 @@ function useUSCoreDataTypes({ medplum }: { medplum: MedplumClient }): { loaded: 
   useEffect(() => {
     (async (): Promise<boolean> => {
       for (const sd of USCoreStructureDefinitionList) {
-        loadDataType(sd, sd.url);
+        loadDataType(sd);
       }
       return true;
     })()
@@ -88,16 +88,12 @@ function useUSCoreDataTypes({ medplum }: { medplum: MedplumClient }): { loaded: 
 function useFakeRequestProfileSchema(medplum: MedplumClient): void {
   useLayoutEffect(() => {
     const realRequestProfileSchema = medplum.requestProfileSchema;
-    async function fakeRequestProfileSchema(
-      profileUrl: string,
-      options?: RequestProfileSchemaOptions
-    ): Promise<string[]> {
+    async function fakeRequestProfileSchema(profileUrl: string, options?: RequestProfileSchemaOptions): Promise<void> {
       console.log(
         'Fake medplum.requestProfileSchema invoked but not doing anything; ensure expected profiles are already loaded',
         profileUrl,
         options
       );
-      return [profileUrl];
     }
 
     medplum.requestProfileSchema = fakeRequestProfileSchema;

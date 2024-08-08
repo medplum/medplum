@@ -1,4 +1,4 @@
-import { indexStructureDefinitionBundle } from '@medplum/core';
+import { loadDataType } from '@medplum/core';
 import { FishPatientResources } from '@medplum/mock';
 import { useMedplum } from '@medplum/react-hooks';
 import { Meta } from '@storybook/react';
@@ -31,7 +31,7 @@ export const PatientProfileAndPatient = (): JSX.Element => {
   useEffect(() => {
     (async (): Promise<boolean> => {
       const sd = await medplum.createResource(FishPatientProfileSD);
-      indexStructureDefinitionBundle([sd], sd.url);
+      loadDataType(sd);
       await medplum.createResource(FishPatientResources.getBlinkyTheFish());
       await medplum.createResource(FishPatientResources.getSampleFishPatient());
       return true;

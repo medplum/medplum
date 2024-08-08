@@ -685,6 +685,7 @@ export class MockFetchClient {
 
     for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
       structureDefinition.kind = 'resource';
+      structureDefinition.url = 'http://hl7.org/fhir/StructureDefinition/' + structureDefinition.name;
       loadDataType(structureDefinition);
       await this.repo.createResource(structureDefinition);
     }
