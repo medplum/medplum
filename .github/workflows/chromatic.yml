@@ -27,4 +27,4 @@ jobs:
           autoAcceptChanges: 'main'
           exitOnceUploaded: true
           exitZeroOnChanges: true
-          onlyChanged: false
+          onlyChanged: true
