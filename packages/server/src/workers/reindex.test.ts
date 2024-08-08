@@ -1,4 +1,4 @@
-import { AsyncJob, Parameters, Patient, Practitioner, ResourceType } from '@medplum/fhirtypes';
+import { AsyncJob, Parameters, ParametersParameter, Patient, Practitioner, ResourceType } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
@@ -145,6 +145,42 @@ describe('Reindex Worker', () => {
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('accepted');
+    }));
+
+  test('Updates in-progress status on AsyncJob resource', () =>
+    withTestContext(async () => {
+      const queue = getReindexQueue() as any;
+      queue.add.mockClear();
+
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+
+      const resourceTypes = ['MedicinalProductManufactured', 'BiologicallyDerivedProduct'] as ResourceType[];
+
+      await addReindexJob(resourceTypes, asyncJob);
+      expect(queue.add).toHaveBeenCalledWith(
+        'ReindexJobData',
+        expect.objectContaining<Partial<ReindexJobData>>({
+          resourceTypes,
+          asyncJob,
+        })
+      );
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      queue.add.mockClear();
+      await execReindexJob(job);
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
+      expect(asyncJob.status).toEqual('accepted');
+      const outputParam = asyncJob.output?.parameter?.[0];
+      expect(outputParam).toMatchObject<ParametersParameter>({
+        name: 'result',
+        part: expect.arrayContaining([{ name: 'resourceType', valueCode: 'MedicinalProductManufactured' }]),
+      });
     }));
 
   test('Fails job on error', () =>
