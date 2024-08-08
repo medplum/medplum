@@ -1,6 +1,6 @@
-import { HTTP_HL7_ORG, createReference, deepClone, loadDataType } from '@medplum/core';
+import { HTTP_HL7_ORG, createReference, deepClone, indexStructureDefinitionBundle, loadDataType } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Observation, OperationOutcome, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, Observation, OperationOutcome, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
@@ -12,6 +12,9 @@ const medplum = new MockClient();
 describe('ResourceForm', () => {
   let USCoreStructureDefinitions: StructureDefinition[];
   beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+
     USCoreStructureDefinitions = readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
   });
 
@@ -284,15 +287,13 @@ describe('ResourceForm', () => {
       if (!sd) {
         fail(`could not find structure definition for ${url}`);
       }
-      loadDataType(sd, sd.url);
+      loadDataType(sd);
     }
 
     const onSubmit = jest.fn();
 
     const mockedMedplum = new MockClient();
-    const fakeRequestProfileSchema = jest.fn(async (profileUrl: string) => {
-      return [profileUrl];
-    });
+    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
     mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
     await setup({ defaultValue: { resourceType: 'Device' }, profileUrl, onSubmit }, mockedMedplum);
 
@@ -310,16 +311,14 @@ describe('ResourceForm', () => {
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
     ];
-    const fakeRequestProfileSchema = jest.fn(async (profileUrl: string) => {
-      return [profileUrl];
-    });
+    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
     beforeAll(() => {
       for (const url of profileUrls) {
         const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
         if (!sd) {
           fail(`could not find structure definition for ${url}`);
         }
-        loadDataType(sd, sd.url);
+        loadDataType(sd);
       }
     });
 
