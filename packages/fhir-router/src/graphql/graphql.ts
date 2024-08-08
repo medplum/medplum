@@ -130,6 +130,7 @@ export async function graphqlHandler(
       config: req.config,
       dataLoader,
       searchCount: 0,
+      searchDataLoaders: Object.create(null),
     };
 
     result = await execute({

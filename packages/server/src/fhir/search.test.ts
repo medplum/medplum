@@ -51,6 +51,8 @@ import { clampEstimateCount } from './search';
 
 jest.mock('hibp');
 
+const SUBSET_TAG: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
+
 describe('FHIR Search', () => {
   describe('project-scoped Repository', () => {
     let config: MedplumServerConfig;
@@ -61,6 +63,7 @@ describe('FHIR Search', () => {
       await initAppServices(config);
       const { project } = await createTestProject();
       repo = new Repository({
+        strictMode: true,
         projects: [project.id as string],
         author: { reference: 'User/' + randomUUID() },
       });
@@ -163,7 +166,6 @@ describe('FHIR Search', () => {
 
     test('Search _summary', () =>
       withTestContext(async () => {
-        const subsetTag: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
         const patient: Patient = {
           resourceType: 'Patient',
           meta: {
@@ -265,7 +267,7 @@ describe('FHIR Search', () => {
           id: resource.id,
           meta: expect.objectContaining({
             profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient'],
-            tag: [{ system: 'http://example.com/', code: 'test' }, subsetTag],
+            tag: [{ system: 'http://example.com/', code: 'test' }, SUBSET_TAG],
           }),
           text: {
             status: 'generated',
@@ -282,7 +284,7 @@ describe('FHIR Search', () => {
         expect(dataResults.entry).toHaveLength(1);
         const dataResult = dataResults.entry?.[0]?.resource as Resource;
         const { text: _1, ...dataExpected } = resource;
-        dataExpected.meta?.tag?.push(subsetTag);
+        dataExpected.meta?.tag?.push(SUBSET_TAG);
         expect(dataResult).toEqual<Partial<Patient>>({ ...dataExpected });
 
         // _summary=true
@@ -299,7 +301,6 @@ describe('FHIR Search', () => {
 
     test('Search _elements', () =>
       withTestContext(async () => {
-        const subsetTag: Coding = { system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' };
         const patient: Patient = {
           resourceType: 'Patient',
           birthDate: '2000-01-01',
@@ -327,7 +328,7 @@ describe('FHIR Search', () => {
           resourceType: 'Patient',
           id: resource.id,
           meta: expect.objectContaining({
-            tag: [subsetTag],
+            tag: [SUBSET_TAG],
           }),
           birthDate: resource.birthDate,
           _birthDate: (resource as any)._birthDate,
@@ -3783,6 +3784,212 @@ describe('FHIR Search', () => {
         expect(filterNotEqualsResult.entry).toHaveLength(1);
         expect(filterNotEqualsResult.entry?.[0]?.resource?.id).toEqual(patient1.id);
       }));
+    describe('searchByReference', () => {
+      async function createPatients(repo: Repository, count: number): Promise<Patient[]> {
+        const patients = [];
+        for (let i = 0; i < count; i++) {
+          patients.push(await repo.createResource<Patient>({ resourceType: 'Patient' }));
+        }
+        return patients;
+      }
+
+      async function createObservations(repo: Repository, count: number, patient: Patient): Promise<Observation[]> {
+        const resources = [];
+        for (let i = 0; i < count; i++) {
+          resources.push(
+            await repo.createResource<Observation>({
+              resourceType: 'Observation',
+              subject: createReference(patient),
+              status: 'final',
+              code: { text: 'code CodeableConcept.text' },
+              valueString: i.toString(),
+            })
+          );
+        }
+        return resources;
+      }
+
+      async function createServiceRequests(
+        repo: Repository,
+        count: number,
+        patient: Patient
+      ): Promise<ServiceRequest[]> {
+        const resources = [];
+        for (let i = 0; i < count; i++) {
+          resources.push(
+            await repo.createResource<ServiceRequest>({
+              resourceType: 'ServiceRequest',
+              subject: createReference(patient),
+              status: 'active',
+              intent: 'plan',
+            })
+          );
+        }
+        return resources;
+      }
+
+      function expectResultsContents<Parent extends Resource, Child extends Resource>(
+        parents: Parent[],
+        childrenByParent: Child[][],
+        count: number,
+        results: Record<string, Child[]>
+      ): void {
+        expect(Object.keys(results)).toHaveLength(parents.length);
+        for (const [parent, children] of zip(parents, childrenByParent)) {
+          const result = results[getReferenceString(parent)];
+          expect(result).toHaveLength(Math.min(children.length, count));
+          for (const child of result) {
+            expect(children.map((c) => c.id)).toContain(child.id);
+          }
+        }
+      }
+
+      function zip<A, B>(a: A[], b: B[]): [A, B][] {
+        return a.map((k, i) => [k, b[i]]);
+      }
+      test('Basic reference', async () =>
+        withTestContext(async () => {
+          const patients = await createPatients(repo, 3);
+          const patientObservations = [
+            await createObservations(repo, 2, patients[0]),
+            await createObservations(repo, 0, patients[1]),
+            await createObservations(repo, 4, patients[2]),
+          ];
+          const observation = patientObservations[0][0];
+          const count = 3;
+          const result = await repo.searchByReference<Observation>(
+            { resourceType: 'Observation', count },
+            'subject',
+            patients.map((p) => getReferenceString(p))
+          );
+
+          expectResultsContents(patients, patientObservations, count, result);
+          const resultRepoObservation = result[getReferenceString(patients[0])][0];
+          expect(resultRepoObservation).toEqual(observation);
+          expect(resultRepoObservation.meta?.tag).toBeUndefined();
+        }));
+
+      test('Invalid reference field', async () =>
+        withTestContext(async () => {
+          // 'code' is not a reference search parameter
+          await expect(() =>
+            repo.searchByReference<Observation>({ resourceType: 'Observation', count: 1 }, 'code', [])
+          ).rejects.toThrow('Invalid reference search parameter');
+        }));
+
+      test('Reference with sort', async () =>
+        withTestContext(async () => {
+          const patients = await createPatients(repo, 2);
+          const patientObservations = [
+            await createObservations(repo, 3, patients[0]),
+            await createObservations(repo, 2, patients[1]),
+          ];
+          const count = 3;
+
+          // descending
+          const resultDesc = await repo.searchByReference<Observation>(
+            { resourceType: 'Observation', count, sortRules: [{ code: 'value-string', descending: true }] },
+            'subject',
+            patients.map((p) => getReferenceString(p))
+          );
+
+          expectResultsContents(patients, patientObservations, count, resultDesc);
+          expect(resultDesc[getReferenceString(patients[0])].map((o) => o.valueString)).toEqual(['2', '1', '0']);
+          expect(resultDesc[getReferenceString(patients[1])].map((o) => o.valueString)).toEqual(['1', '0']);
+
+          // ascending
+          const resultAsc = await repo.searchByReference<Observation>(
+            { resourceType: 'Observation', count, sortRules: [{ code: 'value-string', descending: false }] },
+            'subject',
+            patients.map((p) => getReferenceString(p))
+          );
+          expectResultsContents(patients, patientObservations, count, resultAsc);
+          expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toEqual(['0', '1', '2']);
+          expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toEqual(['0', '1']);
+        }));
+
+      test('narrowed fields', async () =>
+        withTestContext(async () => {
+          const patients = await createPatients(repo, 1);
+          const patientObservations = [await createObservations(repo, 1, patients[0])];
+
+          const count = 1;
+          const result = await repo.searchByReference<Observation>(
+            { resourceType: 'Observation', count, fields: ['status'] },
+            'subject',
+            patients.map((p) => getReferenceString(p))
+          );
+
+          expectResultsContents(patients, patientObservations, count, result);
+          const observation = patientObservations[0][0];
+          const resultObservation = result[getReferenceString(patients[0])][0];
+          expect({ ...observation, meta: undefined }).toEqual({
+            resourceType: 'Observation',
+            id: observation.id,
+            status: observation.status,
+            code: observation.code,
+            method: observation.method,
+            subject: expect.objectContaining({ reference: getReferenceString(patients[0]) }),
+            valueString: observation.valueString,
+          });
+
+          expect(resultObservation).toEqual({
+            resourceType: 'Observation',
+            id: observation.id,
+            meta: expect.objectContaining({
+              tag: [SUBSET_TAG],
+            }),
+            status: observation.status,
+            code: observation.code, // code is a mandatory field so is included even though not specified in fields
+          });
+        }));
+
+      test('Multiple types', async () =>
+        withTestContext(async () => {
+          const patients = await createPatients(repo, 3);
+          const patientObservations = [
+            await createObservations(repo, 0, patients[0]),
+            await createObservations(repo, 1, patients[1]),
+            await createObservations(repo, 3, patients[2]),
+          ];
+
+          const patientServiceRequests = [
+            await createServiceRequests(repo, 3, patients[0]),
+            await createServiceRequests(repo, 1, patients[1]),
+            await createServiceRequests(repo, 0, patients[2]),
+          ];
+
+          const count = 2;
+          const result = await repo.searchByReference(
+            { resourceType: 'Observation', count, types: ['Observation', 'ServiceRequest'], fields: ['subject'] },
+            'subject',
+            patients.map((p) => getReferenceString(p))
+          );
+
+          const childrenByParent = [];
+          for (let i = 0; i < patients.length; i++) {
+            childrenByParent.push([...patientObservations[i], ...patientServiceRequests[i]]);
+          }
+          expectResultsContents(patients, childrenByParent, count, result);
+
+          // First patient has only ServiceRequests
+          expect(result[getReferenceString(patients[0])].map((r) => r.resourceType)).toEqual([
+            'ServiceRequest',
+            'ServiceRequest',
+          ]);
+
+          // Second patient has one ServiceRequest and one Observation
+          expect(
+            result[getReferenceString(patients[1])].map((r) => r.resourceType).sort((a, b) => a.localeCompare(b))
+          ).toEqual(['Observation', 'ServiceRequest']);
+
+          // Third patient has only Observations
+          expect(result[getReferenceString(patients[2])].map((r) => r.resourceType)).toEqual([
+            'Observation',
+            'Observation',
+          ]);
+        }));
+    });
   });
 
   describe('systemRepo', () => {
