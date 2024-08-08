@@ -296,6 +296,82 @@ export function addLanguage(patient: Patient, valueCoding: Coding | undefined, p
 }
 
 /**
+ * Adds an AllergyIntolerance resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the allergy
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up an
+ */
+export async function addAllergy(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const code = answers['allergy-substance']?.valueCoding;
+
+  if (!code) {
+    return;
+  }
+
+  const clinicalStatus = answers['allergy-clinical-status']?.valueCoding;
+  const reaction = answers['allergy-reaction']?.valueString;
+  const onsetDateTime = answers['allergy-onset']?.valueDateTime;
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'AllergyIntolerance',
+      patient: createReference(patient),
+      code: { coding: [code] },
+      clinicalStatus: clinicalStatus ? { coding: [clinicalStatus] } : undefined,
+      reaction: reaction ? [{ manifestation: [{ text: reaction }] }] : undefined,
+      onsetDateTime: onsetDateTime,
+    },
+    {
+      patient: getReferenceString(patient),
+      code: `${code.system}|${code.code}`,
+    }
+  );
+}
+
+/**
+ * Adds a MedicationRequest resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the medication
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
+ *                 medication (see getGroupRepeatedAnswers)
+ */
+export async function addMedication(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const code = answers['medication-code']?.valueCoding;
+
+  if (!code) {
+    return;
+  }
+
+  const note = answers['medication-note']?.valueString;
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'MedicationRequest',
+      subject: createReference(patient),
+      status: 'active',
+      intent: 'order',
+      requester: createReference(patient),
+      medicationCodeableConcept: { coding: [code] },
+      note: note ? [{ text: note }] : undefined,
+    },
+    {
+      subject: getReferenceString(patient),
+      code: `${code.system}|${code.code}`,
+    }
+  );
+}
+
+/**
  * Adds a Coverage resource
  *
  * @param medplum - The Medplum client
@@ -392,52 +468,38 @@ export function getGroupRepeatedAnswers(
   response: QuestionnaireResponse,
   groupLinkId: string
 ): Record<string, QuestionnaireResponseItemAnswer>[] {
+  // Find the questionnaire item based on groupLinkId
   const questionnaireItem = findQuestionnaireItem(questionnaire.item, groupLinkId) as QuestionnaireItem;
-  const responseItem = findQuestionnaireItem(response.item, groupLinkId) as QuestionnaireResponseItem;
 
   if (questionnaireItem.type !== 'group' || !questionnaireItem?.item) {
     return [];
   }
 
-  const responses = responseItem.item ?? [];
-  let responseCursor = 0;
+  // Get all response items corresponding to the groupLinkId
+  const responseGroups = response.item?.filter((item) => item.linkId === groupLinkId);
 
-  const linkIds = questionnaireItem.item.map((item) => item.linkId);
-  let linkCursor = 0;
-
-  const groupAnswers = [];
-  let answerGroup = {};
-
-  // It expects that responses will be organized in the same order the form is filled. Eg.:
-  // [
-  //   {answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3},
-  //   {answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}
-  // ]
-  // The linkCursor and responseCursor logic allows this function to work even when some fields are
-  // not filled. Eg.:
-  // [
-  //   {answer-with-linkId-1}, {answer-with-linkId-3},
-  //   {answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}
-  // ]
-  while (responseCursor < responses.length) {
-    const item = responses[responseCursor];
-
-    if (item.linkId === linkIds[linkCursor]) {
-      Object.assign(answerGroup, { [item.linkId]: item.answer?.[0] });
-      responseCursor += 1;
-    }
-
-    linkCursor += 1;
-    if (linkCursor >= linkIds?.length) {
-      linkCursor = 0;
-      groupAnswers.push(answerGroup);
-      answerGroup = {};
-    }
+  if (!responseGroups || responseGroups?.length === 0) {
+    return [];
   }
 
-  if (Object.keys(answerGroup).length > 0) {
-    groupAnswers.push(answerGroup);
-  }
+  // It expects that responses will be organized in separate groups with the same groupLinkId. Eg.:
+  // [
+  //   {group-linkId-1: [{answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}]},
+  //   {group-linkId-1: [{answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}]}
+  // ]
+  // This function handles scenarios where each group can have some fields filled and some not, while keeping the order intact. Eg.:
+  // [
+  //   {group-linkId-1: [{answer-with-linkId-1}, {answer-with-linkId-3}]},
+  //   {group-linkId-1: [{answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}]}
+  // ]
+
+  const groupAnswers = responseGroups.map((responseItem) => {
+    const answers: Record<string, QuestionnaireResponseItemAnswer> = {};
+    responseItem.item?.forEach(({ linkId, answer }) => {
+      answers[linkId] = answer?.[0] ?? {};
+    });
+    return answers;
+  });
 
   return groupAnswers;
 }

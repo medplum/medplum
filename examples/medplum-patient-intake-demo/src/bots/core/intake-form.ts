@@ -9,9 +9,11 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import {
+  addAllergy,
   addConsent,
   addCoverage,
   addLanguage,
+  addMedication,
   consentCategoryMapping,
   consentPolicyRuleMapping,
   consentScopeMapping,
@@ -41,7 +43,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
 
   // Handle demographic information
 
-  const patientName = getPatientName(answers);
+  const patientName = getHumanName(answers);
   patient.name = patientName ? [patientName] : patient.name;
   patient.birthDate = answers['dob']?.valueDate || patient.birthDate;
   const patientAddress = getPatientAddress(answers);
@@ -123,15 +125,50 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     { valueDateTime: convertDateToDateTime(answers['estimated-delivery-date']?.valueDate) }
   );
 
-  // Handle coverage
-
   if (!response.questionnaire) {
     throw new Error('Missing questionnaire');
   }
 
   const questionnaire: Questionnaire = await medplum.readReference({ reference: response.questionnaire });
-  const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
 
+  // Handle emergency contact
+
+  const emergencyContacts = getGroupRepeatedAnswers(questionnaire, response, 'emergency-contact');
+  patient.contact = [];
+  for (const contact of emergencyContacts) {
+    patient.contact.push({
+      relationship: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
+              code: 'EP',
+              display: 'Emergency contact person',
+            },
+          ],
+        },
+      ],
+      name: getHumanName(contact, 'emergency-contact-'),
+      telecom: [{ system: 'phone', value: contact['emergency-contact-phone']?.valueString }],
+    });
+  }
+
+  // Handle allergies
+
+  const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
+  for (const allergy of allergies) {
+    await addAllergy(medplum, patient, allergy);
+  }
+
+  // Handle medications
+  const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
+  for (const medication of medications) {
+    await addMedication(medplum, patient, medication);
+  }
+
+  // Handle coverage
+
+  const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
   }
@@ -181,26 +218,29 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   await medplum.updateResource(patient);
 }
 
-function getPatientName(answers: Record<string, QuestionnaireResponseItemAnswer>): HumanName | null {
+function getHumanName(
+  answers: Record<string, QuestionnaireResponseItemAnswer>,
+  prefix: string = ''
+): HumanName | undefined {
   const patientName: HumanName = {};
 
   const givenName = [];
-  if (answers['first-name']?.valueString) {
-    givenName.push(answers['first-name'].valueString);
+  if (answers[`${prefix}first-name`]?.valueString) {
+    givenName.push(answers[`${prefix}first-name`].valueString as string);
   }
-  if (answers['middle-name']?.valueString) {
-    givenName.push(answers['middle-name'].valueString);
+  if (answers[`${prefix}middle-name`]?.valueString) {
+    givenName.push(answers[`${prefix}middle-name`].valueString as string);
   }
 
   if (givenName.length > 0) {
     patientName.given = givenName;
   }
 
-  if (answers['last-name']?.valueString) {
-    patientName.family = answers['last-name'].valueString;
+  if (answers[`${prefix}last-name`]?.valueString) {
+    patientName.family = answers[`${prefix}last-name`].valueString;
   }
 
-  return Object.keys(patientName).length > 0 ? patientName : null;
+  return Object.keys(patientName).length > 0 ? patientName : undefined;
 }
 
 function getPatientAddress(answers: Record<string, QuestionnaireResponseItemAnswer>): Address | undefined {
