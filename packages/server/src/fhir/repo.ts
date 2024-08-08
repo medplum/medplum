@@ -894,7 +894,6 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
    * @param conn - Database client to use for reindex operations.
    * @param resources - The resource(s) to reindex.
-   * @returns The reindexed resource.
    */
   async reindexResources<T extends Resource>(conn: PoolClient, ...resources: T[]): Promise<void> {
     let resource: Resource;

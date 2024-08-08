@@ -94,6 +94,16 @@ export class AsyncJobExecutor {
     });
   }
 
+  async updateJobProgress(repo: Repository, output: Parameters): Promise<AsyncJob | undefined> {
+    if (!this.resource) {
+      return undefined;
+    }
+    return repo.updateResource<AsyncJob>({
+      ...this.resource,
+      output,
+    });
+  }
+
   async failJob(repo: Repository, err: Error): Promise<AsyncJob | undefined> {
     if (!this.resource) {
       return undefined;
@@ -102,10 +112,14 @@ export class AsyncJobExecutor {
       ...this.resource,
       status: 'error',
       transactionTime: new Date().toISOString(),
-      output:
-        err instanceof OperationOutcomeError
-          ? { resourceType: 'Parameters', parameter: [{ name: 'outcome', resource: err.outcome }] }
-          : undefined,
+      output: {
+        resourceType: 'Parameters',
+        parameter: [
+          err instanceof OperationOutcomeError
+            ? { name: 'outcome', resource: err.outcome }
+            : { name: 'error', valueString: err.message },
+        ],
+      },
     });
   }
 
