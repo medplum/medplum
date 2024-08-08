@@ -8,6 +8,7 @@ import { TextDecoder, TextEncoder } from 'text-encoding';
 import { polyfillEvent } from './polyfills/event';
 
 export { ExpoClientStorage, type IExpoClientStorage } from './storage';
+export { initWebSocketManager } from './websocket-manager';
 
 let polyfilled = false;
 let originalCryptoIsSet = false;

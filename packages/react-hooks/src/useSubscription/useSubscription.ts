@@ -40,13 +40,14 @@ export function useSubscription(
 ): void {
   const medplum = useMedplum();
   const [emitter, setEmitter] = useState<SubscriptionEmitter>();
-  const [memoizedOptions, setMemoizedOptions] = useState(options);
+  // We don't memoize the entire options object since it contains callbacks and if the callbacks change identity, we don't want to trigger a resubscribe to criteria
+  const [memoizedSubProps, setMemoizedSubProps] = useState(options?.subscriptionProps);
 
   const listeningRef = useRef(false);
   const unsubTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const prevCriteriaRef = useRef<string>();
-  const prevMemoizedOptionsRef = useRef<UseSubscriptionOptions>();
+  const prevMemoizedSubPropsRef = useRef<UseSubscriptionOptions['subscriptionProps']>();
 
   const callbackRef = useRef<typeof callback>();
   callbackRef.current = callback;
@@ -64,10 +65,11 @@ export function useSubscription(
   onSubscriptionDisconnectRef.current = options?.onSubscriptionDisconnect;
 
   useEffect(() => {
-    if (memoizedOptions !== options && !deepEquals(memoizedOptions, options)) {
-      setMemoizedOptions(options);
+    // Deep equals checks referential equality first
+    if (!deepEquals(options?.subscriptionProps, memoizedSubProps)) {
+      setMemoizedSubProps(options?.subscriptionProps);
     }
-  }, [memoizedOptions, options]);
+  }, [memoizedSubProps, options]);
 
   useEffect(() => {
     if (unsubTimerRef.current) {
@@ -75,21 +77,31 @@ export function useSubscription(
       unsubTimerRef.current = undefined;
     }
 
-    if (prevCriteriaRef.current !== criteria || !deepEquals(prevMemoizedOptionsRef.current, memoizedOptions)) {
-      setEmitter(medplum.subscribeToCriteria(criteria, memoizedOptions?.subscriptionProps));
+    let shouldSubscribe = false;
+    if (prevCriteriaRef.current !== criteria || !deepEquals(prevMemoizedSubPropsRef.current, memoizedSubProps)) {
+      shouldSubscribe = true;
+    }
+
+    if (shouldSubscribe && prevCriteriaRef.current) {
+      medplum.unsubscribeFromCriteria(prevCriteriaRef.current, prevMemoizedSubPropsRef.current);
     }
 
     // Set prev criteria and options to latest after checking them
     prevCriteriaRef.current = criteria;
-    prevMemoizedOptionsRef.current = memoizedOptions;
+    prevMemoizedSubPropsRef.current = memoizedSubProps;
+
+    // We do this after as to not immediately trigger re-render
+    if (shouldSubscribe) {
+      setEmitter(medplum.subscribeToCriteria(criteria, memoizedSubProps));
+    }
 
     return () => {
       unsubTimerRef.current = setTimeout(() => {
         setEmitter(undefined);
-        medplum.unsubscribeFromCriteria(criteria, memoizedOptions?.subscriptionProps);
+        medplum.unsubscribeFromCriteria(criteria, memoizedSubProps);
       }, SUBSCRIPTION_DEBOUNCE_MS);
     };
-  }, [medplum, criteria, memoizedOptions]);
+  }, [medplum, criteria, memoizedSubProps]);
 
   const emitterCallback = useCallback((event: SubscriptionEventMap['message']) => {
     callbackRef.current?.(event.payload);

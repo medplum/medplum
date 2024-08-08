@@ -73,6 +73,7 @@ class CriteriaEntry {
   readonly subscriptionProps?: Partial<Subscription>;
   subscriptionId?: string;
   token?: string;
+  connecting = false;
 
   constructor(criteria: string, subscriptionProps?: Partial<Subscription>) {
     this.criteria = criteria;
@@ -96,6 +97,8 @@ type CriteriaMapEntry = { bareCriteria?: CriteriaEntry; criteriaWithProps: Crite
 export interface SubManagerOptions {
   ReconnectingWebSocket?: IReconnectingWebSocketCtor;
   pingIntervalMs?: number;
+  debug?: boolean;
+  debugLogger?: (...args: any[]) => void;
 }
 
 export class SubscriptionManager {
@@ -119,7 +122,9 @@ export class SubscriptionManager {
     } catch (_err) {
       throw new OperationOutcomeError(validationError('Not a valid URL'));
     }
-    const ws = options?.ReconnectingWebSocket ? new options.ReconnectingWebSocket(url) : new ReconnectingWebSocket(url);
+    const ws = options?.ReconnectingWebSocket
+      ? new options.ReconnectingWebSocket(url, undefined, { debug: options?.debug, debugLogger: options?.debugLogger })
+      : new ReconnectingWebSocket(url, undefined, { debug: options?.debug, debugLogger: options?.debugLogger });
 
     this.medplum = medplum;
     this.ws = ws;
@@ -150,7 +155,10 @@ export class SubscriptionManager {
         if (status.type === 'heartbeat') {
           this.masterSubEmitter?.dispatchEvent({ type: 'heartbeat', payload: bundle });
           return;
-        } else if (status.type === 'handshake') {
+        }
+
+        // Handle handshake
+        if (status.type === 'handshake') {
           const subscriptionId = resolveId(status.subscription) as string;
           this.masterSubEmitter?.dispatchEvent({
             type: 'connect',
@@ -162,8 +170,10 @@ export class SubscriptionManager {
             return;
           }
           this.emitConnect(criteriaEntry);
+          criteriaEntry.connecting = false;
           return;
         }
+
         this.masterSubEmitter?.dispatchEvent({ type: 'message', payload: bundle });
         const criteriaEntry = this.criteriaEntriesBySubscriptionId.get(resolveId(status.subscription) as string);
         if (!criteriaEntry) {
@@ -203,6 +213,7 @@ export class SubscriptionManager {
       if (this.pingTimer) {
         clearInterval(this.pingTimer);
         this.pingTimer = undefined;
+        this.waitingForPong = false;
       }
 
       if (this.wsClosed) {
@@ -351,7 +362,7 @@ export class SubscriptionManager {
     }
   }
 
-  private removeCriteriaEntry(criteriaEntry: CriteriaEntry, clientOnly = false): void {
+  private removeCriteriaEntry(criteriaEntry: CriteriaEntry): void {
     const { criteria, subscriptionProps, subscriptionId, token } = criteriaEntry;
     if (!this.criteriaEntries.has(criteria)) {
       return;
@@ -372,12 +383,22 @@ export class SubscriptionManager {
     if (subscriptionId) {
       this.criteriaEntriesBySubscriptionId.delete(subscriptionId);
     }
-    if (token && !clientOnly) {
+    if (token && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ type: 'unbind-from-token', payload: { token } }));
     }
   }
 
   private async subscribeToCriteria(criteriaEntry: CriteriaEntry): Promise<void> {
+    // We check to see if the WebSocket is open first, since if it's not, we will automatically refresh this later when it opens
+    if (
+      this.ws.readyState === WebSocket.CLOSING ||
+      this.ws.readyState === WebSocket.CLOSED ||
+      criteriaEntry.connecting
+    ) {
+      return;
+    }
+    // Set connecting flag to true so other incoming subscription requests to this criteria don't try to subscribe also
+    criteriaEntry.connecting = true;
     try {
       const [subscriptionId, token] = await this.getTokenForCriteria(criteriaEntry);
       criteriaEntry.subscriptionId = subscriptionId;
@@ -451,6 +472,10 @@ export class SubscriptionManager {
     }
     this.wsClosed = true;
     this.ws.close();
+  }
+
+  reconnectWebSocket(): void {
+    this.ws.reconnect();
   }
 
   getCriteriaCount(): number {

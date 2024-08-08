@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { ExpoClientStorage, polyfillMedplumWebAPIs } from '@medplum/expo-polyfills';
+import { ExpoClientStorage, initWebSocketManager, polyfillMedplumWebAPIs } from '@medplum/expo-polyfills';
 import { MedplumProvider } from '@medplum/react-hooks';
 import Home from './Home';
 
@@ -22,6 +22,8 @@ const medplum = new MedplumClient({
   // projectId: 'MY_PROJECT_ID',
   storage: new ExpoClientStorage(),
 });
+
+initWebSocketManager(medplum);
 
 export default function App(): JSX.Element {
   return (
