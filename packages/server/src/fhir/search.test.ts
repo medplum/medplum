@@ -3793,13 +3793,24 @@ describe('FHIR Search', () => {
         return patients;
       }
 
-      async function createObservations(repo: Repository, count: number, patient: Patient): Promise<Observation[]> {
+      async function createObservations(
+        repo: Repository,
+        count: number,
+        {
+          subject,
+          hasMember,
+        }: {
+          subject?: Patient;
+          hasMember?: Observation[];
+        }
+      ): Promise<Observation[]> {
         const resources = [];
         for (let i = 0; i < count; i++) {
           resources.push(
             await repo.createResource<Observation>({
               resourceType: 'Observation',
-              subject: createReference(patient),
+              subject: subject ? createReference(subject) : undefined,
+              hasMember: hasMember ? hasMember.map((o) => createReference(o)) : undefined,
               status: 'final',
               code: { text: 'code CodeableConcept.text' },
               valueString: i.toString(),
@@ -3851,9 +3862,9 @@ describe('FHIR Search', () => {
         withTestContext(async () => {
           const patients = await createPatients(repo, 3);
           const patientObservations = [
-            await createObservations(repo, 2, patients[0]),
-            await createObservations(repo, 0, patients[1]),
-            await createObservations(repo, 4, patients[2]),
+            await createObservations(repo, 2, { subject: patients[0] }),
+            await createObservations(repo, 0, { subject: patients[1] }),
+            await createObservations(repo, 4, { subject: patients[2] }),
           ];
           const observation = patientObservations[0][0];
           const count = 3;
@@ -3865,6 +3876,28 @@ describe('FHIR Search', () => {
 
           expectResultsContents(patients, patientObservations, count, result);
           const resultRepoObservation = result[getReferenceString(patients[0])][0];
+          expect(resultRepoObservation).toEqual(observation);
+          expect(resultRepoObservation.meta?.tag).toBeUndefined();
+        }));
+
+      test('Array reference column', async () =>
+        withTestContext(async () => {
+          const parentObservations = await createObservations(repo, 3, {});
+          const childObservations = [
+            await createObservations(repo, 2, { hasMember: [parentObservations[0]] }),
+            await createObservations(repo, 0, { hasMember: [parentObservations[1]] }),
+            await createObservations(repo, 4, { hasMember: [parentObservations[2]] }),
+          ];
+          const observation = childObservations[0][0];
+          const count = 3;
+          const result = await repo.searchByReference<Observation>(
+            { resourceType: 'Observation', count },
+            'has-member',
+            parentObservations.map((o) => getReferenceString(o))
+          );
+
+          expectResultsContents(parentObservations, childObservations, count, result);
+          const resultRepoObservation = result[getReferenceString(parentObservations[0])][0];
           expect(resultRepoObservation).toEqual(observation);
           expect(resultRepoObservation.meta?.tag).toBeUndefined();
         }));
@@ -3881,8 +3914,8 @@ describe('FHIR Search', () => {
         withTestContext(async () => {
           const patients = await createPatients(repo, 2);
           const patientObservations = [
-            await createObservations(repo, 3, patients[0]),
-            await createObservations(repo, 2, patients[1]),
+            await createObservations(repo, 3, { subject: patients[0] }),
+            await createObservations(repo, 2, { subject: patients[1] }),
           ];
           const count = 3;
 
@@ -3911,7 +3944,7 @@ describe('FHIR Search', () => {
       test('narrowed fields', async () =>
         withTestContext(async () => {
           const patients = await createPatients(repo, 1);
-          const patientObservations = [await createObservations(repo, 1, patients[0])];
+          const patientObservations = [await createObservations(repo, 1, { subject: patients[0] })];
 
           const count = 1;
           const result = await repo.searchByReference<Observation>(
@@ -3948,9 +3981,9 @@ describe('FHIR Search', () => {
         withTestContext(async () => {
           const patients = await createPatients(repo, 3);
           const patientObservations = [
-            await createObservations(repo, 0, patients[0]),
-            await createObservations(repo, 1, patients[1]),
-            await createObservations(repo, 3, patients[2]),
+            await createObservations(repo, 0, { subject: patients[0] }),
+            await createObservations(repo, 1, { subject: patients[1] }),
+            await createObservations(repo, 3, { subject: patients[2] }),
           ];
 
           const patientServiceRequests = [
