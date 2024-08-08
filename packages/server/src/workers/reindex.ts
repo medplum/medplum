@@ -81,7 +81,6 @@ export async function execReindexJob(job: Job<ReindexJobData>): Promise<void> {
   const ctx = getRequestContext();
   const { resourceTypes, currentTimestamp, endTimestamp, count, searchFilter } = job.data;
   const resourceType = resourceTypes[0];
-  const systemRepo = getSystemRepo();
 
   if (!count) {
     ctx.logger.info('Reindex started', { resourceType });
@@ -105,70 +104,88 @@ export async function execReindexJob(job: Job<ReindexJobData>): Promise<void> {
   }
 
   try {
-    const { hasMore, newCount, nextTimestamp } = await systemRepo.withTransaction(async (conn) => {
-      const bundle = await systemRepo.search(searchRequest);
-      let newCount = count ?? 0;
-      let nextTimestamp = currentTimestamp;
-
-      if (bundle.entry?.length) {
-        const resources: Resource[] = [];
-        // Since the page size could be relatively large (1k+), preferring a simple for loop
-        // eslint-disable-next-line @typescript-eslint/prefer-for-of
-        for (let i = 0; i < bundle.entry.length; i++) {
-          const resource = bundle.entry[i].resource as Resource;
-          resources.push(resource);
-          nextTimestamp = resource.meta?.lastUpdated as string;
-        }
-        await systemRepo.reindexResources(conn, ...resources);
-        newCount += resources.length;
-      }
-
-      const hasMore = bundle.link?.some((link) => link.relation === 'next') ?? false;
-      return { hasMore, newCount, nextTimestamp };
-    });
-
-    if (hasMore) {
-      job.data.results[resourceType] = nextTimestamp;
-
-      if (Math.floor(newCount / progressLogThreshold) !== Math.floor((newCount - batchSize) / progressLogThreshold)) {
-        globalLogger.info('Reindex in progress', {
-          resourceType,
-          latestJobId: job.id,
-          nextTimestamp,
-          count,
-          elapsedTime: `${Date.now() - job.data.startTime} ms`,
-        });
-        await updateStatus(job);
-      }
-
-      // Enqueue job to handle next page of the current resource type
-      await addReindexJobData({
-        ...job.data,
-        currentTimestamp: nextTimestamp,
-        count: newCount,
-      });
-    } else if (resourceTypes.length > 1) {
-      // Completed reindex for this resource type
-      const elapsedTime = Date.now() - job.data.startTime;
-      ctx.logger.info('Reindex completed', { resourceType, count: newCount, duration: `${elapsedTime} ms` });
-
-      job.data.results[resourceType] = [newCount, elapsedTime];
-      await updateStatus(job);
-
-      // Enqueue job to start reindexing the next resource type
-      await addReindexJobData({
-        ...job.data,
-        resourceTypes: resourceTypes.slice(1),
-        currentTimestamp: new Date(0).toISOString(),
-        count: 0,
-        startTime: Date.now(),
-      });
-    } else {
-      await finishReindex(job, newCount);
-    }
+    await processPage(searchRequest, job);
   } catch (err) {
+    const systemRepo = getSystemRepo();
     const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
     await exec.failJob(systemRepo, err as Error);
+  }
+}
+
+/**
+ * Reindex one page of resources in the database, determined by the job data and search filter.
+ * @param searchRequest - The search filter to find resources to reindex.
+ * @param job - The current job.
+ */
+async function processPage(searchRequest: SearchRequest, job: Job<ReindexJobData>): Promise<void> {
+  const { resourceTypes, currentTimestamp, count } = job.data;
+  const systemRepo = getSystemRepo();
+  const { hasMore, newCount, nextTimestamp } = await systemRepo.withTransaction(async (conn) => {
+    const bundle = await systemRepo.search(searchRequest);
+    let newCount = count ?? 0;
+    let nextTimestamp = currentTimestamp;
+
+    if (bundle.entry?.length) {
+      const resources: Resource[] = [];
+      // Since the page size could be relatively large (1k+), preferring a simple for loop
+      // eslint-disable-next-line @typescript-eslint/prefer-for-of
+      for (let i = 0; i < bundle.entry.length; i++) {
+        const resource = bundle.entry[i].resource as Resource;
+        resources.push(resource);
+        nextTimestamp = resource.meta?.lastUpdated as string;
+      }
+      await systemRepo.reindexResources(conn, ...resources);
+      newCount += resources.length;
+    }
+
+    const hasMore = bundle.link?.some((link) => link.relation === 'next') ?? false;
+    return { hasMore, newCount, nextTimestamp };
+  });
+
+  const resourceType = resourceTypes[0];
+  if (hasMore) {
+    job.data.results[resourceType] = nextTimestamp;
+
+    // Log progress and update status in the AsyncJob resource periodically
+    if (Math.floor(newCount / progressLogThreshold) !== Math.floor((newCount - batchSize) / progressLogThreshold)) {
+      globalLogger.info('Reindex in progress', {
+        resourceType,
+        latestJobId: job.id,
+        nextTimestamp,
+        count,
+        elapsedTime: `${Date.now() - job.data.startTime} ms`,
+      });
+      await updateStatus(job);
+    }
+
+    // Enqueue job to handle next page of the current resource type
+    await addReindexJobData({
+      ...job.data,
+      currentTimestamp: nextTimestamp,
+      count: newCount,
+    });
+  } else if (resourceTypes.length > 1) {
+    // Completed reindex for this resource type
+    const elapsedTime = Date.now() - job.data.startTime;
+    getRequestContext().logger.info('Reindex completed', {
+      resourceType,
+      count: newCount,
+      duration: `${elapsedTime} ms`,
+    });
+
+    job.data.results[resourceType] = [newCount, elapsedTime];
+    await updateStatus(job);
+
+    // Enqueue job to start reindexing the next resource type
+    await addReindexJobData({
+      ...job.data,
+      resourceTypes: resourceTypes.slice(1),
+      currentTimestamp: new Date(0).toISOString(),
+      count: 0,
+      startTime: Date.now(),
+    });
+  } else {
+    await finishReindex(job, newCount);
   }
 }
 
@@ -182,22 +199,27 @@ async function finishReindex(job: Job<ReindexJobData>, count: number): Promise<v
   const ctx = getRequestContext();
   const resourceType = job.data.resourceTypes[0];
   const elapsedTime = Date.now() - job.data.startTime;
-  const systemRepo = getSystemRepo();
 
   ctx.logger.info('Reindex completed', { resourceType, count, duration: `${elapsedTime} ms` });
-
   job.data.results[resourceType] = [count, elapsedTime];
 
+  const systemRepo = getSystemRepo();
   const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
   await exec.completeJob(systemRepo, formatResults(job.data.results));
 }
 
+/**
+ * Format the current job result status for inclusion in the AsyncJob resource.
+ * @param results - The current results from the job
+ * @returns The formatted output parameters
+ */
 function formatResults(results: ReindexJobData['results']): Parameters {
   return {
     resourceType: 'Parameters',
     parameter: Object.keys(results).map((resourceType) => {
       const result = results[resourceType];
       if (typeof result === 'string') {
+        // In-progress resource types log the next timestamp, which could be used to restart the job
         return {
           name: 'result',
           part: [
@@ -206,6 +228,7 @@ function formatResults(results: ReindexJobData['results']): Parameters {
           ],
         };
       } else {
+        // Completed resource types report the number of indexed resources and wall time for the reindex job(s)
         const [count, elapsedTime] = result;
         return {
           name: 'result',
