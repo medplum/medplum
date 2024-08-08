@@ -1,4 +1,4 @@
-import { InternalTypeSchema, tryGetProfile, isProfileLoaded, isPopulated } from '@medplum/core';
+import { isPopulated, isProfileLoaded } from '@medplum/core';
 import { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
@@ -13,7 +13,6 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
   const { propertyType } = props;
 
   const medplum = useMedplum();
-  const [typeSchema, setTypeSchema] = useState<InternalTypeSchema | undefined>();
   const profileUrl: string | undefined = useMemo(() => {
     if (!isPopulated(propertyType.profile)) {
       return undefined;
@@ -28,11 +27,7 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
       setLoadingProfile(true);
       medplum
         .requestProfileSchema(profileUrl)
-        .then(() => {
-          const profile = tryGetProfile(profileUrl);
-          setLoadingProfile(false);
-          setTypeSchema(profile);
-        })
+        .then(() => setLoadingProfile(false))
         .catch((reason) => {
           setLoadingProfile(false);
           console.warn(reason);
@@ -60,7 +55,7 @@ export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
     <BackboneElementInput
       profileUrl={profileUrl}
       path={props.path}
-      typeName={typeSchema?.name ?? 'Extension'}
+      typeName="Extension"
       defaultValue={props.defaultValue}
       onChange={props.onChange}
     />

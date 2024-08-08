@@ -191,8 +191,10 @@ async function getSearchEntries<T extends Resource>(
   }
 
   const duration = endTime - startTime;
-  const threshold = getConfig().slowQueryThresholdMilliseconds;
-  if (threshold !== undefined && duration > threshold) {
+  const config = getConfig();
+  const threshold = config.slowQueryThresholdMilliseconds;
+  const sampleRate = config.slowQuerySampleRate ?? 1;
+  if (threshold !== undefined && duration > threshold && Math.random() < sampleRate) {
     builder.explain = true;
     builder.analyzeBuffers = true;
     const sqlBuilder = new SqlBuilder();

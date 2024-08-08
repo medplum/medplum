@@ -11,6 +11,7 @@ import {
   getDataType,
   indexStructureDefinitionBundle,
   isProfileLoaded,
+  loadDataType,
   parseStructureDefinition,
   subsetResource,
   tryGetDataType,
@@ -354,20 +355,70 @@ describe('FHIR resource and data type representations', () => {
   test('Indexing structure definitions related to a profile', () => {
     const profileUrl = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure';
     const profileName = 'USCoreBloodPressureProfile';
+    const profileType = 'Observation';
 
     expect(isProfileLoaded(profileUrl)).toBe(false);
     expect(tryGetProfile(profileUrl)).toBeUndefined();
-    expect(tryGetDataType(profileName)).toBeUndefined();
-    expect(tryGetDataType(profileName, profileUrl)).toBeUndefined();
 
     const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8'));
     expect(sd.url).toEqual(profileUrl);
     expect(sd.name).toEqual(profileName);
-    indexStructureDefinitionBundle([sd], profileUrl);
+    expect(sd.type).toEqual(profileType);
+    indexStructureDefinitionBundle([sd]);
 
     expect(isProfileLoaded(profileUrl)).toBe(true);
     expect(tryGetProfile(profileUrl)).toBeDefined();
-    expect(tryGetDataType(profileName)).toBeUndefined(); // expect undefined since profileUrl argument not provided
-    expect(tryGetDataType(profileName, profileUrl)).toBeDefined();
+    expect(tryGetDataType(profileType, profileUrl)).toBeDefined();
+  });
+
+  test('Quantity profiles', () => {
+    const quantity = getDataType('Quantity');
+    expect(quantity).toBeDefined();
+    expect(quantity.name).toEqual('Quantity');
+    expect(quantity.type).toEqual('Quantity');
+
+    const simpleQuantity = getDataType('SimpleQuantity');
+    expect(simpleQuantity).toBeDefined();
+    expect(simpleQuantity.name).toEqual('SimpleQuantity');
+    expect(simpleQuantity.type).toEqual('Quantity');
+
+    const moneyQuantity = getDataType('MoneyQuantity');
+    expect(moneyQuantity).toBeDefined();
+    expect(moneyQuantity.name).toEqual('MoneyQuantity');
+    expect(moneyQuantity.type).toEqual('Quantity');
+  });
+
+  test('Name conflict', () => {
+    const patient1 = getDataType('Patient');
+    expect(patient1).toBeDefined();
+
+    // Index the C-CDA Patient profile
+    // Based on https://github.com/HL7/CDA-core-sd/blob/master/input/resources/Patient.xml
+    // Note that "name" is set to "Patient", which could be inconflict with the FHIR Patient.
+    // Note that "type" is not "Patient", which means that this is a different patient type.
+    loadDataType({
+      resourceType: 'StructureDefinition',
+      url: 'http://hl7.org/cda/stds/core/StructureDefinition/Patient',
+      name: 'Patient',
+      status: 'active',
+      kind: 'logical',
+      abstract: false,
+      type: 'http://hl7.org/cda/stds/core/StructureDefinition/Patient',
+      snapshot: {
+        element: [
+          {
+            path: 'Patient',
+          },
+        ],
+      },
+    });
+    const patient2 = getDataType('http://hl7.org/cda/stds/core/StructureDefinition/Patient');
+    expect(patient2).toBeDefined();
+    expect(patient2?.name).toEqual('Patient');
+
+    // The original Patient profile should still be accessible
+    const patient3 = getDataType('Patient');
+    expect(patient3).toBeDefined();
+    expect(patient3).toEqual(patient1);
   });
 });

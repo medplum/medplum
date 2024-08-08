@@ -42,7 +42,7 @@ export function getValueSliceName(
   for (const slice of slices) {
     const typedValue: TypedValue = {
       value,
-      type: slice.typeSchema?.name ?? slice.type?.[0].code,
+      type: slice.typeSchema?.type ?? slice.type?.[0].code,
     };
     if (
       discriminators.every((d) =>

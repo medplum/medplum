@@ -1,4 +1,4 @@
-import { indexStructureDefinitionBundle } from '@medplum/core';
+import { loadDataType } from '@medplum/core';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, fireEvent, render, screen } from '../test-utils/render';
@@ -185,7 +185,7 @@ describe('ReferenceInput', () => {
     const blinky = FishPatientResources.getBlinkyTheFish();
     await medplum.createResource(blinky);
 
-    indexStructureDefinitionBundle([FishPatientProfileSD], FishPatientProfileSD.url);
+    loadDataType(FishPatientProfileSD);
     setup({
       name: 'foo',
       targetTypes: [FishPatientProfileSD.url, 'Patient'],

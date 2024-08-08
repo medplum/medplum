@@ -6,10 +6,10 @@ import {
   loadDataType,
   tryGetProfile,
 } from '@medplum/core';
-import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
-import { MockClient } from '@medplum/mock';
-import { StructureDefinition } from '@medplum/fhirtypes';
 import { readJson } from '@medplum/definitions';
+import { StructureDefinition } from '@medplum/fhirtypes';
+import { MockClient } from '@medplum/mock';
+import { assignValuesIntoSlices, prepareSlices } from './ResourceArrayInput.utils';
 
 const medplum = new MockClient();
 
@@ -40,7 +40,7 @@ describe('assignValuesIntoSlices', () => {
         if (!sd) {
           fail(`could not find structure definition for ${url}`);
         }
-        loadDataType(sd, sd.url);
+        loadDataType(sd);
       }
       expect(isProfileLoaded(profileUrl)).toBe(true);
       patientSchema = tryGetProfile(profileUrl) as InternalTypeSchema;
@@ -125,7 +125,7 @@ describe('assignValuesIntoSlices', () => {
     beforeAll(() => {
       bpSD = USCoreStructureDefinitions.find((sd) => sd.url === profileUrl) as StructureDefinition;
       expect(bpSD).toBeDefined();
-      loadDataType(bpSD, bpSD.url);
+      loadDataType(bpSD);
       expect(isProfileLoaded(profileUrl)).toBe(true);
       bpSchema = tryGetProfile(profileUrl) as InternalTypeSchema;
       expect(bpSchema).toBeDefined();

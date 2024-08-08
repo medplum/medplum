@@ -49,6 +49,7 @@ export function inflateBaseSchema(base: BaseSchema): DataTypesMap {
   for (const [key, schema] of Object.entries(base)) {
     output[key] = {
       name: key,
+      type: key,
       elements: Object.fromEntries(
         Object.entries(schema.elements).map(([property, partial]) => [property, inflateElement(property, partial)])
       ),

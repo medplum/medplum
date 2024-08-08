@@ -40,7 +40,7 @@ import { ProfileResource, createReference, sleep } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
-  url: 'http://example.com/patient',
+  url: 'http://hl7.org/fhir/StructureDefinition/Patient',
   status: 'active',
   kind: 'resource',
   abstract: false,
@@ -89,6 +89,7 @@ const patientProfileExtensionUrl = 'http://example.com/patient-profile-extension
 const profileSD = {
   resourceType: 'StructureDefinition',
   name: 'PatientProfile',
+  type: 'Patient',
   url: patientProfileUrl,
   snapshot: {
     element: [
@@ -1853,7 +1854,7 @@ describe('Client', () => {
 
     await request1;
     expect(isProfileLoaded(patientProfileUrl)).toBe(true);
-    expect(getDataType(profileSD.name, patientProfileUrl)).toBeDefined();
+    expect(getDataType(profileSD.type, patientProfileUrl)).toBeDefined();
   });
 
   test('requestProfileSchema expandProfile', async () => {
@@ -1873,8 +1874,8 @@ describe('Client', () => {
     await request2;
     expect(isProfileLoaded(patientProfileUrl)).toBe(true);
     expect(isProfileLoaded(patientProfileExtensionUrl)).toBe(true);
-    expect(getDataType(profileSD.name, patientProfileUrl)).toBeDefined();
-    expect(getDataType(profileExtensionSD.name, patientProfileExtensionUrl)).toBeDefined();
+    expect(getDataType(profileSD.type, patientProfileUrl)).toBeDefined();
+    expect(getDataType(profileExtensionSD.type, patientProfileExtensionUrl)).toBeDefined();
   });
 
   test('Search', async () => {
