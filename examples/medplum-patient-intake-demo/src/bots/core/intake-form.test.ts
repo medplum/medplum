@@ -270,6 +270,86 @@ describe('Intake form', async () => {
     });
   });
 
+  describe('Condition', async () => {
+    test('add conditions', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      const conditions = await medplum.searchResources('Condition', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(conditions.length).toEqual(2);
+
+      expect(conditions[0].code?.coding?.[0].code).toEqual('59621000');
+      expect(conditions[0].code?.coding?.[0].display).toEqual('Essential hypertension (disorder)');
+      expect(conditions[0].clinicalStatus?.coding?.[0].code).toEqual('active');
+      expect(conditions[0].onsetDateTime).toEqual('2008-05-01T00:00:00.000Z');
+
+      expect(conditions[1].code?.coding?.[0].code).toEqual('44054006');
+      expect(conditions[1].code?.coding?.[0].display).toEqual('Diabetes mellitus type 2 (disorder)');
+      expect(conditions[1].clinicalStatus?.coding?.[0].code).toEqual('active');
+      expect(conditions[1].onsetDateTime).toEqual('2010-03-01T00:00:00.000Z');
+    });
+
+    test('does not duplicate existing conditions', async () => {
+      await medplum.createResource({
+        resourceType: 'Condition',
+        subject: createReference(patient),
+        code: {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '59621000',
+              display: 'Diabetes mellitus type 2 (disorder)',
+            },
+          ],
+        },
+      });
+
+      let conditions = await medplum.searchResources('Condition', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(conditions.length).toEqual(1);
+
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      conditions = await medplum.searchResources('Condition', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(conditions.length).toEqual(2);
+    });
+  });
+
+  describe('Family Member History', async () => {
+    test('add family member history', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      const familyMemberHistories = await medplum.searchResources('FamilyMemberHistory', {
+        patient: getReferenceString(patient),
+      });
+
+      expect(familyMemberHistories.length).toEqual(2);
+
+      expect(familyMemberHistories[0].condition?.[0].code?.coding?.[0].code).toEqual('254843006');
+      expect(familyMemberHistories[0].condition?.[0].code?.coding?.[0].display).toEqual(
+        'Familial cancer of breast (disorder)'
+      );
+      expect(familyMemberHistories[0].relationship?.coding?.[0].code).toEqual('MTH');
+      expect(familyMemberHistories[0].relationship?.coding?.[0].display).toEqual('mother');
+      expect(familyMemberHistories[0].deceasedBoolean).toEqual(false);
+
+      expect(familyMemberHistories[1].condition?.[0].code?.coding?.[0].code).toEqual('53741008');
+      expect(familyMemberHistories[1].condition?.[0].code?.coding?.[0].display).toEqual(
+        'Coronary arteriosclerosis (disorder)'
+      );
+      expect(familyMemberHistories[1].relationship?.coding?.[0].code).toEqual('FTH');
+      expect(familyMemberHistories[1].relationship?.coding?.[0].display).toEqual('father');
+      expect(familyMemberHistories[1].deceasedBoolean).toEqual(true);
+    });
+  });
+
   describe('Language information', async () => {
     test('add languages', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
@@ -386,6 +466,19 @@ describe('Intake form', async () => {
       });
 
       expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('M');
+    });
+
+    test('Smoking status', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = await medplum.readResource('Patient', patient.id as string);
+
+      const observation = await medplum.searchOne('Observation', {
+        code: '72166-2',
+        subject: getReferenceString(patient),
+      });
+
+      expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('428041000124106');
     });
 
     test('Education Level', async () => {
