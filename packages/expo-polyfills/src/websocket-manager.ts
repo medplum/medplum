@@ -11,6 +11,7 @@ export function initWebSocketManager(medplum: MedplumClient): void {
       ws.close();
     } else if (
       previousState !== 'active' &&
+      nextState === 'active' &&
       ws.readyState !== WebSocket.OPEN &&
       ws.readyState !== WebSocket.CONNECTING
     ) {
