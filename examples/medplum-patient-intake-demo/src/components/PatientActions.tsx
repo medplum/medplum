@@ -5,7 +5,7 @@ import { useMedplum } from '@medplum/react';
 import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
-import { IconEdit, IconForms } from '@tabler/icons-react';
+import { IconEye } from '@tabler/icons-react';
 
 interface PatientActionsProps {
   patient: Patient;
@@ -30,22 +30,13 @@ export function PatientActions(props: PatientActionsProps): JSX.Element {
     navigate(`/Patient/${props.patient.id}/intake/${questionnaireResponse?.id}`);
   }
 
-  function handleCompleteIntakeForm(): void {
-    navigate(`/Patient/${props.patient.id}/intake`);
-  }
-
   return (
     <Stack p="xs" m="xs">
       <Title>Patient Actions</Title>
-      {questionnaireResponse ? (
-        <Button leftSection={<IconEdit size={16} />} onClick={handleViewIntakeForm}>
-          View Existing Intake Form
-        </Button>
-      ) : (
-        <Button leftSection={<IconForms size={16} />} onClick={handleCompleteIntakeForm}>
-          Complete Patient Intake
-        </Button>
-      )}
+
+      <Button leftSection={<IconEye size={16} />} onClick={handleViewIntakeForm} disabled={!questionnaireResponse}>
+        View Intake Form
+      </Button>
     </Stack>
   );
 }

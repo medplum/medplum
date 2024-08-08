@@ -89,7 +89,7 @@ export function IntakeResponsePage(): JSX.Element {
   return (
     <Document>
       <Title order={1} mb="lg">
-        Patient Intake Form Responses
+        Patient Intake Form Response
       </Title>
       <Stack>
         {items.map((item) => (

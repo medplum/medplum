@@ -108,6 +108,8 @@ function getDefaultFields(resourceType: string): string[] {
       return ['name', 'gender', 'birthDate', '_lastUpdated'];
     case 'Practitioner':
       return ['name', '_lastUpdated'];
+    case 'QuestionnaireResponse':
+      return ['_id', 'questionnaire', 'author', '_lastUpdated'];
     default:
       return ['_id', '_lastUpdated'];
   }
