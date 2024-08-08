@@ -14,7 +14,7 @@ export const payorOrganization2: Organization = {
   name: 'Second Insurance Provider',
 };
 
-export const intakeQuestionnaire: Questionnaire = coreBundle.entry[2].resource as Questionnaire;
+export const intakeQuestionnaire: Questionnaire = coreBundle.entry[0].resource as Questionnaire;
 intakeQuestionnaire.id = 'intake-questionnaire-id';
 
 export const intakeResponse: QuestionnaireResponse = {

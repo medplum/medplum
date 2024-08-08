@@ -4,6 +4,7 @@ import {
   IconFilePencil,
   IconHealthRecognition,
   IconPencil,
+  IconQuestionMark,
   IconRobot,
   IconUser,
 } from '@tabler/icons-react';
@@ -72,9 +73,10 @@ export function App(): JSX.Element | null {
         {
           title: 'Upload Data',
           links: [
-            { icon: <IconDatabaseImport />, label: 'Upload Core Data', href: '/upload/core' },
-            { icon: <IconHealthRecognition />, label: 'Upload Example Patient Data', href: '/upload/example' },
+            { icon: <IconDatabaseImport />, label: 'Upload Core ValueSets', href: '/upload/core' },
+            { icon: <IconQuestionMark />, label: 'Upload Questionnaires', href: '/upload/questionnaire' },
             { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' },
+            { icon: <IconHealthRecognition />, label: 'Upload Example Data', href: '/upload/example' },
           ],
         },
       ]}
