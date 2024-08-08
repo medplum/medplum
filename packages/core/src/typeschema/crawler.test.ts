@@ -131,7 +131,7 @@ describe('ResourceCrawler', () => {
             if (propertyValue) {
               for (const value of arrayify(propertyValue) as TypedValue[]) {
                 if (value.type === 'Coding') {
-                  resultCodes.push(value.value as Attachment);
+                  resultCodes.push(value.value);
                 }
               }
             }
@@ -181,7 +181,7 @@ describe('ResourceCrawler', () => {
             for (const value of arrayify(propertyValue) as TypedValue[]) {
               if (value.type === 'Coding') {
                 await sleep(1); // Simulate validating the coding
-                resultCodes.push(value.value as Attachment);
+                resultCodes.push(value.value);
               }
             }
           }
