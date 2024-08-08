@@ -37,6 +37,7 @@ export async function closeRedis(): Promise<void> {
  */
 export function getRedis(): Redis & { duplicate: never } {
   if (!redis) {
+    console.trace('No Redis');
     throw new Error('Redis not initialized');
   }
   // @ts-expect-error We don't want anyone to call `duplicate on the redis global instance
@@ -53,6 +54,7 @@ export function getRedis(): Redis & { duplicate: never } {
  */
 export function getRedisSubscriber(): Redis & { quit: never } {
   if (!redis) {
+    console.trace('No Redis subscriber');
     throw new Error('Redis not initialized');
   }
   if (!redisSubscribers) {
