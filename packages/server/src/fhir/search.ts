@@ -136,8 +136,7 @@ export async function searchByReferenceImpl<T extends Resource>(
         );
       }
       const details = getSearchParameterDetails(resourceType, param);
-      const column = new Column(builder.tableName, details.columnName);
-      builder.whereExpr(new Condition(column, '=', referenceColumn));
+      builder.whereExpr(buildReferenceSearchFilter(builder.tableName, details, Operator.EQUALS, referenceColumn));
     },
   });
   const builder = new SelectQuery(
@@ -991,22 +990,26 @@ function buildTokenSearchFilter(
  * @param table - The table in which to search.
  * @param details - The search parameter details.
  * @param operator - The search operator.
- * @param values - The string values to search against.
+ * @param values - The string values to search against or a Column
  * @returns The select query condition.
  */
 function buildReferenceSearchFilter(
   table: string,
   details: SearchParameterDetails,
   operator: Operator,
-  values: string[]
+  values: string[] | Column
 ): Expression {
   const column = new Column(table, details.columnName);
-  values = values.map((v) =>
-    !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
-  );
+  if (Array.isArray(values)) {
+    values = values.map((v) =>
+      !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
+    );
+  }
   let condition: Condition;
   if (details.array) {
     condition = new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
+  } else if (values instanceof Column) {
+    condition = new Condition(column, '=', values);
   } else if (values.length === 1) {
     condition = new Condition(column, '=', values[0]);
   } else {
