@@ -1,5 +1,12 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconDatabaseImport, IconFilePencil, IconHealthRecognition, IconRobot, IconUser } from '@tabler/icons-react';
+import {
+  IconDatabaseImport,
+  IconFilePencil,
+  IconHealthRecognition,
+  IconPencil,
+  IconRobot,
+  IconUser,
+} from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { IntakeFormPage } from './pages/IntakeFormPage';
@@ -46,6 +53,10 @@ export function App(): JSX.Element | null {
           title: 'Charts',
           links: [{ icon: <IconUser />, label: 'Patients', href: '/Patient' }],
         },
+        {
+          title: 'Onboarding',
+          links: [{ icon: <IconPencil />, label: 'New Patient', href: '/onboarding' }],
+        },
         intakeQuestionnaire
           ? {
               title: 'Management',
@@ -75,8 +86,8 @@ export function App(): JSX.Element | null {
               <Route path="/" element={profile ? <SearchPage /> : <LandingPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/Patient/:id/*" element={<PatientPage />} />
-              <Route path="/Patient/:patientId/intake" element={<IntakeFormPage />} />
               <Route path="/Patient/:patientId/intake/:responseId" element={<IntakeResponsePage />} />
+              <Route path="/onboarding" element={<IntakeFormPage />} />
               <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/upload/:dataType" element={<UploadDataPage />} />

@@ -62,7 +62,7 @@ export function UploadDataPage(): JSX.Element {
   return (
     <Document>
       <LoadingOverlay visible={pageDisabled} />
-      <Button disabled={buttonDisabled} onClick={handleUpload}>
+      <Button disabled={false} onClick={handleUpload}>
         Upload {dataTypeDisplay} data
       </Button>
     </Document>

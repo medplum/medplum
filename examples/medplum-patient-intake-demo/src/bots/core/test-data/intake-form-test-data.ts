@@ -1,17 +1,6 @@
-import { createReference, getReferenceString } from '@medplum/core';
-import { Organization, Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { getReferenceString } from '@medplum/core';
+import { Organization, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import coreBundle from '../../../../data/core/patient-intake-questionnaire.json';
-
-export const intakePatient: Patient = {
-  resourceType: 'Patient',
-  id: 'patient-id',
-  name: [
-    {
-      given: ['John', 'Doe'],
-      family: 'Carvalho',
-    },
-  ],
-};
 
 export const payorOrganization1: Organization = {
   resourceType: 'Organization',
@@ -32,7 +21,6 @@ export const intakeResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   questionnaire: getReferenceString(intakeQuestionnaire),
   status: 'completed',
-  subject: createReference(intakePatient),
   item: [
     {
       id: 'id-35',
