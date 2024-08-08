@@ -558,6 +558,18 @@ function evalAppend(ctx: TransformContext, target: StructureMapGroupRuleTarget):
   return [{ type: 'string', value: (arg1 ?? '').toString() + (arg2 ?? '').toString() }];
 }
 
+/**
+ * Evaluates the "cast" transform.
+ *
+ * "Cast source from one type to another. target type can be left as implicit if there is one and only one target type known."
+ *
+ * See: https://build.fhir.org/mapping-language.html#7.8.0.8.2
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @returns The evaluated target values.
+ * @internal
+ */
 function evalCast(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const arg1 = resolveParameter(ctx, target.parameter?.[0])?.[0];
   const arg2 = resolveParameter(ctx, target.parameter?.[1])?.[0]?.value;
@@ -567,6 +579,22 @@ function evalCast(ctx: TransformContext, target: StructureMapGroupRuleTarget): T
   return [arg1];
 }
 
+/**
+ * Evaluates the "cc" transform.
+ *
+ * "Create a CodeableConcept from the parameters provided."
+ *
+ * If there are two parameters, the first is the system and the second is the code.
+ *
+ * If there is only one parameter, it is the text.
+ *
+ * See: https://build.fhir.org/mapping-language.html#7.8.0.8.2
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @returns The evaluated target values.
+ * @internal
+ */
 function evalCc(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const params = target.parameter as StructureMapGroupRuleTargetParameter[];
   if (params.length === 2) {
