@@ -66,14 +66,15 @@ export function initReindexWorker(config: MedplumServerConfig): void {
  * Closes the BullMQ worker.
  */
 export async function closeReindexWorker(): Promise<void> {
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-
+  // Close worker first, so any jobs that need to finish can enqueue the next job before exiting
   if (worker) {
     await worker.close();
     worker = undefined;
+  }
+
+  if (queue) {
+    await queue.close();
+    queue = undefined;
   }
 }
 

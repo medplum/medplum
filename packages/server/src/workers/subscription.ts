@@ -112,14 +112,14 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
  * Clsoes the BullMQ worker.
  */
 export async function closeSubscriptionWorker(): Promise<void> {
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-
   if (worker) {
     await worker.close();
     worker = undefined;
+  }
+
+  if (queue) {
+    await queue.close();
+    queue = undefined;
   }
 }
 

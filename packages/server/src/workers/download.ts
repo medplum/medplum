@@ -74,14 +74,14 @@ export function initDownloadWorker(config: MedplumServerConfig): void {
  * Closes the BullMQ worker.
  */
 export async function closeDownloadWorker(): Promise<void> {
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-
   if (worker) {
     await worker.close();
     worker = undefined;
+  }
+
+  if (queue) {
+    await queue.close();
+    queue = undefined;
   }
 }
 
