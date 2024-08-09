@@ -178,8 +178,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(false);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
     }));
 
   test('Explicit exact', () =>
@@ -209,8 +209,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(false);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
     }));
 
   test('Contains', () =>
@@ -240,8 +240,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(2);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(true);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeDefined();
     }));
 
   test('Not equals', () =>
@@ -277,8 +277,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBe(false);
-      expect(bundleContains(searchResult1, patient2)).toBe(true);
+      expect(bundleContains(searchResult1, patient1)).toBeUndefined();
+      expect(bundleContains(searchResult1, patient2)).toBeDefined();
     }));
 
   test('Missing', () =>
@@ -313,8 +313,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(false);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
     }));
 
   test('Search comma separated identifier exact', () =>
@@ -345,8 +345,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(2);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(true);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeDefined();
     }));
 
   test('Search on system', () =>
@@ -378,8 +378,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(false);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
 
       const searchResult2 = await systemRepo.search({
         resourceType: 'Patient',
@@ -392,8 +392,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult2.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult2, patient1)).toBe(false);
-      expect(bundleContains(searchResult2, patient2)).toBe(true);
+      expect(bundleContains(searchResult2, patient1)).toBeUndefined();
+      expect(bundleContains(searchResult2, patient2)).toBeDefined();
     }));
 
   test('Non-array identifier', () =>
@@ -471,8 +471,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, sr1)).toBe(true);
-      expect(bundleContains(searchResult1, sr2)).toBe(false);
+      expect(bundleContains(searchResult1, sr1)).toBeDefined();
+      expect(bundleContains(searchResult1, sr2)).toBeUndefined();
     }));
 
   test('Identifier value with pipe', () =>
