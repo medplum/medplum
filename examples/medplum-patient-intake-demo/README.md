@@ -37,19 +37,13 @@ If you haven't already done so, follow the instructions in [this tutorial](https
 
 [Fork](https://github.com/medplum/medplum/) and clone the repo to your local machine.
 
-Navigate to the patient intake demo example directory.
-
-```bash
-cd examples/medplum-patient-intake-demo
-```
-
-Install the dependencies for the demo app.
+Next, install the dependencies.
 
 ```bash
 npm install
 ```
 
-Build the bots:
+Then, build the bots
 
 > [!WARNING]
 > Bots are not on by default for Medplum projects, make sure they are enabled before proceeding.

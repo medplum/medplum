@@ -1,5 +1,6 @@
 import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
+  Address,
   HumanName,
   Patient,
   Questionnaire,
@@ -43,7 +44,28 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const patientName = getPatientName(answers);
   patient.name = patientName ? [patientName] : patient.name;
   patient.birthDate = answers['dob']?.valueDate || patient.birthDate;
+  const patientAddress = getPatientAddress(answers);
+  patient.address = patientAddress ? [patientAddress] : patient.address;
   patient.gender = (answers['gender-identity']?.valueCoding?.code as Patient['gender']) || patient.gender;
+  patient.telecom = answers['phone']?.valueString
+    ? [{ system: 'phone', value: answers['phone'].valueString }]
+    : patient.telecom;
+  patient.identifier = answers['ssn']?.valueString
+    ? [
+        {
+          type: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                code: 'SS',
+              },
+            ],
+          },
+          system: 'http://hl7.org/fhir/sid/us-ssn',
+          value: answers['ssn'].valueString,
+        },
+      ]
+    : patient.identifier;
 
   setExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race']);
   setExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity']);
@@ -179,4 +201,27 @@ function getPatientName(answers: Record<string, QuestionnaireResponseItemAnswer>
   }
 
   return Object.keys(patientName).length > 0 ? patientName : null;
+}
+
+function getPatientAddress(answers: Record<string, QuestionnaireResponseItemAnswer>): Address | undefined {
+  const patientAddress: Address = {};
+
+  if (answers['street']?.valueString) {
+    patientAddress.line = [answers['street'].valueString];
+  }
+
+  if (answers['city']?.valueString) {
+    patientAddress.city = answers['city'].valueString;
+  }
+
+  if (answers['state']?.valueCoding?.code) {
+    patientAddress.state = answers['state'].valueCoding.code;
+  }
+
+  if (answers['zip']?.valueString) {
+    patientAddress.postalCode = answers['zip'].valueString;
+  }
+
+  // To simplify the demo, we're assuming the address is always a home address
+  return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
 }
