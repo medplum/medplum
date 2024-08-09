@@ -250,6 +250,7 @@ async function getSearchEntries<T extends Resource>(
     (resource) =>
       ({
         fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+        search: { mode: 'match' },
         resource,
       }) as BundleEntry
   );
@@ -463,6 +464,7 @@ async function getSearchIncludeEntries(
 
   return includedResources.map((resource) => ({
     fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+    search: { mode: 'include' },
     resource,
   }));
 }
@@ -512,7 +514,11 @@ async function getSearchRevIncludeEntries(
   };
   const builder = getSelectQueryForSearch(repo, searchRequest);
 
-  return (await getSearchEntries(repo, searchRequest, builder)).entry;
+  const entries = (await getSearchEntries(repo, searchRequest, builder)).entry;
+  for (const entry of entries) {
+    entry.search = { mode: 'include' };
+  }
+  return entries;
 }
 
 /**
