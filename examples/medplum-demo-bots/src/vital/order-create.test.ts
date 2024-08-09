@@ -194,7 +194,9 @@ describe('Create Order Bot', () => {
     const apiKey = '3f2504e0-4f89-11d3-9a0c-0305e82c3301';
     const baseURL = 'https://api.dev.tryvital.io';
 
-    (fetch as any).mockResolvedValue(createFetchResponse({ client_user_id: ctx.patient.id, user_id: userID }, 400));
+    (fetch as any).mockResolvedValue(
+      createFetchResponse({ detail: { client_user_id: ctx.patient.id, user_id: userID } }, 400)
+    );
 
     const secrets = {
       VITAL_BASE_URL: {

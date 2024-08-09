@@ -171,34 +171,28 @@ describe('Vital API', () => {
     const apiKey = '3f2504e0-4f89-11d3-9a0c-0305e82c3301';
     const baseURL = 'https://api.dev.tryvital.io';
 
-    const labTests = [
+    const labsMock = [
       {
-        lab: {
-          id: 24,
-          slug: 'ussl',
-          name: 'USSL',
-          collection_methods: ['testkit'],
-        },
+        id: 24,
+        slug: 'ussl',
+        name: 'USSL',
+        collection_methods: ['testkit'],
       },
       {
-        lab: {
-          id: 2,
-          slug: 'spiriplex',
-          name: 'Spiriplex',
-          collection_methods: ['testkit'],
-        },
+        id: 2,
+        slug: 'spiriplex',
+        name: 'Spiriplex',
+        collection_methods: ['testkit'],
       },
       {
-        lab: {
-          id: 27,
-          slug: 'labcorp',
-          name: 'Labcorp',
-          collection_methods: ['at_home_phlebotomy', 'walk_in_test'],
-        },
+        id: 27,
+        slug: 'labcorp',
+        name: 'Labcorp',
+        collection_methods: ['at_home_phlebotomy', 'walk_in_test'],
       },
     ];
 
-    (fetch as any).mockResolvedValue(createFetchResponse(labTests));
+    (fetch as any).mockResolvedValue(createFetchResponse(labsMock));
 
     const labs = await handler(ctx.medplum, {
       bot: { reference: 'Bot/123' },
@@ -218,7 +212,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(fetch).toHaveBeenCalledWith(`${baseURL}/v3/lab_tests`, {
+    expect(fetch).toHaveBeenCalledWith(`${baseURL}/v3/lab_tests/labs`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -226,7 +220,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(labs).toEqual(labTests.map((lt) => lt.lab));
+    expect(labs).toEqual(labsMock);
   });
 
   test<Context>('Get Markers', async (ctx) => {

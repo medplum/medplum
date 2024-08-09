@@ -30,6 +30,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
   switch (resource.resourceType) {
     case 'ServiceRequest': {
+      // Make sure to not duplicate the order
+      if (resource?.identifier?.find((i) => i.system === 'vital-order-id')) {
+        return true;
+      }
+
       const bundle = await buildVitalOrder(medplum, resource);
       const patient = bundle.entry?.find((e) => e.resource?.resourceType === 'Patient')?.resource as
         | Patient
@@ -53,6 +58,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           },
         ],
       });
+
+      console.log('Vital order created:', orderID);
 
       return true;
     }
@@ -178,6 +185,18 @@ type CreateUserResponse = {
 };
 
 /**
+ * Response from the Vital API when a user already exists.
+ */
+type CreateUserConflictResponse = {
+  detail: {
+    error_type: string;
+    error_message: string;
+    user_id: string;
+    created_on: string;
+  };
+};
+
+/**
  * Sends a POST request to the Vital API to create a vital user using the provided Patient.
  *
  * @param secrets - An object containing project settings, including `VITAL_API_KEY` and `VITAL_BASE_URL`.
@@ -209,18 +228,28 @@ export async function createVitalUser(secrets: Record<string, ProjectSetting>, p
   });
 
   switch (resp.status) {
-    case 400:
-    case 200: {
-      const user = (await resp.json()) as CreateUserResponse;
+    case 400: {
+      const data = (await resp.json()) as CreateUserConflictResponse;
 
-      if (user.client_user_id) {
-        return user.user_id;
+      if (data.detail.user_id) {
+        return data.detail.user_id;
       }
 
-      throw new Error('Vital API create user error: ' + JSON.stringify(user));
+      throw new Error('Vital API create user error: ' + JSON.stringify(data));
     }
-    default:
-      throw new Error('Vital API error: ' + (await resp.json()));
+    case 200: {
+      const data = (await resp.json()) as CreateUserResponse;
+
+      if (data.user_id) {
+        return data.user_id;
+      }
+
+      throw new Error('Vital API create user error: ' + JSON.stringify(data));
+    }
+    default: {
+      const data = await resp.json();
+      throw new Error('Vital API error: ' + JSON.stringify(data));
+    }
   }
 }
 
@@ -244,10 +273,6 @@ async function getQuestionnaires(
 
     const q = await medplum.readReference(ref as Reference<QuestionnaireResponse>);
     questionnaires.push(q);
-  }
-
-  if (questionnaires.length === 0) {
-    throw new Error('Questionnaires are missing');
   }
 
   return questionnaires;
