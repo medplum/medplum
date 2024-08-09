@@ -99,6 +99,23 @@ describe('WebSockets Subscriptions', () => {
       await request(server)
         .ws('/ws/subscriptions-r4')
         .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            id: expect.any(String),
+            resourceType: 'Bundle',
+            type: 'history',
+            timestamp: expect.any(String),
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${patientSubscription.id as string}` },
+                },
+              },
+            ],
+          });
+        })
         // Add a new patient for this project
         .exec(async () => {
           // Update the patient
@@ -209,6 +226,23 @@ describe('WebSockets Subscriptions', () => {
       await request(server)
         .ws('/ws/subscriptions-r4')
         .sendJson({ type: 'bind-with-token', payload: { token } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            id: expect.any(String),
+            resourceType: 'Bundle',
+            type: 'history',
+            timestamp: expect.any(String),
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${patientSubscription.id as string}` },
+                },
+              },
+            ],
+          });
+        })
         // Add a new patient for this project
         .exec(async () => {
           // Update the patient
@@ -340,6 +374,16 @@ describe('WebSockets Subscriptions', () => {
         .close()
         .expectClosed();
     }));
+
+  test('Should respond with a pong if sent a ping', () =>
+    withTestContext(async () => {
+      await request(server)
+        .ws('/ws/subscriptions-r4')
+        .sendJson({ type: 'ping' })
+        .expectJson({ type: 'pong' })
+        .close()
+        .expectClosed();
+    }));
 });
 
 describe('Subscription Heartbeat', () => {
@@ -412,6 +456,23 @@ describe('Subscription Heartbeat', () => {
       await request(server)
         .ws('/ws/subscriptions-r4')
         .sendJson({ type: 'bind-with-token', payload: { token: body.parameter?.[0]?.valueString as string } })
+        .expectJson((actual) => {
+          expect(actual).toMatchObject({
+            id: expect.any(String),
+            resourceType: 'Bundle',
+            type: 'history',
+            timestamp: expect.any(String),
+            entry: [
+              {
+                resource: {
+                  resourceType: 'SubscriptionStatus',
+                  type: 'handshake',
+                  subscription: { reference: `Subscription/${subscription.id as string}` },
+                },
+              },
+            ],
+          });
+        })
         .expectJson((msg) => {
           if (!msg.entry?.[0]) {
             return false;
