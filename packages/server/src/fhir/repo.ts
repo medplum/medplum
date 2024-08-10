@@ -903,9 +903,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       resource = resources[i];
       (resource.meta as Meta).compartment = this.getCompartments(resource);
 
-      await this.writeResource(conn, resource);
       await this.writeLookupTables(conn, resource, false);
     }
+    await this.batchWriteResources(conn, ...resources);
   }
 
   /**
@@ -1186,20 +1186,13 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  /**
-   * Writes the resource to the resource table.
-   * This builds all search parameter columns.
-   * This does *not* write the version to the history table.
-   * @param client - The database client inside the transaction.
-   * @param resource - The resource.
-   */
-  private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
+  private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const compartments = meta.compartment?.map((ref) => resolveId(ref));
     const content = stringify(resource);
 
-    const columns: Record<string, any> = {
+    const row: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
@@ -1211,11 +1204,34 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
       for (const searchParam of Object.values(searchParams)) {
-        this.buildColumn(resource, columns, searchParam);
+        this.buildColumn(resource, row, searchParam);
       }
     }
+    return row;
+  }
 
-    await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
+  /**
+   * Writes the resource to the resource table.
+   * This builds all search parameter columns.
+   * This does *not* write the version to the history table.
+   * @param client - The database client inside the transaction.
+   * @param resource - The resource.
+   */
+  private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
+    await new InsertQuery(resource.resourceType, [this.buildResourceRow(resource)]).mergeOnConflict().execute(client);
+  }
+
+  private async batchWriteResources(client: PoolClient, ...resources: Resource[]): Promise<void> {
+    if (!resources.length) {
+      return;
+    }
+
+    await new InsertQuery(
+      resources[0].resourceType,
+      resources.map((r) => this.buildResourceRow(r))
+    )
+      .mergeOnConflict()
+      .execute(client);
   }
 
   /**
