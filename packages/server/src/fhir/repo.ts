@@ -905,7 +905,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
       await this.writeLookupTables(conn, resource, false);
     }
-    await this.batchWriteResources(conn, ...resources);
+    await this.batchWriteResources(conn, resources);
   }
 
   /**
@@ -1221,7 +1221,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     await new InsertQuery(resource.resourceType, [this.buildResourceRow(resource)]).mergeOnConflict().execute(client);
   }
 
-  private async batchWriteResources(client: PoolClient, ...resources: Resource[]): Promise<void> {
+  private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
     if (!resources.length) {
       return;
     }
