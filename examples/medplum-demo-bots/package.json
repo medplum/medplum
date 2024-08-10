@@ -29,6 +29,7 @@
     "root": true
   },
   "devDependencies": {
+    "@medplum/bot-layer": "3.2.6",
     "@medplum/cli": "3.2.6",
     "@medplum/core": "3.2.6",
     "@medplum/eslint-config": "3.2.6",

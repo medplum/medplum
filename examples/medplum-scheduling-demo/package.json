@@ -27,6 +27,7 @@
     "@mantine/core": "7.11.2",
     "@mantine/hooks": "7.11.2",
     "@mantine/notifications": "7.11.2",
+    "@medplum/bot-layer": "3.2.6",
     "@medplum/core": "3.2.6",
     "@medplum/eslint-config": "3.2.6",
     "@medplum/fhirtypes": "3.2.6",
