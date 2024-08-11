@@ -5,14 +5,14 @@ import { resolve } from 'path';
 import { LOINC } from '../constants';
 import { TypedValue } from '../types';
 import {
-  InternalSchemaElement,
-  InternalTypeSchema,
-  SlicingRules,
   getDataType,
   indexStructureDefinitionBundle,
+  InternalSchemaElement,
+  InternalTypeSchema,
   isProfileLoaded,
   loadDataType,
   parseStructureDefinition,
+  SlicingRules,
   subsetResource,
   tryGetDataType,
   tryGetProfile,
