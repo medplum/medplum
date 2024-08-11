@@ -39,12 +39,12 @@ export interface AsyncCrawlerVisitor {
 /** @deprecated - Use AsyncCrawlerVisitor instead */
 export type AsyncResourceVisitor = AsyncCrawlerVisitor;
 
-function isSchema(obj: InternalTypeSchema | ResourceCrawlerOptions): obj is InternalTypeSchema {
+function isSchema(obj: InternalTypeSchema | CrawlerOptions): obj is InternalTypeSchema {
   return 'elements' in obj;
 }
 
-function isAsync(visitor: ResourceVisitor | AsyncResourceVisitor): visitor is AsyncResourceVisitor {
-  return Boolean((visitor as AsyncResourceVisitor).visitPropertyAsync);
+function isAsync(visitor: CrawlerVisitor | AsyncCrawlerVisitor): visitor is AsyncCrawlerVisitor {
+  return Boolean((visitor as AsyncCrawlerVisitor).visitPropertyAsync);
 }
 
 /**
@@ -57,7 +57,7 @@ function isAsync(visitor: ResourceVisitor | AsyncResourceVisitor): visitor is As
  */
 export function crawlResource(
   resource: Resource,
-  visitor: ResourceVisitor,
+  visitor: CrawlerVisitor,
   schema?: InternalTypeSchema,
   initialPath?: string
 ): void;
@@ -69,11 +69,7 @@ export function crawlResource(
  * @returns void
  * @deprecated - Use crawlTypedValueAsync instead
  */
-export function crawlResource(
-  resource: Resource,
-  visitor: AsyncResourceVisitor,
-  options: ResourceCrawlerOptions
-): Promise<void>;
+export function crawlResource(resource: Resource, visitor: AsyncCrawlerVisitor, options: CrawlerOptions): Promise<void>;
 /**
  * Crawls the resource synchronously.
  * @param resource - The resource to crawl.
@@ -81,7 +77,7 @@ export function crawlResource(
  * @param options - Options for how to crawl the resource.
  * @deprecated - Use crawlTypedValue instead
  */
-export function crawlResource(resource: Resource, visitor: ResourceVisitor, options?: ResourceCrawlerOptions): void;
+export function crawlResource(resource: Resource, visitor: CrawlerVisitor, options?: CrawlerOptions): void;
 
 /**
  * Crawls the resource synchronously.
@@ -94,11 +90,11 @@ export function crawlResource(resource: Resource, visitor: ResourceVisitor, opti
  */
 export function crawlResource(
   resource: Resource,
-  visitor: ResourceVisitor | AsyncResourceVisitor,
-  schema?: InternalTypeSchema | ResourceCrawlerOptions,
+  visitor: CrawlerVisitor | AsyncCrawlerVisitor,
+  schema?: InternalTypeSchema | CrawlerOptions,
   initialPath?: string
 ): Promise<void> | void {
-  let options: ResourceCrawlerOptions | undefined;
+  let options: CrawlerOptions | undefined;
   if (schema && isSchema(schema)) {
     options = { schema, initialPath };
   } else {
@@ -122,8 +118,8 @@ export function crawlResource(
  */
 export async function crawlResourceAsync(
   resource: Resource,
-  visitor: AsyncResourceVisitor,
-  options: ResourceCrawlerOptions
+  visitor: AsyncCrawlerVisitor,
+  options: CrawlerOptions
 ): Promise<void> {
   return crawlTypedValueAsync(toTypedValue(resource), visitor, options);
 }
