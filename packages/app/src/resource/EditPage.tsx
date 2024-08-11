@@ -35,7 +35,7 @@ export function EditPage(): JSX.Element | null {
         .updateResource(cleanResource(newResource))
         .then(() => {
           navigate(`/${resourceType}/${id}/details`);
-          showNotification({ color: 'green', message: 'Success' });
+          showNotification({ id: 'succes', color: 'green', message: 'Success' });
         })
         .catch((err) => {
           setOutcome(normalizeOperationOutcome(err));
@@ -53,7 +53,7 @@ export function EditPage(): JSX.Element | null {
         .patchResource(resourceType, id, patchOperations)
         .then(() => {
           navigate(`/${resourceType}/${id}/details`);
-          showNotification({ color: 'green', message: 'Success' });
+          showNotification({ id: 'succes', color: 'green', message: 'Success' });
         })
         .catch((err) => {
           setOutcome(normalizeOperationOutcome(err));
