@@ -1662,7 +1662,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   readResource<K extends ResourceType>(
     resourceType: K,
-    id?: string,
+    id: string,
     options?: MedplumRequestOptions
   ): ReadablePromise<ExtractResource<K>> {
     if (!id) {
