@@ -25,7 +25,7 @@ export const payorOrganization2: Organization = {
   name: 'Second Insurance Provider',
 };
 
-export const intakeQuestionnaire: Questionnaire = coreBundle.entry[1].resource as Questionnaire;
+export const intakeQuestionnaire: Questionnaire = coreBundle.entry[2].resource as Questionnaire;
 intakeQuestionnaire.id = 'intake-questionnaire-id';
 
 export const intakeResponse: QuestionnaireResponse = {
@@ -416,6 +416,186 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
+      id: 'id-91',
+      linkId: 'medical-history',
+      text: 'Medical History',
+      item: [
+        {
+          id: 'id-92',
+          linkId: 'medical-history-problem',
+          text: 'Problem',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '59621000',
+                display: 'Essential hypertension (disorder)',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-93',
+          linkId: 'medical-history-clinical-status',
+          text: 'Status',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                code: 'active',
+                display: 'Active',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-94',
+          linkId: 'medical-history-onset',
+          text: 'Onset',
+          answer: [
+            {
+              valueDateTime: '2008-05-01T00:00:00.000Z',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-125',
+      linkId: 'medical-history',
+      text: 'Medical History',
+      item: [
+        {
+          id: 'id-126',
+          linkId: 'medical-history-problem',
+          text: 'Problem',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '44054006',
+                display: 'Diabetes mellitus type 2 (disorder)',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-127',
+          linkId: 'medical-history-clinical-status',
+          text: 'Status',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                code: 'active',
+                display: 'Active',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-128',
+          linkId: 'medical-history-onset',
+          text: 'Onset',
+          answer: [
+            {
+              valueDateTime: '2010-03-01T00:00:00.000Z',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-95',
+      linkId: 'family-member-history',
+      text: 'Family Member History',
+      item: [
+        {
+          id: 'id-96',
+          linkId: 'family-member-history-problem',
+          text: 'Problem',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '254843006',
+                display: 'Familial cancer of breast (disorder)',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-97',
+          linkId: 'family-member-history-relationship',
+          text: 'Relationship',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+                code: 'MTH',
+                display: 'mother',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-98',
+          linkId: 'family-member-history-deceased',
+          text: 'Deceased',
+          answer: [
+            {
+              valueBoolean: false,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-129',
+      linkId: 'family-member-history',
+      text: 'Family Member History',
+      item: [
+        {
+          id: 'id-130',
+          linkId: 'family-member-history-problem',
+          text: 'Problem',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '53741008',
+                display: 'Coronary arteriosclerosis (disorder)',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-131',
+          linkId: 'family-member-history-relationship',
+          text: 'Relationship',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+                code: 'FTH',
+                display: 'father',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-132',
+          linkId: 'family-member-history-deceased',
+          text: 'Deceased',
+          answer: [
+            {
+              valueBoolean: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: 'id-50',
       linkId: 'coverage-information',
       text: 'Coverage Information',
@@ -530,6 +710,20 @@ export const intakeResponse: QuestionnaireResponse = {
                 system: 'http://terminology.hl7.org/CodeSystem/v3-EducationLevel',
                 code: 'BD',
                 display: 'College or baccalaureate degree complete',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-11',
+          linkId: 'smoking-status',
+          text: 'Smoking Status',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '428041000124106',
+                display: 'Occasional tobacco smoker',
               },
             },
           ],
