@@ -40,17 +40,40 @@ function isAsync(visitor: ResourceVisitor | AsyncResourceVisitor): visitor is As
   return Boolean((visitor as AsyncResourceVisitor).visitPropertyAsync);
 }
 
+/**
+ * Crawls the resource synchronously.
+ * @param resource - The resource to crawl.
+ * @param visitor - The visitor functions to apply while crawling.
+ * @param schema - The schema to use for the resource.
+ * @param initialPath - The path within the resource form which to start crawling.
+ * @deprecated
+ */
 export function crawlResource(
   resource: Resource,
   visitor: ResourceVisitor,
   schema?: InternalTypeSchema,
   initialPath?: string
 ): void;
+/**
+ * Crawls the resource asynchronously.
+ * @param resource - The resource to crawl.
+ * @param visitor - The visitor functions to apply while crawling.
+ * @param options - Options for how to crawl the resource.
+ * @returns void
+ * @deprecated
+ */
 export function crawlResource(
   resource: Resource,
   visitor: AsyncResourceVisitor,
   options: ResourceCrawlerOptions
 ): Promise<void>;
+/**
+ * Crawls the resource synchronously.
+ * @param resource - The resource to crawl.
+ * @param visitor - The visitor functions to apply while crawling.
+ * @param options - Options for how to crawl the resource.
+ */
+export function crawlResource(resource: Resource, visitor: ResourceVisitor, options?: ResourceCrawlerOptions): void;
 export function crawlResource(
   resource: Resource,
   visitor: ResourceVisitor | AsyncResourceVisitor,
@@ -70,6 +93,20 @@ export function crawlResource(
     new ResourceCrawler(resource, visitor, options).crawl();
     return undefined;
   }
+}
+
+/**
+ * Crawls the resource asynchronously.
+ * @param resource - The resource to crawl.
+ * @param visitor - The visitor functions to apply while crawling.
+ * @param options - Options for how to crawl the resource.
+ */
+export async function crawlResourceAsync(
+  resource: Resource,
+  visitor: AsyncResourceVisitor,
+  options: ResourceCrawlerOptions
+): Promise<void> {
+  await new AsyncResourceCrawler(resource, visitor, options).crawl();
 }
 
 export type ResourceCrawlerOptions = {

@@ -7,7 +7,6 @@ import { useMemo } from 'react';
 // https://www.medplum.com/docs/fhir-datastore/binary-data#consuming-a-fhir-binary-in-an-application
 // https://github.com/medplum/medplum/issues/3815
 
-// TODO: possibly retain this cache in and restore from local storage to persist across page refreshes?
 // The S3 presigned URLs expire after 1 hour with the default configuration and hard refreshes are not uncommon even in SPAs so this
 // could be a good way to get additional cache hits
 // This would require additional logic for initialization, saving, and purging of expired keys

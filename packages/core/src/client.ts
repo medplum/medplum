@@ -2710,7 +2710,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   setAccessToken(accessToken: string, refreshToken?: string): void {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
-    this.sessionDetails = undefined;
     this.accessTokenExpires = tryGetJwtExpiration(accessToken);
     this.medplumServer = isMedplumAccessToken(accessToken);
   }

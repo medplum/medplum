@@ -56,12 +56,14 @@ import {
   Conjunction,
   Disjunction,
   Expression,
+  Literal,
   Negation,
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
   SqlBuilder,
   Union,
+  ValuesQuery,
 } from './sql';
 
 /**
@@ -86,20 +88,14 @@ export async function searchImpl<T extends Resource>(
   searchRequest: SearchRequest<T>
 ): Promise<Bundle<T>> {
   validateSearchResourceTypes(repo, searchRequest);
-
-  // Ensure that "count" is set.
-  // Count is an optional field.  From this point on, it is safe to assume it is a number.
-  if (searchRequest.count === undefined) {
-    searchRequest.count = DEFAULT_SEARCH_COUNT;
-  } else if (searchRequest.count > maxSearchResults) {
-    searchRequest.count = maxSearchResults;
-  }
+  applyCountAndOffsetLimits(searchRequest);
 
   let entry = undefined;
   let rowCount = undefined;
   let hasMore = false;
   if (searchRequest.count > 0) {
-    ({ entry, rowCount, hasMore } = await getSearchEntries<T>(repo, searchRequest));
+    const builder = getSelectQueryForSearch(repo, searchRequest);
+    ({ entry, rowCount, hasMore } = await getSearchEntries<T>(repo, searchRequest, builder));
   }
 
   let total = undefined;
@@ -114,6 +110,74 @@ export async function searchImpl<T extends Resource>(
     total,
     link: getSearchLinks(searchRequest, hasMore),
   };
+}
+
+export async function searchByReferenceImpl<T extends Resource>(
+  repo: Repository,
+  searchRequest: SearchRequest<T>,
+  referenceField: string,
+  referenceValues: string[]
+): Promise<Record<string, T[]>> {
+  validateSearchResourceTypes(repo, searchRequest);
+  applyCountAndOffsetLimits(searchRequest);
+
+  const referencesTableName = 'references';
+  const referencesColumnName = 'ref';
+  const referenceColumn = new Column(referencesTableName, referencesColumnName);
+
+  const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
+    addColumns: true,
+    limitModifier: 0,
+    resourceTypeQueryCallback: (resourceType, builder) => {
+      const param = getSearchParameter(resourceType, referenceField);
+      if (param?.type !== 'reference') {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
+        );
+      }
+      const details = getSearchParameterDetails(resourceType, param);
+      builder.whereExpr(buildReferenceSearchFilter(builder.tableName, details, Operator.EQUALS, referenceColumn));
+    },
+  });
+  const builder = new SelectQuery(
+    referencesTableName,
+    new ValuesQuery(
+      referencesTableName,
+      [referencesColumnName],
+      referenceValues.map((r) => [r])
+    )
+  );
+  builder.join('INNER JOIN LATERAL', searchQuery, 'results', new Literal('true'));
+  builder.column(new Column('results', 'id')).column(new Column('results', 'content')).column(referenceColumn);
+
+  const rows: {
+    content: string;
+    ref: string;
+  }[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+
+  const results: Record<string, T[]> = {};
+  for (const ref of referenceValues) {
+    results[ref] = [];
+  }
+  for (const row of rows) {
+    const resource = JSON.parse(row.content) as T;
+    removeResourceFields(resource, repo, searchRequest);
+    results[row.ref].push(resource);
+  }
+
+  return results;
+}
+
+function applyCountAndOffsetLimits<T extends Resource>(
+  searchRequest: SearchRequest
+): asserts searchRequest is SearchRequest<T> & { count: number; offset: number } {
+  if (searchRequest.count === undefined) {
+    searchRequest.count = DEFAULT_SEARCH_COUNT;
+  } else if (searchRequest.count > maxSearchResults) {
+    searchRequest.count = maxSearchResults;
+  }
+
+  searchRequest.offset ??= 0;
 }
 
 /**
@@ -148,33 +212,45 @@ function validateSearchResourceType(repo: Repository, resourceType: ResourceType
   }
 }
 
+interface GetSelectQueryForSearchOptions extends GetBaseSelectQueryOptions {
+  /** Number added to `searchRequest.count` when specifying the query LIMIT. Default is 1 */
+  limitModifier?: number;
+}
+function getSelectQueryForSearch<T extends Resource>(
+  repo: Repository,
+  searchRequest: SearchRequest<T>,
+  options?: GetSelectQueryForSearchOptions
+): SelectQuery {
+  const builder = getBaseSelectQuery(repo, searchRequest, options);
+  addSortRules(builder, searchRequest);
+  const count = searchRequest.count as number;
+  builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
+  builder.offset(searchRequest.offset ?? 0);
+  return builder;
+}
+
 /**
  * Returns the bundle entries for a search request.
  * @param repo - The repository.
  * @param searchRequest - The search request.
+ * @param builder - The `SelectQuery` builder that is ready to execute.
  * @returns The bundle entries for the search result.
  */
 async function getSearchEntries<T extends Resource>(
   repo: Repository,
-  searchRequest: SearchRequest
+  searchRequest: SearchRequest<T> & { count: number },
+  builder: SelectQuery
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
-  const builder = getBaseSelectQuery(repo, searchRequest);
-
-  addSortRules(builder, searchRequest);
-
   const startTime = Date.now();
-  const count = searchRequest.count as number;
-  builder.limit(count + 1); // Request one extra to test if there are more results
-  builder.offset(searchRequest.offset || 0);
-
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const endTime = Date.now();
   const rowCount = rows.length;
-  const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
+  const resources = rows.slice(0, searchRequest.count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
     (resource) =>
       ({
         fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+        search: { mode: 'match' },
         resource,
       }) as BundleEntry
   );
@@ -207,23 +283,34 @@ async function getSearchEntries<T extends Resource>(
   return {
     entry: entries as BundleEntry<T>[],
     rowCount,
-    hasMore: rows.length > count,
+    hasMore: rows.length > searchRequest.count,
   };
 }
 
-function getBaseSelectQuery(repo: Repository, searchRequest: SearchRequest, addColumns = true): SelectQuery {
+interface GetBaseSelectQueryOptions {
+  /** If `true`, the "id" and "content" columns are selected. Defaults to `true`. */
+  addColumns?: boolean;
+  /** Callback invoked for each resource type and  its `SelectQuery` after all filters are applied. */
+  resourceTypeQueryCallback?: (resourceType: SearchRequest['resourceType'], builder: SelectQuery) => void;
+}
+function getBaseSelectQuery(
+  repo: Repository,
+  searchRequest: SearchRequest,
+  opts?: GetBaseSelectQueryOptions
+): SelectQuery {
   let builder: SelectQuery;
   if (searchRequest.types) {
     const queries: SelectQuery[] = [];
     for (const resourceType of searchRequest.types) {
-      queries.push(getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, addColumns));
+      const query = getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, opts);
+      queries.push(query);
     }
     builder = new SelectQuery('combined', new Union(...queries));
-    if (addColumns) {
+    if (opts?.addColumns ?? true) {
       builder.column('id').column('content');
     }
   } else {
-    builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, addColumns);
+    builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, opts);
   }
   return builder;
 }
@@ -232,10 +319,10 @@ function getBaseSelectQueryForResourceType(
   repo: Repository,
   resourceType: ResourceType,
   searchRequest: SearchRequest,
-  addColumns = true
+  opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
   const builder = new SelectQuery(resourceType);
-  if (addColumns) {
+  if (opts?.addColumns ?? true) {
     builder
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
@@ -243,6 +330,9 @@ function getBaseSelectQueryForResourceType(
   repo.addDeletedFilter(builder);
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(repo, builder, resourceType, searchRequest);
+  if (opts?.resourceTypeQueryCallback) {
+    opts.resourceTypeQueryCallback(resourceType, builder);
+  }
   return builder;
 }
 
@@ -352,8 +442,8 @@ async function getSearchIncludeEntries(
     .filter((typedValue) => ([PropertyType.canonical, PropertyType.uri] as string[]).includes(typedValue.type))
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
-    const canonicalSearches = (searchParam.target || []).map((resourceType) =>
-      getSearchEntries(repo, {
+    const canonicalSearches = (searchParam.target || []).map((resourceType) => {
+      const searchRequest = {
         resourceType: resourceType,
         filters: [
           {
@@ -362,8 +452,11 @@ async function getSearchIncludeEntries(
             value: canonicalReferences.join(','),
           },
         ],
-      })
-    );
+        count: DEFAULT_MAX_SEARCH_COUNT,
+      };
+      const builder = getSelectQueryForSearch(repo, searchRequest);
+      return getSearchEntries(repo, searchRequest, builder);
+    });
     (await Promise.all(canonicalSearches)).forEach((result) => {
       includedResources.push(...result.entry.map((e) => e.resource as Resource));
     });
@@ -371,6 +464,7 @@ async function getSearchIncludeEntries(
 
   return includedResources.map((resource) => ({
     fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+    search: { mode: 'include' },
     resource,
   }));
 }
@@ -407,18 +501,24 @@ async function getSearchRevIncludeEntries(
     value = resources.map(getReferenceString).join(',');
   }
 
-  return (
-    await getSearchEntries(repo, {
-      resourceType: revInclude.resourceType as ResourceType,
-      filters: [
-        {
-          code: revInclude.searchParam,
-          operator: Operator.EQUALS,
-          value: value,
-        },
-      ],
-    })
-  ).entry;
+  const searchRequest = {
+    resourceType: revInclude.resourceType as ResourceType,
+    filters: [
+      {
+        code: revInclude.searchParam,
+        operator: Operator.EQUALS,
+        value: value,
+      },
+    ],
+    count: DEFAULT_MAX_SEARCH_COUNT,
+  };
+  const builder = getSelectQueryForSearch(repo, searchRequest);
+
+  const entries = (await getSearchEntries(repo, searchRequest, builder)).entry;
+  for (const entry of entries) {
+    entry.search = { mode: 'include' };
+  }
+  return entries;
 }
 
 /**
@@ -494,7 +594,7 @@ async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount
  * @returns The total number of matching results.
  */
 async function getAccurateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const builder = getBaseSelectQuery(repo, searchRequest, false);
+  const builder = getBaseSelectQuery(repo, searchRequest, { addColumns: false });
 
   if (builder.joins.length > 0) {
     builder.raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`);
@@ -896,22 +996,26 @@ function buildTokenSearchFilter(
  * @param table - The table in which to search.
  * @param details - The search parameter details.
  * @param operator - The search operator.
- * @param values - The string values to search against.
+ * @param values - The string values to search against or a Column
  * @returns The select query condition.
  */
 function buildReferenceSearchFilter(
   table: string,
   details: SearchParameterDetails,
   operator: Operator,
-  values: string[]
+  values: string[] | Column
 ): Expression {
   const column = new Column(table, details.columnName);
-  values = values.map((v) =>
-    !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
-  );
+  if (Array.isArray(values)) {
+    values = values.map((v) =>
+      !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
+    );
+  }
   let condition: Condition;
   if (details.array) {
     condition = new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
+  } else if (values instanceof Column) {
+    condition = new Condition(column, '=', values);
   } else if (values.length === 1) {
     condition = new Condition(column, '=', values[0]);
   } else {
@@ -1118,7 +1222,8 @@ function buildChainedSearchUsingReferenceTable(
     }
 
     const referenceTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.leftJoin(
+    selectQuery.join(
+      'LEFT JOIN',
       referenceTableName,
       referenceTableAlias,
       new Conjunction([
@@ -1128,7 +1233,8 @@ function buildChainedSearchUsingReferenceTable(
     );
 
     const nextTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.leftJoin(
+    selectQuery.join(
+      'LEFT JOIN',
       link.resourceType,
       nextTableAlias,
       new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
@@ -1173,7 +1279,7 @@ function buildChainedSearchUsingReferenceStrings(
   for (const link of param.chain) {
     const nextTable = selectQuery.getNextJoinAlias();
     const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
-    selectQuery.leftJoin(link.resourceType, nextTable, joinCondition);
+    selectQuery.join('LEFT JOIN', link.resourceType, nextTable, joinCondition);
 
     currentTable = nextTable;
     currentResourceType = link.resourceType;
