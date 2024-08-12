@@ -406,7 +406,7 @@ describe('FHIR Repo', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
         meta: {
           account: {
-            reference: 'http://example.com/account/1',
+            reference: 'example.com/account/1',
           },
         },
       });
