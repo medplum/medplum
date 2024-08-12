@@ -283,7 +283,7 @@
                 "linkId": "smoking-status",
                 "text": "Smoking Status",
                 "type": "choice",
-                "answerValueSet": "http://example.com/smoking-status"
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.11.20.9.38"
               },
               {
                 "linkId": "veteran-status",

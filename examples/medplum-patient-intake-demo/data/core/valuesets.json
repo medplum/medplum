@@ -142,55 +142,38 @@
     {
       "fullUrl": "urn:uuid:183a569a-7f6d-41f9-97d8-57691fbc2876",
       "request": {
-        "method": "PUT",
-        "url": "ValueSet?name=smoking-status-codes"
+        "method": "POST",
+        "url": "ValueSet?name=smoking-status",
+        "ifNoneExist": "url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.11.20.9.38"
       },
       "resource": {
         "resourceType": "ValueSet",
         "status": "active",
-        "url": "http://example.com/smoking-status",
-        "name": "smoking-status-codes",
-        "title": "Smoking Status Codes",
-        "description": "These codes are used to indicate smoking status.",
-        "compose": {
-          "include": [
+        "version": "0.0.0",
+        "url": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.11.20.9.38",
+        "name": "smoking-status",
+        "title": "Smoking Status",
+        "expansion": {
+          "timestamp": "2024-08-12T00:00:00.000Z",
+          "extension": [
+            {
+              "url": "http://hl7.org/fhir/StructureDefinition/valueset-expansionSource",
+              "valueUri": "http://hl7.org/fhir/us/core/ValueSet/us-core-usps-state"
+            }
+          ],
+          "contains": [
+            { "system": "http://snomed.info/sct", "code": "266919005", "display": "Never smoked tobacco" },
             {
               "system": "http://snomed.info/sct",
-              "concept": [
-                {
-                  "code": "266919005",
-                  "display": "Never smoked tobacco"
-                },
-                {
-                  "code": "266927001",
-                  "display": "Tobacco smoking consumption unknown"
-                },
-                {
-                  "code": "428041000124106",
-                  "display": "Occasional tobacco smoker"
-                },
-                {
-                  "code": "428061000124105",
-                  "display": "Light tobacco smoker"
-                },
-                {
-                  "code": "428071000124103",
-                  "display": "Heavy tobacco smoker"
-                },
-                {
-                  "code": "449868002",
-                  "display": "Smokes tobacco daily"
-                },
-                {
-                  "code": "77176002",
-                  "display": "Smoker"
-                },
-                {
-                  "code": "8517006",
-                  "display": "Ex-smoker"
-                }
-              ]
-            }
+              "code": "266927001",
+              "display": "Tobacco smoking consumption unknown"
+            },
+            { "system": "http://snomed.info/sct", "code": "428041000124106", "display": "Occasional tobacco smoker" },
+            { "system": "http://snomed.info/sct", "code": "428061000124105", "display": "Light tobacco smoker" },
+            { "system": "http://snomed.info/sct", "code": "428071000124103", "display": "Heavy tobacco smoker" },
+            { "system": "http://snomed.info/sct", "code": "449868002", "display": "Smokes tobacco daily" },
+            { "system": "http://snomed.info/sct", "code": "77176002", "display": "Smoker" },
+            { "system": "http://snomed.info/sct", "code": "8517006", "display": "Ex-smoker" }
           ]
         }
       }
