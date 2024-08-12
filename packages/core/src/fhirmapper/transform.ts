@@ -331,12 +331,6 @@ function tryEvalShorthandRule(ctx: TransformContext, rule: StructureMapGroupRule
  * @returns The matching group, if found; otherwise, undefined.
  */
 function tryFindTypesGroup(ctx: TransformContext, sourceValue: TypedValue): StructureMapGroup | undefined {
-  let sourceType = sourceValue.type;
-  if (sourceType.includes('/')) {
-    // Source type can be a URL, so we need to extract the last part
-    sourceType = sourceType.split('/').pop() as string;
-  }
-
   let currentContext: TransformContext | undefined = ctx;
   while (currentContext) {
     if (currentContext.variables) {
@@ -349,7 +343,7 @@ function tryFindTypesGroup(ctx: TransformContext, sourceValue: TypedValue): Stru
               (group.typeMode === 'types' || group.typeMode === 'type-and-types') &&
               group.input.length === 2 &&
               group.input[0].mode === 'source' &&
-              group.input[0].type === sourceType &&
+              group.input[0].type === sourceValue.type &&
               group.input[1].mode === 'target'
             ) {
               return group;
