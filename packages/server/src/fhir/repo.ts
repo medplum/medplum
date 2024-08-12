@@ -1270,7 +1270,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       result.push({ reference: 'Project/' + resource.meta.project });
     }
 
-    if (resource.resourceType === 'User' && resource.project?.reference) {
+    if (
+      resource.resourceType === 'User' &&
+      resource.project?.reference &&
+      validator.isUUID(resolveId(resource.project) ?? '')
+    ) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       result.push(resource.project);
     }
