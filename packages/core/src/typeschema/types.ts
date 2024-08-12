@@ -19,6 +19,7 @@ import { capitalize, getExtension, isEmpty } from '../utils';
 export interface InternalTypeSchema {
   name: string;
   type: string;
+  path: string;
   title?: string;
   url?: string;
   kind?: string;
@@ -255,6 +256,7 @@ class StructureDefinitionParser {
     this.index = 0;
     this.resourceSchema = {
       name: sd.name as string,
+      path: this.root.path,
       title: sd.title,
       type: sd.type,
       url: sd.url as string,
@@ -346,13 +348,14 @@ class StructureDefinitionParser {
       type: {
         name: typeName,
         type: typeName,
+        path: element.path,
         title: element.label,
         description: element.definition,
         elements: {},
         constraints: this.parseElementDefinition(element).constraints,
         innerTypes: [],
       },
-      path: element.path ?? '',
+      path: element.path,
       parent: pathsCompatible(this.backboneContext?.path, element.path)
         ? this.backboneContext
         : this.backboneContext?.parent,
