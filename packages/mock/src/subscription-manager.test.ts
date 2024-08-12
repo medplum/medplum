@@ -1,8 +1,29 @@
 import { SubscriptionEmitter, SubscriptionEventMap, generateId } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
-import 'jest-websocket-mock';
 import { MockClient } from './client';
-import { MockSubscriptionManager } from './subscription-manager';
+import { MockReconnectingWebSocket, MockSubscriptionManager } from './subscription-manager';
+
+describe('MockReconnectingWebSocket', () => {
+  test('Constructor', () => {
+    expect(() => new MockReconnectingWebSocket()).not.toThrow();
+  });
+
+  test('.close()', () => {
+    const mockWs = new MockReconnectingWebSocket();
+    expect(mockWs.readyState).toEqual(WebSocket.OPEN);
+    expect(() => mockWs.close()).not.toThrow();
+    expect(mockWs.readyState).toEqual(WebSocket.CLOSED);
+  });
+
+  test('.reconnect()', () => {
+    const mockWs = new MockReconnectingWebSocket();
+    expect(mockWs.readyState).toEqual(WebSocket.OPEN);
+    expect(() => mockWs.close()).not.toThrow();
+    expect(mockWs.readyState).toEqual(WebSocket.CLOSED);
+    expect(() => mockWs.reconnect()).not.toThrow();
+    expect(mockWs.readyState).toEqual(WebSocket.OPEN);
+  });
+});
 
 describe('MockSubscriptionManager', () => {
   let medplum: MockClient;
@@ -61,7 +82,7 @@ describe('MockSubscriptionManager', () => {
     } as SubscriptionEventMap['message']);
   });
 
-  test('closeWebSockets()', async () => {
+  test('closeWebSocket()', async () => {
     const receivedEvent = await new Promise<SubscriptionEventMap['close']>((resolve) => {
       manager.getMasterEmitter().addEventListener('close', (event) => {
         resolve(event);
@@ -69,6 +90,16 @@ describe('MockSubscriptionManager', () => {
       manager.closeWebSocket();
     });
     expect(receivedEvent?.type).toEqual('close');
+  });
+
+  test('openWebSocket()', async () => {
+    const receivedEvent = await new Promise<SubscriptionEventMap['open']>((resolve) => {
+      manager.getMasterEmitter().addEventListener('open', (event) => {
+        resolve(event);
+      });
+      manager.openWebSocket();
+    });
+    expect(receivedEvent?.type).toEqual('open');
   });
 
   test('getEmitter()', async () => {

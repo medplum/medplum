@@ -346,7 +346,7 @@ export const HomerMedia: Media = {
   encounter: createReference(HomerEncounter),
   content: {
     contentType: ContentType.TEXT,
-    url: 'https://example.com/test.txt',
+    url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL',
   },
 };
 

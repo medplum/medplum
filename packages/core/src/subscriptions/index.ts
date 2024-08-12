@@ -4,10 +4,17 @@ import { TypedEventTarget } from '../eventtarget';
 import { evalFhirPathTyped } from '../fhirpath/parse';
 import { toTypedValue } from '../fhirpath/utils';
 import { Logger } from '../logger';
-import { OperationOutcomeError, serverError, validationError } from '../outcomes';
+import { normalizeErrorString, OperationOutcomeError, serverError, validationError } from '../outcomes';
 import { matchesSearchRequest } from '../search/match';
 import { parseSearchRequest } from '../search/search';
-import { ProfileResource, deepEquals, getExtension, getReferenceString, resolveId } from '../utils';
+import { deepEquals, getExtension, getReferenceString, ProfileResource, resolveId } from '../utils';
+import {
+  IReconnectingWebSocket,
+  IReconnectingWebSocketCtor,
+  ReconnectingWebSocket,
+} from '../websockets/reconnecting-websocket';
+
+const DEFAULT_PING_INTERVAL_MS = 5_000;
 
 export type SubscriptionEventMap = {
   connect: { type: 'connect'; payload: { subscriptionId: string } };
@@ -18,83 +25,6 @@ export type SubscriptionEventMap = {
   close: { type: 'close' };
   heartbeat: { type: 'heartbeat'; payload: Bundle };
 };
-
-export type RobustWebSocketEventMap = {
-  open: { type: 'open' };
-  message: MessageEvent;
-  error: Event;
-  close: CloseEvent;
-};
-
-export interface IRobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> {
-  readyState: number;
-  close(): void;
-  send(message: string): void;
-}
-
-export interface IRobustWebSocketCtor {
-  new (url: string): IRobustWebSocket;
-}
-
-export class RobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
-  private ws: WebSocket;
-  private messageBuffer: string[];
-  bufferedAmount = -Infinity;
-  extensions = 'NOT_IMPLEMENTED';
-
-  constructor(url: string) {
-    super();
-    this.messageBuffer = [];
-
-    const ws = new WebSocket(url);
-
-    ws.addEventListener('open', () => {
-      if (this.messageBuffer.length) {
-        const buffer = this.messageBuffer;
-        for (const msg of buffer) {
-          ws.send(msg);
-        }
-      }
-      this.dispatchEvent(new Event('open'));
-    });
-
-    ws.addEventListener('error', (event) => {
-      this.dispatchEvent(event);
-    });
-
-    ws.addEventListener('message', (event) => {
-      this.dispatchEvent(event);
-    });
-
-    ws.addEventListener('close', (event) => {
-      this.dispatchEvent(event);
-    });
-
-    this.ws = ws;
-  }
-
-  get readyState(): number {
-    return this.ws.readyState;
-  }
-
-  close(): void {
-    this.ws.close();
-  }
-
-  send(message: string): void {
-    if (this.ws.readyState !== WebSocket.OPEN) {
-      this.messageBuffer.push(message);
-      return;
-    }
-
-    try {
-      this.ws.send(message);
-    } catch (err: unknown) {
-      this.dispatchEvent(new ErrorEvent('error', { error: err as Error, message: (err as Error).message }));
-      this.messageBuffer.push(message);
-    }
-  }
-}
 
 /**
  * An `EventTarget` that emits events when new subscription notifications come in over WebSockets.
@@ -143,6 +73,7 @@ class CriteriaEntry {
   readonly subscriptionProps?: Partial<Subscription>;
   subscriptionId?: string;
   token?: string;
+  connecting = false;
 
   constructor(criteria: string, subscriptionProps?: Partial<Subscription>) {
     this.criteria = criteria;
@@ -154,21 +85,32 @@ class CriteriaEntry {
         }
       : undefined;
   }
+
+  clearAttachedSubscription(): void {
+    this.subscriptionId = undefined;
+    this.token = undefined;
+  }
 }
 
 type CriteriaMapEntry = { bareCriteria?: CriteriaEntry; criteriaWithProps: CriteriaEntry[] };
 
 export interface SubManagerOptions {
-  RobustWebSocket: IRobustWebSocketCtor;
+  ReconnectingWebSocket?: IReconnectingWebSocketCtor;
+  pingIntervalMs?: number;
+  debug?: boolean;
+  debugLogger?: (...args: any[]) => void;
 }
 
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
-  private ws: IRobustWebSocket;
+  private ws: IReconnectingWebSocket;
   private masterSubEmitter?: SubscriptionEmitter;
   private criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
   private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
+  private pingTimer: ReturnType<typeof setInterval> | undefined = undefined;
+  private pingIntervalMs: number;
+  private waitingForPong = false;
 
   constructor(medplum: MedplumClient, wsUrl: URL | string, options?: SubManagerOptions) {
     if (!(medplum instanceof MedplumClient)) {
@@ -180,7 +122,9 @@ export class SubscriptionManager {
     } catch (_err) {
       throw new OperationOutcomeError(validationError('Not a valid URL'));
     }
-    const ws = options?.RobustWebSocket ? new options.RobustWebSocket(url) : new RobustWebSocket(url);
+    const ws = options?.ReconnectingWebSocket
+      ? new options.ReconnectingWebSocket(url, undefined, { debug: options?.debug, debugLogger: options?.debugLogger })
+      : new ReconnectingWebSocket(url, undefined, { debug: options?.debug, debugLogger: options?.debugLogger });
 
     this.medplum = medplum;
     this.ws = ws;
@@ -188,6 +132,7 @@ export class SubscriptionManager {
     this.criteriaEntries = new Map<string, CriteriaMapEntry>();
     this.criteriaEntriesBySubscriptionId = new Map<string, CriteriaEntry>();
     this.wsClosed = false;
+    this.pingIntervalMs = options?.pingIntervalMs ?? DEFAULT_PING_INTERVAL_MS;
 
     this.setupWebSocketListeners();
   }
@@ -197,14 +142,39 @@ export class SubscriptionManager {
 
     ws.addEventListener('message', (event) => {
       try {
-        const bundle = JSON.parse(event.data) as Bundle;
+        const parsedData = JSON.parse(event.data) as { type: 'pong' } | Bundle;
+        if (parsedData.type === 'pong') {
+          this.waitingForPong = false;
+          return;
+        }
+        const bundle = parsedData;
         // Get criteria for event
         const status = bundle?.entry?.[0]?.resource as SubscriptionStatus;
+
         // Handle heartbeat
         if (status.type === 'heartbeat') {
           this.masterSubEmitter?.dispatchEvent({ type: 'heartbeat', payload: bundle });
           return;
         }
+
+        // Handle handshake
+        if (status.type === 'handshake') {
+          const subscriptionId = resolveId(status.subscription) as string;
+          const connectEvent = {
+            type: 'connect',
+            payload: { subscriptionId },
+          } as const;
+          this.masterSubEmitter?.dispatchEvent(connectEvent);
+          const criteriaEntry = this.criteriaEntriesBySubscriptionId.get(subscriptionId);
+          if (!criteriaEntry) {
+            console.warn('Received handshake for criteria the SubscriptionManager is not listening for yet');
+            return;
+          }
+          criteriaEntry.connecting = false;
+          criteriaEntry.emitter.dispatchEvent({ ...connectEvent });
+          return;
+        }
+
         this.masterSubEmitter?.dispatchEvent({ type: 'message', payload: bundle });
         const criteriaEntry = this.criteriaEntriesBySubscriptionId.get(resolveId(status.subscription) as string);
         if (!criteriaEntry) {
@@ -218,7 +188,7 @@ export class SubscriptionManager {
         const errorEvent = { type: 'error', payload: err as Error } as SubscriptionEventMap['error'];
         this.masterSubEmitter?.dispatchEvent(errorEvent);
         for (const emitter of this.getAllCriteriaEmitters()) {
-          emitter.dispatchEvent(errorEvent);
+          emitter.dispatchEvent({ ...errorEvent });
         }
       }
     });
@@ -230,36 +200,59 @@ export class SubscriptionManager {
       } as SubscriptionEventMap['error'];
       this.masterSubEmitter?.dispatchEvent(errorEvent);
       for (const emitter of this.getAllCriteriaEmitters()) {
-        emitter.dispatchEvent(errorEvent);
+        emitter.dispatchEvent({ ...errorEvent });
       }
     });
 
     ws.addEventListener('close', () => {
       const closeEvent = { type: 'close' } as SubscriptionEventMap['close'];
-      if (this.wsClosed) {
-        this.masterSubEmitter?.dispatchEvent(closeEvent);
-      }
+      this.masterSubEmitter?.dispatchEvent(closeEvent);
       for (const emitter of this.getAllCriteriaEmitters()) {
-        emitter.dispatchEvent(closeEvent);
+        emitter.dispatchEvent({ ...closeEvent });
+      }
+
+      if (this.pingTimer) {
+        clearInterval(this.pingTimer);
+        this.pingTimer = undefined;
+        this.waitingForPong = false;
+      }
+
+      if (this.wsClosed) {
+        this.criteriaEntries.clear();
+        this.criteriaEntriesBySubscriptionId.clear();
+        this.masterSubEmitter?.removeAllListeners();
       }
     });
-  }
 
-  private emitConnect(criteriaEntry: CriteriaEntry): void {
-    const connectEvent = {
-      type: 'connect',
-      payload: { subscriptionId: criteriaEntry.subscriptionId as string },
-    } as SubscriptionEventMap['connect'];
-    this.masterSubEmitter?.dispatchEvent(connectEvent);
-    for (const emitter of this.getAllCriteriaEmitters()) {
-      emitter.dispatchEvent(connectEvent);
-    }
+    ws.addEventListener('open', () => {
+      const openEvent = { type: 'open' } as SubscriptionEventMap['open'];
+      this.masterSubEmitter?.dispatchEvent(openEvent);
+      for (const emitter of this.getAllCriteriaEmitters()) {
+        emitter.dispatchEvent({ ...openEvent });
+      }
+      // We do this after dispatching the events so listeners can check if this is the initial open or not
+      // We are reconnecting
+      // So we refresh all current subscriptions
+      this.refreshAllSubscriptions().catch(console.error);
+
+      if (!this.pingTimer) {
+        this.pingTimer = setInterval(() => {
+          if (this.waitingForPong) {
+            this.waitingForPong = false;
+            ws.reconnect();
+            return;
+          }
+          ws.send(JSON.stringify({ type: 'ping' }));
+          this.waitingForPong = true;
+        }, this.pingIntervalMs);
+      }
+    });
   }
 
   private emitError(criteriaEntry: CriteriaEntry, error: Error): void {
     const errorEvent = { type: 'error', payload: error } as SubscriptionEventMap['error'];
     this.masterSubEmitter?.dispatchEvent(errorEvent);
-    criteriaEntry.emitter.dispatchEvent(errorEvent);
+    criteriaEntry.emitter.dispatchEvent({ ...errorEvent });
   }
 
   private maybeEmitDisconnect(criteriaEntry: CriteriaEntry): void {
@@ -272,7 +265,7 @@ export class SubscriptionManager {
       // Emit disconnect on master
       this.masterSubEmitter?.dispatchEvent(disconnectEvent);
       // Emit disconnect on criteria emitter
-      criteriaEntry.emitter.dispatchEvent(disconnectEvent);
+      criteriaEntry.emitter.dispatchEvent({ ...disconnectEvent });
     } else {
       console.warn('Called disconnect for `CriteriaEntry` before `subscriptionId` was present.');
     }
@@ -382,8 +375,42 @@ export class SubscriptionManager {
     if (subscriptionId) {
       this.criteriaEntriesBySubscriptionId.delete(subscriptionId);
     }
-    if (token) {
+    if (token && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({ type: 'unbind-from-token', payload: { token } }));
+    }
+  }
+
+  private async subscribeToCriteria(criteriaEntry: CriteriaEntry): Promise<void> {
+    // We check to see if the WebSocket is open first, since if it's not, we will automatically refresh this later when it opens
+    if (this.ws.readyState !== WebSocket.OPEN || criteriaEntry.connecting) {
+      return;
+    }
+    // Set connecting flag to true so other incoming subscription requests to this criteria don't try to subscribe also
+    criteriaEntry.connecting = true;
+    try {
+      const [subscriptionId, token] = await this.getTokenForCriteria(criteriaEntry);
+      criteriaEntry.subscriptionId = subscriptionId;
+      criteriaEntry.token = token;
+      this.criteriaEntriesBySubscriptionId.set(subscriptionId, criteriaEntry);
+      // Send binding message
+      this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
+    } catch (err: unknown) {
+      console.error(normalizeErrorString(err));
+      this.emitError(criteriaEntry, err as Error);
+      this.removeCriteriaEntry(criteriaEntry);
+    }
+  }
+
+  private async refreshAllSubscriptions(): Promise<void> {
+    this.criteriaEntriesBySubscriptionId.clear();
+    for (const mapEntry of this.criteriaEntries.values()) {
+      for (const criteriaEntry of [
+        ...(mapEntry.bareCriteria ? [mapEntry.bareCriteria] : []),
+        ...mapEntry.criteriaWithProps,
+      ]) {
+        criteriaEntry.clearAttachedSubscription();
+        await this.subscribeToCriteria(criteriaEntry);
+      }
     }
   }
 
@@ -401,21 +428,7 @@ export class SubscriptionManager {
     const newCriteriaEntry = new CriteriaEntry(criteria, subscriptionProps);
     this.addCriteriaEntry(newCriteriaEntry);
 
-    this.getTokenForCriteria(newCriteriaEntry)
-      .then(([subscriptionId, token]) => {
-        newCriteriaEntry.subscriptionId = subscriptionId;
-        newCriteriaEntry.token = token;
-        this.criteriaEntriesBySubscriptionId.set(subscriptionId, newCriteriaEntry);
-        // Emit connect event
-        this.emitConnect(newCriteriaEntry);
-        // Send binding message
-        this.ws.send(JSON.stringify({ type: 'bind-with-token', payload: { token } }));
-      })
-      .catch((err) => {
-        console.error(err.message);
-        this.emitError(newCriteriaEntry, err);
-        this.removeCriteriaEntry(newCriteriaEntry);
-      });
+    this.subscribeToCriteria(newCriteriaEntry).catch(console.error);
 
     return newCriteriaEntry.emitter;
   }
@@ -437,12 +450,20 @@ export class SubscriptionManager {
     this.removeCriteriaEntry(criteriaEntry);
   }
 
+  getWebSocket(): IReconnectingWebSocket {
+    return this.ws;
+  }
+
   closeWebSocket(): void {
     if (this.wsClosed) {
       return;
     }
     this.wsClosed = true;
     this.ws.close();
+  }
+
+  reconnectWebSocket(): void {
+    this.ws.reconnect();
   }
 
   getCriteriaCount(): number {

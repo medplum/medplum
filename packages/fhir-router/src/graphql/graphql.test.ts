@@ -15,6 +15,7 @@ import {
   ExplanationOfBenefit,
   Extension,
   HumanName,
+  Observation,
   OperationOutcome,
   Patient,
   SearchParameter,
@@ -28,6 +29,7 @@ import { getRootSchema, graphqlHandler } from './graphql';
 const repo = new MemoryRepository();
 let binary: Binary;
 let patient: Patient;
+let patient2: Patient;
 let serviceRequest: ServiceRequest;
 let encounter1: Encounter;
 let encounter2: Encounter;
@@ -55,6 +57,16 @@ describe('GraphQL', () => {
         {
           contentType: 'image/jpeg',
           url: getReferenceString(binary),
+        },
+      ],
+    });
+
+    patient2 = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [
+        {
+          given: ['Bill'],
+          family: 'Miller',
         },
       ],
     });
@@ -488,6 +500,30 @@ describe('GraphQL', () => {
   });
 
   test('Reverse lookup with _reference', async () => {
+    await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient),
+      code: {
+        text: 'Blood pressure',
+      },
+    });
+    await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient2),
+      code: {
+        text: 'Blood pressure',
+      },
+    });
+    await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient2),
+      code: {
+        text: 'Heart rate',
+      },
+    });
     const request: FhirRequest = {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
@@ -496,9 +532,9 @@ describe('GraphQL', () => {
       body: {
         query: `
       {
-        PatientList(_count: 1) {
+        PatientList(_count: 2) {
           id
-          ObservationList(_reference: subject) {
+          ObservationList(_reference: subject, _sort: "_lastUpdated") {
             id
             status
             code {
