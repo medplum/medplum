@@ -11,8 +11,8 @@ import {
   validationError,
 } from '../outcomes';
 import { PropertyType, TypedValue, isReference, isResource } from '../types';
-import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
-import { ResourceVisitor, TypedValueWithPath, crawlResource, getNestedProperty } from './crawler';
+import { arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
+import { CrawlerVisitor, TypedValueWithPath, crawlTypedValue, getNestedProperty } from './crawler';
 import {
   Constraint,
   InternalSchemaElement,
@@ -54,6 +54,15 @@ export const fhirTypeToJsType = {
   xhtml: 'string',
   'http://hl7.org/fhirpath/System.String': 'string', // Not actually a FHIR type, but included in some StructureDefinition resources
 } as const satisfies Record<string, 'string' | 'boolean' | 'number'>;
+
+/**
+ * Returns true if the type code is a primitive type.
+ * @param code - The type code to check.
+ * @returns True if the type code is a primitive type.
+ */
+export function isPrimitiveType(code: string): boolean {
+  return code === 'undefined' || code in fhirTypeToJsType;
+}
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -106,7 +115,7 @@ export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOp
   return new ResourceValidator(typedValue, options).validate();
 }
 
-class ResourceValidator implements ResourceVisitor {
+class ResourceValidator implements CrawlerVisitor {
   private issues: OperationOutcomeIssue[];
   private root: TypedValue;
   private currentResource: Resource[];
@@ -128,11 +137,11 @@ class ResourceValidator implements ResourceVisitor {
 
   validate(): OperationOutcomeIssue[] {
     // Check root constraints
-    this.constraintsCheck(this.root, this.schema, this.root.type);
+    this.constraintsCheck(this.root, this.schema, this.schema.path);
 
-    checkObjectForNull(this.root.value as unknown as Record<string, unknown>, this.root.type, this.issues);
+    checkObjectForNull(this.root.value as unknown as Record<string, unknown>, this.schema.path, this.issues);
 
-    crawlResource(this.root.value as Resource, this, this.schema, this.root.type);
+    crawlTypedValue(this.root, this, { schema: this.schema, initialPath: this.schema.path });
 
     const issues = this.issues;
 
@@ -252,7 +261,7 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   private checkPropertyValue(value: TypedValue, path: string): void {
-    if (isLowerCase(value.type.charAt(0))) {
+    if (isPrimitiveType(value.type)) {
       this.validatePrimitiveType(value, path);
     }
   }
@@ -475,7 +484,7 @@ class ResourceValidator implements ResourceVisitor {
       }
     }
     if (extensionElement) {
-      crawlResource(extensionElement.value, this, getDataType('Element'), path);
+      crawlTypedValue(extensionElement, this, { schema: getDataType('Element'), initialPath: path });
     }
   }
 

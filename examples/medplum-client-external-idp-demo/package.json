@@ -13,21 +13,21 @@
     "singleQuote": true
   },
   "devDependencies": {
-    "@mantine/core": "7.11.2",
-    "@mantine/hooks": "7.11.2",
-    "@mantine/notifications": "7.11.2",
+    "@mantine/core": "7.12.0",
+    "@mantine/hooks": "7.12.0",
+    "@mantine/notifications": "7.12.0",
     "@medplum/core": "3.2.6",
     "@medplum/eslint-config": "3.2.6",
     "@medplum/fhirtypes": "3.2.6",
     "@medplum/react": "3.2.6",
-    "@tabler/icons-react": "3.11.0",
-    "@types/node": "22.1.0",
+    "@tabler/icons-react": "3.12.0",
+    "@types/node": "22.2.0",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
     "chart.js": "4.4.3",
     "esbuild": "0.23.0",
-    "postcss": "8.4.40",
+    "postcss": "8.4.41",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-chartjs-2": "5.2.0",
@@ -35,6 +35,6 @@
     "react-router-dom": "6.26.0",
     "rimraf": "5.0.9",
     "typescript": "5.5.4",
-    "vite": "5.3.5"
+    "vite": "5.4.0"
   }
 }

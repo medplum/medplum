@@ -50,6 +50,7 @@ export function inflateBaseSchema(base: BaseSchema): DataTypesMap {
     output[key] = {
       name: key,
       type: key,
+      path: key,
       elements: Object.fromEntries(
         Object.entries(schema.elements).map(([property, partial]) => [property, inflateElement(property, partial)])
       ),

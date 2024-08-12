@@ -1265,7 +1265,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private getCompartments(resource: Resource): Reference[] {
     const result: Reference[] = [];
 
-    if (resource.meta?.project) {
+    if (resource.meta?.project && validator.isUUID(resource.meta.project)) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       result.push({ reference: 'Project/' + resource.meta.project });
     }
@@ -1276,7 +1276,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
 
     if (resource.meta?.account) {
-      result.push(resource.meta.account);
+      const id = resolveId(resource.meta.account);
+      if (id && validator.isUUID(id)) {
+        result.push(resource.meta.account);
+      }
     }
 
     for (const patient of getPatients(resource)) {
