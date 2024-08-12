@@ -1,5 +1,7 @@
 import {
   ConceptMap,
+  ExtractResource,
+  ResourceType,
   StructureMap,
   StructureMapGroup,
   StructureMapGroupInput,
@@ -16,9 +18,36 @@ import { TypedValue } from '../types';
 import { InternalSchemaElement, tryGetDataType } from '../typeschema/types';
 import { conceptMapTranslate } from './conceptmaptranslate';
 
+/**
+ * The TransformMapCollection class is a collection of StructureMap and ConceptMap resources.
+ * It is used to store and retrieve imported StructureMaps and ConceptMaps by URL.
+ */
+export class TransformMapCollection {
+  constructor(readonly resources: (StructureMap | ConceptMap)[] = []) {}
+
+  get<K extends ResourceType>(resourceType: K, url: string): ExtractResource<K>[] {
+    const result = [];
+    for (const r of this.resources) {
+      if (r.resourceType === resourceType && r.url && this.matchesUrl(r.url as string, url)) {
+        result.push(r);
+      }
+    }
+    return result as ExtractResource<K>[];
+  }
+
+  private matchesUrl(url: string, pattern: string): boolean {
+    if (pattern.includes('*')) {
+      const parts = pattern.split('*');
+      return url.startsWith(parts[0]) && url.endsWith(parts[1]);
+    } else {
+      return url === pattern;
+    }
+  }
+}
+
 interface TransformContext {
   root: StructureMap;
-  loader?: (url: string) => StructureMap[];
+  transformMaps?: TransformMapCollection;
   parent?: TransformContext;
   variables?: Record<string, TypedValue[] | TypedValue>;
 }
@@ -30,15 +59,15 @@ interface TransformContext {
  *
  * @param structureMap - The StructureMap to transform.
  * @param input - The input values.
- * @param loader - Optional loader function for loading imported StructureMaps.
+ * @param transformMaps - Optional collection of imported StructureMaps and ConceptMaps.
  * @returns The transformed values.
  */
 export function structureMapTransform(
   structureMap: StructureMap,
   input: TypedValue[],
-  loader?: (url: string) => StructureMap[]
+  transformMaps = new TransformMapCollection()
 ): TypedValue[] {
-  return evalStructureMap({ root: structureMap, loader }, structureMap, input);
+  return evalStructureMap({ root: structureMap, transformMaps }, structureMap, input);
 }
 
 /**
@@ -52,7 +81,7 @@ export function structureMapTransform(
  */
 function evalStructureMap(ctx: TransformContext, structureMap: StructureMap, input: TypedValue[]): TypedValue[] {
   evalImports(ctx, structureMap);
-  hoistGroups(ctx, structureMap);
+  registerGlobals(ctx, structureMap);
   return evalGroup(ctx, structureMap.group[0], input);
 }
 
@@ -65,17 +94,20 @@ function evalStructureMap(ctx: TransformContext, structureMap: StructureMap, inp
  * @internal
  */
 function evalImports(ctx: TransformContext, structureMap: StructureMap): void {
-  if (ctx.loader && structureMap.import) {
+  const transformMaps = getTransformMaps(ctx);
+  if (transformMaps && structureMap.import) {
     for (const url of structureMap.import) {
-      const importedMaps = ctx.loader(url as string);
+      const importedMaps = transformMaps.get('StructureMap', url);
       for (const importedMap of importedMaps) {
-        hoistGroups(ctx, importedMap);
+        registerGlobals(ctx, importedMap);
       }
     }
   }
 }
 
 /**
+ * Registers all globals in a FHIR StructureMap into the current context.
+ * Adds all contained StructureMaps and ConceptMaps to the map collection.
  * Hoists the groups in a FHIR StructureMap into the current context.
  * This is necessary to allow groups to reference each other.
  *
@@ -83,7 +115,16 @@ function evalImports(ctx: TransformContext, structureMap: StructureMap): void {
  * @param structureMap - The FHIR StructureMap definition.
  * @internal
  */
-function hoistGroups(ctx: TransformContext, structureMap: StructureMap): void {
+function registerGlobals(ctx: TransformContext, structureMap: StructureMap): void {
+  const transformMaps = getTransformMaps(ctx);
+  if (transformMaps && structureMap.contained) {
+    for (const c of structureMap.contained) {
+      if (c.resourceType === 'StructureMap' || c.resourceType === 'ConceptMap') {
+        transformMaps.resources.push(c);
+      }
+    }
+  }
+
   if (structureMap.group) {
     for (const group of structureMap.group) {
       setVariable(ctx, group.name as string, { type: 'StructureMapGroup', value: group });
@@ -684,15 +725,9 @@ function evalEvaluate(ctx: TransformContext, target: StructureMapGroupRuleTarget
 function evalTranslate(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
   const args = (target.parameter as StructureMapGroupRuleTargetParameter[]).flatMap((p) => resolveParameter(ctx, p));
   const sourceValue = args[0].value;
-
-  let mapUri = args[1].value;
-  if (mapUri.startsWith('#')) {
-    mapUri = mapUri.substring(1);
-  }
-
-  const conceptMap = ctx.root.contained?.find((r) => r.resourceType === 'ConceptMap' && r.url === mapUri) as
-    | ConceptMap
-    | undefined;
+  const mapUri = args[1].value;
+  const transformMaps = getTransformMaps(ctx);
+  const conceptMap = transformMaps?.get('ConceptMap', mapUri)[0];
   if (!conceptMap) {
     throw new Error('ConceptMap not found: ' + mapUri);
   }
@@ -751,6 +786,16 @@ function evalDependent(ctx: TransformContext, dependent: StructureMapGroupRuleDe
 
   const newContext: TransformContext = { root: ctx.root, parent: ctx, variables: {} };
   evalGroup(newContext, dependentGroup.value as StructureMapGroup, args);
+}
+
+function getTransformMaps(ctx: TransformContext): TransformMapCollection | undefined {
+  if (ctx.transformMaps) {
+    return ctx.transformMaps;
+  }
+  if (ctx.parent) {
+    return getTransformMaps(ctx.parent);
+  }
+  return undefined;
 }
 
 /**

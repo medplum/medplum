@@ -326,7 +326,7 @@ describe('FHIR Mapper transform', () => {
       }
 
       group tutorial(source src : TLeft, target tgt : TRight) {
-        src.d as d -> tgt.d = translate(d, 'uri-of-concept-map', 'code');
+        src.d as d -> tgt.d = translate(d, '#uri-of-concept-map', 'code');
       }
     `;
 
