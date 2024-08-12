@@ -1276,7 +1276,10 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
 
     if (resource.meta?.account) {
-      result.push(resource.meta.account);
+      const id = resolveId(resource.meta.account);
+      if (id && validator.isUUID(id)) {
+        result.push(resource.meta.account);
+      }
     }
 
     for (const patient of getPatients(resource)) {
