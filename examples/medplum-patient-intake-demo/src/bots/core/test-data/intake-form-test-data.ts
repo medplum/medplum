@@ -220,20 +220,6 @@ export const intakeResponse: QuestionnaireResponse = {
         },
         {
           id: 'id-85',
-          linkId: 'allergy-clinical-status',
-          text: 'Clinical Status',
-          answer: [
-            {
-              valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-                code: 'active',
-                display: 'Active',
-              },
-            },
-          ],
-        },
-        {
-          id: 'id-86',
           linkId: 'allergy-onset',
           text: 'Onset',
           answer: [
@@ -317,20 +303,6 @@ export const intakeResponse: QuestionnaireResponse = {
         },
         {
           id: 'id-96',
-          linkId: 'allergy-clinical-status',
-          text: 'Clinical Status',
-          answer: [
-            {
-              valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-                code: 'active',
-                display: 'Active',
-              },
-            },
-          ],
-        },
-        {
-          id: 'id-97',
           linkId: 'allergy-onset',
           text: 'Onset',
           answer: [

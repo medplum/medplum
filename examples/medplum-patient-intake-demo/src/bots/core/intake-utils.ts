@@ -314,16 +314,34 @@ export async function addAllergy(
     return;
   }
 
-  const clinicalStatus = answers['allergy-clinical-status']?.valueCoding;
   const reaction = answers['allergy-reaction']?.valueString;
   const onsetDateTime = answers['allergy-onset']?.valueDateTime;
 
   await medplum.upsertResource(
     {
       resourceType: 'AllergyIntolerance',
+      clinicalStatus: {
+        text: 'Active',
+        coding: [
+          {
+            system: 'http://hl7.org/fhir/ValueSet/allergyintolerance-clinical',
+            code: 'active',
+            display: 'Active',
+          },
+        ],
+      },
+      verificationStatus: {
+        text: 'Unconfirmed',
+        coding: [
+          {
+            system: 'http://hl7.org/fhir/ValueSet/allergyintolerance-verification',
+            code: 'unconfirmed',
+            display: 'Unconfirmed',
+          },
+        ],
+      },
       patient: createReference(patient),
       code: { coding: [code] },
-      clinicalStatus: clinicalStatus ? { coding: [clinicalStatus] } : undefined,
       reaction: reaction ? [{ manifestation: [{ text: reaction }] }] : undefined,
       onsetDateTime: onsetDateTime,
     },

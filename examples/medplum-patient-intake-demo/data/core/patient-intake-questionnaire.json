@@ -145,12 +145,6 @@
                 "type": "string"
               },
               {
-                "linkId": "allergy-clinical-status",
-                "text": "Clinical Status",
-                "type": "choice",
-                "answerValueSet": "http://hl7.org/fhir/ValueSet/allergyintolerance-clinical"
-              },
-              {
                 "linkId": "allergy-onset",
                 "text": "Onset",
                 "type": "dateTime"
