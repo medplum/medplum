@@ -69,6 +69,30 @@ describe('Intake form', async () => {
       expect(patient.name?.[0].family).toEqual('LastName');
       expect(patient.gender).toEqual('33791000087105');
       expect(patient.birthDate).toEqual('2000-01-01');
+      expect(patient.address?.[0]).toEqual({
+        use: 'home',
+        type: 'physical',
+        line: ['123 Happy St'],
+        city: 'Sunnyvale',
+        state: 'CA',
+        postalCode: '95008',
+      });
+      expect(patient.telecom?.[0]).toEqual({
+        system: 'phone',
+        value: '555-555-5555',
+      });
+      expect(patient.identifier?.[0]).toEqual({
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+              code: 'SS',
+            },
+          ],
+        },
+        system: 'http://hl7.org/fhir/sid/us-ssn',
+        value: '518225060',
+      });
     });
 
     test("Doesn't change patient name if not provided", async () => {
@@ -107,7 +131,7 @@ describe('Intake form', async () => {
       expect(Object.keys(patientName)).not.toContain('family');
     });
 
-    test('Race and etinicity', async () => {
+    test('Race and ethnicity', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = await medplum.readResource('Patient', patient.id as string);
