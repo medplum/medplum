@@ -1662,13 +1662,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   readResource<K extends ResourceType>(
     resourceType: K,
-    id: string,
+    id?: string,
     options?: MedplumRequestOptions
   ): ReadablePromise<ExtractResource<K>> {
-    if (id == null || id.trim() === '') {
+    if (!id) {
       throw new Error('The "id" parameter cannot be null, undefined, or an empty string.');
     }
-  
     return this.get<ExtractResource<K>>(this.fhirUrl(resourceType, id), options);
   }
   
