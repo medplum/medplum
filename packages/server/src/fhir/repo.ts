@@ -1265,7 +1265,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private getCompartments(resource: Resource): Reference[] {
     const result: Reference[] = [];
 
-    if (resource.meta?.project) {
+    if (resource.meta?.project && validator.isUUID(resource.meta.project)) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       result.push({ reference: 'Project/' + resource.meta.project });
     }
