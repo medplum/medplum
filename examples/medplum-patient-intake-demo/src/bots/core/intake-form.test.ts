@@ -93,6 +93,29 @@ describe('Intake form', async () => {
         system: 'http://hl7.org/fhir/sid/us-ssn',
         value: '518225060',
       });
+      expect(patient.contact?.[0]).toEqual({
+        relationship: [
+          {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
+                code: 'EP',
+                display: 'Emergency contact person',
+              },
+            ],
+          },
+        ],
+        name: {
+          family: 'Simpson',
+          given: ['Marge'],
+        },
+        telecom: [
+          {
+            system: 'phone',
+            value: '111-222-5555',
+          },
+        ],
+      });
     });
 
     test("Doesn't change patient name if not provided", async () => {
@@ -146,6 +169,104 @@ describe('Intake form', async () => {
         display: 'Hispanic or Latino',
         system: 'urn:oid:2.16.840.1.113883.6.238',
       });
+    });
+  });
+
+  describe('Allergies', async () => {
+    test('add allergies', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      const allergies = await medplum.searchResources('AllergyIntolerance', { patient: getReferenceString(patient) });
+
+      expect(allergies.length).toEqual(2);
+
+      expect(allergies[0].code?.coding?.[0].code).toEqual('111088007');
+      expect(allergies[0].clinicalStatus?.coding?.[0].code).toEqual('active');
+      expect(allergies[0].reaction?.[0].manifestation?.[0].text).toEqual('Skin rash');
+      expect(allergies[0].onsetDateTime).toEqual('2000-07-01T00:00:00Z');
+
+      expect(allergies[1].code?.coding?.[0].code).toEqual('763875007');
+      expect(allergies[1].clinicalStatus?.coding?.[0].code).toEqual('active');
+      expect(allergies[1].reaction?.[0].manifestation?.[0].text).toEqual('Skin rash');
+      expect(allergies[1].onsetDateTime).toEqual('2020-01-01T00:00:00Z');
+    });
+
+    test('does not duplicate existing allergies', async () => {
+      await medplum.createResource({
+        resourceType: 'AllergyIntolerance',
+        patient: createReference(patient),
+        code: {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '111088007',
+              display: 'Latex (substance)',
+            },
+          ],
+        },
+      });
+
+      let allergies = await medplum.searchResources('AllergyIntolerance', { patient: getReferenceString(patient) });
+
+      expect(allergies.length).toEqual(1);
+
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      allergies = await medplum.searchResources('AllergyIntolerance', { patient: getReferenceString(patient) });
+
+      expect(allergies.length).toEqual(2);
+    });
+  });
+
+  describe('Current medications', async () => {
+    test('add medications', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      const medications = await medplum.searchResources('MedicationRequest', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(medications.length).toEqual(2);
+
+      expect(medications[0].medicationCodeableConcept?.coding?.[0].code).toEqual('1156277');
+      expect(medications[0].status).toEqual('active');
+      expect(medications[0].note?.[0].text).toEqual('I take it to manage my chronic back pain.');
+
+      expect(medications[1].medicationCodeableConcept?.coding?.[0].code).toEqual('1161610');
+      expect(medications[1].status).toEqual('active');
+      expect(medications[1].note?.[0].text).toEqual('I take it to manage my diabetes.');
+    });
+
+    test('does not duplicate existing medications', async () => {
+      await medplum.createResource({
+        resourceType: 'MedicationRequest',
+        subject: createReference(patient),
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+              code: '1156277',
+              display: 'ibuprofen Oral Product',
+            },
+          ],
+        },
+        status: 'active',
+        intent: 'order',
+      });
+
+      let medications = await medplum.searchResources('MedicationRequest', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(medications.length).toEqual(1);
+
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      medications = await medplum.searchResources('MedicationRequest', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(medications.length).toEqual(2);
     });
   });
 

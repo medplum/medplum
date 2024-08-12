@@ -202,6 +202,220 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
+      id: 'id-82',
+      linkId: 'allergies',
+      text: 'Allergies',
+      item: [
+        {
+          id: 'id-83',
+          linkId: 'allergy-substance',
+          text: 'Type',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '111088007',
+                display: 'Latex (substance)',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-84',
+          linkId: 'allergy-reaction',
+          text: 'Reaction',
+          answer: [
+            {
+              valueString: 'Skin rash',
+            },
+          ],
+        },
+        {
+          id: 'id-85',
+          linkId: 'allergy-clinical-status',
+          text: 'Clinical Status',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+                code: 'active',
+                display: 'Active',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-86',
+          linkId: 'allergy-onset',
+          text: 'Onset',
+          answer: [
+            {
+              valueDateTime: '2000-07-01T00:00:00Z',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-87',
+      linkId: 'emergency-contact',
+      text: 'Emergency Contact',
+      item: [
+        {
+          id: 'id-88',
+          linkId: 'emergency-contact-first-name',
+          text: 'First Name',
+          answer: [
+            {
+              valueString: 'Marge',
+            },
+          ],
+        },
+        {
+          id: 'id-89',
+          linkId: 'emergency-contact-middle-name',
+          text: 'Middle Name',
+        },
+        {
+          id: 'id-90',
+          linkId: 'emergency-contact-last-name',
+          text: 'Last Name',
+          answer: [
+            {
+              valueString: 'Simpson',
+            },
+          ],
+        },
+        {
+          id: 'id-91',
+          linkId: 'emergency-contact-phone',
+          text: 'Phone',
+          answer: [
+            {
+              valueString: '111-222-5555',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-93',
+      linkId: 'allergies',
+      text: 'Allergies',
+      item: [
+        {
+          id: 'id-94',
+          linkId: 'allergy-substance',
+          text: 'Substance',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://snomed.info/sct',
+                code: '763875007',
+                display: 'Product containing sulfonamide (product)',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-95',
+          linkId: 'allergy-reaction',
+          text: 'Reaction',
+          answer: [
+            {
+              valueString: 'Skin rash',
+            },
+          ],
+        },
+        {
+          id: 'id-96',
+          linkId: 'allergy-clinical-status',
+          text: 'Clinical Status',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+                code: 'active',
+                display: 'Active',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-97',
+          linkId: 'allergy-onset',
+          text: 'Onset',
+          answer: [
+            {
+              valueDateTime: '2020-01-01T00:00:00Z',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-78',
+      linkId: 'medications',
+      text: 'Current medications',
+      item: [
+        {
+          id: 'id-79',
+          linkId: 'medication-code',
+          text: 'Medication Name',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                code: '1156277',
+                display: 'ibuprofen Oral Product',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-80',
+          linkId: 'medication-note',
+          text: 'Note',
+          answer: [
+            {
+              valueString: 'I take it to manage my chronic back pain.',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-81',
+      linkId: 'medications',
+      text: 'Current medications',
+      item: [
+        {
+          id: 'id-82',
+          linkId: 'medication-code',
+          text: 'Medication Name',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+                code: '1161610',
+                display: 'metformin Oral Product',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-83',
+          linkId: 'medication-note',
+          text: 'Note',
+          answer: [
+            {
+              valueString: 'I take it to manage my diabetes.',
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: 'id-50',
       linkId: 'coverage-information',
       text: 'Coverage Information',
@@ -242,6 +456,13 @@ export const intakeResponse: QuestionnaireResponse = {
             },
           ],
         },
+      ],
+    },
+    {
+      id: 'id-100',
+      linkId: 'coverage-information',
+      text: 'Coverage Information',
+      item: [
         {
           id: 'id-54',
           linkId: 'insurance-provider',
@@ -439,12 +660,12 @@ export const intakeResponse: QuestionnaireResponse = {
         {
           id: 'id-72',
           linkId: 'notice-of-privacy-practices-help',
-          text: 'Sample Hospital Notice of Privacy Practices gives information about how Sample Hospital may use and release protected health information (PHI) about you. I understand that:\n- I have the right to receive a copy of BACH’s Notice of Privacy Practices.\n- I may request a copy at any time.\n- BACH‘s Notice of Privacy Practices may be revised.',
+          text: 'Sample Hospital Notice of Privacy Practices gives information about how Sample Hospital may use and release protected health information (PHI) about you. I understand that:\n- I have the right to receive a copy of Sample Hospital’s Notice of Privacy Practices.\n- I may request a copy at any time.\n- Sample Hospital‘s Notice of Privacy Practices may be revised.',
         },
         {
           id: 'id-73',
           linkId: 'notice-of-privacy-practices-signature',
-          text: 'I acknowledge the above and that I have received a copy of BACH’s Notice of Privacy Practices.',
+          text: 'I acknowledge the above and that I have received a copy of Sample Hospital’s Notice of Privacy Practices.',
           answer: [
             {
               valueBoolean: true,

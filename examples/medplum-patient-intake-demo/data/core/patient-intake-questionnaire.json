@@ -143,6 +143,83 @@
             ]
           },
           {
+            "linkId": "emergency-contact",
+            "text": "Emergency Contact",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "emergency-contact-first-name",
+                "text": "First Name",
+                "type": "string"
+              },
+              {
+                "linkId": "emergency-contact-middle-name",
+                "text": "Middle Name",
+                "type": "string"
+              },
+              {
+                "linkId": "emergency-contact-last-name",
+                "text": "Last Name",
+                "type": "string"
+              },
+              {
+                "linkId": "emergency-contact-phone",
+                "text": "Phone",
+                "type": "string"
+              }
+            ]
+          },
+          {
+            "linkId": "allergies",
+            "text": "Allergies",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "allergy-substance",
+                "text": "Substance",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1186.8"
+              },
+              {
+                "linkId": "allergy-reaction",
+                "text": "Reaction",
+                "type": "string"
+              },
+              {
+                "linkId": "allergy-clinical-status",
+                "text": "Clinical Status",
+                "type": "choice",
+                "answerValueSet": "http://hl7.org/fhir/ValueSet/allergyintolerance-clinical"
+              },
+              {
+                "linkId": "allergy-onset",
+                "text": "Onset",
+                "type": "dateTime"
+              }
+            ]
+          },
+          {
+            "linkId": "medications",
+            "text": "Current medications",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "medication-code",
+                "text": "Medication Name",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1010.4"
+              },
+              {
+                "linkId": "medication-note",
+                "text": "Note",
+                "type": "string"
+              }
+            ]
+          },
+          {
             "linkId": "coverage-information",
             "text": "Coverage Information",
             "type": "group",
@@ -298,12 +375,12 @@
             "item": [
               {
                 "linkId": "notice-of-privacy-practices-help",
-                "text": "Sample Hospital Notice of Privacy Practices gives information about how Sample Hospital may use and release protected health information (PHI) about you. I understand that:\n- I have the right to receive a copy of BACH’s Notice of Privacy Practices.\n- I may request a copy at any time.\n- BACH‘s Notice of Privacy Practices may be revised.",
+                "text": "Sample Hospital Notice of Privacy Practices gives information about how Sample Hospital may use and release protected health information (PHI) about you. I understand that:\n- I have the right to receive a copy of Sample Hospital’s Notice of Privacy Practices.\n- I may request a copy at any time.\n- Sample Hospital‘s Notice of Privacy Practices may be revised.",
                 "type": "display"
               },
               {
                 "linkId": "notice-of-privacy-practices-signature",
-                "text": "I acknowledge the above and that I have received a copy of BACH’s Notice of Privacy Practices.",
+                "text": "I acknowledge the above and that I have received a copy of Sample Hospital’s Notice of Privacy Practices.",
                 "type": "boolean"
               },
               {
