@@ -207,3 +207,164 @@ export type PhotonMedHistoryInput = {
   active: boolean;
   comment?: string;
 };
+
+export interface PhotonWebhook {
+  headers: Record<string, string>;
+  body: PhotonEvent;
+}
+
+type BasePhotonEvent = {
+  id: string;
+  type: OrderEventType | PrescriptionEventType;
+  specversion: number;
+  datacontenttype: string;
+  time: string;
+  subject: string;
+  source: string;
+  data: OrderData | PrescriptionData;
+};
+
+export type OrderEventType =
+  | 'photon:order:created'
+  | 'photon:order:placed'
+  | 'photon:order:fulfillment'
+  | 'photon:order:completed'
+  | 'photon:order:canceled'
+  | 'photon:order:rerouted'
+  | 'photon:order:error';
+
+type PrescriptionEventType =
+  | 'photon:prescription:created'
+  | 'photon:prescription:depleted'
+  | 'photon:prescription:expired';
+
+type OrderData = {
+  id: string;
+  externalId?: string;
+  patient: {
+    id: string;
+    externalId?: string;
+  };
+};
+
+type PrescriptionData = {
+  id: string;
+  externalId: string;
+  patient: {
+    id: string;
+    externalId: string;
+  };
+};
+
+interface OrderCreatedData extends OrderData {
+  pharmacyId: string;
+  fills: {
+    id: string;
+    prescription: {
+      id: string;
+      externalId: string;
+    };
+  }[];
+  createdAt: string;
+}
+
+interface OrderCreatedEvent extends BasePhotonEvent {
+  type: 'photon:order:created';
+  data: OrderCreatedData;
+}
+
+interface OrderPlacedEvent extends BasePhotonEvent {
+  type: 'photon:order:placed';
+  data: OrderData;
+}
+
+interface OrderFulfillmentData extends OrderData {
+  fulfillment: {
+    type: string;
+    state: string;
+    carrier: string;
+    trackingNumber: string;
+  };
+}
+
+interface OrderFulfillmentEvent extends BasePhotonEvent {
+  type: 'photon:order:fulfillment';
+  data: OrderFulfillmentData;
+}
+
+interface OrderCompletedEvent extends BasePhotonEvent {
+  type: 'photon:order:completed';
+  data: OrderData;
+}
+
+interface OrderCanceledEvent extends BasePhotonEvent {
+  type: 'photon:order:canceled';
+  data: OrderData;
+}
+
+interface OrderReroutedData extends OrderData {
+  pharmacy: {
+    id: string;
+    name: string;
+    address: PhotonAddress;
+  };
+}
+
+interface OrderReroutedEvent extends BasePhotonEvent {
+  type: 'photon:order:rerouted';
+  data: OrderReroutedData;
+}
+
+interface OrderErrorData extends OrderData {
+  reason: string;
+}
+
+interface OrderErrorEvent extends BasePhotonEvent {
+  type: 'photon:order:error';
+  data: OrderErrorData;
+}
+
+interface PrescriptionCreatedData extends PrescriptionData {
+  dispenseQuantity: number;
+  dispenseUnit: string;
+  dispenseAsWritten: boolean;
+  refillsAllowed: number;
+  daysSupply: number;
+  instructions: string;
+  effectiveDate: string;
+  expirationDate: string;
+  prescriberId: string;
+  medicationId: string;
+  patient: {
+    id: string;
+    externalId: string;
+  };
+  notes: string;
+}
+
+interface PrescriptionCreatedEvent extends BasePhotonEvent {
+  type: 'photon:prescription:created';
+  data: PrescriptionCreatedData;
+}
+
+interface PrescriptionDepletedEvent extends BasePhotonEvent {
+  type: 'photon:prescription:depleted';
+  data: PrescriptionData;
+}
+
+interface PrescriptionExpiredEvent extends BasePhotonEvent {
+  type: 'photon:prescription:expired';
+  data: PrescriptionData;
+}
+
+export type PhotonEvent =
+  | OrderCreatedEvent
+  | OrderPlacedEvent
+  | OrderFulfillmentEvent
+  | OrderCompletedEvent
+  | OrderCanceledEvent
+  | OrderReroutedEvent
+  | OrderErrorEvent
+  | PrescriptionCreatedEvent
+  | PrescriptionDepletedEvent
+  | PrescriptionExpiredEvent;
