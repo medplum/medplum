@@ -57,6 +57,16 @@ describe('Intake form', async () => {
     response = await medplum.createResource(intakeResponse);
   });
 
+  test('Create the patient resource', async () => {
+    await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+    patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+    expect(patient).toBeDefined();
+    expect(patient.identifier?.[0].value).toEqual(ssn);
+    expect(response.subject).toEqual(createReference(patient));
+  });
+
   describe('Patient demographic information', async () => {
     test('Patient attributes', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });

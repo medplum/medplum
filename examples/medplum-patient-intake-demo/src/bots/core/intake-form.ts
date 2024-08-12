@@ -1,4 +1,4 @@
-import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
   Address,
   HumanName,
@@ -114,6 +114,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   // Create the patient resource
 
   patient = await medplum.createResource(patient);
+
+  // NOTE: Updating the questionnaire response does not trigger a loop because the bot subscription
+  // is configured for "create"-only event.
+  response.subject = createReference(patient);
+  await medplum.updateResource(response);
 
   // Handle observations
 
