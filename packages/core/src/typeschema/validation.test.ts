@@ -1602,9 +1602,19 @@ describe('FHIR resource validation', () => {
     };
     loadDataType(clinicalDocumentSd);
 
-    const value = { realmCode: [{ code: 'foo' }] };
-    const typedValue = { type: clinicalDocumentSd.type, value };
-    expect(() => validateTypedValue(typedValue)).not.toThrow();
+    const typedValue1 = {
+      type: clinicalDocumentSd.type,
+      value: { realmCode: [{ code: 'foo' }] },
+    };
+    expect(() => validateTypedValue(typedValue1)).not.toThrow();
+
+    const typedValue2 = {
+      type: clinicalDocumentSd.type,
+      value: { realmCode: [{ foo: 'bar' }] },
+    };
+    expect(() => validateTypedValue(typedValue2)).toThrow(
+      'Invalid additional property "foo" (ClinicalDocument.realmCode.foo)'
+    );
   });
 
   test('Choice-of-type without [x]', () => {
@@ -1640,9 +1650,19 @@ describe('FHIR resource validation', () => {
     };
     loadDataType(sd);
 
-    const value = { effectiveTime: ['2022-02-02T12:00:00Z'] };
-    const typedValue = { type: sd.type, value };
-    expect(() => validateTypedValue(typedValue)).not.toThrow();
+    const typedValue1 = {
+      type: sd.type,
+      value: { effectiveTime: ['2022-02-02T12:00:00Z'] },
+    };
+    expect(() => validateTypedValue(typedValue1)).not.toThrow();
+
+    const typedValue2 = {
+      type: sd.type,
+      value: { effectiveTime: ['foo'] },
+    };
+    expect(() => validateTypedValue(typedValue2)).toThrow(
+      'Invalid dateTime format (SubstanceAdministration.effectiveTime)'
+    );
   });
 });
 
