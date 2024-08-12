@@ -1,5 +1,5 @@
-import { ContentType, createReference, getReferenceString } from '@medplum/core';
-import { Binary, Encounter, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
+import { ContentType, createReference, getReferenceString, isPopulated } from '@medplum/core';
+import { Binary, Encounter, Patient, Practitioner, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -8,6 +8,7 @@ import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
+import * as searchFile from '../search';
 
 const app = express();
 let practitioner: Practitioner;
@@ -873,4 +874,198 @@ describe('GraphQL', () => {
     expect(res3.body.errors).toHaveLength(1);
     expect(res3.body.errors[0].message).toEqual('Maximum number of searches exceeded');
   });
+
+  describe('searchByReference', () => {
+    async function runQuery(accessToken: string): Promise<unknown> {
+      const res = await request(app)
+        .post('/fhir/R4/$graphql')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.JSON)
+        .send({
+          query: `
+            {
+              PatientList {
+                id
+                ObservationList(_reference: subject) {
+                  id
+                  bodySite { text }
+                }
+              }
+            }`,
+        });
+      expect(res.status).toBe(200);
+
+      return res.body.data;
+    }
+
+    let searchByReferenceSpy: jest.SpyInstance<ReturnType<typeof searchFile.searchByReferenceImpl>>;
+
+    beforeEach(async () => {
+      searchByReferenceSpy = jest.spyOn(searchFile, 'searchByReferenceImpl');
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    test('disabled without project setting', async () => {
+      const { accessToken, project, repo } = await createTestProject({
+        withAccessToken: true,
+        withRepo: true,
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const obs = await repo.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'blood pressure' },
+        subject: createReference(patient),
+      });
+      hasId(obs);
+
+      expect(project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')).toBeUndefined();
+      const data = await runQuery(accessToken);
+      expect(data).toEqual({ PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: null }] }] });
+
+      expect(searchByReferenceSpy).not.toHaveBeenCalled();
+    });
+
+    test('Respect project boundary', async () => {
+      const {
+        accessToken: accessToken1,
+        project: project1,
+        repo: repo1,
+      } = await createTestProject({
+        withAccessToken: true,
+        withRepo: true,
+        project: {
+          systemSetting: [{ name: 'graphqlBatchedSearchSize', valueInteger: 10 }],
+        },
+      });
+      const {
+        accessToken: accessToken2,
+        project: project2,
+        repo: repo2,
+      } = await createTestProject({
+        withAccessToken: true,
+        withRepo: true,
+        project: {
+          systemSetting: [{ name: 'graphqlBatchedSearchSize', valueInteger: 10 }],
+        },
+      });
+
+      expect(project1.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')?.valueInteger).toEqual(10);
+      expect(project2.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')?.valueInteger).toEqual(10);
+
+      const patient1 = await repo1.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const patient2 = await repo2.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Billy'], family: 'Smith' }],
+      });
+
+      const obs1 = await repo1.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'blood pressure' },
+        subject: createReference(patient1),
+      });
+      hasId(obs1);
+
+      // make an observation in project2 that references patient1 which should make it inaccessible via the ref
+      await repo2.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'blood pressure' },
+        subject: createReference(patient1),
+      });
+
+      const data1 = await runQuery(accessToken1);
+      expect(searchByReferenceSpy).toHaveBeenCalledTimes(1);
+      expect(data1).toEqual({ PatientList: [{ id: patient1.id, ObservationList: [{ id: obs1.id, bodySite: null }] }] });
+
+      // obs2 is in project2 but has a reference to patient1 which is in project1, so expect no observations
+      const data2 = await runQuery(accessToken2);
+      expect(searchByReferenceSpy).toHaveBeenCalledTimes(2);
+      expect(data2).toEqual({ PatientList: [{ id: patient2.id, ObservationList: [] }] });
+    });
+
+    test('Respect access policy', async () => {
+      const { accessToken, project, repo } = await createTestProject({
+        withAccessToken: true,
+        withRepo: true,
+        project: {
+          systemSetting: [{ name: 'graphqlBatchedSearchSize', valueInteger: 10 }],
+        },
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const obs = await repo.createResource({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'blood pressure' },
+        subject: createReference(patient),
+        bodySite: { text: 'left arm' },
+      });
+      hasId(obs);
+
+      const { accessToken: restrictedAccessToken } = await addTestUser(project, {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+          },
+        ],
+      });
+
+      const { accessToken: hiddenBodySiteAccessToken } = await addTestUser(project, {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'Patient',
+          },
+          {
+            resourceType: 'Observation',
+            hiddenFields: ['bodySite'],
+          },
+        ],
+      });
+
+      // No AccessPolicy
+      const data = await runQuery(accessToken);
+      expect(searchByReferenceSpy).toHaveBeenCalledTimes(1);
+      expect(data).toEqual({
+        PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: { text: 'left arm' } }] }],
+      });
+
+      // AccessPolicy excludes Observation
+      const restrictedData = await runQuery(restrictedAccessToken);
+      expect(searchByReferenceSpy).toHaveBeenCalledTimes(2);
+      expect(restrictedData).toEqual({ PatientList: [{ id: patient.id, ObservationList: null }] });
+
+      // AccessPolicy hides BodySite
+      const hiddenData = await runQuery(hiddenBodySiteAccessToken);
+      expect(searchByReferenceSpy).toHaveBeenCalledTimes(3);
+      expect(hiddenData).toEqual({
+        PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: null }] }],
+      });
+    });
+  });
 });
+
+function hasId<T extends Resource = Resource>(resource: T): asserts resource is T & { id: string } {
+  if (!isPopulated(resource.id)) {
+    throw new Error('Resource does not have an id');
+  }
+}

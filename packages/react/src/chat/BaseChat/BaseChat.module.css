@@ -17,6 +17,7 @@
 .chatBody {
   background-color: var(--mantine-color-body);
   flex: 1;
+  position: relative;
 }
 
 .chatScrollArea {

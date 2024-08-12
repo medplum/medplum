@@ -1,5 +1,5 @@
 import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
-import { FhirRequest, FhirRouter, HttpMethod, RepositoryMode } from '@medplum/fhir-router';
+import { BatchEvent, FhirRequest, FhirRouter, HttpMethod, RepositoryMode } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -270,17 +270,24 @@ function initInternalFhirRouter(): FhirRouter {
     ctx.logger.warn(e.message, { ...e.data, project: ctx.project.id });
   });
 
-  router.addEventListener('batch', ({ count, errors, size, bundleType }: any) => {
+  router.addEventListener('batch', (event: any) => {
     const ctx = getAuthenticatedContext();
     const projectId = ctx.project.id;
 
+    const { count, errors, size, bundleType } = event as BatchEvent;
     const batchMetricOptions = { attributes: { bundleType, projectId } };
-    recordHistogramValue('medplum.batch.entries', count, batchMetricOptions);
-    recordHistogramValue('medplum.batch.errors', errors, batchMetricOptions);
-    recordHistogramValue('medplum.batch.size', size, batchMetricOptions);
+    if (count !== undefined) {
+      recordHistogramValue('medplum.batch.entries', count, batchMetricOptions);
+    }
+    if (errors !== undefined) {
+      recordHistogramValue('medplum.batch.errors', errors, batchMetricOptions);
 
-    if (errors > 0 && bundleType === 'transaction') {
-      ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: projectId });
+      if (errors > 0 && bundleType === 'transaction') {
+        ctx.logger.warn('Error processing transaction Bundle', { count, errors, size, project: projectId });
+      }
+    }
+    if (size !== undefined) {
+      recordHistogramValue('medplum.batch.size', size, batchMetricOptions);
     }
   });
 
@@ -301,6 +308,8 @@ protectedRoutes.use(
       body: req.body,
       headers: req.headers,
       config: {
+        graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
+          ?.valueInteger,
         graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
         graphqlMaxPageSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxPageSize')?.valueInteger,
         graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,

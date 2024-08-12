@@ -1,4 +1,15 @@
-import { ActionIcon, Group, Paper, PaperProps, ScrollArea, Stack, TextInput, Title } from '@mantine/core';
+import {
+  ActionIcon,
+  Group,
+  LoadingOverlay,
+  Paper,
+  PaperProps,
+  ScrollArea,
+  Skeleton,
+  Stack,
+  TextInput,
+  Title,
+} from '@mantine/core';
 import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ProfileResource, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
@@ -63,23 +74,68 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     ...paperProps
   } = props;
   const medplum = useMedplum();
+
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const firstScrollRef = useRef(true);
+  const initialLoadRef = useRef(true);
+
   const [profile, setProfile] = useState(medplum.getProfile());
+  const [reconnecting, setReconnecting] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  if (!loading) {
+    initialLoadRef.current = false;
+  }
 
   const profileRefStr = useMemo<string>(
     () => (profile ? getReferenceString(medplum.getProfile() as ProfileResource) : ''),
     [profile, medplum]
   );
 
-  useSubscription(`Communication?${query}`, (bundle: Bundle) => {
-    const communication = bundle.entry?.[1]?.resource as Communication;
-    upsertCommunications(communicationsRef.current, [communication], setCommunications);
-    // Call `onMessageReceived` when we are not the sender of a chat message that came in
-    if (onMessageReceived && getReferenceString(communication.sender as Reference) !== profileRefStr) {
-      onMessageReceived(communication);
+  const searchMessages = useCallback(async (): Promise<void> => {
+    setLoading(true);
+    const searchParams = new URLSearchParams(query);
+    searchParams.append('_sort', '-sent');
+    const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
+    upsertCommunications(communicationsRef.current, searchResult, setCommunications);
+    setLoading(false);
+  }, [medplum, setCommunications, query]);
+
+  useEffect(() => {
+    searchMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+  }, [searchMessages]);
+
+  useSubscription(
+    `Communication?${query}`,
+    (bundle: Bundle) => {
+      const communication = bundle.entry?.[1]?.resource as Communication;
+      upsertCommunications(communicationsRef.current, [communication], setCommunications);
+      // Call `onMessageReceived` when we are not the sender of a chat message that came in
+      if (onMessageReceived && getReferenceString(communication.sender as Reference) !== profileRefStr) {
+        onMessageReceived(communication);
+      }
+    },
+    {
+      onWebSocketClose: useCallback(() => {
+        if (!reconnecting) {
+          setReconnecting(true);
+        }
+        showNotification({ color: 'red', message: 'Live chat disconnected. Attempting to reconnect...' });
+      }, [setReconnecting, reconnecting]),
+      onWebSocketOpen: useCallback(() => {
+        if (reconnecting) {
+          showNotification({ color: 'green', message: 'Live chat reconnected.' });
+        }
+      }, [reconnecting]),
+      onSubscriptionConnect: useCallback(() => {
+        if (reconnecting) {
+          searchMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+          setReconnecting(false);
+        }
+      }, [reconnecting, setReconnecting, searchMessages]),
     }
-  });
+  );
 
   const sendMessageInternal = useCallback(
     (formData: Record<string, string>) => {
@@ -113,17 +169,6 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
 
   const scrollToBottomRef = useRef<boolean>(true);
 
-  const searchMessages = useCallback(async (): Promise<void> => {
-    const searchParams = new URLSearchParams(query);
-    searchParams.append('_sort', '-sent');
-    const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
-    upsertCommunications(communicationsRef.current, searchResult, setCommunications);
-  }, [medplum, setCommunications, query]);
-
-  useEffect(() => {
-    searchMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
-  }, [searchMessages]);
-
   useEffect(() => {
     if (communications !== prevCommunicationsRef.current) {
       scrollToBottomRef.current = true;
@@ -134,7 +179,13 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   useEffect(() => {
     if (scrollToBottomRef.current) {
       if (scrollAreaRef.current?.scrollTo) {
-        scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
+        scrollAreaRef.current.scrollTo({
+          top: scrollAreaRef.current.scrollHeight,
+          // We want to skip scrolling through the whole chat on initial load,
+          // Then every time after we will do the "smooth scroll"
+          ...(firstScrollRef.current ? { duration: 0 } : { behavior: 'smooth' }),
+        });
+        firstScrollRef.current = false;
         scrollToBottomRef.current = false;
       }
     }
@@ -163,35 +214,58 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
         {title}
       </Title>
       <div className={classes.chatBody} ref={parentRef}>
-        <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} h={parentRect.height}>
-          {communications.map((c, i) => {
-            const prevCommunication = i > 0 ? communications[i - 1] : undefined;
-            const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
-            const currCommTime = parseSentTime(c);
-            return (
-              <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
-                {(!prevCommTime || currCommTime !== prevCommTime) && (
-                  <div style={{ textAlign: 'center' }}>{currCommTime}</div>
-                )}
-                {c.sender?.reference === profileRefStr ? (
-                  <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
-                    <ChatBubble
-                      alignment="right"
-                      communication={c}
-                      showDelivered={!!c.received && c.id === myLastDeliveredId}
-                    />
-                    <ResourceAvatar radius="xl" color="orange" value={c.sender} />
-                  </Group>
-                ) : (
-                  <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
-                    <ResourceAvatar radius="xl" value={c.sender} />
-                    <ChatBubble alignment="left" communication={c} />
-                  </Group>
-                )}
-              </Stack>
-            );
-          })}
-        </ScrollArea>
+        {initialLoadRef.current ? (
+          <Stack key="skeleton-chat-messages" align="stretch" mt="lg">
+            <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
+              <Skeleton height={38} circle ml="md" />
+              <ChatBubbleSkeleton alignment="left" parentWidth={parentRect.width} />
+            </Group>
+            <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
+              <ChatBubbleSkeleton alignment="right" parentWidth={parentRect.width} />
+              <Skeleton height={38} circle mr="md" />
+            </Group>
+            <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
+              <Skeleton height={38} circle ml="md" />
+              <ChatBubbleSkeleton alignment="left" parentWidth={parentRect.width} />
+            </Group>
+          </Stack>
+        ) : (
+          <ScrollArea viewportRef={scrollAreaRef} className={classes.chatScrollArea} h={parentRect.height}>
+            {/* We don't wrap our scrollarea or scrollarea children with this overlay since it seems to break the rendering of the virtual scroll element */}
+            {/* Instead we manually set the width and height to match the parent and use absolute positioning */}
+            <LoadingOverlay
+              visible={loading || reconnecting}
+              style={{ width: parentRect.width, height: parentRect.height, position: 'absolute', zIndex: 1 }}
+            />
+            {communications.map((c, i) => {
+              const prevCommunication = i > 0 ? communications[i - 1] : undefined;
+              const prevCommTime = prevCommunication ? parseSentTime(prevCommunication) : undefined;
+              const currCommTime = parseSentTime(c);
+              return (
+                <Stack key={`${c.id}--${c.meta?.versionId ?? 'no-version'}`} align="stretch">
+                  {(!prevCommTime || currCommTime !== prevCommTime) && (
+                    <div style={{ textAlign: 'center' }}>{currCommTime}</div>
+                  )}
+                  {c.sender?.reference === profileRefStr ? (
+                    <Group justify="flex-end" align="flex-end" gap="xs" mb="sm">
+                      <ChatBubble
+                        alignment="right"
+                        communication={c}
+                        showDelivered={!!c.received && c.id === myLastDeliveredId}
+                      />
+                      <ResourceAvatar radius="xl" color="orange" value={c.sender} />
+                    </Group>
+                  ) : (
+                    <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
+                      <ResourceAvatar radius="xl" value={c.sender} />
+                      <ChatBubble alignment="left" communication={c} />
+                    </Group>
+                  )}
+                </Stack>
+              );
+            })}
+          </ScrollArea>
+        )}
       </div>
       <div className={classes.chatInputContainer}>
         <Form onSubmit={sendMessageInternal}>
@@ -255,6 +329,39 @@ function ChatBubble(props: ChatBubbleProps): JSX.Element {
           {seenTime.getMinutes()}
         </div>
       )}
+    </div>
+  );
+}
+
+export interface ChatBubbleSkeletonProps {
+  readonly alignment: 'left' | 'right';
+  readonly parentWidth: number;
+}
+
+function ChatBubbleSkeleton(props: ChatBubbleSkeletonProps): JSX.Element {
+  const { alignment, parentWidth } = props;
+  return (
+    <div className={classes.chatBubbleOuterWrap}>
+      <div className={classes.chatBubbleName} aria-label="Placeholder sender name">
+        <div style={{ position: 'relative' }}>
+          <Skeleton
+            height={14}
+            width="100px"
+            radius="l"
+            ml={alignment === 'left' ? 'sm' : undefined}
+            style={alignment === 'right' ? { position: 'absolute', right: 5, top: -15 } : undefined}
+          />
+        </div>
+      </div>
+      <div
+        className={
+          alignment === 'left' ? classes.chatBubbleLeftAlignedInnerWrap : classes.chatBubbleRightAlignedInnerWrap
+        }
+      >
+        <div className={classes.chatBubble}>
+          <Skeleton height={14} width={parentWidth * 0.5} radius="l" />
+        </div>
+      </div>
     </div>
   );
 }

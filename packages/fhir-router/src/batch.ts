@@ -68,8 +68,15 @@ class BatchProcessor {
       throw new OperationOutcomeError(badRequest('Missing bundle entry'));
     }
 
+    const preEvent: BatchEvent = {
+      type: 'batch',
+      bundleType,
+      count: entries.length,
+      size: JSON.stringify(this.bundle).length,
+    };
+    this.router.dispatchEvent(preEvent);
+
     const resultEntries: BundleEntry[] = [];
-    let count = 0;
     let errors = 0;
     for (const entry of entries) {
       const rewritten = this.rewriteIdsInObject(entry);
@@ -80,7 +87,6 @@ class BatchProcessor {
       }
 
       try {
-        count++;
         resultEntries.push(await this.processBatchEntry(rewritten));
       } catch (err) {
         errors++;
@@ -88,14 +94,12 @@ class BatchProcessor {
       }
     }
 
-    const event: BatchEvent = {
+    const postEvent: BatchEvent = {
       type: 'batch',
       bundleType,
-      count,
       errors,
-      size: JSON.stringify(this.bundle).length,
     };
-    this.router.dispatchEvent(event);
+    this.router.dispatchEvent(postEvent);
 
     return {
       resourceType: 'Bundle',
@@ -267,9 +271,9 @@ function buildBundleResponse(outcome: OperationOutcome, resource?: Resource): Bu
 
 export interface BatchEvent extends Event {
   bundleType: Bundle['type'];
-  count: number;
-  errors: number;
-  size: number;
+  count?: number;
+  errors?: number;
+  size?: number;
 }
 
 export interface LogEvent extends Event {

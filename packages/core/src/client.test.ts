@@ -2979,6 +2979,66 @@ describe('Client', () => {
     });
   });
 
+  describe('Token refresh', () => {
+    test('should not clear sessionDetails when profile is refreshing', async () => {
+      const fetch = mockFetch(200, (url) => {
+        if (url.includes('Patient/123')) {
+          return { resourceType: 'Patient', id: '123' };
+        }
+        if (url.includes('oauth2/token')) {
+          return {
+            access_token: createFakeJwt({ client_id: '123', login_id: '123', exp: Math.floor(Date.now() / 1000) + 1 }),
+            refresh_token: createFakeJwt({ client_id: '123' }),
+            profile: { reference: 'Patient/123' },
+          };
+        }
+        if (url.includes('auth/me')) {
+          return {
+            profile: { resourceType: 'Patient', id: '123' },
+          };
+        }
+        return {};
+      });
+
+      const client = new MedplumClient({ fetch });
+
+      const loginResponse = await client.startLogin({ email: 'admin@example.com', password: 'admin' });
+      expect(fetch).toHaveBeenCalledTimes(1);
+      fetch.mockClear();
+
+      await client.processCode(loginResponse.code as string);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      fetch.mockClear();
+
+      expect(client.getProfile()).toBeDefined();
+
+      const refreshingPromise = new Promise<void>((resolve) => {
+        client.addEventListener('profileRefreshing', () => {
+          resolve();
+        });
+      });
+
+      const now = Date.now();
+      jest.useFakeTimers().setSystemTime(now + 2000);
+
+      // Call refreshIfExpired
+      const refreshedPromise = client.refreshIfExpired();
+
+      // Wait to receive event
+      await refreshingPromise;
+
+      // Check that profile is still defined
+      // This is where the test failed before this PR
+      expect(client.getProfile()).toBeDefined();
+
+      await refreshedPromise;
+
+      expect(client.getProfile()).toBeDefined();
+
+      jest.useRealTimers();
+    });
+  });
+
   test('Verbose mode', async () => {
     const fetch = jest.fn(() => {
       return Promise.resolve({

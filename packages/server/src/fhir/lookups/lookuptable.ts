@@ -115,7 +115,8 @@ export abstract class LookupTable {
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
     const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
-    selectQuery.innerJoin(
+    selectQuery.join(
+      'INNER JOIN',
       new SelectQuery(lookupTableName).distinctOn('resourceId').column('resourceId').column(columnName),
       joinName,
       joinOnExpression
