@@ -1,10 +1,10 @@
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Bot, Bundle, BundleEntry, Practitioner, Questionnaire, Resource } from '@medplum/fhirtypes';
+import { capitalize, getReferenceString, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { Bot, Bundle, BundleEntry, Practitioner, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { useCallback, useContext, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import exampleBotData from '../../data/core/example-bots.json';
 
@@ -28,12 +28,6 @@ export function UploadDataPage(): JSX.Element {
     setPageDisabled(true);
     let uploadFunction: UploadFunction;
     switch (dataType) {
-      // case 'core':
-      //   uploadFunction = uploadCoreData;
-      //   break;
-      // case 'example':
-      //   uploadFunction = uploadExampleData;
-      //   break;
       case 'bots':
         uploadFunction = uploadExampleBots;
         break;
@@ -63,45 +57,6 @@ export function UploadDataPage(): JSX.Element {
     </Document>
   );
 }
-
-// async function uploadCoreData(medplum: MedplumClient): Promise<void> {
-//   const batch = coreData as Bundle;
-
-//   const result = await medplum.executeBatch(batch);
-
-//   if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
-//     await setTimeout(
-//       () =>
-//         showNotification({
-//           icon: <IconCircleCheck />,
-//           title: 'Success',
-//           message: 'Uploaded Core Data',
-//         }),
-//       1000
-//     );
-//   } else {
-//     throw new Error('Error uploading core data');
-//   }
-// }
-
-// async function uploadExampleData(medplum: MedplumClient): Promise<void> {
-//   const exampleDataBatch = exampleData as Bundle;
-//   const result = await medplum.executeBatch(exampleDataBatch);
-
-//   if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
-//     await setTimeout(
-//       () =>
-//         showNotification({
-//           icon: <IconCircleCheck />,
-//           title: 'Success',
-//           message: 'Uploaded Example Data',
-//         }),
-//       1000
-//     );
-//   } else {
-//     throw new Error('Error uploading example data');
-//   }
-// }
 
 async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner): Promise<void> {
   let transactionString = JSON.stringify(exampleBotData);
