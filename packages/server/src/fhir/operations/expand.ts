@@ -390,7 +390,10 @@ export function expansionQuery(
           }
           break;
         case '=':
-          query = addPropertyFilter(query, condition.property, condition.value, true);
+          query = addPropertyFilter(query, condition.property, '=', condition.value);
+          break;
+        case 'in':
+          query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','));
           break;
         default:
           ctx.logger.warn('Unknown filter type in ValueSet', { filter: condition });

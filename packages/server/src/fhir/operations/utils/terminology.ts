@@ -1,7 +1,7 @@
 import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
 import { getAuthenticatedContext } from '../../../context';
 import { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
-import { SelectQuery, Conjunction, Condition, Column, Union } from '../../sql';
+import { SelectQuery, Conjunction, Condition, Column, Union, Exists, Operator as SqlOperator } from '../../sql';
 import { getSystemRepo } from '../../repo';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
@@ -70,33 +70,33 @@ function sameTerminologyResourceVersion(a: TerminologyResource, b: TerminologyRe
   return true;
 }
 
-export function addPropertyFilter(query: SelectQuery, property: string, value: string, isEqual?: boolean): SelectQuery {
-  const propertyTable = query.getNextJoinAlias();
-  query.join(
-    'LEFT JOIN',
-    'Coding_Property',
-    propertyTable,
-    new Conjunction([
-      new Condition(new Column(query.tableName, 'id'), '=', new Column(propertyTable, 'coding')),
-      new Condition(new Column(propertyTable, 'value'), '=', value),
-    ])
-  );
+export function addPropertyFilter(
+  query: SelectQuery,
+  property: string,
+  operator: keyof typeof SqlOperator,
+  value: string | string[]
+): SelectQuery {
+  const propertyQuery = new SelectQuery('Coding_Property')
+    .column('coding')
+    .whereExpr(
+      new Conjunction([
+        new Condition(new Column(query.tableName, 'id'), '=', new Column('Coding_Property', 'coding')),
+        new Condition('value', operator, value),
+      ])
+    );
 
-  const csPropertyTable = query.getNextJoinAlias();
-  query.join(
-    'LEFT JOIN',
+  const csPropertyTable = propertyQuery.getNextJoinAlias();
+  propertyQuery.join(
+    'INNER JOIN',
     'CodeSystem_Property',
     csPropertyTable,
     new Conjunction([
-      new Condition(new Column('Coding', 'system'), '=', new Column(csPropertyTable, 'system')),
-      new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyTable, 'property')),
+      new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyQuery.tableName, 'property')),
       new Condition(new Column(csPropertyTable, 'code'), '=', property),
     ])
   );
 
-  query
-    .where(new Column(propertyTable, 'value'), isEqual ? '!=' : '=', null)
-    .where(new Column(csPropertyTable, 'system'), isEqual ? '!=' : '=', null);
+  query.whereExpr(new Exists(propertyQuery));
   return query;
 }
 

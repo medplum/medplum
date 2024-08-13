@@ -786,6 +786,37 @@ describe('Updated implementation', () => {
     expect(expansion.contains?.[0]?.code).toEqual('ERECCAP');
   });
 
+  test('Property filter with multiple values', async () => {
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.com/fhir/ValueSet/property-filter' + randomUUID(),
+      compose: {
+        include: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm',
+            filter: [{ property: 'status', op: 'in', value: 'preferred,retired' }],
+          },
+        ],
+      },
+    };
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(res1.status).toBe(201);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    console.log(res2.body.issue);
+    expect(res2.status).toEqual(200);
+    const expansion = res2.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains?.[0]?.code).toEqual('ERECCAP');
+  });
+
   test('Reference to other ValueSet', async () => {
     const valueSetResource: ValueSet = {
       resourceType: 'ValueSet',
