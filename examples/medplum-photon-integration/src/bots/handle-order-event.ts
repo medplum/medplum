@@ -243,6 +243,12 @@ async function createMedicationDispense(
     identifier: `https://neutron.health|${fillData.prescription?.id ?? ''}`,
   });
 
+  const pharmacy = request.dispenseRequest?.performer;
+  const performer: MedicationDispense['performer'] = [];
+  if (pharmacy) {
+    performer.push({ actor: pharmacy });
+  }
+
   // Link the dispense to the prescription if it exists
   const authorizingPrescription: Reference<MedicationRequest>[] = [{ reference: getReferenceString(request) }];
   if (prescription) {
@@ -259,6 +265,7 @@ async function createMedicationDispense(
       coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: fill.treatment?.codes.rxcui }],
     },
     whenPrepared: fillData.filledAt,
+    performer,
   };
 
   // Create and return the MedicationDispense
