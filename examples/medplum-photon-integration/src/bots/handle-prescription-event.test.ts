@@ -3,11 +3,8 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, MedicationRequest, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { PrescriptionCreatedEvent, PrescriptionData, PrescriptionDepletedEvent } from '../photon-types';
-import {
-  getExistingPrescription,
-  handleCreatePrescription,
-  handleUpdatePrescription,
-} from './handle-prescription-event';
+import { handleCreatePrescription, handleUpdatePrescription } from './handle-prescription-event';
+import { getExistingMedicationRequest } from './utils';
 
 describe('Prescription webhooks', async () => {
   beforeAll(() => {
@@ -41,7 +38,7 @@ describe('Prescription webhooks', async () => {
       },
     };
 
-    const existingRequest = await getExistingPrescription(prescriptionData, medplum);
+    const existingRequest = await getExistingMedicationRequest(prescriptionData, medplum);
     expect(existingRequest).toBeDefined();
   });
 

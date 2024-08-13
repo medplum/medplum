@@ -1,6 +1,5 @@
 import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Medication, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
-import { createHmac } from 'crypto';
 import {
   PhotonEvent,
   PhotonWebhook,
