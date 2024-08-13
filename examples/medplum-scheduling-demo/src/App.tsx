@@ -67,12 +67,12 @@ export function App(): JSX.Element | null {
           links: [
             {
               icon: <IconCalendar />,
-              label: 'Schedule',
+              label: 'My Schedule',
               href: '/Schedule',
             },
             {
               icon: <IconClipboard />,
-              label: 'Appointments',
+              label: 'My Appointments',
               href: '/Appointment/upcoming',
             },
           ],
