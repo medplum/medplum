@@ -71,6 +71,11 @@ import {
  */
 const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 
+export type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
+  count: number;
+  offset: number;
+};
+
 export interface ChainedSearchLink {
   resourceType: string;
   code: string;
@@ -108,7 +113,7 @@ export async function searchImpl<T extends Resource>(
     type: 'searchset',
     entry,
     total,
-    link: getSearchLinks(searchRequest, hasMore),
+    link: getSearchLinks(searchRequest, entry, hasMore),
   };
 }
 
@@ -170,7 +175,7 @@ export async function searchByReferenceImpl<T extends Resource>(
 
 function applyCountAndOffsetLimits<T extends Resource>(
   searchRequest: SearchRequest
-): asserts searchRequest is SearchRequest<T> & { count: number; offset: number } {
+): asserts searchRequest is SearchRequestWithCountAndOffset<T> {
   if (searchRequest.count === undefined) {
     searchRequest.count = DEFAULT_SEARCH_COUNT;
   } else if (searchRequest.count > maxSearchResults) {
@@ -218,14 +223,14 @@ interface GetSelectQueryForSearchOptions extends GetBaseSelectQueryOptions {
 }
 function getSelectQueryForSearch<T extends Resource>(
   repo: Repository,
-  searchRequest: SearchRequest<T>,
+  searchRequest: SearchRequestWithCountAndOffset<T>,
   options?: GetSelectQueryForSearchOptions
 ): SelectQuery {
   const builder = getBaseSelectQuery(repo, searchRequest, options);
   addSortRules(builder, searchRequest);
-  const count = searchRequest.count as number;
+  const count = searchRequest.count;
   builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
-  builder.offset(searchRequest.offset ?? 0);
+  builder.offset(searchRequest.offset);
   return builder;
 }
 
@@ -238,7 +243,7 @@ function getSelectQueryForSearch<T extends Resource>(
  */
 async function getSearchEntries<T extends Resource>(
   repo: Repository,
-  searchRequest: SearchRequest<T> & { count: number },
+  searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
   const startTime = Date.now();
@@ -453,6 +458,7 @@ async function getSearchIncludeEntries(
           },
         ],
         count: DEFAULT_MAX_SEARCH_COUNT,
+        offset: 0,
       };
       const builder = getSelectQueryForSearch(repo, searchRequest);
       return getSearchEntries(repo, searchRequest, builder);
@@ -511,6 +517,7 @@ async function getSearchRevIncludeEntries(
       },
     ],
     count: DEFAULT_MAX_SEARCH_COUNT,
+    offset: 0,
   };
   const builder = getSelectQueryForSearch(repo, searchRequest);
 
@@ -526,10 +533,15 @@ async function getSearchRevIncludeEntries(
  * At minimum, the 'self' link will be returned.
  * If "count" does not equal zero, then 'first', 'next', and 'previous' links will be included.
  * @param searchRequest - The search request.
+ * @param entries - The search bundle entries.
  * @param hasMore - True if there are more entries after the current page.
  * @returns The search bundle links.
  */
-function getSearchLinks(searchRequest: SearchRequest, hasMore: boolean | undefined): BundleLink[] {
+function getSearchLinks(
+  searchRequest: SearchRequestWithCountAndOffset,
+  entries: BundleEntry[] | undefined,
+  hasMore: boolean | undefined
+): BundleLink[] {
   const result: BundleLink[] = [
     {
       relation: 'self',
@@ -537,31 +549,114 @@ function getSearchLinks(searchRequest: SearchRequest, hasMore: boolean | undefin
     },
   ];
 
-  const count = searchRequest.count as number;
-  if (count > 0) {
-    const offset = searchRequest.offset || 0;
-
-    result.push({
-      relation: 'first',
-      url: getSearchUrl({ ...searchRequest, offset: 0 }),
-    });
-
-    if (hasMore) {
-      result.push({
-        relation: 'next',
-        url: getSearchUrl({ ...searchRequest, offset: offset + count }),
-      });
-    }
-
-    if (offset > 0) {
-      result.push({
-        relation: 'previous',
-        url: getSearchUrl({ ...searchRequest, offset: offset - count }),
-      });
+  if (searchRequest.count > 0) {
+    if (canUseLastUpdatedSort(searchRequest)) {
+      buildSearchLinksWithLastUpdated(searchRequest, entries, hasMore, result);
+    } else {
+      buildSearchLinksWithOffset(searchRequest, hasMore, result);
     }
   }
 
   return result;
+}
+
+function canUseLastUpdatedSort(searchRequest: SearchRequestWithCountAndOffset): boolean {
+  // Using _offset for pagination does not scale for very large row counts.
+  // Instead, we can use _lastUpdated for pagination if the search is sorted by _lastUpdated.
+  // Check if the _lastUpdated sort rule is the only sort rule, or if no sort rules are specified.
+  return (
+    searchRequest.offset === 0 &&
+    (searchRequest.sortRules === undefined ||
+      searchRequest.sortRules?.length === 0 ||
+      (searchRequest.sortRules?.length === 1 && searchRequest.sortRules[0].code === '_lastUpdated'))
+  );
+}
+
+function buildSearchLinksWithLastUpdated(
+  searchRequest: SearchRequestWithCountAndOffset,
+  entries: BundleEntry[] | undefined,
+  hasMore: boolean | undefined,
+  result: BundleLink[]
+): void {
+  let sortedSearchRequest = searchRequest;
+  if (!sortedSearchRequest.sortRules || sortedSearchRequest.sortRules.length === 0) {
+    sortedSearchRequest = {
+      ...sortedSearchRequest,
+      sortRules: [{ code: '_lastUpdated', descending: false }],
+    };
+  }
+
+  if (sortedSearchRequest.sortRules?.[0]?.descending) {
+    buildSearchLinksWithLastUpdatedDesc(sortedSearchRequest, entries, hasMore, result);
+  } else {
+    buildSearchLinksWithLastUpdatedAsc(sortedSearchRequest, entries, hasMore, result);
+  }
+}
+
+function buildSearchLinksWithLastUpdatedDesc(
+  searchRequest: SearchRequestWithCountAndOffset,
+  entries: BundleEntry[] | undefined,
+  hasMore: boolean | undefined,
+  result: BundleLink[]
+): void {
+  const filters = searchRequest.filters ?? [];
+  const filtersWithoutLastUpdated = filters.filter((f) => f.code !== '_lastUpdated');
+
+  result.push({
+    relation: 'first',
+    url: getSearchUrl({ ...searchRequest, filters: filtersWithoutLastUpdated }),
+  });
+
+  if (hasMore) {
+    result.push({
+      relation: 'next',
+      url: getSearchUrl({ ...searchRequest, offset: offset + count }),
+    });
+  }
+
+  if (offset > 0) {
+    result.push({
+      relation: 'previous',
+      url: getSearchUrl({ ...searchRequest, offset: offset - count }),
+    });
+  }
+}
+
+function buildSearchLinksWithLastUpdatedAsc(
+  searchRequest: SearchRequestWithCountAndOffset,
+  entries: BundleEntry[] | undefined,
+  hasMore: boolean | undefined,
+  result: BundleLink[]
+): void {
+  // Build links using _lastUpdated ascending
+}
+
+function buildSearchLinksWithOffset(
+  searchRequest: SearchRequestWithCountAndOffset,
+  hasMore: boolean | undefined,
+  result: BundleLink[]
+): void {
+  const count = searchRequest.count;
+  const offset = searchRequest.offset;
+
+  result.push({
+    relation: 'first',
+    url: getSearchUrl({ ...searchRequest, offset: 0 }),
+  });
+
+  if (hasMore) {
+    result.push({
+      relation: 'next',
+      url: getSearchUrl({ ...searchRequest, offset: offset + count }),
+    });
+  }
+
+  if (offset > 0) {
+    result.push({
+      relation: 'previous',
+      url: getSearchUrl({ ...searchRequest, offset: offset - count }),
+    });
+  }
 }
 
 function getSearchUrl(searchRequest: SearchRequest): string {
