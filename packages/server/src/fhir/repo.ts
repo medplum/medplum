@@ -64,7 +64,7 @@ import { Pool, PoolClient } from 'pg';
 import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { getLogger, getRequestContext, tryGetRequestContext } from '../context';
+import { getLogger, getRequestContext } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
@@ -2066,7 +2066,6 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     this.transactionDepth++;
     const conn = await this.getConnection(DatabaseMode.WRITER);
     if (this.transactionDepth === 1) {
-      await conn.query(`SET application_name TO '${tryGetRequestContext()?.requestId ?? ''}'`);
       await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
     } else {
       await conn.query('SAVEPOINT sp' + this.transactionDepth);
