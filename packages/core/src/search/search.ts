@@ -11,6 +11,7 @@ export interface SearchRequest<T extends Resource = Resource> {
   readonly resourceType: T['resourceType'];
   filters?: Filter[];
   sortRules?: SortRule[];
+  cursor?: string;
   offset?: number;
   count?: number;
   fields?: string[];
@@ -264,6 +265,10 @@ function parseKeyValue(searchRequest: SearchRequest, key: string, value: string)
       parseSortRule(searchRequest, value);
       break;
 
+    case '_cursor':
+      searchRequest.cursor = value;
+      break;
+
     case '_count':
       searchRequest.count = parseInt(value, 10);
       break;
@@ -494,6 +499,10 @@ export function formatSearchQuery(definition: SearchRequest): string {
 
   if (definition.sortRules && definition.sortRules.length > 0) {
     params.push(formatSortRules(definition.sortRules));
+  }
+
+  if (definition.cursor !== undefined) {
+    params.push('_cursor=' + encodeURIComponent(definition.cursor));
   }
 
   if (definition.offset !== undefined) {

@@ -71,12 +71,19 @@ import {
  */
 const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 
-export type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
+type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
   count: number;
   offset: number;
 };
 
-export interface ChainedSearchLink {
+interface Cursor {
+  version: string;
+  page: number;
+  dir: 'asc' | 'desc';
+  offset: string;
+}
+
+interface ChainedSearchLink {
   resourceType: string;
   code: string;
   details: SearchParameterDetails;
@@ -84,7 +91,7 @@ export interface ChainedSearchLink {
   filter?: Filter;
 }
 
-export interface ChainedSearchParameter {
+interface ChainedSearchParameter {
   chain: ChainedSearchLink[];
 }
 
@@ -549,9 +556,9 @@ function getSearchLinks(
     },
   ];
 
-  if (searchRequest.count > 0) {
-    if (canUseLastUpdatedSort(searchRequest)) {
-      buildSearchLinksWithLastUpdated(searchRequest, entries, hasMore, result);
+  if (searchRequest.count > 0 && entries && entries.length > 1) {
+    if (canUseCursorLinks(searchRequest)) {
+      buildSearchLinksWithCursor(searchRequest, entries, hasMore, result);
     } else {
       buildSearchLinksWithOffset(searchRequest, hasMore, result);
     }
@@ -560,10 +567,17 @@ function getSearchLinks(
   return result;
 }
 
-function canUseLastUpdatedSort(searchRequest: SearchRequestWithCountAndOffset): boolean {
-  // Using _offset for pagination does not scale for very large row counts.
-  // Instead, we can use _lastUpdated for pagination if the search is sorted by _lastUpdated.
-  // Check if the _lastUpdated sort rule is the only sort rule, or if no sort rules are specified.
+/**
+ * Returns true if the search request can use cursor links.
+ * Cursor links are more efficient than offset links for large result sets.
+ * A search request can use cursor links if:
+ *   1. Not using offset pagination
+ *   2. The only sort rule is _lastUpdated
+ *   3. There are entries in the search result
+ * @param searchRequest - The candidate search request.
+ * @returns True if the search request can use cursor links.
+ */
+function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): boolean {
   return (
     searchRequest.offset === 0 &&
     (searchRequest.sortRules === undefined ||
@@ -572,65 +586,133 @@ function canUseLastUpdatedSort(searchRequest: SearchRequestWithCountAndOffset): 
   );
 }
 
-function buildSearchLinksWithLastUpdated(
+/**
+ * Builds the "first", "next", and "previous" links for a search request using cursor pagination.
+ * @param searchRequest - The search request.
+ * @param entries - The search bundle entries.
+ * @param hasMore - True if there are more entries after the current page.
+ * @param result - The search bundle links.
+ */
+function buildSearchLinksWithCursor(
   searchRequest: SearchRequestWithCountAndOffset,
-  entries: BundleEntry[] | undefined,
+  entries: BundleEntry[],
   hasMore: boolean | undefined,
   result: BundleLink[]
 ): void {
-  let sortedSearchRequest = searchRequest;
-  if (!sortedSearchRequest.sortRules || sortedSearchRequest.sortRules.length === 0) {
-    sortedSearchRequest = {
-      ...sortedSearchRequest,
-      sortRules: [{ code: '_lastUpdated', descending: false }],
-    };
-  }
+  const { min, max } = getMinMaxLastUpdated(entries);
 
-  if (sortedSearchRequest.sortRules?.[0]?.descending) {
-    buildSearchLinksWithLastUpdatedDesc(sortedSearchRequest, entries, hasMore, result);
-  } else {
-    buildSearchLinksWithLastUpdatedAsc(sortedSearchRequest, entries, hasMore, result);
+  let currCursor: Cursor | undefined = undefined;
+  if (searchRequest.cursor) {
+    currCursor = parseCursor(searchRequest.cursor);
   }
-}
-
-function buildSearchLinksWithLastUpdatedDesc(
-  searchRequest: SearchRequestWithCountAndOffset,
-  entries: BundleEntry[] | undefined,
-  hasMore: boolean | undefined,
-  result: BundleLink[]
-): void {
-  const filters = searchRequest.filters ?? [];
-  const filtersWithoutLastUpdated = filters.filter((f) => f.code !== '_lastUpdated');
+  if (!currCursor) {
+    currCursor = { version: '1', page: 0, dir: 'asc', offset: '' };
+  }
 
   result.push({
     relation: 'first',
-    url: getSearchUrl({ ...searchRequest, filters: filtersWithoutLastUpdated }),
+    url: getSearchUrl({ ...searchRequest, cursor: undefined, offset: undefined }),
   });
 
   if (hasMore) {
     result.push({
       relation: 'next',
-      url: getSearchUrl({ ...searchRequest, offset: offset + count }),
+      url: getSearchUrl({
+        ...searchRequest,
+        cursor: formatCursor({
+          ...currCursor,
+          page: currCursor.page + 1,
+          offset: currCursor.dir === 'asc' ? max : min,
+        }),
+        offset: undefined,
+      }),
     });
   }
 
-  if (offset > 0) {
+  if (currCursor.page > 0) {
     result.push({
       relation: 'previous',
-      url: getSearchUrl({ ...searchRequest, offset: offset - count }),
+      url: getSearchUrl({
+        ...searchRequest,
+        cursor: formatCursor({
+          ...currCursor,
+          page: currCursor.page + 1,
+          dir: oppositeDirection(currCursor.dir),
+          offset: currCursor.dir === 'asc' ? min : max,
+        }),
+        offset: undefined,
+      }),
     });
   }
 }
 
-function buildSearchLinksWithLastUpdatedAsc(
-  searchRequest: SearchRequestWithCountAndOffset,
-  entries: BundleEntry[] | undefined,
-  hasMore: boolean | undefined,
-  result: BundleLink[]
-): void {
-  // Build links using _lastUpdated ascending
+/**
+ * Parses a cursor string into a Cursor object.
+ * @param cursor - The cursor string.
+ * @returns The Cursor object or undefined if the cursor string is invalid.
+ */
+function parseCursor(cursor: string): Cursor | undefined {
+  const parts = splitN(cursor, ':', 4);
+  if (parts.length !== 4) {
+    return undefined;
+  }
+  return {
+    version: parts[0],
+    page: parseInt(parts[1], 10),
+    dir: parts[2] as 'asc' | 'desc',
+    offset: parts[3],
+  };
 }
 
+/**
+ * Formats a cursor object into a cursor string.
+ * @param cursor - The cursor object.
+ * @returns The cursor string.
+ */
+function formatCursor(cursor: Cursor): string {
+  return `${cursor.version}:${cursor.page}:${cursor.dir}:${cursor.offset}`;
+}
+
+/**
+ * Returns the opposite direction.
+ * @param dir - The current direction.
+ * @returns The opposite direction.
+ */
+function oppositeDirection(dir: 'asc' | 'desc'): 'asc' | 'desc' {
+  return dir === 'asc' ? 'desc' : 'asc';
+}
+
+/**
+ * Returns the minimum and maximum lastUpdated values from a set of search bundle entries.
+ * @param entries - The search bundle entries.
+ * @returns The minimum and maximum lastUpdated values.`
+ */
+function getMinMaxLastUpdated(entries: BundleEntry[]): { min: string; max: string } {
+  let min = '';
+  let max = '';
+
+  for (const entry of entries) {
+    const lastUpdated = entry.resource?.meta?.lastUpdated;
+    if (lastUpdated) {
+      if (!min || lastUpdated < min) {
+        min = lastUpdated;
+      }
+      if (!max || lastUpdated > max) {
+        max = lastUpdated;
+      }
+    }
+  }
+
+  return { min, max };
+}
+
+/**
+ * Adds the "first", "next", and "previous" links to the result array using offset pagination.
+ * Offset pagination is slow, and should be avoided if possible.
+ * @param searchRequest - The search request.
+ * @param hasMore - True if there are more entries after the current page.
+ * @param result - The search bundle links.
+ */
 function buildSearchLinksWithOffset(
   searchRequest: SearchRequestWithCountAndOffset,
   hasMore: boolean | undefined,
