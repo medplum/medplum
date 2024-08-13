@@ -93,7 +93,7 @@ export type PhotonOrder = {
 export type Fill = {
   id: string;
   treatment: PhotonTreatment;
-  prescription?: PhotonPrescription;
+  prescription?: Partial<PhotonPrescription>;
   state: 'SCHEDULED' | 'NEW' | 'SENT' | 'CANCELED';
   requestedAt: string;
   filledAt?: string;

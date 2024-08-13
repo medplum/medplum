@@ -77,7 +77,7 @@ export async function handler(
  * @param existingRequest - An already existing MedicationRequest resource to update
  * @returns The updated MedicationRequest resource
  */
-async function updateMedicationRequest(
+export async function updateMedicationRequest(
   body: OrderEvent,
   medplum: MedplumClient,
   authToken: string,
@@ -151,7 +151,7 @@ function checkForStatusUpdate(orderType: OrderEventType, status: MedicationReque
  * @param patient - The subject of the MedicationRequest
  * @returns The created MedicationRequest
  */
-async function createMedicationRequest(
+export async function createMedicationRequest(
   body: OrderEvent,
   medplum: MedplumClient,
   authToken: string,
@@ -450,9 +450,12 @@ async function handleCreatedData(
     medicationRequest.substitution = { allowedBoolean: prescription.dispenseAsWritten };
     medicationRequest.dosageInstruction = [{ patientInstruction: prescription.instructions }];
     medicationRequest.note = [{ text: prescription.notes ?? '' }];
-    medicationRequest.medicationCodeableConcept = {
-      coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: medication }],
-    };
+
+    if (medication) {
+      medicationRequest.medicationCodeableConcept = {
+        coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: medication }],
+      };
+    }
 
     const dispenseRequest: MedicationRequestDispenseRequest = {
       quantity: {
