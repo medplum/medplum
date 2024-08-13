@@ -8,7 +8,7 @@ import {
   PrescriptionDepletedEvent,
   PrescriptionExpiredEvent,
 } from '../photon-types';
-import { handlePhotonAuth, photonGraphqlFetch } from './utils';
+import { checkForDuplicateEvent, handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<PhotonWebhook>): Promise<MedicationRequest> {
   const webhook = event.input;
@@ -27,6 +27,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PhotonWebh
   const existingPrescription = await getExistingPrescription(body.data, medplum);
   if (!existingPrescription && body.type !== 'photon:prescription:created') {
     throw new Error('Prescription does not exist');
+  }
+
+  const dupe = checkForDuplicateEvent(webhook, existingPrescription);
+
+  if (dupe && existingPrescription) {
+    return existingPrescription;
   }
 
   const PHOTON_CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
@@ -87,11 +93,15 @@ export async function handleUpdatePrescription(
   }
 
   const updatedStatus = body.type === 'photon:prescription:depleted' ? 'completed' : 'stopped';
+  const identifiers = existingPrescription.identifier ?? [];
+  identifiers.push({ system: 'https://neutron.health/webhooks', value: body.id });
+  const op = existingPrescription.identifier ? 'replace' : 'add';
 
   const id = body.data.externalId;
   const ops: PatchOperation[] = [
     { op: 'test', path: '/meta/versionId', value: existingPrescription.meta?.versionId },
     { op: 'replace', path: '/status', value: updatedStatus },
+    { op, path: '/identifier', value: identifiers },
   ];
 
   try {
@@ -117,6 +127,7 @@ export async function handleCreatePrescription(
     status: 'active',
     intent: 'order',
     subject: { reference: `Patient/${data.patient.externalId}` },
+    identifier: [{ system: 'https://neutron.health/webhooks', value: event.id }],
     dispenseRequest: {
       quantity: {
         value: data.dispenseQuantity,

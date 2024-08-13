@@ -1,6 +1,6 @@
 import { normalizeErrorString } from '@medplum/core';
-import { Address, ContactPoint, Patient } from '@medplum/fhirtypes';
-import { PhotonAddress } from '../photon-types';
+import { Address, ContactPoint, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { PhotonAddress, PhotonWebhook } from '../photon-types';
 
 export async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {
   try {
@@ -110,5 +110,19 @@ export async function handlePhotonAuth(clientId?: string, clientSecret?: string)
     return result.access_token as string;
   } catch (err) {
     throw new Error(normalizeErrorString(err));
+  }
+}
+
+export function checkForDuplicateEvent(webhook: PhotonWebhook, medicationRequest?: MedicationRequest): boolean {
+  if (!medicationRequest) {
+    return false;
+  }
+
+  const dupe = medicationRequest.identifier?.find((id) => id.value === webhook.body.id);
+
+  if (dupe) {
+    return true;
+  } else {
+    return false;
   }
 }
