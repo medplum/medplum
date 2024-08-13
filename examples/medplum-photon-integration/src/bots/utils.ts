@@ -1,6 +1,7 @@
-import { normalizeErrorString } from '@medplum/core';
+import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Address, ContactPoint, MedicationRequest, Patient } from '@medplum/fhirtypes';
-import { PhotonAddress, PhotonWebhook } from '../photon-types';
+import { createHmac } from 'crypto';
+import { PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
 
 export async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {
   try {
@@ -125,4 +126,36 @@ export function checkForDuplicateEvent(webhook: PhotonWebhook, medicationRequest
   } else {
     return false;
   }
+}
+
+export function verifyEvent(photonEvent: PhotonWebhook, secret: string): boolean {
+  const signature = photonEvent.headers['X-Photon-Signature'];
+  const body = photonEvent.body;
+
+  const hmac = createHmac('sha256', secret);
+  const digest = hmac.update(JSON.stringify(body)).digest('hex');
+
+  return digest === signature;
+}
+
+export async function getExistingMedicationRequest(
+  data: PhotonEvent['data'],
+  medplum: MedplumClient
+): Promise<MedicationRequest | undefined> {
+  const id = data.externalId;
+  const photonId = data.id;
+
+  let existingPrescription = await medplum.searchOne('MedicationRequest', {
+    _id: id,
+  });
+
+  if (existingPrescription) {
+    return existingPrescription;
+  }
+
+  existingPrescription = await medplum.searchOne('MedicationRequest', {
+    identifier: `https://neutron.health|${photonId}`,
+  });
+
+  return existingPrescription;
 }
