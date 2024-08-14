@@ -44,7 +44,17 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
       await medplum.updateResource({
         ...appointment,
         status: newStatus,
+        slot: undefined,
       });
+      // If the appointment is cancelled, update the slot status to free
+      if (newStatus === 'cancelled' && appointment.slot?.[0].reference) {
+        const slotId = appointment.slot[0].reference.split('Slot/')[1];
+        const slot = await medplum.readResource('Slot', slotId);
+        await medplum.updateResource({
+          ...slot,
+          status: 'free',
+        });
+      }
 
       navigate(`/Appointment/${appointment.id}/details`);
       showNotification({
