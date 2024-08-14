@@ -6,6 +6,7 @@ import {
   Organization,
   Patient,
   Reference,
+  SupplyDelivery,
 } from '@medplum/fhirtypes';
 import {
   Fill,
@@ -14,6 +15,7 @@ import {
   OrderErrorData,
   OrderEvent,
   OrderEventType,
+  OrderFulfillmentData,
   OrderReroutedData,
   PhotonPrescription,
   PhotonWebhook,
@@ -174,12 +176,13 @@ export async function createMedicationRequest(
 
   let medicationRequest: MedicationRequest;
 
-  // Add the additional data based on the event type
+  // Add the additional data based on the event type and create the MedicationRequest in your project
   if (body.type === 'photon:order:created') {
     const createdDataRequest = await handleCreatedData(body.data, medicationRequestData, authToken, medplum);
     medicationRequest = await medplum.createResource(createdDataRequest);
     // Handle the fill data that is included on order created events
     await handleFills(body.data.fills, medicationRequest, medplum, authToken);
+    return medicationRequest;
   } else if (body.type === 'photon:order:rerouted') {
     medicationRequest = await handleReroutedData(body.data, medicationRequestData, authToken, medplum);
   } else if (body.type === 'photon:order:error') {
@@ -188,11 +191,17 @@ export async function createMedicationRequest(
     medicationRequest = medicationRequestData;
   }
 
-  // if (body.type === 'photon:order:fulfillment') {
-  //   handleFulfillment(medicationRequest, medplum, body.data.fulfillment);
-  // }
+  // For fulfillment events, no additional data needs to be added to the MedicationRequest, but a SupplyDelivery resource
+  // must be created to track the shipment of the medication
+  if (body.type === 'photon:order:fulfillment') {
+    await handleFulfillment(medicationRequest, medplum, body.data.fulfillment);
+  }
 
-  return medicationRequest;
+  try {
+    return await medplum.createResource(medicationRequest);
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
 }
 
 /**
@@ -517,24 +526,35 @@ async function createPharmacy(data: OrderReroutedData, medplum: MedplumClient): 
   }
 }
 
-// function handleFulfillment(
-//   request: MedicationRequest,
-//   medplum: MedplumClient,
-//   fulfillment: OrderFulfillmentData['fulfillment']
-// ) {
-//   const supplyDelivery: SupplyDelivery = {
-//     resourceType: 'SupplyDelivery',
-//     suppliedItem: {
-//       itemReference: { reference: getReferenceString(request) },
-//     },
-//     status: 'in-progress',
-//     type: {
-//       coding: [
-//         { system: 'http://hl7.org/fhir/supplydelivery-supplyitemtype', code: 'medication', display: 'Medication' },
-//       ],
-//     },
-//   };
-// }
+/**
+ * Takes fulfillment data from photon health and creates a SupplyDelivery resource in your project which can be used to
+ * track the shipment of the medication to a pharmacy or patient.
+ *
+ * @param request - The medication request that has the details of the medication being shipped
+ * @param medplum - Medplum Client used to create the supply delivery in your project
+ * @param fulfillment - The fulfillment data from Photon health
+ */
+async function handleFulfillment(
+  request: MedicationRequest,
+  medplum: MedplumClient,
+  fulfillment: OrderFulfillmentData['fulfillment']
+): Promise<void> {
+  const supplyDelivery: SupplyDelivery = {
+    resourceType: 'SupplyDelivery',
+    identifier: [{ system: `https://neutron.health/${fulfillment.carrier}`, value: fulfillment.trackingNumber }],
+    suppliedItem: {
+      itemCodeableConcept: request.medicationCodeableConcept,
+    },
+    status: 'in-progress',
+    type: {
+      coding: [
+        { system: 'http://hl7.org/fhir/supplydelivery-supplyitemtype', code: 'medication', display: 'Medication' },
+      ],
+    },
+  };
+
+  await medplum.createResource(supplyDelivery);
+}
 
 /**
  * Gets the status the MedicationRequest should have based on the Photon event type.
