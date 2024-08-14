@@ -556,7 +556,7 @@ function getSearchLinks(
     },
   ];
 
-  if (searchRequest.count > 0 && entries && entries.length > 1) {
+  if (searchRequest.count > 0 && entries && entries.length > 0) {
     if (canUseCursorLinks(searchRequest)) {
       buildSearchLinksWithCursor(searchRequest, entries, hasMore, result);
     } else {
