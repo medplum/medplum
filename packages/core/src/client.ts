@@ -2175,7 +2175,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       };
 
       xhr.responseType = 'json';
-      xhr.onabort = () => sendResult(new Error('Request aborted'));
+      xhr.onabort = () => sendResult(new DOMException('Request aborted', 'AbortError'));
       xhr.onerror = () => sendResult(new Error('Request error'));
 
       if (onProgress) {
@@ -3766,18 +3766,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
       if (Date.now() >= (tokenPayload.exp as number) * 1000) {
         this.clearActiveLogin();
-        throw new Error('Token expired');
+        throw new TokenExpiredError();
       }
 
       // Verify app_client_id
       if (tokenPayload.cid) {
         if (tokenPayload.cid !== this.clientId) {
           this.clearActiveLogin();
-          throw new Error('Token was not issued for this audience');
+          throw new TokenAudienceError();
         }
       } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
         this.clearActiveLogin();
-        throw new Error('Token was not issued for this audience');
+        throw new TokenAudienceError();
       }
     }
 
@@ -4031,5 +4031,17 @@ export function normalizeCreatePdfOptions(
 export class UnauthenticatedError extends Error {
   constructor() {
     super('Unauthenticated');
+  }
+}
+
+export class TokenExpiredError extends Error {
+  constructor() {
+    super('Token expired');
+  }
+}
+
+export class TokenAudienceError extends Error {
+  constructor() {
+    super('Token was not issued for this audience');
   }
 }
