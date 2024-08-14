@@ -274,7 +274,8 @@ async function getSearchEntries<T extends Resource>(
     builder.explain = true;
     builder.analyzeBuffers = true;
     const sqlBuilder = new SqlBuilder();
-    const sql = builder.buildSql(sqlBuilder);
+    builder.buildSql(sqlBuilder);
+    const sql = sqlBuilder.toString();
     const explainRows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
     const explain = explainRows.map((row) => row['QUERY PLAN']).join('\n');
     getLogger().warn('Slow search query', { duration, searchRequest, sql, explain });
