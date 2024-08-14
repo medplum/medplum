@@ -505,7 +505,7 @@ export function formatSearchQuery(definition: SearchRequest): string {
     params.push('_cursor=' + encodeURIComponent(definition.cursor));
   }
 
-  if (definition.offset !== undefined) {
+  if (definition.offset !== undefined && definition.offset !== 0) {
     params.push('_offset=' + definition.offset);
   }
 

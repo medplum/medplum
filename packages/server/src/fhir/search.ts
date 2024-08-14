@@ -237,7 +237,20 @@ function getSelectQueryForSearch<T extends Resource>(
   addSortRules(builder, searchRequest);
   const count = searchRequest.count;
   builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
-  builder.offset(searchRequest.offset);
+  if (searchRequest.offset > 0) {
+    builder.offset(searchRequest.offset);
+  }
+  if (searchRequest.cursor) {
+    const cursor = parseCursor(searchRequest.cursor);
+    if (cursor) {
+      builder.orderBy(new Column(searchRequest.resourceType, 'lastUpdated'), cursor.dir === 'desc');
+      builder.where(
+        new Column(searchRequest.resourceType, 'lastUpdated'),
+        cursor.dir === 'asc' ? '>' : '<',
+        cursor.offset
+      );
+    }
+  }
   return builder;
 }
 
@@ -606,7 +619,12 @@ function buildSearchLinksWithCursor(
     currCursor = parseCursor(searchRequest.cursor);
   }
   if (!currCursor) {
-    currCursor = { version: '1', page: 0, dir: 'asc', offset: '' };
+    currCursor = {
+      version: '1',
+      page: 0,
+      dir: searchRequest.sortRules?.[0]?.descending ? 'desc' : 'asc',
+      offset: '',
+    };
   }
 
   result.push({
@@ -636,7 +654,7 @@ function buildSearchLinksWithCursor(
         ...searchRequest,
         cursor: formatCursor({
           ...currCursor,
-          page: currCursor.page + 1,
+          page: currCursor.page - 1,
           dir: oppositeDirection(currCursor.dir),
           offset: currCursor.dir === 'asc' ? min : max,
         }),
@@ -652,7 +670,7 @@ function buildSearchLinksWithCursor(
  * @returns The Cursor object or undefined if the cursor string is invalid.
  */
 function parseCursor(cursor: string): Cursor | undefined {
-  const parts = splitN(cursor, ':', 4);
+  const parts = splitN(cursor, '-', 4);
   if (parts.length !== 4) {
     return undefined;
   }
@@ -670,7 +688,7 @@ function parseCursor(cursor: string): Cursor | undefined {
  * @returns The cursor string.
  */
 function formatCursor(cursor: Cursor): string {
-  return `${cursor.version}:${cursor.page}:${cursor.dir}:${cursor.offset}`;
+  return `${cursor.version}-${cursor.page}-${cursor.dir}-${cursor.offset}`;
 }
 
 /**
