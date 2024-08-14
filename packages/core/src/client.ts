@@ -3358,7 +3358,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (this.onUnauthenticated) {
       this.onUnauthenticated();
     }
-    return Promise.reject(new Error('Unauthenticated'));
+    return Promise.reject(new UnauthenticatedError());
   }
 
   /**
@@ -4026,4 +4026,10 @@ export function normalizeCreatePdfOptions(
     tableLayouts: arg3,
     fonts: arg4,
   };
+}
+
+export class UnauthenticatedError extends Error {
+  constructor() {
+    super('Unauthenticated');
+  }
 }
