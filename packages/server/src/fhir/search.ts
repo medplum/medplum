@@ -177,7 +177,16 @@ function applyCountAndOffsetLimits<T extends Resource>(
     searchRequest.count = maxSearchResults;
   }
 
-  searchRequest.offset ??= 0;
+  if (searchRequest.offset === undefined) {
+    searchRequest.offset = 0;
+  } else {
+    const maxOffset = getConfig().maxSearchOffset;
+    if (maxOffset !== undefined && searchRequest.offset > maxOffset) {
+      throw new OperationOutcomeError(
+        badRequest(`Search offset exceeds maximum (got ${searchRequest.offset}, max ${maxOffset})`)
+      );
+    }
+  }
 }
 
 /**

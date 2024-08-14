@@ -123,6 +123,34 @@ describe('FHIR Search', () => {
         expect(result1.link?.length).toBe(1);
       }));
 
+    test('Search offset max', async () =>
+      withTestContext(async () => {
+        // Temporarily set a low maxSearchOffset
+        const prevMax = config.maxSearchOffset;
+        config.maxSearchOffset = 200;
+
+        // Search under the limit, this should succeed
+        const result1 = await repo.search({
+          resourceType: 'Patient',
+          offset: 100,
+        });
+        expect(result1.entry).toHaveLength(0);
+
+        // Search over the limit, this should fail
+        try {
+          await repo.search({
+            resourceType: 'Patient',
+            offset: 300,
+          });
+          fail('Expected error');
+        } catch (err) {
+          expect(normalizeErrorString(err)).toEqual('Search offset exceeds maximum (got 300, max 200)');
+        }
+
+        // Restore the maxSearchOffset
+        config.maxSearchOffset = prevMax;
+      }));
+
     test('clampEstimateCount', () => {
       expect(clampEstimateCount({ resourceType: 'Patient' }, undefined, 0)).toEqual(0);
       expect(clampEstimateCount({ resourceType: 'Patient' }, 0, 0)).toEqual(0);
