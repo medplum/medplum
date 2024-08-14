@@ -8,6 +8,7 @@ import {
   Operator,
   parseSearchRequest,
   SearchRequest,
+  sleep,
   SNOMED,
 } from '@medplum/core';
 import {
@@ -4026,6 +4027,41 @@ describe('FHIR Search', () => {
             'Observation',
             'Observation',
           ]);
+        }));
+
+      test('Cursor pagination', () =>
+        withTestContext(async () => {
+          const tasks: Task[] = [];
+          let prevLastUpdated = '';
+          for (let i = 0; i < 10; i++) {
+            const task = await repo.createResource<Task>({
+              resourceType: 'Task',
+              status: 'accepted',
+              intent: 'order',
+              code: { text: 'cursor_test' },
+            });
+            expect(task.meta?.lastUpdated).toBeDefined();
+            expect(task.meta?.lastUpdated).not.toEqual(prevLastUpdated);
+            tasks.push(task);
+            prevLastUpdated = task.meta?.lastUpdated as string;
+            await sleep(1);
+          }
+
+          let url = 'Task?code=cursor_test&_sort=_lastUpdated&_count=1';
+          for (let i = 0; i < 10; i++) {
+            const bundle = await repo.search(parseSearchRequest(url));
+            expect(bundle.entry?.length).toBe(1);
+            expect(bundle.entry?.[0]?.resource?.id).toEqual(tasks[i].id);
+
+            const link = bundle.link?.find((l) => l.relation === 'next')?.url;
+            if (i < 9) {
+              expect(link).toBeDefined();
+              expect(link?.includes('_cursor')).toBe(true);
+              url = link as string;
+            } else {
+              expect(link).toBeUndefined();
+            }
+          }
         }));
     });
   });
