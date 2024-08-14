@@ -105,9 +105,9 @@ PRO data comes in from a multitude of systems like Qualtrics, custom mobile appl
 
 Build a powerful dashboard that can track your workflow and get where you need to quickly. Our admin console [app.medplum.com](https://app.medplum.com) supports building worklists to get you started quickly, for example:
 
-- [Adverse Events](https://app.medplum.com/AdverseEvent?_count=20&_fields=id,date,detected,event,location,outcome,recorder,seriousness,severity,study,subject&_sort=-_lastUpdated) dash
-- [Protocols and SoA Dash](https://app.medplum.com/PlanDefinition?_count=20&_fields=_lastUpdated,author,name,status,subject[x]&_sort=-_lastUpdated)
-- [Per Patient SoA](https://app.medplum.com/RequestGroup?_count=20&_fields=_lastUpdated,groupIdentifier,participant,reasonCode,reasonReference,priority,note&_sort=-_lastUpdated)
+- [Adverse Events](https://app.medplum.com/AdverseEvent?_count=20&_fields=id,date,detected,event,location,outcome,recorder,seriousness,severity,study,subject&_offset=0&_sort=-_lastUpdated) dash
+- [Protocols and SoA Dash](https://app.medplum.com/PlanDefinition?_count=20&_fields=_lastUpdated,author,name,status,subject[x]&_offset=0&_sort=-_lastUpdated)
+- [Per Patient SoA](https://app.medplum.com/RequestGroup?_count=20&_fields=_lastUpdated,groupIdentifier,participant,reasonCode,reasonReference,priority,note&_offset=0&_sort=-_lastUpdated)
 
 ## FHIR Resources
 

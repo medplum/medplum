@@ -60,12 +60,12 @@ export function App(): JSX.Element | null {
             {
               icon: <IconTimeDuration15 />,
               label: 'Appointment Requests',
-              href: '/Appointment?_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_sort=-_lastUpdated&status=proposed',
+              href: '/Appointment?_count=20&_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_offset=0&_sort=-_lastUpdated&status=proposed',
             },
             {
               icon: <IconCalendar />,
               label: 'Upcoming Appointments',
-              href: '/Appointment?_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_sort=-_lastUpdated&status=booked',
+              href: '/Appointment?_count=20&_fields=_lastUpdated,patient,practitioner,start,end,serviceType&_offset=0&_sort=-_lastUpdated&status=booked',
             },
           ],
         },
