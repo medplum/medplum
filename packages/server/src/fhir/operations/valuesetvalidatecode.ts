@@ -135,12 +135,12 @@ async function satisfies(
       break;
     case 'is-a':
     case 'descendent-of':
-      // Recursively find parents until one matches
-      query = findAncestor(query, codeSystem, filter.value);
-
       if (filter.op !== 'is-a') {
         query.where('code', '!=', filter.value);
       }
+
+      // Recursively find parents until one matches
+      query = findAncestor(query, codeSystem, filter.value);
       break;
     default:
       ctx.logger.warn('Unknown filter type in ValueSet', { filter: filter.op });
