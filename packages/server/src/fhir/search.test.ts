@@ -4055,6 +4055,46 @@ describe('FHIR Search', () => {
             'Observation',
           ]);
         }));
+
+      test('Error on cursor and offset', () =>
+        withTestContext(async () => {
+          try {
+            await repo.search({ resourceType: 'Patient', offset: 10, cursor: 'foo' });
+            fail('Expected error');
+          } catch (err) {
+            expect(normalizeErrorString(err)).toBe('Cannot use both offset and cursor');
+          }
+        }));
+
+      test('Cursor pagination', () =>
+        withTestContext(async () => {
+          const tasks: Task[] = [];
+          for (let i = 0; i < 10; i++) {
+            const task = await repo.createResource<Task>({
+              resourceType: 'Task',
+              status: 'accepted',
+              intent: 'order',
+              code: { text: 'cursor_test' },
+            });
+            tasks.push(task);
+          }
+
+          let url = 'Task?code=cursor_test&_sort=_lastUpdated&_count=1';
+          for (let i = 0; i < 10; i++) {
+            const bundle = await repo.search(parseSearchRequest(url));
+            expect(bundle.entry?.length).toBe(1);
+            expect(bundle.entry?.[0]?.resource?.id).toEqual(tasks[i].id);
+
+            const link = bundle.link?.find((l) => l.relation === 'next')?.url;
+            if (i < 9) {
+              expect(link).toBeDefined();
+              expect(link?.includes('_cursor')).toBe(true);
+              url = link as string;
+            } else {
+              expect(link).toBeUndefined();
+            }
+          }
+        }));
     });
   });
 
