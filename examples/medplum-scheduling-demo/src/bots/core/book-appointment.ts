@@ -4,7 +4,7 @@ import { Appointment } from '@medplum/fhirtypes';
 export async function handler(medplum: MedplumClient, event: BotEvent<Appointment>): Promise<Appointment> {
   let appointment = event.input;
 
-  // Basic validation
+  // Basic data validation
   const slotId = appointment.slot?.[0].reference?.split('Slot/')[1];
   if (!slotId) {
     throw new Error('Must provide a slot');
@@ -12,10 +12,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Appointmen
 
   if (!appointment.appointmentType) {
     throw new Error('Must provide an appointment type');
-  }
-
-  if (appointment.participant?.length !== 2) {
-    throw new Error('Must provide a patient and a practitioner');
   }
 
   if (appointment.status !== 'booked') {
