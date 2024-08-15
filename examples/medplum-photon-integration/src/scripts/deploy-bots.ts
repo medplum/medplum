@@ -21,7 +21,7 @@ const Bots: BotDescription[] = [
   },
   {
     src: 'src/bots/handle-prescription-event.ts',
-    dist: 'dist/handle-prescription-event.ts',
+    dist: 'dist/handle-prescription-event.js',
   },
 ];
 
