@@ -113,7 +113,7 @@ export class BackEnd extends Construct {
       });
       const dbParams = new ParameterGroup(this, 'MedplumDatabaseParams', {
         engine,
-        parameters: config.rdsDBParameters,
+        parameters: config.rdsInstanceParameters,
       });
 
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
