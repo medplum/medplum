@@ -1,5 +1,4 @@
 {
-  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
@@ -16,5 +15,6 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "jsx": "react-jsx"
-  }
+  },
+  "exclude": ["dist"]
 }
