@@ -78,7 +78,8 @@ type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequ
 
 interface Cursor {
   version: string;
-  instant: string;
+  lastInstant: string;
+  lastId: string;
 }
 
 interface ChainedSearchLink {
@@ -236,15 +237,25 @@ function getSelectQueryForSearch<T extends Resource>(
   const count = searchRequest.count;
   builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
   if (searchRequest.offset > 0) {
+    if (searchRequest.cursor) {
+      throw new OperationOutcomeError(badRequest('Cannot use both offset and cursor'));
+    }
     builder.offset(searchRequest.offset);
-  }
-  if (searchRequest.cursor) {
+  } else if (searchRequest.cursor) {
     const cursor = parseCursor(searchRequest.cursor);
     if (cursor) {
       builder.orderBy(new Column(searchRequest.resourceType, 'lastUpdated', false));
-      if (cursor.instant) {
-        builder.where(new Column(searchRequest.resourceType, 'lastUpdated'), '>', cursor.instant);
-      }
+      builder.orderBy(new Column(searchRequest.resourceType, 'id', false));
+      // (lastUpdated=x and id>y) or lastUpdated>x
+      builder.whereExpr(
+        new Disjunction([
+          new Conjunction([
+            new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '=', cursor.lastInstant),
+            new Condition(new Column(searchRequest.resourceType, 'id'), '>', cursor.lastId),
+          ]),
+          new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '>', cursor.lastInstant),
+        ])
+      );
     }
   }
   return builder;
@@ -607,28 +618,22 @@ function buildSearchLinksWithCursor(
   hasMore: boolean | undefined,
   result: BundleLink[]
 ): void {
-  let currCursor: Cursor | undefined = undefined;
-  if (searchRequest.cursor) {
-    currCursor = parseCursor(searchRequest.cursor);
-  }
-  if (!currCursor) {
-    currCursor = {
-      version: '1',
-      instant: '',
-    };
-  }
-
   result.push({
     relation: 'first',
     url: getSearchUrl({ ...searchRequest, cursor: undefined, offset: undefined }),
   });
 
   if (hasMore) {
+    const lastResource = entries[entries.length - 1].resource;
     result.push({
       relation: 'next',
       url: getSearchUrl({
         ...searchRequest,
-        cursor: formatCursor({ ...currCursor, instant: getMaxLastUpdated(entries) }),
+        cursor: formatCursor({
+          version: '1',
+          lastInstant: lastResource?.meta?.lastUpdated as string,
+          lastId: lastResource?.id as string,
+        }),
         offset: undefined,
       }),
     });
@@ -641,11 +646,12 @@ function buildSearchLinksWithCursor(
  * @returns The Cursor object or undefined if the cursor string is invalid.
  */
 function parseCursor(cursor: string): Cursor | undefined {
-  const parts = splitN(cursor, '-', 2);
-  if (parts.length !== 2) {
+  const parts = splitN(cursor, '-', 3);
+  if (parts.length !== 3) {
     return undefined;
   }
-  return { version: parts[0], instant: parts[1] };
+  const date = new Date(parseInt(parts[1], 10));
+  return { version: parts[0], lastInstant: date.toISOString(), lastId: parts[2] };
 }
 
 /**
@@ -654,25 +660,8 @@ function parseCursor(cursor: string): Cursor | undefined {
  * @returns The cursor string.
  */
 function formatCursor(cursor: Cursor): string {
-  return `${cursor.version}-${cursor.instant}`;
-}
-
-/**
- * Returns the maximum lastUpdated values from a set of search bundle entries.
- * @param entries - The search bundle entries.
- * @returns The maximum lastUpdated values.`
- */
-function getMaxLastUpdated(entries: BundleEntry[]): string {
-  let max = '';
-  for (const entry of entries) {
-    const lastUpdated = entry.resource?.meta?.lastUpdated;
-    if (lastUpdated) {
-      if (!max || lastUpdated > max) {
-        max = lastUpdated;
-      }
-    }
-  }
-  return max;
+  const date = new Date(cursor.lastInstant);
+  return `${cursor.version}-${date.getTime()}-${cursor.lastId}`;
 }
 
 /**

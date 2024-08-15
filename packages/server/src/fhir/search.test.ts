@@ -8,7 +8,6 @@ import {
   Operator,
   parseSearchRequest,
   SearchRequest,
-  sleep,
   SNOMED,
 } from '@medplum/core';
 import {
@@ -4029,10 +4028,19 @@ describe('FHIR Search', () => {
           ]);
         }));
 
+      test('Error on cursor and offset', () =>
+        withTestContext(async () => {
+          try {
+            await repo.search({ resourceType: 'Patient', offset: 10, cursor: 'foo' });
+            fail('Expected error');
+          } catch (err) {
+            expect(normalizeErrorString(err)).toBe('Cannot use both offset and cursor');
+          }
+        }));
+
       test('Cursor pagination', () =>
         withTestContext(async () => {
           const tasks: Task[] = [];
-          let prevLastUpdated = '';
           for (let i = 0; i < 10; i++) {
             const task = await repo.createResource<Task>({
               resourceType: 'Task',
@@ -4040,11 +4048,7 @@ describe('FHIR Search', () => {
               intent: 'order',
               code: { text: 'cursor_test' },
             });
-            expect(task.meta?.lastUpdated).toBeDefined();
-            expect(task.meta?.lastUpdated).not.toEqual(prevLastUpdated);
             tasks.push(task);
-            prevLastUpdated = task.meta?.lastUpdated as string;
-            await sleep(1);
           }
 
           let url = 'Task?code=cursor_test&_sort=_lastUpdated&_count=1';
