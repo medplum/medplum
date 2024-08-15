@@ -23,6 +23,10 @@ const Bots: BotDescription[] = [
     src: 'src/bots/handle-prescription-event.ts',
     dist: 'dist/bots/handle-prescription-event.js',
   },
+  {
+    src: 'src/bots/handle-prescription-event.ts',
+    dist: 'dist/handle-prescription-event.ts',
+  },
 ];
 
 async function main(): Promise<void> {
