@@ -10,12 +10,16 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Appointmen
     throw new Error('Must provide a slot');
   }
 
-  if (appointment.serviceType?.length === 0) {
-    throw new Error('Must provide a  type');
+  if (!appointment.appointmentType) {
+    throw new Error('Must provide an appointment type');
   }
 
   if (appointment.participant?.length !== 2) {
     throw new Error('Must provide a patient and a practitioner');
+  }
+
+  if (appointment.status !== 'booked') {
+    throw new Error('Appointment status must be "booked"');
   }
 
   const slot = await medplum.readResource('Slot', slotId);

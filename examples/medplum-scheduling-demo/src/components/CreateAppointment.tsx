@@ -50,7 +50,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
         resourceType: 'Appointment',
         status: 'booked',
         slot: [createReference(slot)],
-        serviceType: [{ coding: [answers['service-type'].valueCoding as Coding] }],
+        appointmentType: { coding: [answers['service-type'].valueCoding as Coding] },
         participant: [
           {
             actor: appointmentPatient,
@@ -121,7 +121,7 @@ const appointmentQuestionnaire: Questionnaire = {
       linkId: 'service-type',
       type: 'choice',
       text: 'What is the appointment service type?',
-      answerValueSet: 'http://hl7.org/fhir/ValueSet/service-type',
+      answerValueSet: 'http://terminology.hl7.org/ValueSet/v2-0276',
       required: true,
     },
   ],
