@@ -13,15 +13,15 @@ interface BotDescription {
 const Bots: BotDescription[] = [
   {
     src: 'src/bots/test-auth.ts',
-    dist: 'dist/test-auth.js',
+    dist: 'dist/bots/test-auth.js',
   },
   {
     src: 'src/bots/sync-patient.ts',
-    dist: 'dist/sync-patient.js',
+    dist: 'dist/bots/sync-patient.js',
   },
   {
     src: 'src/bots/handle-prescription-event.ts',
-    dist: 'dist/handle-prescription-event.js',
+    dist: 'dist/bots/handle-prescription-event.js',
   },
 ];
 
