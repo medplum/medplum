@@ -12,8 +12,8 @@ interface BotDescription {
 
 const Bots: BotDescription[] = [
   {
-    src: 'src/bots/core/appointments.ts',
-    dist: 'dist/bots/core/appointments.js',
+    src: 'src/bots/core/book-appointment.ts',
+    dist: 'dist/bots/core/book-appointment.js',
   },
 ];
 
@@ -34,6 +34,7 @@ async function main(): Promise<void> {
         resource: {
           resourceType: 'Bot',
           id: botIdPlaceholder,
+          identifier: [{ system: 'http://example.com', value: botName }],
           name: botName,
           runtimeVersion: 'awslambda',
           sourceCode: {

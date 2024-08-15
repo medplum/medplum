@@ -46,12 +46,9 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
       : (answers['patient'].valueReference as Reference<Patient>);
 
     try {
-      // Create the appointment
-      const appointment: Appointment = await medplum.createResource({
+      let appointment: Appointment = {
         resourceType: 'Appointment',
         status: 'booked',
-        start: slot.start,
-        end: slot.end,
         slot: [createReference(slot)],
         serviceType: [{ coding: [answers['service-type'].valueCoding as Coding] }],
         participant: [
@@ -64,13 +61,9 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
             status: 'accepted',
           },
         ],
-      });
-
-      // Update the slot status to busy
-      await medplum.updateResource({
-        ...slot,
-        status: 'busy',
-      });
+      };
+      // Call bot to create the appointment
+      appointment = await medplum.executeBot({ system: 'http://example.com', value: 'book-appointment' }, appointment);
 
       // Navigate to the appointment detail page
       navigate(`/Appointment/${appointment.id}`);
