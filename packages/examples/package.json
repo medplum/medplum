@@ -15,7 +15,8 @@
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
     "build": "npm run clean && tsc",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "@jest/globals": "29.7.0",

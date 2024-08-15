@@ -63,6 +63,7 @@
     "chromatic": "chromatic --exit-zero-on-changes --build-script-name=storybook --exit-once-uploaded",
     "clean": "rimraf dist storybook-static",
     "dev": "storybook dev -p 6006",
+    "lint": "eslint .",
     "storybook": "storybook build",
     "test": "jest"
   },
