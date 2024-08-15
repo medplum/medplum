@@ -17,7 +17,7 @@ import {
   aws_wafv2 as wafv2,
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
-import { ClusterInstance } from 'aws-cdk-lib/aws-rds';
+import { ClusterInstance, ParameterGroup } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 import { buildWafConfig } from './waf';
 
@@ -102,16 +102,32 @@ export class BackEnd extends Construct {
         caCertificate: rds.CaCertificate.RDS_CA_RSA2048_G1,
       };
 
+      const engine = rds.DatabaseClusterEngine.auroraPostgres({
+        version: config.rdsInstanceVersion
+          ? rds.AuroraPostgresEngineVersion.of(
+              config.rdsInstanceVersion,
+              config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
+              { s3Import: true, s3Export: true }
+            )
+          : rds.AuroraPostgresEngineVersion.VER_12_9,
+      });
+      const dbParams = new ParameterGroup(this, 'MedplumDatabaseParams', {
+        engine,
+        parameters: config.rdsInstanceParameters,
+      });
+
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
       const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: readerInstanceType ? new ec2.InstanceType(readerInstanceType) : undefined,
+        parameterGroup: dbParams,
       };
 
       const writerInstanceType = config.rdsInstanceType;
       const writerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
+        parameterGroup: dbParams,
       };
 
       let readers = undefined;
@@ -123,15 +139,7 @@ export class BackEnd extends Construct {
       }
 
       this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
-        engine: rds.DatabaseClusterEngine.auroraPostgres({
-          version: config.rdsInstanceVersion
-            ? rds.AuroraPostgresEngineVersion.of(
-                config.rdsInstanceVersion,
-                config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
-                { s3Import: true, s3Export: true }
-              )
-            : rds.AuroraPostgresEngineVersion.VER_12_9,
-        }),
+        engine,
         credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
         defaultDatabaseName: 'medplum',
         storageEncrypted: true,
