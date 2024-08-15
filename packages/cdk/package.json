@@ -20,6 +20,7 @@
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
     "cdk": "cdk",
     "clean": "rimraf dist cdk.out",
+    "lint": "eslint .",
     "test": "jest --runInBand"
   },
   "dependencies": {

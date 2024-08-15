@@ -149,9 +149,8 @@ module.exports = {
   },
   ignorePatterns: [
     'coverage',
-    'dist',
-    'node_modules',
-    'packages/**/dist/',
+    '**/node_modules/',
+    '**/dist/',
     'packages/docs/build/',
     'packages/docs/markdown-to-mdx.cjs',
     'packages/docs/docusaurus.config.js',
