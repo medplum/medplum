@@ -6,7 +6,7 @@
 import { PoolClient } from 'pg';
 
 export async function run(client: PoolClient): Promise<void> {
-  await client.query(`CREATE EXTENSION pg_trgm;`);
+  await client.query(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`);
   await client.query(
     `CREATE INDEX CONCURRENTLY IF NOT EXISTS "Coding_display_trgm_idx" ON "Coding" USING gin (system, display gin_trgm_ops)`
   );
