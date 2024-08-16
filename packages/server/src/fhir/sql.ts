@@ -238,7 +238,7 @@ export class Disjunction extends Connective {
   }
 }
 
-export class Function implements Expression {
+export class SqlFunction implements Expression {
   constructor(
     readonly name: string,
     readonly args: (Expression | Column)[]

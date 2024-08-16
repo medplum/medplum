@@ -1,7 +1,7 @@
 import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
 import { getAuthenticatedContext } from '../../../context';
 import { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
-import { SelectQuery, Conjunction, Condition, Column, Union, Operator as SqlOperator, Function } from '../../sql';
+import { SelectQuery, Conjunction, Condition, Column, Union, Operator as SqlOperator, SqlFunction } from '../../sql';
 import { getSystemRepo } from '../../repo';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
@@ -96,7 +96,7 @@ export function addPropertyFilter(
     ])
   );
 
-  query.whereExpr(new Function('EXISTS', [propertyQuery]));
+  query.whereExpr(new SqlFunction('EXISTS', [propertyQuery]));
   return query;
 }
 

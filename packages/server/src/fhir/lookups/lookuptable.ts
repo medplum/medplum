@@ -8,7 +8,7 @@ import {
   DeleteQuery,
   Disjunction,
   Expression,
-  Function,
+  SqlFunction,
   InsertQuery,
   Negation,
   SelectQuery,
@@ -86,7 +86,7 @@ export abstract class LookupTable {
       }
     }
 
-    const exists = new Function('EXISTS', [
+    const exists = new SqlFunction('EXISTS', [
       new SelectQuery(lookupTableName)
         .column('resourceId')
         .whereExpr(
