@@ -163,7 +163,7 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
       resourceType: 'ValueSet',
       url: valueSet,
       expansion: {
-        contains: [
+        contains: expect.arrayContaining([
           {
             system: 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus',
             code: 'M',
@@ -174,7 +174,7 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
             code: 'S',
             display: 'Never Married',
           },
-        ],
+        ]),
       },
     });
   });

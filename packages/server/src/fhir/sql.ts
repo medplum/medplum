@@ -248,6 +248,29 @@ export class Exists implements Expression {
   }
 }
 
+export class Function implements Expression {
+  constructor(
+    readonly name: string,
+    readonly args: (Expression | Column)[]
+  ) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append(this.name + '(');
+    for (let i = 0; i < this.args.length; i++) {
+      const arg = this.args[i];
+      if (arg instanceof Column) {
+        sql.appendColumn(arg);
+      } else {
+        arg.buildSql(sql);
+      }
+      if (i + 1 < this.args.length) {
+        sql.append(', ');
+      }
+    }
+    sql.append(')');
+  }
+}
+
 export class Union implements Expression {
   readonly queries: SelectQuery[];
   constructor(...queries: SelectQuery[]) {
@@ -281,7 +304,7 @@ export class GroupBy {
 
 export class OrderBy {
   constructor(
-    readonly column: Column,
+    readonly key: Column | Expression,
     readonly descending?: boolean
   ) {}
 }
@@ -496,6 +519,11 @@ export class SelectQuery extends BaseQuery implements Expression {
     return this;
   }
 
+  orderByExpr(expr: Expression, descending?: boolean): this {
+    this.orderBys.push(new OrderBy(expr, descending));
+    return this;
+  }
+
   limit(limit: number): this {
     this.limit_ = limit;
     return this;
@@ -633,7 +661,11 @@ export class SelectQuery extends BaseQuery implements Expression {
 
     for (const orderBy of combined) {
       sql.append(first ? ' ORDER BY ' : ', ');
-      sql.appendColumn(orderBy.column);
+      if (orderBy.key instanceof Column) {
+        sql.appendColumn(orderBy.key);
+      } else {
+        orderBy.key.buildSql(sql);
+      }
       if (orderBy.descending) {
         sql.append(' DESC');
       }
