@@ -1,4 +1,4 @@
-<h1 align="center">Medplum Schedulingg Demo</h1>
+<h1 align="center">Medplum Scheduling Demo</h1>
 <p align="center">A starter application for building a scheduling app on Medplum.</p>
 <p align="center">
 <a href="https://github.com/medplum/medplum-hello-world/blob/main/LICENSE.txt">

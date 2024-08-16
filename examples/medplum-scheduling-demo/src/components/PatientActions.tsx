@@ -1,8 +1,10 @@
 import { Button, Stack, Title } from '@mantine/core';
 import { IconClock } from '@tabler/icons-react';
-import { CreateAppointment } from './CreateAppointment';
-import { useDisclosure } from '@mantine/hooks';
 import { Patient } from '@medplum/fhirtypes';
+import { useNavigate } from 'react-router-dom';
+import { useContext } from 'react';
+import { ScheduleContext } from '../Schedule.context';
+import { Loading } from '@medplum/react';
 
 interface PatientActionsProps {
   patient: Patient;
@@ -10,13 +12,21 @@ interface PatientActionsProps {
 
 export function PatientActions(props: PatientActionsProps): JSX.Element {
   const { patient } = props;
-  const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
+  const navigate = useNavigate();
+  const { schedule } = useContext(ScheduleContext);
+
+  if (!schedule) {
+    return <Loading />;
+  }
 
   return (
     <Stack p="xs" m="xs">
       <Title>Patient Actions</Title>
-      <CreateAppointment patient={patient} opened={createAppointmentOpened} handlers={createAppointmentHandlers} />
-      <Button leftSection={<IconClock size={16} />} onClick={() => createAppointmentHandlers.open()}>
+
+      <Button
+        leftSection={<IconClock size={16} />}
+        onClick={() => navigate(`/Patient/${patient.id}/Schedule/${schedule.id}`)}
+      >
         Create Appointment
       </Button>
     </Stack>
