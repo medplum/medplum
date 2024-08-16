@@ -1,4 +1,4 @@
-import { SearchRequest, Operator } from '@medplum/core';
+import { SearchRequest, Operator, normalizeErrorString } from '@medplum/core';
 import { ResourceType, Resource, AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Queue, QueueBaseOptions, Job, Worker } from 'bullmq';
 import { MedplumServerConfig } from '../config';
@@ -243,7 +243,7 @@ function formatResults(results: ReindexJobData['results']): Parameters {
           name: 'result',
           part: [
             { name: 'resourceType', valueCode: resourceType },
-            { name: 'error', valueString: result.err.message },
+            { name: 'error', valueString: normalizeErrorString(result.err) },
             { name: 'nextTimestamp', valueDateTime: result.nextTimestamp },
           ],
         };
