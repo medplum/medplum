@@ -28,7 +28,7 @@ export async function handler(
 ): Promise<MedicationRequest | undefined> {
   const webhook = event.input;
   // You will need to set up the webhook secret in your Medplum project. Per the photon docs, if there is no secret, an empty string should be used.
-  const PHOTON_WEBHOOK_SECRET = event.secrets['PHOTON_WEBHOOK_SECRET']?.valueString ?? '';
+  const PHOTON_WEBHOOK_SECRET = event.secrets['PHOTON_ORDER_WEBHOOK_SECRET']?.valueString ?? '';
 
   // Ensure the webhook is coming from Photon
   const isValid = verifyEvent(webhook, PHOTON_WEBHOOK_SECRET);
