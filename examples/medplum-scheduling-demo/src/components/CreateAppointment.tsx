@@ -1,12 +1,23 @@
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
-import { Coding, Patient, Practitioner, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
+import {
+  Appointment,
+  Coding,
+  Patient,
+  Practitioner,
+  Questionnaire,
+  QuestionnaireResponse,
+  Reference,
+  Slot,
+} from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useNavigate } from 'react-router-dom';
 
 interface CreateAppointmentProps {
   patient?: Patient;
+  slot: Slot;
   readonly opened: boolean;
   readonly handlers: {
     readonly open: () => void;
@@ -16,9 +27,10 @@ interface CreateAppointmentProps {
 }
 
 export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
-  const { patient, opened, handlers } = props;
+  const { patient, slot, opened, handlers } = props;
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
+  const navigate = useNavigate();
 
   // If a patient is provided, remove the patient question from the questionnaire
   if (patient) {
@@ -34,12 +46,11 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
       : (answers['patient'].valueReference as Reference<Patient>);
 
     try {
-      await medplum.createResource({
+      let appointment: Appointment = {
         resourceType: 'Appointment',
         status: 'booked',
-        start: answers['start-date'].valueDateTime,
-        end: answers['end-date'].valueDateTime,
-        serviceType: [{ coding: [answers['service-type'].valueCoding as Coding] }],
+        slot: [createReference(slot)],
+        appointmentType: { coding: [answers['service-type'].valueCoding as Coding] },
         participant: [
           {
             actor: appointmentPatient,
@@ -50,11 +61,17 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
             status: 'accepted',
           },
         ],
-      });
+        comment: answers['comment']?.valueString,
+      };
+      // Call bot to create the appointment
+      appointment = await medplum.executeBot({ system: 'http://example.com', value: 'book-appointment' }, appointment);
+
+      // Navigate to the appointment detail page
+      navigate(`/Appointment/${appointment.id}`);
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
-        message: 'Slot created',
+        message: 'Appointment created',
       });
     } catch (err) {
       showNotification({
@@ -92,7 +109,9 @@ const appointmentQuestionnaire: Questionnaire = {
           valueCodeableConcept: {
             coding: [
               {
+                system: 'http://hl7.org/fhir/fhir-types',
                 code: 'Patient',
+                display: 'Patient',
               },
             ],
           },
@@ -100,23 +119,16 @@ const appointmentQuestionnaire: Questionnaire = {
       ],
     },
     {
-      linkId: 'start-date',
-      type: 'dateTime',
-      text: 'Start date',
-      required: true,
-    },
-    {
-      linkId: 'end-date',
-      type: 'dateTime',
-      text: 'End date',
-      required: true,
-    },
-    {
       linkId: 'service-type',
       type: 'choice',
       text: 'What is the appointment service type?',
-      answerValueSet: 'http://hl7.org/fhir/ValueSet/service-type',
+      answerValueSet: 'http://terminology.hl7.org/ValueSet/v2-0276',
       required: true,
+    },
+    {
+      linkId: 'comment',
+      type: 'string',
+      text: 'Additional comments',
     },
   ],
 };

@@ -25,11 +25,24 @@ export function RescheduleAppointment(props: RescheduleAppointmentProps): JSX.El
     const answers = getQuestionnaireAnswers(formData);
 
     try {
-      // Update the appointment with the new start and end dates, and change the status to "booked"
+      const startDateTime = answers['start-date'].valueDateTime as string;
+      const endDateTime = answers['end-date'].valueDateTime as string;
+
+      // Update the appointment and the slot with the new start and end dates, and change the status
+      const slotId = appointment?.slot?.[0].reference?.split('Slot/')[1];
+      if (slotId) {
+        const slot = await medplum.readResource('Slot', slotId);
+        await medplum.updateResource({
+          ...slot,
+          start: startDateTime,
+          end: endDateTime,
+          status: 'busy',
+        });
+      }
       await medplum.updateResource({
         ...appointment,
-        start: answers['start-date'].valueDateTime,
-        end: answers['end-date'].valueDateTime,
+        start: startDateTime,
+        end: endDateTime,
         status: 'booked',
       });
 
