@@ -24,7 +24,7 @@ import {
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { getLogger } from '../../context';
-import { Column, Condition, Conjunction, Disjunction, Exists, Expression, Negation, SelectQuery } from '../sql';
+import { Column, Condition, Conjunction, Disjunction, Expression, Function, Negation, SelectQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
 
@@ -115,7 +115,9 @@ export class TokenTable extends LookupTable {
       conjunction.expressions.push(whereExpression);
     }
 
-    const exists = new Exists(new SelectQuery(lookupTableName).column('resourceId').whereExpr(conjunction));
+    const exists = new Function('EXISTS', [
+      new SelectQuery(lookupTableName).column('resourceId').whereExpr(conjunction),
+    ]);
 
     if (shouldTokenRowExist(filter)) {
       return exists;

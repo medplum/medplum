@@ -10,17 +10,7 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import {
-  Column,
-  Condition,
-  Conjunction,
-  Disjunction,
-  Exists,
-  Expression,
-  Function,
-  Literal,
-  SelectQuery,
-} from '../sql';
+import { Column, Condition, Conjunction, Disjunction, Expression, Function, Literal, SelectQuery } from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
@@ -391,7 +381,7 @@ export function expansionQuery(
               .where(new Column('origin', 'system'), '=', codeSystem.id)
               .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
             const ancestorQuery = findAncestor(base, codeSystem, condition.value);
-            query.whereExpr(new Exists(ancestorQuery));
+            query.whereExpr(new Function('EXISTS', [ancestorQuery]));
           } else {
             query = addDescendants(query, codeSystem, condition.value);
           }

@@ -238,16 +238,6 @@ export class Disjunction extends Connective {
   }
 }
 
-export class Exists implements Expression {
-  constructor(readonly selectQuery: SelectQuery) {}
-
-  buildSql(sql: SqlBuilder): void {
-    sql.append('EXISTS(');
-    this.selectQuery.buildSql(sql);
-    sql.append(')');
-  }
-}
-
 export class Function implements Expression {
   constructor(
     readonly name: string,

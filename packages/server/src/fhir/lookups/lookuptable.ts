@@ -7,8 +7,8 @@ import {
   Conjunction,
   DeleteQuery,
   Disjunction,
-  Exists,
   Expression,
+  Function,
   InsertQuery,
   Negation,
   SelectQuery,
@@ -86,7 +86,7 @@ export abstract class LookupTable {
       }
     }
 
-    const exists = new Exists(
+    const exists = new Function('EXISTS', [
       new SelectQuery(lookupTableName)
         .column('resourceId')
         .whereExpr(
@@ -94,8 +94,8 @@ export abstract class LookupTable {
             new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
             disjunction,
           ])
-        )
-    );
+        ),
+    ]);
 
     if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
       return new Negation(exists);
