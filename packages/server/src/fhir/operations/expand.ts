@@ -10,7 +10,17 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { Column, Condition, Conjunction, Disjunction, Exists, Expression, SelectQuery } from '../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  escapeLikeString,
+  Expression,
+  Literal,
+  SelectQuery,
+  SqlFunction,
+} from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
@@ -381,7 +391,7 @@ export function expansionQuery(
               .where(new Column('origin', 'system'), '=', codeSystem.id)
               .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
             const ancestorQuery = findAncestor(base, codeSystem, condition.value);
-            query.whereExpr(new Exists(ancestorQuery));
+            query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
           } else {
             query = addDescendants(query, codeSystem, condition.value);
           }
@@ -410,7 +420,19 @@ export function expansionQuery(
 
 function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameters): SelectQuery {
   if (params.filter) {
-    query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(params.filter));
+    query
+      .whereExpr(
+        new Conjunction(
+          params.filter.split(/\s+/g).map((filter) => new Condition('display', 'LIKE', `%${escapeLikeString(filter)}%`))
+        )
+      )
+      .orderByExpr(
+        new SqlFunction('strict_word_similarity', [
+          new Column(undefined, 'display'),
+          new Literal(`'${params.filter}'`),
+        ]),
+        true
+      );
   }
   if (params.excludeNotForUI) {
     query = addAbstractFilter(query);
