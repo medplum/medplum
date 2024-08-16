@@ -1,7 +1,7 @@
 import { Button, Stack, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference, normalizeErrorString, resolveId } from '@medplum/core';
 import { Appointment, Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import { IconCancel, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
@@ -41,14 +41,15 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
   // Handler for completing or cancelling the appointment
   async function handleChangeStatus(newStatus: Appointment['status']): Promise<void> {
     try {
+      // TODO: Move code to a bot. Use patchResource instead of updateResource.
       await medplum.updateResource({
         ...appointment,
         status: newStatus,
         slot: undefined,
       });
       // If the appointment is cancelled, update the slot status to free
-      if (newStatus === 'cancelled' && appointment.slot?.[0].reference) {
-        const slotId = appointment.slot[0].reference.split('Slot/')[1];
+      const slotId = resolveId(appointment.slot?.[0]);
+      if (newStatus === 'cancelled' && slotId) {
         const slot = await medplum.readResource('Slot', slotId);
         await medplum.updateResource({
           ...slot,

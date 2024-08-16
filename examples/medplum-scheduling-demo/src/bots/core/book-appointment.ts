@@ -1,11 +1,11 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+import { BotEvent, MedplumClient, resolveId } from '@medplum/core';
 import { Appointment } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Appointment>): Promise<Appointment> {
   let appointment = event.input;
 
   // Basic data validation
-  const slotId = appointment.slot?.[0].reference?.split('Slot/')[1];
+  const slotId = resolveId(appointment.slot?.[0]);
   if (!slotId) {
     throw new Error('Must provide a slot');
   }
