@@ -810,7 +810,6 @@ describe('Updated implementation', () => {
     const res2 = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    console.log(res2.body.issue);
     expect(res2.status).toEqual(200);
     const expansion = res2.body.expansion as ValueSetExpansion;
     expect(expansion.contains).toHaveLength(1);
