@@ -24,7 +24,17 @@ import {
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { getLogger } from '../../context';
-import { Column, Condition, Conjunction, Disjunction, Expression, SqlFunction, Negation, SelectQuery } from '../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  Expression,
+  SqlFunction,
+  Negation,
+  SelectQuery,
+  escapeLikeString,
+} from '../sql';
 import { LookupTable } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
 
@@ -473,7 +483,7 @@ function buildValueCondition(tableName: string, operator: FhirOperator, value: s
     ]);
   } else if (operator === FhirOperator.CONTAINS) {
     getLogger().warn('Potentially expensive token lookup query', { operator });
-    return new Condition(column, 'LIKE', value.trim() + '%');
+    return new Condition(column, 'LIKE', escapeLikeString(value.trim()) + '%');
   } else {
     return new Condition(column, '=', value.trim());
   }

@@ -141,6 +141,10 @@ function simpleBinaryOperator(operator: string): OperatorFunc {
   };
 }
 
+export function escapeLikeString(str: string): string {
+  return str.replaceAll(/[\\_%]/g, (c) => '\\' + c);
+}
+
 export class Column {
   constructor(
     readonly tableName: string | undefined,

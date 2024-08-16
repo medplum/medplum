@@ -12,6 +12,7 @@ import {
   InsertQuery,
   Negation,
   SelectQuery,
+  escapeLikeString,
 } from '../sql';
 
 /**
@@ -69,7 +70,9 @@ export abstract class LookupTable {
       if (filter.operator === FhirOperator.EXACT) {
         disjunction.expressions.push(new Condition(new Column(lookupTableName, columnName), '=', option.trim()));
       } else if (filter.operator === FhirOperator.CONTAINS) {
-        disjunction.expressions.push(new Condition(new Column(lookupTableName, columnName), 'LIKE', `%${option}%`));
+        disjunction.expressions.push(
+          new Condition(new Column(lookupTableName, columnName), 'LIKE', `%${escapeLikeString(option)}%`)
+        );
       } else {
         disjunction.expressions.push(
           new Condition(
