@@ -61,6 +61,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
             status: 'accepted',
           },
         ],
+        comment: answers['comment']?.valueString,
       };
       // Call bot to create the appointment
       appointment = await medplum.executeBot({ system: 'http://example.com', value: 'book-appointment' }, appointment);
@@ -123,6 +124,11 @@ const appointmentQuestionnaire: Questionnaire = {
       text: 'What is the appointment service type?',
       answerValueSet: 'http://terminology.hl7.org/ValueSet/v2-0276',
       required: true,
+    },
+    {
+      linkId: 'comment',
+      type: 'string',
+      text: 'Additional comments',
     },
   ],
 };

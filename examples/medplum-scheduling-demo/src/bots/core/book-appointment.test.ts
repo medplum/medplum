@@ -55,6 +55,7 @@ describe('Book Appointment', async () => {
         { actor: { reference: 'Patient/homer-simpson' }, status: 'accepted' },
         { actor: { reference: 'Practitioner/dr-alice-smith' }, status: 'accepted' },
       ],
+      comment: 'The patient is feeling much better',
     };
 
     const appointment = await handler(medplum, { bot, input: appointmentInput, contentType, secrets: {} });
@@ -65,6 +66,7 @@ describe('Book Appointment', async () => {
     expect(appointment).toBeDefined();
     expect(appointment.start).toBe(slot.start);
     expect(appointment.end).toBe(slot.end);
+    expect(appointment.comment).toBe('The patient is feeling much better');
 
     // Check that the slot was updated
     expect(slot.status).toBe('busy');
