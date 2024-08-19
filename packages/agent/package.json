@@ -20,6 +20,7 @@
     "agent": "ts-node src/main.ts",
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
+    "lint": "eslint .",
     "test": "jest"
   },
   "dependencies": {

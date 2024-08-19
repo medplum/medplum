@@ -55,6 +55,7 @@ import {
   Condition,
   Conjunction,
   Disjunction,
+  escapeLikeString,
   Expression,
   Literal,
   Negation,
@@ -71,7 +72,18 @@ import {
  */
 const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 
-export interface ChainedSearchLink {
+type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
+  count: number;
+  offset: number;
+};
+
+interface Cursor {
+  version: string;
+  lastInstant: string;
+  lastId: string;
+}
+
+interface ChainedSearchLink {
   resourceType: string;
   code: string;
   details: SearchParameterDetails;
@@ -79,7 +91,7 @@ export interface ChainedSearchLink {
   filter?: Filter;
 }
 
-export interface ChainedSearchParameter {
+interface ChainedSearchParameter {
   chain: ChainedSearchLink[];
 }
 
@@ -108,7 +120,7 @@ export async function searchImpl<T extends Resource>(
     type: 'searchset',
     entry,
     total,
-    link: getSearchLinks(searchRequest, hasMore),
+    link: getSearchLinks(searchRequest, entry, hasMore),
   };
 }
 
@@ -170,14 +182,23 @@ export async function searchByReferenceImpl<T extends Resource>(
 
 function applyCountAndOffsetLimits<T extends Resource>(
   searchRequest: SearchRequest
-): asserts searchRequest is SearchRequest<T> & { count: number; offset: number } {
+): asserts searchRequest is SearchRequestWithCountAndOffset<T> {
   if (searchRequest.count === undefined) {
     searchRequest.count = DEFAULT_SEARCH_COUNT;
   } else if (searchRequest.count > maxSearchResults) {
     searchRequest.count = maxSearchResults;
   }
 
-  searchRequest.offset ??= 0;
+  if (searchRequest.offset === undefined) {
+    searchRequest.offset = 0;
+  } else {
+    const maxOffset = getConfig().maxSearchOffset;
+    if (maxOffset !== undefined && searchRequest.offset > maxOffset) {
+      throw new OperationOutcomeError(
+        badRequest(`Search offset exceeds maximum (got ${searchRequest.offset}, max ${maxOffset})`)
+      );
+    }
+  }
 }
 
 /**
@@ -218,14 +239,35 @@ interface GetSelectQueryForSearchOptions extends GetBaseSelectQueryOptions {
 }
 function getSelectQueryForSearch<T extends Resource>(
   repo: Repository,
-  searchRequest: SearchRequest<T>,
+  searchRequest: SearchRequestWithCountAndOffset<T>,
   options?: GetSelectQueryForSearchOptions
 ): SelectQuery {
   const builder = getBaseSelectQuery(repo, searchRequest, options);
   addSortRules(builder, searchRequest);
-  const count = searchRequest.count as number;
+  const count = searchRequest.count;
   builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
-  builder.offset(searchRequest.offset ?? 0);
+  if (searchRequest.offset > 0) {
+    if (searchRequest.cursor) {
+      throw new OperationOutcomeError(badRequest('Cannot use both offset and cursor'));
+    }
+    builder.offset(searchRequest.offset);
+  } else if (searchRequest.cursor) {
+    const cursor = parseCursor(searchRequest.cursor);
+    if (cursor) {
+      builder.orderBy(new Column(searchRequest.resourceType, 'lastUpdated', false));
+      builder.orderBy(new Column(searchRequest.resourceType, 'id', false));
+      // (lastUpdated=x and id>y) or lastUpdated>x
+      builder.whereExpr(
+        new Disjunction([
+          new Conjunction([
+            new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '=', cursor.lastInstant),
+            new Condition(new Column(searchRequest.resourceType, 'id'), '>', cursor.lastId),
+          ]),
+          new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '>', cursor.lastInstant),
+        ])
+      );
+    }
+  }
   return builder;
 }
 
@@ -238,7 +280,7 @@ function getSelectQueryForSearch<T extends Resource>(
  */
 async function getSearchEntries<T extends Resource>(
   repo: Repository,
-  searchRequest: SearchRequest<T> & { count: number },
+  searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
   const startTime = Date.now();
@@ -274,7 +316,8 @@ async function getSearchEntries<T extends Resource>(
     builder.explain = true;
     builder.analyzeBuffers = true;
     const sqlBuilder = new SqlBuilder();
-    const sql = builder.buildSql(sqlBuilder);
+    builder.buildSql(sqlBuilder);
+    const sql = sqlBuilder.toString();
     const explainRows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
     const explain = explainRows.map((row) => row['QUERY PLAN']).join('\n');
     getLogger().warn('Slow search query', { duration, searchRequest, sql, explain });
@@ -453,6 +496,7 @@ async function getSearchIncludeEntries(
           },
         ],
         count: DEFAULT_MAX_SEARCH_COUNT,
+        offset: 0,
       };
       const builder = getSelectQueryForSearch(repo, searchRequest);
       return getSearchEntries(repo, searchRequest, builder);
@@ -511,6 +555,7 @@ async function getSearchRevIncludeEntries(
       },
     ],
     count: DEFAULT_MAX_SEARCH_COUNT,
+    offset: 0,
   };
   const builder = getSelectQueryForSearch(repo, searchRequest);
 
@@ -526,10 +571,15 @@ async function getSearchRevIncludeEntries(
  * At minimum, the 'self' link will be returned.
  * If "count" does not equal zero, then 'first', 'next', and 'previous' links will be included.
  * @param searchRequest - The search request.
+ * @param entries - The search bundle entries.
  * @param hasMore - True if there are more entries after the current page.
  * @returns The search bundle links.
  */
-function getSearchLinks(searchRequest: SearchRequest, hasMore: boolean | undefined): BundleLink[] {
+function getSearchLinks(
+  searchRequest: SearchRequestWithCountAndOffset,
+  entries: BundleEntry[] | undefined,
+  hasMore: boolean | undefined
+): BundleLink[] {
   const result: BundleLink[] = [
     {
       relation: 'self',
@@ -537,31 +587,127 @@ function getSearchLinks(searchRequest: SearchRequest, hasMore: boolean | undefin
     },
   ];
 
-  const count = searchRequest.count as number;
-  if (count > 0) {
-    const offset = searchRequest.offset || 0;
-
-    result.push({
-      relation: 'first',
-      url: getSearchUrl({ ...searchRequest, offset: 0 }),
-    });
-
-    if (hasMore) {
-      result.push({
-        relation: 'next',
-        url: getSearchUrl({ ...searchRequest, offset: offset + count }),
-      });
-    }
-
-    if (offset > 0) {
-      result.push({
-        relation: 'previous',
-        url: getSearchUrl({ ...searchRequest, offset: offset - count }),
-      });
+  if (searchRequest.count > 0 && entries && entries.length > 0) {
+    if (canUseCursorLinks(searchRequest)) {
+      buildSearchLinksWithCursor(searchRequest, entries, hasMore, result);
+    } else {
+      buildSearchLinksWithOffset(searchRequest, hasMore, result);
     }
   }
 
   return result;
+}
+
+/**
+ * Returns true if the search request can use cursor links.
+ * Cursor links are more efficient than offset links for large result sets.
+ * A search request can use cursor links if:
+ *   1. Not using offset pagination
+ *   2. Exactly one sort rule using _lastUpdated ascending
+ * @param searchRequest - The candidate search request.
+ * @returns True if the search request can use cursor links.
+ */
+function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): boolean {
+  return (
+    searchRequest.offset === 0 &&
+    searchRequest.sortRules?.length === 1 &&
+    searchRequest.sortRules[0].code === '_lastUpdated' &&
+    !searchRequest.sortRules[0].descending
+  );
+}
+
+/**
+ * Builds the "first", "next", and "previous" links for a search request using cursor pagination.
+ * @param searchRequest - The search request.
+ * @param entries - The search bundle entries.
+ * @param hasMore - True if there are more entries after the current page.
+ * @param result - The search bundle links.
+ */
+function buildSearchLinksWithCursor(
+  searchRequest: SearchRequestWithCountAndOffset,
+  entries: BundleEntry[],
+  hasMore: boolean | undefined,
+  result: BundleLink[]
+): void {
+  result.push({
+    relation: 'first',
+    url: getSearchUrl({ ...searchRequest, cursor: undefined, offset: undefined }),
+  });
+
+  if (hasMore) {
+    const lastResource = entries[entries.length - 1].resource;
+    result.push({
+      relation: 'next',
+      url: getSearchUrl({
+        ...searchRequest,
+        cursor: formatCursor({
+          version: '1',
+          lastInstant: lastResource?.meta?.lastUpdated as string,
+          lastId: lastResource?.id as string,
+        }),
+        offset: undefined,
+      }),
+    });
+  }
+}
+
+/**
+ * Parses a cursor string into a Cursor object.
+ * @param cursor - The cursor string.
+ * @returns The Cursor object or undefined if the cursor string is invalid.
+ */
+function parseCursor(cursor: string): Cursor | undefined {
+  const parts = splitN(cursor, '-', 3);
+  if (parts.length !== 3) {
+    return undefined;
+  }
+  const date = new Date(parseInt(parts[1], 10));
+  return { version: parts[0], lastInstant: date.toISOString(), lastId: parts[2] };
+}
+
+/**
+ * Formats a cursor object into a cursor string.
+ * @param cursor - The cursor object.
+ * @returns The cursor string.
+ */
+function formatCursor(cursor: Cursor): string {
+  const date = new Date(cursor.lastInstant);
+  return `${cursor.version}-${date.getTime()}-${cursor.lastId}`;
+}
+
+/**
+ * Adds the "first", "next", and "previous" links to the result array using offset pagination.
+ * Offset pagination is slow, and should be avoided if possible.
+ * @param searchRequest - The search request.
+ * @param hasMore - True if there are more entries after the current page.
+ * @param result - The search bundle links.
+ */
+function buildSearchLinksWithOffset(
+  searchRequest: SearchRequestWithCountAndOffset,
+  hasMore: boolean | undefined,
+  result: BundleLink[]
+): void {
+  const count = searchRequest.count;
+  const offset = searchRequest.offset;
+
+  result.push({
+    relation: 'first',
+    url: getSearchUrl({ ...searchRequest, offset: 0 }),
+  });
+
+  if (hasMore) {
+    result.push({
+      relation: 'next',
+      url: getSearchUrl({ ...searchRequest, offset: offset + count }),
+    });
+  }
+
+  if (offset > 0) {
+    result.push({
+      relation: 'previous',
+      url: getSearchUrl({ ...searchRequest, offset: offset - count }),
+    });
+  }
 }
 
 function getSearchUrl(searchRequest: SearchRequest): string {
@@ -929,9 +1075,9 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
     if (operator === Operator.EXACT) {
       return new Condition(column, '=', v);
     } else if (operator === Operator.CONTAINS) {
-      return new Condition(column, 'LIKE', `%${v}%`);
+      return new Condition(column, 'LIKE', `%${escapeLikeString(v)}%`);
     } else {
-      return new Condition(column, 'LIKE', `${v}%`);
+      return new Condition(column, 'LIKE', `${escapeLikeString(v)}%`);
     }
   });
   return new Disjunction(conditions);

@@ -1,17 +1,14 @@
 import { Paper, Tabs } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
 import { Filter, getReferenceString, Operator, SearchRequest } from '@medplum/core';
 import { Practitioner } from '@medplum/fhirtypes';
 import { SearchControl, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CreateAppointment } from '../components/CreateAppointment';
 
 export function AppointmentsPage(): JSX.Element {
   const profile = useMedplumProfile() as Practitioner;
   const navigate = useNavigate();
   const location = useLocation();
-  const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
 
   const tab = location.pathname.split('/').pop() ?? '';
 
@@ -75,7 +72,6 @@ export function AppointmentsPage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs">
-      <CreateAppointment opened={createAppointmentOpened} handlers={createAppointmentHandlers} />
       <Tabs value={tab.toLowerCase()} onChange={changeTab}>
         <Tabs.List mb="xs">
           {tabs.map((tab) => (
@@ -92,7 +88,7 @@ export function AppointmentsPage(): JSX.Element {
         onChange={(e) => {
           setSearch(e.definition);
         }}
-        onNew={() => createAppointmentHandlers.open()}
+        onNew={() => navigate('/Schedule')} // Redirect to the Schedule page where the user can create a new appointment
         checkboxesEnabled={false}
         hideFilters
       />

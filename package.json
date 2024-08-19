@@ -13,7 +13,7 @@
     "build:fast": "turbo run build --filter=@medplum/app --filter=@medplum/server",
     "clean": "turbo run clean",
     "cyclonedx": "cyclonedx-npm --omit dev --omit optional --omit peer",
-    "lint": "cross-env NODE_OPTIONS='--max-old-space-size=8192' eslint .",
+    "lint": "turbo run lint --filter=!@medplum/docs",
     "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs,json}\"",
     "sort-package-json": "sort-package-json package.json \"packages/*/package.json\" \"examples/*/package.json\"",
     "test": "turbo run test --filter=!@medplum/docs"

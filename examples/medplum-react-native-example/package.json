@@ -5,6 +5,7 @@
   "scripts": {
     "android": "expo start --android",
     "ios": "expo start --ios",
+    "lint": "eslint .",
     "start": "expo start",
     "web": "expo start --web"
   },

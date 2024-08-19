@@ -64,6 +64,7 @@ export * from './QuestionnaireForm/QuestionnaireForm';
 export * from './QuestionnaireForm/QuestionnaireForm.context';
 export * from './RangeDisplay/RangeDisplay';
 export * from './RangeInput/RangeInput';
+export * from './RatioInput/RatioInput';
 export * from './ReferenceDisplay/ReferenceDisplay';
 export * from './ReferenceInput/ReferenceInput';
 export * from './ReferenceRangeEditor/ReferenceRangeEditor';

@@ -123,6 +123,34 @@ describe('FHIR Search', () => {
         expect(result1.link?.length).toBe(1);
       }));
 
+    test('Search offset max', async () =>
+      withTestContext(async () => {
+        // Temporarily set a low maxSearchOffset
+        const prevMax = config.maxSearchOffset;
+        config.maxSearchOffset = 200;
+
+        // Search under the limit, this should succeed
+        const result1 = await repo.search({
+          resourceType: 'Patient',
+          offset: 100,
+        });
+        expect(result1.entry).toHaveLength(0);
+
+        // Search over the limit, this should fail
+        try {
+          await repo.search({
+            resourceType: 'Patient',
+            offset: 300,
+          });
+          fail('Expected error');
+        } catch (err) {
+          expect(normalizeErrorString(err)).toEqual('Search offset exceeds maximum (got 300, max 200)');
+        }
+
+        // Restore the maxSearchOffset
+        config.maxSearchOffset = prevMax;
+      }));
+
     test('clampEstimateCount', () => {
       expect(clampEstimateCount({ resourceType: 'Patient' }, undefined, 0)).toEqual(0);
       expect(clampEstimateCount({ resourceType: 'Patient' }, 0, 0)).toEqual(0);
@@ -4026,6 +4054,46 @@ describe('FHIR Search', () => {
             'Observation',
             'Observation',
           ]);
+        }));
+
+      test('Error on cursor and offset', () =>
+        withTestContext(async () => {
+          try {
+            await repo.search({ resourceType: 'Patient', offset: 10, cursor: 'foo' });
+            fail('Expected error');
+          } catch (err) {
+            expect(normalizeErrorString(err)).toBe('Cannot use both offset and cursor');
+          }
+        }));
+
+      test('Cursor pagination', () =>
+        withTestContext(async () => {
+          const tasks: Task[] = [];
+          for (let i = 0; i < 10; i++) {
+            const task = await repo.createResource<Task>({
+              resourceType: 'Task',
+              status: 'accepted',
+              intent: 'order',
+              code: { text: 'cursor_test' },
+            });
+            tasks.push(task);
+          }
+
+          let url = 'Task?code=cursor_test&_sort=_lastUpdated&_count=1';
+          for (let i = 0; i < 10; i++) {
+            const bundle = await repo.search(parseSearchRequest(url));
+            expect(bundle.entry?.length).toBe(1);
+            expect(bundle.entry?.[0]?.resource?.id).toEqual(tasks[i].id);
+
+            const link = bundle.link?.find((l) => l.relation === 'next')?.url;
+            if (i < 9) {
+              expect(link).toBeDefined();
+              expect(link?.includes('_cursor')).toBe(true);
+              url = link as string;
+            } else {
+              expect(link).toBeUndefined();
+            }
+          }
         }));
     });
   });

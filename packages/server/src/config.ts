@@ -56,6 +56,7 @@ export interface MedplumServerConfig {
   accurateCountThreshold: number;
   slowQueryThresholdMilliseconds?: number;
   slowQuerySampleRate?: number;
+  maxSearchOffset?: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?:
     | (

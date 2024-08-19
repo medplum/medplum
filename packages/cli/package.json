@@ -37,6 +37,7 @@
   "scripts": {
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
+    "lint": "eslint .",
     "medplum": "ts-node src/index.ts",
     "test": "jest"
   },

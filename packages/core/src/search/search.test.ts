@@ -137,6 +137,14 @@ describe('Search Utils', () => {
     expect(result.count).toBe(10);
   });
 
+  test('Parse Patient cursor', () => {
+    const result = parseSearchDefinition('Patient?_count=10&_cursor=foo');
+    expect(result.resourceType).toBe('Patient');
+    expect(result.count).toBe(10);
+    expect(result.cursor).toBe('foo');
+    expect(result.offset).toBeUndefined();
+  });
+
   test('Parse modifier operator', () => {
     const result = parseSearchDefinition('Patient?name:contains=alice');
     expect(result).toMatchObject({
