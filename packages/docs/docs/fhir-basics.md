@@ -146,7 +146,7 @@ The example below shows a resource modeling a prescription (i.e. [`MedicationReq
 
 ## Querying Data: Search
 
-FHIR offers both a [REST API](/docs/search) and [GraphQL API](/docs/graphql) to query, search, sort, and filter resources by specific criteria (see [this blog post](/blog/2023/09/06/graphql-vs-rest) for tradeoffs between REST and GraphQL).
+FHIR offers both a [REST API](/docs/search) and [GraphQL API](/docs/graphql) to query, search, sort, and filter resources by specific criteria (see [this blog post](/blog/graphql-vs-rest) for tradeoffs between REST and GraphQL).
 
 **FHIR resources cannot be searched by arbitrary fields**. Instead, the specification defines specific [search parameters](/docs/search/basic-search#search-parameters) for each resource that can be used for queries.
 
