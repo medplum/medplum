@@ -10,7 +10,8 @@
     "dev": "vite",
     "preview": "vite preview",
     "lint": "eslint src/",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coveragex"
   },
   "prettier": {
     "printWidth": 120,

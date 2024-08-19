@@ -127,7 +127,10 @@ export async function handleCreatePrescription(
     status: 'active',
     intent: 'order',
     subject: { reference: `Patient/${data.patient.externalId}` },
-    identifier: [{ system: 'https://neutron.health/webhooks', value: event.id }],
+    identifier: [
+      { system: 'https://neutron.health/webhooks', value: event.id },
+      { system: 'https://neutron.health', value: data.id },
+    ],
     dispenseRequest: {
       quantity: {
         value: data.dispenseQuantity,
