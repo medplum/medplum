@@ -1,12 +1,12 @@
-import { Button, Modal } from '@mantine/core';
+import { Modal } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import { Questionnaire, QuestionnaireItem, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
-import { Event } from 'react-big-calendar';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
-import { ScheduleContext } from '../Schedule.context';
 import { useContext } from 'react';
-import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { Event } from 'react-big-calendar';
+import { ScheduleContext } from '../Schedule.context';
 
 interface CreateUpdateSlotProps {
   event: Event | undefined;
@@ -69,27 +69,6 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
     handlers.close();
   }
 
-  // Handles deleting the slot
-  async function handleDeleteSlot(): Promise<void> {
-    try {
-      await medplum.deleteResource('Slot', editingSlot.id as string);
-      showNotification({
-        icon: <IconCircleCheck />,
-        title: 'Success',
-        message: 'Slot deleted',
-      });
-    } catch (err) {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    }
-
-    handlers.close();
-  }
-
   const appointmentQuestionnaire: Questionnaire = {
     resourceType: 'Questionnaire',
     status: 'active',
@@ -129,11 +108,6 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
 
   return (
     <Modal opened={opened} onClose={handlers.close}>
-      {editingSlot ? (
-        <Button onClick={handleDeleteSlot} fullWidth color="red">
-          Delete Slot
-        </Button>
-      ) : null}
       <QuestionnaireForm
         questionnaire={appointmentQuestionnaire}
         subject={createReference(schedule)}
