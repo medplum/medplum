@@ -80,9 +80,14 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    const resourceTypes = (req.body.resourceType as string).split(',').map((t) => t.trim());
-    for (const resourceType of resourceTypes) {
-      validateResourceType(resourceType);
+    let resourceTypes: string[];
+    if (req.body.resourceType === '*') {
+      resourceTypes = getResourceTypes().filter((rt) => rt !== 'Binary');
+    } else {
+      resourceTypes = (req.body.resourceType as string).split(',').map((t) => t.trim());
+      for (const resourceType of resourceTypes) {
+        validateResourceType(resourceType);
+      }
     }
 
     let searchFilter: SearchRequest | undefined;
