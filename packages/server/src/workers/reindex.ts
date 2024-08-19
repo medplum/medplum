@@ -197,11 +197,7 @@ function searchRequestForNextPage(job: Job<ReindexJobData>): SearchRequest {
     filters: [{ code: '_lastUpdated', operator: Operator.LESS_THAN, value: endTimestamp }],
   };
   if (cursor) {
-    searchRequest.filters?.push({
-      code: '_cursor',
-      operator: Operator.EQUALS,
-      value: cursor,
-    });
+    searchRequest.cursor = cursor;
   }
   if (searchFilter?.filters) {
     searchRequest.filters?.push(...searchFilter.filters);
