@@ -129,7 +129,7 @@ export function checkForDuplicateEvent(webhook: PhotonWebhook, medicationRequest
 }
 
 export function verifyEvent(photonEvent: PhotonWebhook, secret: string): boolean {
-  const signature = photonEvent.headers['X-Photon-Signature'];
+  const signature = photonEvent.headers['x-photon-signature'];
   const body = photonEvent.body;
 
   const hmac = createHmac('sha256', secret);
