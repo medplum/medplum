@@ -259,6 +259,77 @@ describe('Prescription webhooks', async () => {
     expect(patchResourceSpy).not.toHaveBeenCalled();
   });
 
+  test.skip('Updating a prescription that does not exist', async () => {
+    const medplum = new MockClient();
+    await expect(() =>
+      handler(medplum, {
+        input: prescriptionDepletedWebhook,
+        secrets: {},
+        bot,
+        contentType,
+      })
+    ).rejects.toThrow('Prescription does not exist');
+  });
+
+  test.skip('Receive a non-prescription event', async () => {
+    const medplum = new MockClient();
+    await expect(() => handler(medplum, { input: orderEvent, secrets: {}, bot, contentType })).rejects.toThrow(
+      'Not a prescription event'
+    );
+  });
+
+  test.skip('Idempotency test', async () => {
+    const medplum = new MockClient();
+    const prescriber: Practitioner = await medplum.createResource({
+      resourceType: 'Practitioner',
+      identifier: [{ system: 'https://neutron.health', value: 'usr_wUofzqEvcA2JCwJ4' }],
+    });
+
+    await medplum.createResource({
+      resourceType: 'Medication',
+      identifier: [{ system: 'https://neutron.health', value: 'med_01G7T2NB6' }],
+      code: {
+        coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '723', display: 'Amoxicillin' }],
+      },
+    });
+
+    const idempotencyTestWebhook = {
+      ...idempotencyWebhook,
+    };
+
+    idempotencyTestWebhook.body.data.patient.externalId = prescriber.id;
+
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: idempotencyTestWebhook,
+      contentType: 'application/json',
+      secrets: {
+        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'EXAMPLE_CLIENT_ID' },
+        PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'EXAMPLE_CLIENT_SECRET' },
+        PHOTON_WEBHOOK_SECRET: { name: 'Photon Webhook Secret', valueString: 'EXAMPLE_WEBHOOK_SECRET' },
+      },
+    });
+
+    const updateResourceSpy = vi.spyOn(medplum, 'updateResource');
+    const createResourceSpy = vi.spyOn(medplum, 'createResource');
+    const patchResourceSpy = vi.spyOn(medplum, 'patchResource');
+
+    await handler(medplum, {
+      bot: { reference: 'Bot/123' },
+      input: idempotencyTestWebhook,
+      contentType: 'application/json',
+      secrets: {
+        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'EXAMPLE_CLIENT_ID' },
+        PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'EXAMPLE_CLIENT_SECRET' },
+        PHOTON_ORDER_WEBHOOK_SECRET: { name: 'Photon Webhook Secret', valueString: 'EXAMPLE_ORDER_WEBHOOK_SECRET' },
+      },
+    });
+
+    expect(updateResourceSpy).not.toHaveBeenCalled();
+    expect(createResourceSpy).not.toHaveBeenCalled();
+    expect(patchResourceSpy).not.toHaveBeenCalled();
+  });
+
   test.skip('Create prescription', async () => {
     const medplum = new MockClient();
 
