@@ -1,4 +1,13 @@
-import { AsyncJob, Parameters, ParametersParameter, Patient, Practitioner, ResourceType } from '@medplum/fhirtypes';
+import {
+  AsyncJob,
+  Parameters,
+  ParametersParameter,
+  Patient,
+  Practitioner,
+  Project,
+  ResourceType,
+  User,
+} from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
@@ -6,7 +15,9 @@ import { getSystemRepo, Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { ReindexJobData, addReindexJob, closeReindexWorker, execReindexJob, getReindexQueue } from './reindex';
 import { randomUUID } from 'crypto';
-import { parseSearchRequest } from '@medplum/core';
+import { createReference, parseSearchRequest } from '@medplum/core';
+import { SelectQuery } from '../fhir/sql';
+import { DatabaseMode, getDatabasePool } from '../database';
 
 let repo: Repository;
 
@@ -476,5 +487,67 @@ describe('Reindex Worker', () => {
           },
         ],
       });
+    }));
+
+  test('Populates User.projectId column in database', () =>
+    withTestContext(async () => {
+      const queue = getReindexQueue() as any;
+      queue.add.mockClear();
+
+      const idSystem = 'http://example.com/mrn';
+      const mrn = randomUUID();
+
+      let asyncJob = await repo.createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: '/admin/super/reindex',
+      });
+      const systemRepo = getSystemRepo();
+      const project = repo.currentProject() as Project;
+      let user = await systemRepo.createResource<User>({
+        resourceType: 'User',
+        identifier: [{ system: idSystem, value: mrn }],
+        firstName: 'Project',
+        lastName: 'User',
+        project: createReference(project),
+      });
+
+      const resourceTypes = ['User'] as ResourceType[];
+      const searchFilter = parseSearchRequest(`User?identifier=${idSystem}|${mrn}`);
+
+      await addReindexJob(resourceTypes, asyncJob, searchFilter);
+      expect(queue.add).toHaveBeenCalledWith(
+        'ReindexJobData',
+        expect.objectContaining<Partial<ReindexJobData>>({ resourceTypes, asyncJob, searchFilter })
+      );
+
+      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      queue.add.mockClear();
+      await execReindexJob(job);
+
+      asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id as string);
+      expect(asyncJob.status).toEqual('completed');
+      expect(asyncJob.output).toMatchObject<Parameters>({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'result',
+            part: expect.arrayContaining([
+              expect.objectContaining({ name: 'resourceType', valueCode: 'User' }),
+              expect.objectContaining({ name: 'count', valueInteger: 1 }),
+            ]),
+          },
+        ],
+      });
+
+      user = await systemRepo.readResource<User>('User', user.id as string);
+      expect(user.meta?.project).toBeUndefined();
+
+      const rows = await new SelectQuery('User')
+        .column('projectId')
+        .where('id', '=', user.id)
+        .execute(getDatabasePool(DatabaseMode.READER));
+      expect(rows[0].projectId).toEqual(project.id);
     }));
 });
