@@ -52,7 +52,7 @@
     "@types/base-64": "1.0.2",
     "@types/react": "18.3.3",
     "@types/text-encoding": "0.0.39",
-    "esbuild": "0.23.0",
+    "esbuild": "0.23.1",
     "esbuild-node-externals": "1.14.0",
     "expo-crypto": "13.0.2",
     "expo-secure-store": "13.0.2",
