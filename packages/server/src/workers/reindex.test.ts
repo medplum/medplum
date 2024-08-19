@@ -97,7 +97,7 @@ describe('Reindex Worker', () => {
         })
       );
 
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      let job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
       await execReindexJob(job);
 
@@ -105,8 +105,23 @@ describe('Reindex Worker', () => {
         'ReindexJobData',
         expect.objectContaining<Partial<ReindexJobData>>({
           resourceTypes: ['ValueSet'],
-          asyncJob,
-          count: 500,
+          cursor: expect.stringContaining('-'),
+        })
+      );
+
+      asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
+      expect(asyncJob.status).toEqual('accepted');
+
+      job = { id: 2, data: queue.add.mock.calls[0][1] } as unknown as Job;
+      queue.add.mockClear();
+
+      await expect(execReindexJob(job)).resolves.toBe(undefined);
+
+      expect(queue.add).toHaveBeenCalledWith(
+        'ReindexJobData',
+        expect.objectContaining<Partial<ReindexJobData>>({
+          resourceTypes: ['ValueSet'],
+          cursor: expect.stringContaining('-'),
         })
       );
 
