@@ -125,6 +125,7 @@ export async function execReindexJob(job: Job<ReindexJobData>): Promise<void> {
         asyncJob,
         resourceTypes: resourceTypes,
         count: 0,
+        cursor: undefined,
         startTime: Date.now(),
       });
     } else {
