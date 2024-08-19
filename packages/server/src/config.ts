@@ -112,6 +112,8 @@ export interface MedplumDatabaseConfig {
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
   runMigrations?: boolean;
+  maxThreads?: number;
+  minThreads?: number;
 }
 
 export interface MedplumRedisConfig {
