@@ -925,6 +925,39 @@
           { "code": "213", "display": "SARS-COV-2 (COVID-19) vaccine, UNSPECIFIED" }
         ]
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/aus-imm-reg-stub",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "urn:oid:1.2.36.1.2001.1005.17",
+        "identifier": [
+          {
+            "system": "urn:ietf:rfc:3986",
+            "value": "urn:oid:1.2.36.1.2001.1005.17"
+          }
+        ],
+        "version": "20240207",
+        "name": "AustralianImmunisationRegisterVaccine",
+        "title": "Australian Immunisation Register Vaccine",
+        "status": "active",
+        "experimental": false,
+        "date": "2024-03-31",
+        "publisher": "Australian Digital Health Agency",
+        "contact": [
+          {
+            "telecom": [
+              {
+                "system": "email",
+                "value": "help@digitalhealth.gov.au"
+              }
+            ]
+          }
+        ],
+        "description": "The Australian Immunisation Register Vaccine code system defines the vaccine codes available for recording of vaccine administration on the Australian Immunisation Register, and may be used for online claiming and reimbursement for vaccine administration through Medicare.",
+        "copyright": "Copyright © 2022 Australian Digital Health Agency - All rights reserved. Except for the material identified below, this content is licensed under a Creative Commons Attribution 4.0 International License. See https://creativecommons.org/licenses/by/4.0/. \n\nThis resource also includes material from the 'Australian Immunisation Register Vaccine Code Formats' last updated: 7 February 2024 © Commonwealth of Australia, represented by Services Australia https://www.servicesaustralia.gov.au/organisations/health-professionals/services/medicare/australian-immunisation-register-health-professionals/resources/air-vaccine-code-formats. Licensed under https://creativecommons.org/licenses/by/3.0/au).\n\nAll copies of this resource must include this copyright statement and all information contained in this statement.",
+        "content": "not-present"
+      }
     }
   ]
 }

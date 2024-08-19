@@ -9,13 +9,40 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
 import { CreateUpdateSlot } from '../components/CreateUpdateSlot';
 import { ScheduleContext } from '../Schedule.context';
+import { Title } from '@mantine/core';
+import { CreateAppointment } from '../components/CreateAppointment';
+
+interface OnClickEventModalProps {
+  event: Event | undefined;
+  readonly opened: boolean;
+  readonly handlers: {
+    readonly open: () => void;
+    readonly close: () => void;
+    readonly toggle: () => void;
+  };
+}
+
+// This helper component manage the modal to be shown when an event is clicked
+function OnClickEventModal(props: OnClickEventModalProps): JSX.Element {
+  const { event, opened, handlers } = props;
+
+  // If the event is a free slot (available for booking), show the appointment creation modal
+  if (event?.resource?.resourceType === 'Slot' && event?.resource?.status === 'free') {
+    return <CreateAppointment slot={event.resource} opened={opened} handlers={handlers} />;
+  }
+
+  // If the event is a busy-unavailable slot (blocked for booking) or if the event is a range
+  // selection, show the slot management modal
+  return <CreateUpdateSlot event={event} opened={opened} handlers={handlers} />;
+}
 
 export function SchedulePage(): JSX.Element {
-  const profile = useMedplumProfile() as Practitioner;
   const navigate = useNavigate();
-  const [createSlotOpened, createSlotHandlers] = useDisclosure(false);
+  const [modalOpened, modalHandlers] = useDisclosure(false);
   const [selectedEvent, setSelectedEvent] = useState<Event>();
   const { schedule } = useContext(ScheduleContext);
+
+  const profile = useMedplumProfile() as Practitioner;
   const [slots] = useSearchResources('Slot', { schedule: getReferenceString(schedule as Schedule) });
   const [appointments] = useSearchResources('Appointment', { actor: getReferenceString(profile as Practitioner) });
 
@@ -46,35 +73,41 @@ export function SchedulePage(): JSX.Element {
     };
   });
 
-  // When a slot is selected set the event object and open the modal
+  // When a date/time range is selected, set the event object and open the modal
   const handleSelectSlot = useCallback(
     (event: Event) => {
       setSelectedEvent(event);
-      createSlotHandlers.open();
+      modalHandlers.open();
     },
-    [createSlotHandlers]
+    [modalHandlers]
   );
 
-  // When an exiting event is selected set the event object and open the modal
+  // When an exiting event is selected, set the event object and open the modal
   const handleSelectEvent = useCallback(
     (event: Event) => {
       if (event.resource.resourceType === 'Slot') {
         // If it's a slot open the management modal
         setSelectedEvent(event);
-        createSlotHandlers.open();
+        modalHandlers.open();
       } else if (event.resource.resourceType === 'Appointment') {
         // If it's an appointment navigate to the appointment detail page
         navigate(`/Appointment/${event.resource.id}`);
       }
     },
-    [createSlotHandlers, navigate]
+    [modalHandlers, navigate]
   );
 
   return (
     <Document width={1000}>
-      <CreateUpdateSlot event={selectedEvent} opened={createSlotOpened} handlers={createSlotHandlers} />
+      <Title order={1} mb="lg">
+        My Schedule
+      </Title>
+
+      <OnClickEventModal event={selectedEvent} opened={modalOpened} handlers={modalHandlers} />
+
       <Calendar
         defaultView="week"
+        views={['month', 'week', 'day', 'agenda']}
         localizer={dayjsLocalizer(dayjs)}
         events={appointmentEvents}
         backgroundEvents={slotEvents} // Background events don't show in the month view

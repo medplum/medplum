@@ -55,6 +55,7 @@ import {
   Condition,
   Conjunction,
   Disjunction,
+  escapeLikeString,
   Expression,
   Literal,
   Negation,
@@ -1074,9 +1075,9 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
     if (operator === Operator.EXACT) {
       return new Condition(column, '=', v);
     } else if (operator === Operator.CONTAINS) {
-      return new Condition(column, 'LIKE', `%${v}%`);
+      return new Condition(column, 'LIKE', `%${escapeLikeString(v)}%`);
     } else {
-      return new Condition(column, 'LIKE', `${v}%`);
+      return new Condition(column, 'LIKE', `${escapeLikeString(v)}%`);
     }
   });
   return new Disjunction(conditions);
