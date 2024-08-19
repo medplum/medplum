@@ -2,7 +2,7 @@ import { Button, Stack, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { createReference, normalizeErrorString, resolveId } from '@medplum/core';
-import { Appointment, Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
+import { Appointment, CodeableConcept, Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
 import { IconCancel, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -79,7 +79,7 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
 
       const duration = new Date(appointment.end as string).getTime() - new Date(appointment.start as string).getTime();
 
-      const createdEncounter = await medplum.createResource({
+      const createdEncounter: Encounter = await medplum.createResource({
         resourceType: 'Encounter',
         status: 'finished',
         subject: createReference(patient),
@@ -89,6 +89,7 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
           code: 'VR',
           display: 'virtual',
         },
+        type: [appointment.appointmentType as CodeableConcept],
         serviceType: appointment.serviceType?.[0],
         period: {
           start: appointment.start,
