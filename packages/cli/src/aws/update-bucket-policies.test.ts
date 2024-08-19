@@ -1,19 +1,28 @@
 import {
   CloudFormationClient,
   CloudFormationClientResolvedConfig,
+  ServiceInputTypes as CloudFormationServiceInputTypes,
+  ServiceOutputTypes as CloudFormationServiceOutputTypes,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
   ListStacksCommand,
-  ServiceInputTypes,
-  ServiceOutputTypes,
   StackResource,
 } from '@aws-sdk/client-cloudformation';
 import {
   CloudFrontClient,
   CloudFrontClientResolvedConfig,
+  ServiceInputTypes as CloudFrontServiceInputTypes,
+  ServiceOutputTypes as CloudFrontServiceOutputTypes,
   CreateInvalidationCommand,
 } from '@aws-sdk/client-cloudfront';
-import { GetBucketPolicyCommand, PutBucketPolicyCommand, S3Client, S3ClientResolvedConfig } from '@aws-sdk/client-s3';
+import {
+  GetBucketPolicyCommand,
+  PutBucketPolicyCommand,
+  S3Client,
+  S3ClientResolvedConfig,
+  ServiceInputTypes as S3ServiceInputTypes,
+  ServiceOutputTypes as S3ServiceOutputTypes,
+} from '@aws-sdk/client-s3';
 import { AwsStub, mockClient } from 'aws-sdk-client-mock';
 import fs from 'node:fs';
 import { main } from '../index';
@@ -35,9 +44,13 @@ jest.mock('node:fs', () => ({
   },
 }));
 
-let cfMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFormationClientResolvedConfig>;
-let s3Mock: AwsStub<ServiceInputTypes, ServiceOutputTypes, S3ClientResolvedConfig>;
-let cloudFrontMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFrontClientResolvedConfig>;
+let cfMock: AwsStub<
+  CloudFormationServiceInputTypes,
+  CloudFormationServiceOutputTypes,
+  CloudFormationClientResolvedConfig
+>;
+let s3Mock: AwsStub<S3ServiceInputTypes, S3ServiceOutputTypes, S3ClientResolvedConfig>;
+let cloudFrontMock: AwsStub<CloudFrontServiceInputTypes, CloudFrontServiceOutputTypes, CloudFrontClientResolvedConfig>;
 
 describe('update-bucket-policies command', () => {
   let processError: jest.SpyInstance;
@@ -129,11 +142,7 @@ describe('update-bucket-policies command', () => {
     s3Mock.on(GetBucketPolicyCommand).resolves({ Policy: '{}' });
     s3Mock.on(PutBucketPolicyCommand).resolves({});
 
-    cloudFrontMock = mockClient(CloudFrontClient) as AwsStub<
-      ServiceInputTypes,
-      ServiceOutputTypes,
-      CloudFrontClientResolvedConfig
-    >;
+    cloudFrontMock = mockClient(CloudFrontClient);
     cloudFrontMock.on(CreateInvalidationCommand).resolves({});
   });
 
