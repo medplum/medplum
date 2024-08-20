@@ -1,17 +1,6 @@
-import { createReference, getReferenceString } from '@medplum/core';
-import { Organization, Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { getReferenceString } from '@medplum/core';
+import { Organization, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import coreBundle from '../../../../data/core/patient-intake-questionnaire.json';
-
-export const intakePatient: Patient = {
-  resourceType: 'Patient',
-  id: 'patient-id',
-  name: [
-    {
-      given: ['John', 'Doe'],
-      family: 'Carvalho',
-    },
-  ],
-};
 
 export const payorOrganization1: Organization = {
   resourceType: 'Organization',
@@ -25,14 +14,13 @@ export const payorOrganization2: Organization = {
   name: 'Second Insurance Provider',
 };
 
-export const intakeQuestionnaire: Questionnaire = coreBundle.entry[2].resource as Questionnaire;
+export const intakeQuestionnaire: Questionnaire = coreBundle.entry[0].resource as Questionnaire;
 intakeQuestionnaire.id = 'intake-questionnaire-id';
 
 export const intakeResponse: QuestionnaireResponse = {
   resourceType: 'QuestionnaireResponse',
   questionnaire: getReferenceString(intakeQuestionnaire),
   status: 'completed',
-  subject: createReference(intakePatient),
   item: [
     {
       id: 'id-35',
@@ -232,20 +220,6 @@ export const intakeResponse: QuestionnaireResponse = {
         },
         {
           id: 'id-85',
-          linkId: 'allergy-clinical-status',
-          text: 'Clinical Status',
-          answer: [
-            {
-              valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-                code: 'active',
-                display: 'Active',
-              },
-            },
-          ],
-        },
-        {
-          id: 'id-86',
           linkId: 'allergy-onset',
           text: 'Onset',
           answer: [
@@ -329,20 +303,6 @@ export const intakeResponse: QuestionnaireResponse = {
         },
         {
           id: 'id-96',
-          linkId: 'allergy-clinical-status',
-          text: 'Clinical Status',
-          answer: [
-            {
-              valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-                code: 'active',
-                display: 'Active',
-              },
-            },
-          ],
-        },
-        {
-          id: 'id-97',
           linkId: 'allergy-onset',
           text: 'Onset',
           answer: [

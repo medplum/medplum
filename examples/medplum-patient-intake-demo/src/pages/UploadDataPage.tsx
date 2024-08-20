@@ -6,9 +6,12 @@ import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useContext, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+
 import exampleBotData from '../../data/core/example-bots.json';
-import coreData from '../../data/core/patient-intake-questionnaire.json';
-import exampleData from '../../data/example/example-patient-data.json';
+import exampleData from '../../data/example/example-organization-data.json';
+import patientIntakeQuestionnaireData from '../../data/core/patient-intake-questionnaire.json';
+import valuesetsData from '../../data/core/valuesets.json';
+
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
 type UploadFunction = (medplum: MedplumClient, profile: Practitioner, questionnaire: Questionnaire) => Promise<void>;
@@ -36,11 +39,14 @@ export function UploadDataPage(): JSX.Element {
       case 'core':
         uploadFunction = uploadCoreData;
         break;
-      case 'example':
-        uploadFunction = uploadExampleData;
+      case 'questionnaire':
+        uploadFunction = uploadQuestionnaires;
         break;
       case 'bots':
         uploadFunction = uploadExampleBots;
+        break;
+      case 'example':
+        uploadFunction = uploadExampleData;
         break;
       default:
         throw new Error(`Invalid upload type: ${dataType}`);
@@ -70,8 +76,7 @@ export function UploadDataPage(): JSX.Element {
 }
 
 async function uploadCoreData(medplum: MedplumClient): Promise<void> {
-  const batch = coreData as Bundle;
-
+  const batch = valuesetsData as Bundle;
   const result = await medplum.executeBatch(batch);
 
   if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
@@ -89,9 +94,28 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
   }
 }
 
+async function uploadQuestionnaires(medplum: MedplumClient): Promise<void> {
+  const batch = patientIntakeQuestionnaireData as Bundle;
+  const result = await medplum.executeBatch(batch);
+
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+    await setTimeout(
+      () =>
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Uploaded Questionnaire Data',
+        }),
+      1000
+    );
+  } else {
+    throw new Error('Error uploading questionnaire data');
+  }
+}
+
 async function uploadExampleData(medplum: MedplumClient): Promise<void> {
-  const exampleDataBatch = exampleData as Bundle;
-  const result = await medplum.executeBatch(exampleDataBatch);
+  const batch = exampleData as Bundle;
+  const result = await medplum.executeBatch(batch);
 
   if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
     await setTimeout(
