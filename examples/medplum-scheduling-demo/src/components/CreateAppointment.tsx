@@ -102,7 +102,7 @@ const appointmentQuestionnaire: Questionnaire = {
     {
       linkId: 'patient',
       type: 'reference',
-      text: 'Which patient is the subject of this encounter?',
+      text: 'Patient',
       required: true,
       extension: [
         {
@@ -122,21 +122,21 @@ const appointmentQuestionnaire: Questionnaire = {
     {
       linkId: 'appointment-type',
       type: 'choice',
-      text: 'What is the appointment type?',
+      text: 'Appointment Type',
       answerValueSet: 'http://terminology.hl7.org/ValueSet/v2-0276',
       required: true,
     },
     {
       linkId: 'service-type',
       type: 'choice',
-      text: 'What is the service type?',
-      answerValueSet: 'http://example.com/encounter-types',
+      text: 'Appointment Service Type',
+      answerValueSet: 'http://example.com/appointment-service-types',
       required: true,
     },
     {
       linkId: 'comment',
       type: 'string',
-      text: 'Additional comments',
+      text: 'Additional Comments',
     },
   ],
 };

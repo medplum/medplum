@@ -6,7 +6,7 @@ import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import coreData from '../../data/core/encounter-types.json';
+import coreData from '../../data/core/appointment-service-types.json';
 import exampleBotData from '../../data/core/example-bots.json';
 
 type UploadFunction = (medplum: MedplumClient, profile: Practitioner) => Promise<void>;
