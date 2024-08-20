@@ -112,6 +112,7 @@ export interface MedplumDatabaseConfig {
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
   runMigrations?: boolean;
+  maxConnections?: number;
 }
 
 export interface MedplumRedisConfig {
