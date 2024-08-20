@@ -1,17 +1,15 @@
 ---
 slug: radai-case-study
 title: Rad AI Omni Reporting - Case Study
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [ai, interop, radiology, case-study]
 ---
 
 ## Medplum’s Open-Source FHIRcast Hub Enables Rad AI Omni Reporting's Interactive Measurements
 
 Radiology is a bellwether for innovations in Healthcare IT due to the **time-sensitive** and **data-intensive workflow**. Naturally, radiology applications lead the way in adopting real-time functionality like [FHIRcast](https://fhircast.org/), a WebSockets-based protocol that enables development of highly interactive applications.
+
+<!-- truncate -->
 
 Today, we are showcasing the [Rad AI Omni Reporting](https://www.radai.com/omni-reporting) platform, with [FHIRcast support](/docs/fhircast) through Medplum’s open source FHIRcast hub.
 

@@ -9,6 +9,7 @@ import {
   OperationOutcomeError,
   Operator,
   ProfileResource,
+  resolveId,
 } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
@@ -160,6 +161,7 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
   const systemRepo = getSystemRepo();
   return systemRepo.createResource<User>({
     resourceType: 'User',
+    meta: project ? { project: resolveId(project) } : undefined,
     firstName,
     lastName,
     email,

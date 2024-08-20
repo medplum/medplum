@@ -1,15 +1,13 @@
 ---
 slug: codex-and-the-power-of-g10
 title: Power of g10 - Codex Case Study
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [interop, fhir-datastore, compliance, case-study]
 ---
 
 [Codex Health](https://www.codex.health/) enables health systems manage their patient populations with effective remote patient monitoring (RPM) programs for diabetes, cardiovascular diseases and more.
+
+<!-- truncate -->
 
 Their offering has a **patient facing** experience, a **provider experience** and **EHR integrations** with Epic, Cerner and others.
 

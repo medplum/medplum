@@ -1,11 +1,7 @@
 ---
 slug: task-management-apps
 title: Task Management Apps
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [react, fhir-datastore]
 ---
 
@@ -16,6 +12,8 @@ Great workflow apps are core for us at Medplum, and we provide tools to build **
 - Review and approve lab reports
 - Approve or reject medication refill requests
 - Instantiate custom care plans for a patient
+
+<!-- truncate -->
 
 Medical systems in general and FHIR in specific have robust workflow resources to create, track and implement workflows. [Tasks](/docs/api/fhir/resources/task) and [ServiceRequests](/docs/api/fhir/resources/servicerequest) are the most common workflow resources for asynchronous work.
 

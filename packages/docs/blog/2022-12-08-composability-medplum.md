@@ -1,17 +1,15 @@
 ---
 slug: composability-medplum
 title: Composability, Open Source, Standards, API-First
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [integration]
 ---
 
 ![Composability venn diagram](/img/blog/composability-venn-diagram.png)
 
 Composability is the ability of different components or systems to be combined and work together seamlessly. This allows developers to build on existing open source software to create new applications and solutions that meet their specific needs.
+
+<!-- truncate -->
 
 As a software engineer, when a system you are using supports enables composability you have this visceral feeling that you are moving fast, and you feel powerful. Ideally, you also feel a sense of confidence and safety, that the application you are building is going to work as expected.
 

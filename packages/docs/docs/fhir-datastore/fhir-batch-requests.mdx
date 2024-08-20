@@ -1,6 +1,6 @@
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Tabs from '@theme/Tabs';
 
 import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/fhir-batch-requests.ts';
 
@@ -26,7 +26,7 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 | `request.method`      | The type of HTTP request you are making. Can be one of the following: <ul><li>GET: Read a resource or perform a search</li><li>POST: Create a resource</li><li>PUT: Update a resource</li><li>DELETE: Delete a resource</li></ul> |
 | `request.ifNoneExist` | [See below](#conditional-batch-actions)                                                                                                                                                                                           |
 | `resource`            | The details of the FHIR resource that is being created/updated.                                                                                                                                                                   |
-| `fullUrl`             | [See below](#creating-internal-references)                                                                                                                                                                                        |
+| `fullUrl`             | [See below](#internal-references)                                                                                                                                                                                                 |
 
 <details>
   <summary>Example: A simple batch request to simultaneously search for two patients</summary>

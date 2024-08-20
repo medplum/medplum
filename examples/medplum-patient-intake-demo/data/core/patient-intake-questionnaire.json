@@ -3,107 +3,6 @@
   "type": "transaction",
   "entry": [
     {
-      "fullUrl": "urn:uuid:97139871-af48-46af-a8b4-ed16fa8b6b6f",
-      "request": {
-        "method": "PUT",
-        "url": "ValueSet?name=pregnancy-status-codes"
-      },
-      "resource": {
-        "resourceType": "ValueSet",
-        "status": "active",
-        "url": "http://example.com/pregnancy-status",
-        "name": "pregnancy-status-codes",
-        "title": "Pregnancy Status Codes",
-        "description": "These codes are used to indicate pregnancy status.",
-        "compose": {
-          "include": [
-            {
-              "system": "http://snomed.info/sct",
-              "concept": [
-                {
-                  "code": "146799005",
-                  "display": "Possible pregnancy"
-                },
-                {
-                  "code": "60001007",
-                  "display": "Not pregnant (finding)"
-                },
-                {
-                  "code": "77386006",
-                  "display": "Pregnancy"
-                }
-              ]
-            },
-            {
-              "system": "http://terminology.hl7.org/CodeSystem/v3-NullFlavor",
-              "concept": [
-                {
-                  "code": "UNK",
-                  "display": "Unknown"
-                }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    {
-      "fullUrl": "urn:uuid:183a569a-7f6d-41f9-97d8-57691fbc2876",
-      "request": {
-        "method": "PUT",
-        "url": "ValueSet?name=smoking-status-codes"
-      },
-      "resource": {
-        "resourceType": "ValueSet",
-        "status": "active",
-        "url": "http://example.com/smoking-status",
-        "name": "smoking-status-codes",
-        "title": "Smoking Status Codes",
-        "description": "These codes are used to indicate smoking status.",
-        "compose": {
-          "include": [
-            {
-              "system": "http://snomed.info/sct",
-              "concept": [
-                {
-                  "code": "266919005",
-                  "display": "Never smoked tobacco"
-                },
-                {
-                  "code": "266927001",
-                  "display": "Tobacco smoking consumption unknown"
-                },
-                {
-                  "code": "428041000124106",
-                  "display": "Occasional tobacco smoker"
-                },
-                {
-                  "code": "428061000124105",
-                  "display": "Light tobacco smoker"
-                },
-                {
-                  "code": "428071000124103",
-                  "display": "Heavy tobacco smoker"
-                },
-                {
-                  "code": "449868002",
-                  "display": "Smokes tobacco daily"
-                },
-                {
-                  "code": "77176002",
-                  "display": "Smoker"
-                },
-                {
-                  "code": "8517006",
-                  "display": "Ex-smoker"
-                }
-              ]
-            }
-          ]
-        }
-      }
-    },
-    {
       "fullUrl": "urn:uuid:f508b2b8-b796-4931-ac92-de3817d71fc1",
       "request": {
         "method": "PUT",
@@ -114,7 +13,6 @@
         "status": "active",
         "title": "Patient Intake Questionnaire",
         "name": "patient-intake",
-        "subjectType": ["Patient"],
         "item": [
           {
             "linkId": "patient-demographics",
@@ -124,7 +22,8 @@
               {
                 "linkId": "first-name",
                 "text": "First Name",
-                "type": "string"
+                "type": "string",
+                "required": true
               },
               {
                 "linkId": "middle-name",
@@ -134,7 +33,8 @@
               {
                 "linkId": "last-name",
                 "text": "Last Name",
-                "type": "string"
+                "type": "string",
+                "required": true
               },
               {
                 "linkId": "dob",
@@ -170,7 +70,8 @@
               {
                 "linkId": "ssn",
                 "text": "Social Security Number",
-                "type": "string"
+                "type": "string",
+                "required": true
               },
               {
                 "linkId": "race",
@@ -242,12 +143,6 @@
                 "linkId": "allergy-reaction",
                 "text": "Reaction",
                 "type": "string"
-              },
-              {
-                "linkId": "allergy-clinical-status",
-                "text": "Clinical Status",
-                "type": "choice",
-                "answerValueSet": "http://hl7.org/fhir/ValueSet/allergyintolerance-clinical"
               },
               {
                 "linkId": "allergy-onset",
@@ -388,7 +283,7 @@
                 "linkId": "smoking-status",
                 "text": "Smoking Status",
                 "type": "choice",
-                "answerValueSet": "http://example.com/smoking-status"
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.11.20.9.38"
               },
               {
                 "linkId": "veteran-status",
