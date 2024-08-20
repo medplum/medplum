@@ -34,7 +34,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
 
   // If a patient is provided, remove the patient question from the questionnaire
   if (patient) {
-    appointmentQuestionnaire.item = appointmentQuestionnaire.item?.filter((i) => i.linkId !== 'patient');
+    createAppointmentQuestionnaire.item = createAppointmentQuestionnaire.item?.filter((i) => i.linkId !== 'patient');
   }
 
   async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
@@ -88,12 +88,12 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
 
   return (
     <Modal opened={opened} onClose={handlers.close}>
-      <QuestionnaireForm questionnaire={appointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
+      <QuestionnaireForm questionnaire={createAppointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>
   );
 }
 
-const appointmentQuestionnaire: Questionnaire = {
+const createAppointmentQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   status: 'active',
   title: 'Create an Appointment',

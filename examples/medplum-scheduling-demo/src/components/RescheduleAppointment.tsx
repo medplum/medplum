@@ -65,12 +65,12 @@ export function RescheduleAppointment(props: RescheduleAppointmentProps): JSX.El
   return (
     <Modal opened={opened} onClose={handlers.close}>
       <p>Reschedule Appointment</p>
-      <QuestionnaireForm questionnaire={rescheduleQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
+      <QuestionnaireForm questionnaire={rescheduleAppointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>
   );
 }
 
-const rescheduleQuestionnaire: Questionnaire = {
+const rescheduleAppointmentQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   id: 'reschedule-appointment',
   title: 'Reschedule Appointment',

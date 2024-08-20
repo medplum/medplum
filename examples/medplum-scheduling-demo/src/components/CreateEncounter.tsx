@@ -89,12 +89,12 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
 
 const createEncounterQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
-  id: 'create-encounter',
+  id: 'new-encounter',
   title: 'Create Encounter',
   status: 'active',
   item: [
     {
-      linkId: 'create-encounter',
+      linkId: 'info-note',
       type: 'display',
       text:
         "By submitting the form, the appointment status will be set to 'fulfilled' and " +

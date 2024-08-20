@@ -69,11 +69,11 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
     handlers.close();
   }
 
-  const appointmentQuestionnaire: Questionnaire = {
+  const slotQuestionnaire: Questionnaire = {
     resourceType: 'Questionnaire',
     status: 'active',
     title: editingSlot ? 'Update Slot' : 'Create a Slot',
-    id: 'new-appointment',
+    id: 'new-slot',
     item: [
       {
         linkId: 'start-date',
@@ -94,7 +94,7 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
 
   // If creating a Slot add a field to select the status
   if (!editingSlot) {
-    (appointmentQuestionnaire.item as QuestionnaireItem[]).unshift({
+    (slotQuestionnaire.item as QuestionnaireItem[]).unshift({
       linkId: 'status',
       type: 'choice',
       answerOption: [
@@ -109,7 +109,7 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
   return (
     <Modal opened={opened} onClose={handlers.close}>
       <QuestionnaireForm
-        questionnaire={appointmentQuestionnaire}
+        questionnaire={slotQuestionnaire}
         subject={createReference(schedule)}
         onSubmit={handleQuestionnaireSubmit}
       />
