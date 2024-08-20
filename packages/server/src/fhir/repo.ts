@@ -901,7 +901,13 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < resources.length; i++) {
       resource = resources[i];
-      (resource.meta as Meta).compartment = this.getCompartments(resource);
+      const meta = resource.meta as Meta;
+      meta.compartment = this.getCompartments(resource);
+
+      if (!meta.project) {
+        const projectRef = meta.compartment.find((r) => r.reference?.startsWith('Project/'));
+        meta.project = resolveId(projectRef);
+      }
 
       await this.writeLookupTables(conn, resource, false);
     }

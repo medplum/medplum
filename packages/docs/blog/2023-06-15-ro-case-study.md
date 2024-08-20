@@ -1,17 +1,15 @@
 ---
 slug: ro-case-study
 title: At Home Diagnostics - Ro Case Study
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [interop, fhir-datastore, compliance, case-study]
 ---
 
 # Ro Case Study: At Home Lab Diagnostics
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/q-22Y7Ox2jY?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
+<!-- truncate -->
 
 ## Introduction
 

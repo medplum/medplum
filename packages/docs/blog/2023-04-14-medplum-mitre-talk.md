@@ -1,17 +1,15 @@
 ---
 slug: medplum-mitre-talk
 title: Medplum Talk at MITRE OHS
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [interop, fhir-datastore]
 ---
 
 # Medplum Talk at MITRE
 
 [MITRE](https://www.mitre.org/) Open Health Solutions is a leader in healthcare open source and are the makers of [Inferno](https://inferno.healthit.gov/), [Synthea](https://synthea.mitre.org/) and more - which are tools we use all the time here.
+
+<!-- truncate -->
 
 Medplum gave a talk at MITRE last fall, that was [recently released](https://youtu.be/D_S7EKe-S5E), and this post contains an annotated transcript and clips, as well as some updates as the talk was last fall, shortly after Medplum's public launch. Transcript has been lightly edited for clarity.
 
