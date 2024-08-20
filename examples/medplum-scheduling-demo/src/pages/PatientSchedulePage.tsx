@@ -58,6 +58,7 @@ export function PatientSchedulePage(): JSX.Element {
         localizer={dayjsLocalizer(dayjs)}
         backgroundEvents={slotEvents} // Background events don't show in the month view
         onSelectEvent={handleSelectEvent}
+        scrollToTime={new Date()} // Scroll to current time
         style={{ height: 600 }}
       />
 

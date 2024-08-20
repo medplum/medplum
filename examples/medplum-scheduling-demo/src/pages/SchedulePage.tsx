@@ -86,6 +86,7 @@ export function SchedulePage(): JSX.Element {
         backgroundEvents={slotEvents} // Background events don't show in the month view
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectEvent}
+        scrollToTime={new Date()} // Scroll to current time
         style={{ height: 600 }}
         selectable
       />
