@@ -47,8 +47,7 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
     user: config.username,
     password: config.password,
     ssl: config.ssl,
-    max: config.maxThreads ?? 100,
-    min: config.minThreads,
+    max: config.maxConnections ?? 100
   };
 
   if (proxyEndpoint) {
