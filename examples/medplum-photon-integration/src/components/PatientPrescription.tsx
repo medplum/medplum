@@ -79,7 +79,10 @@ export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.
         <Button onClick={testConnection}>Test Connection</Button>
       </Group>
       {syncDisabled ? (
-        <photon-prescribe-workflow patient-id={patientPhotonId} />
+        <div>
+          <photon-prescribe-workflow patient-id={patientPhotonId} />
+          <photon-med-history patient-id={patientPhotonId} />
+        </div>
       ) : (
         <Center>
           <Stack>
