@@ -1,17 +1,15 @@
 ---
 slug: onc-b10-certification-medplum
 title: ONC Certified for (b)(10)
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [fhir-datastore, compliance]
 ---
 
 # Announcing ONC (b)(10) Certification for Medplum
 
 The Medplum team is pleased to announce that we have certified the [(b)(10) ONC Criteria](https://www.healthit.gov/test-method/electronic-health-information-export) - Electronic Health Information Export.
+
+<!-- truncate -->
 
 To see details related to our certification please check out our [ONC Certification](/docs/compliance/onc) page.
 

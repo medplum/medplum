@@ -1,19 +1,17 @@
 ---
 slug: demystifying-fhir-systems
 title: Demystifying FHIR Systems
-authors:
-  name: Rahul Agarwal
-  title: Medplum Core Team
-  url: https://github.com/rahul1
-  image_url: https://github.com/rahul1.png
+authors: rahul
 tags: [fhir-datastore]
 ---
 
-import CodeBlock from '@theme/CodeBlock'
+import CodeBlock from '@theme/CodeBlock';
 
 One of the main sources of confusion when starting an implementation is with FHIR system strings.
 
 This field is ubiquitous across FHIR elements, but many developers who are new to healthcare don't understand its purpose or how to set it properly. They are used in even the most basic implementations, and even the [sample data](/docs/tutorials/importing-sample-data) we provide for prototyping has many `system` identifiers.
+
+{/* truncate */}
 
 So today, we're going to delve into `system` strings to understand what they're for and how to use them!
 
@@ -31,44 +29,52 @@ To avert any name collisions, each [`Identifier`](/docs/fhir-basics#naming-data-
 Let's look at an example. Say we have two patients, Alice and Bob, who have both visited Hospital 1 and Hospital 2. They have the following medical record numbers:
 
 <table>
-    <thead>
-        <tr>
-            <th>Alice</th>
-            <th>Bob</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-                <table>
-                    <tbody>
-                        <tr>
-                            <td><em>Hospital 1</em></td>
-                            <td>12345</td>
-                        </tr>
-                        <tr>
-                            <td><em>Hospital 2</em></td>
-                            <td>98760</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </td>
-            <td>
-                <table>
-                    <tbody>
-                        <tr>
-                            <td><em>Hospital 1</em></td>
-                            <td>98760</td>
-                        </tr>
-                        <tr>
-                            <td><em>Hospital 2</em></td>
-                            <td>12345</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </td>
-        </tr>
-    </tbody>
+  <thead>
+    <tr>
+      <th>Alice</th>
+      <th>Bob</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <table>
+          <tbody>
+            <tr>
+              <td>
+                <em>Hospital 1</em>
+              </td>
+              <td>12345</td>
+            </tr>
+            <tr>
+              <td>
+                <em>Hospital 2</em>
+              </td>
+              <td>98760</td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+      <td>
+        <table>
+          <tbody>
+            <tr>
+              <td>
+                <em>Hospital 1</em>
+              </td>
+              <td>98760</td>
+            </tr>
+            <tr>
+              <td>
+                <em>Hospital 2</em>
+              </td>
+              <td>12345</td>
+            </tr>
+          </tbody>
+        </table>
+      </td>
+    </tr>
+  </tbody>
 </table>
 
 Simply searching for the patient with record number "12345" would cause confusion.
@@ -80,17 +86,17 @@ GET [base]/Patient?identifier=12345
 The system string is our guiding light here. It allows us to clarify which identifier comes from each hosptial.
 
 <table>
-    <thead>
-        <tr>
-            <th>Alice</th>
-            <th>Bob</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-                <CodeBlock language="js">
-{`{
+  <thead>
+    <tr>
+      <th>Alice</th>
+      <th>Bob</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>
+        <CodeBlock language="js">
+          {`{
   "resourceType": "Patient",
   "name": [{"given": ["Alice"]}],
   "identifier": [
@@ -106,11 +112,11 @@ The system string is our guiding light here. It allows us to clarify which ident
     }
   ]
 }`}
-            	</CodeBlock>
-            </td>
-            <td>
-                <CodeBlock language="js">
-            		{`{
+        </CodeBlock>
+      </td>
+      <td>
+        <CodeBlock language="js">
+          {`{
   "resourceType": "Patient",
   "name": [{"given": ["Bob"]}],
   "identifier": [
@@ -126,10 +132,10 @@ The system string is our guiding light here. It allows us to clarify which ident
     }
   ]
 }`}
-            	</CodeBlock>
-            </td>
-        </tr>
-    </tbody>
+        </CodeBlock>
+      </td>
+    </tr>
+  </tbody>
 </table>
 
 Now if we add the system string to our search, we can do a targeted query for Bob.
