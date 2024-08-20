@@ -3,6 +3,7 @@ import {
   allOk,
   badRequest,
   forbidden,
+  getResourceTypes,
   OperationOutcomeError,
   parseSearchRequest,
   SearchRequest,
