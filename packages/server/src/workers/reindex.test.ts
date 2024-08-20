@@ -286,6 +286,7 @@ describe('Reindex Worker', () => {
         'ReindexJobData',
         expect.objectContaining<Partial<ReindexJobData>>({
           resourceTypes: ['Binary', 'DiagnosticReport'],
+          cursor: undefined,
           count: 0,
         })
       );
@@ -321,6 +322,7 @@ describe('Reindex Worker', () => {
         'ReindexJobData',
         expect.objectContaining<Partial<ReindexJobData>>({
           resourceTypes: ['DiagnosticReport'],
+          cursor: undefined,
           count: 0,
         })
       );
