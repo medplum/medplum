@@ -51,7 +51,7 @@
       "fullUrl": "urn:uuid:6abaa6c8-d822-46a4-b3a2-70639475e5ae",
       "request": {
         "method": "POST",
-        "url": "ValueSet?name=us-core-usps-state",
+        "url": "ValueSet",
         "ifNoneExist": "url=http://hl7.org/fhir/us/core/ValueSet/us-core-usps-state"
       },
       "resource": {
@@ -143,7 +143,7 @@
       "fullUrl": "urn:uuid:183a569a-7f6d-41f9-97d8-57691fbc2876",
       "request": {
         "method": "POST",
-        "url": "ValueSet?name=smoking-status",
+        "url": "ValueSet",
         "ifNoneExist": "url=http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113883.11.20.9.38"
       },
       "resource": {
