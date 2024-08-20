@@ -80,7 +80,7 @@ export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.
       </Group>
       {syncDisabled ? (
         <div>
-          <photon-prescribe-workflow patient-id={patientPhotonId} />
+          <photon-prescribe-workflow patient-id={patientPhotonId} enable-order="true" />
           <photon-med-history patient-id={patientPhotonId} />
         </div>
       ) : (
