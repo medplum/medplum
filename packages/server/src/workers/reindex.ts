@@ -1,5 +1,5 @@
 import { SearchRequest, Operator, normalizeErrorString, parseSearchRequest } from '@medplum/core';
-import { ResourceType, Resource, AsyncJob, Parameters } from '@medplum/fhirtypes';
+import { ResourceType, Resource, AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import { Queue, QueueBaseOptions, Job, Worker } from 'bullmq';
 import { MedplumServerConfig } from '../config';
 import { getRequestContext, tryRunInRequestContext } from '../context';
@@ -25,7 +25,9 @@ export type ReindexJobData = {
   readonly traceId?: string;
 };
 
-type ReindexResult = { count: number; cursor: string; err?: Error } | { count: number; duration: number };
+type ReindexResult =
+  | { count: number; cursor: string; nextTimestamp: string; err?: Error }
+  | { count: number; duration: number };
 
 const queueName = 'ReindexQueue';
 const jobName = 'ReindexJobData';
@@ -150,6 +152,7 @@ async function processPage(job: Job<ReindexJobData>): Promise<ReindexResult> {
   const searchRequest = searchRequestForNextPage(job);
   let newCount = count ?? 0;
   let cursor = '';
+  let nextTimestamp = new Date(0).toISOString();
   try {
     const systemRepo = getSystemRepo();
     await systemRepo.withTransaction(async (conn) => {
@@ -158,6 +161,7 @@ async function processPage(job: Job<ReindexJobData>): Promise<ReindexResult> {
         const resources = bundle.entry.map((e) => e.resource as Resource);
         await systemRepo.reindexResources(conn, resources);
         newCount += resources.length;
+        nextTimestamp = bundle.entry[bundle.entry.length - 1].resource?.meta?.lastUpdated ?? nextTimestamp;
       }
 
       const nextLink = bundle.link?.find((link) => link.relation === 'next');
@@ -166,11 +170,11 @@ async function processPage(job: Job<ReindexJobData>): Promise<ReindexResult> {
       }
     });
   } catch (err: any) {
-    return { count: newCount, cursor, err };
+    return { count: newCount, cursor, nextTimestamp, err };
   }
 
   if (cursor) {
-    return { cursor, count: newCount };
+    return { cursor, count: newCount, nextTimestamp };
   } else if (resourceTypes.length > 1) {
     // Completed reindex for this resource type
     const elapsedTime = Date.now() - job.data.startTime;
@@ -238,12 +242,12 @@ function formatResults(results: ReindexJobData['results']): Parameters {
       if ('err' in result && result.err) {
         // Resource types that encountered an error report the error,
         // and a timestamp to allow restarting from previous checkpoint
-        const parts = [
+        const parts: ParametersParameter[] = [
           { name: 'resourceType', valueCode: resourceType },
           { name: 'error', valueString: normalizeErrorString(result.err) },
         ];
-        if (result.cursor) {
-          parts.push({ name: 'cursor', valueString: result.cursor });
+        if (result.nextTimestamp) {
+          parts.push({ name: 'nextTimestamp', valueDateTime: result.nextTimestamp });
         }
         return {
           name: 'result',
@@ -255,7 +259,7 @@ function formatResults(results: ReindexJobData['results']): Parameters {
           name: 'result',
           part: [
             { name: 'resourceType', valueCode: resourceType },
-            { name: 'cursor', valueString: result.cursor },
+            { name: 'nextTimestamp', valueDateTime: result.nextTimestamp },
           ],
         };
       } else {
