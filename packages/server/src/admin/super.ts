@@ -3,7 +3,6 @@ import {
   allOk,
   badRequest,
   forbidden,
-  getResourceTypes,
   OperationOutcomeError,
   parseSearchRequest,
   SearchRequest,
@@ -175,25 +174,6 @@ superAdminRouter.post(
     await removeBullMQJobByKey(req.body.botId);
 
     sendOutcome(res, allOk);
-  })
-);
-
-// POST to /admin/super/rebuildprojectid
-// to rebuild the projectId column on all resource types.
-superAdminRouter.post(
-  '/rebuildprojectid',
-  asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
-    requireAsync(req);
-
-    await sendAsyncResponse(req, res, async () => {
-      const resourceTypes = getResourceTypes();
-      for (const resourceType of resourceTypes) {
-        await getDatabasePool(DatabaseMode.WRITER).query(
-          `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
-        );
-      }
-    });
   })
 );
 

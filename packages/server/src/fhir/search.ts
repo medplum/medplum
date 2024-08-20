@@ -987,10 +987,16 @@ function trySpecialSearchParameter(
     case '_lastUpdated':
       return buildDateSearchFilter(table, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
     case '_compartment':
-    case '_project':
       return buildIdSearchFilter(
         table,
         { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
+        filter.operator,
+        splitSearchOnComma(filter.value)
+      );
+    case '_project':
+      return buildIdSearchFilter(
+        table,
+        { columnName: 'projectId', type: SearchParameterType.UUID },
         filter.operator,
         splitSearchOnComma(filter.value)
       );

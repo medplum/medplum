@@ -1145,7 +1145,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    */
   private addProjectFilters(builder: SelectQuery): void {
     if (this.context.projects?.length) {
-      builder.where('compartments', 'ARRAY_CONTAINS', this.context.projects, 'UUID[]');
+      builder.where('projectId', 'IN', this.context.projects);
     }
   }
 
