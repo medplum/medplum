@@ -100,13 +100,11 @@ Note: While cursor-based pagination requires sorting by `_lastUpdated` ascending
 GET /Observation?code=xyz&_sort=_lastUpdated&_cursor=abc123xyz
 ```
 
-In this guide, we will explain how to perform paginated search queries using the FHIR specification. Specifically, we will discuss using the `_count` parameter to set the page size, the `_offset` parameter to set the page offset, and the `Bundle.link` field to retrieve subsequent pages.
+## Alway sort when paginating
 
-:::caution Reminder
+When paginating through search results, it is essential to sort the results to ensure consistent output across pages. If you don't sort the results, you may see different resources on each page, which can lead to unexpected behavior.
 
-To get consistent output across pages, always remember to provide a `_sort` parameter to your paginated search. See ["Sorting the Results"](/docs/search/basic-search#sorting-the-results) for more info.
-
-:::
+See ["Sorting the Results"](/docs/search/basic-search#sorting-the-results) for more info.
 
 ## Setting the page size with the `_count` parameter
 
@@ -225,7 +223,7 @@ To navigate between pages, simply follow the URLs provided in the `Bundle.link` 
 
 The URLs in the `Bundle.link` will opportunistically use `_cursor` pagination if compatible with the search query (see [Cursor-based pagination limitations](#cursor-based-pagination)). If `_cursor` is not compatible, the URLs will use `_offset` pagination.
 
-It is strongly recommended to use the `Bundle.link` field to navigate between pages, as it ensures that you are following the correct pagination method for the search query.
+**It is strongly recommended to use the `Bundle.link` field to navigate between pages, as it ensures that you are following the correct pagination method for the search query.**
 
 ## Navigating pages with `searchResourcePages()`
 
@@ -236,6 +234,8 @@ The [`searchResourcePages()`](/docs/sdk/core.medplumclient.searchresourcepages) 
 </MedplumCodeBlock>
 
 The array returned by `searchResourcePages` also includes a `bundle` property that contains the original `Bundle` resource. You can use this to access bundle metadata such as `Bundle.total` and `Bundle.link`.
+
+The `searchResourcePages` method uses `Bundle.link` to navigate between pages, ensuring that you are following the correct pagination method for the search query. The URLs in the `Bundle.link` will opportunistically use `_cursor` pagination if compatible with the search query (see [Cursor-based pagination limitations](#cursor-based-pagination)). If `_cursor` is not compatible, the URLs will use `_offset` pagination.
 
 ## Setting the page offset with the `_offset` parameter
 
