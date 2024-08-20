@@ -530,6 +530,7 @@
           {
             "id": "Project.defaultProfile",
             "path": "Project.defaultProfile",
+            "definition": "Default profiles to apply to resources in this project that do not individually specify profiles",
             "min": 0,
             "max": "*",
             "type": [{"code": "BackboneElement"}],
@@ -542,6 +543,7 @@
           {
             "id": "Project.defaultProfile.resourceType",
             "path": "Project.defaultProfile.resourceType",
+            "definition": "The resource type onto which to apply the default profiles",
             "min": 1,
             "max": "1",
             "type": [{"code": "code"}],
@@ -558,6 +560,7 @@
           {
             "id": "Project.defaultProfile.profile",
             "path": "Project.defaultProfile.profile",
+            "definition": "The profiles to add by default",
             "min": 1,
             "max": "*",
             "type": [{

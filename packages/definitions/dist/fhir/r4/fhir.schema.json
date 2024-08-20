@@ -59401,7 +59401,7 @@
           "type": "array"
         },
         "defaultProfile": {
-          "description": "",
+          "description": "Default profiles to apply to resources in this project that do not individually specify profiles",
           "items": {
             "$ref": "#/definitions/ProjectDefaultProfile"
           },

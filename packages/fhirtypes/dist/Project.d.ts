@@ -178,13 +178,27 @@ export interface Project {
    */
   link?: ProjectLink[];
 
+  /**
+   * Default profiles to apply to resources in this project that do not
+   * individually specify profiles
+   */
   defaultProfile?: ProjectDefaultProfile[];
 }
 
+/**
+ * Default profiles to apply to resources in this project that do not
+ * individually specify profiles
+ */
 export interface ProjectDefaultProfile {
 
+  /**
+   * The resource type onto which to apply the default profiles
+   */
   resourceType: ResourceType;
 
+  /**
+   * The profiles to add by default
+   */
   profile: string[];
 }
 
