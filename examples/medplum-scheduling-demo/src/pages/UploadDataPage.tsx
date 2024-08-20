@@ -130,7 +130,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
 }
 
 function checkBotsUploaded(medplum: MedplumClient): boolean {
-  const exampleBots = medplum.searchResources('Bot', { name: 'appointments' }).read();
+  const exampleBots = medplum.searchResources('Bot', { name: 'book-appointment' }).read();
 
   if (exampleBots.length === 1) {
     return true;
