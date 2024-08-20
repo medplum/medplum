@@ -59399,6 +59399,13 @@
             "$ref": "#/definitions/ProjectLink"
           },
           "type": "array"
+        },
+        "defaultProfile": {
+          "description": "",
+          "items": {
+            "$ref": "#/definitions/ProjectDefaultProfile"
+          },
+          "type": "array"
         }
       },
       "additionalProperties": false,

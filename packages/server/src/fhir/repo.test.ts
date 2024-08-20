@@ -1080,6 +1080,40 @@ describe('FHIR Repo', () => {
       await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
     }));
 
+  test('Project default profiles', async () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: {
+          defaultProfile: [
+            { resourceType: 'Observation', profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'] },
+          ],
+        },
+      });
+
+      const observation: Observation = {
+        resourceType: 'Observation',
+        status: 'final',
+        category: [
+          { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
+        ],
+        code: { text: 'Strep test' },
+        effectiveDateTime: '2024-02-13T14:34:56Z',
+        valueBoolean: true,
+      };
+
+      await expect(systemRepo.createResource(observation)).resolves.toBeDefined();
+      await expect(repo.createResource(observation)).rejects.toThrow('Missing required property (Observation.subject)');
+
+      observation.subject = { identifier: { value: randomUUID() } };
+      await expect(repo.createResource(observation)).resolves.toMatchObject<Partial<Observation>>({
+        meta: expect.objectContaining({
+          profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'],
+        }),
+      });
+    }));
+
   test('setTypedValue', () => {
     const patient: Patient = {
       resourceType: 'Patient',

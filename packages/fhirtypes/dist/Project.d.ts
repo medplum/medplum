@@ -10,6 +10,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { ResourceType } from './ResourceType';
 import { User } from './User';
 
 /**
@@ -176,6 +177,15 @@ export interface Project {
    * Linked Projects whose contents are made available to this one
    */
   link?: ProjectLink[];
+
+  defaultProfile?: ProjectDefaultProfile[];
+}
+
+export interface ProjectDefaultProfile {
+
+  resourceType: ResourceType;
+
+  profile: string[];
 }
 
 /**

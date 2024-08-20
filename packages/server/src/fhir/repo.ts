@@ -576,6 +576,15 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
+
+    // Add default profiles before validating resource
+    if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
+      const defaultProfiles = this.currentProject()?.defaultProfile?.find(
+        (o) => o.resourceType === resourceType
+      )?.profile;
+      resource.meta = { ...resource.meta, profile: defaultProfiles };
+    }
+
     await this.validateResource(resource);
 
     if (!this.canWriteResourceType(resourceType)) {

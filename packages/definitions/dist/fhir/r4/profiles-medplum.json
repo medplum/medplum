@@ -526,6 +526,49 @@
               "min": 1,
               "max": "1"
             }
+          },
+          {
+            "id": "Project.defaultProfile",
+            "path": "Project.defaultProfile",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "BackboneElement"}],
+            "base": {
+              "path": "Project.defaultProfile",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Project.defaultProfile.resourceType",
+            "path": "Project.defaultProfile.resourceType",
+            "min": 1,
+            "max": "1",
+            "type": [{"code": "code"}],
+            "base": {
+              "path": "Project.defaultProfile.resourceType",
+              "min": 1,
+              "max": "1"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "http://hl7.org/fhir/ValueSet/resource-types"
+            }
+          },
+          {
+            "id": "Project.defaultProfile.profile",
+            "path": "Project.defaultProfile.profile",
+            "min": 1,
+            "max": "*",
+            "type": [{
+              "code" : "canonical",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
+            }],
+            "base": {
+              "path": "Project.defaultProfile.profile",
+              "min": 1,
+              "max": "*"
+            }
           }
         ]
       }
