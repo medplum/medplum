@@ -21983,8 +21983,8 @@
         {
           "id" : "Meta.account",
           "path" : "Meta.account",
-          "short" : "@deprecated Use Meta.compartment instead",
-          "definition" : "Optional account reference that can be used for sub-project compartments.",
+          "short" : "Optional account reference that can be used for sub-project compartments.",
+          "definition" : "@deprecated Use Meta.compartment instead",
           "comment" : "Optional account reference that can be used for sub-project compartments.",
           "min" : 0,
           "max" : "1",
