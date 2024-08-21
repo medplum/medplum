@@ -1303,7 +1303,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (resource.meta?.compartment?.length) {
       for (const compartment of resource.meta.compartment) {
         const id = resolveId(compartment);
-        if (id && validator.isUUID(id)) {
+        if (id && validator.isUUID(id) && !compartment.reference?.startsWith('Project/')) {
           compartments.add(compartment.reference as string);
         }
       }
