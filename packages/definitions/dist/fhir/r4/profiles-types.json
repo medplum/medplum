@@ -21983,7 +21983,7 @@
         {
           "id" : "Meta.account",
           "path" : "Meta.account",
-          "short" : "Optional account reference that can be used for sub-project compartments.",
+          "short" : "@deprecated Use Meta.compartment instead",
           "definition" : "Optional account reference that can be used for sub-project compartments.",
           "comment" : "Optional account reference that can be used for sub-project compartments.",
           "min" : 0,
@@ -22000,9 +22000,9 @@
         {
           "id" : "Meta.compartment",
           "path" : "Meta.compartment",
-          "short" : "The list of compartments containing this resource. This is readonly and is set by the server.",
-          "definition" : "The list of compartments containing this resource. This is readonly and is set by the server.",
-          "comment" : "The list of compartments containing this resource. This is readonly and is set by the server.",
+          "short" : "The list of compartments containing this resource",
+          "definition" : "The list of compartments containing this resource",
+          "comment" : "The list of compartments containing this resource",
           "min" : 0,
           "max" : "*",
           "base" : {

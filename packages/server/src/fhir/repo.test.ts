@@ -9,6 +9,7 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
+  parseSearchRequest,
   preconditionFailed,
   toTypedValue,
 } from '@medplum/core';
@@ -1078,6 +1079,25 @@ describe('FHIR Repo', () => {
         ],
       };
       await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
+    }));
+
+  test('Allows adding compartments', async () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({ withRepo: true });
+      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      const practitionerReference = createReference(practitioner);
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { compartment: [practitionerReference] },
+      });
+      expect(patient.meta?.compartment).toContainEqual(practitionerReference);
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+
+      const results = await repo.searchResources(
+        parseSearchRequest('Patient?_compartment=' + getReferenceString(practitioner))
+      );
+      expect(results).toHaveLength(1);
     }));
 
   test('setTypedValue', () => {
