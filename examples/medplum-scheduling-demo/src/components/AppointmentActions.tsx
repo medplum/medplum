@@ -40,19 +40,16 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
     return <Loading />;
   }
 
-  // Handler for completing or cancelling the appointment
-  async function handleChangeStatus(newStatus: Appointment['status']): Promise<void> {
+  async function handleCancelAppointment(): Promise<void> {
     try {
-      await medplum.updateResource({
-        ...appointment,
-        status: newStatus,
-      });
+      // Call the cancel-appointment bot
+      await medplum.executeBot({ system: 'http://example.com', value: 'cancel-appointment' }, appointment);
 
-      navigate(`/Appointment/${appointment.id}/details`);
+      navigate('/Appointment/upcoming');
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
-        message: 'Appointment status updated',
+        message: 'Appointment cancelled',
       });
     } catch (err) {
       showNotification({
@@ -90,7 +87,7 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
       ) : null}
       {/* Only show "Cancel" if not already cancelled */}
       {appointment.status !== 'cancelled' ? (
-        <Button leftSection={<IconCancel size={16} />} onClick={() => handleChangeStatus('cancelled')}>
+        <Button leftSection={<IconCancel size={16} />} onClick={() => handleCancelAppointment()}>
           Cancel
         </Button>
       ) : null}
