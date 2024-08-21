@@ -65,6 +65,9 @@ import {
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
+  unauthorized,
+  unauthorizedTokenAudience,
+  unauthorizedTokenExpired,
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
@@ -3358,7 +3361,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (this.onUnauthenticated) {
       this.onUnauthenticated();
     }
-    return Promise.reject(new UnauthenticatedError());
+    return Promise.reject(new OperationOutcomeError(unauthorized));
   }
 
   /**
@@ -3766,18 +3769,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
       if (Date.now() >= (tokenPayload.exp as number) * 1000) {
         this.clearActiveLogin();
-        throw new TokenExpiredError();
+        throw new OperationOutcomeError(unauthorizedTokenExpired);
       }
 
       // Verify app_client_id
       if (tokenPayload.cid) {
         if (tokenPayload.cid !== this.clientId) {
           this.clearActiveLogin();
-          throw new TokenAudienceError();
+          throw new OperationOutcomeError(unauthorizedTokenAudience);
         }
       } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
         this.clearActiveLogin();
-        throw new TokenAudienceError();
+        throw new OperationOutcomeError(unauthorizedTokenAudience);
       }
     }
 
@@ -4026,22 +4029,4 @@ export function normalizeCreatePdfOptions(
     tableLayouts: arg3,
     fonts: arg4,
   };
-}
-
-export class UnauthenticatedError extends Error {
-  constructor() {
-    super('Unauthenticated');
-  }
-}
-
-export class TokenExpiredError extends Error {
-  constructor() {
-    super('Token expired');
-  }
-}
-
-export class TokenAudienceError extends Error {
-  constructor() {
-    super('Token was not issued for this audience');
-  }
 }
