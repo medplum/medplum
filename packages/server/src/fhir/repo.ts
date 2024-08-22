@@ -1313,6 +1313,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     for (const reference of compartments.values()) {
       results.push({ reference });
     }
+
+    const maxCompartments = getConfig().maxCompartments;
+    if (maxCompartments !== undefined && results.length > maxCompartments) {
+      throw new OperationOutcomeError(badRequest('Too many compartments', resource.resourceType + '.meta.compartment'));
+    }
     return results;
   }
 
