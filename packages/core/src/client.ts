@@ -97,6 +97,7 @@ const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
 const DEFAULT_BROWSER_CACHE_TIME = 60000; // 60 seconds
 const DEFAULT_NODE_CACHE_TIME = 0;
+const DEFAULT_REFRESH_GRACE_PERIOD = 300000; // 5 minutes
 const BINARY_URL_PREFIX = 'Binary/';
 
 const system: Device = {
@@ -215,6 +216,15 @@ export interface MedplumClientOptions {
    * Default value is 0, which disables auto batching.
    */
   autoBatchTime?: number;
+
+  /**
+   * The refresh grace period in milliseconds.
+   *
+   * This is the amount of time before the access token expires that the client will attempt to refresh the token.
+   *
+   * Default value is 300000 (5 minutes).
+   */
+  refreshGracePeriod?: number;
 
   /**
    * Fetch implementation.
@@ -770,6 +780,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private readonly refreshGracePeriod: number;
   private subscriptionManager?: SubscriptionManager;
   private medplumServer?: boolean;
   private clientId?: string;
@@ -807,6 +818,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
     this.onUnauthenticated = options?.onUnauthenticated;
+    this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
 
     this.cacheTime =
       options?.cacheTime ?? (typeof window === 'undefined' ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
@@ -3427,12 +3439,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * Refreshes the access token using the refresh token if available.
+   * @param gracePeriod - Optional grace period in milliseconds. If not specified, uses the client configured grace period (default 5 minutes).
    * @returns Promise to refresh the access token.
    */
-  refreshIfExpired(): Promise<void> {
+  refreshIfExpired(gracePeriod?: number): Promise<void> {
+    if (gracePeriod === undefined) {
+      gracePeriod = this.refreshGracePeriod;
+    }
     // If (1) not already refreshing, (2) we have an access token, and (3) the access token is expired,
     // then start a refresh.
-    if (!this.refreshPromise && this.accessTokenExpires !== undefined && this.accessTokenExpires < Date.now()) {
+    if (
+      !this.refreshPromise &&
+      this.accessTokenExpires !== undefined &&
+      this.accessTokenExpires < Date.now() - gracePeriod
+    ) {
       // The result of the `refresh()` function is cached in `this.refreshPromise`,
       // so we can safely ignore the return value here.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
