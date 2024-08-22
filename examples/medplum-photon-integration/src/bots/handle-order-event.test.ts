@@ -3,7 +3,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bot, Bundle, MedicationRequest, Organization, Patient, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
-import { OrderCreatedEvent, PhotonWebhook } from '../photon-types';
+import { OrderEvent, PhotonWebhook } from '../photon-types';
 import { createMedicationRequest, handler, updateMedicationRequest } from './handle-order-event';
 
 describe('Order webhooks', async () => {
@@ -71,14 +71,19 @@ describe('Order webhooks', async () => {
 
     const patient = await medplum.createResource(patientData);
 
-    const medicationRequest = await createMedicationRequest(orderCreatedEvent, medplum, authToken, patient);
+    const medicationRequest = await createMedicationRequest(
+      orderCreatedWebhook.body as OrderEvent,
+      medplum,
+      authToken,
+      patient
+    );
     console.log(medicationRequest);
     expect(medicationRequest).toBeDefined();
   });
 
   test.skip('Update medication request from order created event', async () => {
     const medplum = new MockClient();
-    const body = orderCreatedEvent;
+    const body = orderCreatedWebhook.body as OrderEvent;
     const authToken = 'example-auth-token';
     const existingRequestData: MedicationRequest = {
       resourceType: 'MedicationRequest',
@@ -146,34 +151,6 @@ describe('Order webhooks', async () => {
     expect(patchResourceSpy).not.toHaveBeenCalled();
   });
 });
-
-const exampleWebhookEvent: PhotonWebhook = {
-  method: 'POST',
-  query: {},
-  path: '/',
-  client_ip: 'example-ip',
-  url: 'https://neutron.health',
-  headers: {
-    'Content-Type': 'application/json',
-    'x-photon-signature': 'verification-test',
-    Authorization: 'Bearer EXAMPLE_TOKEN',
-  },
-  body: {
-    id: '01G8C1TNGH2F03021F23C95261',
-    type: 'photon:prescription:created',
-    specversion: 1.0,
-    datacontenttype: 'application/json',
-    time: '2022-01-01T01:00:00.000Z',
-    subject: 'rx_01G8C1TNF8TZ5N9DAJN66H9KSH',
-    source: 'org:org_KzSVZBQixLRkqj5d',
-    data: {
-      id: 'rx_01G8C1TNF8TZ5N9DAJN66H9KSH',
-      externalId: '1234',
-    },
-    fills: [],
-    createdAt: '2022-01-01T01:00:00.000Z',
-  },
-};
 
 const orderCreatedWebhook: PhotonWebhook = {
   method: 'POST',
