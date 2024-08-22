@@ -263,7 +263,7 @@ describe('Prescription webhooks', async () => {
     const medplum = new MockClient();
     await expect(() =>
       handler(medplum, {
-        input: prescriptionDepletedWebhook,
+        input: prescriptionDepletedWebhook as PhotonWebhook,
         secrets: {},
         bot,
         contentType,
@@ -273,9 +273,9 @@ describe('Prescription webhooks', async () => {
 
   test.skip('Receive a non-prescription event', async () => {
     const medplum = new MockClient();
-    await expect(() => handler(medplum, { input: orderEvent, secrets: {}, bot, contentType })).rejects.toThrow(
-      'Not a prescription event'
-    );
+    await expect(() =>
+      handler(medplum, { input: orderEvent as PhotonWebhook, secrets: {}, bot, contentType })
+    ).rejects.toThrow('Not a prescription event');
   });
 
   test.skip('Idempotency test', async () => {
@@ -293,15 +293,16 @@ describe('Prescription webhooks', async () => {
       },
     });
 
-    const idempotencyTestWebhook = {
+    const idempotencyTestWebhook: PhotonWebhook = {
       ...idempotencyWebhook,
+      method: 'POST',
     };
 
     idempotencyTestWebhook.body.data.patient.externalId = prescriber.id;
 
     await handler(medplum, {
       bot: { reference: 'Bot/123' },
-      input: idempotencyTestWebhook,
+      input: idempotencyTestWebhook as PhotonWebhook,
       contentType: 'application/json',
       secrets: {
         PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'EXAMPLE_CLIENT_ID' },
