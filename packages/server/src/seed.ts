@@ -8,6 +8,10 @@ import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
 
+/**
+ * The hardcoded ID for the base FHIR R4 Project.
+ * (161452d9-43b7-5c29-aa7b-c85680fa45c6)
+ */
 export const r4ProjectId = v5('R4', nullUuid);
 
 export async function seedDatabase(): Promise<void> {

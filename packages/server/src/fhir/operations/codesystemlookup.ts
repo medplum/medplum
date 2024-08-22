@@ -56,25 +56,34 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
     throw new OperationOutcomeError(notFound);
   }
 
-  const lookup = new SelectQuery('Coding');
+  const lookup = new SelectQuery('Coding').column('display');
   const propertyTable = lookup.getNextJoinAlias();
-  lookup.leftJoin(
+  lookup.join(
+    'LEFT JOIN',
     'Coding_Property',
     propertyTable,
     new Condition(new Column(propertyTable, 'coding'), '=', new Column('Coding', 'id'))
   );
   const csPropTable = lookup.getNextJoinAlias();
-  lookup.leftJoin(
+  lookup.join(
+    'LEFT JOIN',
     'CodeSystem_Property',
     csPropTable,
     new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropTable, 'id'))
   );
+  const target = lookup.getNextJoinAlias();
+  lookup.join(
+    'LEFT JOIN',
+    'Coding',
+    target,
+    new Condition(new Column(propertyTable, 'target'), '=', new Column(target, 'id'))
+  );
   lookup
-    .column('display')
     .column(new Column(csPropTable, 'code'))
     .column(new Column(csPropTable, 'type'))
     .column(new Column(csPropTable, 'description'))
     .column(new Column(propertyTable, 'value'))
+    .column(new Column(target, 'display', undefined, 'targetDisplay'))
     .where('code', '=', coding.code)
     .where('system', '=', codeSystem.id);
 
@@ -93,7 +102,7 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
     if (property.code && property.value) {
       output.property = append(output.property, {
         code: property.code,
-        description: property.description,
+        description: property.targetDisplay ?? property.description,
         value: { type: property.type, value: property.value },
       });
     }

@@ -106,7 +106,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   let client: ClientApplication;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  } catch (err) {
+  } catch (_err) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
   }
@@ -221,7 +221,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     } else if (login.client) {
       client = await getClientApplication(resolveId(login.client) as string);
     }
-  } catch (err) {
+  } catch (_err) {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
   }
@@ -267,7 +267,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   let claims: MedplumRefreshTokenClaims;
   try {
     claims = (await verifyJwt(refreshToken)).payload as MedplumRefreshTokenClaims;
-  } catch (err) {
+  } catch (_err) {
     sendTokenError(res, 'invalid_request', 'Invalid refresh token');
     return;
   }
@@ -317,7 +317,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     const clientId = resolveId(login.client) ?? '';
     try {
       client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-    } catch (err) {
+    } catch (_err) {
       sendTokenError(res, 'invalid_request', 'Invalid client');
       return;
     }
@@ -495,7 +495,7 @@ async function parseClientAssertion(
   let client: ClientApplication;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  } catch (err) {
+  } catch (_err) {
     return { error: 'Client not found' };
   }
 

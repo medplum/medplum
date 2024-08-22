@@ -2,7 +2,7 @@ import {
   AgentError,
   AgentMessage,
   AgentReloadConfigRequest,
-  AgentTransmitResponse,
+  AgentTransmitRequest,
   AgentUpgradeRequest,
   AgentUpgradeResponse,
   ContentType,
@@ -29,6 +29,7 @@ import { AgentHl7Channel } from './hl7';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
 
 jest.mock('node:process', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   return new (class MockProcess extends require('node:events') {
     send = jest.fn().mockImplementation((msg) => {
       this.emit('childSend', msg);
@@ -673,6 +674,7 @@ describe('App', () => {
                 channel: command.channel,
                 remote: command.remote,
                 body: ackMessage.toString(),
+                callback: command.callback,
               })
             )
           );
@@ -783,13 +785,14 @@ describe('App', () => {
       Buffer.from(
         JSON.stringify({
           type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
           body:
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57099',
-        })
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -809,7 +812,7 @@ describe('App', () => {
     state.mySocket.send(
       Buffer.from(
         JSON.stringify({
-          type: 'agent:transmit:response',
+          type: 'agent:transmit:request',
           contentType: ContentType.HL7_V2,
           body:
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
@@ -817,7 +820,7 @@ describe('App', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57099',
-        } satisfies AgentTransmitResponse)
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -916,6 +919,7 @@ describe('App', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57099',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
         })
       )
     );
@@ -975,6 +979,7 @@ describe('App', () => {
                 channel: command.channel,
                 remote: command.remote,
                 body: ackMessage.toString(),
+                callback: command.callback,
               })
             )
           );

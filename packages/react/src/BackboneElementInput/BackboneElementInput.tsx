@@ -1,10 +1,10 @@
 import { ElementsContextType, buildElementsContext, tryGetDataType } from '@medplum/core';
+import { AccessPolicyResource } from '@medplum/fhirtypes';
 import { useContext, useMemo, useState } from 'react';
 import { ElementsInput } from '../ElementsInput/ElementsInput';
 import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
-import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 import { BaseInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
-import { AccessPolicyResource } from '@medplum/fhirtypes';
+import { maybeWrapWithContext } from '../utils/maybeWrapWithContext';
 
 export interface BackboneElementInputProps extends BaseInputProps {
   /** Type name the backbone element represents */

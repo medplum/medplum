@@ -1,6 +1,6 @@
 {
   "name": "@medplum/agent",
-  "version": "3.2.4",
+  "version": "3.2.7",
   "description": "Medplum Agent",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -20,18 +20,19 @@
     "agent": "ts-node src/main.ts",
     "build": "npm run clean && tsc && node esbuild.mjs",
     "clean": "rimraf dist",
+    "lint": "eslint .",
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "3.2.4",
-    "@medplum/hl7": "3.2.4",
+    "@medplum/core": "3.2.7",
+    "@medplum/hl7": "3.2.7",
     "dcmjs-dimse": "0.1.28",
     "iconv-lite": "0.6.3",
     "ws": "8.18.0"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "3.2.4",
-    "@medplum/mock": "3.2.4",
+    "@medplum/fhirtypes": "3.2.7",
+    "@medplum/mock": "3.2.7",
     "@types/async-eventemitter": "0.2.4",
     "@types/ws": "8.5.12",
     "mock-socket": "9.3.1",

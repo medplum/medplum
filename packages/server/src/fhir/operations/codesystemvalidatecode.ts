@@ -94,6 +94,6 @@ export async function validateCodings(codeSystem: CodeSystem, codings: Coding[])
 
   return codings.map((c, idx) => {
     const row = eligible[idx] && result?.find((r: any) => r.code === c.code);
-    return row ? { id: row.id, system: codeSystem.url, code: c.code, display: row.display } : undefined;
+    return row ? { id: row.id, system: codeSystem.url, code: c.code, display: c.display ?? row.display } : undefined;
   });
 }

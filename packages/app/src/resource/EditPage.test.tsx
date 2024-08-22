@@ -70,4 +70,22 @@ describe('EditPage', () => {
 
     expect(await screen.findByText('Are you sure you want to delete this Practitioner?')).toBeInTheDocument();
   });
+
+  test('Patch button on edit page', async () => {
+    await setup('/Practitioner/123/edit');
+
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
+    await act(async () => {
+      fireEvent.click(moreActions);
+    });
+
+    const patchButton = await screen.findByText('Patch');
+    expect(patchButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(patchButton);
+    });
+
+    expect(screen.getByText('Success')).toBeInTheDocument();
+  });
 });

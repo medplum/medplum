@@ -20,6 +20,9 @@
       "dependsOn": ["build"],
       "outputs": ["coverage/**"],
       "inputs": ["src/**/*.tsx", "src/**/*.ts"]
+    },
+    "lint": {
+      "dependsOn": ["build"]
     }
   }
 }

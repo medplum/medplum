@@ -1697,7 +1697,7 @@ describe('FHIR Mapping Language parser', () => {
       {
         resourceType: 'ConceptMap',
         status: 'active',
-        url: 'cm-v3-administrative-gender',
+        url: '#cm-v3-administrative-gender',
         group: [
           {
             source: 'http://terminology.hl7.org/ValueSet/v3-AdministrativeGender',
@@ -1712,7 +1712,7 @@ describe('FHIR Mapping Language parser', () => {
       {
         resourceType: 'ConceptMap',
         status: 'active',
-        url: 'addressUse',
+        url: '#addressUse',
         group: [
           {
             source: 'http://terminology.hl7.org/ValueSet/v3-AddressUse',

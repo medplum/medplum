@@ -2,7 +2,7 @@ import { LoginAuthenticationResponse, getDisplayString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumContext, useMedplumProfile, useSubscription } from '@medplum/react-hooks';
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import CustomButton from './CustomButton';
 
@@ -52,7 +52,7 @@ export default function Home(): JSX.Element {
           },
         ],
       })
-      .then(console.log)
+      .then((patient) => console.log('Patient created', patient))
       .catch(console.error);
     setLastName('');
   }
@@ -138,10 +138,24 @@ interface NotificationsWidgitProps {
 
 function NotificationsWidgit(props: NotificationsWidgitProps): JSX.Element {
   const [notifications, setNotifications] = useState(0);
+  const [reconnecting, setReconnecting] = useState(false);
 
-  useSubscription(props.criteria, () => {
-    setNotifications(notifications + 1);
-  });
+  useSubscription(
+    props.criteria,
+    () => {
+      setNotifications(notifications + 1);
+    },
+    {
+      onWebSocketClose: useCallback(() => {
+        setReconnecting(true);
+      }, []),
+      onWebSocketOpen: useCallback(() => {
+        if (reconnecting) {
+          setReconnecting(false);
+        }
+      }, [reconnecting]),
+    }
+  );
 
   function clearNotifications(): void {
     setNotifications(0);
@@ -152,6 +166,7 @@ function NotificationsWidgit(props: NotificationsWidgitProps): JSX.Element {
       <Text>
         {props.title ?? 'Notifications:'} {notifications}
       </Text>
+      <Text>Reconnecting: {reconnecting.toString()}</Text>
       <CustomButton onPress={clearNotifications} title="Clear" />
     </View>
   );

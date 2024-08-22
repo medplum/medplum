@@ -95,6 +95,7 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
+import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import {
   Condition,
   DeleteQuery,
@@ -106,7 +107,6 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
-import { buildSearchExpression, searchImpl } from './search';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -406,7 +406,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     let parts: [T['resourceType'], string];
     try {
       parts = parseReference(reference);
-    } catch (err) {
+    } catch (_err) {
       throw new OperationOutcomeError(badRequest('Invalid reference'));
     }
     return this.readResource(parts[0], parts[1]);
@@ -884,7 +884,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     await this.withTransaction(async (conn) => {
       const resource = await this.readResourceImpl<T>(resourceType, id);
-      return this.reindexResources(conn, resource);
+      return this.reindexResources(conn, [resource]);
     });
   }
 
@@ -894,19 +894,24 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
    * @param conn - Database client to use for reindex operations.
    * @param resources - The resource(s) to reindex.
-   * @returns The reindexed resource.
    */
-  async reindexResources<T extends Resource>(conn: PoolClient, ...resources: T[]): Promise<void> {
+  async reindexResources<T extends Resource>(conn: PoolClient, resources: T[]): Promise<void> {
     let resource: Resource;
     // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < resources.length; i++) {
       resource = resources[i];
-      (resource.meta as Meta).compartment = this.getCompartments(resource);
+      const meta = resource.meta as Meta;
+      meta.compartment = this.getCompartments(resource);
 
-      await this.writeResource(conn, resource);
+      if (!meta.project) {
+        const projectRef = meta.compartment.find((r) => r.reference?.startsWith('Project/'));
+        meta.project = resolveId(projectRef);
+      }
+
       await this.writeLookupTables(conn, resource, false);
     }
+    await this.batchWriteResources(conn, resources);
   }
 
   /**
@@ -1096,6 +1101,21 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
+  async searchByReference<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    referenceField: string,
+    references: string[]
+  ): Promise<Record<string, T[]>> {
+    try {
+      const result = await searchByReferenceImpl<T>(this, searchRequest, referenceField, references);
+      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, undefined, searchRequest);
+      return result;
+    } catch (err) {
+      this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, undefined, searchRequest);
+      throw err;
+    }
+  }
+
   /**
    * Adds filters to ignore soft-deleted resources.
    * @param builder - The select query builder.
@@ -1172,20 +1192,13 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  /**
-   * Writes the resource to the resource table.
-   * This builds all search parameter columns.
-   * This does *not* write the version to the history table.
-   * @param client - The database client inside the transaction.
-   * @param resource - The resource.
-   */
-  private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
+  private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const compartments = meta.compartment?.map((ref) => resolveId(ref));
     const content = stringify(resource);
 
-    const columns: Record<string, any> = {
+    const row: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
@@ -1197,11 +1210,34 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
       for (const searchParam of Object.values(searchParams)) {
-        this.buildColumn(resource, columns, searchParam);
+        this.buildColumn(resource, row, searchParam);
       }
     }
+    return row;
+  }
 
-    await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
+  /**
+   * Writes the resource to the resource table.
+   * This builds all search parameter columns.
+   * This does *not* write the version to the history table.
+   * @param client - The database client inside the transaction.
+   * @param resource - The resource.
+   */
+  private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
+    await new InsertQuery(resource.resourceType, [this.buildResourceRow(resource)]).mergeOnConflict().execute(client);
+  }
+
+  private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
+    if (!resources.length) {
+      return;
+    }
+
+    await new InsertQuery(
+      resources[0].resourceType,
+      resources.map((r) => this.buildResourceRow(r))
+    )
+      .mergeOnConflict()
+      .execute(client);
   }
 
   /**
@@ -1235,18 +1271,25 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   private getCompartments(resource: Resource): Reference[] {
     const result: Reference[] = [];
 
-    if (resource.meta?.project) {
+    if (resource.meta?.project && validator.isUUID(resource.meta.project)) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       result.push({ reference: 'Project/' + resource.meta.project });
     }
 
-    if (resource.resourceType === 'User' && resource.project?.reference) {
+    if (
+      resource.resourceType === 'User' &&
+      resource.project?.reference &&
+      validator.isUUID(resolveId(resource.project) ?? '')
+    ) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
       result.push(resource.project);
     }
 
     if (resource.meta?.account) {
-      result.push(resource.meta.account);
+      const id = resolveId(resource.meta.account);
+      if (id && validator.isUUID(id)) {
+        result.push(resource.meta.account);
+      }
     }
 
     for (const patient of getPatients(resource)) {
@@ -1352,7 +1395,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       try {
         const date = new Date(value);
         return date.toISOString().substring(0, 10);
-      } catch (ex) {
+      } catch (_err) {
         // Silent ignore
       }
     }
@@ -1371,7 +1414,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       try {
         const date = new Date(value);
         return date.toISOString();
-      } catch (ex) {
+      } catch (_err) {
         // Silent ignore
       }
     } else if (typeof value === 'object') {

@@ -1,18 +1,20 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser, IconClipboard, IconCalendar } from '@tabler/icons-react';
+import { IconUser, IconClipboard, IconCalendar, IconRobot } from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { AppointmentDetailPage } from './pages/AppointmentDetailPage';
+import { AppointmentsPage } from './pages/AppointmentsPage';
+import { createReference, getReferenceString } from '@medplum/core';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
-import { AppointmentsPage } from './pages/AppointmentsPage';
+import { PatientSchedulePage } from './pages/PatientSchedulePage';
+import { Practitioner, Schedule } from '@medplum/fhirtypes';
 import { ResourcePage } from './pages/ResourcePage';
+import { ScheduleContext } from './Schedule.context';
+import { SchedulePage } from './pages/SchedulePage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
-import { AppointmentDetailPage } from './pages/AppointmentDetailPage';
-import { SchedulePage } from './pages/SchedulePage';
-import { Practitioner, Schedule } from '@medplum/fhirtypes';
-import { createReference, getReferenceString } from '@medplum/core';
-import { ScheduleContext } from './Schedule.context';
+import { UploadDataPage } from './pages/UploadDataPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -66,15 +68,19 @@ export function App(): JSX.Element | null {
           links: [
             {
               icon: <IconCalendar />,
-              label: 'Schedule',
+              label: 'My Schedule',
               href: '/Schedule',
             },
             {
               icon: <IconClipboard />,
-              label: 'Appointments',
+              label: 'My Appointments',
               href: '/Appointment/upcoming',
             },
           ],
+        },
+        {
+          title: 'Upload Data',
+          links: [{ icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' }],
         },
       ]}
     >
@@ -86,10 +92,15 @@ export function App(): JSX.Element | null {
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/Schedule" element={schedule ? <Navigate to={`/Schedule/${schedule.id}`} /> : <Loading />} />
               <Route path="/Schedule/:id" element={schedule ? <SchedulePage /> : <Loading />} />
+              <Route
+                path="/Patient/:patientId/Schedule/:scheduleId"
+                element={schedule ? <PatientSchedulePage /> : <Loading />}
+              />
               <Route path="/Patient/:id/*" element={<PatientPage />} />
               <Route path="/Appointment/upcoming" element={<AppointmentsPage />} />
               <Route path="/Appointment/past" element={<AppointmentsPage />} />
               <Route path="/Appointment/:id/*" element={<AppointmentDetailPage />} />
+              <Route path="/upload/:dataType" element={<UploadDataPage />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/:id/*" element={<ResourcePage />} />
             </Routes>

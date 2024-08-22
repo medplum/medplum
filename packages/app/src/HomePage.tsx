@@ -2,7 +2,7 @@ import { Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { formatSearchQuery, normalizeErrorString, parseSearchRequest, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
-import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
+import { Loading, SearchControl, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import classes from './HomePage.module.css';
@@ -41,7 +41,7 @@ export function HomePage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
-      <MemoizedSearchControl
+      <SearchControl
         checkboxesEnabled={true}
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}

@@ -1,13 +1,13 @@
 import { Button, Stack, Title } from '@mantine/core';
-import { IconCancel, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useDisclosure } from '@mantine/hooks';
+import { showNotification } from '@mantine/notifications';
+import { createReference, normalizeErrorString, resolveId } from '@medplum/core';
 import { Appointment, Encounter, Patient, Practitioner, Reference } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
-import { showNotification } from '@mantine/notifications';
+import { IconCancel, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createReference, normalizeErrorString } from '@medplum/core';
 import { RescheduleAppointment } from './RescheduleAppointment';
-import { useDisclosure } from '@mantine/hooks';
-import { useEffect, useState } from 'react';
 
 interface AppointmentActionsProps {
   appointment: Appointment;
@@ -21,18 +21,18 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
   const [rescheduleOpened, rescheduleHandlers] = useDisclosure(false);
   const [encounter, setEncounter] = useState<Encounter | undefined | boolean>(false); // `false` means it was not loaded yet
 
-  async function refreshEncounter(): Promise<void> {
+  const refreshEncounter = useCallback(async (): Promise<void> => {
     try {
       const result = await medplum.searchOne('Encounter', { appointment: `Appointment/${appointment.id}` });
       setEncounter(result);
     } catch (err) {
       console.error(err);
     }
-  }
+  }, [medplum, appointment.id]);
 
   useEffect(() => {
     refreshEncounter().catch(console.error);
-  }, []);
+  }, [refreshEncounter]);
 
   if (!appointment) {
     return <Loading />;
@@ -41,10 +41,21 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
   // Handler for completing or cancelling the appointment
   async function handleChangeStatus(newStatus: Appointment['status']): Promise<void> {
     try {
+      // TODO: Move code to a bot. Use patchResource instead of updateResource.
       await medplum.updateResource({
         ...appointment,
         status: newStatus,
+        slot: undefined,
       });
+      // If the appointment is cancelled, update the slot status to free
+      const slotId = resolveId(appointment.slot?.[0]);
+      if (newStatus === 'cancelled' && slotId) {
+        const slot = await medplum.readResource('Slot', slotId);
+        await medplum.updateResource({
+          ...slot,
+          status: 'free',
+        });
+      }
 
       navigate(`/Appointment/${appointment.id}/details`);
       showNotification({

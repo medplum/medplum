@@ -1,22 +1,27 @@
 import {
-  IRobustWebSocket,
+  deepEquals,
+  IReconnectingWebSocket,
   MedplumClient,
-  RobustWebSocketEventMap,
   SubscriptionEmitter,
   SubscriptionEventMap,
   SubscriptionManager,
   TypedEventTarget,
-  deepEquals,
+  WebSocketEventMap,
 } from '@medplum/core';
 import { Subscription } from '@medplum/fhirtypes';
 
-class MockRobustWebSocket extends TypedEventTarget<RobustWebSocketEventMap> implements IRobustWebSocket {
-  readyState = WebSocket.OPEN;
-  close(): void {
-    // Not implemented -- this is a mock
+export class MockReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> implements IReconnectingWebSocket {
+  readyState: WebSocket['OPEN'] | WebSocket['CLOSED'] = WebSocket.OPEN;
+  close(code?: number, reason?: string): void {
+    this.readyState = WebSocket.CLOSED;
+    this.dispatchEvent(new CloseEvent('close', { code: code ?? 1000, reason: reason ?? 'unknown reason' }));
   }
   send(): void {
     // Not implemented -- this is a mock
+  }
+  reconnect(_code?: number, _reason?: string): void {
+    this.readyState = WebSocket.OPEN;
+    this.dispatchEvent(new Event('open'));
   }
 }
 
@@ -28,7 +33,7 @@ export type MockCriteriaEntry = {
 };
 
 export interface MockSubManagerOptions {
-  mockRobustWebSocket?: boolean;
+  mockReconnectingWebSocket?: boolean;
 }
 
 export class MockSubscriptionManager extends SubscriptionManager {
@@ -39,7 +44,7 @@ export class MockSubscriptionManager extends SubscriptionManager {
     super(
       medplum,
       'wss://example.com/ws/subscriptions-r4',
-      options?.mockRobustWebSocket ? { RobustWebSocket: MockRobustWebSocket } : undefined
+      options?.mockReconnectingWebSocket ? { ReconnectingWebSocket: MockReconnectingWebSocket } : undefined
     );
     this.entries = new Map<string, MockCriteriaEntry[]>();
     this.masterEmitter = new SubscriptionEmitter();
@@ -114,9 +119,18 @@ export class MockSubscriptionManager extends SubscriptionManager {
   }
 
   closeWebSocket(): void {
+    this.getWebSocket().close();
     this.masterEmitter.dispatchEvent({ type: 'close' });
     for (const emitter of this.getAllMockCriteriaEmitters()) {
       emitter.dispatchEvent({ type: 'close' });
+    }
+  }
+
+  openWebSocket(): void {
+    this.getWebSocket().reconnect();
+    this.masterEmitter.dispatchEvent({ type: 'open' });
+    for (const emitter of this.getAllMockCriteriaEmitters()) {
+      emitter.dispatchEvent({ type: 'open' });
     }
   }
 
@@ -134,6 +148,7 @@ export class MockSubscriptionManager extends SubscriptionManager {
     subscriptionProps?: Partial<Subscription>
   ): void {
     this.maybeGetMockCriteriaEntry(criteria, subscriptionProps)?.emitter?.dispatchEvent(event);
+    this.masterEmitter.dispatchEvent(event);
   }
 
   getEmitter(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter | undefined {

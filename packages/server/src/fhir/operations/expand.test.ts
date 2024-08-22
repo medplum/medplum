@@ -151,7 +151,7 @@ describe('Expand', () => {
       resourceType: 'ValueSet',
       url: valueSet,
       expansion: {
-        contains: [
+        contains: expect.arrayContaining([
           {
             system: 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus',
             code: 'M',
@@ -162,7 +162,7 @@ describe('Expand', () => {
             code: 'S',
             display: 'Never Married',
           },
-        ],
+        ]),
       },
     });
   });
@@ -758,6 +758,36 @@ describe('Expand', () => {
     expect(expansion.contains?.[0]?.code).toEqual('ERECCAP');
   });
 
+  test('Property filter with multiple values', async () => {
+    const valueSet: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'active',
+      url: 'https://example.com/fhir/ValueSet/property-filter' + randomUUID(),
+      compose: {
+        include: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm',
+            filter: [{ property: 'status', op: 'in', value: 'preferred,retired' }],
+          },
+        ],
+      },
+    };
+    const res1 = await request(app)
+      .post(`/fhir/R4/ValueSet`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(valueSet);
+    expect(res1.status).toBe(201);
+
+    const res2 = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toEqual(200);
+    const expansion = res2.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains?.[0]?.code).toEqual('ERECCAP');
+  });
+
   test('Reference to other ValueSet', async () => {
     const valueSetResource: ValueSet = {
       resourceType: 'ValueSet',
@@ -809,5 +839,40 @@ describe('Expand', () => {
     expect(filterCode?.display).toEqual('healthcare power of attorney');
     const explicitCode = expansion.contains?.find((c) => c.code === 'SEE');
     expect(explicitCode?.display).toEqual('Seeing');
+  });
+
+  test('Display text override', async () => {
+    const valueSetResource: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'http://example.com/ValueSet/reference-' + randomUUID(),
+      compose: {
+        include: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+            concept: [{ code: 'SEE', display: 'Seeing-eye doggo' }],
+          },
+        ],
+      },
+    };
+    const valueSetRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(valueSetResource);
+    expect(valueSetRes.status).toEqual(201);
+    const valueSet = valueSetRes.body as ValueSet;
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&count=200&filter=doggo`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains?.[0]).toMatchObject({
+      code: 'SEE',
+      system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+      display: 'Seeing-eye doggo',
+    });
   });
 });

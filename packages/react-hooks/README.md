@@ -203,6 +203,10 @@ function MyComponent(): JSX.Element {
 }
 ```
 
+### Usage within `Expo` app
+
+Usage within `Expo` / `React Native` has some special considerations. See: [@medplum/expo-polyfills README](https://github.com/medplum/medplum/blob/main/packages/expo-polyfills/README.md)
+
 ## About Medplum
 
 Medplum is a healthcare platform that helps you quickly develop high-quality compliant applications. Medplum includes a FHIR server, React component library, and developer app.

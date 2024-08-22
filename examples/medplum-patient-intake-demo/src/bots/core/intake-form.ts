@@ -1,16 +1,20 @@
-import { BotEvent, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import {
+  Address,
   HumanName,
   Patient,
   Questionnaire,
   QuestionnaireResponse,
   QuestionnaireResponseItemAnswer,
-  Reference,
 } from '@medplum/fhirtypes';
 import {
+  addAllergy,
+  addCondition,
   addConsent,
   addCoverage,
+  addFamilyMemberHistory,
   addLanguage,
+  addMedication,
   consentCategoryMapping,
   consentPolicyRuleMapping,
   consentScopeMapping,
@@ -26,33 +30,95 @@ import {
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<void> {
   const response = event.input;
 
+  if (!response.questionnaire) {
+    throw new Error('Missing questionnaire');
+  }
+
+  const questionnaire: Questionnaire = await medplum.readReference({ reference: response.questionnaire });
   const answers = getQuestionnaireAnswers(response);
 
-  if (!response.subject) {
-    throw new Error('Missing subject');
-  }
-
-  const patient = await medplum.readReference(response.subject as Reference<Patient>);
-
-  if (!patient) {
-    throw new Error('Patient not found');
-  }
+  let patient: Patient = {
+    resourceType: 'Patient',
+  };
 
   // Handle demographic information
 
-  const patientName = getPatientName(answers);
-  patient.name = patientName ? [patientName] : patient.name;
-  patient.birthDate = answers['dob']?.valueDate || patient.birthDate;
-  patient.gender = (answers['gender-identity']?.valueCoding?.code as Patient['gender']) || patient.gender;
+  const patientName = getHumanName(answers);
+  if (patientName) {
+    patient.name = [patientName];
+  }
+
+  if (answers['dob']?.valueDate) {
+    patient.birthDate = answers['dob'].valueDate;
+  }
+
+  const patientAddress = getPatientAddress(answers);
+  if (patientAddress) {
+    patient.address = [patientAddress];
+  }
+
+  if (answers['gender-identity']?.valueCoding?.code) {
+    patient.gender = answers['gender-identity'].valueCoding.code as Patient['gender'];
+  }
+
+  if (answers['phone']?.valueString) {
+    patient.telecom = [{ system: 'phone', value: answers['phone'].valueString }];
+  }
+
+  if (answers['ssn']?.valueString) {
+    patient.identifier = [
+      {
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+              code: 'SS',
+            },
+          ],
+        },
+        system: 'http://hl7.org/fhir/sid/us-ssn',
+        value: answers['ssn'].valueString,
+      },
+    ];
+  }
+
+  const emergencyContacts = getGroupRepeatedAnswers(questionnaire, response, 'emergency-contact');
+  if (emergencyContacts) {
+    patient.contact = [];
+    for (const contact of emergencyContacts) {
+      patient.contact.push({
+        relationship: [
+          {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
+                code: 'EP',
+                display: 'Emergency contact person',
+              },
+            ],
+          },
+        ],
+        name: getHumanName(contact, 'emergency-contact-'),
+        telecom: [{ system: 'phone', value: contact['emergency-contact-phone']?.valueString }],
+      });
+    }
+  }
 
   setExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race']);
   setExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity']);
   setExtension(patient, extensionURLMapping.veteran, 'valueBoolean', answers['veteran-status']);
 
-  // Handle language preferences
-
   addLanguage(patient, answers['languages-spoken']?.valueCoding);
   addLanguage(patient, answers['preferred-language']?.valueCoding, true);
+
+  // Create the patient resource
+
+  patient = await medplum.createResource(patient);
+
+  // NOTE: Updating the questionnaire response does not trigger a loop because the bot subscription
+  // is configured for "create"-only event.
+  response.subject = createReference(patient);
+  await medplum.updateResource(response);
 
   // Handle observations
 
@@ -86,30 +152,59 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   await upsertObservation(
     medplum,
     patient,
+    observationCodeMapping.smokingStatus,
+    observationCategoryMapping.socialHistory,
+    'valueCodeableConcept',
+    answers['smoking-status']?.valueCoding
+  );
+
+  await upsertObservation(
+    medplum,
+    patient,
     observationCodeMapping.pregnancyStatus,
     observationCategoryMapping.socialHistory,
     'valueCodeableConcept',
     answers['pregnancy-status']?.valueCoding
   );
 
+  const estimatedDeliveryDate = convertDateToDateTime(answers['estimated-delivery-date']?.valueDate);
   await upsertObservation(
     medplum,
     patient,
     observationCodeMapping.estimatedDeliveryDate,
     observationCategoryMapping.socialHistory,
     'valueDateTime',
-    { valueDateTime: convertDateToDateTime(answers['estimated-delivery-date']?.valueDate) }
+    estimatedDeliveryDate ? { valueDateTime: estimatedDeliveryDate } : undefined
   );
+
+  // Handle allergies
+
+  const allergies = getGroupRepeatedAnswers(questionnaire, response, 'allergies');
+  for (const allergy of allergies) {
+    await addAllergy(medplum, patient, allergy);
+  }
+
+  // Handle medications
+  const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
+  for (const medication of medications) {
+    await addMedication(medplum, patient, medication);
+  }
+
+  // Handle medical history
+
+  const medicalHistory = getGroupRepeatedAnswers(questionnaire, response, 'medical-history');
+  for (const history of medicalHistory) {
+    await addCondition(medplum, patient, history);
+  }
+
+  const familyMemberHistory = getGroupRepeatedAnswers(questionnaire, response, 'family-member-history');
+  for (const history of familyMemberHistory) {
+    await addFamilyMemberHistory(medplum, patient, history);
+  }
 
   // Handle coverage
 
-  if (!response.questionnaire) {
-    throw new Error('Missing questionnaire');
-  }
-
-  const questionnaire: Questionnaire = await medplum.readReference({ reference: response.questionnaire });
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
-
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
   }
@@ -155,28 +250,52 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     consentPolicyRuleMapping.adr,
     convertDateToDateTime(answers['acknowledgement-for-advance-directives-date']?.valueDate)
   );
-
-  await medplum.updateResource(patient);
 }
 
-function getPatientName(answers: Record<string, QuestionnaireResponseItemAnswer>): HumanName | null {
+function getHumanName(
+  answers: Record<string, QuestionnaireResponseItemAnswer>,
+  prefix: string = ''
+): HumanName | undefined {
   const patientName: HumanName = {};
 
   const givenName = [];
-  if (answers['first-name']?.valueString) {
-    givenName.push(answers['first-name'].valueString);
+  if (answers[`${prefix}first-name`]?.valueString) {
+    givenName.push(answers[`${prefix}first-name`].valueString as string);
   }
-  if (answers['middle-name']?.valueString) {
-    givenName.push(answers['middle-name'].valueString);
+  if (answers[`${prefix}middle-name`]?.valueString) {
+    givenName.push(answers[`${prefix}middle-name`].valueString as string);
   }
 
   if (givenName.length > 0) {
     patientName.given = givenName;
   }
 
-  if (answers['last-name']?.valueString) {
-    patientName.family = answers['last-name'].valueString;
+  if (answers[`${prefix}last-name`]?.valueString) {
+    patientName.family = answers[`${prefix}last-name`].valueString;
   }
 
-  return Object.keys(patientName).length > 0 ? patientName : null;
+  return Object.keys(patientName).length > 0 ? patientName : undefined;
+}
+
+function getPatientAddress(answers: Record<string, QuestionnaireResponseItemAnswer>): Address | undefined {
+  const patientAddress: Address = {};
+
+  if (answers['street']?.valueString) {
+    patientAddress.line = [answers['street'].valueString];
+  }
+
+  if (answers['city']?.valueString) {
+    patientAddress.city = answers['city'].valueString;
+  }
+
+  if (answers['state']?.valueCoding?.code) {
+    patientAddress.state = answers['state'].valueCoding.code;
+  }
+
+  if (answers['zip']?.valueString) {
+    patientAddress.postalCode = answers['zip'].valueString;
+  }
+
+  // To simplify the demo, we're assuming the address is always a home address
+  return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
 }

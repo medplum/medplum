@@ -1665,6 +1665,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     id: string,
     options?: MedplumRequestOptions
   ): ReadablePromise<ExtractResource<K>> {
+    if (!id) {
+      throw new Error('The "id" parameter cannot be null, undefined, or an empty string.');
+    }
     return this.get<ExtractResource<K>>(this.fhirUrl(resourceType, id), options);
   }
 
@@ -1730,6 +1733,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         kind,
         description,
         type,
+        url,
         snapshot {
           element {
             id,
@@ -1783,11 +1787,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Schema
    * @param profileUrl - The FHIR URL of the profile
    * @param options - (optional) Additional options
-   * @returns Promise with an array of URLs of the profile(s) loaded.
+   * @returns Promise for schema request.
    */
-  requestProfileSchema(profileUrl: string, options?: RequestProfileSchemaOptions): Promise<string[]> {
+  requestProfileSchema(profileUrl: string, options?: RequestProfileSchemaOptions): Promise<void> {
     if (!options?.expandProfile && isProfileLoaded(profileUrl)) {
-      return Promise.resolve([profileUrl]);
+      return Promise.resolve();
     }
 
     const cacheKey = profileUrl + '-requestSchema' + (options?.expandProfile ? '-nested' : '');
@@ -1796,16 +1800,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return cached.value;
     }
 
-    const promise = new ReadablePromise<string[]>(
+    const promise = new ReadablePromise<void>(
       (async () => {
         if (options?.expandProfile) {
           const url = this.fhirUrl('StructureDefinition', '$expand-profile');
           url.search = new URLSearchParams({ url: profileUrl }).toString();
           const sdBundle = (await this.post(url.toString(), {})) as Bundle<StructureDefinition>;
-          return bundleToResourceArray(sdBundle).map((sd) => {
-            loadDataType(sd, sd.url);
-            return sd.url;
-          });
+          indexStructureDefinitionBundle(sdBundle);
         } else {
           // Just sort by lastUpdated. Ideally, it would also be based on a logical sort of version
           // See https://hl7.org/fhir/references.html#canonical-matching for more discussion
@@ -1816,11 +1817,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
           if (!sd) {
             console.warn(`No StructureDefinition found for ${profileUrl}!`);
-            return [];
+            return;
           }
 
-          indexStructureDefinitionBundle([sd], profileUrl);
-          return [profileUrl];
+          loadDataType(sd);
         }
       })()
     );
@@ -2713,7 +2713,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   setAccessToken(accessToken: string, refreshToken?: string): void {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
-    this.sessionDetails = undefined;
     this.accessTokenExpires = tryGetJwtExpiration(accessToken);
     this.medplumServer = isMedplumAccessToken(accessToken);
   }
@@ -3804,7 +3803,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           window.location.reload();
         }
       });
-    } catch (err) {
+    } catch (_err) {
       // Silently ignore if this environment does not support storage events
     }
   }

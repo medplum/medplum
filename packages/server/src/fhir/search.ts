@@ -43,6 +43,7 @@ import {
 } from '@medplum/fhirtypes';
 import validator from 'validator';
 import { getConfig } from '../config';
+import { getLogger } from '../context';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
@@ -54,12 +55,16 @@ import {
   Condition,
   Conjunction,
   Disjunction,
+  escapeLikeString,
   Expression,
+  Literal,
   Negation,
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
+  SqlBuilder,
   Union,
+  ValuesQuery,
 } from './sql';
 
 /**
@@ -67,7 +72,18 @@ import {
  */
 const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 
-export interface ChainedSearchLink {
+type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
+  count: number;
+  offset: number;
+};
+
+interface Cursor {
+  version: string;
+  lastInstant: string;
+  lastId: string;
+}
+
+interface ChainedSearchLink {
   resourceType: string;
   code: string;
   details: SearchParameterDetails;
@@ -75,7 +91,7 @@ export interface ChainedSearchLink {
   filter?: Filter;
 }
 
-export interface ChainedSearchParameter {
+interface ChainedSearchParameter {
   chain: ChainedSearchLink[];
 }
 
@@ -84,20 +100,14 @@ export async function searchImpl<T extends Resource>(
   searchRequest: SearchRequest<T>
 ): Promise<Bundle<T>> {
   validateSearchResourceTypes(repo, searchRequest);
-
-  // Ensure that "count" is set.
-  // Count is an optional field.  From this point on, it is safe to assume it is a number.
-  if (searchRequest.count === undefined) {
-    searchRequest.count = DEFAULT_SEARCH_COUNT;
-  } else if (searchRequest.count > maxSearchResults) {
-    searchRequest.count = maxSearchResults;
-  }
+  applyCountAndOffsetLimits(searchRequest);
 
   let entry = undefined;
   let rowCount = undefined;
   let hasMore = false;
   if (searchRequest.count > 0) {
-    ({ entry, rowCount, hasMore } = await getSearchEntries<T>(repo, searchRequest));
+    const builder = getSelectQueryForSearch(repo, searchRequest);
+    ({ entry, rowCount, hasMore } = await getSearchEntries<T>(repo, searchRequest, builder));
   }
 
   let total = undefined;
@@ -110,8 +120,85 @@ export async function searchImpl<T extends Resource>(
     type: 'searchset',
     entry,
     total,
-    link: getSearchLinks(searchRequest, hasMore),
+    link: getSearchLinks(searchRequest, entry, hasMore),
   };
+}
+
+export async function searchByReferenceImpl<T extends Resource>(
+  repo: Repository,
+  searchRequest: SearchRequest<T>,
+  referenceField: string,
+  referenceValues: string[]
+): Promise<Record<string, T[]>> {
+  validateSearchResourceTypes(repo, searchRequest);
+  applyCountAndOffsetLimits(searchRequest);
+
+  const referencesTableName = 'references';
+  const referencesColumnName = 'ref';
+  const referenceColumn = new Column(referencesTableName, referencesColumnName);
+
+  const searchQuery = getSelectQueryForSearch(repo, searchRequest, {
+    addColumns: true,
+    limitModifier: 0,
+    resourceTypeQueryCallback: (resourceType, builder) => {
+      const param = getSearchParameter(resourceType, referenceField);
+      if (param?.type !== 'reference') {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
+        );
+      }
+      const details = getSearchParameterDetails(resourceType, param);
+      builder.whereExpr(buildReferenceSearchFilter(builder.tableName, details, Operator.EQUALS, referenceColumn));
+    },
+  });
+  const builder = new SelectQuery(
+    referencesTableName,
+    new ValuesQuery(
+      referencesTableName,
+      [referencesColumnName],
+      referenceValues.map((r) => [r])
+    )
+  );
+  builder.join('INNER JOIN LATERAL', searchQuery, 'results', new Literal('true'));
+  builder.column(new Column('results', 'id')).column(new Column('results', 'content')).column(referenceColumn);
+
+  const rows: {
+    content: string;
+    ref: string;
+  }[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+
+  const results: Record<string, T[]> = {};
+  for (const ref of referenceValues) {
+    results[ref] = [];
+  }
+  for (const row of rows) {
+    const resource = JSON.parse(row.content) as T;
+    removeResourceFields(resource, repo, searchRequest);
+    results[row.ref].push(resource);
+  }
+
+  return results;
+}
+
+function applyCountAndOffsetLimits<T extends Resource>(
+  searchRequest: SearchRequest
+): asserts searchRequest is SearchRequestWithCountAndOffset<T> {
+  if (searchRequest.count === undefined) {
+    searchRequest.count = DEFAULT_SEARCH_COUNT;
+  } else if (searchRequest.count > maxSearchResults) {
+    searchRequest.count = maxSearchResults;
+  }
+
+  if (searchRequest.offset === undefined) {
+    searchRequest.offset = 0;
+  } else {
+    const maxOffset = getConfig().maxSearchOffset;
+    if (maxOffset !== undefined && searchRequest.offset > maxOffset) {
+      throw new OperationOutcomeError(
+        badRequest(`Search offset exceeds maximum (got ${searchRequest.offset}, max ${maxOffset})`)
+      );
+    }
+  }
 }
 
 /**
@@ -146,31 +233,66 @@ function validateSearchResourceType(repo: Repository, resourceType: ResourceType
   }
 }
 
+interface GetSelectQueryForSearchOptions extends GetBaseSelectQueryOptions {
+  /** Number added to `searchRequest.count` when specifying the query LIMIT. Default is 1 */
+  limitModifier?: number;
+}
+function getSelectQueryForSearch<T extends Resource>(
+  repo: Repository,
+  searchRequest: SearchRequestWithCountAndOffset<T>,
+  options?: GetSelectQueryForSearchOptions
+): SelectQuery {
+  const builder = getBaseSelectQuery(repo, searchRequest, options);
+  addSortRules(builder, searchRequest);
+  const count = searchRequest.count;
+  builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
+  if (searchRequest.offset > 0) {
+    if (searchRequest.cursor) {
+      throw new OperationOutcomeError(badRequest('Cannot use both offset and cursor'));
+    }
+    builder.offset(searchRequest.offset);
+  } else if (searchRequest.cursor) {
+    const cursor = parseCursor(searchRequest.cursor);
+    if (cursor) {
+      builder.orderBy(new Column(searchRequest.resourceType, 'lastUpdated', false));
+      builder.orderBy(new Column(searchRequest.resourceType, 'id', false));
+      // (lastUpdated=x and id>y) or lastUpdated>x
+      builder.whereExpr(
+        new Disjunction([
+          new Conjunction([
+            new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '=', cursor.lastInstant),
+            new Condition(new Column(searchRequest.resourceType, 'id'), '>', cursor.lastId),
+          ]),
+          new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '>', cursor.lastInstant),
+        ])
+      );
+    }
+  }
+  return builder;
+}
+
 /**
  * Returns the bundle entries for a search request.
  * @param repo - The repository.
  * @param searchRequest - The search request.
+ * @param builder - The `SelectQuery` builder that is ready to execute.
  * @returns The bundle entries for the search result.
  */
 async function getSearchEntries<T extends Resource>(
   repo: Repository,
-  searchRequest: SearchRequest
+  searchRequest: SearchRequestWithCountAndOffset<T>,
+  builder: SelectQuery
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
-  const builder = getBaseSelectQuery(repo, searchRequest);
-
-  addSortRules(builder, searchRequest);
-
-  const count = searchRequest.count as number;
-  builder.limit(count + 1); // Request one extra to test if there are more results
-  builder.offset(searchRequest.offset || 0);
-
+  const startTime = Date.now();
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  const endTime = Date.now();
   const rowCount = rows.length;
-  const resources = rows.slice(0, count).map((row) => JSON.parse(row.content as string)) as T[];
+  const resources = rows.slice(0, searchRequest.count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
     (resource) =>
       ({
         fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+        search: { mode: 'match' },
         resource,
       }) as BundleEntry
   );
@@ -186,26 +308,52 @@ async function getSearchEntries<T extends Resource>(
     removeResourceFields(entry.resource, repo, searchRequest);
   }
 
+  const duration = endTime - startTime;
+  const config = getConfig();
+  const threshold = config.slowQueryThresholdMilliseconds;
+  const sampleRate = config.slowQuerySampleRate ?? 1;
+  if (threshold !== undefined && duration > threshold && Math.random() < sampleRate) {
+    builder.explain = true;
+    builder.analyzeBuffers = true;
+    const sqlBuilder = new SqlBuilder();
+    builder.buildSql(sqlBuilder);
+    const sql = sqlBuilder.toString();
+    const explainRows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+    const explain = explainRows.map((row) => row['QUERY PLAN']).join('\n');
+    getLogger().warn('Slow search query', { duration, searchRequest, sql, explain });
+  }
+
   return {
     entry: entries as BundleEntry<T>[],
     rowCount,
-    hasMore: rows.length > count,
+    hasMore: rows.length > searchRequest.count,
   };
 }
 
-function getBaseSelectQuery(repo: Repository, searchRequest: SearchRequest, addColumns = true): SelectQuery {
+interface GetBaseSelectQueryOptions {
+  /** If `true`, the "id" and "content" columns are selected. Defaults to `true`. */
+  addColumns?: boolean;
+  /** Callback invoked for each resource type and  its `SelectQuery` after all filters are applied. */
+  resourceTypeQueryCallback?: (resourceType: SearchRequest['resourceType'], builder: SelectQuery) => void;
+}
+function getBaseSelectQuery(
+  repo: Repository,
+  searchRequest: SearchRequest,
+  opts?: GetBaseSelectQueryOptions
+): SelectQuery {
   let builder: SelectQuery;
   if (searchRequest.types) {
     const queries: SelectQuery[] = [];
     for (const resourceType of searchRequest.types) {
-      queries.push(getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, addColumns));
+      const query = getBaseSelectQueryForResourceType(repo, resourceType, searchRequest, opts);
+      queries.push(query);
     }
     builder = new SelectQuery('combined', new Union(...queries));
-    if (addColumns) {
+    if (opts?.addColumns ?? true) {
       builder.column('id').column('content');
     }
   } else {
-    builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, addColumns);
+    builder = getBaseSelectQueryForResourceType(repo, searchRequest.resourceType, searchRequest, opts);
   }
   return builder;
 }
@@ -214,10 +362,10 @@ function getBaseSelectQueryForResourceType(
   repo: Repository,
   resourceType: ResourceType,
   searchRequest: SearchRequest,
-  addColumns = true
+  opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
   const builder = new SelectQuery(resourceType);
-  if (addColumns) {
+  if (opts?.addColumns ?? true) {
     builder
       .column({ tableName: resourceType, columnName: 'id' })
       .column({ tableName: resourceType, columnName: 'content' });
@@ -225,6 +373,9 @@ function getBaseSelectQueryForResourceType(
   repo.addDeletedFilter(builder);
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(repo, builder, resourceType, searchRequest);
+  if (opts?.resourceTypeQueryCallback) {
+    opts.resourceTypeQueryCallback(resourceType, builder);
+  }
   return builder;
 }
 
@@ -334,8 +485,8 @@ async function getSearchIncludeEntries(
     .filter((typedValue) => ([PropertyType.canonical, PropertyType.uri] as string[]).includes(typedValue.type))
     .map((typedValue) => typedValue.value as string);
   if (canonicalReferences.length > 0) {
-    const canonicalSearches = (searchParam.target || []).map((resourceType) =>
-      getSearchEntries(repo, {
+    const canonicalSearches = (searchParam.target || []).map((resourceType) => {
+      const searchRequest = {
         resourceType: resourceType,
         filters: [
           {
@@ -344,8 +495,12 @@ async function getSearchIncludeEntries(
             value: canonicalReferences.join(','),
           },
         ],
-      })
-    );
+        count: DEFAULT_MAX_SEARCH_COUNT,
+        offset: 0,
+      };
+      const builder = getSelectQueryForSearch(repo, searchRequest);
+      return getSearchEntries(repo, searchRequest, builder);
+    });
     (await Promise.all(canonicalSearches)).forEach((result) => {
       includedResources.push(...result.entry.map((e) => e.resource as Resource));
     });
@@ -353,6 +508,7 @@ async function getSearchIncludeEntries(
 
   return includedResources.map((resource) => ({
     fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+    search: { mode: 'include' },
     resource,
   }));
 }
@@ -389,18 +545,25 @@ async function getSearchRevIncludeEntries(
     value = resources.map(getReferenceString).join(',');
   }
 
-  return (
-    await getSearchEntries(repo, {
-      resourceType: revInclude.resourceType as ResourceType,
-      filters: [
-        {
-          code: revInclude.searchParam,
-          operator: Operator.EQUALS,
-          value: value,
-        },
-      ],
-    })
-  ).entry;
+  const searchRequest = {
+    resourceType: revInclude.resourceType as ResourceType,
+    filters: [
+      {
+        code: revInclude.searchParam,
+        operator: Operator.EQUALS,
+        value: value,
+      },
+    ],
+    count: DEFAULT_MAX_SEARCH_COUNT,
+    offset: 0,
+  };
+  const builder = getSelectQueryForSearch(repo, searchRequest);
+
+  const entries = (await getSearchEntries(repo, searchRequest, builder)).entry;
+  for (const entry of entries) {
+    entry.search = { mode: 'include' };
+  }
+  return entries;
 }
 
 /**
@@ -408,10 +571,15 @@ async function getSearchRevIncludeEntries(
  * At minimum, the 'self' link will be returned.
  * If "count" does not equal zero, then 'first', 'next', and 'previous' links will be included.
  * @param searchRequest - The search request.
+ * @param entries - The search bundle entries.
  * @param hasMore - True if there are more entries after the current page.
  * @returns The search bundle links.
  */
-function getSearchLinks(searchRequest: SearchRequest, hasMore: boolean | undefined): BundleLink[] {
+function getSearchLinks(
+  searchRequest: SearchRequestWithCountAndOffset,
+  entries: BundleEntry[] | undefined,
+  hasMore: boolean | undefined
+): BundleLink[] {
   const result: BundleLink[] = [
     {
       relation: 'self',
@@ -419,31 +587,127 @@ function getSearchLinks(searchRequest: SearchRequest, hasMore: boolean | undefin
     },
   ];
 
-  const count = searchRequest.count as number;
-  if (count > 0) {
-    const offset = searchRequest.offset || 0;
-
-    result.push({
-      relation: 'first',
-      url: getSearchUrl({ ...searchRequest, offset: 0 }),
-    });
-
-    if (hasMore) {
-      result.push({
-        relation: 'next',
-        url: getSearchUrl({ ...searchRequest, offset: offset + count }),
-      });
-    }
-
-    if (offset > 0) {
-      result.push({
-        relation: 'previous',
-        url: getSearchUrl({ ...searchRequest, offset: offset - count }),
-      });
+  if (searchRequest.count > 0 && entries && entries.length > 0) {
+    if (canUseCursorLinks(searchRequest)) {
+      buildSearchLinksWithCursor(searchRequest, entries, hasMore, result);
+    } else {
+      buildSearchLinksWithOffset(searchRequest, hasMore, result);
     }
   }
 
   return result;
+}
+
+/**
+ * Returns true if the search request can use cursor links.
+ * Cursor links are more efficient than offset links for large result sets.
+ * A search request can use cursor links if:
+ *   1. Not using offset pagination
+ *   2. Exactly one sort rule using _lastUpdated ascending
+ * @param searchRequest - The candidate search request.
+ * @returns True if the search request can use cursor links.
+ */
+function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): boolean {
+  return (
+    searchRequest.offset === 0 &&
+    searchRequest.sortRules?.length === 1 &&
+    searchRequest.sortRules[0].code === '_lastUpdated' &&
+    !searchRequest.sortRules[0].descending
+  );
+}
+
+/**
+ * Builds the "first", "next", and "previous" links for a search request using cursor pagination.
+ * @param searchRequest - The search request.
+ * @param entries - The search bundle entries.
+ * @param hasMore - True if there are more entries after the current page.
+ * @param result - The search bundle links.
+ */
+function buildSearchLinksWithCursor(
+  searchRequest: SearchRequestWithCountAndOffset,
+  entries: BundleEntry[],
+  hasMore: boolean | undefined,
+  result: BundleLink[]
+): void {
+  result.push({
+    relation: 'first',
+    url: getSearchUrl({ ...searchRequest, cursor: undefined, offset: undefined }),
+  });
+
+  if (hasMore) {
+    const lastResource = entries[entries.length - 1].resource;
+    result.push({
+      relation: 'next',
+      url: getSearchUrl({
+        ...searchRequest,
+        cursor: formatCursor({
+          version: '1',
+          lastInstant: lastResource?.meta?.lastUpdated as string,
+          lastId: lastResource?.id as string,
+        }),
+        offset: undefined,
+      }),
+    });
+  }
+}
+
+/**
+ * Parses a cursor string into a Cursor object.
+ * @param cursor - The cursor string.
+ * @returns The Cursor object or undefined if the cursor string is invalid.
+ */
+function parseCursor(cursor: string): Cursor | undefined {
+  const parts = splitN(cursor, '-', 3);
+  if (parts.length !== 3) {
+    return undefined;
+  }
+  const date = new Date(parseInt(parts[1], 10));
+  return { version: parts[0], lastInstant: date.toISOString(), lastId: parts[2] };
+}
+
+/**
+ * Formats a cursor object into a cursor string.
+ * @param cursor - The cursor object.
+ * @returns The cursor string.
+ */
+function formatCursor(cursor: Cursor): string {
+  const date = new Date(cursor.lastInstant);
+  return `${cursor.version}-${date.getTime()}-${cursor.lastId}`;
+}
+
+/**
+ * Adds the "first", "next", and "previous" links to the result array using offset pagination.
+ * Offset pagination is slow, and should be avoided if possible.
+ * @param searchRequest - The search request.
+ * @param hasMore - True if there are more entries after the current page.
+ * @param result - The search bundle links.
+ */
+function buildSearchLinksWithOffset(
+  searchRequest: SearchRequestWithCountAndOffset,
+  hasMore: boolean | undefined,
+  result: BundleLink[]
+): void {
+  const count = searchRequest.count;
+  const offset = searchRequest.offset;
+
+  result.push({
+    relation: 'first',
+    url: getSearchUrl({ ...searchRequest, offset: 0 }),
+  });
+
+  if (hasMore) {
+    result.push({
+      relation: 'next',
+      url: getSearchUrl({ ...searchRequest, offset: offset + count }),
+    });
+  }
+
+  if (offset > 0) {
+    result.push({
+      relation: 'previous',
+      url: getSearchUrl({ ...searchRequest, offset: offset - count }),
+    });
+  }
 }
 
 function getSearchUrl(searchRequest: SearchRequest): string {
@@ -476,7 +740,7 @@ async function getCount(repo: Repository, searchRequest: SearchRequest, rowCount
  * @returns The total number of matching results.
  */
 async function getAccurateCount(repo: Repository, searchRequest: SearchRequest): Promise<number> {
-  const builder = getBaseSelectQuery(repo, searchRequest, false);
+  const builder = getBaseSelectQuery(repo, searchRequest, { addColumns: false });
 
   if (builder.joins.length > 0) {
     builder.raw(`COUNT (DISTINCT "${searchRequest.resourceType}"."id")::int AS "count"`);
@@ -811,9 +1075,9 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
     if (operator === Operator.EXACT) {
       return new Condition(column, '=', v);
     } else if (operator === Operator.CONTAINS) {
-      return new Condition(column, 'LIKE', `%${v}%`);
+      return new Condition(column, 'LIKE', `%${escapeLikeString(v)}%`);
     } else {
-      return new Condition(column, 'LIKE', `${v}%`);
+      return new Condition(column, 'LIKE', `${escapeLikeString(v)}%`);
     }
   });
   return new Disjunction(conditions);
@@ -878,22 +1142,26 @@ function buildTokenSearchFilter(
  * @param table - The table in which to search.
  * @param details - The search parameter details.
  * @param operator - The search operator.
- * @param values - The string values to search against.
+ * @param values - The string values to search against or a Column
  * @returns The select query condition.
  */
 function buildReferenceSearchFilter(
   table: string,
   details: SearchParameterDetails,
   operator: Operator,
-  values: string[]
+  values: string[] | Column
 ): Expression {
   const column = new Column(table, details.columnName);
-  values = values.map((v) =>
-    !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
-  );
+  if (Array.isArray(values)) {
+    values = values.map((v) =>
+      !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
+    );
+  }
   let condition: Condition;
   if (details.array) {
     condition = new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
+  } else if (values instanceof Column) {
+    condition = new Condition(column, '=', values);
   } else if (values.length === 1) {
     condition = new Condition(column, '=', values[0]);
   } else {
@@ -1100,7 +1368,8 @@ function buildChainedSearchUsingReferenceTable(
     }
 
     const referenceTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.leftJoin(
+    selectQuery.join(
+      'LEFT JOIN',
       referenceTableName,
       referenceTableAlias,
       new Conjunction([
@@ -1110,7 +1379,8 @@ function buildChainedSearchUsingReferenceTable(
     );
 
     const nextTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.leftJoin(
+    selectQuery.join(
+      'LEFT JOIN',
       link.resourceType,
       nextTableAlias,
       new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
@@ -1155,7 +1425,7 @@ function buildChainedSearchUsingReferenceStrings(
   for (const link of param.chain) {
     const nextTable = selectQuery.getNextJoinAlias();
     const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
-    selectQuery.leftJoin(link.resourceType, nextTable, joinCondition);
+    selectQuery.join('LEFT JOIN', link.resourceType, nextTable, joinCondition);
 
     currentTable = nextTable;
     currentResourceType = link.resourceType;

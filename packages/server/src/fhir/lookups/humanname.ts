@@ -120,6 +120,10 @@ export function getNameString(name: HumanName): string {
 }
 
 function getTokens(input: string): Set<string> {
+  if (!input || typeof input !== 'string') {
+    return new Set();
+  }
+
   // Convert to lowercase
   // Split on whitespace
   // Remove empty strings
