@@ -1100,6 +1100,23 @@ describe('FHIR Repo', () => {
       expect(results).toHaveLength(1);
     }));
 
+  test('Prevents setting Project compartments', async () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({ withRepo: true });
+      const { project: otherProject, repo: otherRepo } = await createTestProject({ withRepo: true });
+      const projectReference = createReference(otherProject);
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { compartment: [projectReference], account: projectReference },
+      });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+      expect(patient.meta?.compartment).not.toContainEqual({ reference: getReferenceString(otherProject) });
+
+      const results = await otherRepo.searchResources(parseSearchRequest('Patient'));
+      expect(results).toHaveLength(0);
+    }));
+
   test('setTypedValue', () => {
     const patient: Patient = {
       resourceType: 'Patient',
