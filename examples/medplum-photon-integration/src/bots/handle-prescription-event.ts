@@ -85,7 +85,7 @@ export async function handleUpdatePrescription(
   identifiers.push({ system: 'https://neutron.health/webhooks', value: body.id });
   const op = existingPrescription.identifier ? 'replace' : 'add';
 
-  const id = body.data.externalId;
+  const id = body.data.externalId as string;
   const ops: PatchOperation[] = [
     { op: 'test', path: '/meta/versionId', value: existingPrescription.meta?.versionId },
     { op: 'replace', path: '/status', value: updatedStatus },
