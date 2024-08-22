@@ -61,7 +61,7 @@ export async function groupExportResources(
           const resource = await repo.readResource(resourceType, memberId);
           await exporter.writeResource(resource);
         }
-      } catch (err) {
+      } catch (_err) {
         getLogger().warn('Unable to read patient for group export', {
           reference: member.entity.reference,
         });

@@ -81,3 +81,5 @@ export * as v72 from './v72';
 export * as v73 from './v73';
 export * as v74 from './v74';
 export * as v75 from './v75';
+export * as v76 from './v76';
+export * as v77 from './v77';

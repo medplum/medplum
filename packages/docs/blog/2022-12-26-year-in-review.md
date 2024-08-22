@@ -1,17 +1,15 @@
 ---
 slug: 2022-year-in-review-medplum
 title: Medplum Year in Review 2022
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [integration, fhir-datastore]
 ---
 
 ![2022 in Review](/img/blog/2022-in-review.png)
 
 As we close out 2022, the Medplum team would love to thank our customers and community for joining us on this journey.
+
+<!-- truncate -->
 
 We wanted to highlight a few memorable moments and reflect on all that happened during the year. It was a lot of fun, and huge thank you to the team who pushed so hard to make all these things happen.
 
@@ -50,7 +48,7 @@ Instead of going on about what the new year has to hold, I'll share a peek into 
 | [Auth](/docs/auth)                         | [Change log](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aauth)           | [Roadmap](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Aauth)           |
 | [FHIR Datastore](/docs/fhir-datastore)     | [Change log](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Afhir-datastore) | [Roadmap](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Afhir-datastore) |
 | [Subscriptions](/docs/subscriptions)       | [Change log](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Asubscriptions)  | [Roadmap](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Asubscriptions)  |
-| [React](/docs/react)               | [Change log](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Areact)          | [Roadmap](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Areact)          |
+| [React](/docs/react)                       | [Change log](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Areact)          | [Roadmap](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Areact)          |
 | [Search](/docs/search)                     | [Change log](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Asearch)         | [Roadmap](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Asearch)         |
 | [Self-Hosting](/docs/self-hosting)         | [Change log](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aself-host)      | [Roadmap](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Asef-host)       |
 | [Compliance](/docs/compliance)             | [Change log](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Acompliance)     | [Roadmap](https://github.com/medplum/medplum/issues?q=is%3Aissue+is%3Aopen+label%3Acompliance)     |

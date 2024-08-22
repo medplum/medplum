@@ -1,6 +1,6 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
-import { Document, MemoizedSearchControl } from '@medplum/react';
+import { Document, SearchControl } from '@medplum/react';
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -17,7 +17,7 @@ export function AuditEventPage(): JSX.Element | null {
 
   return (
     <Document>
-      <MemoizedSearchControl
+      <SearchControl
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onChange={(e) => setSearch(e.definition)}

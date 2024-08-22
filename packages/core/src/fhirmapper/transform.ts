@@ -1,5 +1,7 @@
 import {
   ConceptMap,
+  ExtractResource,
+  ResourceType,
   StructureMap,
   StructureMapGroup,
   StructureMapGroupInput,
@@ -16,9 +18,36 @@ import { TypedValue } from '../types';
 import { InternalSchemaElement, tryGetDataType } from '../typeschema/types';
 import { conceptMapTranslate } from './conceptmaptranslate';
 
+/**
+ * The TransformMapCollection class is a collection of StructureMap and ConceptMap resources.
+ * It is used to store and retrieve imported StructureMaps and ConceptMaps by URL.
+ */
+export class TransformMapCollection {
+  constructor(readonly resources: (StructureMap | ConceptMap)[] = []) {}
+
+  get<K extends ResourceType>(resourceType: K, url: string): ExtractResource<K>[] {
+    const result = [];
+    for (const r of this.resources) {
+      if (r.resourceType === resourceType && r.url && this.matchesUrl(r.url as string, url)) {
+        result.push(r);
+      }
+    }
+    return result as ExtractResource<K>[];
+  }
+
+  private matchesUrl(url: string, pattern: string): boolean {
+    if (pattern.includes('*')) {
+      const parts = pattern.split('*');
+      return url.startsWith(parts[0]) && url.endsWith(parts[1]);
+    } else {
+      return url === pattern;
+    }
+  }
+}
+
 interface TransformContext {
   root: StructureMap;
-  loader?: (url: string) => StructureMap[];
+  transformMaps?: TransformMapCollection;
   parent?: TransformContext;
   variables?: Record<string, TypedValue[] | TypedValue>;
 }
@@ -30,15 +59,15 @@ interface TransformContext {
  *
  * @param structureMap - The StructureMap to transform.
  * @param input - The input values.
- * @param loader - Optional loader function for loading imported StructureMaps.
+ * @param transformMaps - Optional collection of imported StructureMaps and ConceptMaps.
  * @returns The transformed values.
  */
 export function structureMapTransform(
   structureMap: StructureMap,
   input: TypedValue[],
-  loader?: (url: string) => StructureMap[]
+  transformMaps = new TransformMapCollection()
 ): TypedValue[] {
-  return evalStructureMap({ root: structureMap, loader }, structureMap, input);
+  return evalStructureMap({ root: structureMap, transformMaps }, structureMap, input);
 }
 
 /**
@@ -52,7 +81,7 @@ export function structureMapTransform(
  */
 function evalStructureMap(ctx: TransformContext, structureMap: StructureMap, input: TypedValue[]): TypedValue[] {
   evalImports(ctx, structureMap);
-  hoistGroups(ctx, structureMap);
+  registerGlobals(ctx, structureMap);
   return evalGroup(ctx, structureMap.group[0], input);
 }
 
@@ -65,17 +94,20 @@ function evalStructureMap(ctx: TransformContext, structureMap: StructureMap, inp
  * @internal
  */
 function evalImports(ctx: TransformContext, structureMap: StructureMap): void {
-  if (ctx.loader && structureMap.import) {
+  const transformMaps = getTransformMaps(ctx);
+  if (transformMaps && structureMap.import) {
     for (const url of structureMap.import) {
-      const importedMaps = ctx.loader(url as string);
+      const importedMaps = transformMaps.get('StructureMap', url);
       for (const importedMap of importedMaps) {
-        hoistGroups(ctx, importedMap);
+        registerGlobals(ctx, importedMap);
       }
     }
   }
 }
 
 /**
+ * Registers all globals in a FHIR StructureMap into the current context.
+ * Adds all contained StructureMaps and ConceptMaps to the map collection.
  * Hoists the groups in a FHIR StructureMap into the current context.
  * This is necessary to allow groups to reference each other.
  *
@@ -83,7 +115,16 @@ function evalImports(ctx: TransformContext, structureMap: StructureMap): void {
  * @param structureMap - The FHIR StructureMap definition.
  * @internal
  */
-function hoistGroups(ctx: TransformContext, structureMap: StructureMap): void {
+function registerGlobals(ctx: TransformContext, structureMap: StructureMap): void {
+  const transformMaps = getTransformMaps(ctx);
+  if (transformMaps && structureMap.contained) {
+    for (const c of structureMap.contained) {
+      if (c.resourceType === 'StructureMap' || c.resourceType === 'ConceptMap') {
+        transformMaps.resources.push(c);
+      }
+    }
+  }
+
   if (structureMap.group) {
     for (const group of structureMap.group) {
       setVariable(ctx, group.name as string, { type: 'StructureMapGroup', value: group });
@@ -264,7 +305,7 @@ function tryEvalShorthandRule(ctx: TransformContext, rule: StructureMapGroupRule
 
   // Ok, this is a shorthand rule.
   // Next, try to find a "types" group that matches the input and output types
-  const group = tryFindTypesGroup(ctx, rule);
+  const group = tryFindTypesGroup(ctx, sourceValue);
   if (!group) {
     // No group found, fallback to simple copy transform
     // This is commonly used for primitive types such as "string" and "code"
@@ -286,24 +327,10 @@ function tryEvalShorthandRule(ctx: TransformContext, rule: StructureMapGroupRule
  * Tries to find a "types" group that matches the input and output types.
  * This is used to determine the transform for a shorthand rule.
  * @param ctx - The transform context.
- * @param _rule - The FHIR Mapping rule definition.
+ * @param sourceValue - The source value.
  * @returns The matching group, if found; otherwise, undefined.
  */
-function tryFindTypesGroup(ctx: TransformContext, _rule: StructureMapGroupRule): StructureMapGroup | undefined {
-  let sourceValue = getVariable(ctx, '_');
-  if (Array.isArray(sourceValue)) {
-    sourceValue = sourceValue[0];
-  }
-  if (!sourceValue) {
-    return undefined;
-  }
-
-  let sourceType = sourceValue.type;
-  if (sourceType.includes('/')) {
-    // Source type can be a URL, so we need to extract the last part
-    sourceType = sourceType.split('/').pop() as string;
-  }
-
+function tryFindTypesGroup(ctx: TransformContext, sourceValue: TypedValue): StructureMapGroup | undefined {
   let currentContext: TransformContext | undefined = ctx;
   while (currentContext) {
     if (currentContext.variables) {
@@ -316,7 +343,7 @@ function tryFindTypesGroup(ctx: TransformContext, _rule: StructureMapGroupRule):
               (group.typeMode === 'types' || group.typeMode === 'type-and-types') &&
               group.input.length === 2 &&
               group.input[0].mode === 'source' &&
-              group.input[0].type === sourceType &&
+              group.input[0].type === sourceValue.type &&
               group.input[1].mode === 'target'
             ) {
               return group;
@@ -453,6 +480,12 @@ function evalTarget(ctx: TransformContext, target: StructureMapGroupRuleTarget):
       case 'append':
         targetValue = evalAppend(ctx, target);
         break;
+      case 'cast':
+        targetValue = evalCast(ctx, target);
+        break;
+      case 'cc':
+        targetValue = evalCc(ctx, target);
+        break;
       case 'copy':
         targetValue = evalCopy(ctx, target);
         break;
@@ -561,6 +594,57 @@ function evalAppend(ctx: TransformContext, target: StructureMapGroupRuleTarget):
 }
 
 /**
+ * Evaluates the "cast" transform.
+ *
+ * "Cast source from one type to another. target type can be left as implicit if there is one and only one target type known."
+ *
+ * See: https://build.fhir.org/mapping-language.html#7.8.0.8.2
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @returns The evaluated target values.
+ * @internal
+ */
+function evalCast(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
+  const arg1 = resolveParameter(ctx, target.parameter?.[0])?.[0];
+  const arg2 = resolveParameter(ctx, target.parameter?.[1])?.[0]?.value;
+  if (arg2 === 'string') {
+    return [{ type: 'string', value: arg1?.value?.toString() }];
+  }
+  return [arg1];
+}
+
+/**
+ * Evaluates the "cc" transform.
+ *
+ * "Create a CodeableConcept from the parameters provided."
+ *
+ * If there are two parameters, the first is the system and the second is the code.
+ *
+ * If there is only one parameter, it is the text.
+ *
+ * See: https://build.fhir.org/mapping-language.html#7.8.0.8.2
+ *
+ * @param ctx - The transform context.
+ * @param target - The FHIR Mapping target definition.
+ * @returns The evaluated target values.
+ * @internal
+ */
+function evalCc(ctx: TransformContext, target: StructureMapGroupRuleTarget): TypedValue[] {
+  const params = target.parameter as StructureMapGroupRuleTargetParameter[];
+  if (params.length === 2) {
+    // system and code
+    const system = resolveParameter(ctx, params[0])?.[0]?.value;
+    const code = resolveParameter(ctx, params[1])?.[0]?.value;
+    return [{ type: 'CodeableConcept', value: { coding: [{ system, code }] } }];
+  } else {
+    // text
+    const text = resolveParameter(ctx, params[0])?.[0]?.value;
+    return [{ type: 'CodeableConcept', value: { text } }];
+  }
+}
+
+/**
  * Evaluates the "copy" transform.
  *
  * "Simply copy the source to the target as is (only allowed when the types in source and target match- typically for primitive types).
@@ -636,7 +720,11 @@ function evalTranslate(ctx: TransformContext, target: StructureMapGroupRuleTarge
   const args = (target.parameter as StructureMapGroupRuleTargetParameter[]).flatMap((p) => resolveParameter(ctx, p));
   const sourceValue = args[0].value;
   const mapUri = args[1].value;
-  const conceptMap = ctx.root.contained?.find((r) => r.resourceType === 'ConceptMap' && r.url === mapUri) as ConceptMap;
+  const transformMaps = getTransformMaps(ctx);
+  const conceptMap = transformMaps?.get('ConceptMap', mapUri)[0];
+  if (!conceptMap) {
+    throw new Error('ConceptMap not found: ' + mapUri);
+  }
   // TODO: Verify whether system is actually required
   // The FHIR Mapping Language spec does not say whether it is required
   // But our current implementation requires it
@@ -692,6 +780,16 @@ function evalDependent(ctx: TransformContext, dependent: StructureMapGroupRuleDe
 
   const newContext: TransformContext = { root: ctx.root, parent: ctx, variables: {} };
   evalGroup(newContext, dependentGroup.value as StructureMapGroup, args);
+}
+
+function getTransformMaps(ctx: TransformContext): TransformMapCollection | undefined {
+  if (ctx.transformMaps) {
+    return ctx.transformMaps;
+  }
+  if (ctx.parent) {
+    return getTransformMaps(ctx.parent);
+  }
+  return undefined;
 }
 
 /**

@@ -110,20 +110,48 @@ describe('ExpoClientStorage', () => {
     expect(newStorage.length).toEqual(0);
   });
 
+  test('Setting a key to a value larger than max (2000)', async () => {
+    const firstStorage = new ExpoClientStorage();
+    await firstStorage.getInitPromise();
+
+    const test1Str = 'Hello, world!'.repeat(200);
+    expect(test1Str.length).toEqual(2600);
+
+    firstStorage.setString('test1', test1Str);
+    expect(firstStorage.getString('test1')).toEqual(test1Str);
+    await sleep(100);
+
+    const test2Str = test1Str.repeat(3);
+    expect(test2Str.length).toEqual(2600 * 3);
+
+    firstStorage.setString('test2', test2Str);
+    expect(firstStorage.getString('test2')).toEqual(test2Str);
+    await sleep(100);
+
+    const newStorage = new ExpoClientStorage();
+    await newStorage.getInitPromise();
+
+    expect(newStorage.getString('test1')).toEqual(test1Str);
+    expect(newStorage.getString('test2')).toEqual(test2Str);
+  });
+
   if (Platform.OS !== 'web') {
     test('If an error is thrown while getting keys, should call delete and init anyways', async () => {
+      // Clear keys before this test
+      await SecureStore.deleteItemAsync('___keys___');
+
       // Setup, pre-init with keys
       const storage1 = new ExpoClientStorage();
       await expect(storage1.getInitPromise()).resolves.toBeUndefined();
       storage1.setString('bestEhr', 'medplum');
-      expect(storage1.length).toBe(1);
+      expect(storage1.length).toEqual(1);
 
       // Sleep for a bit to let async stuff settle
       await sleep(25);
 
       const storage2 = new ExpoClientStorage();
       await expect(storage2.getInitPromise()).resolves.toBeUndefined();
-      expect(storage2.length).toBe(1);
+      expect(storage2.length).toEqual(1);
       expect(storage2.getString('bestEhr')).toEqual('medplum');
 
       const originalError = console.error;

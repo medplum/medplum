@@ -260,13 +260,15 @@ async function assertPropertyExists(
   const db = getDatabasePool(DatabaseMode.READER);
   const query = new SelectQuery('Coding_Property');
   const codingTable = query.getNextJoinAlias();
-  query.innerJoin(
+  query.join(
+    'INNER JOIN',
     'Coding',
     codingTable,
     new Condition(new Column('Coding_Property', 'coding'), '=', new Column(codingTable, 'id'))
   );
   const propertyTable = query.getNextJoinAlias();
-  query.innerJoin(
+  query.join(
+    'INNER JOIN',
     'CodeSystem_Property',
     propertyTable,
     new Condition(new Column('Coding_Property', 'property'), '=', new Column(propertyTable, 'id'))

@@ -1,17 +1,15 @@
 ---
 slug: develo-case-study
 title: Develo Pediatric EHR
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [pediatrics, fhir-datastore, self-host, ai]
 ---
 
 # Develo Pediatric EHR
 
 [Develo](https://getdevelo.com/) has built a **full-featured EHR and customer relationship management (CRM)** for pediatrics, encompassing core [scheduling](/docs/scheduling), [clinical](/docs/charting), and [billing](/docs/billing) workflows along with family engagement capabilities.
+
+<!-- truncate -->
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/Jk5jSEiBYbQ?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
 

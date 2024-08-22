@@ -29,7 +29,7 @@ export interface UnbindFromTokenMsg extends BaseSubscriptionClientMsg {
   payload: { token: string };
 }
 
-export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg;
+export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg | { type: 'ping' };
 
 const hostname = os.hostname();
 const METRIC_OPTIONS = { attributes: { hostname } };
@@ -151,6 +151,8 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     }
     subscribeWsToSubscription(socket, subscriptionId);
     ensureHeartbeatHandler();
+    // Send a handshake to notify client that this subscription is active for this connection
+    socket.send(JSON.stringify(createHandshakeBundle(subscriptionId)));
 
     onDisconnect = async (): Promise<void> => {
       const subscriptionIds = wsToSubLookup.get(socket);
@@ -195,7 +197,9 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     const rawDataStr = (data as Buffer).toString();
     globalLogger.debug('[WS] received data', { data: rawDataStr });
     const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
-    if (['bind-with-token', 'unbind-from-token'].includes(msg.type)) {
+    if (msg.type === 'ping') {
+      socket.send(JSON.stringify({ type: 'pong' }));
+    } else if (['bind-with-token', 'unbind-from-token'].includes(msg.type)) {
       const token = msg?.payload?.token;
       if (!token) {
         globalLogger.error('[WS]: invalid client message - missing token', { data, socket });
@@ -260,6 +264,27 @@ export function createSubHeartbeatEvent(subscriptionIds: Set<string>): Bundle {
         subscription: { reference: `Subscription/${subscriptionId}` },
       },
     })),
+  };
+}
+
+export function createHandshakeBundle(subscriptionId: string): Bundle {
+  const timestamp = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    resourceType: 'Bundle',
+    type: 'history',
+    timestamp,
+    entry: [
+      {
+        resource: {
+          resourceType: 'SubscriptionStatus',
+          id: crypto.randomUUID(),
+          status: 'active',
+          type: 'handshake',
+          subscription: { reference: `Subscription/${subscriptionId}` },
+        },
+      },
+    ],
   };
 }
 

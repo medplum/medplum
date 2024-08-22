@@ -94,19 +94,36 @@ export class AsyncJobExecutor {
     });
   }
 
-  async failJob(repo: Repository, err: Error): Promise<AsyncJob | undefined> {
+  async updateJobProgress(repo: Repository, output: Parameters): Promise<AsyncJob | undefined> {
     if (!this.resource) {
       return undefined;
     }
     return repo.updateResource<AsyncJob>({
       ...this.resource,
+      output,
+    });
+  }
+
+  async failJob(repo: Repository, err?: Error): Promise<AsyncJob | undefined> {
+    if (!this.resource) {
+      return undefined;
+    }
+    const failedJob: AsyncJob = {
+      ...this.resource,
       status: 'error',
       transactionTime: new Date().toISOString(),
-      output:
-        err instanceof OperationOutcomeError
-          ? { resourceType: 'Parameters', parameter: [{ name: 'outcome', resource: err.outcome }] }
-          : undefined,
-    });
+    };
+    if (err) {
+      failedJob.output = {
+        resourceType: 'Parameters',
+        parameter: [
+          err instanceof OperationOutcomeError
+            ? { name: 'outcome', resource: err.outcome }
+            : { name: 'error', valueString: err.message },
+        ],
+      };
+    }
+    return repo.updateResource<AsyncJob>(failedJob);
   }
 
   getContentLocation(baseUrl: string): string {

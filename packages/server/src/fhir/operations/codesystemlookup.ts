@@ -58,19 +58,26 @@ export async function lookupCoding(codeSystem: CodeSystem, coding: Coding): Prom
 
   const lookup = new SelectQuery('Coding').column('display');
   const propertyTable = lookup.getNextJoinAlias();
-  lookup.leftJoin(
+  lookup.join(
+    'LEFT JOIN',
     'Coding_Property',
     propertyTable,
     new Condition(new Column(propertyTable, 'coding'), '=', new Column('Coding', 'id'))
   );
   const csPropTable = lookup.getNextJoinAlias();
-  lookup.leftJoin(
+  lookup.join(
+    'LEFT JOIN',
     'CodeSystem_Property',
     csPropTable,
     new Condition(new Column(propertyTable, 'property'), '=', new Column(csPropTable, 'id'))
   );
   const target = lookup.getNextJoinAlias();
-  lookup.leftJoin('Coding', target, new Condition(new Column(propertyTable, 'target'), '=', new Column(target, 'id')));
+  lookup.join(
+    'LEFT JOIN',
+    'Coding',
+    target,
+    new Condition(new Column(propertyTable, 'target'), '=', new Column(target, 'id'))
+  );
   lookup
     .column(new Column(csPropTable, 'code'))
     .column(new Column(csPropTable, 'type'))

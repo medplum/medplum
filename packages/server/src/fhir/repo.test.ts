@@ -387,6 +387,33 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.account?.reference).toEqual(account);
     }));
 
+  test('Create resource with malformed account', () =>
+    withTestContext(async () => {
+      const author = 'Practitioner/' + randomUUID();
+
+      // This user does not have an access policy
+      // So they can optionally set an account
+      const repo = new Repository({
+        extendedMode: true,
+        author: {
+          reference: author,
+        },
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        meta: {
+          account: {
+            reference: 'example.com/account/1',
+          },
+        },
+      });
+
+      expect(patient.meta?.author?.reference).toEqual(author);
+      expect(patient.meta?.account?.reference).toEqual('example.com/account/1');
+    }));
+
   test('Create resource with lastUpdated', () =>
     withTestContext(async () => {
       const lastUpdated = '2020-01-01T12:00:00Z';
@@ -1005,14 +1032,17 @@ describe('FHIR Repo', () => {
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
+      const conditionalReference = {
+        reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
+      };
 
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
-        generalPractitioner: [
-          { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
-        ],
+        meta: { account: conditionalReference },
+        generalPractitioner: [conditionalReference],
       });
       expect(patient.generalPractitioner?.[0]?.reference).toEqual(getReferenceString(practitioner));
+      expect(patient.meta?.account?.reference).toEqual(getReferenceString(practitioner));
     }));
 
   test('Conditional reference resolution failure', async () =>

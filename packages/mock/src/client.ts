@@ -291,10 +291,17 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
   getSubscriptionManager(): MockSubscriptionManager {
     if (!this.subManager) {
       this.subManager = new MockSubscriptionManager(this, 'wss://example.com/ws/subscriptions-r4', {
-        mockRobustWebSocket: true,
+        mockReconnectingWebSocket: true,
       });
     }
     return this.subManager;
+  }
+
+  setSubscriptionManager(subManager: MockSubscriptionManager): void {
+    if (this.subManager) {
+      this.subManager.closeWebSocket();
+    }
+    this.subManager = subManager;
   }
 
   subscribeToCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {
@@ -685,6 +692,7 @@ export class MockFetchClient {
 
     for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
       structureDefinition.kind = 'resource';
+      structureDefinition.url = 'http://hl7.org/fhir/StructureDefinition/' + structureDefinition.name;
       loadDataType(structureDefinition);
       await this.repo.createResource(structureDefinition);
     }
@@ -713,7 +721,7 @@ export class MockFetchClient {
     if (options.body) {
       try {
         body = JSON.parse(options.body);
-      } catch (err) {
+      } catch (_err) {
         body = options.body;
       }
     }

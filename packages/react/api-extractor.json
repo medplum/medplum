@@ -1,3 +1,4 @@
 {
-  "extends": "../../api-extractor.json"
+  "extends": "../../api-extractor.json",
+  "bundledPackages": ["@medplum/react-hooks"]
 }

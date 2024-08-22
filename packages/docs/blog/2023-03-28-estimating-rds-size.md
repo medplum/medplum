@@ -1,17 +1,15 @@
 ---
 slug: estimating-rds
 title: Estimating RDS Size
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [fhir-datastore, self-host]
 ---
 
 # Estimating RDS Size
 
 Data privacy, locality, governance and [compliance](/docs/compliance) are huge issues in healthcare, and that's why we at Medplum support [self-hosting](/docs/self-hosting). For those running on AWS, we use Aurora RDS, which supports auto-scaling. A common question we get is - **how big is my database going to be?**
+
+<!-- truncate -->
 
 :::tip
 Medplum offers a hosted offering as well as self-hosted. Instructions to [register](/docs/tutorials/register) can be found in our docs.

@@ -312,14 +312,33 @@ class BatchProcessor {
     resultEntries: (BundleEntry | OperationOutcome)[]
   ): Promise<Bundle> {
     const bundleType = this.bundle.type;
-    let count = 0;
+    if (!bundleType) {
+      throw new OperationOutcomeError(badRequest('Missing bundle type'));
+    }
+
+    if (bundleType !== 'batch' && bundleType !== 'transaction') {
+      throw new OperationOutcomeError(badRequest('Unrecognized bundle type'));
+    }
+
+    const entries = this.bundle.entry;
+    if (!entries) {
+      throw new OperationOutcomeError(badRequest('Missing bundle entry'));
+    }
+
+    const preEvent: BatchEvent = {
+      type: 'batch',
+      bundleType,
+      count: entries.length,
+      size: JSON.stringify(this.bundle).length,
+    };
+    this.router.dispatchEvent(preEvent);
+
     let errors = 0;
 
     for (const entryIndex of bundleInfo.ordering) {
       const entry = this.bundle.entry?.[entryIndex] as BundleEntry;
       const rewritten = this.rewriteIdsInObject(entry);
       try {
-        count++;
         resultEntries[entryIndex] = await this.processBatchEntry(rewritten);
       } catch (err) {
         if (bundleType === 'transaction') {
@@ -332,14 +351,12 @@ class BatchProcessor {
       }
     }
 
-    const event: BatchEvent = {
+    const postEvent: BatchEvent = {
       type: 'batch',
       bundleType,
-      count,
       errors,
-      size: JSON.stringify(this.bundle).length,
     };
-    this.router.dispatchEvent(event);
+    this.router.dispatchEvent(postEvent);
 
     return {
       resourceType: 'Bundle',
@@ -478,9 +495,9 @@ function buildBundleResponse(outcome: OperationOutcome, resource?: Resource): Bu
 
 export interface BatchEvent extends Event {
   bundleType: Bundle['type'];
-  count: number;
-  errors: number;
-  size: number;
+  count?: number;
+  errors?: number;
+  size?: number;
 }
 
 export interface LogEvent extends Event {

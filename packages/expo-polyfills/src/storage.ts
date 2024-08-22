@@ -2,6 +2,8 @@ import { ClientStorage, IClientStorage, OperationOutcomeError } from '@medplum/c
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
+const MAX_VALUE_LENGTH = 2000;
+
 export interface IExpoClientStorage extends IClientStorage {
   getInitPromise(): Promise<void>;
   length: number;
@@ -86,7 +88,7 @@ export class SyncSecureStorage implements Storage {
   }
 
   private async buildMapFromStoredKeys(keys: string[]): Promise<void> {
-    const promises = keys.map((key) => SecureStore.getItemAsync(key));
+    const promises = keys.map((key) => this.getValueForKey(key));
     const values = await Promise.all(promises);
     for (let i = 0; i < keys.length; i++) {
       const val = values[i];
@@ -139,6 +141,56 @@ export class SyncSecureStorage implements Storage {
     this.setKeys();
   }
 
+  private async getValueForKey(key: string): Promise<string | null> {
+    let valStr = await SecureStore.getItemAsync(key);
+    if (!valStr) {
+      return valStr;
+    }
+    let chunk = 0;
+    while (valStr.endsWith('___continued___')) {
+      chunk++;
+      valStr = valStr.replace('___continued___', '');
+      const next = await SecureStore.getItemAsync(`${key}___chunk${chunk}___`);
+      if (!next) {
+        this.removeItem(key);
+        throw new OperationOutcomeError({
+          id: 'key-chunk-missing',
+          resourceType: 'OperationOutcome',
+          issue: [
+            {
+              severity: 'error',
+              code: 'exception',
+              details: {
+                text: 'Chunk missing for key',
+              },
+              diagnostics: `Chunk ${chunk} of key's value is missing for key '${key}'`,
+            },
+          ],
+        });
+      }
+      valStr += next;
+    }
+    return valStr;
+  }
+
+  private async setValueForKey(key: string, value: string): Promise<void> {
+    const chunks = splitStringIntoChunks(value, MAX_VALUE_LENGTH);
+    // Append ___continued___ if this isn't the only chunk
+    // Otherwise just put the full chunk in
+    const promises = [];
+    promises.push(SecureStore.setItemAsync(key, chunks.length === 1 ? chunks[0] : `${chunks[0]}___continued___`));
+    for (let i = 1; i < chunks.length; i++) {
+      promises.push(
+        SecureStore.setItemAsync(
+          `${key}___chunk${i}___`,
+          // If this isn't the last chunk append ___continued___ to it
+          i === chunks.length - 1 ? chunks[i] : `${chunks[i]}___continued___`
+        )
+      );
+    }
+    await Promise.all(promises);
+  }
+
   private setKeys(): void {
     SecureStore.setItemAsync('___keys___', JSON.stringify(Array.from(this.storage.keys()))).catch(console.error);
   }
@@ -164,7 +216,7 @@ export class SyncSecureStorage implements Storage {
     if (!value) {
       this.removeItem(key);
     } else {
-      SecureStore.setItemAsync(key, value).catch(console.error);
+      this.setValueForKey(key, value).catch(console.error);
       this.storage.set(key, value);
     }
     this.setKeys();
@@ -193,4 +245,12 @@ export class SyncSecureStorage implements Storage {
     this.assertInitialized();
     return null;
   }
+}
+
+export function splitStringIntoChunks(str: string, chunkSize: number): string[] {
+  const chunks = [];
+  for (let i = 0; i < str.length; i += chunkSize) {
+    chunks.push(str.slice(i, i + chunkSize));
+  }
+  return chunks;
 }

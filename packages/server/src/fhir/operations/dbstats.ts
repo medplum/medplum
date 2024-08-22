@@ -59,6 +59,5 @@ export async function dbStatsHandler(_req: FhirRequest): Promise<FhirResponse> {
     );
   }
 
-  console.log(output);
   return [allOk, buildOutputParameters(operation, { tableString: output.join('\n') })];
 }

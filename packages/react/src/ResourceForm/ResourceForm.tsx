@@ -7,7 +7,7 @@ import {
   satisfiedAccessPolicy,
   tryGetProfile,
 } from '@medplum/core';
-import { OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import { OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconAlertCircle, IconChevronDown, IconEdit, IconTrash } from '@tabler/icons-react';
 import cx from 'clsx';
@@ -22,7 +22,6 @@ export interface ResourceFormProps {
   readonly onSubmit: (resource: Resource) => void;
   readonly onPatch?: (resource: Resource) => void;
   readonly onDelete?: (resource: Resource) => void;
-  readonly schemaName?: string;
   /** (optional) URL of the resource profile used to display the form. Takes priority over schemaName. */
   readonly profileUrl?: string;
 }
@@ -31,7 +30,8 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
   const { outcome } = props;
   const medplum = useMedplum();
   const defaultValue = useResource(props.defaultValue);
-  const [schemaLoaded, setSchemaLoaded] = useState<string>();
+  const resourceType = defaultValue?.resourceType as ResourceType;
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [value, setValue] = useState<Resource>();
   const accessPolicy = medplum.getAccessPolicy();
   const theme = useMantineTheme();
@@ -45,7 +45,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
           .then(() => {
             const profile = tryGetProfile(profileUrl);
             if (profile) {
-              setSchemaLoaded(profile.name);
+              setSchemaLoaded(true);
               const modifiedDefaultValue = applyDefaultValuesToResource(defaultValue, profile);
               setValue(modifiedDefaultValue);
             } else {
@@ -56,17 +56,16 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
             console.error('Error in requestProfileSchema', reason);
           });
       } else {
-        const schemaName = props.schemaName ?? defaultValue?.resourceType;
         medplum
-          .requestSchema(schemaName)
+          .requestSchema(resourceType)
           .then(() => {
             setValue(defaultValue);
-            setSchemaLoaded(schemaName);
+            setSchemaLoaded(true);
           })
           .catch(console.log);
       }
     }
-  }, [medplum, defaultValue, props.schemaName, props.profileUrl]);
+  }, [medplum, defaultValue, resourceType, props.profileUrl]);
 
   const accessPolicyResource = useMemo(() => {
     return defaultValue && satisfiedAccessPolicy(defaultValue, AccessPolicyInteraction.READ, accessPolicy);
@@ -122,7 +121,7 @@ export function ResourceForm(props: ResourceFormProps): JSX.Element {
       <BackboneElementInput
         path={value.resourceType}
         valuePath={value.resourceType}
-        typeName={schemaLoaded}
+        typeName={resourceType}
         defaultValue={value}
         outcome={outcome}
         onChange={setValue}

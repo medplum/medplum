@@ -1,5 +1,6 @@
 import {
   OperationOutcomeError,
+  Operator,
   SearchRequest,
   SortRule,
   allOk,
@@ -156,6 +157,12 @@ export abstract class FhirRepository<TClient = unknown> {
    * @returns The search results.
    */
   abstract search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>>;
+
+  abstract searchByReference<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    referenceField: string,
+    references: string[]
+  ): Promise<Record<string, T[]>>;
 
   /**
    * Runs a callback function within a transaction.
@@ -463,6 +470,27 @@ export class MemoryRepository extends FhirRepository {
       entry,
       total: result.length,
     };
+  }
+
+  async searchByReference<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    referenceField: string,
+    references: string[]
+  ): Promise<Record<string, T[]>> {
+    searchRequest.filters ??= [];
+    const results: Record<string, T[]> = {};
+    for (const reference of references) {
+      searchRequest.filters.push({ code: referenceField, operator: Operator.EQUALS, value: reference });
+      const bundle = await this.search(searchRequest);
+      results[reference] = [];
+      for (const entry of bundle.entry ?? []) {
+        if (entry.resource) {
+          results[reference].push(entry.resource);
+        }
+      }
+      searchRequest.filters.pop();
+    }
+    return results;
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {

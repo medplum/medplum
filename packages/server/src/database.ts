@@ -103,7 +103,7 @@ async function runMigrations(pool: Pool): Promise<void> {
   } finally {
     if (client) {
       await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
-      client.release();
+      client.release(true); // Ensure migration connection is torn down and not re-used
       client = undefined;
     }
   }

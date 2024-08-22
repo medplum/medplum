@@ -727,6 +727,11 @@ describe('Core Utils', () => {
     expect(
       deepEquals({ resourceType: 'Patient', meta: { author: '1' } }, { resourceType: 'Patient', meta: { author: '2' } })
     ).toEqual(true);
+
+    // Functions
+    const onConnect = (): void => undefined;
+    expect(deepEquals({ onConnect }, { onConnect })).toEqual(true);
+    expect(deepEquals({ onConnect: () => undefined }, { onConnect: () => undefined })).toEqual(false);
   });
 
   test('deepIncludes', () => {

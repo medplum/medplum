@@ -327,6 +327,9 @@ describe('MedplumProvider', () => {
     });
 
     test('Async ClientStorage.getInitPromise throws', async () => {
+      const originalConsoleError = console.error;
+      console.error = jest.fn();
+
       class TestAsyncStorage extends MockAsyncClientStorage {
         private promise: Promise<void>;
         private reject!: (err: Error) => void;
@@ -383,6 +386,9 @@ describe('MedplumProvider', () => {
       expect(dispatchEventSpy).not.toHaveBeenCalledWith<[MedplumClientEventMap['storageInitialized']]>({
         type: 'storageInitialized',
       });
+
+      expect(console.error).toHaveBeenCalledWith(new Error('Failed to init storage!'));
+      console.error = originalConsoleError;
     });
   });
 });

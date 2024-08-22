@@ -41,7 +41,7 @@ export function NewProjectForm(props: NewProjectFormProps): JSX.Element {
           placeholder="My Project"
           required={true}
           autoFocus={true}
-          error={getErrorsForInput(outcome, 'firstName')}
+          error={getErrorsForInput(outcome, 'projectName')}
         />
         <Text c="dimmed" size="xs">
           By clicking submit you agree to the Medplum{' '}
