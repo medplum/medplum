@@ -1,4 +1,4 @@
-import { Title } from '@mantine/core';
+import { Button, Group, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
 import { Practitioner, Schedule } from '@medplum/fhirtypes';
@@ -9,10 +9,12 @@ import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
 import { ScheduleContext } from '../Schedule.context';
+import { SetAvailability } from '../components/SetAvailability';
 import { SlotDetails } from '../components/SlotDetails';
 
 export function SchedulePage(): JSX.Element {
   const navigate = useNavigate();
+  const [setAvailabilityOpened, setAvailabilityHandlers] = useDisclosure(false);
   const [slotDetailsOpened, slotDetailsHandlers] = useDisclosure(false);
   const [selectedEvent, setSelectedEvent] = useState<Event>();
   const { schedule } = useContext(ScheduleContext);
@@ -81,6 +83,12 @@ export function SchedulePage(): JSX.Element {
         My Schedule
       </Title>
 
+      <Group mb="lg">
+        <Button size="sm" onClick={() => setAvailabilityHandlers.open()}>
+          Set Availability
+        </Button>
+      </Group>
+
       <Calendar
         defaultView="week"
         views={['month', 'week', 'day', 'agenda']}
@@ -94,6 +102,8 @@ export function SchedulePage(): JSX.Element {
         selectable
       />
 
+      {/* Modals */}
+      <SetAvailability opened={setAvailabilityOpened} handlers={setAvailabilityHandlers} />
       <SlotDetails event={selectedEvent} opened={slotDetailsOpened} handlers={slotDetailsHandlers} />
     </Document>
   );
