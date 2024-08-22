@@ -51,11 +51,15 @@ describe('Set Availability', async () => {
 
     await handler(medplum, { bot, input, contentType, secrets: {} });
 
+    // Update the schedule planning horizon
+    const updatedSchedule = await medplum.readResource('Schedule', schedule.id as string);
+    expect(updatedSchedule.planningHorizon?.start).toBe('2024-08-19T09:00:00.000Z');
+    expect(updatedSchedule.planningHorizon?.end).toBe('2024-08-21T17:00:00.000Z');
+
+    // Create 8 free slots: 4 on Monday and 4 on Wednesday
     freeSlots = await medplum.searchResources('Slot', {
       status: 'free',
     });
-
-    // 4 slots on Monday and 4 slots on Wednesday
     expect(freeSlots.length).toBe(8);
   });
 

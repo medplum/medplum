@@ -1,4 +1,4 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+import { BotEvent, MedplumClient, resolveId } from '@medplum/core';
 import { Bundle, BundleEntry, Reference, Resource, Schedule, Slot } from '@medplum/fhirtypes';
 
 export interface SetAvailabilityEvent {
@@ -21,6 +21,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent<SetAvailab
   if (new Date(endDate) < new Date(startDate)) {
     throw new Error('End date must be after start date');
   }
+
+  // Update the period of time covered by schedule
+  await medplum.patchResource('Schedule', resolveId(schedule) as string, [
+    {
+      op: 'add',
+      path: '/planningHorizon',
+      value: {
+        start: new Date(`${startDate}T${startTime}.000Z`),
+        end: new Date(`${endDate}T${endTime}.000Z`),
+      },
+    },
+  ]);
 
   // Map daysOfWeek to their corresponding day numbers
   const dayNumbers = daysOfWeek.map((day) => dayOfWeekMap[day.toLowerCase()]);
