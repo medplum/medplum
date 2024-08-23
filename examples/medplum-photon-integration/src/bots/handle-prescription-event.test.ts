@@ -53,7 +53,12 @@ describe('Prescription webhooks', async () => {
       },
     });
 
-    const prescription = await handler(medplum, { bot, contentType, input: createdWebhook, secrets: {} });
+    const prescription = await handler(medplum, {
+      bot,
+      contentType,
+      input: createdWebhook,
+      secrets: {},
+    });
 
     expect(prescription).toBeDefined();
     expect(prescription.status).toBe('active');
@@ -77,7 +82,7 @@ describe('Prescription webhooks', async () => {
 
     expect(prescription).toBeDefined();
 
-    const createdMedication = await medplum.searchOne('Medication', {
+    const createdMedication = await medplum.searchOne('MedicationKnowledge', {
       code: '4053',
     });
 

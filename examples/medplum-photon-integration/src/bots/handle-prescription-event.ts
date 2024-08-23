@@ -1,5 +1,5 @@
 import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { Medication, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
+import { MedicationKnowledge, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
 import {
   PhotonEvent,
   PhotonWebhook,
@@ -116,10 +116,10 @@ export async function handleCreatePrescription(
   const data = event.data as PrescriptionCreatedData;
   // Get the prescribing practitioner and the medication from Medplum
   const prescriber = await getPrescriber(data, medplum, authToken);
-  let medication: Medication | undefined = await getMedication(data.medicationId, medplum, authToken);
+  let medication: MedicationKnowledge | undefined = await getMedicationKnowledge(data.medicationId, medplum, authToken);
 
   if (!medication) {
-    medication = await createMedication(data, medplum, authToken);
+    medication = await createMedicationKnowledge(data, medplum, authToken);
   }
 
   const medicationRequest: MedicationRequest = {
@@ -173,24 +173,24 @@ export async function handleCreatePrescription(
  * @param authToken - Photon auth token to authorize GraphQL queries
  * @returns The created FHIR Medication resource if it can be created
  */
-async function createMedication(
+async function createMedicationKnowledge(
   data: PrescriptionCreatedData,
   medplum: MedplumClient,
   authToken: string
-): Promise<Medication | undefined> {
+): Promise<MedicationKnowledge | undefined> {
   const medicationCode = await getPhotonMedicationCode(data.medicationId, authToken);
   if (!medicationCode) {
     return undefined;
   }
 
-  const medicationData: Medication = {
-    resourceType: 'Medication',
+  const medicationData: MedicationKnowledge = {
+    resourceType: 'MedicationKnowledge',
     code: { coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: medicationCode }] },
     status: 'active',
   };
 
-  const medication = await medplum.createResource(medicationData);
-  return medication;
+  const medicationKnowledge = await medplum.createResource(medicationData);
+  return medicationKnowledge;
 }
 
 /**
@@ -280,12 +280,12 @@ async function getPhotonMedicationCode(photonMedicationId: string, authToken: st
  * @param authToken - Photon auth token to authorize GraphQL queries
  * @returns The Medication resource from your project if it exists
  */
-async function getMedication(
+async function getMedicationKnowledge(
   photonMedicationId: string,
   medplum: MedplumClient,
   authToken: string
-): Promise<Medication | undefined> {
-  const trackedMedication = await medplum.searchOne('Medication', {
+): Promise<MedicationKnowledge | undefined> {
+  const trackedMedication = await medplum.searchOne('MedicationKnowledge', {
     identifier: `https://neutron.health|${photonMedicationId}`,
   });
 
@@ -295,7 +295,7 @@ async function getMedication(
 
   try {
     const rxcui = await getPhotonMedicationCode(photonMedicationId, authToken);
-    const medication = await medplum.searchOne('Medication', {
+    const medication = await medplum.searchOne('MedicationKnowledge', {
       code: rxcui,
     });
 
