@@ -115,12 +115,19 @@ export class BackEnd extends Construct {
         engine,
         parameters: config.rdsInstanceParameters,
       });
+      let readerParameters: ParameterGroup | undefined;
+      if (config.rdsReaderInstanceParameters) {
+        readerParameters = new ParameterGroup(this, 'MedplumDatabaseReaderParams', {
+          engine,
+          parameters: config.rdsReaderInstanceParameters,
+        });
+      }
 
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
       const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: readerInstanceType ? new ec2.InstanceType(readerInstanceType) : undefined,
-        parameterGroup: dbParams,
+        parameterGroup: readerParameters ?? dbParams,
       };
 
       const writerInstanceType = config.rdsInstanceType;
