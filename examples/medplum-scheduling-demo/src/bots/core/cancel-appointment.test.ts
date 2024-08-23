@@ -68,9 +68,10 @@ describe('Cancel Appointment', async () => {
       ],
     });
 
-    const cancelledAppointment = await handler(medplum, { bot, input: appointment, contentType, secrets: {} });
+    await handler(medplum, { bot, input: appointment, contentType, secrets: {} });
 
     // Check that the appointment was cancelled
+    const cancelledAppointment = await medplum.readResource('Appointment', appointment.id as string);
     expect(cancelledAppointment).toBeDefined();
     expect(cancelledAppointment.status).toBe('cancelled');
 
