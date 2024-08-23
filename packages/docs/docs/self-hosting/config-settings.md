@@ -49,7 +49,7 @@ Here is a full example. See the table below for details on each setting.
 | `rdsProxyEnabled`             | Optional flag to enable [AWS RDS Proxy](https://aws.amazon.com/rds/proxy/).                                                                                                                                                                                                                       |
 | `cacheNodeType`               | Optional [Elasticache Node Type](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html). Default value is `cache.t2.medium`.                                                                                                                                 |
 | `cacheSecurityGroupId`        | Optional Elasticache security group ID. By default, a new security group will be provisioned automatically.                                                                                                                                                                                       |
-| `desiredServerCount`          | The number of running ECS/Fargate instances in steady state. Use `1` when getting started, and increase as necessary or for high availability.                                                                                                                                                    |
+| `desiredServerCount`          | The number of running ECS/Fargate instances in steady state. Use `1` when getting started, and increase as necessary or for high availability and scale.                                                                                                                                          |
 | `serverImage`                 | The DockerHub server image to deploy. Use `medplum/medplum-server:latest` for the most recent version published by the Medplum team. Or use your own repository if you need to deploy a custom instance.                                                                                          |
 | `serverMemory`                | The amount (in MiB) of memory used by the ECS/Fargate instance. For example, 512, 1024, 2048, 4096, etc. See [Task size](#task-size).                                                                                                                                                             |
 | `serverCpu`                   | The number of cpu units used by the task. For example, 512, 1024, 2048, 4096, etc. See [Task size](#task-size).                                                                                                                                                                                   |
@@ -106,6 +106,10 @@ configurations are shown below:
 | ------------------------------- | ----------- | -------------- |
 | Recommended for production      | 4096        | 8192           |
 | Minimum required for production | 2048        | 4096           |
+
+Beyond the recommended instance size for production, the server may not be able to take advantage of additional CPU and
+memory resources; instead of increasing these settings further, adding more instances with `desiredServerCount` is the
+recommended way to improve performance if the server CPU is a performance bottleneck.
 
 For more information, see the [AWS task size documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size).
 
