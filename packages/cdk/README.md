@@ -7,7 +7,7 @@ CDK scripts to setup the full stack:
 - Fargate for backend server
 - Aurora RDS for database
 
-![diagram](./medplum_arch.png)
+![diagram](./medplum_stack.png)
 
 ### Install
 
