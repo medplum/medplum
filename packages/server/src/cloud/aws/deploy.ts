@@ -6,6 +6,7 @@ import {
   LambdaClient,
   ListLayerVersionsCommand,
   PackageType,
+  TagResourceCommand,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
@@ -15,6 +16,13 @@ import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getConfig } from '../../config';
 import { getRequestContext } from '../../context';
+
+type BotMeta = {
+  project: string;
+  versionId: string;
+  id: string;
+  name?: string;
+};
 
 const LAMBDA_RUNTIME = 'nodejs18.x';
 
@@ -109,16 +117,34 @@ export async function deployLambda(bot: Bot, code: string): Promise<void> {
     ),
   });
 
-  const name = `medplum-bot-lambda-${bot.id}`;
-  ctx.logger.info('Deploying lambda function for bot', { name });
+  ctx.logger.info('Deploying lambda function for bot', { botId: bot.id });
   const zipFile = await createZipFile(code);
   ctx.logger.debug('Lambda function zip size', { bytes: zipFile.byteLength });
 
-  const exists = await lambdaExists(client, name);
+  if (!bot.id) {
+    throw new Error('Bot id is required');
+  }
+
+  if (!bot.meta?.versionId) {
+    throw new Error('Bot versionId is required');
+  }
+
+  if (!bot.meta?.project) {
+    throw new Error('Bot project is required');
+  }
+
+  const botMeta = {
+    project: bot.meta.project,
+    versionId: bot.meta.versionId,
+    id: bot.id,
+    name: bot.name,
+  } satisfies BotMeta;
+
+  const exists = await lambdaExists(client, bot.id);
   if (!exists) {
-    await createLambda(client, name, zipFile);
+    await createLambda(client, botMeta, zipFile);
   } else {
-    await updateLambda(client, name, zipFile);
+    await updateLambda(client, botMeta, zipFile);
   }
 }
 
@@ -129,14 +155,22 @@ async function createZipFile(code: string): Promise<Uint8Array> {
   return zip.generateAsync({ type: 'uint8array' });
 }
 
+async function getLambdaArn(client: LambdaClient, botId: string): Promise<string> {
+  const name = `medplum-bot-lambda-${botId}`;
+  const command = new GetFunctionCommand({ FunctionName: name });
+  const response = await client.send(command);
+  return response.Configuration?.FunctionArn as string;
+}
+
 /**
  * Returns true if the AWS Lambda exists for the bot name.
  * @param client - The AWS Lambda client.
- * @param name - The bot name.
+ * @param botId - The bot id.
  * @returns True if the bot exists.
  */
-async function lambdaExists(client: LambdaClient, name: string): Promise<boolean> {
+async function lambdaExists(client: LambdaClient, botId: string): Promise<boolean> {
   try {
+    const name = `medplum-bot-lambda-${botId}`;
     const command = new GetFunctionCommand({ FunctionName: name });
     const response = await client.send(command);
     return response.Configuration?.FunctionName === name;
@@ -148,15 +182,17 @@ async function lambdaExists(client: LambdaClient, name: string): Promise<boolean
 /**
  * Creates a new AWS Lambda for the bot name.
  * @param client - The AWS Lambda client.
- * @param name - The bot name.
+ * @param botMeta - Bot name, id, and other useful info.
  * @param zipFile - The zip file with the bot code.
  */
-async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
+async function createLambda(client: LambdaClient, botMeta: BotMeta, zipFile: Uint8Array): Promise<void> {
   const layerVersion = await getLayerVersion(client);
+  const { id: botId, name, project } = botMeta;
+  const lambdaName = `medplum-bot-lambda-${botId}`;
 
   await client.send(
     new CreateFunctionCommand({
-      FunctionName: name,
+      FunctionName: lambdaName,
       Role: getConfig().botLambdaRoleArn,
       Runtime: LAMBDA_RUNTIME,
       Handler: LAMBDA_HANDLER,
@@ -165,6 +201,11 @@ async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
       Layers: [layerVersion],
       Code: {
         ZipFile: zipFile,
+      },
+      Tags: {
+        'medplum-bot-name': name ?? '',
+        'medplum-bot-id': botId,
+        'medplum-project-id': project,
       },
       Publish: true,
       Timeout: 10, // seconds
@@ -175,17 +216,30 @@ async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
 /**
  * Updates an existing AWS Lambda for the bot name.
  * @param client - The AWS Lambda client.
- * @param name - The bot name.
+ * @param botMeta - Bot name, id, and other useful info.
  * @param zipFile - The zip file with the bot code.
  */
-async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
+async function updateLambda(client: LambdaClient, botMeta: BotMeta, zipFile: Uint8Array): Promise<void> {
   // First, make sure the lambda configuration is up to date
-  await updateLambdaConfig(client, name);
+  await updateLambdaConfig(client, botMeta);
+  const { id: botId } = botMeta;
+  const arn = await getLambdaArn(client, botId);
+
+  await client.send(
+    new TagResourceCommand({
+      Resource: arn,
+      Tags: {
+        'medplum-bot-id': botId,
+        'medplum-bot-name': botMeta.name ?? '',
+        'medplum-project-id': botMeta.project,
+      },
+    })
+  );
 
   // Then update the code
   await client.send(
     new UpdateFunctionCodeCommand({
-      FunctionName: name,
+      FunctionName: `medplum-bot-lambda-${botId}`,
       ZipFile: zipFile,
       Publish: true,
     })
@@ -195,11 +249,13 @@ async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
 /**
  * Updates the lambda configuration.
  * @param client - The AWS Lambda client.
- * @param name - The lambda name.
+ * @param botMeta - The bot id, name, etc.
  */
-async function updateLambdaConfig(client: LambdaClient, name: string): Promise<void> {
+async function updateLambdaConfig(client: LambdaClient, botMeta: BotMeta): Promise<void> {
+  const { id: botId, name: botName } = botMeta;
   const layerVersion = await getLayerVersion(client);
-  const functionConfig = await getLambdaConfig(client, name);
+  const lambdaName = `medplum-bot-lambda-${botId}`;
+  const functionConfig = await getLambdaConfig(client, lambdaName);
   if (
     functionConfig.Runtime === LAMBDA_RUNTIME &&
     functionConfig.Handler === LAMBDA_HANDLER &&
@@ -212,11 +268,12 @@ async function updateLambdaConfig(client: LambdaClient, name: string): Promise<v
   // Need to update
   await client.send(
     new UpdateFunctionConfigurationCommand({
-      FunctionName: name,
+      FunctionName: lambdaName,
       Role: getConfig().botLambdaRoleArn,
       Runtime: LAMBDA_RUNTIME,
       Handler: LAMBDA_HANDLER,
       Layers: [layerVersion],
+      Description: botName,
     })
   );
 
@@ -225,7 +282,7 @@ async function updateLambdaConfig(client: LambdaClient, name: string): Promise<v
   // See: https://github.com/aws/aws-toolkit-visual-studio/issues/197
   // See: https://aws.amazon.com/blogs/compute/coming-soon-expansion-of-aws-lambda-states-to-all-functions/
   for (let i = 0; i < 5; i++) {
-    const config = await getLambdaConfig(client, name);
+    const config = await getLambdaConfig(client, lambdaName);
     // Valid Values: Pending | Active | Inactive | Failed
     // See: https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionConfiguration.html
     if (config.State === 'Active') {
