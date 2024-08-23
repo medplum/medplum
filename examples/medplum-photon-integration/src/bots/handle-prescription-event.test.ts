@@ -27,7 +27,7 @@ describe('Prescription webhooks', async () => {
     return {
       ...actualModule,
       verifyEvent: vi.fn().mockImplementation(() => true),
-      handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+      // handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
     };
   });
 
@@ -58,6 +58,31 @@ describe('Prescription webhooks', async () => {
     expect(prescription).toBeDefined();
     expect(prescription.status).toBe('active');
   }, 10000);
+
+  test.skip('Handle a prescription created event and create a new medication', async () => {
+    const medplum = new MockClient();
+
+    await medplum.createResource({
+      resourceType: 'Practitioner',
+      identifier: [{ system: 'https://neutron.health', value: 'usr_01J21EPR81W9XRYTY69RQY3R9J' }],
+      name: [{ given: ['Alice'], family: 'Smith' }],
+    });
+
+    const prescription = await handler(medplum, {
+      bot,
+      contentType,
+      input: createdWebhook,
+      secrets: {},
+    });
+
+    expect(prescription).toBeDefined();
+
+    const createdMedication = await medplum.searchOne('Medication', {
+      code: '4053',
+    });
+
+    expect(createdMedication).toBeDefined();
+  });
 
   test.skip('Handle prescription depleted event', async () => {
     const medplum = new MockClient();
@@ -154,6 +179,7 @@ describe('Prescription webhooks', async () => {
 
     const existingRequest = await getExistingMedicationRequest(prescriptionData, medplum);
     expect(existingRequest).toBeDefined();
+    expect(existingRequest?.id).toBe(prescription?.id);
   });
 
   test.skip('Updating a prescription that does not exist', async () => {
@@ -540,7 +566,7 @@ const createdWebhook: PhotonWebhook = {
       effectiveDate: '2024-08-20',
       expirationDate: '2025-08-20',
       prescriberId: 'usr_01J21EPR81W9XRYTY69RQY3R9J',
-      medicationId: 'med_01GGT9ZK1327R6SGZDJADSSNKN',
+      medicationId: 'med_01J5VK0D4534R7VMD1P95VZ1RY',
     },
   },
 };

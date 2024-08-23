@@ -251,7 +251,7 @@ async function getPrescriber(
 
 async function getPhotonMedicationCode(photonMedicationId: string, authToken: string): Promise<string | undefined> {
   const query = `
-    query medicationProducts($id: string) {
+    query medicationProducts($id: String!) {
       medicationProducts(id: $id) {
         codes {
           rxcui
