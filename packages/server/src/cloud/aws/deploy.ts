@@ -206,6 +206,7 @@ async function createLambda(client: LambdaClient, botMeta: BotMeta, zipFile: Uin
         'medplum-bot-name': name ?? '',
         'medplum-bot-id': botId,
         'medplum-project-id': project,
+        'medplum-bot-version-id': botMeta.versionId,
       },
       Publish: true,
       Timeout: 10, // seconds
@@ -232,6 +233,7 @@ async function updateLambda(client: LambdaClient, botMeta: BotMeta, zipFile: Uin
         'medplum-bot-id': botId,
         'medplum-bot-name': botMeta.name ?? '',
         'medplum-project-id': botMeta.project,
+        'medplum-bot-version-id': botMeta.versionId,
       },
     })
   );
