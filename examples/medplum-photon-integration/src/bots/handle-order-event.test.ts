@@ -26,7 +26,7 @@ describe('Order webhooks', async () => {
   const bot: Reference<Bot> = { reference: 'Bot/123' };
   const contentType = 'application/json';
 
-  test.skip('Handle order created event with no existing request', async () => {
+  test('Handle order created event with no existing request', async () => {
     const medplum = new MockClient();
     const patient: Patient = await medplum.createResource({
       resourceType: 'Patient',
@@ -36,6 +36,14 @@ describe('Order webhooks', async () => {
         { system: 'email', value: 'kevinsmith9413-medplum@aol.com' },
       ],
       address: [{ line: ['702 10th Street'], city: 'Easton', state: 'PA', postalCode: '18042' }],
+    });
+
+    await medplum.createResource({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'proposal',
+      subject: { reference: getReferenceString(patient) },
+      identifier: [{ system: 'https://neutron.health', value: 'rx_01J5RHKZZQXWAHMXKPT9CF1S6N' }],
     });
 
     const pharmacy: Organization = await medplum.createResource({
@@ -53,12 +61,22 @@ describe('Order webhooks', async () => {
       bot,
       contentType,
       input: createdWebhook,
-      secrets: {},
+      secrets: {
+        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'E7FNao89rtmdqicUMjI0LLPetEwKki8b' },
+        PHOTON_CLIENT_SECRET: {
+          name: 'Photon Client Secret',
+          valueString: 'mrxwnp4n5SovcI3zNT1p8zBmvDmAWspU2_W9Gn4Sb5tacWR9EY__frBExerupvFl',
+        },
+      },
     });
+
+    const dispense = await medplum.searchOne('MedicationDispense');
 
     expect(createdOrder).toBeDefined();
     expect(createdOrder?.subject.reference).toBe(getReferenceString(patient));
     expect(createdOrder?.dispenseRequest?.performer?.reference).toBe(getReferenceString(pharmacy));
+    expect(dispense).toBeDefined();
+    // expect(dispense?.authorizingPrescription?.[0].reference).toBe(getReferenceString(createdOrder))
   }, 10000);
 
   test.skip('Create medication request from order created event', async () => {
@@ -77,7 +95,6 @@ describe('Order webhooks', async () => {
       authToken,
       patient
     );
-    console.log(medicationRequest);
     expect(medicationRequest).toBeDefined();
   });
 

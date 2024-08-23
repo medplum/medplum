@@ -47,6 +47,7 @@ export async function handler(
   const existingRequest = await getExistingMedicationRequest(data, medplum);
   // Check that the incoming photon event is not a duplicate
   const dupe = checkForDuplicateEvent(webhook, existingRequest);
+  // console.log(existingRequest, dupe);
 
   if (dupe && existingRequest) {
     return existingRequest;
@@ -62,6 +63,7 @@ export async function handler(
 
   // If no existing request create one, otherwise update it
   if (!existingRequest) {
+    console.log('Creating new request');
     const newRequest = await createMedicationRequest(body, medplum, PHOTON_AUTH_TOKEN, patient);
     return newRequest;
   } else {
@@ -175,10 +177,12 @@ export async function createMedicationRequest(
   };
 
   let medicationRequest: MedicationRequest;
+  console.log('creating request');
 
   // Add the additional data based on the event type and create the MedicationRequest in your project
   if (body.type === 'photon:order:created') {
     const createdDataRequest = await handleCreatedData(body.data, medicationRequestData, authToken, medplum);
+    console.log('med request created');
     medicationRequest = await medplum.createResource(createdDataRequest);
     // Handle the fill data that is included on order created events
     await handleFills(body.data.fills, medicationRequest, medplum, authToken);
@@ -455,12 +459,14 @@ async function handleCreatedData(
 ): Promise<MedicationRequest> {
   // Get the photon prescription
   const prescription = await getPrescription(createdData.fills, authToken);
+  const linkedPrescription = await getLinkedPrescription(medplum, prescription);
   // Get the FHIR Organization resource for the pharmacy the order is going to
   const pharmacy = await getPharmacy(medplum, authToken, createdData.pharmacyId);
   const medication = prescription?.treatment.codes.rxcui;
 
   // Update the medication request
   medicationRequest.authoredOn = createdData.createdAt;
+  medicationRequest.basedOn = [{ reference: getReferenceString(linkedPrescription) }];
 
   if (prescription) {
     medicationRequest.substitution = { allowedBoolean: prescription.dispenseAsWritten };
@@ -489,6 +495,25 @@ async function handleCreatedData(
     }
 
     medicationRequest.dispenseRequest = dispenseRequest;
+  }
+
+  return medicationRequest;
+}
+
+async function getLinkedPrescription(
+  medplum: MedplumClient,
+  prescription?: PhotonPrescription
+): Promise<MedicationRequest> {
+  if (!prescription) {
+    throw new Error('Order does not have a linked prescription');
+  }
+
+  const medicationRequest: MedicationRequest | undefined = await medplum.searchOne('MedicationRequest', {
+    identifier: `https://neutron.health|${prescription.id}`,
+  });
+
+  if (!medicationRequest) {
+    throw new Error('Linked prescription does not exist in Medplum');
   }
 
   return medicationRequest;
@@ -624,6 +649,7 @@ async function getPrescription(
   const query = `
     query prescription($id: ID!) {
       prescription(id: $id) {
+        id
         treatment {
           codes {
             rxcui
