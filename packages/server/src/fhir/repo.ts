@@ -808,7 +808,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param create - If true, then the resource is being created.
    */
   private async writeToDatabase<T extends Resource>(resource: T, create: boolean): Promise<void> {
-    await this.withTransaction(async (client) => {
+    await this.ensureInTransaction(async (client) => {
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
       await this.writeLookupTables(client, resource, create);
@@ -966,7 +966,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
       await deleteCacheEntry(resourceType, id);
 
-      await this.withTransaction(async (conn) => {
+      await this.ensureInTransaction(async (conn) => {
         const lastUpdated = new Date();
         const content = '';
         const columns: Record<string, any> = {
@@ -2060,6 +2060,15 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw operationOutcomeError;
     } finally {
       this.endTransaction();
+    }
+  }
+
+  async ensureInTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
+    if (this.transactionDepth) {
+      const client = await this.getConnection(DatabaseMode.WRITER);
+      return callback(client);
+    } else {
+      return this.withTransaction(callback);
     }
   }
 
