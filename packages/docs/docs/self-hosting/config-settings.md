@@ -105,8 +105,8 @@ configurations are shown below:
 |                                                        | `serverCpu` | `serverMemory` |
 | ------------------------------------------------------ | ----------- | -------------- |
 | Recommended for production                             | 4096        | 8192           |
-| Baseline capacity for production                       | 2048        | 4096           |
-| Minimum requirement for small workloads or development | 512         | 2048           |
+| Minimum for production                       | 2048        | 4096           |
+| Minimum for development or small workloads | 512         | 2048           |
 
 Beyond the recommended instance size for production, the server may not be able to take advantage of additional CPU and
 memory resources; instead of increasing these settings further, adding more instances with `desiredServerCount` is the
