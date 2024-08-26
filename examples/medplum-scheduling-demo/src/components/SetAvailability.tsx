@@ -49,6 +49,7 @@ export function SetAvailability(props: SetAvailabilityProps): JSX.Element {
         daysOfWeek: answers['days-of-week'].map(
           (d: QuestionnaireItemAnswerOption) => (d.valueCoding as Coding).code as string
         ),
+        timezoneOffset: new Date().getTimezoneOffset(),
       };
       await medplum.executeBot({ system: 'http://example.com', value: 'set-availability' }, input);
 
