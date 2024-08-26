@@ -111,10 +111,13 @@ export class BackEnd extends Construct {
             )
           : rds.AuroraPostgresEngineVersion.VER_12_9,
       });
-      const dbParams = new ParameterGroup(this, 'MedplumDatabaseParams', {
-        engine,
-        parameters: config.rdsInstanceParameters,
-      });
+      let dbParams: ParameterGroup | undefined;
+      if (config.rdsInstanceParameters) {
+        dbParams = new ParameterGroup(this, 'MedplumDatabaseParams', {
+          engine,
+          parameters: config.rdsInstanceParameters,
+        });
+      }
       let readerParameters: ParameterGroup | undefined;
       if (config.rdsReaderInstanceParameters) {
         readerParameters = new ParameterGroup(this, 'MedplumDatabaseReaderParams', {
