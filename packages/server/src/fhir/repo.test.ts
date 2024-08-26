@@ -9,6 +9,7 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
+  parseSearchRequest,
   preconditionFailed,
   toTypedValue,
 } from '@medplum/core';
@@ -1112,6 +1113,58 @@ describe('FHIR Repo', () => {
           profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'],
         }),
       });
+    }));
+
+  test('Allows adding compartments', async () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({ withRepo: true });
+      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      const practitionerReference = createReference(practitioner);
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { compartment: [practitionerReference] },
+      });
+      expect(patient.meta?.compartment).toContainEqual(practitionerReference);
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+
+      const results = await repo.searchResources(
+        parseSearchRequest('Patient?_compartment=' + getReferenceString(practitioner))
+      );
+      expect(results).toHaveLength(1);
+    }));
+
+  test('Prevents setting Project compartments', async () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({ withRepo: true });
+      const { project: otherProject, repo: otherRepo } = await createTestProject({ withRepo: true });
+      const projectReference = createReference(otherProject);
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { compartment: [projectReference], account: projectReference },
+      });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+      expect(patient.meta?.compartment).not.toContainEqual({ reference: getReferenceString(otherProject) });
+
+      const results = await otherRepo.searchResources(parseSearchRequest('Patient'));
+      expect(results).toHaveLength(0);
+    }));
+
+  test('Prevents setting too many compartments', async () =>
+    withTestContext(async () => {
+      const config = await loadTestConfig();
+      config.maxCompartments = 3;
+      await initAppServices(config);
+
+      const { repo, client } = await createTestProject({ withRepo: true, withClient: true });
+      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      await expect(
+        repo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: { compartment: [createReference(practitioner), createReference(client)] },
+        })
+      ).rejects.toThrow('Too many compartments (Patient.meta.compartment)');
     }));
 
   test('setTypedValue', () => {
