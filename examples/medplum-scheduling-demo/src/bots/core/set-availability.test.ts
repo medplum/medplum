@@ -41,6 +41,7 @@ describe('Set Availability', async () => {
       endTime: '17:00:00',
       duration: 120,
       daysOfWeek: ['mon', 'wed'],
+      timezoneOffset: 480,
     };
 
     let freeSlots = await medplum.searchResources('Slot', {
@@ -67,6 +68,7 @@ describe('Set Availability', async () => {
       endTime: '17:00:00',
       duration: 0,
       daysOfWeek: ['mon', 'wed'],
+      timezoneOffset: 480,
     };
 
     await expect(handler(medplum, { bot, input, contentType, secrets: {} })).rejects.toThrow(
@@ -83,6 +85,7 @@ describe('Set Availability', async () => {
       endTime: '17:00:00',
       duration: 120,
       daysOfWeek: ['mon', 'wed'],
+      timezoneOffset: 480,
     };
 
     await expect(handler(medplum, { bot, input, contentType, secrets: {} })).rejects.toThrow(

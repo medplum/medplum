@@ -9,10 +9,11 @@ export interface SetAvailabilityEvent {
   endTime: string;
   duration: number;
   daysOfWeek: string[];
+  timezoneOffset: number;
 }
 
 export async function handler(medplum: MedplumClient, event: BotEvent<SetAvailabilityEvent>): Promise<Bundle> {
-  const { schedule, startDate, endDate, startTime, endTime, duration, daysOfWeek } = event.input;
+  const { schedule, startDate, endDate, startTime, endTime, duration, daysOfWeek, timezoneOffset } = event.input;
 
   // Basic data validation
   if (duration <= 0) {
@@ -40,8 +41,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<SetAvailab
       const [startHour, startMinute] = startTime.split(':').map(Number);
       const [endHour, endMinute] = endTime.split(':').map(Number);
 
-      dayStartTime.setUTCHours(startHour, startMinute, 0, 0);
-      dayEndTime.setUTCHours(endHour, endMinute, 0, 0);
+      dayStartTime.setHours(startHour, startMinute, 0, 0);
+      dayEndTime.setHours(endHour, endMinute, 0, 0);
+
+      // Adjust for timezone offset
+      dayStartTime.setMinutes(dayStartTime.getMinutes() + timezoneOffset);
+      dayEndTime.setMinutes(dayEndTime.getMinutes() + timezoneOffset);
 
       let currentSlotTime = new Date(dayStartTime);
 
