@@ -1269,11 +1269,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @returns The list of compartments for the resource.
    */
   private getCompartments(resource: Resource): Reference[] {
-    const result: Reference[] = [];
+    const compartments = new Set<string>();
 
     if (resource.meta?.project && validator.isUUID(resource.meta.project)) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
-      result.push({ reference: 'Project/' + resource.meta.project });
+      compartments.add('Project/' + resource.meta.project);
     }
 
     if (
@@ -1282,24 +1282,43 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       validator.isUUID(resolveId(resource.project) ?? '')
     ) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
-      result.push(resource.project);
+      compartments.add(resource.project.reference);
     }
 
-    if (resource.meta?.account) {
+    if (resource.meta?.account && !resource.meta.account.reference?.startsWith('Project/')) {
       const id = resolveId(resource.meta.account);
       if (id && validator.isUUID(id)) {
-        result.push(resource.meta.account);
+        compartments.add(resource.meta.account.reference as string);
       }
     }
 
     for (const patient of getPatients(resource)) {
       const patientId = resolveId(patient);
       if (patientId && validator.isUUID(patientId)) {
-        result.push(patient);
+        compartments.add(patient.reference);
       }
     }
 
-    return result;
+    // Carry forward anything added to the resource compartments array
+    if (resource.meta?.compartment?.length) {
+      for (const compartment of resource.meta.compartment) {
+        const id = resolveId(compartment);
+        if (id && validator.isUUID(id) && !compartment.reference?.startsWith('Project/')) {
+          compartments.add(compartment.reference as string);
+        }
+      }
+    }
+
+    const results: Reference[] = [];
+    for (const reference of compartments.values()) {
+      results.push({ reference });
+    }
+
+    const maxCompartments = getConfig().maxCompartments;
+    if (maxCompartments !== undefined && results.length > maxCompartments) {
+      throw new OperationOutcomeError(badRequest('Too many compartments', resource.resourceType + '.meta.compartment'));
+    }
+    return results;
   }
 
   /**
