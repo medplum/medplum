@@ -89,27 +89,27 @@ const setAvailabilityQuestionnaire: Questionnaire = {
     {
       linkId: 'start-date',
       type: 'date',
-      text: 'Start date of availability',
+      text: 'Start date',
       required: true,
       initial: [{ valueDate: new Date().toISOString().slice(0, 10) }],
     },
     {
       linkId: 'end-date',
       type: 'date',
-      text: 'End date of availability',
+      text: 'End date',
       required: true,
     },
     {
       linkId: 'start-time',
       type: 'time',
-      text: 'Start time of availability (each day)',
+      text: 'Start time (each day)',
       required: true,
       initial: [{ valueTime: '09:00:00' }],
     },
     {
       linkId: 'end-time',
       type: 'time',
-      text: 'End time of availability (each day)',
+      text: 'End time (each day)',
       required: true,
       initial: [{ valueTime: '17:00:00' }],
     },
@@ -123,7 +123,7 @@ const setAvailabilityQuestionnaire: Questionnaire = {
     {
       linkId: 'days-of-week',
       type: 'choice',
-      text: 'Repeat on days of the week',
+      text: 'Days of Week',
       required: true,
       repeats: true,
       answerOption: [
