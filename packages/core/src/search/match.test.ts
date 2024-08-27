@@ -472,6 +472,27 @@ describe('Search matching', () => {
       expect(
         matchesSearchRequest(resource, {
           resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://example.com|' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://test.com|' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://bad.com|' }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
           filters: [{ code: 'code', operator: Operator.EQUALS, value: 'http://example.com|' + identifier }],
         })
       ).toBe(true);
