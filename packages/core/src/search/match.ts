@@ -189,7 +189,8 @@ function matchesTokenCodeableConceptValue(
     return (
       resourceValue.coding?.some(
         (coding) =>
-          coding.system?.toLowerCase() === system.toLowerCase() && coding.code?.toLowerCase() === code.toLowerCase()
+          coding.system?.toLowerCase() === system.toLowerCase() &&
+          (!code || coding.code?.toLowerCase() === code.toLowerCase())
       ) ?? false
     );
   }
