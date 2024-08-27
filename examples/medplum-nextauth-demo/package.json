@@ -1,6 +1,6 @@
 {
   "name": "medplum-nextauth-demo",
-  "version": "3.2.7",
+  "version": "3.2.8",
   "private": true,
   "type": "module",
   "scripts": {
@@ -23,15 +23,15 @@
     "@mantine/core": "7.12.0",
     "@mantine/hooks": "7.12.0",
     "@mantine/notifications": "7.12.0",
-    "@medplum/core": "3.2.7",
-    "@medplum/eslint-config": "3.2.7",
+    "@medplum/core": "3.2.8",
+    "@medplum/eslint-config": "3.2.8",
     "next": "14.2.5",
     "next-auth": "4.24.7",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "3.2.7",
+    "@medplum/fhirtypes": "3.2.8",
     "@types/node": "22.2.0",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
