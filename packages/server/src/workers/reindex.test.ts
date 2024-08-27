@@ -313,6 +313,7 @@ describe('Reindex Worker', () => {
             part: expect.arrayContaining([
               { name: 'resourceType', valueCode: 'Binary' },
               { name: 'error', valueString: 'Cannot search on Binary resource type' },
+              { name: 'nextTimestamp', valueDateTime: '1970-01-01T00:00:00.000Z' },
             ]),
           },
         ]),
@@ -349,6 +350,7 @@ describe('Reindex Worker', () => {
             part: expect.arrayContaining([
               { name: 'resourceType', valueCode: 'Binary' },
               { name: 'error', valueString: 'Cannot search on Binary resource type' },
+              { name: 'nextTimestamp', valueDateTime: '1970-01-01T00:00:00.000Z' },
             ]),
           },
           {

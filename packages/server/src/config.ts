@@ -57,6 +57,7 @@ export interface MedplumServerConfig {
   slowQueryThresholdMilliseconds?: number;
   slowQuerySampleRate?: number;
   maxSearchOffset?: number;
+  maxCompartments?: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?:
     | (
@@ -112,6 +113,7 @@ export interface MedplumDatabaseConfig {
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
   runMigrations?: boolean;
+  maxConnections?: number;
 }
 
 export interface MedplumRedisConfig {
@@ -284,28 +286,31 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
   config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
   config.emailProvider = config.emailProvider || (config.smtp ? 'smtp' : 'awsses');
+  config.maxCompartments = config.maxCompartments ?? 10;
   return config;
 }
 
+const integerKeys = ['port', 'accurateCountThreshold', 'slowQueryThresholdMilliseconds', 'maxCompartments'];
 function isIntegerConfig(key: string): boolean {
-  return key === 'port' || key === 'accurateCountThreshold' || key === 'slowQueryThresholdMilliseconds';
+  return integerKeys.includes(key);
 }
 
 function isFloatConfig(key: string): boolean {
   return key === 'slowQuerySampleRate';
 }
 
+const booleanKeys = [
+  'botCustomFunctionsEnabled',
+  'database.ssl.rejectUnauthorized',
+  'database.ssl.require',
+  'logRequests',
+  'logAuditEvents',
+  'registerEnabled',
+  'require',
+  'rejectUnauthorized',
+];
 function isBooleanConfig(key: string): boolean {
-  return (
-    key === 'botCustomFunctionsEnabled' ||
-    key === 'database.ssl.rejectUnauthorized' ||
-    key === 'database.ssl.require' ||
-    key === 'logRequests' ||
-    key === 'logAuditEvents' ||
-    key === 'registerEnabled' ||
-    key === 'require' ||
-    key === 'rejectUnauthorized'
-  );
+  return booleanKeys.includes(key);
 }
 
 function isObjectConfig(key: string): boolean {

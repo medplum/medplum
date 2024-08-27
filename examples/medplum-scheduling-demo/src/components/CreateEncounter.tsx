@@ -98,7 +98,7 @@ const createEncounterQuestionnaire: Questionnaire = {
       type: 'display',
       text:
         "By submitting the form, the appointment status will be set to 'fulfilled' and " +
-        'an Encounter resource will be created, signaling the end of the Scheduling Demo flow. ' +
+        'an Encounter resource will be created to capture details about the visit. ' +
         'To further explore the Encounter lifecycle, please visit the Medplum Charting Demo.',
     },
     {
