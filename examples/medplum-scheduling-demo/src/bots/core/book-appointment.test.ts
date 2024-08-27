@@ -51,6 +51,17 @@ describe('Book Appointment', async () => {
           },
         ],
       },
+      serviceType: [
+        {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '11429006',
+              display: 'Consultation',
+            },
+          ],
+        },
+      ],
       participant: [
         { actor: { reference: 'Patient/homer-simpson' }, status: 'accepted' },
         { actor: { reference: 'Practitioner/dr-alice-smith' }, status: 'accepted' },
@@ -85,6 +96,17 @@ describe('Book Appointment', async () => {
           },
         ],
       },
+      serviceType: [
+        {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '11429006',
+              display: 'Consultation',
+            },
+          ],
+        },
+      ],
       participant: [
         { actor: { reference: 'Patient/homer-simpson' }, status: 'accepted' },
         { actor: { reference: 'Practitioner/dr-alice-smith' }, status: 'accepted' },
@@ -101,6 +123,17 @@ describe('Book Appointment', async () => {
       resourceType: 'Appointment',
       status: 'booked',
       slot: [{ reference: 'Slot/123' }],
+      serviceType: [
+        {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '11429006',
+              display: 'Consultation',
+            },
+          ],
+        },
+      ],
       participant: [
         { actor: { reference: 'Patient/homer-simpson' }, status: 'accepted' },
         { actor: { reference: 'Practitioner/dr-alice-smith' }, status: 'accepted' },
@@ -109,6 +142,31 @@ describe('Book Appointment', async () => {
 
     await expect(handler(medplum, { bot, input: appointment, contentType, secrets: {} })).rejects.toThrow(
       'Must provide an appointment type'
+    );
+  });
+
+  test('Missing service type', async () => {
+    const appointment: Appointment = {
+      resourceType: 'Appointment',
+      status: 'booked',
+      slot: [{ reference: 'Slot/123' }],
+      appointmentType: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+            code: 'FOLLOWUP',
+            display: 'A follow up visit from a previous appointment',
+          },
+        ],
+      },
+      participant: [
+        { actor: { reference: 'Patient/homer-simpson' }, status: 'accepted' },
+        { actor: { reference: 'Practitioner/dr-alice-smith' }, status: 'accepted' },
+      ],
+    };
+
+    await expect(handler(medplum, { bot, input: appointment, contentType, secrets: {} })).rejects.toThrow(
+      'Must provide a service type'
     );
   });
 
@@ -126,6 +184,17 @@ describe('Book Appointment', async () => {
           },
         ],
       },
+      serviceType: [
+        {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '11429006',
+              display: 'Consultation',
+            },
+          ],
+        },
+      ],
       participant: [
         { actor: { reference: 'Patient/homer-simpson' }, status: 'accepted' },
         { actor: { reference: 'Practitioner/dr-alice-smith' }, status: 'accepted' },

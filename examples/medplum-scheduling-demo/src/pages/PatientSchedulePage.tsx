@@ -19,7 +19,7 @@ export function PatientSchedulePage(): JSX.Element {
   const { schedule } = useContext(ScheduleContext);
 
   const medplum = useMedplum();
-  const [slots] = useSearchResources('Slot', { schedule: getReferenceString(schedule as Schedule) });
+  const [slots] = useSearchResources('Slot', { schedule: getReferenceString(schedule as Schedule), _count: '100' });
   const patient = patientId ? medplum.readResource('Patient', patientId).read() : undefined;
 
   // Converts Slot resources to big-calendar Event objects
@@ -52,20 +52,21 @@ export function PatientSchedulePage(): JSX.Element {
         Select a slot for the appointment
       </Title>
 
-      <CreateAppointment
-        patient={patient}
-        slot={selectedEvent?.resource}
-        opened={createAppointmentOpened}
-        handlers={createAppointmentHandlers}
-      />
-
       <Calendar
         defaultView="week"
         views={['week', 'day']}
         localizer={dayjsLocalizer(dayjs)}
         backgroundEvents={slotEvents} // Background events don't show in the month view
         onSelectEvent={handleSelectEvent}
+        scrollToTime={new Date()} // Scroll to current time
         style={{ height: 600 }}
+      />
+
+      <CreateAppointment
+        patient={patient}
+        slot={selectedEvent?.resource}
+        opened={createAppointmentOpened}
+        handlers={createAppointmentHandlers}
       />
     </Document>
   );

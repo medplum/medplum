@@ -14,6 +14,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Appointmen
     throw new Error('Must provide an appointment type');
   }
 
+  if (!appointment.serviceType || appointment.serviceType?.length === 0) {
+    throw new Error('Must provide a service type');
+  }
+
   if (appointment.status !== 'booked') {
     throw new Error('Appointment status must be "booked"');
   }

@@ -9,6 +9,40 @@
 > [!WARNING]
 > Under development
 
+### Getting Started
+
+If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
+
+[Fork](https://github.com/medplum/medplum/) and clone the repo to your local machine.
+
+Next, install the dependencies.
+
+```bash
+npm install
+```
+
+Then, build the bots
+
+> [!WARNING]
+> Bots are not on by default for Medplum projects, make sure they are enabled before proceeding.
+
+```bash
+npm run build:bots
+```
+
+Then, run the app
+
+```bash
+npm run dev
+```
+
+This app should run on `http://localhost:3000/`
+
+### Uploading sample data
+
+Click `Upload Core ValueSets` in the app navigation menu and then click the upload button.
+Click `Upload Example Bots` in the app navigation menu and then click the upload button.
+
 ### About Medplum
 
 [Medplum](https://www.medplum.com/) is an open-source, API-first EHR. Medplum makes it easy to build healthcare apps quickly with less code.

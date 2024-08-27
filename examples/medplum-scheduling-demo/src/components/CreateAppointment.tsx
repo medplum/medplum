@@ -34,7 +34,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
 
   // If a patient is provided, remove the patient question from the questionnaire
   if (patient) {
-    appointmentQuestionnaire.item = appointmentQuestionnaire.item?.filter((i) => i.linkId !== 'patient');
+    createAppointmentQuestionnaire.item = createAppointmentQuestionnaire.item?.filter((i) => i.linkId !== 'patient');
   }
 
   async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
@@ -50,7 +50,8 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
         resourceType: 'Appointment',
         status: 'booked',
         slot: [createReference(slot)],
-        appointmentType: { coding: [answers['service-type'].valueCoding as Coding] },
+        appointmentType: { coding: [answers['appointment-type'].valueCoding as Coding] },
+        serviceType: [{ coding: [answers['service-type'].valueCoding as Coding] }],
         participant: [
           {
             actor: appointmentPatient,
@@ -87,12 +88,12 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
 
   return (
     <Modal opened={opened} onClose={handlers.close}>
-      <QuestionnaireForm questionnaire={appointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
+      <QuestionnaireForm questionnaire={createAppointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
     </Modal>
   );
 }
 
-const appointmentQuestionnaire: Questionnaire = {
+const createAppointmentQuestionnaire: Questionnaire = {
   resourceType: 'Questionnaire',
   status: 'active',
   title: 'Create an Appointment',
@@ -101,7 +102,7 @@ const appointmentQuestionnaire: Questionnaire = {
     {
       linkId: 'patient',
       type: 'reference',
-      text: 'Which patient is the subject of this encounter?',
+      text: 'Patient',
       required: true,
       extension: [
         {
@@ -119,16 +120,23 @@ const appointmentQuestionnaire: Questionnaire = {
       ],
     },
     {
+      linkId: 'appointment-type',
+      type: 'choice',
+      text: 'Appointment Type',
+      answerValueSet: 'http://terminology.hl7.org/ValueSet/v2-0276',
+      required: true,
+    },
+    {
       linkId: 'service-type',
       type: 'choice',
-      text: 'What is the appointment service type?',
-      answerValueSet: 'http://terminology.hl7.org/ValueSet/v2-0276',
+      text: 'Appointment Service Type',
+      answerValueSet: 'http://example.com/appointment-service-types',
       required: true,
     },
     {
       linkId: 'comment',
       type: 'string',
-      text: 'Additional comments',
+      text: 'Additional Comments',
     },
   ],
 };
