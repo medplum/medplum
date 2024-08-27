@@ -42,7 +42,7 @@ export function AppointmentActions(props: AppointmentActionsProps): JSX.Element 
 
   async function handleCancelAppointment(): Promise<void> {
     try {
-      // Call the cancel-appointment bot
+      // Call bot to cancel the appointment
       await medplum.executeBot({ system: 'http://example.com', value: 'cancel-appointment' }, appointment);
 
       navigate('/Appointment/upcoming');

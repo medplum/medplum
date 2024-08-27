@@ -1,4 +1,4 @@
-import { Button, Group, Title } from '@mantine/core';
+import { Button, Center, Group, Stack, Title } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
@@ -28,9 +28,19 @@ export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.
         'application/json'
       );
 
+      notifications.show({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Connected to Photon Health',
+      });
       console.log(result);
     } catch (err) {
-      console.error(err);
+      notifications.show({
+        icon: <IconCircleOff />,
+        color: 'red',
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
     }
   }
 
@@ -67,9 +77,26 @@ export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.
       <Group justify="space-between" mb="md">
         <Title order={3}>Prescription Management</Title>
         <Button onClick={testConnection}>Test Connection</Button>
-        {syncDisabled ? null : <Button onClick={syncPatient}>Sync Patient to Photon Health</Button>}
       </Group>
-      <photon-prescribe-workflow patient-id={patientPhotonId} />
+      {syncDisabled ? (
+        <div>
+          <photon-prescribe-workflow
+            patient-id={patientPhotonId}
+            enable-order="true"
+            hide-patient-card="true"
+            enable-med-history="true"
+          />
+        </div>
+      ) : (
+        <Center>
+          <Stack>
+            <p>This patient has no record in Photon Health. Click below to sync them to Photon.</p>
+            <Button m="auto" w="fit-content" onClick={syncPatient}>
+              Sync Patient to Photon Health
+            </Button>
+          </Stack>
+        </Center>
+      )}
     </Document>
   );
 }
