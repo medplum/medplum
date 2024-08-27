@@ -61,20 +61,10 @@ export function main(): void {
   for (const typeSchema of Object.values(getAllDataTypes())) {
     const typeName = typeSchema.name;
     if (medplumTypes.includes(typeName)) {
-      if (!fhirSchema.discriminator.mapping[typeName]) {
-        fhirSchema.discriminator.mapping[typeName] = `#/definitions/${typeName}`;
+      addSchemaDefinition(fhirSchema, typeSchema);
+      for (const innerType of typeSchema.innerTypes) {
+        addSchemaDefinition(fhirSchema, innerType);
       }
-      if (!fhirSchema.oneOf.find((x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`)) {
-        fhirSchema.oneOf.push({ $ref: `#/definitions/${typeName}` });
-      }
-      if (
-        !fhirSchema.definitions.ResourceList.oneOf.find(
-          (x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`
-        )
-      ) {
-        fhirSchema.definitions.ResourceList.oneOf.push({ $ref: `#/definitions/${typeName}` });
-      }
-      fhirSchema.definitions[typeName] = buildElementSchema(typeSchema);
     }
   }
 
@@ -87,6 +77,24 @@ export function main(): void {
       .replaceAll('>', '\\u003e'),
     'utf8'
   );
+}
+
+function addSchemaDefinition(fhirSchema: FhirSchema, typeSchema: InternalTypeSchema): void {
+  const typeName = typeSchema.name;
+  if (!fhirSchema.discriminator.mapping[typeName]) {
+    fhirSchema.discriminator.mapping[typeName] = `#/definitions/${typeName}`;
+  }
+  if (!fhirSchema.oneOf.find((x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`)) {
+    fhirSchema.oneOf.push({ $ref: `#/definitions/${typeName}` });
+  }
+  if (
+    !fhirSchema.definitions.ResourceList.oneOf.find(
+      (x) => typeof x === 'object' && x.$ref === `#/definitions/${typeName}`
+    )
+  ) {
+    fhirSchema.definitions.ResourceList.oneOf.push({ $ref: `#/definitions/${typeName}` });
+  }
+  fhirSchema.definitions[typeName] = buildElementSchema(typeSchema);
 }
 
 function buildElementSchema(typeSchema: InternalTypeSchema): JSONSchema6Definition {

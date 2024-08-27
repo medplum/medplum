@@ -10,6 +10,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
+import { ResourceType } from './ResourceType';
 import { User } from './User';
 
 /**
@@ -176,6 +177,29 @@ export interface Project {
    * Linked Projects whose contents are made available to this one
    */
   link?: ProjectLink[];
+
+  /**
+   * Default profiles to apply to resources in this project that do not
+   * individually specify profiles
+   */
+  defaultProfile?: ProjectDefaultProfile[];
+}
+
+/**
+ * Default profiles to apply to resources in this project that do not
+ * individually specify profiles
+ */
+export interface ProjectDefaultProfile {
+
+  /**
+   * The resource type onto which to apply the default profiles
+   */
+  resourceType: ResourceType;
+
+  /**
+   * The profiles to add by default
+   */
+  profile: string[];
 }
 
 /**
