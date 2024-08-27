@@ -111,6 +111,7 @@ export class SubscriptionManager {
   private pingTimer: ReturnType<typeof setInterval> | undefined = undefined;
   private pingIntervalMs: number;
   private waitingForPong = false;
+  private currentProfile: ProfileResource | undefined;
 
   constructor(medplum: MedplumClient, wsUrl: URL | string, options?: SubManagerOptions) {
     if (!(medplum instanceof MedplumClient)) {
@@ -133,11 +134,12 @@ export class SubscriptionManager {
     this.criteriaEntriesBySubscriptionId = new Map<string, CriteriaEntry>();
     this.wsClosed = false;
     this.pingIntervalMs = options?.pingIntervalMs ?? DEFAULT_PING_INTERVAL_MS;
+    this.currentProfile = medplum.getProfile();
 
-    this.setupWebSocketListeners();
+    this.setupListeners();
   }
 
-  private setupWebSocketListeners(): void {
+  private setupListeners(): void {
     const ws = this.ws;
 
     ws.addEventListener('message', (event) => {
@@ -246,6 +248,16 @@ export class SubscriptionManager {
           this.waitingForPong = true;
         }, this.pingIntervalMs);
       }
+    });
+
+    this.medplum.addEventListener('change', () => {
+      const nextProfile = this.medplum.getProfile();
+      if (this.currentProfile && nextProfile === undefined) {
+        this.ws.close();
+      } else if (nextProfile && this.currentProfile?.id !== nextProfile.id) {
+        this.ws.reconnect();
+      }
+      this.currentProfile = nextProfile;
     });
   }
 
@@ -464,6 +476,7 @@ export class SubscriptionManager {
 
   reconnectWebSocket(): void {
     this.ws.reconnect();
+    this.wsClosed = false;
   }
 
   getCriteriaCount(): number {
