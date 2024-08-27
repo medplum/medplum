@@ -33,20 +33,23 @@ export function SchedulePage(): JSX.Element {
     }));
 
   // Converts Appointment resources to big-calendar Event objects
-  const appointmentEvents: Event[] = (appointments ?? []).map((appointment) => {
-    // Find the patient among the participants to use as title
-    const patientParticipant = appointment?.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'));
-    const status = !['booked', 'arrived', 'fulfilled'].includes(appointment.status as string)
-      ? ` (${appointment.status})`
-      : '';
+  // Exclude cancelled appointments to prevent them from overlapping free slots during rendering
+  const appointmentEvents: Event[] = (appointments ?? [])
+    .filter((appointment) => appointment.status !== 'cancelled')
+    .map((appointment) => {
+      // Find the patient among the participants to use as title
+      const patientParticipant = appointment?.participant?.find((p) => p.actor?.reference?.startsWith('Patient/'));
+      const status = !['booked', 'arrived', 'fulfilled'].includes(appointment.status as string)
+        ? ` (${appointment.status})`
+        : '';
 
-    return {
-      title: `${patientParticipant?.actor?.display} ${status}`,
-      start: new Date(appointment.start as string),
-      end: new Date(appointment.end as string),
-      resource: appointment,
-    };
-  });
+      return {
+        title: `${patientParticipant?.actor?.display} ${status}`,
+        start: new Date(appointment.start as string),
+        end: new Date(appointment.end as string),
+        resource: appointment,
+      };
+    });
 
   // When a date/time range is selected, set the event object and open the modal
   const handleSelectSlot = useCallback(

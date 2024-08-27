@@ -15,6 +15,10 @@ const Bots: BotDescription[] = [
     src: 'src/bots/core/book-appointment.ts',
     dist: 'dist/bots/core/book-appointment.js',
   },
+  {
+    src: 'src/bots/core/cancel-appointment.ts',
+    dist: 'dist/bots/core/cancel-appointment.js',
+  },
 ];
 
 async function main(): Promise<void> {
