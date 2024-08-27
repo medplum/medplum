@@ -169,32 +169,47 @@ function matchesStringValue(
 
 function matchesTokenIdentifierValue(resourceValue: Identifier, operator: Operator, filterValue: string): boolean {
   if (filterValue.includes('|')) {
-    const [system, value] = filterValue.split('|');
-    return (
-      resourceValue.system?.toLowerCase() === system.toLowerCase() &&
-      resourceValue.value?.toLowerCase() === value.toLowerCase()
-    );
+    const [system, value] = filterValue.split('|').map((s) => s.toLowerCase());
+    if (!system && !value) {
+      return false;
+    } else if (!system) {
+      // [parameter]=|[code]: the value of [code] matches a Coding.code or Identifier.value, and the Coding/Identifier has no system property
+      return !resourceValue.system && resourceValue.value?.toLowerCase() === value;
+    }
+
+    // [parameter]=[system]|: any element where the value of [system] matches the system property of the Identifier or Coding
+    // [parameter]=[system]|[code]: the value of [code] matches a Coding.code or Identifier.value, and the value of [system] matches the system property of the Identifier or Coding
+    return resourceValue.system?.toLowerCase() === system && (!value || resourceValue.value?.toLowerCase() === value);
   }
 
+  // [parameter]=[code]: the value of [code] matches a Coding.code or Identifier.value irrespective of the value of the system property
   return resourceValue.value?.toLowerCase() === filterValue.toLowerCase();
 }
 
 function matchesTokenCodeableConceptValue(
   resourceValue: CodeableConcept,
-  operator: Operator,
+  _operator: Operator,
   filterValue: string
 ): boolean {
   if (filterValue.includes('|')) {
-    const [system, code] = filterValue.split('|');
+    const [system, code] = filterValue.split('|').map((s) => s.toLowerCase());
+    if (!system && !code) {
+      return false;
+    } else if (!system) {
+      // [parameter]=|[code]: the value of [code] matches a Coding.code or Identifier.value, and the Coding/Identifier has no system property
+      return resourceValue.coding?.some((coding) => !coding.system && coding.code?.toLowerCase() === code) ?? false;
+    }
+
+    // [parameter]=[system]|: any element where the value of [system] matches the system property of the Identifier or Coding
+    // [parameter]=[system]|[code]: the value of [code] matches a Coding.code or Identifier.value, and the value of [system] matches the system property of the Identifier or Coding
     return (
       resourceValue.coding?.some(
-        (coding) =>
-          coding.system?.toLowerCase() === system.toLowerCase() &&
-          (!code || coding.code?.toLowerCase() === code.toLowerCase())
+        (coding) => coding.system?.toLowerCase() === system && (!code || coding.code?.toLowerCase() === code)
       ) ?? false
     );
   }
 
+  // [parameter]=[code]: the value of [code] matches a Coding.code or Identifier.value irrespective of the value of the system property
   return (
     resourceValue.text?.toLowerCase() === filterValue.toLowerCase() ||
     (resourceValue.coding?.some((coding) => coding.code?.toLowerCase() === filterValue.toLowerCase()) ?? false)

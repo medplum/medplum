@@ -374,6 +374,7 @@ describe('Search matching', () => {
     test('Identifier filter value', () => {
       const identifier = '1234567890';
       const identifierSubstring = identifier.substring(0, 4);
+      const valueOnlyValue = 'code-only';
       const resource: Patient = {
         resourceType: 'Patient',
         identifier: [
@@ -389,9 +390,57 @@ describe('Search matching', () => {
             system: 'http://test.com',
             value: 'foo',
           },
+          {
+            value: valueOnlyValue,
+          },
         ],
       };
 
+      // system only
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://example.com|' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://test.com|' }],
+        })
+      ).toBe(true);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://bad.com|' }],
+        })
+      ).toBe(false);
+
+      // value only
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: '|' + identifier }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: '|' + identifierSubstring }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: '|' + valueOnlyValue }],
+        })
+      ).toBe(true);
+
+      // system and value
       expect(
         matchesSearchRequest(resource, {
           resourceType: 'Patient',
@@ -447,6 +496,7 @@ describe('Search matching', () => {
     test('CodeableConcept filter value', () => {
       const identifier = '12345-6';
       const identifierSubstring = identifier.substring(0, 4);
+      const codeOnlyCode = 'code-only';
       const resource: Observation = {
         resourceType: 'Observation',
         status: 'final',
@@ -464,11 +514,15 @@ describe('Search matching', () => {
               system: 'http://test.com',
               code: 'foo',
             },
+            {
+              code: codeOnlyCode,
+            },
           ],
           text: 'test',
         },
       };
 
+      // system only
       expect(
         matchesSearchRequest(resource, {
           resourceType: 'Observation',
@@ -490,6 +544,29 @@ describe('Search matching', () => {
         })
       ).toBe(false);
 
+      // code only
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: '|' + identifier }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: '|' + identifierSubstring }],
+        })
+      ).toBe(false);
+
+      expect(
+        matchesSearchRequest(resource, {
+          resourceType: 'Observation',
+          filters: [{ code: 'code', operator: Operator.EQUALS, value: '|' + codeOnlyCode }],
+        })
+      ).toBe(true);
+
+      // system and code
       expect(
         matchesSearchRequest(resource, {
           resourceType: 'Observation',
