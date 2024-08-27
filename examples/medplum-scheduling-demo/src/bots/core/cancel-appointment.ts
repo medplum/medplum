@@ -1,6 +1,5 @@
 import { BotEvent, MedplumClient, resolveId } from '@medplum/core';
 import { Appointment, Bundle, BundleEntry, Slot } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Appointment>): Promise<Bundle> {
   const appointment = event.input;
@@ -25,7 +24,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Appointmen
     ],
   };
   entries.push({
-    fullUrl: `urn:uuid:${randomUUID()}`,
     request: {
       method: 'PUT',
       url: `Appointment?_id=${appointment.id}`,

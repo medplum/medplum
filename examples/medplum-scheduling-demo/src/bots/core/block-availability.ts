@@ -40,7 +40,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<BlockAvail
   );
   entries.push(
     ...(appointmentsToCancel.map((appointment) => ({
-      fullUrl: `urn:uuid:${appointment.id}`,
       request: {
         method: 'PUT',
         url: `Appointment?_id=${appointment.id}`,
@@ -68,7 +67,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<BlockAvail
   );
   entries.push(
     ...(freeSlotsToBlock.map((slot) => ({
-      fullUrl: `urn:uuid:${slot.id}`,
       request: {
         method: 'PUT',
         url: `Slot?_id=${slot.id}`,
