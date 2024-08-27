@@ -751,6 +751,26 @@ describe('SubscriptionManager', () => {
         } as Parameters;
       });
 
+      medplum.router.addRoute('GET', `fhir/R4/Subscription/${SECOND_SUBSCRIPTION_ID}/$get-ws-binding-token`, () => {
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'token',
+              valueString: 'token-123',
+            },
+            {
+              name: 'expiration',
+              valueDateTime: new Date(Date.now() + ONE_HOUR).toISOString(),
+            },
+            {
+              name: 'websocket-url',
+              valueUrl: 'wss://example.com/ws/subscriptions-r4',
+            },
+          ],
+        } as Parameters;
+      });
+
       defaultManager = new SubscriptionManager(medplum, 'wss://example.com/ws/subscriptions-r4');
       wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
     });
@@ -1037,6 +1057,104 @@ describe('SubscriptionManager', () => {
       await sleep(1500);
 
       expect(receivedClose).toEqual(false);
+    });
+
+    test('should reconnect WebSocket and refresh subscriptions when profile changes', async () => {
+      const receivedEvent1Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('open', (event) => {
+          resolve(event);
+        });
+      });
+
+      await wsServer.connected;
+
+      const receivedEvent1 = await receivedEvent1Promise;
+      expect(receivedEvent1?.type).toEqual('open');
+
+      const receivedEvent2Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('connect', (event) => {
+          resolve(event);
+        });
+      });
+
+      const emitter1 = defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toEqual(1);
+
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+      const receivedEvent2 = await receivedEvent2Promise;
+      expect(receivedEvent2.type).toEqual('connect');
+
+      const receivedEvent3Promise = new Promise<SubscriptionEventMap['message']>((resolve) => {
+        emitter1.addEventListener('message', (event) => {
+          resolve(event);
+        });
+      });
+
+      await sendSubscriptionMessage(wsServer, medplum, MOCK_SUBSCRIPTION_ID, 'Hello, Medplum!');
+
+      const receivedEvent3 = await receivedEvent3Promise;
+      expect(receivedEvent3.type).toEqual('message');
+
+      const receivedEvent4Promise = new Promise<SubscriptionEventMap['close']>((resolve) => {
+        emitter1.addEventListener('close', (event) => {
+          resolve(event);
+        });
+      });
+
+      medplum.setProfile(undefined);
+
+      const receivedEvent4 = await receivedEvent4Promise;
+      expect(receivedEvent4.type).toEqual('close');
+
+      expect(defaultManager.getCriteriaCount()).toEqual(1);
+
+      await wsServer.closed;
+      WS.clean();
+
+      const receivedEvent5Promise = new Promise<SubscriptionEventMap['open']>((resolve) => {
+        emitter1.addEventListener('open', (event) => {
+          resolve(event);
+        });
+      });
+
+      wsServer = new WS('wss://example.com/ws/subscriptions-r4', { jsonProtocol: true });
+
+      medplum.addNextResourceId(SECOND_SUBSCRIPTION_ID);
+
+      // Set profile to a new profile
+      medplum.setProfile({ resourceType: 'Practitioner', id: generateId() });
+
+      const receivedEvent5 = await receivedEvent5Promise;
+      expect(receivedEvent5.type).toEqual('open');
+
+      const receivedEvent6Promise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
+        defaultManager.getMasterEmitter().addEventListener('connect', (event) => {
+          resolve(event);
+        });
+      });
+
+      const emitter2 = defaultManager.addCriteria('Communication');
+      expect(defaultManager.getCriteriaCount()).toEqual(1);
+
+      await expect(wsServer).toReceiveMessage({ type: 'bind-with-token', payload: { token: 'token-123' } });
+      await sleep(100);
+      sendHandshakeBundle(wsServer, SECOND_SUBSCRIPTION_ID);
+
+      const receivedEvent6 = await receivedEvent6Promise;
+      expect(receivedEvent6.type).toEqual('connect');
+
+      const receivedEvent7Promise = new Promise<SubscriptionEventMap['message']>((resolve) => {
+        emitter2.addEventListener('message', (event) => {
+          resolve(event);
+        });
+      });
+
+      await sendSubscriptionMessage(wsServer, medplum, SECOND_SUBSCRIPTION_ID, 'Hello, Medplum!');
+
+      const receivedEvent7 = await receivedEvent7Promise;
+      expect(receivedEvent7.type).toEqual('message');
     });
   });
 });
