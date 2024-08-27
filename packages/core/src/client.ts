@@ -3451,7 +3451,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (
       !this.refreshPromise &&
       this.accessTokenExpires !== undefined &&
-      this.accessTokenExpires < Date.now() - gracePeriod
+      Date.now() > this.accessTokenExpires - gracePeriod
     ) {
       // The result of the `refresh()` function is cached in `this.refreshPromise`,
       // so we can safely ignore the return value here.
