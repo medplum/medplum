@@ -3019,7 +3019,7 @@ describe('Client', () => {
         return {};
       });
 
-      const client = new MedplumClient({ fetch });
+      const client = new MedplumClient({ fetch, refreshGracePeriod: 0 });
 
       const loginResponse = await client.startLogin({ email: 'admin@example.com', password: 'admin' });
       expect(fetch).toHaveBeenCalledTimes(1);
