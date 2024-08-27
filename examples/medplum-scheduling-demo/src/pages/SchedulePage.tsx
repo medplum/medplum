@@ -9,11 +9,13 @@ import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
 import { ScheduleContext } from '../Schedule.context';
+import { BlockAvailability } from '../components/BlockAvailability';
 import { SetAvailability } from '../components/SetAvailability';
 import { SlotDetails } from '../components/SlotDetails';
 
 export function SchedulePage(): JSX.Element {
   const navigate = useNavigate();
+  const [blockAvailabilityOpened, blockAvailabilityHandlers] = useDisclosure(false);
   const [setAvailabilityOpened, setAvailabilityHandlers] = useDisclosure(false);
   const [slotDetailsOpened, slotDetailsHandlers] = useDisclosure(false);
   const [selectedEvent, setSelectedEvent] = useState<Event>();
@@ -87,6 +89,9 @@ export function SchedulePage(): JSX.Element {
         <Button size="sm" onClick={() => setAvailabilityHandlers.open()}>
           Set Availability
         </Button>
+        <Button size="sm" onClick={() => blockAvailabilityHandlers.open()}>
+          Block Availability
+        </Button>
       </Group>
 
       <Calendar
@@ -104,6 +109,7 @@ export function SchedulePage(): JSX.Element {
 
       {/* Modals */}
       <SetAvailability opened={setAvailabilityOpened} handlers={setAvailabilityHandlers} />
+      <BlockAvailability opened={blockAvailabilityOpened} handlers={blockAvailabilityHandlers} />
       <SlotDetails event={selectedEvent} opened={slotDetailsOpened} handlers={slotDetailsHandlers} />
     </Document>
   );

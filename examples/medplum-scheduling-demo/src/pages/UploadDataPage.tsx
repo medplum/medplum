@@ -133,10 +133,12 @@ function checkBotsUploaded(medplum: MedplumClient): boolean {
   const bots = medplum.searchResources('Bot').read();
 
   const exampleBots = bots.filter(
-    (bot) => bot.name && ['book-appointment', 'cancel-appointment', 'set-availability'].includes(bot.name)
+    (bot) =>
+      bot.name &&
+      ['book-appointment', 'cancel-appointment', 'set-availability', 'block-availability'].includes(bot.name)
   );
 
-  if (exampleBots.length === 3) {
+  if (exampleBots.length === 4) {
     return true;
   }
   return false;

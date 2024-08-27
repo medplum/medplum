@@ -7,6 +7,7 @@ import { useContext } from 'react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { Event } from 'react-big-calendar';
 import { ScheduleContext } from '../Schedule.context';
+import { BlockAvailabilityEvent } from '../bots/core/block-availability';
 
 interface CreateUpdateSlotProps {
   event: Event | undefined;
@@ -32,23 +33,35 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
   // If an editing slot was passed, update it otherwise create a new slot
   async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
     const answers = getQuestionnaireAnswers(formData);
+    const status = answers['status']?.valueCoding?.code as 'free' | 'busy-unavailable';
+    const start = answers['start-date'].valueDateTime as string;
+    const end = answers['end-date'].valueDateTime as string;
+    const scheduleReference = formData.subject as Reference<Schedule>;
 
     try {
-      if (!editingSlot) {
+      if (editingSlot) {
+        // Edit existing slot
+        await medplum.updateResource({
+          ...editingSlot,
+          start,
+          end,
+        });
+      } else if (status === 'busy-unavailable') {
+        // Create new slot and block availability
+        const input: BlockAvailabilityEvent = {
+          schedule: scheduleReference,
+          start,
+          end,
+        };
+        await medplum.executeBot({ system: 'http://example.com', value: 'block-availability' }, input);
+      } else if (status === 'free') {
         // Create new slot
         await medplum.createResource({
           resourceType: 'Slot',
-          status: answers['status']?.valueCoding?.code as 'free' | 'busy-unavailable',
-          start: answers['start-date'].valueDateTime as string,
-          end: answers['end-date'].valueDateTime as string,
-          schedule: formData.subject as Reference<Schedule>,
-        });
-      } else {
-        // Edit the existing slot
-        await medplum.updateResource({
-          ...editingSlot,
-          start: answers['start-date'].valueDateTime as string,
-          end: answers['end-date'].valueDateTime as string,
+          schedule: scheduleReference,
+          start,
+          end,
+          status,
         });
       }
 
