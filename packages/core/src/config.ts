@@ -123,10 +123,9 @@ export interface MedplumInfraConfig {
   rdsInstances: number;
   rdsInstanceType: string;
   rdsInstanceVersion?: string;
-  rdsInstanceParameters?: StringMap;
+  rdsClusterParameters?: StringMap;
   rdsSecretsArn?: string;
   rdsReaderInstanceType?: string;
-  rdsReaderInstanceParameters?: StringMap;
   rdsProxyEnabled?: boolean;
   cacheNodeType?: string;
   cacheSecurityGroupId?: string;
