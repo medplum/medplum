@@ -1,10 +1,14 @@
 import {
+  AgentError,
   AgentMessage,
   AgentReloadConfigRequest,
-  AgentTransmitResponse,
+  AgentTransmitRequest,
+  AgentUpgradeRequest,
+  AgentUpgradeResponse,
   ContentType,
   Hl7Message,
   LogLevel,
+  MEDPLUM_VERSION,
   allOk,
   createReference,
   getReferenceString,
@@ -14,15 +18,34 @@ import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { MockClient } from '@medplum/mock';
 import { Client, Server } from 'mock-socket';
+import child_process, { ChildProcess } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import fs, { existsSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
+import { resolve } from 'node:path';
+import { EventEmitter, Readable, Writable } from 'node:stream';
 import { App } from './app';
 import { AgentHl7Channel } from './hl7';
+import { mockFetchForUpgrader } from './upgrader-test-utils';
 
-const medplum = new MockClient();
+jest.mock('node:process', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return new (class MockProcess extends require('node:events') {
+    send = jest.fn().mockImplementation((msg) => {
+      this.emit('childSend', msg);
+    });
+    exit = jest.fn(() => {
+      throw new Error('process.exit');
+    });
+  })();
+});
 
 describe('App', () => {
-  beforeAll(async () => {
+  let medplum: MockClient;
+
+  beforeEach(async () => {
     console.log = jest.fn();
+    medplum = new MockClient();
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
     });
@@ -651,6 +674,7 @@ describe('App', () => {
                 channel: command.channel,
                 remote: command.remote,
                 body: ackMessage.toString(),
+                callback: command.callback,
               })
             )
           );
@@ -761,13 +785,14 @@ describe('App', () => {
       Buffer.from(
         JSON.stringify({
           type: 'agent:transmit:request',
+          contentType: ContentType.HL7_V2,
           body:
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57099',
-        })
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -787,7 +812,7 @@ describe('App', () => {
     state.mySocket.send(
       Buffer.from(
         JSON.stringify({
-          type: 'agent:transmit:response',
+          type: 'agent:transmit:request',
           contentType: ContentType.HL7_V2,
           body:
             'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
@@ -795,7 +820,7 @@ describe('App', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57099',
-        } satisfies AgentTransmitResponse)
+        } satisfies AgentTransmitRequest)
       )
     );
 
@@ -894,6 +919,7 @@ describe('App', () => {
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
           remote: 'mllp://localhost:57099',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
         })
       )
     );
@@ -953,6 +979,7 @@ describe('App', () => {
                 channel: command.channel,
                 remote: command.remote,
                 body: ackMessage.toString(),
+                callback: command.callback,
               })
             )
           );
@@ -1159,4 +1186,783 @@ describe('App', () => {
 
     console.log = originalConsoleLog;
   });
+
+  describe('Upgrade', () => {
+    beforeEach(() => {
+      const upgradeFilePath = resolve(__dirname, 'upgrade.json');
+      if (existsSync(upgradeFilePath)) {
+        rmSync(upgradeFilePath);
+      }
+    });
+
+    test('Upgrade -- Not on Windows', async () => {
+      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'linux'));
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        gotAgentUpgradeResponse: false,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.gotAgentUpgradeResponse = true;
+              break;
+
+            case 'agent:error':
+              state.agentError = command;
+              break;
+
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to reconnect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+        } satisfies AgentUpgradeRequest)
+      );
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      while (!state.agentError) {
+        if (shouldThrow) {
+          throw new Error('Timeout');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(state.agentError.body).toEqual('Auto-upgrading is currently only supported on Windows');
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      platformSpy.mockRestore();
+    });
+
+    test('Upgrade -- No version specified', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      let child!: MockChildProcess;
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        gotAgentUpgradeResponse: false,
+        agentError: undefined as AgentError | undefined,
+        disconnectCalled: false,
+      };
+
+      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const fetchSpy = mockFetchForUpgrader();
+      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
+      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
+      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
+        jest.fn(() => {
+          child = new MockChildProcess();
+          child.onDisconnect = () => {
+            state.disconnectCalled = true;
+          };
+          return child;
+        })
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.gotAgentUpgradeResponse = true;
+              break;
+
+            case 'agent:error':
+              state.agentError = command;
+              break;
+
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to reconnect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          callback,
+        } satisfies AgentUpgradeRequest)
+      );
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      // eslint-disable-next-line no-unmodified-loop-condition
+      while (!child) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for child to spawn');
+        }
+        await sleep(100);
+      }
+
+      await sleep(100);
+      child.emit('message', { type: 'STARTED' });
+      while (!state.disconnectCalled) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for disconnect');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {
+        detached: true,
+        stdio: ['ignore', 42, 42, 'ipc'],
+      });
+      expect(openSyncSpy).toHaveBeenCalled();
+      expect(child.unref).toHaveBeenCalled();
+      expect(child.disconnect).toHaveBeenCalled();
+
+      expect(writeFileSyncSpy).toHaveBeenLastCalledWith(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: MEDPLUM_VERSION,
+          targetVersion: '3.1.6',
+          callback,
+        }),
+        { encoding: 'utf8', flag: 'w+' }
+      );
+      expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      for (const spy of [platformSpy, fetchSpy, openSyncSpy, writeFileSyncSpy, spawnSpy]) {
+        spy.mockRestore();
+      }
+      console.log = originalConsoleLog;
+    });
+
+    test('Upgrade -- Version specified', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      let child!: MockChildProcess;
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        agentUpgradeResponse: undefined as AgentUpgradeResponse | undefined,
+        agentError: undefined as AgentError | undefined,
+        disconnectCalled: false,
+      };
+
+      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const fetchSpy = mockFetchForUpgrader();
+      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(jest.fn(() => 42));
+      const writeFileSyncSpy = jest.spyOn(fs, 'writeFileSync').mockImplementation(jest.fn());
+      const rmSyncSpy = jest.spyOn(fs, 'rmSync').mockImplementation(jest.fn());
+      const spawnSpy = jest.spyOn(child_process, 'spawn').mockImplementation(
+        jest.fn(() => {
+          child = new MockChildProcess();
+          child.onDisconnect = () => {
+            state.disconnectCalled = true;
+          };
+          return child;
+        })
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.agentUpgradeResponse = command;
+              break;
+
+            case 'agent:error':
+              state.agentError = command;
+              break;
+
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to reconnect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      const callback = getReferenceString(agent) + '-' + randomUUID();
+
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          callback,
+          version: '3.1.6',
+        } satisfies AgentUpgradeRequest)
+      );
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      // eslint-disable-next-line no-unmodified-loop-condition
+      while (!child) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for child to spawn');
+        }
+        await sleep(100);
+      }
+
+      child.emit('message', { type: 'STARTED' });
+      while (!state.disconnectCalled) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for disconnect');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(spawnSpy).toHaveBeenLastCalledWith(resolve(__dirname, 'app.ts'), ['--upgrade'], {
+        detached: true,
+        stdio: ['ignore', 42, 42, 'ipc'],
+      });
+      expect(openSyncSpy).toHaveBeenCalled();
+      expect(child.unref).toHaveBeenCalled();
+      expect(child.disconnect).toHaveBeenCalled();
+
+      expect(writeFileSyncSpy).toHaveBeenLastCalledWith(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: MEDPLUM_VERSION,
+          targetVersion: '3.1.6',
+          callback,
+        }),
+        { encoding: 'utf8', flag: 'w+' }
+      );
+      expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Closing IPC...'));
+
+      expect(state.agentError).toBeUndefined();
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      for (const spy of [platformSpy, fetchSpy, openSyncSpy, writeFileSyncSpy, rmSyncSpy, spawnSpy]) {
+        spy.mockRestore();
+      }
+      console.log = originalConsoleLog;
+    });
+
+    test('Upgrade -- Invalid version', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        gotAgentUpgradeResponse: false,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const fetchSpy = mockFetchForUpgrader();
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.gotAgentUpgradeResponse = true;
+              break;
+
+            case 'agent:error':
+              state.agentError = command;
+              break;
+
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to reconnect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+          version: 'medplum',
+        } satisfies AgentUpgradeRequest)
+      );
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      while (!state.agentError) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for error');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(state.agentError.body).toMatch(/'medplum' is not a valid version/);
+      expect(state.gotAgentUpgradeResponse).toEqual(false);
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      platformSpy.mockRestore();
+      fetchSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
+    test('Upgrade -- Error while starting upgrader', async () => {
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        gotAgentUpgradeResponse: false,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      const platformSpy = jest.spyOn(os, 'platform').mockImplementation(jest.fn(() => 'win32'));
+      const fetchSpy = mockFetchForUpgrader();
+      const openSyncSpy = jest.spyOn(fs, 'openSync').mockImplementation(
+        jest.fn(() => {
+          throw new Error('Unable to open file');
+        })
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.gotAgentUpgradeResponse = true;
+              break;
+
+            case 'agent:error':
+              state.agentError = command;
+              break;
+
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to reconnect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      state.mySocket.send(
+        JSON.stringify({
+          type: 'agent:upgrade:request',
+          callback: getReferenceString(agent) + '-' + randomUUID(),
+          version: '3.1.6',
+        } satisfies AgentUpgradeRequest)
+      );
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      while (!state.agentError) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for error');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+      expect(state.agentError.body).toEqual("Error during upgrading to version 'v3.1.6': Unable to open file");
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      platformSpy.mockRestore();
+      fetchSpy.mockRestore();
+      openSyncSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
+    test('Upgrading -- Manifest present on startup, version is wrong (Error)', async () => {
+      const rmSyncSpy = jest.spyOn(fs, 'rmSync');
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        gotAgentUpgradeResponse: false,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      writeFileSync(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: MEDPLUM_VERSION,
+          targetVersion: getNextMinorVersion(MEDPLUM_VERSION),
+          callback: randomUUID(),
+        }),
+        { flag: 'w+', encoding: 'utf-8' }
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.gotAgentUpgradeResponse = true;
+              break;
+
+            case 'agent:error':
+              state.agentError = command;
+              break;
+
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to reconnect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      while (!state.agentError) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for error');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(state.agentError.body).toMatch(/Failed to upgrade to version*/);
+      expect(rmSyncSpy).toHaveBeenCalledWith(resolve(__dirname, 'upgrade.json'));
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      rmSyncSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+
+    test('Upgrading -- Manifest present on startup, version is correct (Success)', async () => {
+      const rmSyncSpy = jest.spyOn(fs, 'rmSync');
+      const originalConsoleLog = console.log;
+      console.log = jest.fn();
+
+      const state = {
+        mySocket: undefined as Client | undefined,
+        gotAgentUpgradeResponse: false,
+        agentError: undefined as AgentError | undefined,
+      };
+
+      writeFileSync(
+        resolve(__dirname, 'upgrade.json'),
+        JSON.stringify({
+          previousVersion: getNextMinorVersion('3.0.0'),
+          targetVersion: MEDPLUM_VERSION.split('-')[0],
+          callback: randomUUID(),
+        }),
+        { flag: 'w+' }
+      );
+
+      function mockConnectionHandler(socket: Client): void {
+        state.mySocket = socket;
+        socket.on('message', (data) => {
+          const command = JSON.parse((data as Buffer).toString('utf8')) as AgentMessage;
+          switch (command.type) {
+            case 'agent:connect:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+              break;
+
+            case 'agent:heartbeat:request':
+              socket.send(Buffer.from(JSON.stringify({ type: 'agent:heartbeat:response' })));
+              break;
+
+            case 'agent:upgrade:response':
+              if (command.statusCode !== 200) {
+                throw new Error('Invalid status code. Expected 200');
+              }
+              state.gotAgentUpgradeResponse = true;
+              break;
+
+            case 'agent:error':
+              state.agentError = command;
+              break;
+
+            default:
+              throw new Error('Unhandled message type');
+          }
+        });
+      }
+
+      const mockServer = new Server('wss://example.com/ws/agent');
+      mockServer.on('connection', mockConnectionHandler);
+
+      const agent = await medplum.createResource<Agent>({
+        resourceType: 'Agent',
+        name: 'Test Agent',
+        status: 'active',
+      });
+
+      const app = new App(medplum, agent.id as string, LogLevel.INFO);
+      await app.start();
+
+      // Wait for the WebSocket to reconnect
+      while (!state.mySocket) {
+        await sleep(100);
+      }
+
+      let shouldThrow = false;
+      const timeout = setTimeout(() => {
+        shouldThrow = true;
+      }, 2500);
+
+      while (!state.gotAgentUpgradeResponse) {
+        if (shouldThrow) {
+          throw new Error('Timeout while waiting for error');
+        }
+        await sleep(100);
+      }
+      clearTimeout(timeout);
+
+      expect(rmSyncSpy).toHaveBeenCalledWith(resolve(__dirname, 'upgrade.json'));
+
+      await app.stop();
+      await new Promise<void>((resolve) => {
+        mockServer.stop(resolve);
+      });
+
+      rmSyncSpy.mockRestore();
+      console.log = originalConsoleLog;
+    });
+  });
 });
+
+class MockChildProcess extends EventEmitter implements ChildProcess {
+  send = jest.fn();
+  unref = jest.fn();
+  ref = jest.fn();
+  disconnect = jest.fn(() => {
+    this.onDisconnect?.();
+  });
+  stdin = new Writable();
+  stdout = new Readable();
+  stderr = new Readable();
+  // This is not quite right but not super important
+  stdio = [new Writable(), new Readable(), new Readable(), new Writable(), new Readable()] as ChildProcess['stdio'];
+  killed = false;
+  connected = true;
+  exitCode = 1;
+  // This is not quite right but not super important
+  signalCode = null;
+  // This is not quite right but not super important
+  spawnargs = ['node', 'main.ts', '--upgrade'];
+  // This is not quite right but not super important
+  spawnfile = 'node';
+  kill = (() => false) as ChildProcess['kill'];
+  [Symbol.dispose](): void {}
+  onDisconnect?: () => void;
+}
+
+function getNextMinorVersion(version: string): string {
+  const majorMinorPatch = version.split('-')[0];
+  const [major, minor] = majorMinorPatch.split('.');
+  return [major, Number.parseInt(minor, 10) + 1, 0].join('.');
+}

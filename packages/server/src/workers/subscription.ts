@@ -26,13 +26,13 @@ import { MedplumServerConfig } from '../config';
 import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
-import { Repository, getSystemRepo } from '../fhir/repo';
+import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
 import { AuditEventOutcome } from '../util/auditevent';
-import { createAuditEvent, findProjectMembership, getPreviousResource, isJobSuccessful } from './utils';
+import { createAuditEvent, findProjectMembership, isJobSuccessful } from './utils';
 
 /**
  * The upper limit on the number of times a job can be retried.
@@ -64,6 +64,7 @@ export interface SubscriptionJobData {
   readonly requestTime: string;
   readonly requestId?: string;
   readonly traceId?: string;
+  readonly verbose?: boolean;
 }
 
 const queueName = 'SubscriptionQueue';
@@ -111,14 +112,14 @@ export function initSubscriptionWorker(config: MedplumServerConfig): void {
  * Clsoes the BullMQ worker.
  */
 export async function closeSubscriptionWorker(): Promise<void> {
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-
   if (worker) {
     await worker.close();
     worker = undefined;
+  }
+
+  if (queue) {
+    await queue.close();
+    queue = undefined;
   }
 }
 
@@ -158,7 +159,7 @@ async function satisfiesAccessPolicy(
     if (membership) {
       const accessPolicy = await buildAccessPolicy(membership);
       satisfied = !!satisfiedAccessPolicy(resource, AccessPolicyInteraction.READ, accessPolicy);
-      if (!satisfied) {
+      if (!satisfied && subscription.channel.type !== 'websocket') {
         const resourceReference = getReferenceString(resource);
         const subReference = getReferenceString(subscription);
         const projectReference = getReferenceString(project);
@@ -204,9 +205,16 @@ async function satisfiesAccessPolicy(
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the subscription.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource.
  * @param context - The background job context.
+ * @param options - The resend subscriptions options.
  */
-export async function addSubscriptionJobs(resource: Resource, context: BackgroundJobContext): Promise<void> {
+export async function addSubscriptionJobs(
+  resource: Resource,
+  previousVersion: Resource | undefined,
+  context: BackgroundJobContext,
+  options?: ResendSubscriptionsOptions
+): Promise<void> {
   if (resource.resourceType === 'AuditEvent') {
     // Never send subscriptions for audit events
     return;
@@ -214,6 +222,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
 
   const ctx = tryGetRequestContext();
   const logger = getLogger();
+  const logFn = options?.verbose ? logger.info : logger.debug;
   const systemRepo = getSystemRepo();
   let project: Project | undefined;
   try {
@@ -235,14 +244,20 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
 
   const requestTime = new Date().toISOString();
   const subscriptions = await getSubscriptions(resource, project);
-  logger.debug(`Evaluate ${subscriptions.length} subscription(s)`);
+  logFn(`Evaluate ${subscriptions.length} subscription(s)`);
 
   const wsEvents = [] as [Resource, string, SubEventsOptions][];
 
   for (const subscription of subscriptions) {
-    const criteria = await matchesCriteria(resource, subscription, context);
+    if (options?.subscription && options.subscription !== getReferenceString(subscription)) {
+      logFn('Subscription does not match options.subscription');
+      continue;
+    }
+    const criteria = await matchesCriteria(resource, previousVersion, subscription, context);
+    logFn(`Subscription matchesCriteria(${resource.id}, ${subscription.id}) = ${criteria}`);
     if (criteria) {
       if (!(await satisfiesAccessPolicy(resource, project, subscription))) {
+        logFn(`Subscription satisfiesAccessPolicy(${resource.id}) = false`);
         continue;
       }
       if (subscription.channel.type === 'websocket') {
@@ -259,6 +274,7 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
         requestTime,
         requestId: ctx?.requestId,
         traceId: ctx?.traceId,
+        verbose: options?.verbose,
       });
     }
   }
@@ -271,16 +287,19 @@ export async function addSubscriptionJobs(resource: Resource, context: Backgroun
 /**
  * Determines if the resource matches the subscription criteria.
  * @param resource - The resource that was created or updated.
+ * @param previousVersion - The previous version of the resource.
  * @param subscription - The subscription.
  * @param context - Background job context.
  * @returns True if the resource matches the subscription criteria.
  */
 async function matchesCriteria(
   resource: Resource,
+  previousVersion: Resource | undefined,
   subscription: Subscription,
   context: BackgroundJobContext
 ): Promise<boolean> {
   const ctx = getRequestContext();
+  const getPreviousResource = async (): Promise<Resource | undefined> => previousVersion;
   return resourceMatchesSubscriptionCriteria({
     resource,
     subscription,
@@ -349,16 +368,20 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
  */
 export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promise<void> {
   const systemRepo = getSystemRepo();
-  const { subscriptionId, channelType, resourceType, id, versionId, interaction, requestTime } = job.data;
+  const { subscriptionId, channelType, resourceType, id, versionId, interaction, requestTime, verbose } = job.data;
+  const logger = getLogger();
+  const logFn = verbose ? logger.info : logger.debug;
 
   const subscription = await tryGetSubscription(systemRepo, subscriptionId, channelType);
   if (!subscription) {
     // If the subscription was deleted, then stop processing it.
+    logFn(`Subscription ${subscriptionId} not found`);
     return;
   }
 
   if (subscription.status !== 'active') {
     // If the subscription has been disabled, then stop processing it.
+    logFn(`Subscription ${subscriptionId} is not active`);
     return;
   }
 
@@ -366,11 +389,13 @@ export async function execSubscriptionJob(job: Job<SubscriptionJobData>): Promis
     const currentVersion = await tryGetCurrentVersion(systemRepo, resourceType, id);
     if (!currentVersion) {
       // If the resource was deleted, then stop processing it.
+      logFn(`Resource ${resourceType}/${id} not found`);
       return;
     }
 
     if (job.attemptsMade > 0 && currentVersion.meta?.versionId !== versionId) {
       // If this is a retry and the resource is not the current version, then stop processing it.
+      logFn(`Resource ${resourceType}/${id} is not the current version`);
       return;
     }
   }
@@ -457,18 +482,7 @@ async function sendRestHook(
     return;
   }
 
-  const headers = buildRestHookHeaders(subscription, resource) as Record<string, string>;
-  if (interaction === 'delete') {
-    headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
-  }
-  const traceId = job.data.traceId;
-  if (traceId) {
-    headers['x-trace-id'] = traceId;
-    if (parseTraceparent(traceId)) {
-      headers['traceparent'] = traceId;
-    }
-  }
-
+  const headers = buildRestHookHeaders(job, subscription, resource, interaction);
   const body = interaction === 'delete' ? '{}' : stringify(resource);
   let error: Error | undefined = undefined;
 
@@ -508,14 +522,27 @@ async function sendRestHook(
 
 /**
  * Builds a collection of HTTP request headers for the rest-hook subscription.
+ * @param job - The subscription job.
  * @param subscription - The subscription resource.
  * @param resource - The trigger resource.
+ * @param interaction - The interaction type.
  * @returns The HTTP request headers.
  */
-function buildRestHookHeaders(subscription: Subscription, resource: Resource): HeadersInit {
+function buildRestHookHeaders(
+  job: Job<SubscriptionJobData>,
+  subscription: Subscription,
+  resource: Resource,
+  interaction: BackgroundJobInteraction
+): HeadersInit {
   const headers: HeadersInit = {
     'Content-Type': ContentType.FHIR_JSON,
+    'X-Medplum-Subscription': subscription.id as string,
+    'X-Medplum-Interaction': interaction,
   };
+
+  if (interaction === 'delete') {
+    headers['X-Medplum-Deleted-Resource'] = `${resource.resourceType}/${resource.id}`;
+  }
 
   if (subscription.channel?.header) {
     for (const header of subscription.channel.header) {
@@ -533,6 +560,14 @@ function buildRestHookHeaders(subscription: Subscription, resource: Resource): H
   if (secret && isString(secret)) {
     const body = stringify(resource);
     headers['X-Signature'] = createHmac('sha256', secret).update(body).digest('hex');
+  }
+
+  const traceId = job.data.traceId;
+  if (traceId) {
+    headers['x-trace-id'] = traceId;
+    if (parseTraceparent(traceId)) {
+      headers['traceparent'] = traceId;
+    }
   }
 
   return headers;

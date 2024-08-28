@@ -26,6 +26,8 @@ export interface MedplumServerConfig {
   approvedSenderEmails?: string;
   database: MedplumDatabaseConfig;
   databaseProxyEndpoint?: string;
+  readonlyDatabase?: MedplumDatabaseConfig;
+  readonlyDatabaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
   emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
@@ -52,6 +54,10 @@ export interface MedplumServerConfig {
   heartbeatMilliseconds?: number;
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
+  slowQueryThresholdMilliseconds?: number;
+  slowQuerySampleRate?: number;
+  maxSearchOffset?: number;
+  maxCompartments?: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?:
     | (
@@ -107,6 +113,7 @@ export interface MedplumDatabaseConfig {
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
   runMigrations?: boolean;
+  maxConnections?: number;
 }
 
 export interface MedplumRedisConfig {
@@ -187,12 +194,18 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.database.port = process.env['POSTGRES_PORT'] ? Number.parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
   config.database.dbname = 'medplum_test';
   config.database.runMigrations = false;
+  config.readonlyDatabase = {
+    ...config.database,
+    username: 'medplum_test_readonly',
+    password: 'medplum_test_readonly',
+  };
   config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
   config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
   config.approvedSenderEmails = 'no-reply@example.com';
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
+
   return config;
 }
 
@@ -226,6 +239,8 @@ function loadEnvConfig(): MedplumServerConfig {
 
     if (isIntegerConfig(key)) {
       currConfig[key] = parseInt(value ?? '', 10);
+    } else if (isFloatConfig(key)) {
+      currConfig[key] = parseFloat(value ?? '');
     } else if (isBooleanConfig(key)) {
       currConfig[key] = value === 'true';
     } else if (isObjectConfig(key)) {
@@ -271,24 +286,31 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
   config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
   config.emailProvider = config.emailProvider || (config.smtp ? 'smtp' : 'awsses');
+  config.maxCompartments = config.maxCompartments ?? 10;
   return config;
 }
 
+const integerKeys = ['port', 'accurateCountThreshold', 'slowQueryThresholdMilliseconds', 'maxCompartments'];
 function isIntegerConfig(key: string): boolean {
-  return key === 'port' || key === 'accurateCountThreshold';
+  return integerKeys.includes(key);
 }
 
+function isFloatConfig(key: string): boolean {
+  return key === 'slowQuerySampleRate';
+}
+
+const booleanKeys = [
+  'botCustomFunctionsEnabled',
+  'database.ssl.rejectUnauthorized',
+  'database.ssl.require',
+  'logRequests',
+  'logAuditEvents',
+  'registerEnabled',
+  'require',
+  'rejectUnauthorized',
+];
 function isBooleanConfig(key: string): boolean {
-  return (
-    key === 'botCustomFunctionsEnabled' ||
-    key === 'database.ssl.rejectUnauthorized' ||
-    key === 'database.ssl.require' ||
-    key === 'logRequests' ||
-    key === 'logAuditEvents' ||
-    key === 'registerEnabled' ||
-    key === 'require' ||
-    key === 'rejectUnauthorized'
-  );
+  return booleanKeys.includes(key);
 }
 
 function isObjectConfig(key: string): boolean {

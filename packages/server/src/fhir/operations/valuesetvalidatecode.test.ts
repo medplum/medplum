@@ -24,7 +24,15 @@ const testValueSet: ValueSet = {
       },
       {
         system,
-        filter: [{ property: 'concept', op: 'is-a', value: '_PersonalRelationshipRoleType' }],
+        filter: [{ property: 'concept', op: 'descendent-of', value: '_PersonalRelationshipRoleType' }],
+      },
+      {
+        system,
+        filter: [{ property: 'status', op: '=', value: 'deprecated' }],
+      },
+      {
+        system,
+        filter: [{ property: 'child', op: 'in', value: 'PEDICU,PEDE' }],
       },
     ],
   },
@@ -177,6 +185,44 @@ describe('ValueSet validate-code', () => {
       } as Parameters);
     expect(res2.status).toBe(400);
     expect(res2.body.resourceType).toEqual('OperationOutcome');
+  });
+
+  test('Validates coding via property filter', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: valueSet.url },
+          { name: 'coding', valueCoding: { system, code: 'NOK' } },
+        ],
+      } as Parameters);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('next of kin');
+  });
+
+  test('Validates coding via property filter with multiple values', async () => {
+    const res2 = await request(app)
+      .post(`/fhir/R4/ValueSet/$validate-code`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'url', valueUri: valueSet.url },
+          { name: 'coding', valueCoding: { system, code: 'PEDC' } },
+        ],
+      } as Parameters);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toEqual('Parameters');
+    const output = res2.body as Parameters;
+    expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('Pediatrics clinic');
   });
 
   test('Validates code when only example CodeSystem is present', async () => {

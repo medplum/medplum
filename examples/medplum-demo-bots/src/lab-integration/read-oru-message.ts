@@ -7,6 +7,7 @@ import {
   Hl7Segment,
   LOINC,
   MedplumClient,
+  normalizeErrorString,
   parseHl7DateTime,
   SNOMED,
   streamToBuffer,
@@ -288,10 +289,10 @@ async function readSFTPDirectory(sftp: SftpClient, dir: string, batchSize = 25):
         try {
           stream = sftp.createReadStream(filePath);
           result = await streamToBuffer(stream);
-        } catch (err: any) {
+        } catch (err) {
           // Throw any errors related to file reading
-          console.error(`[${filePath}] Error processing file: ${err.message}`);
-          throw err as Error;
+          console.error(`[${filePath}] Error processing file: ${normalizeErrorString(err)}`);
+          throw err;
         } finally {
           if (stream) {
             stream.destroy();

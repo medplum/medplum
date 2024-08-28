@@ -1,6 +1,6 @@
 import { Resource, ViewDefinition, ViewDefinitionSelect } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
-import { toTypedValue } from '../fhirpath/utils';
+import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import { TypedValue } from '../types';
 
 /**
@@ -59,12 +59,23 @@ function processResource(v: ViewDefinition, r: Resource): OutputRow[] {
     return [];
   }
 
+  const variables: Record<string, TypedValue> = {};
+  if (v.constant) {
+    for (const c of v.constant) {
+      const typedConstant = { type: 'ViewDefinitionConstant', value: c };
+      variables['%' + c.name] = getTypedPropertyValue(typedConstant, 'value') as TypedValue;
+    }
+  }
+
   const typedResource = toTypedValue(r);
 
   if (v.where) {
     for (const where of v.where) {
-      const whereResult = evalFhirPathTyped(where.path, [typedResource]);
-      if (whereResult.length !== 1 || whereResult[0].type !== 'boolean') {
+      const whereResult = evalFhirPathTyped(where.path, [typedResource], variables);
+      if (whereResult.length !== 1) {
+        return [];
+      }
+      if (whereResult[0].type !== 'boolean') {
         throw new Error('WHERE clause must evaluate to a boolean');
       }
       if (!whereResult[0].value) {
@@ -73,7 +84,7 @@ function processResource(v: ViewDefinition, r: Resource): OutputRow[] {
     }
   }
 
-  return process(v, typedResource);
+  return process(v, typedResource, variables);
 }
 
 /**
@@ -87,19 +98,20 @@ function processResource(v: ViewDefinition, r: Resource): OutputRow[] {
  *
  * @param s - The selection structure.
  * @param n - The node (element) from a FHIR resource.
+ * @param variables - The variables.
  * @returns An array of output rows.
  */
-function process(s: SelectionStructure, n: TypedValue): OutputRow[] {
+function process(s: SelectionStructure, n: TypedValue, variables: Record<string, TypedValue>): OutputRow[] {
   const result: OutputRow[] = [];
 
   // 1. Define a list of Nodes foci as
   let foci: TypedValue[];
   if (s.forEach) {
     // If S.forEach is defined: fhirpath(S.forEach, N)
-    foci = evalFhirPathTyped(s.forEach, [n]);
+    foci = evalFhirPathTyped(s.forEach, [n], variables);
   } else if (s.forEachOrNull) {
     // Else if S.forEachOrNull is defined: fhirpath(S.forEachOrNull, N)
-    foci = evalFhirPathTyped(s.forEachOrNull, [n]);
+    foci = evalFhirPathTyped(s.forEachOrNull, [n], variables);
   } else {
     // Otherwise: [N] (a list with just the input node)
     foci = [n];
@@ -113,7 +125,7 @@ function process(s: SelectionStructure, n: TypedValue): OutputRow[] {
     // Process Columns:
     for (const col of s.column ?? []) {
       // For each Column col of S.column, define val as fhirpath(col.path, f)
-      const val = evalFhirPathTyped(col.path, [f]);
+      const val = evalFhirPathTyped(col.path, [f], variables);
 
       // Define b as a row whose column named col.name takes the value
       let b: OutputRow;
@@ -121,12 +133,12 @@ function process(s: SelectionStructure, n: TypedValue): OutputRow[] {
       if (val.length === 0) {
         // If val was the empty set: null
         b = { [col.name]: null };
-      } else if (val.length === 1) {
-        // Else if val has a single element e: e
-        b = { [col.name]: val[0].value };
       } else if (col.collection) {
         // Else if col.collection is true: val
         b = { [col.name]: val.map((v) => v.value) };
+      } else if (val.length === 1) {
+        // Else if val has a single element e: e
+        b = { [col.name]: val[0].value };
       } else {
         // Else: throw "Multiple values found but not expected for column"
         throw new Error('Multiple values found but not expected for column');
@@ -141,7 +153,7 @@ function process(s: SelectionStructure, n: TypedValue): OutputRow[] {
     // For each selection structure sel of S.select
     for (const sel of s.select ?? []) {
       // Define rows as the collection of all rows emitted by Process(sel, f)
-      const rows = process(sel, f);
+      const rows = process(sel, f, variables);
 
       // Append rows to parts
       // (Note: do not append the elements but the whole list, so the final element of parts is now the list rows)
@@ -155,7 +167,7 @@ function process(s: SelectionStructure, n: TypedValue): OutputRow[] {
       const urows: OutputRow[] = [];
       for (const u of s.unionAll) {
         // For each row r in Process(u, f)
-        for (const r of process(u, f)) {
+        for (const r of process(u, f, variables)) {
           // Append r to urows
           urows.push(r);
         }

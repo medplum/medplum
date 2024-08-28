@@ -51,7 +51,7 @@ function processRequest(
     status: 'active',
     purpose: request.purpose,
     patient: request.patient,
-    created: new Date().toDateString(),
+    created: new Date().toISOString(),
     request: {
       reference: getReferenceString(request),
     },
@@ -66,6 +66,9 @@ function processRequest(
             // For simplicity, this demo only provides coverage for X12 Service Type Code 30 - Plan Coverage and General Benefits.
             // For more details see https://www.medplum.com/docs/billing/insurance-eligibility-checks#use-cases
             excluded: serviceType?.code === '30',
+            category: {
+              coding: [serviceType || { code: '30' }],
+            },
             benefit: [
               {
                 type: {

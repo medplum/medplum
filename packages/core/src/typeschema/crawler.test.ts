@@ -1,9 +1,10 @@
 import { readJson } from '@medplum/definitions';
-import { Attachment, Bundle, Patient } from '@medplum/fhirtypes';
+import { Attachment, Bundle, Coding, Observation, Patient } from '@medplum/fhirtypes';
 import { TypedValue } from '../types';
 import { arrayify, sleep } from '../utils';
-import { crawlResource } from './crawler';
+import { crawlResource, crawlResourceAsync } from './crawler';
 import { indexStructureDefinitionBundle } from './types';
+import { LOINC } from '../constants';
 
 describe('ResourceCrawler', () => {
   beforeAll(() => {
@@ -96,5 +97,104 @@ describe('ResourceCrawler', () => {
 
     expect(paths).toContain('Patient.photo.contentType');
     expect(paths).not.toContain('Patient.gender');
+  });
+
+  test('New sync signature', () => {
+    const obs: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: {
+        coding: [{ system: LOINC, code: '85354-9' }],
+      },
+      component: [
+        {
+          code: {
+            coding: [{ system: LOINC, code: '8480-6' }],
+          },
+          valueQuantity: { value: 120, code: 'mm[Hg]' },
+        },
+        {
+          code: {
+            coding: [{ system: LOINC, code: '8462-4' }],
+          },
+          valueQuantity: { value: 80, code: 'mm[Hg]' },
+        },
+      ],
+    };
+
+    const resultCodes: Coding[] = [];
+    crawlResource(
+      obs,
+      {
+        visitProperty: (_parent, _key, _path, propertyValues) => {
+          for (const propertyValue of propertyValues) {
+            if (propertyValue) {
+              for (const value of arrayify(propertyValue) as TypedValue[]) {
+                if (value.type === 'Coding') {
+                  resultCodes.push(value.value);
+                }
+              }
+            }
+          }
+        },
+      },
+      { initialPath: 'component' }
+    );
+
+    expect(resultCodes).toEqual(
+      expect.arrayContaining<Coding>([
+        { system: LOINC, code: '8480-6' },
+        { system: LOINC, code: '8462-4' },
+      ])
+    );
+  });
+
+  test('New async signature', async () => {
+    const obs: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      code: {
+        coding: [{ system: LOINC, code: '85354-9' }],
+      },
+      component: [
+        {
+          code: {
+            coding: [{ system: LOINC, code: '8480-6' }],
+          },
+          valueQuantity: { value: 120, code: 'mm[Hg]' },
+        },
+        {
+          code: {
+            coding: [{ system: LOINC, code: '8462-4' }],
+          },
+          valueQuantity: { value: 80, code: 'mm[Hg]' },
+        },
+      ],
+    };
+
+    const resultCodes: Coding[] = [];
+    await crawlResourceAsync(
+      obs,
+      {
+        visitPropertyAsync: async (_parent, _key, _path, propertyValue) => {
+          if (propertyValue) {
+            for (const value of arrayify(propertyValue) as TypedValue[]) {
+              if (value.type === 'Coding') {
+                await sleep(1); // Simulate validating the coding
+                resultCodes.push(value.value);
+              }
+            }
+          }
+        },
+      },
+      { initialPath: 'component' }
+    );
+
+    expect(resultCodes).toEqual(
+      expect.arrayContaining<Coding>([
+        { system: LOINC, code: '8480-6' },
+        { system: LOINC, code: '8462-4' },
+      ])
+    );
   });
 });

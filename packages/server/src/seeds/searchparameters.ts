@@ -1,6 +1,6 @@
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { BundleEntry, SearchParameter } from '@medplum/fhirtypes';
-import { getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { r4ProjectId } from '../seed';
@@ -9,7 +9,7 @@ import { r4ProjectId } from '../seed';
  * Creates all SearchParameter resources.
  */
 export async function rebuildR4SearchParameters(): Promise<void> {
-  const client = getDatabasePool();
+  const client = getDatabasePool(DatabaseMode.WRITER);
   await client.query('DELETE FROM "SearchParameter" WHERE "projectId" = $1', [r4ProjectId]);
 
   const systemRepo = getSystemRepo();

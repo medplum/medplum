@@ -31,7 +31,7 @@ describe('Gynecology Encounter Note', async () => {
     const testEncounter = await medplum.createResource(encounter);
     fullResponse.encounter = { reference: getReferenceString(testEncounter) };
 
-    const responseBundle = await handler({ bot, input: fullResponse, contentType, secrets: {} }, medplum);
+    const responseBundle = await handler(medplum, { bot, input: fullResponse, contentType, secrets: {} });
     const clinicalImpression = await medplum.searchResources('ClinicalImpression');
     const observations = await medplum.searchResources('Observation', {
       encounter: getReferenceString(testEncounter),
@@ -52,7 +52,7 @@ describe('Gynecology Encounter Note', async () => {
     const testEncounter = await medplum.createResource(encounter);
     fullResponseNoProblemList.encounter = { reference: getReferenceString(testEncounter) };
 
-    const responseBundle = await handler({ bot, input: fullResponseNoProblemList, contentType, secrets: {} }, medplum);
+    const responseBundle = await handler(medplum, { bot, input: fullResponseNoProblemList, contentType, secrets: {} });
     const clinicalImpression = await medplum.searchResources('ClinicalImpression');
     const observations = await medplum.searchResources('Observation', {
       encounter: getReferenceString(testEncounter),
@@ -72,7 +72,7 @@ describe('Gynecology Encounter Note', async () => {
     const testEncounter = await medplum.createResource(encounter);
     noAssessment.encounter = { reference: getReferenceString(testEncounter) };
 
-    const responseBundle = await handler({ bot, input: noAssessment, contentType, secrets: {} }, medplum);
+    const responseBundle = await handler(medplum, { bot, input: noAssessment, contentType, secrets: {} });
     const clinicalImpression = await medplum.searchResources('ClinicalImpression');
 
     expect(responseBundle.entry?.length).toBe(12);
@@ -84,7 +84,7 @@ describe('Gynecology Encounter Note', async () => {
     const testEncounter = await medplum.createResource(encounter);
     noCondition.encounter = { reference: getReferenceString(testEncounter) };
 
-    await expect(handler({ bot, input: noCondition, contentType, secrets: {} }, medplum)).rejects.toThrow(
+    await expect(handler(medplum, { bot, input: noCondition, contentType, secrets: {} })).rejects.toThrow(
       /^Must provide a reason for the visit$/
     );
   });
@@ -94,7 +94,7 @@ describe('Gynecology Encounter Note', async () => {
     const testEncounter = await medplum.createResource(encounter);
     onlyCondition.encounter = { reference: getReferenceString(testEncounter) };
 
-    const responseBundle = await handler({ bot, input: onlyCondition, contentType, secrets: {} }, medplum);
+    const responseBundle = await handler(medplum, { bot, input: onlyCondition, contentType, secrets: {} });
     const observations = await medplum.searchResources('Observation', {
       encounter: getReferenceString(testEncounter),
     });
@@ -115,10 +115,12 @@ describe('Gynecology Encounter Note', async () => {
     const encounterRef = getReferenceString(testEncounter);
     oneBloodPressureMeasurement.encounter = { reference: encounterRef };
 
-    const responseBundle = await handler(
-      { bot, contentType, input: oneBloodPressureMeasurement, secrets: {} },
-      medplum
-    );
+    const responseBundle = await handler(medplum, {
+      bot,
+      contentType,
+      input: oneBloodPressureMeasurement,
+      secrets: {},
+    });
     const observations = await medplum.searchResources('Observation', {
       encounter: getReferenceString(testEncounter),
     });

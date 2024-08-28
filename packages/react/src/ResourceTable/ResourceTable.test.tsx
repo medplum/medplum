@@ -1,10 +1,10 @@
+import { HTTP_HL7_ORG, loadDataType } from '@medplum/core';
+import { readJson } from '@medplum/definitions';
+import { StructureDefinition } from '@medplum/fhirtypes';
 import { HomerSimpsonUSCorePatient, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '../test-utils/render';
 import { ResourceTable, ResourceTableProps } from './ResourceTable';
-import { HTTP_HL7_ORG, loadDataType } from '@medplum/core';
-import { StructureDefinition } from '@medplum/fhirtypes';
-import { readJson } from '@medplum/definitions';
 
 const medplum = new MockClient();
 
@@ -78,13 +78,11 @@ describe('ResourceTable', () => {
       if (!sd) {
         fail(`could not find structure definition for ${url}`);
       }
-      loadDataType(sd, sd.url);
+      loadDataType(sd);
     }
 
     const mockedMedplum = new MockClient();
-    const fakeRequestProfileSchema = jest.fn(async (profileUrl: string) => {
-      return [profileUrl];
-    });
+    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
     mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
 
     const value = HomerSimpsonUSCorePatient;

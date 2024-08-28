@@ -1,5 +1,6 @@
 import {
   OperationOutcomeError,
+  Operator,
   SearchRequest,
   SortRule,
   allOk,
@@ -17,6 +18,11 @@ import {
 import { Bundle, BundleEntry, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { Operation, applyPatch } from 'rfc6902';
 
+export enum RepositoryMode {
+  READER = 'reader',
+  WRITER = 'writer',
+}
+
 /**
  * The FhirRepository interface defines the methods that are required to implement a FHIR repository.
  * A FHIR repository is responsible for storing and retrieving FHIR resources.
@@ -26,6 +32,16 @@ import { Operation, applyPatch } from 'rfc6902';
  *  2. Server Repository - A repository that stores resources in a relational database.
  */
 export interface FhirRepository<TClient = unknown> {
+  /**
+   * Sets the repository mode.
+   * In general, it is assumed that repositories will start in "reader" mode,
+   * and that the mode will be changed to "writer" as needed.
+   * It is recommended that the repository use "reader" opportunistically,
+   * but after using "writer" once it should use "writer" exclusively.
+   * @param mode - The repository mode.
+   */
+  setMode(mode: RepositoryMode): void;
+
   /**
    * Creates a FHIR resource.
    *
@@ -136,6 +152,12 @@ export interface FhirRepository<TClient = unknown> {
    */
   search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>>;
 
+  searchByReference<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    referenceField: string,
+    references: string[]
+  ): Promise<Record<string, T[]>>;
+
   /**
    * Searches for a single FHIR resource.
    *
@@ -226,6 +248,10 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
   clear(): void {
     this.resources.clear();
     this.history.clear();
+  }
+
+  setMode(_mode: RepositoryMode): void {
+    // MockRepository ignores reader/writer mode
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
@@ -388,6 +414,27 @@ export class MemoryRepository extends BaseRepository implements FhirRepository {
       entry,
       total: result.length,
     };
+  }
+
+  async searchByReference<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    referenceField: string,
+    references: string[]
+  ): Promise<Record<string, T[]>> {
+    searchRequest.filters ??= [];
+    const results: Record<string, T[]> = {};
+    for (const reference of references) {
+      searchRequest.filters.push({ code: referenceField, operator: Operator.EQUALS, value: reference });
+      const bundle = await this.search(searchRequest);
+      results[reference] = [];
+      for (const entry of bundle.entry ?? []) {
+        if (entry.resource) {
+          results[reference].push(entry.resource);
+        }
+      }
+      searchRequest.filters.pop();
+    }
+    return results;
   }
 
   async deleteResource(resourceType: string, id: string): Promise<void> {

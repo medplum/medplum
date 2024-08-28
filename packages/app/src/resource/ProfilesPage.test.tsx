@@ -18,11 +18,11 @@ describe('ProfilesPage', () => {
     for (const profile of [fishPatientProfile, FishPatientResources.getFishSpeciesExtensionSD()]) {
       const sd = await medplum.createResourceIfNoneExist<StructureDefinition>(profile, `url:${profile.url}`);
       loadedProfileUrls.push(sd.url);
-      loadDataType(sd, sd.url);
+      loadDataType(sd);
     }
     medplum.requestProfileSchema = jest.fn((profileUrl) => {
       if (loadedProfileUrls.includes(profileUrl)) {
-        return Promise.resolve([profileUrl]);
+        return Promise.resolve();
       } else {
         throw new Error('unexpected profileUrl');
       }
@@ -72,7 +72,7 @@ describe('ProfilesPage', () => {
     expect(screen.queryByText('Species')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Update' }));
     });
 
     expect(screen.getByText('Success')).toBeInTheDocument();

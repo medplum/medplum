@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
 jest.mock('hibp');
@@ -73,6 +73,22 @@ describe('Change Password', () => {
       });
 
     expect(res2.status).toBe(400);
+  });
+
+  test('Old password not set', async () => {
+    // This creates a ClientApplication user
+    const accessToken = await initTestAuth();
+
+    const res2 = await request(app)
+      .post('/auth/changepassword')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        oldPassword: 'foobarbang',
+        newPassword: 'password!@#123',
+      });
+
+    expect(res2.status).toBe(400);
+    expect(res2.body).toMatchObject(badRequest('Existing password not set', 'oldPassword'));
   });
 
   test('Incorrect old password', async () => {

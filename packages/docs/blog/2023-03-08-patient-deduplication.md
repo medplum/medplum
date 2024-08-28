@@ -1,17 +1,15 @@
 ---
 slug: patient-deduplication
 title: Patient Deduplication
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [bots]
 ---
 
 # Patient Deduplication
 
 Patient deduplication is a tough problem, and there are many approaches to implementing a deduplication program. We provide this guide and [sample code](https://github.com/medplum/medplum-demo-bots) as a resource to teams who want to run a continuous deduplication program that is powered by automation and highly auditable.
+
+<!-- truncate -->
 
 There are three elements that we see playing a big role in deduplication:
 
@@ -41,8 +39,8 @@ The stakes are high for deduplication. A false merge can cause treatment errors,
 
 ## Resources
 
-- [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-deduplication.ts) sample Bot
-- [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/patient-deduplication.test.ts) Bot tests
+- [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/deduplication/merge-matching-patients.ts) sample Bot
+- [Patient deduplication](https://github.com/medplum/medplum-demo-bots/blob/main/src/deduplication/merge-matching-patients.test.ts) Bot tests
 - [Bot Execution via Subscription](/docs/bots/bot-basics#executing-automatically-using-a-subscription)
 - [FHIR Multiple Identifiers](/docs/fhir-basics#naming-data-identifiers) documentation
 - [Patient](https://app.medplum.com/Patient) resource in Medplum App

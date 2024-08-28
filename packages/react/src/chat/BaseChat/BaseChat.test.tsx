@@ -1,8 +1,8 @@
-import { ProfileResource, TypedEventTarget, createReference, getReferenceString } from '@medplum/core';
+import { Notifications } from '@mantine/notifications';
+import { ProfileResource, createReference, generateId, getReferenceString, getWebSocketUrl } from '@medplum/core';
 import { Bundle, Communication } from '@medplum/fhirtypes';
-import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
-// @ts-expect-error _subscriptionController is not exported from module normally
-import { MedplumProvider, _subscriptionController } from '@medplum/react-hooks';
+import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient, MockSubscriptionManager } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import crypto from 'node:crypto';
 import { useState } from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -10,27 +10,6 @@ import { act, fireEvent, render, screen } from '../../test-utils/render';
 import { BaseChat, BaseChatProps } from './BaseChat';
 
 type TestComponentProps = Omit<Omit<BaseChatProps, 'communications'>, 'setCommunications'>;
-type SubscriptionControllerEvents = {
-  subscription: { type: 'subscription'; criteria: string; bundle: Bundle };
-};
-
-jest.mock('@medplum/react-hooks', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { TypedEventTarget } = require('@medplum/core');
-  const _subscriptionController = new TypedEventTarget() as TypedEventTarget<SubscriptionControllerEvents>;
-  const original = jest.requireActual('@medplum/react-hooks');
-  return {
-    ...original,
-    useSubscription: jest.fn().mockImplementation((criteria: string, callback: (bundle: Bundle) => void) => {
-      _subscriptionController.addEventListener('subscription', (event) => {
-        if (criteria === event.criteria) {
-          callback(event.bundle);
-        }
-      });
-    }),
-    _subscriptionController,
-  };
-});
 
 const homerReference = createReference(HomerSimpson);
 const homerReferenceStr = getReferenceString(homerReference);
@@ -90,13 +69,19 @@ async function createCommunicationSubBundle(medplum: MockClient, communication?:
 
 describe('BaseChat', () => {
   let defaultMedplum: MockClient;
+  let defaultSubManager: MockSubscriptionManager;
 
   beforeAll(() => {
     defaultMedplum = new MockClient({ profile: DrAliceSmith });
   });
 
-  afterEach(() => {
-    (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).removeAllListeners();
+  beforeEach(() => {
+    defaultSubManager = new MockSubscriptionManager(
+      defaultMedplum,
+      getWebSocketUrl(defaultMedplum.getBaseUrl(), '/ws/subscriptions-r4'),
+      { mockReconnectingWebSocket: true }
+    );
+    defaultMedplum.setSubscriptionManager(defaultSubManager);
   });
 
   function TestComponent(props: TestComponentProps): JSX.Element | null {
@@ -111,6 +96,7 @@ describe('BaseChat', () => {
     const { rerender: _rerender } = await act(async () =>
       render(<TestComponent {...props} />, ({ children }) => (
         <MemoryRouter>
+          <Notifications />
           <MedplumProvider medplum={medplum ?? defaultMedplum}>{children}</MedplumProvider>
         </MemoryRouter>
       ))
@@ -134,10 +120,9 @@ describe('BaseChat', () => {
 
     const bundle = await createCommunicationSubBundle(defaultMedplum);
     act(() => {
-      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
-        type: 'subscription',
-        criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
-        bundle,
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle,
       });
     });
 
@@ -146,6 +131,7 @@ describe('BaseChat', () => {
 
   test('Loads initial messages and can receive new ones', async () => {
     const medplum = new MockClient({ profile: HomerSimpson });
+    medplum.setSubscriptionManager(defaultSubManager);
     await Promise.all([
       createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
       createCommunication(medplum),
@@ -168,10 +154,9 @@ describe('BaseChat', () => {
 
     const bundle = await createCommunicationSubBundle(medplum);
     act(() => {
-      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
-        type: 'subscription',
-        criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
-        bundle,
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle,
       });
     });
 
@@ -217,10 +202,9 @@ describe('BaseChat', () => {
 
     const bundle = await createCommunicationSubBundle(defaultMedplum, incomingMessage);
     act(() => {
-      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
-        type: 'subscription',
-        criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
-        bundle,
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle,
       });
     });
 
@@ -244,10 +228,9 @@ describe('BaseChat', () => {
 
     const bundle = await createCommunicationSubBundle(defaultMedplum, outgoingMessage);
     act(() => {
-      (_subscriptionController as TypedEventTarget<SubscriptionControllerEvents>).dispatchEvent({
-        type: 'subscription',
-        criteria: `Communication?${HOMER_DR_ALICE_CHAT_QUERY}`,
-        bundle,
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle,
       });
     });
 
@@ -294,5 +277,69 @@ describe('BaseChat', () => {
     expect(screen.getByPlaceholderText('Type a message...')).toBeInTheDocument();
     await rerender({ ...baseProps, inputDisabled: true });
     expect(screen.queryByPlaceholderText('Type a message...')).not.toBeInTheDocument();
+  });
+
+  test('Notifies user when disconnected and reconnected, refetches message after reconnect', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    await Promise.all([
+      createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
+      createCommunication(medplum),
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        payload: [{ contentString: 'Hello again!' }],
+      }),
+    ]);
+
+    const baseProps = {
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+    };
+
+    await setup(baseProps, medplum);
+    expect(screen.getAllByText('Hello, Medplum!').length).toEqual(2);
+    expect(screen.getByText('Hello again!')).toBeInTheDocument();
+
+    // Emulate disconnecting WebSocket
+    act(() => {
+      defaultSubManager.closeWebSocket();
+    });
+
+    // Check for the disconnected notification(s)
+    await expect(
+      screen.findByText(/live chat disconnected\. attempting to reconnect\.\.\./i)
+    ).resolves.toBeInTheDocument();
+
+    // While disconnected send a new message
+    await createCommunication(medplum, {
+      sender: drAliceReference,
+      recipient: [homerReference],
+      payload: [{ contentString: 'Homer please' }],
+    });
+
+    // Reconnect
+    act(() => {
+      defaultSubManager.openWebSocket();
+    });
+
+    // Check for the reconnected notification(s)
+    await expect(screen.findByText(/live chat reconnected\./i)).resolves.toBeInTheDocument();
+
+    // Message should not be in chat yet
+    expect(screen.queryByText(/homer please/i)).not.toBeInTheDocument();
+
+    // Emit that subscription is connected
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'connect',
+        payload: { subscriptionId: generateId() },
+      });
+    });
+
+    // Make sure the new message is fetched via search after subscription reconnects
+    await expect(screen.findByText(/homer please/i)).resolves.toBeInTheDocument();
   });
 });

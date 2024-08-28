@@ -2,9 +2,10 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config';
-import { getDatabasePool } from './database';
+import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
+import { initTestAuth } from './test.setup';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
@@ -106,8 +107,24 @@ describe('App', () => {
 
     const loggerError = jest.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
-    getDatabasePool().emit('error', error);
+    getDatabasePool(DatabaseMode.WRITER).emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test.skip('Database timeout', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+
+    config.database.queryTimeout = 1;
+    await initApp(app, config);
+    const res = await request(app)
+      .get(`/fhir/R4/SearchParameter?base=Observation`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(400);
+
     expect(await shutdownApp()).toBeUndefined();
   });
 

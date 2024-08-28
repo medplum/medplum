@@ -8,6 +8,8 @@ authors: cody
 
 Healthcare applications are famous for being complex, rigid and hideous, and we on the Medplum team have seen many up close and witnessed the problems firsthand. It's easy to dismiss the hideous phenomenon as lazy app developers or poor product management, but in reality, it's not that straightforward.
 
+<!-- truncate -->
+
 Delivering healthcare is very complicated - lives are at stake and tools and treatments are constantly evolving. Additionally, incentives and business models for patient care complex and heavily regulated. **Any app built for healthcare by default serves many stakeholders**.
 
 Medplum approaches this complex environment from the developer perspective. **We believe that a toolset that abstracts data, identity management, user interface and reporting will allow healthcare apps can be built quickly, and more importantly flexibly** - i.e. they won't need to be re-written when new stakeholders are introduced. That's what we are building.

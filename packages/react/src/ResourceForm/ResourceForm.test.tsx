@@ -1,6 +1,6 @@
-import { HTTP_HL7_ORG, createReference, deepClone, loadDataType } from '@medplum/core';
+import { HTTP_HL7_ORG, createReference, deepClone, indexStructureDefinitionBundle, loadDataType } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Observation, OperationOutcome, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, Observation, OperationOutcome, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
@@ -12,6 +12,9 @@ const medplum = new MockClient();
 describe('ResourceForm', () => {
   let USCoreStructureDefinitions: StructureDefinition[];
   beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+
     USCoreStructureDefinitions = readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
   });
 
@@ -90,7 +93,7 @@ describe('ResourceForm', () => {
     expect(await screen.findByText('Resource Type')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -158,7 +161,7 @@ describe('ResourceForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -167,6 +170,35 @@ describe('ResourceForm', () => {
     expect(result.resourceType).toBe('Observation');
     expect(result.valueQuantity).toBeUndefined();
     expect(result.valueString).toBe('hello');
+  });
+
+  test('Patch', async () => {
+    const onSubmit = jest.fn();
+    const onPatch = jest.fn();
+
+    await setup({
+      defaultValue: {
+        resourceType: 'Practitioner',
+        id: 'xyz',
+      },
+      onSubmit,
+      onPatch,
+    });
+
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
+    await act(async () => {
+      fireEvent.click(moreActions);
+    });
+
+    const patchButton = await screen.findByText('Patch');
+    expect(patchButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(patchButton);
+    });
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(onPatch).toHaveBeenCalled();
   });
 
   test('Delete', async () => {
@@ -182,10 +214,16 @@ describe('ResourceForm', () => {
       onDelete,
     });
 
-    expect(screen.getByText('Delete')).toBeInTheDocument();
-
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete'));
+      fireEvent.click(moreActions);
+    });
+
+    const deleteButton = await screen.findByText('Delete');
+    expect(deleteButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(deleteButton);
     });
 
     expect(onSubmit).not.toHaveBeenCalled();
@@ -208,7 +246,7 @@ describe('ResourceForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -231,7 +269,7 @@ describe('ResourceForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Create'));
     });
 
     expect(onSubmit).toHaveBeenCalled();
@@ -249,15 +287,13 @@ describe('ResourceForm', () => {
       if (!sd) {
         fail(`could not find structure definition for ${url}`);
       }
-      loadDataType(sd, sd.url);
+      loadDataType(sd);
     }
 
     const onSubmit = jest.fn();
 
     const mockedMedplum = new MockClient();
-    const fakeRequestProfileSchema = jest.fn(async (profileUrl: string) => {
-      return [profileUrl];
-    });
+    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
     mockedMedplum.requestProfileSchema = fakeRequestProfileSchema;
     await setup({ defaultValue: { resourceType: 'Device' }, profileUrl, onSubmit }, mockedMedplum);
 
@@ -275,16 +311,14 @@ describe('ResourceForm', () => {
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-birthsex`,
       `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-genderIdentity`,
     ];
-    const fakeRequestProfileSchema = jest.fn(async (profileUrl: string) => {
-      return [profileUrl];
-    });
+    const fakeRequestProfileSchema = jest.fn(async (_profileUrl: string) => {});
     beforeAll(() => {
       for (const url of profileUrls) {
         const sd = USCoreStructureDefinitions.find((sd) => sd.url === url);
         if (!sd) {
           fail(`could not find structure definition for ${url}`);
         }
-        loadDataType(sd, sd.url);
+        loadDataType(sd);
       }
     });
 
@@ -373,7 +407,7 @@ describe('ResourceForm', () => {
       });
 
       await act(async () => {
-        fireEvent.click(screen.getByText('OK'));
+        fireEvent.click(screen.getByText('Create'));
       });
 
       expect(onSubmit).toHaveBeenCalledWith(expectedValue);

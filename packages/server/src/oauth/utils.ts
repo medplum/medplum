@@ -27,6 +27,7 @@ import {
 import bcrypt from 'bcryptjs';
 import { JWTPayload, jwtVerify, VerifyOptions } from 'jose';
 import fetch from 'node-fetch';
+import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
 import { getRequestContext } from '../context';
@@ -388,7 +389,7 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   let membership = undefined;
   try {
     membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', membershipId);
-  } catch (err) {
+  } catch (_err) {
     throw new OperationOutcomeError(badRequest('Profile not found'));
   }
   if (membership.user?.reference !== login.user?.reference) {
@@ -403,8 +404,12 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
     throw new OperationOutcomeError(badRequest('Google authentication is required'));
   }
 
+  // TODO: Do we really need to check IP access rules inside this method?
+  // Or could this be done closer to call site?
+  // This method is used internally in a bunch of places that do not need to check IP access rules
+
   // Get the access policy
-  const accessPolicy = await getAccessPolicyForLogin(project, login, membership);
+  const accessPolicy = await getAccessPolicyForLogin({ project, login, membership });
 
   // Check IP Access Rules
   await checkIpAccessRules(login, accessPolicy);
@@ -497,15 +502,14 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
 }
 
 export async function getAuthTokens(
+  user: User | ClientApplication,
   login: Login,
   profile: Reference<ProfileResource>,
   refreshLifetime?: string
 ): Promise<TokenResult> {
+  assert.equal(getReferenceString(user), login.user?.reference);
+
   const clientId = login.client && resolveId(login.client);
-  const userId = resolveId(login.user);
-  if (!userId) {
-    throw new OperationOutcomeError(badRequest('Login missing user'));
-  }
 
   if (!login.membership) {
     throw new OperationOutcomeError(badRequest('Login missing profile'));
@@ -523,8 +527,9 @@ export async function getAuthTokens(
     client_id: clientId,
     login_id: login.id as string,
     fhirUser: profile.reference,
+    email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
     aud: clientId,
-    sub: userId,
+    sub: user.id,
     nonce: login.nonce as string,
     auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
   });
@@ -532,8 +537,8 @@ export async function getAuthTokens(
   const accessToken = await generateAccessToken({
     client_id: clientId,
     login_id: login.id as string,
-    sub: userId,
-    username: userId,
+    sub: user.id,
+    username: user.id as string,
     scope: login.scope as string,
     profile: profile.reference as string,
   });
@@ -809,7 +814,7 @@ export async function getLoginForAccessToken(accessToken: string): Promise<AuthS
   let verifyResult: Awaited<ReturnType<typeof verifyJwt>>;
   try {
     verifyResult = await verifyJwt(accessToken);
-  } catch (err) {
+  } catch (_err) {
     return undefined;
   }
 
@@ -819,7 +824,7 @@ export async function getLoginForAccessToken(accessToken: string): Promise<AuthS
   let login = undefined;
   try {
     login = await systemRepo.readResource<Login>('Login', claims.login_id);
-  } catch (err) {
+  } catch (_err) {
     return undefined;
   }
 

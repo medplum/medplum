@@ -2,7 +2,6 @@ import {
   BinarySource,
   ContentType,
   CreateBinaryOptions,
-  IClientStorage,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
@@ -86,15 +85,28 @@ import {
 } from './mocks/workflow';
 import { MockSubscriptionManager } from './subscription-manager';
 
-export interface MockClientOptions extends MedplumClientOptions {
+export interface MockClientOptions
+  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime'> {
   readonly debug?: boolean;
   /**
    * Override currently logged in user. Specifying null results in
    * MedplumContext.profile returning undefined as if no one were logged in.
    */
   readonly profile?: ReturnType<MedplumClient['getProfile']> | null;
-  readonly storage?: IClientStorage;
+  /**
+   * Override the `MockFetchClient` used by this `MockClient`.
+   */
+  readonly mockFetchOverride?: MockFetchOverrideOptions;
 }
+
+/**
+ * Override must contain all of `router`, `repo`, and `client`.
+ */
+export type MockFetchOverrideOptions = {
+  client: MockFetchClient;
+  router: FhirRouter;
+  repo: MemoryRepository;
+};
 
 export class MockClient extends MedplumClient {
   readonly router: FhirRouter;
@@ -107,16 +119,36 @@ export class MockClient extends MedplumClient {
   subManager: MockSubscriptionManager | undefined;
 
   constructor(clientOptions?: MockClientOptions) {
-    const router = new FhirRouter();
-    const repo = new MemoryRepository();
-
     const baseUrl = clientOptions?.baseUrl ?? 'https://example.com/';
-    const client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
+
+    let router: FhirRouter;
+    let repo: MemoryRepository;
+    let client: MockFetchClient;
+
+    if (clientOptions?.mockFetchOverride) {
+      if (
+        !(
+          clientOptions.mockFetchOverride?.router &&
+          clientOptions.mockFetchOverride?.repo &&
+          clientOptions.mockFetchOverride?.client
+        )
+      ) {
+        throw new Error('mockFetchOverride must specify all fields: client, repo, router');
+      }
+      router = clientOptions.mockFetchOverride.router;
+      repo = clientOptions.mockFetchOverride.repo;
+      client = clientOptions.mockFetchOverride.client;
+    } else {
+      router = new FhirRouter();
+      repo = new MemoryRepository();
+      client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
+    }
 
     super({
       baseUrl,
       clientId: clientOptions?.clientId,
       storage: clientOptions?.storage,
+      cacheTime: clientOptions?.cacheTime,
       createPdf: (
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
@@ -131,7 +163,7 @@ export class MockClient extends MedplumClient {
     this.repo = repo;
     this.client = client;
     // if null is specified, treat it as if no one is logged in
-    this.profile = clientOptions?.profile === null ? undefined : clientOptions?.profile ?? DrAliceSmith;
+    this.profile = clientOptions?.profile === null ? undefined : (clientOptions?.profile ?? DrAliceSmith);
     this.debug = !!clientOptions?.debug;
   }
 
@@ -259,10 +291,17 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
   getSubscriptionManager(): MockSubscriptionManager {
     if (!this.subManager) {
       this.subManager = new MockSubscriptionManager(this, 'wss://example.com/ws/subscriptions-r4', {
-        mockRobustWebSocket: true,
+        mockReconnectingWebSocket: true,
       });
     }
     return this.subManager;
+  }
+
+  setSubscriptionManager(subManager: MockSubscriptionManager): void {
+    if (this.subManager) {
+      this.subManager.closeWebSocket();
+    }
+    this.subManager = subManager;
   }
 
   subscribeToCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {
@@ -653,6 +692,7 @@ export class MockFetchClient {
 
     for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
       structureDefinition.kind = 'resource';
+      structureDefinition.url = 'http://hl7.org/fhir/StructureDefinition/' + structureDefinition.name;
       loadDataType(structureDefinition);
       await this.repo.createResource(structureDefinition);
     }
@@ -681,7 +721,7 @@ export class MockFetchClient {
     if (options.body) {
       try {
         body = JSON.parse(options.body);
-      } catch (err) {
+      } catch (_err) {
         body = options.body;
       }
     }

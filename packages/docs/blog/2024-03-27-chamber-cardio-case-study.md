@@ -1,28 +1,29 @@
 ---
 slug: chamber-cardio-case-study
 title: Chamber Cardio - case study
-authors:
-  name: Andrew Dilling
-  title: Head of Product, Chamber Cardio
-  url: https://github.com/andrewdilling
-  image_url: https://github.com/andrewdilling.png
+authors: andrewdilling
 tags: [fhir-datastore, self-host, cardiology, case-study]
 ---
+
 # Case Study: Chamber Cardio
 
-[Chamber Cardio](https://www.chambercardio.com/), a technology-enabled cardiology solution, **helps enable and empower cardiologists and practices in their transition to value-based care**. With our cloud-based technology platform, we offer a suite of tools designed specifically for cardiovascular care. These tools provide **real-time insights, analytics and care coordination tools** focused on improving outcomes for patients with chronic cardiovascular conditions. 
+[Chamber Cardio](https://www.chambercardio.com/), a technology-enabled cardiology solution, **helps enable and empower cardiologists and practices in their transition to value-based care**. With our cloud-based technology platform, we offer a suite of tools designed specifically for cardiovascular care. These tools provide **real-time insights, analytics and care coordination tools** focused on improving outcomes for patients with chronic cardiovascular conditions.
+
+<!-- truncate -->
 
 Chamber’s products serve as a compliment to a cardiology practice’s existing Electronic Health Records (EHR) and Practice Management Systems offering many powerful features, such as quality [measure](/docs/api/fhir/resources/measure) and care gap assessment, customizable population-level patient dashboards and hospital encounter notifications, clinical pathway workflows (including guideline-directed medication support), automated [risk assessments](/docs/api/fhir/resources/riskassessment) and care team collaboration through secure messaging and task management.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/8bsrKe6VmUs?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/8bsrKe6VmUs?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 To reduce engineering lift and accelerate development, the clinical and operational front-end for internal care team management was built using the **Retool Enterprise Platform** self-hosted in Chamber’s AWS cloud environment **integrated directly with Medplum** for the backend data storage and web services layer.
 
 ## Problem
 
-In the early stages of product development, the Chamber team, with limited time and technical resources, sought out creative solutions to help accelerate product delivery without sacrificing the quality or capabilities in scope for our MVP milestones. We initially prioritized the development of our **core data integration pipeline (including EHR, ADT feeds, claims, etc.) and a foundation for internal tooling to properly support clinical and operational workflows**. 
+In the early stages of product development, the Chamber team, with limited time and technical resources, sought out creative solutions to help accelerate product delivery without sacrificing the quality or capabilities in scope for our MVP milestones. We initially prioritized the development of our **core data integration pipeline (including EHR, ADT feeds, claims, etc.) and a foundation for internal tooling to properly support clinical and operational workflows**.
 
-The complexity of internal care coordination and practice management requirements, including integrated clinical guidelines, medication titration support, disease-specific risk assessments, and quality measure reporting, elevated the challenge. We also had to manage and normalize diverse datasets and terminology standards.  As a seed-funded startup with just two software engineers, finding the right mix of custom-built and off-the-shelf solutions was critical to building a strong, secure foundation for the product, capable of supporting future growth.
+The complexity of internal care coordination and practice management requirements, including integrated clinical guidelines, medication titration support, disease-specific risk assessments, and quality measure reporting, elevated the challenge. We also had to manage and normalize diverse datasets and terminology standards. As a seed-funded startup with just two software engineers, finding the right mix of custom-built and off-the-shelf solutions was critical to building a strong, secure foundation for the product, capable of supporting future growth.
 
 ## Solution
 
@@ -37,7 +38,7 @@ Several challenges emerged during the early development process:
 - **Normalizing Clinical Terminologies**: One of the first obstacles was creating a system to accurately map and normalize clinical terminologies from various data sources into Chamber’s FHIR datastore. The solution was a blend of API integrations for standard coding systems, utilization of public crosswalk datasets, and leveraging Medplum for critical terminology metadata and mapping logic. This multilayered approach ensured a seamless, standardized coding solution.
 - **Generating Realistic Synthetic Patient Data**: To refine complex workflows, Chamber turned to Synthea™, generating synthetic patient data that mimics real-world medical histories (e.g. hospital encounters, office visits, prescriptions, lab values, etc). This synthetic data allowed our team to simulate scenarios specific to chronic cardiovascular diseases, refining the system’s use of FHIR resources and Medplum integration. The insights gained were pivotal in developing analytics dashboards, risk assessment algorithms, and medication management features.
 - **Concept Mapping and Categorization**: Effective query support and decision-making required a sophisticated grouping and categorization of clinical concepts. By integrating with leading coding system APIs and the NLM VSAC repository through Retool, Chamber was able to categorize and code clinical concepts efficiently, laying the groundwork for robust data queries and decision support tools.
-- **Maximizing Retool Built-in Capabilities**: While Retool provided a strong foundation for data integration, Chamber encountered limitations with more complex and nuanced FHIR data use cases. To overcome these, the team incorporated FHIR-based libraries as global functions using [BonFHIR](https://bonfhir.dev/), enhancing Retool’s capabilities while adhering to healthcare standards. 
+- **Maximizing Retool Built-in Capabilities**: While Retool provided a strong foundation for data integration, Chamber encountered limitations with more complex and nuanced FHIR data use cases. To overcome these, the team incorporated FHIR-based libraries as global functions using [BonFHIR](https://bonfhir.dev/), enhancing Retool’s capabilities while adhering to healthcare standards.
 
 ## Medplum Features
 
@@ -57,7 +58,7 @@ Chamber took advantage of a wide array of Retool’s platform capabilities for b
 - Javascript Transformers: reusable functions and local data storage used to manipulate data returned from queries and access anywhere in the app
 - Event handling: triggering queries and components on successful and failing query responses and manual data refresh control
 - Environments & Version Control: Ease of configuration for multi-environment deployment with dedicated data sources and version-based release support
-- Self-Hosted Deployment:  To maintain healthcare compliance, Chamber’s Retool instance is deployed fully within our AWS cloud infrastructure
+- Self-Hosted Deployment: To maintain healthcare compliance, Chamber’s Retool instance is deployed fully within our AWS cloud infrastructure
 
 ## Conclusion
 

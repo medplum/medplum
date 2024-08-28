@@ -37,7 +37,11 @@ export interface ChangePasswordRequest {
 }
 
 async function changePassword(request: ChangePasswordRequest): Promise<void> {
-  const oldPasswordHash = request.user.passwordHash as string;
+  const oldPasswordHash = request.user.passwordHash;
+  if (!oldPasswordHash) {
+    throw new OperationOutcomeError(badRequest('Existing password not set', 'oldPassword'));
+  }
+
   const bcryptResult = await bcrypt.compare(request.oldPassword, oldPasswordHash);
   if (!bcryptResult) {
     throw new OperationOutcomeError(badRequest('Incorrect password', 'oldPassword'));

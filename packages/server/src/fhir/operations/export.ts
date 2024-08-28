@@ -1,6 +1,14 @@
-import { accepted, concatUrls, getResourceTypes, protectedResourceTypes } from '@medplum/core';
+import {
+  accepted,
+  concatUrls,
+  getResourceTypes,
+  Operator,
+  parseSearchRequest,
+  protectedResourceTypes,
+  SearchRequest,
+} from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Project, ResourceType } from '@medplum/fhirtypes';
+import { Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientResourceTypes } from '../patient';
@@ -39,9 +47,8 @@ export async function patientExportHandler(req: FhirRequest): Promise<FhirRespon
 async function startExport(req: FhirRequest, exportType: string): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
-  const query = req.query as Record<string, string | undefined>;
-  const since = query._since;
-  const types = query._type?.split(',');
+  const since = req.query._since;
+  const types = req.query._type?.split(',');
 
   const exporter = new BulkExporter(ctx.repo, since);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
@@ -57,9 +64,11 @@ export async function exportResources(
   exporter: BulkExporter,
   project: Project,
   types: string[] | undefined,
-  exportLevel: string
+  exportLevel: string,
+  since?: string
 ): Promise<void> {
   const resourceTypes = getResourceTypesByExportLevel(exportLevel);
+  const pageSize = 1000;
 
   for (const resourceType of resourceTypes) {
     if (
@@ -69,27 +78,28 @@ export async function exportResources(
     ) {
       continue;
     }
-    await exportResourceType(exporter, resourceType);
+    await exportResourceType(exporter, resourceType, pageSize, since);
   }
 
   // Close the exporter
   await exporter.close(project);
 }
 
-export async function exportResourceType(
+export async function exportResourceType<T extends Resource>(
   exporter: BulkExporter,
-  resourceType: ResourceType,
-  maxResources = 1000
+  resourceType: T['resourceType'],
+  count: number,
+  since?: string
 ): Promise<void> {
   const repo = exporter.repo;
-  let hasMore = true;
-  let offset = 0;
-  while (hasMore) {
-    const bundle = await repo.search({
-      resourceType,
-      count: maxResources,
-      offset,
-    });
+  let searchRequest: SearchRequest<T> | undefined = {
+    resourceType,
+    count,
+    filters: since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : undefined,
+    sortRules: [{ code: '_lastUpdated', descending: false }],
+  };
+  while (searchRequest) {
+    const bundle: Bundle<T> = await repo.search<T>(searchRequest);
     if (!bundle.entry || bundle.entry.length === 0) {
       break;
     }
@@ -100,9 +110,12 @@ export async function exportResourceType(
       }
     }
 
-    const linkNext = bundle.link?.find((b) => b.relation === 'next');
-    hasMore = !!linkNext;
-    offset += maxResources;
+    const linkNext = bundle.link?.find((b) => b.relation === 'next')?.url;
+    if (!linkNext) {
+      break;
+    }
+    searchRequest = parseSearchRequest<T>(linkNext);
+    console.assert(searchRequest.cursor, 'Expected cursor in next link');
   }
 }
 

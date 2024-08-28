@@ -4,7 +4,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { getDatabasePool } from '../../database';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { initTestAuth } from '../../test.setup';
 import { Column, Condition, SelectQuery } from '../sql';
 
@@ -241,7 +241,7 @@ describe('CodeSystem $import', () => {
 });
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {
-  const db = getDatabasePool();
+  const db = getDatabasePool(DatabaseMode.READER);
   const coding = await new SelectQuery('Coding')
     .column('id')
     .where('system', '=', system)
@@ -257,16 +257,18 @@ async function assertPropertyExists(
   property: string,
   value: string
 ): Promise<any> {
-  const db = getDatabasePool();
+  const db = getDatabasePool(DatabaseMode.READER);
   const query = new SelectQuery('Coding_Property');
   const codingTable = query.getNextJoinAlias();
-  query.innerJoin(
+  query.join(
+    'INNER JOIN',
     'Coding',
     codingTable,
     new Condition(new Column('Coding_Property', 'coding'), '=', new Column(codingTable, 'id'))
   );
   const propertyTable = query.getNextJoinAlias();
-  query.innerJoin(
+  query.join(
+    'INNER JOIN',
     'CodeSystem_Property',
     propertyTable,
     new Condition(new Column('Coding_Property', 'property'), '=', new Column(propertyTable, 'id'))

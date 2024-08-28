@@ -20,7 +20,7 @@ jobRouter.get(
     const asyncJob = await ctx.repo.readResource<AsyncJob>('AsyncJob', id);
 
     if (!finalJobStatusCodes.includes(asyncJob.status as string)) {
-      res.status(202).end();
+      res.status(202).send(asyncJob).end();
       return;
     }
 

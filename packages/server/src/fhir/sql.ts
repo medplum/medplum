@@ -141,12 +141,25 @@ function simpleBinaryOperator(operator: string): OperatorFunc {
   };
 }
 
+export function escapeLikeString(str: string): string {
+  return str.replaceAll(/[\\_%]/g, (c) => '\\' + c);
+}
+
 export class Column {
   constructor(
     readonly tableName: string | undefined,
     readonly columnName: string,
-    readonly raw?: boolean
+    readonly raw?: boolean,
+    readonly alias?: string
   ) {}
+}
+
+export class Literal implements Expression {
+  constructor(readonly value: string) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append(this.value);
+  }
 }
 
 export interface Expression {
@@ -229,12 +242,25 @@ export class Disjunction extends Connective {
   }
 }
 
-export class Exists implements Expression {
-  constructor(readonly selectQuery: SelectQuery) {}
+export class SqlFunction implements Expression {
+  constructor(
+    readonly name: string,
+    readonly args: (Expression | Column)[]
+  ) {}
 
   buildSql(sql: SqlBuilder): void {
-    sql.append('EXISTS(');
-    this.selectQuery.buildSql(sql);
+    sql.append(this.name + '(');
+    for (let i = 0; i < this.args.length; i++) {
+      const arg = this.args[i];
+      if (arg instanceof Column) {
+        sql.appendColumn(arg);
+      } else {
+        arg.buildSql(sql);
+      }
+      if (i + 1 < this.args.length) {
+        sql.append(', ');
+      }
+    }
     sql.append(')');
   }
 }
@@ -259,7 +285,7 @@ export class Union implements Expression {
 
 export class Join {
   constructor(
-    readonly joinType: 'LEFT JOIN' | 'INNER JOIN',
+    readonly joinType: 'LEFT JOIN' | 'INNER JOIN' | 'INNER JOIN LATERAL',
     readonly joinItem: SelectQuery | string,
     readonly joinAlias: string,
     readonly onExpression: Expression
@@ -272,7 +298,7 @@ export class GroupBy {
 
 export class OrderBy {
   constructor(
-    readonly column: Column,
+    readonly key: Column | Expression,
     readonly descending?: boolean
   ) {}
 }
@@ -306,6 +332,10 @@ export class SqlBuilder {
         this.append('.');
       }
       this.appendIdentifier(column.columnName);
+    }
+    if (column.alias) {
+      this.append(' AS ');
+      this.appendIdentifier(column.alias);
     }
     return this;
   }
@@ -348,7 +378,7 @@ export class SqlBuilder {
     return this.values;
   }
 
-  async execute(conn: Client | Pool | PoolClient): Promise<any[]> {
+  async execute(conn: Client | Pool | PoolClient): Promise<{ rowCount: number; rows: any[] }> {
     const sql = this.toString();
     let startTime = 0;
     if (this.debug) {
@@ -361,9 +391,10 @@ export class SqlBuilder {
       if (this.debug) {
         const endTime = Date.now();
         const duration = endTime - startTime;
-        console.log(`result: ${result.rows.length} rows (${duration} ms)`);
+        console.log(`result: ${result.rowCount} rows (${duration} ms)`);
       }
-      return result.rows;
+
+      return { rowCount: result.rowCount ?? 0, rows: result.rows };
     } catch (err: any) {
       if (err && typeof err === 'object' && err.code === '23505') {
         // Catch duplicate key errors and throw a 409 Conflict
@@ -380,9 +411,12 @@ export abstract class BaseQuery {
   readonly tableName: string;
   readonly predicate: Conjunction;
   explain = false;
+  analyzeBuffers = false;
+  readonly alias?: string;
 
-  constructor(tableName: string) {
+  constructor(tableName: string, alias?: string) {
     this.tableName = tableName;
+    this.alias = alias;
     this.predicate = new Conjunction([]);
   }
 
@@ -411,9 +445,9 @@ interface CTE {
 }
 
 export class SelectQuery extends BaseQuery implements Expression {
-  readonly innerQuery?: SelectQuery | Union;
+  readonly innerQuery?: SelectQuery | Union | ValuesQuery;
   readonly distinctOns: Column[];
-  readonly columns: Column[];
+  readonly columns: (Column | Literal)[];
   readonly joins: Join[];
   readonly groupBys: GroupBy[];
   readonly orderBys: OrderBy[];
@@ -422,8 +456,8 @@ export class SelectQuery extends BaseQuery implements Expression {
   offset_: number;
   joinCount = 0;
 
-  constructor(tableName: string, innerQuery?: SelectQuery | Union) {
-    super(tableName);
+  constructor(tableName: string, innerQuery?: SelectQuery | Union | ValuesQuery, alias?: string) {
+    super(tableName, alias);
     this.innerQuery = innerQuery;
     this.distinctOns = [];
     this.columns = [];
@@ -449,8 +483,8 @@ export class SelectQuery extends BaseQuery implements Expression {
     return this;
   }
 
-  column(column: Column | string): this {
-    this.columns.push(getColumn(column, this.tableName));
+  column(column: Column | string | Literal): this {
+    this.columns.push(column instanceof Literal ? column : getColumn(column, this.tableName));
     return this;
   }
 
@@ -459,13 +493,13 @@ export class SelectQuery extends BaseQuery implements Expression {
     return `T${this.joinCount}`;
   }
 
-  innerJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
-    this.joins.push(new Join('INNER JOIN', joinItem, joinAlias, onExpression));
-    return this;
-  }
-
-  leftJoin(joinItem: SelectQuery | string, joinAlias: string, onExpression: Expression): this {
-    this.joins.push(new Join('LEFT JOIN', joinItem, joinAlias, onExpression));
+  join(
+    joinType: 'INNER JOIN' | 'INNER JOIN LATERAL' | 'LEFT JOIN',
+    joinItem: SelectQuery | string,
+    joinAlias: string,
+    onExpression: Expression
+  ): this {
+    this.joins.push(new Join(joinType, joinItem, joinAlias, onExpression));
     return this;
   }
 
@@ -476,6 +510,11 @@ export class SelectQuery extends BaseQuery implements Expression {
 
   orderBy(column: Column | string, descending?: boolean): this {
     this.orderBys.push(new OrderBy(getColumn(column, this.tableName), descending));
+    return this;
+  }
+
+  orderByExpr(expr: Expression, descending?: boolean): this {
+    this.orderBys.push(new OrderBy(expr, descending));
     return this;
   }
 
@@ -492,6 +531,9 @@ export class SelectQuery extends BaseQuery implements Expression {
   buildSql(sql: SqlBuilder): void {
     if (this.explain) {
       sql.append('EXPLAIN ');
+      if (this.analyzeBuffers) {
+        sql.append('(ANALYZE, BUFFERS) ');
+      }
     }
     if (this.with) {
       sql.append('WITH ');
@@ -525,7 +567,7 @@ export class SelectQuery extends BaseQuery implements Expression {
   async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     this.buildSql(sql);
-    return sql.execute(conn);
+    return (await sql.execute(conn)).rows;
   }
 
   private buildDistinctOn(sql: SqlBuilder): void {
@@ -552,7 +594,11 @@ export class SelectQuery extends BaseQuery implements Expression {
       if (!first) {
         sql.append(', ');
       }
-      sql.appendColumn(column);
+      if (column instanceof Literal) {
+        sql.appendParameters(column.value, false);
+      } else {
+        sql.appendColumn(column);
+      }
       first = false;
     }
   }
@@ -567,6 +613,11 @@ export class SelectQuery extends BaseQuery implements Expression {
     }
 
     sql.appendIdentifier(this.tableName);
+    if (this.alias) {
+      sql.append(' ');
+      sql.appendIdentifier(this.alias);
+      sql.append(' ');
+    }
 
     for (const join of this.joins) {
       sql.append(` ${join.joinType} `);
@@ -604,7 +655,11 @@ export class SelectQuery extends BaseQuery implements Expression {
 
     for (const orderBy of combined) {
       sql.append(first ? ' ORDER BY ' : ', ');
-      sql.appendColumn(orderBy.column);
+      if (orderBy.key instanceof Column) {
+        sql.appendColumn(orderBy.key);
+      } else {
+        orderBy.key.buildSql(sql);
+      }
       if (orderBy.descending) {
         sql.append(' DESC');
       }
@@ -635,14 +690,19 @@ export class ArraySubquery implements Expression {
 }
 
 export class InsertQuery extends BaseQuery {
-  private readonly values: Record<string, any>[];
+  private readonly values?: Record<string, any>[];
+  private readonly query?: SelectQuery;
   private returnColumns?: string[];
   private conflictColumns?: string[];
   private ignoreConflict?: boolean;
 
-  constructor(tableName: string, values: Record<string, any>[]) {
+  constructor(tableName: string, values: Record<string, any>[] | SelectQuery) {
     super(tableName);
-    this.values = values;
+    if (Array.isArray(values)) {
+      this.values = values;
+    } else {
+      this.query = values;
+    }
   }
 
   mergeOnConflict(columns?: string[]): this {
@@ -660,13 +720,17 @@ export class InsertQuery extends BaseQuery {
     return this;
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
+  async execute(conn: Pool | PoolClient): Promise<{ rowCount: number; rows: any[] }> {
     const sql = new SqlBuilder();
     sql.append('INSERT INTO ');
     sql.appendIdentifier(this.tableName);
-    const columnNames = Object.keys(this.values[0]);
-    this.appendColumns(sql, columnNames);
-    this.appendAllValues(sql, columnNames);
+    if (this.values) {
+      const columnNames = Object.keys(this.values[0]);
+      this.appendColumns(sql, columnNames);
+      this.appendAllValues(sql, columnNames);
+    } else {
+      this.appendSubquery(sql);
+    }
     this.appendMerge(sql);
     if (this.returnColumns) {
       sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
@@ -688,6 +752,10 @@ export class InsertQuery extends BaseQuery {
   }
 
   private appendAllValues(sql: SqlBuilder, columnNames: string[]): void {
+    if (!this.values) {
+      return;
+    }
+
     for (let i = 0; i < this.values.length; i++) {
       if (i === 0) {
         sql.append(' VALUES ');
@@ -696,6 +764,14 @@ export class InsertQuery extends BaseQuery {
       }
       this.appendValues(sql, columnNames, this.values[i]);
     }
+  }
+
+  private appendSubquery(sql: SqlBuilder): void {
+    if (!this.query) {
+      return;
+    }
+    sql.append(' ');
+    this.query.buildSql(sql);
   }
 
   private appendValues(sql: SqlBuilder, columnNames: string[], values: Record<string, any>): void {
@@ -715,7 +791,7 @@ export class InsertQuery extends BaseQuery {
     if (this.ignoreConflict) {
       sql.append(` ON CONFLICT DO NOTHING`);
       return;
-    } else if (!this.conflictColumns?.length) {
+    } else if (!this.conflictColumns?.length || !this.values) {
       return;
     }
 
@@ -753,7 +829,50 @@ export class DeleteQuery extends BaseQuery {
     if (this.returnColumns) {
       sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
     }
-    return sql.execute(conn);
+    return (await sql.execute(conn)).rows;
+  }
+}
+
+export class ValuesQuery implements Expression {
+  readonly tableName: string;
+  readonly columnNames: string[];
+  readonly rows: any[][];
+  constructor(tableName: string, columnNames: string[], rows: any[][]) {
+    this.tableName = tableName;
+    this.columnNames = columnNames;
+    this.rows = rows;
+  }
+
+  buildSql(builder: SqlBuilder): void {
+    /*
+    Since a VALUES expression has a special alias format of "tableName"("columnName"),
+    wrap its sql with SELECT * FROM (VALUES ...) AS "tableName"("columnName") for compatibility
+    other query builders that may include a ValuesQuery:
+
+    SELECT * FROM (VALUES
+      ('val1'),
+		  ('val2'),
+		  ('val3'),
+    ) AS "values"("val")
+    */
+
+    builder.append('SELECT * FROM (VALUES');
+    for (let r = 0; r < this.rows.length; r++) {
+      builder.append(r === 0 ? '(' : ',(');
+      for (let v = 0; v < this.rows[r].length; v++) {
+        builder.append(v === 0 ? '' : ',');
+        builder.param(this.rows[r][v]);
+      }
+      builder.append(')');
+    }
+    builder.append(') AS ');
+    builder.appendIdentifier(this.tableName);
+    builder.append('(');
+    for (let c = 0; c < this.columnNames.length; c++) {
+      builder.append(c === 0 ? '' : ',');
+      builder.appendIdentifier(this.columnNames[c]);
+    }
+    builder.append(')');
   }
 }
 

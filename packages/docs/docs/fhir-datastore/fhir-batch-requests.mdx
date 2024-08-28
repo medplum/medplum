@@ -1,6 +1,6 @@
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
-import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
+import Tabs from '@theme/Tabs';
 
 import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/fhir-batch-requests.ts';
 
@@ -26,7 +26,7 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 | `request.method`      | The type of HTTP request you are making. Can be one of the following: <ul><li>GET: Read a resource or perform a search</li><li>POST: Create a resource</li><li>PUT: Update a resource</li><li>DELETE: Delete a resource</li></ul> |
 | `request.ifNoneExist` | [See below](#conditional-batch-actions)                                                                                                                                                                                           |
 | `resource`            | The details of the FHIR resource that is being created/updated.                                                                                                                                                                   |
-| `fullUrl`             | [See below](#creating-internal-references)                                                                                                                                                                                        |
+| `fullUrl`             | [See below](#internal-references)                                                                                                                                                                                                 |
 
 <details>
   <summary>Example: A simple batch request to simultaneously search for two patients</summary>
@@ -67,9 +67,13 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 Medplum does not currently distinguish between `'batch'` and `'transaction'` type [`Bundle`](/docs/api/fhir/resources/bundle) resources and does not provide atomic transactions. This is currently being worked on, and you can track progress on the issue [here](https://github.com/medplum/medplum/issues/1369).
 :::
 
-## Creating Internal References
+## References in Bundles
 
-A common workflow when using batch requests is creating a resource that references another resource that is being created in the same batch. For example, you may create a `Patient` resource that is the `subject` of an `Encounter` created in the same batch request.
+When using batch requests, it is common to require resources to refer to one another: either between two resources within the Bundle, or to resources outside the Bundle. FHIR provides ways to automatically link the resources together, without needing to know the exact resource IDs up front.
+
+### Internal References
+
+Resources within the same Bundle often need to link to one another: for example, you may create a `Patient` resource that is the `subject` of an `Encounter` created in the same batch request.
 
 Creating internal references is done by assigning temporary ids to each bundle entry. The `fullUrl` field is set to `'urn:uuid:'` followed by a temporary UUID.
 
@@ -82,6 +86,20 @@ Batches are processed in order, so resources must be created in your bundle prio
 <details>
   <summary>Example: Create a patient and encounter whose subject is the created patient</summary>
   <MedplumCodeBlock language="ts" selectBlocks="internalReference">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+### External \(Conditional) References
+
+Additionally, it may be necessary to link to other resources that already exist on the server, for which the ID of the
+target resource is not known. To handle this use case, FHIR allows populating the reference with a search query string,
+which will be resolved by Medplum server at resource creation time. This search must resolve to a single resource, otherwise
+an error will be returned. For example:
+
+<details>
+  <summary>Example: Create multiple patients that link to the same provider</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="externalReference">
     {ExampleCode}
   </MedplumCodeBlock>
 </details>

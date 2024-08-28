@@ -42,6 +42,7 @@ jobs:
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.STAGING_GOOGLE_CLIENT_ID }}
           MEDPLUM_BASE_URL: ${{ secrets.STAGING_MEDPLUM_BASE_URL }}
+          MEDPLUM_AWS_TEXTRACT_ENABLED: 'true'
           RECAPTCHA_SITE_KEY: ${{ secrets.STAGING_RECAPTCHA_SITE_KEY }}
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -71,3 +72,7 @@ jobs:
           AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}
           ECS_CLUSTER: ${{ secrets.STAGING_ECS_CLUSTER }}
           ECS_SERVICE: ${{ secrets.STAGING_ECS_SERVICE }}
+      - name: Deploy bot layer
+        run: ./scripts/deploy-bot-layer.sh
+        env:
+          AWS_REGION: ${{ secrets.STAGING_AWS_REGION }}

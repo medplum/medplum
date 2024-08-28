@@ -346,8 +346,11 @@ class StructureMapParser {
   private parseConceptMap(): void {
     this.parser.consume('Symbol', 'conceptmap');
 
-    const conceptMap = { resourceType: 'ConceptMap', status: 'active' } as Partial<ConceptMap>;
-    conceptMap.url = this.parser.consume('String').value;
+    const conceptMap: ConceptMap = {
+      resourceType: 'ConceptMap',
+      status: 'active',
+      url: '#' + this.parser.consume('String').value,
+    };
 
     this.parser.consume('{');
 

@@ -188,6 +188,10 @@ export class Tokenizer {
       }
     }
 
+    if (this.pos.index === start) {
+      throw new Error('Invalid DateTime literal');
+    }
+
     let value = this.str.substring(start, this.pos.index);
     if (value.endsWith('T')) {
       // The date/time string ended with a "T", which is valid FHIRPath, but not valid ISO8601.

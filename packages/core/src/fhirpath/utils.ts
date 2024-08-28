@@ -1,8 +1,8 @@
 import { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
-import { capitalize, isEmpty } from '../utils';
 import { validationRegexes } from '../typeschema/validation';
+import { capitalize, isEmpty } from '../utils';
 
 /**
  * Returns a single element array with a typed boolean value.
@@ -137,22 +137,16 @@ export function getTypedPropertyValueWithSchema(
   let resultType = 'undefined';
   let primitiveExtension: Extension[] | undefined = undefined;
 
-  if (element.path.endsWith('[x]')) {
-    const elementBasePath = (element.path.split('.').pop() as string).replace('[x]', '');
-    for (const type of types) {
-      const candidatePath = elementBasePath + capitalize(type.code);
-      resultValue = value[candidatePath];
-      primitiveExtension = value['_' + candidatePath];
-      if (resultValue !== undefined || primitiveExtension !== undefined) {
-        resultType = type.code;
-        break;
-      }
+  const lastPathSegmentIndex = element.path.lastIndexOf('.');
+  const lastPathSegment = element.path.substring(lastPathSegmentIndex + 1);
+  for (const type of types) {
+    const candidatePath = lastPathSegment.replace('[x]', capitalize(type.code));
+    resultValue = value[candidatePath];
+    primitiveExtension = value['_' + candidatePath];
+    if (resultValue !== undefined || primitiveExtension !== undefined) {
+      resultType = type.code;
+      break;
     }
-  } else {
-    console.assert(types.length === 1, 'Expected single type', element.path);
-    resultValue = value[path];
-    resultType = types[0].code;
-    primitiveExtension = value['_' + path];
   }
 
   // When checking for primitive extensions, we must use the "resolved" path.
@@ -284,6 +278,22 @@ export function fhirPathArrayEquals(x: TypedValue[], y: TypedValue[]): TypedValu
     return booleanToTypedValue(false);
   }
   return booleanToTypedValue(x.every((val, index) => toJsBoolean(fhirPathEquals(val, y[index]))));
+}
+
+/**
+ * Determines if two arrays are not equal according to FHIRPath equality rules.
+ * @param x - The first array.
+ * @param y - The second array.
+ * @returns FHIRPath true if the arrays are not equal.
+ */
+export function fhirPathArrayNotEquals(x: TypedValue[], y: TypedValue[]): TypedValue[] {
+  if (x.length === 0 || y.length === 0) {
+    return [];
+  }
+  if (x.length !== y.length) {
+    return booleanToTypedValue(true);
+  }
+  return booleanToTypedValue(x.some((val, index) => !toJsBoolean(fhirPathEquals(val, y[index]))));
 }
 
 /**

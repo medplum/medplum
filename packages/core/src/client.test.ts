@@ -1,4 +1,12 @@
-import { Bot, Bundle, Identifier, Patient, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
+import {
+  Bot,
+  Bundle,
+  Identifier,
+  OperationOutcome,
+  Patient,
+  SearchParameter,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
 import { randomUUID, webcrypto } from 'crypto';
 import PdfPrinter from 'pdfmake';
 import type { CustomTableLayout, TDocumentDefinitions, TFontDictionary } from 'pdfmake/interfaces';
@@ -9,20 +17,30 @@ import {
   FetchLike,
   InviteRequest,
   MedplumClient,
+  MedplumClientEventMap,
   NewPatientRequest,
   NewProjectRequest,
   NewUserRequest,
 } from './client';
 import { createFakeJwt, mockFetch, mockFetchResponse } from './client-test-utils';
 import { ContentType } from './contenttype';
-import { OperationOutcomeError, accepted, allOk, forbidden, notFound, unauthorized } from './outcomes';
+import {
+  OperationOutcomeError,
+  accepted,
+  allOk,
+  badRequest,
+  forbidden,
+  notFound,
+  serverError,
+  unauthorized,
+} from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
-import { ProfileResource, createReference } from './utils';
+import { ProfileResource, createReference, sleep } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
-  url: 'http://example.com/patient',
+  url: 'http://hl7.org/fhir/StructureDefinition/Patient',
   status: 'active',
   kind: 'resource',
   abstract: false,
@@ -71,6 +89,7 @@ const patientProfileExtensionUrl = 'http://example.com/patient-profile-extension
 const profileSD = {
   resourceType: 'StructureDefinition',
   name: 'PatientProfile',
+  type: 'Patient',
   url: patientProfileUrl,
   snapshot: {
     element: [
@@ -1152,6 +1171,25 @@ describe('Client', () => {
     expect(result.id).toBe('123');
   });
 
+  test('Read resource with invalid id', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+
+    try {
+      await client.readResource('Patient', '');
+      throw new Error('Test failed: Expected an error when calling readResource with an empty string id.');
+    } catch (err) {
+      expect((err as Error).message).toBe('The "id" parameter cannot be null, undefined, or an empty string.');
+    }
+
+    try {
+      await client.readResource('Patient', undefined as unknown as string);
+      throw new Error('Test failed: Expected an error when calling readResource with an undefined id.');
+    } catch (err) {
+      expect((err as Error).message).toBe('The "id" parameter cannot be null, undefined, or an empty string.');
+    }
+  });
+
   test('Read reference', async () => {
     const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
     const client = new MedplumClient({ fetch });
@@ -1835,7 +1873,7 @@ describe('Client', () => {
 
     await request1;
     expect(isProfileLoaded(patientProfileUrl)).toBe(true);
-    expect(getDataType(profileSD.name, patientProfileUrl)).toBeDefined();
+    expect(getDataType(profileSD.type, patientProfileUrl)).toBeDefined();
   });
 
   test('requestProfileSchema expandProfile', async () => {
@@ -1855,8 +1893,8 @@ describe('Client', () => {
     await request2;
     expect(isProfileLoaded(patientProfileUrl)).toBe(true);
     expect(isProfileLoaded(patientProfileExtensionUrl)).toBe(true);
-    expect(getDataType(profileSD.name, patientProfileUrl)).toBeDefined();
-    expect(getDataType(profileExtensionSD.name, patientProfileExtensionUrl)).toBeDefined();
+    expect(getDataType(profileSD.type, patientProfileUrl)).toBeDefined();
+    expect(getDataType(profileExtensionSD.type, patientProfileExtensionUrl)).toBeDefined();
   });
 
   test('Search', async () => {
@@ -1990,6 +2028,101 @@ describe('Client', () => {
     } catch (err) {
       expect((err as OperationOutcomeError).outcome).toMatchObject(notFound);
     }
+  });
+
+  describe('maxRetries', () => {
+    test('should try 3 times by default', async () => {
+      const fetch = mockFetch(500, serverError(new Error('Something is broken')));
+      const client = new MedplumClient({ fetch });
+
+      await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
+        'Internal server error (Error: Something is broken)'
+      );
+      expect(fetch).toHaveBeenCalledTimes(3);
+    });
+
+    test('should only try once when maxRetries = 0', async () => {
+      const fetch = mockFetch(500, serverError(new Error('Something is broken')));
+      const client = new MedplumClient({ fetch });
+
+      await expect(client.get(client.fhirUrl('Patient', '123'), { maxRetries: 0 })).rejects.toThrow(
+        'Internal server error (Error: Something is broken)'
+      );
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test.each([400, 401, 404])('%d status code is not retried', async (statusCode) => {
+      const fetch = mockFetch(statusCode, (): OperationOutcome => {
+        switch (statusCode) {
+          case 400:
+            return badRequest('The request is not good');
+          case 401:
+            return unauthorized;
+          case 404:
+            return notFound;
+          default:
+            throw new Error('Invalid status code');
+        }
+      });
+      const client = new MedplumClient({ fetch });
+
+      switch (statusCode) {
+        case 400:
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('The request is not good');
+          break;
+        case 401:
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Unauthenticated');
+          break;
+        case 404:
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Not found');
+          break;
+        default:
+          throw new Error('Invalid status code');
+      }
+
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('should not retry after request is aborted', async () => {
+      const fetch = jest.fn().mockImplementation((async (_url: string, options?: RequestInit) => {
+        return new Promise((_resolve, reject) => {
+          if (!options?.signal) {
+            throw new Error('options.signal required for this test');
+          }
+
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout'));
+          }, 3000);
+
+          options.signal.addEventListener('abort', () => {
+            clearTimeout(timeout);
+            const abortError = new Error('Request aborted');
+            abortError.name = 'AbortError';
+            reject(abortError);
+          });
+        });
+      }) satisfies FetchLike);
+      const client = new MedplumClient({ fetch });
+
+      const controller = new AbortController();
+
+      const getPromise = client.get(client.fhirUrl('Patient', '123'), { signal: controller.signal });
+      await sleep(0);
+      controller.abort();
+      await expect(getPromise).rejects.toThrow('Request aborted');
+
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test('should retry on fetch errors', async () => {
+      const fetch = jest.fn().mockImplementation(async (_url: string, _options?: RequestInit) => {
+        throw new Error('Some kind of fetch error occurred');
+      });
+      const client = new MedplumClient({ fetch });
+
+      await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Some kind of fetch error occurred');
+      expect(fetch).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe('Paginated Search ', () => {
@@ -2865,6 +2998,66 @@ describe('Client', () => {
     });
   });
 
+  describe('Token refresh', () => {
+    test('should not clear sessionDetails when profile is refreshing', async () => {
+      const fetch = mockFetch(200, (url) => {
+        if (url.includes('Patient/123')) {
+          return { resourceType: 'Patient', id: '123' };
+        }
+        if (url.includes('oauth2/token')) {
+          return {
+            access_token: createFakeJwt({ client_id: '123', login_id: '123', exp: Math.floor(Date.now() / 1000) + 1 }),
+            refresh_token: createFakeJwt({ client_id: '123' }),
+            profile: { reference: 'Patient/123' },
+          };
+        }
+        if (url.includes('auth/me')) {
+          return {
+            profile: { resourceType: 'Patient', id: '123' },
+          };
+        }
+        return {};
+      });
+
+      const client = new MedplumClient({ fetch, refreshGracePeriod: 0 });
+
+      const loginResponse = await client.startLogin({ email: 'admin@example.com', password: 'admin' });
+      expect(fetch).toHaveBeenCalledTimes(1);
+      fetch.mockClear();
+
+      await client.processCode(loginResponse.code as string);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      fetch.mockClear();
+
+      expect(client.getProfile()).toBeDefined();
+
+      const refreshingPromise = new Promise<void>((resolve) => {
+        client.addEventListener('profileRefreshing', () => {
+          resolve();
+        });
+      });
+
+      const now = Date.now();
+      jest.useFakeTimers().setSystemTime(now + 2000);
+
+      // Call refreshIfExpired
+      const refreshedPromise = client.refreshIfExpired();
+
+      // Wait to receive event
+      await refreshingPromise;
+
+      // Check that profile is still defined
+      // This is where the test failed before this PR
+      expect(client.getProfile()).toBeDefined();
+
+      await refreshedPromise;
+
+      expect(client.getProfile()).toBeDefined();
+
+      jest.useRealTimers();
+    });
+  });
+
   test('Verbose mode', async () => {
     const fetch = jest.fn(() => {
       return Promise.resolve({
@@ -2913,7 +3106,39 @@ describe('Passed in async-backed `ClientStorage`', () => {
   test('MedplumClient should resolve initialized when sync storage used', async () => {
     const fetch = mockFetch(200, { success: true });
     const medplum = new MedplumClient({ fetch });
-    await expect(medplum.getInitPromise()).resolves;
+    await expect(medplum.getInitPromise()).resolves.toBeUndefined();
+  });
+
+  test('MedplumClient emits `storageInitFailed` when storage.getInitPromise throws', async () => {
+    const fetch = mockFetch(200, { success: true });
+    class TestStorage extends MockAsyncClientStorage {
+      reject!: (err: Error) => void;
+      promise: Promise<void>;
+      constructor() {
+        super();
+        this.promise = new Promise((_resolve, reject) => {
+          this.reject = reject;
+        });
+      }
+      getInitPromise(): Promise<void> {
+        return this.promise;
+      }
+      rejectInitPromise(): void {
+        this.reject(new Error('Storage init failed!'));
+      }
+    }
+
+    const storage = new TestStorage();
+    const medplum = new MedplumClient({ fetch, storage });
+    const dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+
+    storage.rejectInitPromise();
+
+    await expect(medplum.getInitPromise()).rejects.toThrow('Storage init failed!');
+    expect(dispatchEventSpy).toHaveBeenCalledWith<[MedplumClientEventMap['storageInitFailed']]>({
+      type: 'storageInitFailed',
+      payload: { error: new Error('Storage init failed!') },
+    });
   });
 });
 

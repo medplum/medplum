@@ -126,6 +126,7 @@ export class AgentDicomChannel extends BaseChannel {
             remote: this.association?.getCallingAeTitle() as string,
             contentType: ContentType.JSON,
             body: JSON.stringify(payload),
+            callback: `Agent/${App.instance.agentId}-${randomUUID()}`,
           });
           response.setStatus(dimse.constants.Status.Success);
         } catch (err) {

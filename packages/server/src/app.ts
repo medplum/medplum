@@ -243,7 +243,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
     }
 
     ctx.logger.info('Request served', {
-      duration: `${duration} ms`,
+      durationMs: duration,
       ip: req.ip,
       method: req.method,
       path: req.originalUrl,
@@ -252,6 +252,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
       receivedAt: start,
       status: res.statusCode,
       ua: req.get('User-Agent'),
+      mode: ctx instanceof AuthenticatedRequestContext ? ctx.repo.mode : undefined,
     });
   });
 

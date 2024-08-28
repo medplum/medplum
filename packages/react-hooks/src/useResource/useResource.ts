@@ -15,7 +15,9 @@ export function useResource<T extends Resource>(
   setOutcome?: (outcome: OperationOutcome) => void
 ): T | undefined {
   const medplum = useMedplum();
-  const [resource, setResource] = useState<T | undefined>(getInitialResource(medplum, value));
+  const [resource, setResource] = useState<T | undefined>(() => {
+    return getInitialResource(medplum, value);
+  });
 
   const setResourceIfChanged = useCallback(
     (r: T | undefined) => {
@@ -23,17 +25,14 @@ export function useResource<T extends Resource>(
         setResource(r);
       }
     },
-    [resource, setResource]
+    [resource]
   );
-
-  useEffect(() => {
-    setResourceIfChanged(getInitialResource(medplum, value));
-  }, [medplum, value, setResourceIfChanged]);
 
   useEffect(() => {
     let subscribed = true;
 
-    if (isReference(value)) {
+    const newValue = getInitialResource(medplum, value);
+    if (!newValue && isReference(value)) {
       medplum
         .readReference(value as Reference<T>)
         .then((r) => {
@@ -49,10 +48,12 @@ export function useResource<T extends Resource>(
             }
           }
         });
+    } else {
+      setResourceIfChanged(newValue);
     }
 
     return (() => (subscribed = false)) as () => void;
-  }, [medplum, resource, value, setResourceIfChanged, setOutcome]);
+  }, [medplum, value, setResourceIfChanged, setOutcome]);
 
   return resource;
 }

@@ -56,7 +56,7 @@ export async function isExternalAuth(email: string): Promise<{ domain: string; a
     url.searchParams.set('response_type', 'code');
     url.searchParams.set('scope', 'openid profile email');
     return { domain, authorizeUrl: url.toString() };
-  } catch (error: any) {
+  } catch (_err) {
     globalLogger.error(`Error constructing URL for domain ${domain}:`);
     throw new OperationOutcomeError(badRequest('Failed to construct URL for the domain'));
   }

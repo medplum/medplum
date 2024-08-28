@@ -69,6 +69,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
           case 'agent:transmit:response':
           case 'agent:reloadconfig:response':
+          case 'agent:upgrade:response':
             if (command.callback) {
               const redis = getRedis();
               await redis.publish(command.callback, JSON.stringify(command));
@@ -128,8 +129,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       return;
     }
 
-    const { login, project, membership } = authState;
-    const repo = await getRepoForLogin(login, membership, project, true);
+    const repo = await getRepoForLogin(authState, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
 
     // Connect to Redis
@@ -182,8 +182,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       return;
     }
 
-    const { login, project, membership } = authState;
-    const repo = await getRepoForLogin(login, membership, project, true);
+    const repo = await getRepoForLogin(authState, true);
     const agent = await repo.readResource<Agent>('Agent', agentId);
     const channel = agent?.channel?.find((c) => c.name === command.channel);
     if (!channel) {
@@ -203,19 +202,29 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
     const result = await executeBot({
       agent,
       bot,
-      runAs: membership,
+      runAs: authState.membership,
       contentType: command.contentType,
       input,
       remoteAddress,
       forwardedFor: command.remote,
     });
 
+    let body: string;
+    if (result.returnValue && !result.success) {
+      body = JSON.stringify(result.returnValue);
+    } else if (result.returnValue) {
+      body = result.returnValue;
+    } else {
+      body = `Bot execution logs:\n${result.logResult}`;
+    }
+
     sendMessage({
       type: 'agent:transmit:response',
       channel: command.channel,
       remote: command.remote,
-      contentType: command.contentType,
-      body: result.returnValue,
+      contentType: result.success ? command.contentType : ContentType.JSON,
+      statusCode: result.success ? 200 : 400,
+      body,
     });
   }
 

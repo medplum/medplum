@@ -199,3 +199,4 @@ Keep the terminal open so that you can see the logs. At this point you can start
 - [FHIRCast](https://fhircast.org/)
 - [Medplum CLI](/docs/cli)
 - [Sim Hospital](https://github.com/google/simhospital) is a useful tool to generate HL7 V2 test messages locally for testing
+- [Medplum Agent Demo Video](https://youtu.be/MmE3Dn939B4) on Youtube

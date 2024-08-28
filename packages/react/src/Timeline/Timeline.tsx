@@ -20,8 +20,8 @@ export function Timeline(props: TimelineProps): JSX.Element {
   return <Container>{props.children}</Container>;
 }
 
-export interface TimelineItemProps extends PanelProps {
-  readonly resource: Resource;
+export interface TimelineItemProps<T extends Resource = Resource> extends PanelProps {
+  readonly resource: T;
   readonly profile?: Reference;
   readonly dateTime?: string;
   readonly padding?: boolean;
