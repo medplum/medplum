@@ -15,7 +15,9 @@ Medplum gave a talk at MITRE last fall, that was [recently released](https://you
 
 ## Medplum Intro and Team Story
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _5 minutes_
 
@@ -49,7 +51,9 @@ Our experience is also informed by building many applications that are in the he
 
 ## Healthcare Developer Pain Points
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=300" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=300" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _5 minutes_
 
@@ -77,7 +81,9 @@ So that leads me to the next part, which is our approach, how we've thought abou
 
 ## System Overview
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=590" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=590" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _3 minutes_
 
@@ -105,7 +111,9 @@ And we just have a built-in implementation as well as allowing people to [bring 
 
 ## Traditional Healthcare Applications
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=799" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=799" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 1 minute
 
@@ -119,7 +127,9 @@ So the, I'll emphasize that. It's very common to have a SaaS app with an API sof
 
 ## Developer Experience and Open Source
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=899" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=899" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _4 minutes_
 
@@ -141,7 +151,9 @@ We are early in our open source life, so I'm really excited for the chance to me
 
 ## Business Model
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1136" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1136" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _1 minute_
 
@@ -155,7 +167,9 @@ And again, this is a model that is, is modeled after GitLab and their very succe
 
 ## Demos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1243" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1243" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _10 minutes_
 

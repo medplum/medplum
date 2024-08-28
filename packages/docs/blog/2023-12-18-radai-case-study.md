@@ -13,7 +13,9 @@ Radiology is a bellwether for innovations in Healthcare IT due to the **time-sen
 
 Today, we are showcasing the [Rad AI Omni Reporting](https://www.radai.com/omni-reporting) platform, with [FHIRcast support](/docs/fhircast) through Medplum’s open source FHIRcast hub.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/N5ZocZhdPZ0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/N5ZocZhdPZ0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 ### How does it work?
 

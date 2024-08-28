@@ -13,7 +13,9 @@ Claims data is a uniquely rich source of financial and clinical data important t
 
 Today, we are showcasing [Flexpa](https://www.flexpa.com/) which connects applications to claims data via direct patient consent and a modern FHIR API powered by Medplum.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/DsdLq6DGi-0?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/DsdLq6DGi-0?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 ## How does it work?
 

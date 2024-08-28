@@ -551,6 +551,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
+
+    // Add default profiles before validating resource
+    if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
+      const defaultProfiles = this.currentProject()?.defaultProfile?.find(
+        (o) => o.resourceType === resourceType
+      )?.profile;
+      resource.meta = { ...resource.meta, profile: defaultProfiles };
+    }
+
     await this.validateResource(resource);
 
     if (!this.canWriteResourceType(resourceType)) {
@@ -788,7 +797,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param create - If true, then the resource is being created.
    */
   private async writeToDatabase<T extends Resource>(resource: T, create: boolean): Promise<void> {
-    await this.withTransaction(async (client) => {
+    await this.ensureInTransaction(async (client) => {
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
       await this.writeLookupTables(client, resource, create);
@@ -944,7 +953,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
       await this.deleteCacheEntry(resourceType, id);
 
-      await this.withTransaction(async (conn) => {
+      await this.ensureInTransaction(async (conn) => {
         const lastUpdated = new Date();
         const content = '';
         const columns: Record<string, any> = {
@@ -1252,11 +1261,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns The list of compartments for the resource.
    */
   private getCompartments(resource: Resource): Reference[] {
-    const result: Reference[] = [];
+    const compartments = new Set<string>();
 
     if (resource.meta?.project && validator.isUUID(resource.meta.project)) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
-      result.push({ reference: 'Project/' + resource.meta.project });
+      compartments.add('Project/' + resource.meta.project);
     }
 
     if (
@@ -1265,24 +1274,43 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       validator.isUUID(resolveId(resource.project) ?? '')
     ) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
-      result.push(resource.project);
+      compartments.add(resource.project.reference);
     }
 
-    if (resource.meta?.account) {
+    if (resource.meta?.account && !resource.meta.account.reference?.startsWith('Project/')) {
       const id = resolveId(resource.meta.account);
       if (id && validator.isUUID(id)) {
-        result.push(resource.meta.account);
+        compartments.add(resource.meta.account.reference as string);
       }
     }
 
     for (const patient of getPatients(resource)) {
       const patientId = resolveId(patient);
       if (patientId && validator.isUUID(patientId)) {
-        result.push(patient);
+        compartments.add(patient.reference);
       }
     }
 
-    return result;
+    // Carry forward anything added to the resource compartments array
+    if (resource.meta?.compartment?.length) {
+      for (const compartment of resource.meta.compartment) {
+        const id = resolveId(compartment);
+        if (id && validator.isUUID(id) && !compartment.reference?.startsWith('Project/')) {
+          compartments.add(compartment.reference as string);
+        }
+      }
+    }
+
+    const results: Reference[] = [];
+    for (const reference of compartments.values()) {
+      results.push({ reference });
+    }
+
+    const maxCompartments = getConfig().maxCompartments;
+    if (maxCompartments !== undefined && results.length > maxCompartments) {
+      throw new OperationOutcomeError(badRequest('Too many compartments', resource.resourceType + '.meta.compartment'));
+    }
+    return results;
   }
 
   /**
@@ -2201,6 +2229,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     });
 
     await getRedis().del(cacheKeys);
+  }
+
+  async ensureInTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
+    if (this.transactionDepth) {
+      const client = await this.getConnection(DatabaseMode.WRITER);
+      return callback(client);
+    } else {
+      return this.withTransaction(callback);
+    }
   }
 
   close(): void {

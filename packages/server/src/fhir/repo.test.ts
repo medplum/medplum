@@ -9,7 +9,9 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
+  parseSearchRequest,
   preconditionFailed,
+  toTypedValue,
 } from '@medplum/core';
 import {
   BundleEntry,
@@ -34,7 +36,7 @@ import { loadTestConfig } from '../config';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
-import { getSystemRepo, Repository } from './repo';
+import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
 
 jest.mock('hibp');
 
@@ -1077,4 +1079,109 @@ describe('FHIR Repo', () => {
       };
       await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
     }));
+
+  test('Project default profiles', async () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: {
+          defaultProfile: [
+            { resourceType: 'Observation', profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'] },
+          ],
+        },
+      });
+
+      const observation: Observation = {
+        resourceType: 'Observation',
+        status: 'final',
+        category: [
+          { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
+        ],
+        code: { text: 'Strep test' },
+        effectiveDateTime: '2024-02-13T14:34:56Z',
+        valueBoolean: true,
+      };
+
+      await expect(systemRepo.createResource(observation)).resolves.toBeDefined();
+      await expect(repo.createResource(observation)).rejects.toThrow('Missing required property (Observation.subject)');
+
+      observation.subject = { identifier: { value: randomUUID() } };
+      await expect(repo.createResource(observation)).resolves.toMatchObject<Partial<Observation>>({
+        meta: expect.objectContaining({
+          profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'],
+        }),
+      });
+    }));
+
+  test('Allows adding compartments', async () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({ withRepo: true });
+      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      const practitionerReference = createReference(practitioner);
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { compartment: [practitionerReference] },
+      });
+      expect(patient.meta?.compartment).toContainEqual(practitionerReference);
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+
+      const results = await repo.searchResources(
+        parseSearchRequest('Patient?_compartment=' + getReferenceString(practitioner))
+      );
+      expect(results).toHaveLength(1);
+    }));
+
+  test('Prevents setting Project compartments', async () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({ withRepo: true });
+      const { project: otherProject, repo: otherRepo } = await createTestProject({ withRepo: true });
+      const projectReference = createReference(otherProject);
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { compartment: [projectReference], account: projectReference },
+      });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+      expect(patient.meta?.compartment).not.toContainEqual({ reference: getReferenceString(otherProject) });
+
+      const results = await otherRepo.searchResources(parseSearchRequest('Patient'));
+      expect(results).toHaveLength(0);
+    }));
+
+  test('Prevents setting too many compartments', async () =>
+    withTestContext(async () => {
+      const config = await loadTestConfig();
+      config.maxCompartments = 3;
+      await initAppServices(config);
+
+      const { repo, client } = await createTestProject({ withRepo: true, withClient: true });
+      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      await expect(
+        repo.createResource<Patient>({
+          resourceType: 'Patient',
+          meta: { compartment: [createReference(practitioner), createReference(client)] },
+        })
+      ).rejects.toThrow('Too many compartments (Patient.meta.compartment)');
+    }));
+
+  test('setTypedValue', () => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      photo: [
+        {
+          contentType: 'image/png',
+          url: 'https://example.com/photo.png',
+        },
+        {
+          contentType: 'image/png',
+          data: 'base64data',
+        },
+      ],
+    };
+
+    setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
+    expect(patient.photo?.[1].contentType).toEqual('image/jpeg');
+  });
 });

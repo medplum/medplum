@@ -11,7 +11,9 @@ tags: [community, careplan]
 
 <!-- truncate -->
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/tjOZt4RzVic?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/tjOZt4RzVic?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 Awell works seamlessly with Medplum to build and operate careflows. Connecting Medplum to your Awell care flows opens up limitless possibilities for automating, standardizing and coordinating care such as:
 

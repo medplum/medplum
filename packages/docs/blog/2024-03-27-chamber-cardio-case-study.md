@@ -13,7 +13,9 @@ tags: [fhir-datastore, self-host, cardiology, case-study]
 
 Chamber’s products serve as a compliment to a cardiology practice’s existing Electronic Health Records (EHR) and Practice Management Systems offering many powerful features, such as quality [measure](/docs/api/fhir/resources/measure) and care gap assessment, customizable population-level patient dashboards and hospital encounter notifications, clinical pathway workflows (including guideline-directed medication support), automated [risk assessments](/docs/api/fhir/resources/riskassessment) and care team collaboration through secure messaging and task management.
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/8bsrKe6VmUs?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/8bsrKe6VmUs?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 To reduce engineering lift and accelerate development, the clinical and operational front-end for internal care team management was built using the **Retool Enterprise Platform** self-hosted in Chamber’s AWS cloud environment **integrated directly with Medplum** for the backend data storage and web services layer.
 

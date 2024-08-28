@@ -719,7 +719,6 @@ describe('Batch and Transaction processing', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(transaction);
-    console.log(res.body.issue);
     expect(res.status).toBe(200);
     expect(res.body.resourceType).toEqual('Bundle');
   });
