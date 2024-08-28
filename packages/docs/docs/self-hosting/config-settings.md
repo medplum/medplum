@@ -47,6 +47,7 @@ Here is a full example. See the table below for details on each setting.
 | `rdsSecretsArn`               | Optional override to provide custom database connection secrets. If `rdsSecretsArn` is provided, then no RDS resources will be instantiated. The secrets at `rdsSecretsArn` must conform to the same secrets format as secrets created by CDK (`host`, `port`, `dbname`, `username`, `password`). |
 | `rdsReaderInstanceType`       | Optional AWS RDS Aurora instance type for reader instances. Default value is `rdsInstanceType`. See [Upgrade RDS Database](/docs/self-hosting/upgrade-rds-database).                                                                                                                              |
 | `rdsProxyEnabled`             | Optional flag to enable [AWS RDS Proxy](https://aws.amazon.com/rds/proxy/).                                                                                                                                                                                                                       |
+| `maxConnections`              | Number of database connections per API server instance                                                                                                                                                                                                                                            |
 | `cacheNodeType`               | Optional [Elasticache Node Type](https://docs.aws.amazon.com/AmazonElastiCache/latest/red-ug/CacheNodes.SupportedTypes.html). Default value is `cache.t2.medium`. k                                                                                                                               |
 | `cacheSecurityGroupId`        | Optional Elasticache security group ID. By default, a new security group will be provisioned automatically.                                                                                                                                                                                       |
 | `desiredServerCount`          | The number of running ECS/Fargate instances in steady state. Use `1` when getting started, and increase as necessary or for high availability and scale.                                                                                                                                          |
@@ -102,10 +103,10 @@ A certain amount of server CPU and memory is required to validate resources on w
 instance may result in excessive garbage collection pressure and degraded performance. The recommended server task
 configurations are shown below:
 
-|                                                        | `serverCpu` | `serverMemory` |
-| ------------------------------------------------------ | ----------- | -------------- |
-| Recommended for production                             | 4096        | 8192           |
-| Minimum for production                       | 2048        | 4096           |
+|                                            | `serverCpu` | `serverMemory` |
+| ------------------------------------------ | ----------- | -------------- |
+| Recommended for production                 | 4096        | 8192           |
+| Minimum for production                     | 2048        | 4096           |
 | Minimum for development or small workloads | 512         | 2048           |
 
 Beyond the recommended instance size for production, the server may not be able to take advantage of additional CPU and
