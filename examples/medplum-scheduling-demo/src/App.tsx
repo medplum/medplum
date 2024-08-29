@@ -1,5 +1,12 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser, IconClipboard, IconCalendar, IconRobot, IconDatabaseImport } from '@tabler/icons-react';
+import {
+  IconCalendar,
+  IconClipboard,
+  IconDatabaseImport,
+  IconHealthRecognition,
+  IconRobot,
+  IconUser,
+} from '@tabler/icons-react';
 import { Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppointmentDetailPage } from './pages/AppointmentDetailPage';
@@ -83,6 +90,7 @@ export function App(): JSX.Element | null {
           links: [
             { icon: <IconDatabaseImport />, label: 'Upload Core ValueSets', href: '/upload/core' },
             { icon: <IconRobot />, label: 'Upload Example Bots', href: '/upload/bots' },
+            { icon: <IconHealthRecognition />, label: 'Upload Example Data', href: '/upload/example' },
           ],
         },
       ]}

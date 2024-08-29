@@ -1,11 +1,30 @@
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Bot, Bundle, BundleEntry, Practitioner, Resource } from '@medplum/fhirtypes';
+import {
+  capitalize,
+  createReference,
+  getReferenceString,
+  isOk,
+  MedplumClient,
+  normalizeErrorString,
+} from '@medplum/core';
+import {
+  Appointment,
+  Bot,
+  Bundle,
+  BundleEntry,
+  Patient,
+  Practitioner,
+  Reference,
+  Resource,
+  Schedule,
+  Slot,
+} from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { v4 as uuidv4 } from 'uuid';
 import coreData from '../../data/core/appointment-service-types.json';
 import exampleBotData from '../../data/core/example-bots.json';
 
@@ -34,6 +53,9 @@ export function UploadDataPage(): JSX.Element {
         break;
       case 'bots':
         uploadFunction = uploadExampleBots;
+        break;
+      case 'example':
+        uploadFunction = uploadExampleData;
         break;
       default:
         throw new Error(`Invalid upload type: ${dataType}`);
@@ -142,4 +164,172 @@ function checkBotsUploaded(medplum: MedplumClient): boolean {
     return true;
   }
   return false;
+}
+
+async function uploadExampleData(medplum: MedplumClient, profile: Practitioner): Promise<void> {
+  // Note that the Schedule resource is created in the App.tsx file
+  const schedule = await medplum.searchOne('Schedule', { actor: getReferenceString(profile) });
+  if (!schedule) {
+    throw new Error('Schedule not found');
+  }
+
+  const entries: BundleEntry<Patient | Slot | Appointment>[] = [...createPatientEntries()];
+
+  const practitionerReference = createReference(profile);
+  const homerReference = { reference: 'urn:uuid:bd90afcc-4f44-4c13-8710-84ddc1bce347', display: 'Homer Simpson' };
+  const scheduleReference = createReference(schedule);
+
+  const today = new Date();
+
+  createWeekSlots(today, -1, entries, scheduleReference, practitionerReference, homerReference);
+  createWeekSlots(today, 0, entries, scheduleReference, practitionerReference, homerReference);
+  createWeekSlots(today, 1, entries, scheduleReference, practitionerReference, homerReference);
+
+  const batch: Bundle = {
+    resourceType: 'Bundle',
+    type: 'batch',
+    entry: entries,
+  };
+
+  const result = await medplum.executeBatch(batch);
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+    setTimeout(
+      () =>
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Uploaded Example Data',
+        }),
+      1000
+    );
+  } else {
+    throw new Error('Error uploading example data');
+  }
+}
+
+function createPatientEntries(): BundleEntry<Patient>[] {
+  return [
+    {
+      fullUrl: 'urn:uuid:bd90afcc-4f44-4c13-8710-84ddc1bce347',
+      request: { method: 'PUT', url: 'Patient?name=homer' },
+      resource: {
+        resourceType: 'Patient',
+        active: true,
+        name: [{ family: 'Simpson', given: ['Homer'] }],
+        gender: 'male',
+        birthDate: '1956-05-12',
+      },
+    },
+    {
+      fullUrl: 'urn:uuid:eca66352-415c-4dab-add1-e4ed8a156408',
+      request: { method: 'PUT', url: 'Patient?name=marge' },
+      resource: {
+        resourceType: 'Patient',
+        active: true,
+        name: [{ family: 'Simpson', given: ['Marge'] }],
+        gender: 'female',
+        birthDate: '1958-03-19',
+      },
+    },
+  ];
+}
+
+function createWeekSlots(
+  baseDate: Date,
+  weekOffset: number,
+  entries: BundleEntry[],
+  scheduleReference: Reference<Schedule>,
+  practitionerReference: Reference<Practitioner>,
+  patientReference: Reference<Patient>
+): void {
+  // Calculate Monday, Wednesday, and Friday of the week
+  const monday = new Date(baseDate);
+  monday.setDate(monday.getDate() + weekOffset * 7 - ((baseDate.getDay() + 6) % 7));
+  const wednesday = new Date(monday);
+  wednesday.setDate(wednesday.getDate() + 2);
+  const friday = new Date(monday);
+  friday.setDate(friday.getDate() + 4);
+
+  // Create free slots and appointments for Monday and Wednesday
+  [monday, wednesday].forEach((day, index) => {
+    for (let hour = 9; hour < 17; hour++) {
+      // Skip lunch hour
+      if (hour === 12) {
+        continue;
+      }
+
+      const startTime = new Date(day);
+      startTime.setHours(hour, 0, 0, 0);
+      const endTime = new Date(startTime);
+      endTime.setHours(hour + 1, 0, 0, 0);
+
+      const freeSlotEntry = createSlot(scheduleReference, startTime, endTime, 'free');
+
+      if (weekOffset === -1 && index === 0 && hour === 9) {
+        // Create a cancelled appointment on Monday at 9am + a replacement free slot
+        const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
+        entries.push(busySlotEntry);
+        entries.push(createAppointment(practitionerReference, patientReference, busySlotEntry, 'cancelled'));
+        entries.push(freeSlotEntry);
+      } else if (weekOffset === 0 && index === 0 && hour === 10) {
+        // Create a fulfilled appointment on Monday at 10am
+        const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
+        entries.push(busySlotEntry);
+        entries.push(createAppointment(practitionerReference, patientReference, busySlotEntry, 'fulfilled'));
+      } else if (weekOffset === 1 && index === 0 && hour === 11) {
+        // Create an upcoming appointment on Monday at 11am
+        const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
+        entries.push(busySlotEntry);
+        entries.push(createAppointment(practitionerReference, patientReference, busySlotEntry, 'booked'));
+      } else {
+        // Create a free slot
+        entries.push(freeSlotEntry);
+      }
+    }
+  });
+
+  // Create busy-unavailable slot for Friday from 9am to 5pm
+  const busyUnavailableSlot = createSlot(
+    scheduleReference,
+    new Date(new Date(friday).setHours(9, 0, 0, 0)),
+    new Date(new Date(friday).setHours(17, 0, 0, 0)),
+    'busy-unavailable'
+  );
+  entries.push(busyUnavailableSlot);
+}
+
+function createSlot(schedule: Reference<Schedule>, start: Date, end: Date, status: Slot['status']): BundleEntry<Slot> {
+  return {
+    fullUrl: `urn:uuid:${uuidv4()}`,
+    request: { url: 'Slot', method: 'POST' },
+    resource: {
+      resourceType: 'Slot',
+      schedule,
+      status,
+      start: start.toISOString(),
+      end: end.toISOString(),
+    },
+  };
+}
+
+function createAppointment(
+  practitioner: Reference<Practitioner>,
+  patient: Reference<Patient>,
+  slotEntry: BundleEntry<Slot>,
+  status: Appointment['status']
+): BundleEntry<Appointment> {
+  return {
+    request: { url: 'Appointment', method: 'POST' },
+    resource: {
+      resourceType: 'Appointment',
+      status,
+      slot: [{ reference: slotEntry.fullUrl }],
+      start: (slotEntry.resource as Slot).start,
+      end: (slotEntry.resource as Slot).end,
+      participant: [
+        { actor: patient, status: 'accepted' },
+        { actor: practitioner, status: 'accepted' },
+      ],
+    },
+  };
 }
