@@ -298,9 +298,7 @@ function createWeekSlots(
           [serviceTypeMap.consultation]
         );
         entries.push(fulfilledAppointment);
-        entries.push(
-          createEncounter(practitionerReference, routinePatient, fulfilledAppointment.resource as Appointment)
-        );
+        entries.push(createEncounter(practitionerReference, routinePatient, fulfilledAppointment));
       } else if (weekOffset === 0 && index === 1 && hour === 15) {
         // Create an emergency appointment on Wednesday at 3pm
         const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
@@ -385,6 +383,8 @@ function createAppointment(
   serviceType: Appointment['serviceType'],
   comment?: Appointment['comment']
 ): BundleEntry<Appointment> {
+  const slot = slotEntry.resource as Slot;
+  const slotReference = { reference: slotEntry.fullUrl };
   const cancelationReason =
     status === 'cancelled'
       ? {
@@ -398,13 +398,14 @@ function createAppointment(
         }
       : undefined;
   return {
+    fullUrl: `urn:uuid:${uuidv4()}`,
     request: { url: 'Appointment', method: 'POST' },
     resource: {
       resourceType: 'Appointment',
       status,
-      slot: [{ reference: slotEntry.fullUrl }],
-      start: (slotEntry.resource as Slot).start,
-      end: (slotEntry.resource as Slot).end,
+      slot: [slotReference],
+      start: slot.start,
+      end: slot.end,
       appointmentType,
       serviceType,
       participant: [
@@ -420,16 +421,19 @@ function createAppointment(
 function createEncounter(
   practitioner: Reference<Practitioner>,
   patient: Reference<Patient>,
-  appointment: Appointment
+  appointmentEntry: BundleEntry<Appointment>
 ): BundleEntry<Encounter> {
+  const appointment = appointmentEntry.resource as Appointment;
+  const appointmentReference = { reference: appointmentEntry.fullUrl };
   const duration = new Date(appointment.end as string).getTime() - new Date(appointment.start as string).getTime();
   return {
+    fullUrl: `urn:uuid:${uuidv4()}`,
     request: { url: 'Encounter', method: 'POST' },
     resource: {
       resourceType: 'Encounter',
       status: 'finished',
       subject: patient,
-      appointment: [createReference(appointment)],
+      appointment: [appointmentReference],
       class: {
         system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
         code: 'VR',
