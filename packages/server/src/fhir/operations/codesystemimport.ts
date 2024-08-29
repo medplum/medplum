@@ -1,8 +1,7 @@
-import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
+import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { requireSuperAdmin } from '../../admin/super';
 import { getAuthenticatedContext } from '../../context';
 import { InsertQuery, SelectQuery } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -59,7 +58,10 @@ export type CodeSystemImportParameters = {
  * @returns The FHIR response.
  */
 export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirResponse> {
-  const ctx = requireSuperAdmin();
+  const repo = getAuthenticatedContext().repo;
+  if (!repo.isProjectAdmin() && !repo.isSuperAdmin()) {
+    return [forbidden];
+  }
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
 
@@ -73,7 +75,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
   }
 
   try {
-    await ctx.repo.withTransaction(async (db) => {
+    await repo.withTransaction(async (db) => {
       await importCodeSystem(db, codeSystem, params.concept, params.property);
     });
   } catch (err) {
