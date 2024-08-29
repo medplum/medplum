@@ -30,9 +30,13 @@
     "cdk": "2.151.0",
     "cdk-nag": "2.28.177",
     "cdk-serverless-clamscan": "2.8.9",
-    "constructs": "10.3.0"
+    "constructs": "10.3.0",
+    "object-hash": "3.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/object-hash": "3.0.6"
   }
 }
