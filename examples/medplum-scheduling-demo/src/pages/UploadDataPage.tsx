@@ -13,6 +13,8 @@ import {
   Bot,
   Bundle,
   BundleEntry,
+  CodeableConcept,
+  Encounter,
   Patient,
   Practitioner,
   Reference,
@@ -173,17 +175,19 @@ async function uploadExampleData(medplum: MedplumClient, profile: Practitioner):
     throw new Error('Schedule not found');
   }
 
-  const entries: BundleEntry<Patient | Slot | Appointment>[] = [...createPatientEntries()];
+  const entries: BundleEntry<Patient | Slot | Appointment | Encounter>[] = [...createPatientEntries()];
 
   const practitionerReference = createReference(profile);
   const homerReference = { reference: 'urn:uuid:bd90afcc-4f44-4c13-8710-84ddc1bce347', display: 'Homer Simpson' };
+  const margeReference = { reference: 'urn:uuid:eca66352-415c-4dab-add1-e4ed8a156408', display: 'Marge Simpson' };
   const scheduleReference = createReference(schedule);
 
   const today = new Date();
 
-  createWeekSlots(today, -1, entries, scheduleReference, practitionerReference, homerReference);
-  createWeekSlots(today, 0, entries, scheduleReference, practitionerReference, homerReference);
-  createWeekSlots(today, 1, entries, scheduleReference, practitionerReference, homerReference);
+  // Create slots and appointments for the previous week, this week, and next week
+  createWeekSlots(today, -1, entries, scheduleReference, practitionerReference, [margeReference, homerReference]);
+  createWeekSlots(today, 0, entries, scheduleReference, practitionerReference, [margeReference, homerReference]);
+  createWeekSlots(today, 1, entries, scheduleReference, practitionerReference, [margeReference, homerReference]);
 
   const batch: Bundle = {
     resourceType: 'Bundle',
@@ -240,8 +244,9 @@ function createWeekSlots(
   entries: BundleEntry[],
   scheduleReference: Reference<Schedule>,
   practitionerReference: Reference<Practitioner>,
-  patientReference: Reference<Patient>
+  patientReferences: [Reference<Patient>, Reference<Patient>]
 ): void {
+  const [routinePatient, emergencyPatient] = patientReferences;
   // Calculate Monday, Wednesday, and Friday of the week
   const monday = new Date(baseDate);
   monday.setDate(monday.getDate() + weekOffset * 7 - ((baseDate.getDay() + 6) % 7));
@@ -266,21 +271,80 @@ function createWeekSlots(
       const freeSlotEntry = createSlot(scheduleReference, startTime, endTime, 'free');
 
       if (weekOffset === -1 && index === 0 && hour === 9) {
-        // Create a cancelled appointment on Monday at 9am + a replacement free slot
+        // Create a cancelled routine appointment on Monday at 9am + a replacement free slot
         const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
         entries.push(busySlotEntry);
-        entries.push(createAppointment(practitionerReference, patientReference, busySlotEntry, 'cancelled'));
+        entries.push(
+          createAppointment(
+            practitionerReference,
+            routinePatient,
+            busySlotEntry,
+            'cancelled',
+            appointmentTypeMap.routine,
+            [serviceTypeMap.consultation]
+          )
+        );
         entries.push(freeSlotEntry);
       } else if (weekOffset === 0 && index === 0 && hour === 10) {
-        // Create a fulfilled appointment on Monday at 10am
+        // Create a fulfilled routine appointment on Monday at 10am
         const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
         entries.push(busySlotEntry);
-        entries.push(createAppointment(practitionerReference, patientReference, busySlotEntry, 'fulfilled'));
+        const fulfilledAppointment = createAppointment(
+          practitionerReference,
+          routinePatient,
+          busySlotEntry,
+          'fulfilled',
+          appointmentTypeMap.routine,
+          [serviceTypeMap.consultation]
+        );
+        entries.push(fulfilledAppointment);
+        entries.push(
+          createEncounter(practitionerReference, routinePatient, fulfilledAppointment.resource as Appointment)
+        );
+      } else if (weekOffset === 0 && index === 1 && hour === 15) {
+        // Create an emergency appointment on Wednesday at 3pm
+        const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
+        entries.push(busySlotEntry);
+        entries.push(
+          createAppointment(
+            practitionerReference,
+            emergencyPatient,
+            busySlotEntry,
+            'booked',
+            appointmentTypeMap.emergency,
+            [serviceTypeMap.emergencyRoomAdmission]
+          )
+        );
       } else if (weekOffset === 1 && index === 0 && hour === 11) {
-        // Create an upcoming appointment on Monday at 11am
+        // Create an upcoming followup appointment on Monday at 11am
         const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
         entries.push(busySlotEntry);
-        entries.push(createAppointment(practitionerReference, patientReference, busySlotEntry, 'booked'));
+        entries.push(
+          createAppointment(
+            practitionerReference,
+            routinePatient,
+            busySlotEntry,
+            'booked',
+            appointmentTypeMap.followup,
+            [serviceTypeMap.consultation],
+            'Followup appointment to assess the exam results'
+          )
+        );
+      } else if (weekOffset === 1 && index === 1 && hour === 15) {
+        // Create an upcoming routine checkup appointment on Wednesday at 3pm
+        const busySlotEntry = createSlot(scheduleReference, startTime, endTime, 'busy');
+        entries.push(busySlotEntry);
+        entries.push(
+          createAppointment(
+            practitionerReference,
+            emergencyPatient,
+            busySlotEntry,
+            'booked',
+            appointmentTypeMap.routine,
+            [serviceTypeMap.consultation],
+            'Routine checkup after the emergency room visit'
+          )
+        );
       } else {
         // Create a free slot
         entries.push(freeSlotEntry);
@@ -316,8 +380,23 @@ function createAppointment(
   practitioner: Reference<Practitioner>,
   patient: Reference<Patient>,
   slotEntry: BundleEntry<Slot>,
-  status: Appointment['status']
+  status: Appointment['status'],
+  appointmentType: Appointment['appointmentType'],
+  serviceType: Appointment['serviceType'],
+  comment?: Appointment['comment']
 ): BundleEntry<Appointment> {
+  const cancelationReason =
+    status === 'cancelled'
+      ? {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason',
+              code: 'prov',
+              display: 'Provider',
+            },
+          ],
+        }
+      : undefined;
   return {
     request: { url: 'Appointment', method: 'POST' },
     resource: {
@@ -326,10 +405,104 @@ function createAppointment(
       slot: [{ reference: slotEntry.fullUrl }],
       start: (slotEntry.resource as Slot).start,
       end: (slotEntry.resource as Slot).end,
+      appointmentType,
+      serviceType,
       participant: [
         { actor: patient, status: 'accepted' },
         { actor: practitioner, status: 'accepted' },
       ],
+      comment,
+      cancelationReason,
     },
   };
 }
+
+function createEncounter(
+  practitioner: Reference<Practitioner>,
+  patient: Reference<Patient>,
+  appointment: Appointment
+): BundleEntry<Encounter> {
+  const duration = new Date(appointment.end as string).getTime() - new Date(appointment.start as string).getTime();
+  return {
+    request: { url: 'Encounter', method: 'POST' },
+    resource: {
+      resourceType: 'Encounter',
+      status: 'finished',
+      subject: patient,
+      appointment: [createReference(appointment)],
+      class: {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+        code: 'VR',
+        display: 'virtual',
+      },
+      serviceType: appointment.serviceType?.[0],
+      period: {
+        start: appointment.start,
+        end: appointment.end,
+      },
+      length: {
+        value: Math.floor(duration / 60000),
+        unit: 'minutes',
+      },
+      participant: [
+        {
+          individual: practitioner,
+          type: [{ coding: [{ system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType', code: 'ATND' }] }],
+        },
+      ],
+    },
+  };
+}
+
+// Subset of http://terminology.hl7.org/ValueSet/v2-0276
+const appointmentTypeMap: Record<string, CodeableConcept> = {
+  followup: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+        code: 'FOLLOWUP',
+        display: 'A follow up visit from a previous appointment',
+      },
+    ],
+  },
+  routine: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+        code: 'ROUTINE',
+        display: 'Routine appointment - default if not valued',
+      },
+    ],
+  },
+  emergency: {
+    coding: [
+      {
+        system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+        code: 'EMERGENCY',
+        display: 'Emergency appointment',
+      },
+    ],
+  },
+};
+
+// Subset of http://example.com/appointment-service-types
+const serviceTypeMap: Record<string, CodeableConcept> = {
+  consultation: {
+    coding: [
+      {
+        system: 'http://snomed.info/sct',
+        code: '11429006',
+        display: 'Consultation',
+      },
+    ],
+  },
+  emergencyRoomAdmission: {
+    coding: [
+      {
+        system: 'http://snomed.info/sct',
+        code: '50849002',
+        display: 'Emergency room admission',
+      },
+    ],
+  },
+};
