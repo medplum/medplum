@@ -1952,11 +1952,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  private isSuperAdmin(): boolean {
+  isSuperAdmin(): boolean {
     return !!this.context.superAdmin;
   }
 
-  private isProjectAdmin(): boolean {
+  isProjectAdmin(): boolean {
     return !!this.context.projectAdmin;
   }
 
