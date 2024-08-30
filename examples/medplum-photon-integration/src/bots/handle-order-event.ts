@@ -1,6 +1,8 @@
 import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import {
+  Identifier,
   MedicationDispense,
+  MedicationKnowledge,
   MedicationRequest,
   MedicationRequestDispenseRequest,
   Organization,
@@ -47,7 +49,6 @@ export async function handler(
   const existingRequest = await getExistingMedicationRequest(data, medplum);
   // Check that the incoming photon event is not a duplicate
   const dupe = checkForDuplicateEvent(webhook, existingRequest);
-  // console.log(existingRequest, dupe);
 
   if (dupe && existingRequest) {
     return existingRequest;
@@ -63,7 +64,6 @@ export async function handler(
 
   // If no existing request create one, otherwise update it
   if (!existingRequest) {
-    console.log('Creating new request');
     const newRequest = await createMedicationRequest(body, medplum, PHOTON_AUTH_TOKEN, patient);
     return newRequest;
   } else {
@@ -90,8 +90,11 @@ export async function updateMedicationRequest(
   // Check if the status of the medication request needs to be updated
   const updateStatus = checkForStatusUpdate(body.type, existingRequest.status);
 
+  const identifier: Identifier[] = existingRequest.identifier ?? [];
+  identifier.push({ system: 'https://neutron.health/webhooks', value: body.id });
+
   // Create a medication request to hold the data and update the status if necessary
-  const updatedRequestData: MedicationRequest = { ...existingRequest };
+  const updatedRequestData: MedicationRequest = { ...existingRequest, identifier };
   if (updateStatus) {
     updatedRequestData.status = getStatus(body.type);
   }
@@ -131,7 +134,7 @@ export async function updateMedicationRequest(
  * @param status - The current status of the MedicationRequest
  * @returns - A boolean representing whether the status needs to be updated
  */
-function checkForStatusUpdate(orderType: OrderEventType, status: MedicationRequest['status']): boolean {
+export function checkForStatusUpdate(orderType: OrderEventType, status: MedicationRequest['status']): boolean {
   // If status is currently active and updating to completed, canceled, or an error, it should be updated.
   // Otherwise the status does not need to be updated
   if (
@@ -177,12 +180,10 @@ export async function createMedicationRequest(
   };
 
   let medicationRequest: MedicationRequest;
-  console.log('creating request');
 
   // Add the additional data based on the event type and create the MedicationRequest in your project
   if (body.type === 'photon:order:created') {
     const createdDataRequest = await handleCreatedData(body.data, medicationRequestData, authToken, medplum);
-    console.log('med request created');
     medicationRequest = await medplum.createResource(createdDataRequest);
     // Handle the fill data that is included on order created events
     await handleFills(body.data.fills, medicationRequest, medplum, authToken);
@@ -405,9 +406,8 @@ async function getExistingFill(fill: Partial<Fill>, medplum: MedplumClient): Pro
  * @param request - The MedicationRequest to add the data to
  * @returns The MedicationRequest data updated to represent the error
  */
-function handleErrorData(data: OrderErrorData, request: MedicationRequest): MedicationRequest {
+export function handleErrorData(data: OrderErrorData, request: MedicationRequest): MedicationRequest {
   const updatedRequest = { ...request };
-  updatedRequest.status = 'cancelled';
   updatedRequest.statusReason = { coding: [{ system: 'https://neutron.health', code: data.reason }] };
   return updatedRequest;
 }
@@ -500,7 +500,7 @@ async function handleCreatedData(
   return medicationRequest;
 }
 
-async function getLinkedPrescription(
+export async function getLinkedPrescription(
   medplum: MedplumClient,
   prescription?: PhotonPrescription
 ): Promise<MedicationRequest> {
@@ -587,14 +587,14 @@ async function handleFulfillment(
  * @param eventType - The Photon order event type
  * @returns A MedicationRequest status
  */
-function getStatus(eventType: OrderEventType): MedicationRequest['status'] {
+export function getStatus(eventType: OrderEventType): MedicationRequest['status'] {
   switch (eventType) {
     case 'photon:order:canceled':
       return 'cancelled';
     case 'photon:order:completed':
       return 'completed';
     case 'photon:order:error':
-      return 'unknown';
+      return 'cancelled';
     default:
       return 'active';
   }
@@ -607,24 +607,29 @@ function getStatus(eventType: OrderEventType): MedicationRequest['status'] {
  * @param medplum - MedplumClient to search your project for a patient
  * @returns Your project's patient from the Photon event if it exists
  */
-async function getPatient(patientData: OrderData['patient'], medplum: MedplumClient): Promise<Patient | undefined> {
-  const id = patientData.externalId;
+export async function getPatient(
+  patientData: OrderData['patient'],
+  medplum: MedplumClient
+): Promise<Patient | undefined> {
+  const id = patientData.externalId as string;
   const photonId = patientData.id;
 
   let patient: Patient | undefined;
-  // Search for the patient based on the medplum ID
+  // Search for the patient based on the photon ID
   patient = await medplum.searchOne('Patient', {
-    _id: id,
+    identifier: `https://neutron.health|${photonId}`,
   });
 
   if (patient) {
     return patient;
   }
 
-  // Search for the patient based on the photon id
-  patient = await medplum.searchOne('Patient', {
-    identifier: `https://neutron.health|${photonId}`,
-  });
+  if (!id) {
+    return undefined;
+  }
+
+  // Search for the patient based on the medplum id
+  patient = await medplum.readResource('Patient', id);
 
   return patient;
 }

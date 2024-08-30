@@ -3,10 +3,20 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bot, Bundle, MedicationRequest, Organization, Patient, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
-import { OrderEvent, PhotonWebhook } from '../photon-types';
-import { createMedicationRequest, handler, updateMedicationRequest } from './handle-order-event';
+import { OrderErrorData, OrderEvent, PhotonWebhook } from '../photon-types';
+import * as myModule from './handle-order-event';
+import {
+  canceledWebhook,
+  completedWebhook,
+  createdWebhook,
+  errorWebhook,
+  placedWebhook,
+} from './test-data/order-event-test-data';
 
-describe('Order webhooks', async () => {
+const { handler, createMedicationRequest, updateMedicationRequest, getStatus, checkForStatusUpdate, handleErrorData } =
+  myModule;
+
+describe('Order webhook handler', async () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
@@ -16,17 +26,171 @@ describe('Order webhooks', async () => {
   });
 
   vi.mock('./utils.ts', async () => {
-    const actualModule = vi.importActual('./utils.ts');
+    const actualModule = await vi.importActual('./utils.ts');
     return {
       ...actualModule,
       verifyEvent: vi.fn().mockImplementation(() => true),
+      // handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
     };
   });
 
   const bot: Reference<Bot> = { reference: 'Bot/123' };
   const contentType = 'application/json';
 
-  test('Handle order created event with no existing request', async () => {
+  test.skip('Returns existing request on dupe', async () => {
+    const medplum = new MockClient();
+    const existingRequest = await medplum.createResource({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: 'Patient/123' },
+      identifier: [
+        { system: 'https://neutron.health', value: 'ord_01J5RHM42NS4WA666RJVP02N45' },
+        { system: 'https://neutron.health/webhooks', value: '01J5RHM4DVKA7YGE0AR3J4MS31' },
+      ],
+    });
+
+    const result = await handler(medplum, {
+      bot,
+      contentType,
+      input: createdWebhook,
+      secrets: {
+        PHOTON_CLIENT_ID: { name: 'client id', valueString: 'example-id' },
+        PHOTON_CLIENT_SECRET: { name: 'client secret', valueString: 'example-secret' },
+      },
+    });
+    expect(result).toEqual(existingRequest);
+  });
+
+  test.skip('Update existing request with order placed webhook', async () => {
+    const medplum = new MockClient();
+    const mockPatient: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
+    });
+    const existingRequest: MedicationRequest = await medplum.createResource({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: getReferenceString(mockPatient) },
+      identifier: [{ system: 'https://neutron.health', value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
+    });
+
+    // Updating an order from a placed webhook does not provide any new data. However, it will still be updated with a new identifier, so the versionId should be updated.
+    const updatedOrder = await handler(medplum, { bot, contentType, input: placedWebhook, secrets: {} });
+    expect(updatedOrder?.id).toEqual(existingRequest.id);
+    expect(updatedOrder?.status).toEqual(existingRequest.status);
+    expect(updatedOrder?.meta?.versionId).not.toEqual(existingRequest.meta?.versionId);
+  });
+
+  test.skip('Update existing request with order error webhook', async () => {
+    const medplum = new MockClient();
+    const mockPatient: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
+    });
+    const existingRequest: MedicationRequest = await medplum.createResource({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: getReferenceString(mockPatient) },
+      identifier: [{ system: 'https://neutron.health', value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
+    });
+
+    const updatedOrder = await handler(medplum, { bot, contentType, input: errorWebhook, secrets: {} });
+
+    expect(updatedOrder?.status).toEqual('cancelled');
+    expect(updatedOrder?.id).toEqual(existingRequest.id);
+    expect(updatedOrder?.statusReason?.coding?.[0].code).toEqual('EXAMPLE REASON');
+    expect(updatedOrder?.meta?.versionId).not.toEqual(existingRequest.meta?.versionId);
+  });
+
+  test.skip('Update existing request with canceled webhook', async () => {
+    const medplum = new MockClient();
+    const mockPatient: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
+    });
+    const existingRequest: MedicationRequest = await medplum.createResource({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: getReferenceString(mockPatient) },
+      identifier: [{ system: 'https://neutron.health', value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
+    });
+
+    const updatedOrder = await handler(medplum, { bot, contentType, input: canceledWebhook, secrets: {} });
+    // Only the status and version ID should change
+    expect(updatedOrder?.status).toEqual('cancelled');
+    expect(updatedOrder?.id).toEqual(existingRequest.id);
+    expect(updatedOrder?.meta?.versionId).not.toEqual(existingRequest.meta?.versionId);
+  });
+
+  test.skip('Update existing request with completed webhook', async () => {
+    const medplum = new MockClient();
+    const mockPatient: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
+    });
+    const existingRequest: MedicationRequest = await medplum.createResource({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: getReferenceString(mockPatient) },
+      identifier: [{ system: 'https://neutron.health', value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
+    });
+
+    const updatedOrder = await handler(medplum, { bot, contentType, input: completedWebhook, secrets: {} });
+    // Only the status and version ID should change
+    expect(updatedOrder?.status).toEqual('completed');
+    expect(updatedOrder?.id).toEqual(existingRequest.id);
+    expect(updatedOrder?.meta?.versionId).not.toEqual(existingRequest.meta?.versionId);
+  });
+
+  test.skip('Update existing request with created webhook', async () => {
+    const medplum = new MockClient();
+    const mockPatient: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      identifier: [{ system: 'https://neutron.health', value: 'pat_01J5RHGXB2ZJFQ7B694CQGSGT5' }],
+    });
+    const existingRequest: MedicationRequest = await medplum.createResource({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: getReferenceString(mockPatient) },
+      identifier: [{ system: 'https://neutron.health', value: 'ord_01J5RHM42NS4WA666RJVP02N45' }],
+    });
+    // Create a prescription that the order is linked to
+    await medplum.createResource({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: getReferenceString(mockPatient) },
+      identifier: [{ system: 'https://neutron.health', value: 'rx_01J5RHKZZQXWAHMXKPT9CF1S6N' }],
+    });
+
+    const testWebhook = { ...createdWebhook };
+    testWebhook.body.data.patient.externalId = mockPatient.id;
+
+    const updatedOrder = await handler(medplum, {
+      bot,
+      contentType,
+      input: testWebhook,
+      secrets: {
+        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'example-id' },
+        PHOTON_CLIENT_SECRET: {
+          name: 'Photon Client Secret',
+          valueString: 'example-secret',
+        },
+      },
+    });
+    // Only the status and version ID should change
+    expect(updatedOrder?.status).toEqual('active');
+    expect(updatedOrder?.id).toEqual(existingRequest.id);
+    expect(updatedOrder?.meta?.versionId).not.toEqual(existingRequest.meta?.versionId);
+  }, 10000);
+
+  test.skip('Handle order created event with no existing request', async () => {
     const medplum = new MockClient();
     const patient: Patient = await medplum.createResource({
       resourceType: 'Patient',
@@ -62,10 +226,10 @@ describe('Order webhooks', async () => {
       contentType,
       input: createdWebhook,
       secrets: {
-        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'E7FNao89rtmdqicUMjI0LLPetEwKki8b' },
+        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'example-id' },
         PHOTON_CLIENT_SECRET: {
           name: 'Photon Client Secret',
-          valueString: 'mrxwnp4n5SovcI3zNT1p8zBmvDmAWspU2_W9Gn4Sb5tacWR9EY__frBExerupvFl',
+          valueString: 'example-secret',
         },
       },
     });
@@ -79,57 +243,21 @@ describe('Order webhooks', async () => {
     // expect(dispense?.authorizingPrescription?.[0].reference).toBe(getReferenceString(createdOrder))
   }, 10000);
 
-  test.skip('Create medication request from order created event', async () => {
-    const medplum = new MockClient();
-    const authToken = 'example-token';
-    const patientData: Patient = {
-      resourceType: 'Patient',
-      name: [{ given: ['Homer'], family: 'Simpson' }],
-    };
-
-    const patient = await medplum.createResource(patientData);
-
-    const medicationRequest = await createMedicationRequest(
-      orderCreatedWebhook.body as OrderEvent,
-      medplum,
-      authToken,
-      patient
-    );
-    expect(medicationRequest).toBeDefined();
-  });
-
-  test.skip('Update medication request from order created event', async () => {
-    const medplum = new MockClient();
-    const body = orderCreatedWebhook.body as OrderEvent;
-    const authToken = 'example-auth-token';
-    const existingRequestData: MedicationRequest = {
-      resourceType: 'MedicationRequest',
-      status: 'active',
-      intent: 'order',
-      subject: { reference: 'Patient/123' },
-    };
-    const exisitingRequest = await medplum.createResource(existingRequestData);
-
-    const updatedRequest = await updateMedicationRequest(body, medplum, authToken, exisitingRequest);
-
-    expect(updatedRequest).toBeDefined();
-    expect(updatedRequest.status).toBe('active');
-  });
-
   test.skip('Idempotency test', async () => {
-    vi.mock('./utils.ts', async () => {
-      const actualModule = await vi.importActual('./utils.ts');
-      return {
-        ...actualModule,
-        verifyEvent: vi.fn().mockImplementation(() => true),
-      };
-    });
-
     const medplum = new MockClient();
     const patient: Patient = await medplum.createResource({
       resourceType: 'Patient',
       identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
     });
+
+    const linkedPrescription: MedicationRequest = {
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'order',
+      subject: { reference: getReferenceString(patient) },
+    };
+
+    vi.spyOn(myModule, 'getLinkedPrescription').mockResolvedValue(linkedPrescription);
 
     const idempotencyTestWebhook = {
       ...orderCreatedWebhook,
@@ -142,9 +270,11 @@ describe('Order webhooks', async () => {
       input: idempotencyTestWebhook,
       contentType: 'application/json',
       secrets: {
-        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'EXAMPLE_CLIENT_ID' },
-        PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'EXAMPLE_CLIENT_SECRET' },
-        PHOTON_WEBHOOK_SECRET: { name: 'Photon Webhook Secret', valueString: 'EXAMPLE_WEBHOOK_SECRET' },
+        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'example-id' },
+        PHOTON_CLIENT_SECRET: {
+          name: 'Photon Client Secret',
+          valueString: 'example-secret',
+        },
       },
     });
 
@@ -166,6 +296,24 @@ describe('Order webhooks', async () => {
     expect(updateResourceSpy).not.toHaveBeenCalled();
     expect(createResourceSpy).not.toHaveBeenCalled();
     expect(patchResourceSpy).not.toHaveBeenCalled();
+  });
+
+  test('getStatus', () => {
+    expect(getStatus('photon:order:canceled')).toBe('cancelled');
+    expect(getStatus('photon:order:completed')).toBe('completed');
+    expect(getStatus('photon:order:error')).toBe('cancelled');
+    expect(getStatus('photon:order:created')).toBe('active');
+  });
+
+  test('Status should be updated', () => {
+    expect(checkForStatusUpdate('photon:order:completed', 'active')).toBe(true);
+    expect(checkForStatusUpdate('photon:order:canceled', 'active')).toBe(true);
+    expect(checkForStatusUpdate('photon:order:error', 'active')).toBe(true);
+  });
+
+  test('Status should not be updated', () => {
+    expect(checkForStatusUpdate('photon:order:created', 'active')).toBe(false);
+    expect(checkForStatusUpdate('photon:order:completed', 'completed')).toBe(false);
   });
 });
 
