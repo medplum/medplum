@@ -70,13 +70,11 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system);
+    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, {
+      ownProjectOnly: !isSuperAdmin,
+    });
   } else {
     return [badRequest('No code system specified')];
-  }
-
-  if (!isSuperAdmin && codeSystem.meta?.project !== repo.currentProject()?.id) {
-    return [forbidden];
   }
 
   try {

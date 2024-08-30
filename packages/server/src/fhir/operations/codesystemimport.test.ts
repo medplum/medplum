@@ -287,7 +287,7 @@ describe('CodeSystem $import', () => {
           { name: 'concept', valueCoding: { code: 'NIBL', display: 'nibling' } },
         ],
       });
-    expect(res2.status).toEqual(403);
+    expect(res2.status).toEqual(400);
   });
 });
 
