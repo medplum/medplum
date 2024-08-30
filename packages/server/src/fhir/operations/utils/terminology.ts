@@ -15,7 +15,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
   url: string,
   options?: {
     version?: string;
-    ownProjectOnly: boolean;
+    ownProjectOnly?: boolean;
   }
 ): Promise<T> {
   const { repo, project } = getAuthenticatedContext();
