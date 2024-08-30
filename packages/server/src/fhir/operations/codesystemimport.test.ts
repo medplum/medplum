@@ -268,6 +268,27 @@ describe('CodeSystem $import', () => {
     expect(res2.status).toEqual(200);
     await assertCodeExists(res.body.id, '184598004');
   });
+
+  test('Prevents writes by Project admin to linked Project systems', async () => {
+    const { accessToken } = await createTestProject({
+      project: { superAdmin: false },
+      membership: { admin: true },
+      withAccessToken: true,
+    });
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/CodeSystem/$import`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode' },
+          { name: 'concept', valueCoding: { code: 'NIBL', display: 'nibling' } },
+        ],
+      });
+    expect(res2.status).toEqual(403);
+  });
 });
 
 async function assertCodeExists(system: string | undefined, code: string): Promise<any> {

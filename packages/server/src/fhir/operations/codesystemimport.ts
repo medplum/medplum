@@ -59,7 +59,8 @@ export type CodeSystemImportParameters = {
  */
 export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirResponse> {
   const repo = getAuthenticatedContext().repo;
-  if (!repo.isProjectAdmin() && !repo.isSuperAdmin()) {
+  const isSuperAdmin = repo.isSuperAdmin();
+  if (!repo.isProjectAdmin() && !isSuperAdmin) {
     return [forbidden];
   }
 
@@ -72,6 +73,10 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
     codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system);
   } else {
     return [badRequest('No code system specified')];
+  }
+
+  if (!isSuperAdmin && codeSystem.meta?.project !== repo.currentProject()?.id) {
+    return [forbidden];
   }
 
   try {
