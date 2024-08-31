@@ -9,7 +9,7 @@
 This example app demonstrates the following:
 
 - Creating a new React app with Vite and TypeScript to demonstrate [`Communication`](/packages/docs/api/fhir/resources/communication)-based workflows.
-- A threaded [`Communiaction`](/docs/api/fhir/resources/communication) model.
+- A threaded [`Communication`](/docs/api/fhir/resources/communication) model.
 - Creating thread-level and message-level [`Communication`](/packages/docs/api/fhir/resources/communication) resources.
 - Sending and replying to messages.
 - Realtime communication via WebSockets.
