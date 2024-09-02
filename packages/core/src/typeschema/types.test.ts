@@ -421,4 +421,16 @@ describe('FHIR resource and data type representations', () => {
     expect(patient3).toBeDefined();
     expect(patient3).toEqual(patient1);
   });
+
+  test('Profile with 2 subsequent sliced properties', () => {
+    const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'be-practitionerrole.json'), 'utf8'));
+    const profile = parseStructureDefinition(sd);
+
+    expect(profile.name).toBe('BePractitionerRole');
+
+    expect(profile.elements['code']).toBeDefined();
+    expect(profile.elements['code'].slicing?.slices.length).toBe(2);
+    expect(profile.elements['specialty']).toBeDefined();
+    expect(profile.elements['specialty'].slicing?.slices.length).toBe(1);
+  });
 });
