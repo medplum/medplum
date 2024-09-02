@@ -8,9 +8,11 @@ import {
   MedplumClient,
 } from '@medplum/core';
 import {
+  Address,
   CodeableConcept,
   Coding,
   Consent,
+  HumanName,
   Observation,
   Organization,
   Patient,
@@ -481,6 +483,28 @@ export async function addCoverage(
 ): Promise<void> {
   const payor = answers['insurance-provider'].valueReference as Reference<Organization>;
   const subscriberId = answers['subscriber-id'].valueString;
+  const relationshipToSubscriber = answers['relationship-to-subscriber'].valueCoding as Coding;
+
+  // Create RelatedPerson resource depending on the relationship to the subscriber
+  const relatedPersonAnswers = answers['related-person'] as Record<string, QuestionnaireResponseItemAnswer>;
+  if (
+    relationshipToSubscriber.code &&
+    !['other', 'self', 'injured'].includes(relationshipToSubscriber.code) &&
+    relatedPersonAnswers
+  ) {
+    const name = getHumanName(relatedPersonAnswers, 'related-person-');
+    const relatedPersonRelationship = getRelatedPersonRelationshipFromCoverage(relationshipToSubscriber);
+
+    await medplum.createResource({
+      resourceType: 'RelatedPerson',
+      patient: createReference(patient),
+      relationship: relatedPersonRelationship ? [{ coding: [relatedPersonRelationship] }] : undefined,
+      name: name ? [name] : undefined,
+      birthDate: relatedPersonAnswers['related-person-dob']?.valueDate,
+      gender:
+        (relatedPersonAnswers['related-person-gender-identity'].valueCoding?.code as Patient['gender']) ?? undefined,
+    });
+  }
 
   await medplum.upsertResource(
     {
@@ -488,7 +512,7 @@ export async function addCoverage(
       status: 'active',
       beneficiary: createReference(patient),
       subscriberId: subscriberId,
-      relationship: { coding: [answers['relationship-to-subscriber'].valueCoding as Coding] },
+      relationship: { coding: [relationshipToSubscriber] },
       payor: [payor],
     },
     {
@@ -589,10 +613,25 @@ export function getGroupRepeatedAnswers(
   // ]
 
   const groupAnswers = responseGroups.map((responseItem) => {
-    const answers: Record<string, QuestionnaireResponseItemAnswer> = {};
-    responseItem.item?.forEach(({ linkId, answer }) => {
-      answers[linkId] = answer?.[0] ?? {};
-    });
+    const answers: Record<string, any> = {};
+
+    const extractAnswers = (items: QuestionnaireResponseItem[]): void => {
+      items.forEach(({ linkId, answer, item }) => {
+        if (item) {
+          const subGroupAnswers: Record<string, any> = {};
+          item.forEach((subItem) => {
+            if (subItem.answer) {
+              subGroupAnswers[subItem.linkId] = subItem.answer?.[0] ?? {};
+            }
+          });
+          answers[linkId] = subGroupAnswers;
+        } else {
+          answers[linkId] = answer?.[0] ?? {};
+        }
+      });
+    };
+
+    extractAnswers(responseItem.item || []);
     return answers;
   });
 
@@ -604,4 +643,73 @@ export function convertDateToDateTime(date: string | undefined): string | undefi
     return undefined;
   }
   return new Date(date).toISOString();
+}
+
+export function getHumanName(
+  answers: Record<string, QuestionnaireResponseItemAnswer>,
+  prefix: string = ''
+): HumanName | undefined {
+  const patientName: HumanName = {};
+
+  const givenName = [];
+  if (answers[`${prefix}first-name`]?.valueString) {
+    givenName.push(answers[`${prefix}first-name`].valueString as string);
+  }
+  if (answers[`${prefix}middle-name`]?.valueString) {
+    givenName.push(answers[`${prefix}middle-name`].valueString as string);
+  }
+
+  if (givenName.length > 0) {
+    patientName.given = givenName;
+  }
+
+  if (answers[`${prefix}last-name`]?.valueString) {
+    patientName.family = answers[`${prefix}last-name`].valueString;
+  }
+
+  return Object.keys(patientName).length > 0 ? patientName : undefined;
+}
+
+export function getPatientAddress(answers: Record<string, QuestionnaireResponseItemAnswer>): Address | undefined {
+  const patientAddress: Address = {};
+
+  if (answers['street']?.valueString) {
+    patientAddress.line = [answers['street'].valueString];
+  }
+
+  if (answers['city']?.valueString) {
+    patientAddress.city = answers['city'].valueString;
+  }
+
+  if (answers['state']?.valueCoding?.code) {
+    patientAddress.state = answers['state'].valueCoding.code;
+  }
+
+  if (answers['zip']?.valueString) {
+    patientAddress.postalCode = answers['zip'].valueString;
+  }
+
+  // To simplify the demo, we're assuming the address is always a home address
+  return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
+}
+
+function getRelatedPersonRelationshipFromCoverage(coverageRelationship: Coding): Coding | undefined {
+  // Basic relationship mapping between Coverage and RelatedPerson
+  // Coverage.relationship: http://hl7.org/fhir/ValueSet/subscriber-relationship
+  // RelatedPerson.relationship: http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype
+  switch (coverageRelationship.code) {
+    case 'child':
+      return {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+        code: 'PRN',
+        display: 'parent',
+      };
+    case 'parent':
+      return { system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'child' };
+    case 'spouse':
+    case 'common':
+      return { system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'SPS', display: 'spouse' };
+    default:
+      return undefined;
+  }
 }
