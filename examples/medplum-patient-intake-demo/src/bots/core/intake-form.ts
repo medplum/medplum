@@ -193,8 +193,6 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
 
   const familyMemberHistory = getGroupRepeatedAnswers(questionnaire, response, 'family-member-history');
-  // const relatedPerson = getGroupRepeatedAnswers(questionnaire, response, 'related-person');
-  // console.log(JSON.stringify(response, null, 2));
   for (const history of familyMemberHistory) {
     await addFamilyMemberHistory(medplum, patient, history);
   }
