@@ -1,6 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import '@photonhealth/elements';
-import { IconRobot, IconUser } from '@tabler/icons-react';
+import { IconMedicineSyrup, IconRobot, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { PHOTON_CLIENT_ID, PHOTON_ORG_ID } from './config';
@@ -11,6 +10,9 @@ import { PrescriptionPage } from './pages/PrescriptionPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
+import '@photonhealth/elements';
+import { MedicationsPage } from './pages/MedicationsPage';
+import { MedicationPage } from './pages/MedicationPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -27,7 +29,10 @@ export function App(): JSX.Element | null {
         menus={[
           {
             title: 'My Links',
-            links: [{ icon: <IconUser />, label: 'Patients', href: '/' }],
+            links: [
+              { icon: <IconUser />, label: 'Patients', href: '/' },
+              { icon: <IconMedicineSyrup />, label: 'Formulary', href: '/MedicationKnowledge' },
+            ],
           },
           {
             title: 'Upload Data',
@@ -45,6 +50,8 @@ export function App(): JSX.Element | null {
               <Route path="/:resourceType/:id" element={<ResourcePage />} />
               <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
               <Route path="/upload/:dataType" element={<UploadDataPage />} />
+              <Route path="/MedicationKnowledge" element={<MedicationsPage />} />
+              <Route path="/MedicationKnowledge/:id/*" element={<MedicationPage />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
