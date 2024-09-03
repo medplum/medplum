@@ -423,7 +423,7 @@ describe('FHIR resource and data type representations', () => {
   });
 
   test('Profile with 2 subsequent sliced properties', () => {
-    const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'be-practitionerrole.json'), 'utf8'));
+    const sd = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'subsequent-sliced-profile.json'), 'utf8'));
     const profile = parseStructureDefinition(sd);
 
     expect(profile.name).toBe('BePractitionerRole');
