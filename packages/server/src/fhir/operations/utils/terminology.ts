@@ -13,12 +13,15 @@ export type TerminologyResource = CodeSystem | ValueSet | ConceptMap;
 export async function findTerminologyResource<T extends TerminologyResource>(
   resourceType: T['resourceType'],
   url: string,
-  version?: string
+  options?: {
+    version?: string;
+    ownProjectOnly?: boolean;
+  }
 ): Promise<T> {
   const { repo, project } = getAuthenticatedContext();
   const filters = [{ code: 'url', operator: Operator.EQUALS, value: url }];
-  if (version) {
-    filters.push({ code: 'version', operator: Operator.EQUALS, value: version });
+  if (options?.version) {
+    filters.push({ code: 'version', operator: Operator.EQUALS, value: options.version });
   }
   const results = await repo.searchResources<T>({
     resourceType,
@@ -34,7 +37,14 @@ export async function findTerminologyResource<T extends TerminologyResource>(
   if (!results.length) {
     throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
   } else if (results.length === 1 || !sameTerminologyResourceVersion(results[0], results[1])) {
-    return results[0];
+    if (options?.ownProjectOnly) {
+      const fullResource = await getSystemRepo().readReference(createReference(results[0]));
+      if (fullResource.meta?.project === repo.currentProject()?.id) {
+        return results[0];
+      }
+    } else {
+      return results[0];
+    }
   } else {
     const resourceReferences: Reference<T>[] = [];
     for (const resource of results) {
@@ -47,7 +57,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     } else if (projectResource) {
       return projectResource;
     }
-    if (project.link) {
+    if (!options?.ownProjectOnly && project.link) {
       for (const linkedProject of project.link) {
         const linkedResource = resources.find(
           (r) => !(r instanceof Error) && r.meta?.project === resolveId(linkedProject.project)
@@ -57,8 +67,8 @@ export async function findTerminologyResource<T extends TerminologyResource>(
         }
       }
     }
-    throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
   }
+  throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
 }
 
 function sameTerminologyResourceVersion(a: TerminologyResource, b: TerminologyResource): boolean {

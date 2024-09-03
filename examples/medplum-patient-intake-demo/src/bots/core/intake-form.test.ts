@@ -381,12 +381,12 @@ describe('Intake form', async () => {
 
       expect(coverages[0].beneficiary).toEqual(createReference(patient));
       expect(coverages[0].subscriberId).toEqual('first-provider-id');
-      expect(coverages[0].relationship?.coding?.[0]?.code).toEqual('BP');
+      expect(coverages[0].relationship?.coding?.[0]?.code).toEqual('self');
       expect(coverages[0].payor?.[0].reference).toEqual(createReference(payor1).reference);
 
       expect(coverages[1].beneficiary).toEqual(createReference(patient));
       expect(coverages[1].subscriberId).toEqual('second-provider-id');
-      expect(coverages[1].relationship?.coding?.[0]?.code).toEqual('BP');
+      expect(coverages[1].relationship?.coding?.[0]?.code).toEqual('child');
       expect(coverages[1].payor?.[0].reference).toEqual(createReference(payor2).reference);
     });
 
@@ -406,6 +406,37 @@ describe('Intake form', async () => {
       const updatedCoverages = await medplum.searchResources('Coverage', { beneficiary: getReferenceString(patient) });
 
       expect(updatedCoverages.length).toEqual(2);
+    });
+
+    test('create RelatedPerson resource for subscriber', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const relatedPerson = await medplum.searchResources('RelatedPerson', {
+        patient: getReferenceString(patient),
+      });
+
+      expect(relatedPerson.length).toEqual(1);
+      expect(relatedPerson[0].relationship?.[0]).toEqual({
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+            code: 'PRN',
+            display: 'parent',
+          },
+        ],
+      });
+      expect(relatedPerson[0].name).toEqual([
+        {
+          family: 'Simpson',
+          given: ['Marge'],
+        },
+      ]);
+      expect(relatedPerson[0].birthDate).toEqual('1958-03-19');
+      expect(relatedPerson[0].gender).toEqual('446141000124107');
     });
   });
 
