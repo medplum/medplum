@@ -342,4 +342,41 @@ describe('BaseChat', () => {
     // Make sure the new message is fetched via search after subscription reconnects
     await expect(screen.findByText(/homer please/i)).resolves.toBeInTheDocument();
   });
+
+  test.only('Displays an error notification when a subscription error occurs', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const baseProps = {
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+    };
+
+    await Promise.all([
+      createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
+      createCommunication(medplum),
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        payload: [{ contentString: 'Hello again!' }],
+      }),
+    ]);
+
+    // Setup and check setup successful
+    await setup(baseProps, medplum);
+    expect(screen.getAllByText('Hello, Medplum!').length).toEqual(2);
+    expect(screen.getByText('Hello again!')).toBeInTheDocument();
+
+    // Emit error event on subscription
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'error',
+        payload: new Error('Something is broken'),
+      });
+    });
+
+    // Check for the reconnected notification(s)
+    await expect(screen.findByText(/something is broken/i)).resolves.toBeInTheDocument();
+  });
 });

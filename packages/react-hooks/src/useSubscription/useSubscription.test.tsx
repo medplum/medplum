@@ -574,4 +574,58 @@ describe('useSubscription()', () => {
     expect(callsToOpen).toEqual(2);
     expect(subscribeSpy).toHaveBeenCalledTimes(1);
   });
+
+  test('Error emitted', async () => {
+    let lastError: Error | undefined;
+
+    function TestWrapper(): JSX.Element {
+      return (
+        <TestComponent
+          criteria="Communication"
+          options={{
+            subscriptionProps: {
+              extension: [
+                {
+                  url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+                  valueCode: 'create',
+                },
+              ],
+            },
+            onError: useCallback((err: Error) => {
+              lastError = err;
+            }, []),
+          }}
+        />
+      );
+    }
+
+    const errorPromise = new Promise((resolve) => {
+      medplum.getMasterSubscriptionEmitter().addEventListener('error', resolve);
+    });
+
+    setup(<TestWrapper />);
+
+    // Emit open to recompute the onWebSocketOpen callback, which previous busted the options memo and cause `subscribeToCriteria` to be called again
+    act(() => {
+      medplum.getSubscriptionManager().emitEventForCriteria<'error'>(
+        'Communication',
+        {
+          type: 'error',
+          payload: new Error('Something is broken'),
+        },
+        {
+          extension: [
+            {
+              url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+              valueCode: 'create',
+            },
+          ],
+        }
+      );
+    });
+
+    await errorPromise;
+
+    expect(lastError).toEqual(new Error('Something is broken'));
+  });
 });

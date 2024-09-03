@@ -22,6 +22,15 @@ import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
 
+function showError(message: string): void {
+  showNotification({
+    color: 'red',
+    title: 'Error',
+    message,
+    autoClose: false,
+  });
+}
+
 function parseSentTime(communication: Communication): string {
   const sentTime = new Date(communication.sent ?? 0);
   const sentTimeMins = sentTime.getMinutes().toString();
@@ -122,7 +131,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           setReconnecting(true);
         }
         showNotification({ color: 'red', message: 'Live chat disconnected. Attempting to reconnect...' });
-      }, [setReconnecting, reconnecting]),
+      }, [reconnecting]),
       onWebSocketOpen: useCallback(() => {
         if (reconnecting) {
           showNotification({ color: 'green', message: 'Live chat reconnected.' });
@@ -133,7 +142,10 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           searchMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
           setReconnecting(false);
         }
-      }, [reconnecting, setReconnecting, searchMessages]),
+      }, [reconnecting, searchMessages]),
+      onError: useCallback((err: Error) => {
+        showError(normalizeErrorString(err));
+      }, []),
     }
   );
 
