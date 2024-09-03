@@ -54,6 +54,6 @@
     "react-big-calendar": "1.13.4",
     "react-router-dom": "6.26.1",
     "typescript": "5.5.4",
-    "vite": "5.4.2"
+    "vite": "5.4.3"
   }
 }
