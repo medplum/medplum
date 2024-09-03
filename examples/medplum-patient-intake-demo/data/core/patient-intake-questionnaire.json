@@ -257,8 +257,71 @@
                 "linkId": "relationship-to-subscriber",
                 "text": "Relationship to Subscriber",
                 "type": "choice",
-                "answerValueSet": "http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype",
+                "answerValueSet": "http://hl7.org/fhir/ValueSet/subscriber-relationship",
                 "required": true
+              },
+              {
+                "linkId": "related-person",
+                "text": "Subscriber Information",
+                "type": "group",
+                "enableBehavior": "all",
+                "enableWhen": [
+                  {
+                    "question": "relationship-to-subscriber",
+                    "operator": "!=",
+                    "answerCoding": {
+                      "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+                      "code": "other",
+                      "display": "Other"
+                    }
+                  },
+                  {
+                    "question": "relationship-to-subscriber",
+                    "operator": "!=",
+                    "answerCoding": {
+                      "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+                      "code": "self",
+                      "display": "Self"
+                    }
+                  },
+                  {
+                    "question": "relationship-to-subscriber",
+                    "operator": "!=",
+                    "answerCoding": {
+                      "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+                      "code": "injured",
+                      "display": "Injured Party"
+                    }
+                  }
+                ],
+                "item": [
+                  {
+                    "linkId": "related-person-first-name",
+                    "text": "First Name",
+                    "type": "string"
+                  },
+                  {
+                    "linkId": "related-person-middle-name",
+                    "text": "Middle Name",
+                    "type": "string"
+                  },
+                  {
+                    "linkId": "related-person-last-name",
+                    "text": "Last Name",
+                    "type": "string"
+                  },
+                  {
+                    "linkId": "related-person-dob",
+                    "text": "Date of Birth",
+                    "type": "date"
+                  },
+                  {
+                    "linkId": "related-person-gender-identity",
+                    "text": "Gender Identity",
+                    "type": "choice",
+                    "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1021.32"
+                  }
+                ]
               }
             ]
           },
