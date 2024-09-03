@@ -642,7 +642,7 @@ export const intakeResponse: QuestionnaireResponse = {
         {
           id: 'id-108',
           linkId: 'related-person',
-          text: 'Related Person Information',
+          text: 'Subscriber Information',
           item: [
             {
               id: 'id-109',

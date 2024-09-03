@@ -262,7 +262,7 @@
               },
               {
                 "linkId": "related-person",
-                "text": "Related Person Information",
+                "text": "Subscriber Information",
                 "type": "group",
                 "enableBehavior": "all",
                 "enableWhen": [
