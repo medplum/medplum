@@ -37,10 +37,16 @@ type BundlePreprocessInfo = {
  * @param router - The FHIR router.
  * @param repo - The FHIR repository.
  * @param bundle - The input bundle.
+ * @param req - The request for the batch.
  * @returns The bundle response.
  */
-export async function processBatch(router: FhirRouter, repo: FhirRepository, bundle: Bundle): Promise<Bundle> {
-  const processor = new BatchProcessor(router, repo, bundle);
+export async function processBatch(
+  router: FhirRouter,
+  repo: FhirRepository,
+  bundle: Bundle,
+  req: FhirRequest
+): Promise<Bundle> {
+  const processor = new BatchProcessor(router, repo, bundle, req);
   return processor.run();
 }
 
@@ -56,11 +62,13 @@ class BatchProcessor {
    * @param router - The FHIR router.
    * @param repo - The FHIR repository.
    * @param bundle - The input bundle.
+   * @param req - The request for the batch.
    */
   constructor(
     private readonly router: FhirRouter,
     private readonly repo: FhirRepository,
-    private readonly bundle: Bundle
+    private readonly bundle: Bundle,
+    private readonly req: FhirRequest
   ) {
     this.resolvedIdentities = Object.create(null);
   }
@@ -484,16 +492,7 @@ class BatchProcessor {
   }
 
   private isTransaction(): boolean {
-    if (this.bundle.type !== 'transaction') {
-      return false;
-    }
-
-    const config = this.repo.getConfig();
-    if (typeof config === 'object' && config && 'transactions' in config) {
-      return Boolean(config.transactions);
-    }
-
-    return false;
+    return this.bundle.type === 'transaction' && Boolean(this.req.config?.transactions);
   }
 }
 

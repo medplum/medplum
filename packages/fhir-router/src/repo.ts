@@ -42,7 +42,7 @@ export enum RepositoryMode {
  * Additionally, several convenience method implementations are provided to offer advanced functionality on top of the
  * abstract basic operations.
  */
-export abstract class FhirRepository<TClient = unknown, TConfig = unknown> {
+export abstract class FhirRepository<TClient = unknown> {
   /**
    * Sets the repository mode.
    * In general, it is assumed that repositories will start in "reader" mode,
@@ -52,8 +52,6 @@ export abstract class FhirRepository<TClient = unknown, TConfig = unknown> {
    * @param mode - The repository mode.
    */
   abstract setMode(mode: RepositoryMode): void;
-
-  abstract getConfig(): TConfig;
 
   /**
    * Creates a FHIR resource.
@@ -305,7 +303,7 @@ export abstract class FhirRepository<TClient = unknown, TConfig = unknown> {
   }
 }
 
-export class MemoryRepository extends FhirRepository<undefined, undefined> {
+export class MemoryRepository extends FhirRepository<undefined> {
   private readonly resources: Map<string, Map<string, Resource>>;
   private readonly history: Map<string, Map<string, Resource[]>>;
 
@@ -322,10 +320,6 @@ export class MemoryRepository extends FhirRepository<undefined, undefined> {
 
   setMode(_mode: RepositoryMode): void {
     // MockRepository ignores reader/writer mode
-  }
-
-  getConfig(): undefined {
-    return undefined;
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {

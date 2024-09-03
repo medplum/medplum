@@ -186,9 +186,6 @@ export interface RepositoryContext {
    * 3) "compartment" - References to all compartments the resource is in.
    */
   extendedMode?: boolean;
-
-  /** Feature flag for using database transactions with `transaction` Bundles. */
-  transactions?: boolean;
 }
 
 export interface CacheEntry<T extends Resource = Resource> {
@@ -226,7 +223,7 @@ const lookupTables: LookupTable[] = [
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository extends FhirRepository<PoolClient, RepositoryContext> implements Disposable {
+export class Repository extends FhirRepository<PoolClient> implements Disposable {
   private readonly context: RepositoryContext;
   private conn?: PoolClient;
   private transactionDepth = 0;

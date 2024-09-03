@@ -36,6 +36,7 @@ export type FhirRequestConfig = {
   graphqlMaxDepth?: number;
   graphqlMaxPageSize?: number;
   graphqlMaxSearches?: number;
+  transactions?: boolean;
 };
 
 export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
@@ -62,7 +63,7 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
     return [badRequest('Not a bundle')];
   }
 
-  const result = await processBatch(router, repo, bundle);
+  const result = await processBatch(router, repo, bundle, req);
   return [allOk, result];
 }
 
