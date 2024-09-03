@@ -3644,7 +3644,15 @@
               "path" : "AccessPolicy.resource.criteria",
               "min" : 0,
               "max" : "1"
-            }
+            },
+            "constraint": [
+              {
+                "key": "axp-2",
+                "severity": "error",
+                "human": "Criteria must be a valid FHIR search string, e.g. Patient?identifier=123",
+                "expression": "indexOf('?') > 0"
+              }
+            ]
           },
           {
             "id" : "AccessPolicy.resource.readonly",
