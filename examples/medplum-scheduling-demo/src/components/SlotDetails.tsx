@@ -6,7 +6,6 @@ import { Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconClock, IconEdit, IconNote, IconTrash } from '@tabler/icons-react';
 import { Event } from 'react-big-calendar';
-import { CreateAppointment } from './CreateAppointment';
 import { CreateUpdateSlot } from './CreateUpdateSlot';
 
 interface SlotDetailsProps {
@@ -19,7 +18,13 @@ interface SlotDetailsProps {
   };
 }
 
-export function SlotDetails(props: SlotDetailsProps): JSX.Element {
+/**
+ * SlotDetails component that displays the details of a slot.
+ * Allows the user to edit or delete the slot.
+ * @param props - SlotDetailsProps
+ * @returns A React component that displays the modal.
+ */
+export function SlotDetails(props: SlotDetailsProps): JSX.Element | null {
   const { event, opened, handlers } = props;
   const slot: Slot | undefined = event?.resource;
 
@@ -27,12 +32,6 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element {
 
   const medplum = useMedplum();
 
-  // If the event is a range selection (no slot), render the slot creation modal
-  if (!slot) {
-    return <CreateUpdateSlot event={event} opened={opened} handlers={handlers} />;
-  }
-
-  // Handles deleting the slot
   async function handleDeleteSlot(slotId: string): Promise<void> {
     try {
       await medplum.deleteResource('Slot', slotId);
@@ -53,14 +52,12 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element {
     handlers.close();
   }
 
-  const slotStatusTitle = slot.status === 'free' ? 'Available' : 'Blocked';
-
-  // If the event is a free slot (available for booking), render the appointment creation modal
-  if (slot.status === 'free') {
-    return <CreateAppointment slot={slot} opened={opened} handlers={handlers} />;
+  if (!slot) {
+    return null;
   }
 
-  // If the event is a busy-unavailable slot (blocked for booking), show the slot details data
+  const slotStatusTitle = slot.status === 'free' ? 'Available' : 'Blocked';
+
   return (
     <>
       <Modal

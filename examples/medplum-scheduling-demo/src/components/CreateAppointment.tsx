@@ -14,12 +14,13 @@ import {
 } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconEdit, IconTrash } from '@tabler/icons-react';
+import { Event } from 'react-big-calendar';
 import { useNavigate } from 'react-router-dom';
 import { CreateUpdateSlot } from './CreateUpdateSlot';
 
 interface CreateAppointmentProps {
   patient?: Patient;
-  slot: Slot;
+  event: Event | undefined;
   readonly opened: boolean;
   readonly handlers: {
     readonly open: () => void;
@@ -28,8 +29,15 @@ interface CreateAppointmentProps {
   };
 }
 
-export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
-  const { patient, slot, opened, handlers } = props;
+/**
+ * CreateAppointment component that allows the user to create an appointment from a slot.
+ * @param props - CreateAppointmentProps
+ * @returns A React component that displays the modal.
+ */
+export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | null {
+  const { patient, event, opened, handlers } = props;
+  const slot: Slot | undefined = event?.resource;
+
   const [updateSlotOpened, updateSlotHandlers] = useDisclosure(false, { onClose: handlers.close });
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
@@ -40,7 +48,6 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
     createAppointmentQuestionnaire.item = createAppointmentQuestionnaire.item?.filter((i) => i.linkId !== 'patient');
   }
 
-  // Handles deleting the slot
   async function handleDeleteSlot(slotId: string): Promise<void> {
     try {
       await medplum.deleteResource('Slot', slotId);
@@ -73,7 +80,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
       let appointment: Appointment = {
         resourceType: 'Appointment',
         status: 'booked',
-        slot: [createReference(slot)],
+        slot: [createReference(slot as Slot)],
         appointmentType: { coding: [answers['appointment-type'].valueCoding as Coding] },
         serviceType: [{ coding: [answers['service-type'].valueCoding as Coding] }],
         participant: [
@@ -110,6 +117,10 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
     handlers.close();
   }
 
+  if (!slot) {
+    return null;
+  }
+
   return (
     <>
       <Modal
@@ -143,7 +154,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element {
         <QuestionnaireForm questionnaire={createAppointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
       </Modal>
 
-      <CreateUpdateSlot event={{ resource: slot }} opened={updateSlotOpened} handlers={updateSlotHandlers} />
+      <CreateUpdateSlot event={event} opened={updateSlotOpened} handlers={updateSlotHandlers} />
     </>
   );
 }

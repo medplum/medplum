@@ -19,6 +19,11 @@ interface CreateUpdateSlotProps {
   };
 }
 
+/**
+ * CreateUpdateSlot component that allows the user to create or update a slot.
+ * @param props - CreateUpdateSlotProps
+ * @returns A React component that displays the modal.
+ */
 export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
   const { event, opened, handlers } = props;
   const medplum = useMedplum();
