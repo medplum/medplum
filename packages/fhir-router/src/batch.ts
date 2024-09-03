@@ -40,28 +40,8 @@ type BundlePreprocessInfo = {
  * @returns The bundle response.
  */
 export async function processBatch(router: FhirRouter, repo: FhirRepository, bundle: Bundle): Promise<Bundle> {
-  const bundleType = bundle.type;
-  if (bundleType !== 'batch' && bundleType !== 'transaction') {
-    throw new OperationOutcomeError(badRequest('Unrecognized bundle type: ' + bundleType));
-  }
   const processor = new BatchProcessor(router, repo, bundle);
-  const resultEntries: (BundleEntry | OperationOutcome)[] = new Array(bundle.entry?.length ?? 0);
-  const bundleInfo = await processor.preprocessBundle(resultEntries);
-
-  if (bundleType !== 'transaction') {
-    return processor.processBatch(bundleInfo, resultEntries);
-  }
-
-  if (bundleInfo.updates > maxUpdates) {
-    throw new OperationOutcomeError(badRequest('Transaction contains more update operations than allowed'));
-  }
-  if (bundleInfo.requiresStrongTransaction && resultEntries.length > maxSerializableTransactionEntries) {
-    throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
-  }
-
-  return repo.withTransaction(() => processor.processBatch(bundleInfo, resultEntries), {
-    serializable: bundleInfo.requiresStrongTransaction,
-  });
+  return processor.run();
 }
 
 /**
@@ -86,13 +66,42 @@ class BatchProcessor {
   }
 
   /**
+   * Processes a FHIR batch request.
+   * @returns The bundle response.
+   */
+  async run(): Promise<Bundle> {
+    const bundleType = this.bundle.type;
+    if (bundleType !== 'batch' && bundleType !== 'transaction') {
+      throw new OperationOutcomeError(badRequest('Unrecognized bundle type: ' + bundleType));
+    }
+
+    const resultEntries: (BundleEntry | OperationOutcome)[] = new Array(this.bundle.entry?.length ?? 0);
+    const bundleInfo = await this.preprocessBundle(resultEntries);
+
+    if (!this.isTransaction()) {
+      return this.processBatch(bundleInfo, resultEntries);
+    }
+
+    if (bundleInfo.updates > maxUpdates) {
+      throw new OperationOutcomeError(badRequest('Transaction contains more update operations than allowed'));
+    }
+    if (bundleInfo.requiresStrongTransaction && resultEntries.length > maxSerializableTransactionEntries) {
+      throw new OperationOutcomeError(badRequest('Transaction requires strict isolation but has too many entries'));
+    }
+
+    return this.repo.withTransaction(() => this.processBatch(bundleInfo, resultEntries), {
+      serializable: bundleInfo.requiresStrongTransaction,
+    });
+  }
+
+  /**
    * Scans the Bundle in order to ensure entries are processed in the correct sequence,
    * as well as to identify any operations that might require specific handling.
    *
    * @param results - The array of result entries, to track partial results.
    * @returns The information gathered from scanning the Bundle.
    */
-  async preprocessBundle(results: BundleEntry[]): Promise<BundlePreprocessInfo> {
+  private async preprocessBundle(results: BundleEntry[]): Promise<BundlePreprocessInfo> {
     const entries = this.bundle.entry;
     if (!entries?.length) {
       throw new OperationOutcomeError(badRequest('Missing bundle entries'));
@@ -130,7 +139,7 @@ class BatchProcessor {
       }
       const outcome = await this.preprocessEntry(entry, i, seenIdentities);
       if (outcome) {
-        if (this.bundle.type !== 'transaction') {
+        if (!this.isTransaction()) {
           results[i] = buildBundleResponse(outcome);
           continue;
         }
@@ -201,7 +210,7 @@ class BatchProcessor {
       this.resolvedIdentities[resolved.placeholder] = resolved.reference;
 
       // If in a transaction, ensure identity is unique
-      if (this.bundle.type === 'transaction') {
+      if (this.isTransaction()) {
         if (seenIdentities.has(resolved.reference)) {
           throw new OperationOutcomeError(badRequest('Duplicate resource identity found in Bundle'));
         }
@@ -307,18 +316,11 @@ class BatchProcessor {
    * @param resultEntries - The array of results.
    * @returns The bundle response.
    */
-  async processBatch(
+  private async processBatch(
     bundleInfo: BundlePreprocessInfo,
     resultEntries: (BundleEntry | OperationOutcome)[]
   ): Promise<Bundle> {
     const bundleType = this.bundle.type;
-    if (!bundleType) {
-      throw new OperationOutcomeError(badRequest('Missing bundle type'));
-    }
-
-    if (bundleType !== 'batch' && bundleType !== 'transaction') {
-      throw new OperationOutcomeError(badRequest('Unrecognized bundle type'));
-    }
 
     const entries = this.bundle.entry;
     if (!entries) {
@@ -341,7 +343,7 @@ class BatchProcessor {
       try {
         resultEntries[entryIndex] = await this.processBatchEntry(rewritten);
       } catch (err) {
-        if (bundleType === 'transaction') {
+        if (this.isTransaction()) {
           throw err;
         }
 
@@ -380,7 +382,7 @@ class BatchProcessor {
     const request = this.parseBatchRequest(entry, route?.params);
     const [outcome, resource] = await route.handler(request, this.repo, this.router, { batch: true });
 
-    if (!isOk(outcome) && this.bundle.type === 'transaction') {
+    if (!isOk(outcome) && this.isTransaction()) {
       throw new OperationOutcomeError(outcome);
     }
     return buildBundleResponse(outcome, resource);
@@ -392,7 +394,7 @@ class BatchProcessor {
    * @param params - Route path parameters
    * @returns The HTTP request to perform the operation specified by the given batch entry.
    */
-  parseBatchRequest(entry: BundleEntry, params?: Record<string, string>): FhirRequest {
+  private parseBatchRequest(entry: BundleEntry, params?: Record<string, string>): FhirRequest {
     const request = entry.request as BundleEntryRequest;
     const headers = Object.create(null) as IncomingHttpHeaders;
     if (request.ifNoneExist) {
@@ -467,7 +469,7 @@ class BatchProcessor {
   private rewriteIdsInString(input: string): string {
     const match = localBundleReference.exec(input);
     if (match) {
-      if (this.bundle.type !== 'transaction') {
+      if (!this.isTransaction()) {
         const event: LogEvent = {
           type: 'warn',
           message: 'Invalid internal reference in batch',
@@ -479,6 +481,19 @@ class BatchProcessor {
       return referenceString ? input.replaceAll(fullUrl, referenceString) : input;
     }
     return input;
+  }
+
+  private isTransaction(): boolean {
+    if (this.bundle.type !== 'transaction') {
+      return false;
+    }
+
+    const config = this.repo.getConfig();
+    if (typeof config === 'object' && config && 'transactions' in config) {
+      return Boolean(config.transactions);
+    }
+
+    return false;
   }
 }
 

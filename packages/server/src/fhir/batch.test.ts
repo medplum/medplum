@@ -23,7 +23,7 @@ describe('Batch and Transaction processing', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ project: { features: ['transactions'] } });
   });
 
   afterAll(async () => {
@@ -759,7 +759,7 @@ describe('Batch and Transaction processing', () => {
       ],
     };
 
-    const accessToken = await initTestAuth({ project: { checkReferencesOnWrite: true } });
+    const accessToken = await initTestAuth({ project: { checkReferencesOnWrite: true, features: ['transactions'] } });
     const res = await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)

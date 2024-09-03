@@ -42,7 +42,7 @@ export enum RepositoryMode {
  * Additionally, several convenience method implementations are provided to offer advanced functionality on top of the
  * abstract basic operations.
  */
-export abstract class FhirRepository<TClient = unknown> {
+export abstract class FhirRepository<TClient = unknown, TConfig = unknown> {
   /**
    * Sets the repository mode.
    * In general, it is assumed that repositories will start in "reader" mode,
@@ -52,6 +52,8 @@ export abstract class FhirRepository<TClient = unknown> {
    * @param mode - The repository mode.
    */
   abstract setMode(mode: RepositoryMode): void;
+
+  abstract getConfig(): TConfig;
 
   /**
    * Creates a FHIR resource.
@@ -303,7 +305,7 @@ export abstract class FhirRepository<TClient = unknown> {
   }
 }
 
-export class MemoryRepository extends FhirRepository {
+export class MemoryRepository extends FhirRepository<undefined, undefined> {
   private readonly resources: Map<string, Map<string, Resource>>;
   private readonly history: Map<string, Map<string, Resource[]>>;
 
@@ -320,6 +322,10 @@ export class MemoryRepository extends FhirRepository {
 
   setMode(_mode: RepositoryMode): void {
     // MockRepository ignores reader/writer mode
+  }
+
+  getConfig(): undefined {
+    return undefined;
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
@@ -500,7 +506,7 @@ export class MemoryRepository extends FhirRepository {
     this.resources.get(resourceType)?.delete(id);
   }
 
-  withTransaction<TResult>(callback: (client: unknown) => Promise<TResult>): Promise<TResult> {
+  withTransaction<TResult>(callback: (client: undefined) => Promise<TResult>): Promise<TResult> {
     // MockRepository currently does not support transactions
     console.debug('WARN: MockRepository does not support transactions');
     return callback(undefined);
