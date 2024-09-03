@@ -69,6 +69,7 @@ export interface BaseChatProps extends PaperProps {
   readonly sendMessage: (content: string) => void;
   readonly onMessageReceived?: (message: Communication) => void;
   readonly inputDisabled?: boolean;
+  readonly onError?: (err: Error) => void;
 }
 
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
@@ -80,6 +81,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     sendMessage,
     onMessageReceived,
     inputDisabled,
+    onError,
     ...paperProps
   } = props;
   const medplum = useMedplum();
@@ -143,9 +145,16 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           setReconnecting(false);
         }
       }, [reconnecting, searchMessages]),
-      onError: useCallback((err: Error) => {
-        showError(normalizeErrorString(err));
-      }, []),
+      onError: useCallback(
+        (err: Error) => {
+          if (onError) {
+            onError(err);
+          } else {
+            showError(normalizeErrorString(err));
+          }
+        },
+        [onError]
+      ),
     }
   );
 

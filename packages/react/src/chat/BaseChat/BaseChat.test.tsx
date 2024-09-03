@@ -1,5 +1,12 @@
 import { Notifications } from '@mantine/notifications';
-import { ProfileResource, createReference, generateId, getReferenceString, getWebSocketUrl } from '@medplum/core';
+import {
+  ProfileResource,
+  createReference,
+  generateId,
+  getReferenceString,
+  getWebSocketUrl,
+  sleep,
+} from '@medplum/core';
 import { Bundle, Communication } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient, MockSubscriptionManager } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -343,7 +350,7 @@ describe('BaseChat', () => {
     await expect(screen.findByText(/homer please/i)).resolves.toBeInTheDocument();
   });
 
-  test.only('Displays an error notification when a subscription error occurs', async () => {
+  test('Displays an error notification when a subscription error occurs', async () => {
     const medplum = new MockClient({ profile: DrAliceSmith });
     medplum.setSubscriptionManager(defaultSubManager);
 
@@ -378,5 +385,43 @@ describe('BaseChat', () => {
 
     // Check for the reconnected notification(s)
     await expect(screen.findByText(/something is broken/i)).resolves.toBeInTheDocument();
+  });
+
+  test('Calls onError cb when `onError` is specified', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const baseProps = {
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      onError: jest.fn(),
+    };
+
+    await Promise.all([
+      createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
+      createCommunication(medplum),
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        payload: [{ contentString: 'Hello again!' }],
+      }),
+    ]);
+
+    // Setup and check setup successful
+    await setup(baseProps, medplum);
+    expect(screen.getAllByText('Hello, Medplum!').length).toEqual(2);
+    expect(screen.getByText('Hello again!')).toBeInTheDocument();
+
+    // Emit error event on subscription
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'error',
+        payload: new Error('Something is broken'),
+      });
+    });
+
+    await sleep(500);
+    expect(baseProps.onError).toHaveBeenCalledWith(new Error('Something is broken'));
   });
 });
