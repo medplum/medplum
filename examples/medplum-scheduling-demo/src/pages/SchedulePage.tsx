@@ -8,12 +8,12 @@ import { useCallback, useContext, useState } from 'react';
 import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
-import { ScheduleContext } from '../Schedule.context';
-import { BlockAvailability } from '../components/BlockAvailability';
-import { CreateAppointment } from '../components/CreateAppointment';
-import { CreateUpdateSlot } from '../components/CreateUpdateSlot';
-import { SetAvailability } from '../components/SetAvailability';
+import { BlockAvailability } from '../components/actions/BlockAvailability';
+import { CreateAppointment } from '../components/actions/CreateAppointment';
+import { CreateUpdateSlot } from '../components/actions/CreateUpdateSlot';
+import { SetAvailability } from '../components/actions/SetAvailability';
 import { SlotDetails } from '../components/SlotDetails';
+import { ScheduleContext } from '../Schedule.context';
 
 /**
  * Schedule page that displays the practitioner's schedule.

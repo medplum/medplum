@@ -9,7 +9,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useParams } from 'react-router-dom';
 import { ScheduleContext } from '../Schedule.context';
 import { Title } from '@mantine/core';
-import { CreateAppointment } from '../components/CreateAppointment';
+import { CreateAppointment } from '../components/actions/CreateAppointment';
 
 /**
  * PatientSchedulePage component that displays the practitioner's schedule as part of the

@@ -6,7 +6,7 @@ import { Slot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff, IconClock, IconEdit, IconNote, IconTrash } from '@tabler/icons-react';
 import { Event } from 'react-big-calendar';
-import { CreateUpdateSlot } from './CreateUpdateSlot';
+import { CreateUpdateSlot } from './actions/CreateUpdateSlot';
 
 interface SlotDetailsProps {
   event: Event | undefined;

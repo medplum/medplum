@@ -1,12 +1,12 @@
 import { Modal } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getQuestionnaireAnswers, createReference, normalizeErrorString } from '@medplum/core';
-import { QuestionnaireResponse, Schedule, Questionnaire } from '@medplum/fhirtypes';
-import { useMedplum, Loading, QuestionnaireForm } from '@medplum/react';
+import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
+import { Questionnaire, QuestionnaireResponse, Schedule } from '@medplum/fhirtypes';
+import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useContext } from 'react';
-import { ScheduleContext } from '../Schedule.context';
-import { BlockAvailabilityEvent } from '../bots/core/block-availability';
+import { BlockAvailabilityEvent } from '../../bots/core/block-availability';
+import { ScheduleContext } from '../../Schedule.context';
 
 interface BlockAvailabilityProps {
   readonly opened: boolean;
