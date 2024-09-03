@@ -32,7 +32,14 @@ import { FhirRepository, MemoryRepository } from './repo';
 
 const router: FhirRouter = new FhirRouter();
 const repo: FhirRepository = new MemoryRepository();
-const req: FhirRequest = { method: 'POST', pathname: '/', params: {}, query: {}, body: '', config: {} };
+const req: FhirRequest = {
+  method: 'POST',
+  pathname: '/',
+  params: {},
+  query: {},
+  body: '',
+  config: { transactions: true },
+};
 
 describe('Batch', () => {
   beforeAll(() => {
