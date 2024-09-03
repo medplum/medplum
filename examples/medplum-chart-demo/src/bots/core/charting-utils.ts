@@ -14,6 +14,7 @@ import {
   QuestionnaireResponse,
   QuestionnaireResponseItemAnswer,
   Reference,
+  Resource,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 
@@ -276,7 +277,7 @@ export function createBundle(resources: (Condition | Observation | ClinicalImpre
   const entries: BundleEntry[] = resources.map((resource) => {
     const entry: BundleEntry = {
       fullUrl: `urn:uuid:${randomUUID()}`,
-      request: { method: 'POST', url: resource.resourceType },
+      request: { method: 'PUT', url: getUpsertUrl(resource) },
       resource,
     };
 
@@ -286,6 +287,43 @@ export function createBundle(resources: (Condition | Observation | ClinicalImpre
   bundle.entry = entries;
 
   return bundle;
+}
+
+/**
+ *
+ * @param resource - The resource that is being upserted
+ * @returns A search url that can be used to upsert a resource
+ */
+function getUpsertUrl(resource: Resource): string {
+  if (resource.resourceType === 'Observation') {
+    const code = resource.code;
+    if (!code.coding?.[0].code) {
+      throw new Error('No code provided');
+    }
+    if (!resource.encounter) {
+      throw new Error('No linked encounter');
+    }
+    const url = `Observation?encounter=${getReferenceString(resource.encounter)}&code=${code.coding?.[0].code}`;
+
+    return url;
+  } else if (resource.resourceType === 'Condition') {
+    const code = resource.code;
+    if (!code) {
+      throw new Error('No code provided');
+    }
+    if (!resource.encounter) {
+      throw new Error('No linked encounter');
+    }
+
+    return `Condition?encounter=${getReferenceString(resource.encounter)}&code=${code.coding?.[0].code}`;
+  } else if (resource.resourceType === 'ClinicalImpression') {
+    if (!resource.encounter) {
+      throw new Error('No linked encounter');
+    }
+    return `ClinicalImpression?encounter=${getReferenceString(resource.encounter)}`;
+  } else {
+    throw new Error('Invalid resource type');
+  }
 }
 
 // A map of self-reported history types to the relevant coding.
