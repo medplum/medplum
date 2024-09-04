@@ -221,6 +221,25 @@
             ]
           },
           {
+            "linkId": "vaccination-history",
+            "text": "Vaccination History",
+            "type": "group",
+            "repeats": true,
+            "item": [
+              {
+                "linkId": "immunization-vaccine",
+                "text": "Vaccine",
+                "type": "choice",
+                "answerValueSet": "http://cts.nlm.nih.gov/fhir/ValueSet/2.16.840.1.113762.1.4.1010.6"
+              },
+              {
+                "linkId": "immunization-date",
+                "text": "Administration Date",
+                "type": "dateTime"
+              }
+            ]
+          },
+          {
             "linkId": "coverage-information",
             "text": "Coverage Information",
             "type": "group",

@@ -469,6 +469,42 @@ export async function addFamilyMemberHistory(
 }
 
 /**
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the immunization
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up an
+ *                  immunization (see getGroupRepeatedAnswers)
+ */
+export async function addImmunization(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const code = answers['immunization-vaccine']?.valueCoding;
+  const occurrenceDateTime = answers['immunization-date']?.valueDateTime;
+
+  if (!code || !occurrenceDateTime) {
+    return;
+  }
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'Immunization',
+      status: 'completed',
+      vaccineCode: { coding: [code] },
+      patient: createReference(patient),
+      occurrenceDateTime: occurrenceDateTime,
+    },
+    {
+      status: 'completed',
+      'vaccine-code': `${code.system}|${code.code}`,
+      patient: getReferenceString(patient),
+      date: occurrenceDateTime,
+    }
+  );
+}
+
+/**
  * Adds a Coverage resource
  *
  * @param medplum - The Medplum client

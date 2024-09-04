@@ -556,6 +556,68 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
+      id: 'id-133',
+      linkId: 'vaccination-history',
+      text: 'Vaccination History',
+      item: [
+        {
+          id: 'id-134',
+          linkId: 'immunization-vaccine',
+          text: 'Vaccine',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://hl7.org/fhir/sid/cvx',
+                code: '197',
+                display: 'influenza, high-dose seasonal, quadrivalent, 0.7mL dose, preservative free',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-135',
+          linkId: 'immunization-date',
+          text: 'Administration Date',
+          answer: [
+            {
+              valueDateTime: '2024-02-01T14:00:00-07:00',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-136',
+      linkId: 'vaccination-history',
+      text: 'Vaccination History',
+      item: [
+        {
+          id: 'id-137',
+          linkId: 'immunization-vaccine',
+          text: 'Vaccine',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://hl7.org/fhir/sid/cvx',
+                code: '115',
+                display: 'tetanus toxoid, reduced diphtheria toxoid, and acellular pertussis vaccine, adsorbed',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-138',
+          linkId: 'immunization-date',
+          text: 'Administration Date',
+          answer: [
+            {
+              valueDateTime: '2015-08-01T15:00:00-07:00',
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: 'id-50',
       linkId: 'coverage-information',
       text: 'Coverage Information',
