@@ -13,6 +13,12 @@ describe('Base64', () => {
 
     const decoded = decodeBase64(encoded);
     expect(decoded).toBe('Hello world');
+
+    const encodedUnicode = encodeBase64('👋🌍');
+    expect(encodedUnicode).toBe('8J+Ri/CfjI0=');
+
+    const decodedUnicode = decodeBase64(encodedUnicode);
+    expect(decodedUnicode).toBe('👋🌍');
   });
 
   test('Node.js', () => {
@@ -24,6 +30,12 @@ describe('Base64', () => {
 
     const decoded = decodeBase64(encoded);
     expect(decoded).toBe('Hello world');
+
+    const encodedUnicode = encodeBase64('👋🌍');
+    expect(encodedUnicode).toBe('8J+Ri/CfjI0=');
+
+    const decodedUnicode = decodeBase64(encodedUnicode);
+    expect(decodedUnicode).toBe('👋🌍');
   });
 
   test('Error', () => {

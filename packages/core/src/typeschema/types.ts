@@ -332,6 +332,11 @@ class StructureDefinitionParser {
     if (this.isInnerType(element)) {
       this.enterInnerType(element);
     }
+    if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path as string)) {
+      // Path must be compatible with the sliced field path (i.e. have it as a prefix) to be a part of the
+      // same slice group; otherwise, that group is finished and this is the start of a new field
+      this.slicingContext = undefined;
+    }
     if (element.slicing && !this.slicingContext) {
       this.enterSlice(element, field);
     }
@@ -397,14 +402,6 @@ class StructureDefinitionParser {
         this.backboneContext = undefined;
       }
     }
-    if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path as string)) {
-      // Path must be compatible with the sliced field path (i.e. have it as a prefix) to be a part of the
-      // same slice group; otherwise, that group is finished and this is the start of a new field
-      if (this.slicingContext?.current) {
-        this.slicingContext.field.slices.push(this.slicingContext.current);
-      }
-      this.slicingContext = undefined;
-    }
   }
 
   private next(): ElementDefinition | undefined {
@@ -458,9 +455,6 @@ class StructureDefinitionParser {
     if (!this.slicingContext) {
       throw new Error(`Invalid slice start before discriminator: ${element.sliceName} (${element.id})`);
     }
-    if (this.slicingContext.current) {
-      this.slicingContext.field.slices.push(this.slicingContext.current);
-    }
 
     this.slicingContext.current = {
       ...this.parseElementDefinition(element),
@@ -468,6 +462,7 @@ class StructureDefinitionParser {
       definition: element.definition,
       elements: {},
     };
+    this.slicingContext.field.slices.push(this.slicingContext.current);
   }
 
   private parseElementDefinitionType(ed: ElementDefinition): ElementType[] {
