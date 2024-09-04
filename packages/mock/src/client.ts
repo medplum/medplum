@@ -732,6 +732,7 @@ export class MockFetchClient {
       body,
       params: Object.create(null),
       query: Object.fromEntries(parsedUrl.searchParams),
+      headers: toIncomingHttpHeaders(options.headers),
     };
 
     const result = await this.router.handleRequest(request, this.repo);
@@ -745,4 +746,26 @@ export class MockFetchClient {
 
 function base64Encode(str: string): string {
   return typeof window !== 'undefined' ? window.btoa(str) : Buffer.from(str).toString('base64');
+}
+
+// even though it's just a type, avoid importing IncomingHttpHeaders from node:http
+// since MockClient needs to work in the browser. Use a reasonable approximation instead
+interface PseudoIncomingHttpHeaders {
+  [key: string]: string | undefined;
+}
+function toIncomingHttpHeaders(headers: HeadersInit | undefined): PseudoIncomingHttpHeaders {
+  const result: PseudoIncomingHttpHeaders = {};
+
+  if (headers) {
+    for (const [key, value] of Object.entries(headers)) {
+      const lowerKey = key.toLowerCase();
+      if (typeof value === 'string') {
+        result[lowerKey] = value;
+      } else {
+        console.warn(`Ignoring non-string value ${value} for header ${lowerKey}`);
+      }
+    }
+  }
+
+  return result;
 }
