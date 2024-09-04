@@ -129,6 +129,8 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
+export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
+
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
   await initAppServices(config);
   server = http.createServer(app);
@@ -153,12 +155,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.TEXT, ContentType.HL7_V2],
     })
   );
-  app.use(
-    json({
-      type: [ContentType.JSON, ContentType.FHIR_JSON, ContentType.JSON_PATCH, ContentType.SCIM_JSON],
-      limit: config.maxJsonSize,
-    })
-  );
+  app.use(json({ type: JSON_TYPE, limit: config.maxJsonSize }));
   app.use(
     hl7BodyParser({
       type: [ContentType.HL7_V2],
