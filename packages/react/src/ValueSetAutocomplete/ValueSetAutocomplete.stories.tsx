@@ -18,3 +18,9 @@ export const Multiple = (): JSX.Element => (
     <ValueSetAutocomplete binding="x" onChange={console.log} maxValues={3} />
   </Document>
 );
+
+export const MinimumInput = (): JSX.Element => (
+  <Document>
+    <ValueSetAutocomplete binding="x" onChange={console.log} maxValues={3} minInputLength={3} />
+  </Document>
+);
