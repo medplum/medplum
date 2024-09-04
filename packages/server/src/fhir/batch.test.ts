@@ -9,6 +9,7 @@ import {
   BundleEntry,
   BundleEntryResponse,
   CareTeam,
+  Observation,
   Patient,
   Practitioner,
   RelatedPerson,
@@ -823,5 +824,60 @@ describe('Batch and Transaction processing', () => {
 
     const patient = (res.body as Bundle).entry?.[0]?.resource as Patient;
     expect(patient.generalPractitioner?.[0].reference).toEqual(getReferenceString(createdPractitioner.body));
+  });
+
+  test('Process batch create ifNoneExist invalid resource type', async () => {
+    const identifier = randomUUID();
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            request: {
+              method: 'POST',
+              url: 'XXX',
+              ifNoneExist: 'identifier=' + identifier,
+            },
+            resource: {
+              resourceType: 'XXX',
+            } as any,
+          },
+        ],
+      });
+    expect(res.status).toEqual(200);
+    const bundle = res.body as Bundle;
+    expect(bundle.entry).toHaveLength(1);
+    expect(bundle.entry?.[0]?.response?.status).toEqual('400');
+  });
+
+  test('Process batch create missing required properties', async () => {
+    const res = await await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Bundle',
+        type: 'batch',
+        entry: [
+          {
+            request: {
+              method: 'POST',
+              url: 'Observation',
+            },
+            resource: {
+              resourceType: 'Observation',
+            } as Observation,
+          },
+        ],
+      });
+    expect(res.status).toEqual(200);
+    const bundle = res.body as Bundle;
+    expect(bundle.entry).toHaveLength(1);
+    expect(bundle.entry?.[0]?.response?.status).toEqual('400');
   });
 });
