@@ -9,7 +9,7 @@ export function decodeBase64(data: string): string {
   if (typeof window !== 'undefined') {
     const binaryString = window.atob(data);
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
-    return new TextDecoder().decode(bytes);
+    return new window.TextDecoder().decode(bytes);
   }
   if (typeof Buffer !== 'undefined') {
     return Buffer.from(data, 'base64').toString('utf-8');
@@ -26,7 +26,7 @@ export function decodeBase64(data: string): string {
  */
 export function encodeBase64(data: string): string {
   if (typeof window !== 'undefined') {
-    const utf8Bytes = new TextEncoder().encode(data);
+    const utf8Bytes = new window.TextEncoder().encode(data);
     // utf8Bytes is a Uint8Array, but String.fromCharCode expects a sequence of numbers.
     const binaryString = String.fromCharCode.apply(null, utf8Bytes as unknown as number[]);
     return window.btoa(binaryString);

@@ -1,15 +1,9 @@
-import { TextDecoder, TextEncoder } from 'util';
 import { decodeBase64, encodeBase64 } from './base64';
 
 const originalWindow = globalThis.window;
 const originalBuffer = globalThis.Buffer;
 
 describe('Base64', () => {
-  beforeAll(() => {
-    Object.defineProperty(globalThis, 'TextDecoder', { value: TextDecoder });
-    Object.defineProperty(globalThis, 'TextEncoder', { value: TextEncoder });
-  });
-
   test('Browser', () => {
     Object.defineProperty(globalThis, 'Buffer', { get: () => undefined });
     Object.defineProperty(globalThis, 'window', { get: () => originalWindow });
