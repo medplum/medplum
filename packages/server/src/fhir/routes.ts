@@ -313,7 +313,7 @@ protectedRoutes.use(
         graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
         graphqlMaxPageSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxPageSize')?.valueInteger,
         graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
-        transactions: ctx.project.features?.includes('transactions'),
+        transactions: ctx.project.features?.includes('transaction-bundles'),
       },
     };
 

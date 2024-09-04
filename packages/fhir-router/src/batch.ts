@@ -8,7 +8,6 @@ import {
   Event,
   normalizeOperationOutcome,
   notFound,
-  splitN,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
@@ -34,17 +33,17 @@ type BundlePreprocessInfo = {
  * Processes a FHIR batch request.
  *
  * See: https://www.hl7.org/fhir/http.html#transaction
- * @param router - The FHIR router.
- * @param repo - The FHIR repository.
- * @param bundle - The input bundle.
  * @param req - The request for the batch.
+ * @param repo - The FHIR repository.
+ * @param router - The FHIR router.
+ * @param bundle - The input bundle.
  * @returns The bundle response.
  */
 export async function processBatch(
-  router: FhirRouter,
+  req: FhirRequest,
   repo: FhirRepository,
-  bundle: Bundle,
-  req: FhirRequest
+  router: FhirRouter,
+  bundle: Bundle
 ): Promise<Bundle> {
   const processor = new BatchProcessor(router, repo, bundle, req);
   return processor.run();
@@ -156,6 +155,11 @@ class BatchProcessor {
 
       const route = this.getRouteForEntry(entry);
       const interaction = route?.data?.interaction as RestInteraction;
+      if (!interaction || !bucketedEntries[interaction]) {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid REST interaction in batch: ${entry.request?.method} ${entry.request?.url}`)
+        );
+      }
       if (interaction === 'create' && entry.request?.ifNoneExist) {
         // Conditional create requires strong (serializable) transaction to
         // guarantee uniqueness of created resource
@@ -171,7 +175,7 @@ class BatchProcessor {
         // Conditional delete requires strong (serializable) transaction
         requiresStrongTransaction = true;
       }
-      bucketedEntries[interaction]?.push(i);
+      bucketedEntries[interaction].push(i);
     }
 
     const ordering = [];
@@ -250,8 +254,7 @@ class BatchProcessor {
   }
 
   private getRouteForEntry(entry: BundleEntry): RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined {
-    const [requestPath] = splitN(entry.request?.url as string, '?', 2);
-    return this.router.find(entry.request?.method as HttpMethod, requestPath);
+    return this.router.find(entry.request?.method as HttpMethod, entry.request?.url ?? '');
   }
 
   private async resolveCreateIdentity(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
@@ -381,8 +384,7 @@ class BatchProcessor {
    * @returns The bundle entry response.
    */
   private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
-    const [requestPath] = splitN(entry.request?.url as string, '?', 2);
-    const route = this.router.find(entry.request?.method as HttpMethod, requestPath);
+    const route = this.getRouteForEntry(entry);
     if (!route) {
       throw new OperationOutcomeError(notFound);
     }
@@ -439,7 +441,7 @@ class BatchProcessor {
   private parsePatchBody(entry: BundleEntry): any {
     const patchResource = entry.resource;
     if (patchResource?.resourceType !== 'Binary') {
-      throw new OperationOutcomeError(badRequest('Patch operation must include a Binary resource'));
+      throw new OperationOutcomeError(badRequest('Patch entry must include a Binary resource'));
     }
     if (!patchResource.data) {
       throw new OperationOutcomeError(badRequest('Missing entry.resource.data'));
@@ -447,7 +449,7 @@ class BatchProcessor {
 
     const body = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
     if (!Array.isArray(body)) {
-      throw new OperationOutcomeError(badRequest('Patch operation body must be an array'));
+      throw new OperationOutcomeError(badRequest('Patch body must be an array'));
     }
 
     return this.rewriteIdsInArray(body);

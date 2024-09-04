@@ -59504,7 +59504,7 @@
               "terminology",
               "websocket-subscriptions",
               "reference-lookups",
-              "transactions"
+              "transaction-bundles"
             ]
           },
           "type": "array"

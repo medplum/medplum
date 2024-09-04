@@ -11,7 +11,7 @@ import {
 } from '@medplum/core';
 import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { Repository, getSystemRepo } from './repo';
+import { getSystemRepo, Repository } from './repo';
 
 /**
  * Exceptional, system-level references that should use systemRepo for validation

@@ -48,7 +48,7 @@ describe('OAuth2 UserInfo', () => {
     expect(res3.body.email).toBe('admin@example.com');
   });
 
-  test.only('Get userinfo with phone', async () => {
+  test('Get userinfo with phone', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
       email: 'admin@example.com',
       password: 'medplum_admin',

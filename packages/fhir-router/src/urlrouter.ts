@@ -18,7 +18,11 @@ export class Router<Handler, Metadata> {
   }
 
   find(method: HttpMethod, pathStr: string): RouteResult<Handler, Metadata> | undefined {
-    const path = pathStr.split('/').filter((e) => !!e);
+    const queryStart = pathStr.indexOf('?');
+    const path = pathStr
+      .substring(0, queryStart > -1 ? queryStart : pathStr.length)
+      .split('/')
+      .filter((e) => !!e);
     let bestRoute: Route<Handler, Metadata> | undefined = undefined;
     let bestScore = -1;
     for (const route of this.routes) {

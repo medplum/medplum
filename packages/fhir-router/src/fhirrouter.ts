@@ -6,6 +6,7 @@ import {
   normalizeOperationOutcome,
   notFound,
   parseSearchRequest,
+  singularize,
 } from '@medplum/core';
 import {
   CapabilityStatementRestInteraction,
@@ -63,7 +64,7 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
     return [badRequest('Not a bundle')];
   }
 
-  const result = await processBatch(router, repo, bundle, req);
+  const result = await processBatch(req, repo, router, bundle);
   return [allOk, result];
 }
 
@@ -106,11 +107,7 @@ async function createResource(
   const assignedId = Boolean(options?.batch);
 
   if (req.headers?.['if-none-exist']) {
-    let ifNoneExist = req.headers['if-none-exist'];
-    if (Array.isArray(ifNoneExist)) {
-      ifNoneExist = ifNoneExist[0];
-    }
-
+    const ifNoneExist = singularize(req.headers['if-none-exist']);
     const result = await repo.conditionalCreate(resource, parseSearchRequest(`${resourceType}?${ifNoneExist}`), {
       assignedId,
     });

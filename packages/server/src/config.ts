@@ -112,7 +112,6 @@ export interface MedplumDatabaseConfig {
   password?: string;
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
-  maxConnectionsPerServer?: number;
   runMigrations?: boolean;
   maxConnections?: number;
 }

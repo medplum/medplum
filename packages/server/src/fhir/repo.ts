@@ -625,7 +625,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.handleStorage(result, create);
     await this.postCommit(async () => {
       await this.handleBinaryUpdate(existing, result);
-      await this.setCacheEntry(result);
       await addBackgroundJobs(result, existing, { interaction: create ? 'create' : 'update' });
     });
     this.removeHiddenFields(result);
@@ -2184,6 +2183,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async setCacheEntry(resource: Resource): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
+      await this.postCommit(() => this.setCacheEntry(resource));
       return;
     }
 
@@ -2207,6 +2207,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async deleteCacheEntry(resourceType: string, id: string): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
+      await this.postCommit(() => this.deleteCacheEntry(resourceType, id));
       return;
     }
 
@@ -2221,6 +2222,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async deleteCacheEntries(resourceType: string, ids: string[]): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
+      await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
       return;
     }
 

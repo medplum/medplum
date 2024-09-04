@@ -180,7 +180,7 @@
             "definition": "Use Reference lookup table for chained search"
           },
           {
-            "code": "transactions",
+            "code": "transaction-bundles",
             "display": "Transaction Bundles",
             "definition": "Use database transactions for transaction Bundles"
           }
