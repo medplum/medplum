@@ -589,9 +589,9 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
-                code: 'BP',
-                display: 'Billing contact person',
+                system: 'http://terminology.hl7.org/CodeSystem/subscriber-relationship',
+                code: 'self',
+                display: 'Self',
               },
             },
           ],
@@ -632,10 +632,66 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
-                code: 'BP',
-                display: 'Billing contact person',
+                system: 'http://terminology.hl7.org/CodeSystem/subscriber-relationship',
+                code: 'child',
+                display: 'Child',
               },
+            },
+          ],
+        },
+        {
+          id: 'id-108',
+          linkId: 'related-person',
+          text: 'Subscriber Information',
+          item: [
+            {
+              id: 'id-109',
+              linkId: 'related-person-first-name',
+              text: 'First Name',
+              answer: [
+                {
+                  valueString: 'Marge',
+                },
+              ],
+            },
+            {
+              id: 'id-110',
+              linkId: 'related-person-middle-name',
+              text: 'Middle Name',
+            },
+            {
+              id: 'id-111',
+              linkId: 'related-person-last-name',
+              text: 'Last Name',
+              answer: [
+                {
+                  valueString: 'Simpson',
+                },
+              ],
+            },
+            {
+              id: 'id-112',
+              linkId: 'related-person-dob',
+              text: 'Date of Birth',
+              answer: [
+                {
+                  valueDate: '1958-03-19',
+                },
+              ],
+            },
+            {
+              id: 'id-113',
+              linkId: 'related-person-gender-identity',
+              text: 'Gender Identity',
+              answer: [
+                {
+                  valueCoding: {
+                    system: 'http://snomed.info/sct',
+                    code: '446141000124107',
+                    display: 'Identifies as female gender (finding)',
+                  },
+                },
+              ],
             },
           ],
         },

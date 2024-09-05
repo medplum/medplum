@@ -2456,4 +2456,24 @@ describe('AccessPolicy', () => {
         })
       ).rejects.toThrow();
     }));
+
+  test('Server rejects invalid criteria', () =>
+    withTestContext(async () => {
+      await expect(
+        systemRepo.createResource<AccessPolicy>({
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: 'Patient',
+              criteria: 'identifier=123',
+              readonly: true,
+            },
+            {
+              resourceType: 'Patient',
+              criteria: 'Patient',
+            },
+          ],
+        })
+      ).rejects.toThrow(/axp-2/);
+    }));
 });

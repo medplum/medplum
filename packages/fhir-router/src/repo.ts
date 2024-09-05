@@ -366,23 +366,33 @@ export class MemoryRepository extends FhirRepository<undefined> {
     return generateId();
   }
 
-  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
-    resource = deepClone(resource);
+  updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
+    if (!resource.id) {
+      throw new OperationOutcomeError(badRequest('Missing id'));
+    }
+
     if (options?.ifMatch) {
-      const existing = await this.readResource(resource.resourceType, resource.id as string);
-      if (options.ifMatch !== `W/"${existing.meta?.versionId}"`) {
+      const versionId = options.ifMatch;
+      const existing = this.resources.get(resource.resourceType)?.get(resource.id) as T | undefined;
+      if (!existing) {
+        throw new OperationOutcomeError(notFound);
+      }
+
+      if (existing.meta?.versionId !== versionId) {
         throw new OperationOutcomeError(preconditionFailed);
       }
     }
-    if (resource.meta) {
-      if (resource.meta.versionId) {
-        delete resource.meta.versionId;
+
+    const result = deepClone(resource);
+    if (result.meta) {
+      if (result.meta.versionId) {
+        delete result.meta.versionId;
       }
-      if (resource.meta.lastUpdated) {
-        delete resource.meta.lastUpdated;
+      if (result.meta.lastUpdated) {
+        delete result.meta.lastUpdated;
       }
     }
-    return this.createResource(resource);
+    return this.createResource(result);
   }
 
   async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {

@@ -32,9 +32,16 @@ describe('getAnswers', async () => {
   test('answer objects have the correct keys', async () => {
     const repeatedAnswers = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
 
-    const linkedIds = ['insurance-provider', 'subscriber-id', 'relationship-to-subscriber'];
-
-    expect(Object.keys(repeatedAnswers[0])).toEqual(linkedIds);
-    expect(Object.keys(repeatedAnswers[1])).toEqual(linkedIds);
+    expect(Object.keys(repeatedAnswers[0])).toEqual([
+      'insurance-provider',
+      'subscriber-id',
+      'relationship-to-subscriber',
+    ]);
+    expect(Object.keys(repeatedAnswers[1])).toEqual([
+      'insurance-provider',
+      'subscriber-id',
+      'relationship-to-subscriber',
+      'related-person',
+    ]);
   });
 });

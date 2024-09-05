@@ -190,6 +190,84 @@ describe('FHIR Router', () => {
     expect(res).toMatchObject(preconditionFailed);
   });
 
+  test('Update with correct precondition', async () => {
+    const [res1, patient] = await router.handleRequest(
+      {
+        method: 'POST',
+        pathname: '/Patient',
+        body: {
+          resourceType: 'Patient',
+          name: [{ given: ['John'], family: 'Doe' }],
+          active: false,
+        },
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res1).toMatchObject(created);
+    if (!patient) {
+      fail('Expected patient to be defined');
+    }
+    const expectedVersion = patient.meta?.versionId;
+    if (!expectedVersion) {
+      fail('Expected version to be defined');
+    }
+
+    const [res2, updatedPatient] = await router.handleRequest(
+      {
+        method: 'PUT',
+        pathname: `/Patient/${patient?.id}`,
+        body: {
+          ...patient,
+          active: true,
+        },
+        params: {},
+        query: {},
+        headers: { 'if-match': `W/"${expectedVersion}"` },
+      },
+      repo
+    );
+    expect(res2).toMatchObject(allOk);
+    expect((updatedPatient as Patient)?.active).toEqual(true);
+  });
+
+  test('Update incorrect precondition', async () => {
+    const [res1, patient] = await router.handleRequest(
+      {
+        method: 'POST',
+        pathname: '/Patient',
+        body: {
+          resourceType: 'Patient',
+          name: [{ given: ['John'], family: 'Doe' }],
+        },
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res1).toMatchObject(created);
+    if (!patient) {
+      fail('Expected patient to be defined');
+    }
+
+    const [res2] = await router.handleRequest(
+      {
+        method: 'PUT',
+        pathname: `/Patient/${patient?.id}`,
+        body: {
+          ...patient,
+          status: 'active',
+        },
+        params: {},
+        query: {},
+        headers: { 'if-match': 'W/"test"' },
+      },
+      repo
+    );
+    expect(res2).toMatchObject(preconditionFailed);
+  });
+
   test('Search by post', async () => {
     const [res, bundle] = await router.handleRequest(
       {

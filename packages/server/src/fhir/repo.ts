@@ -1305,10 +1305,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       results.push({ reference });
     }
 
-    const maxCompartments = getConfig().maxCompartments;
-    if (maxCompartments !== undefined && results.length > maxCompartments) {
-      throw new OperationOutcomeError(badRequest('Too many compartments', resource.resourceType + '.meta.compartment'));
-    }
     return results;
   }
 
@@ -1934,11 +1930,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private isSuperAdmin(): boolean {
+  isSuperAdmin(): boolean {
     return !!this.context.superAdmin;
   }
 
-  private isProjectAdmin(): boolean {
+  isProjectAdmin(): boolean {
     return !!this.context.projectAdmin;
   }
 

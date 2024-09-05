@@ -1150,22 +1150,6 @@ describe('FHIR Repo', () => {
       expect(results).toHaveLength(0);
     }));
 
-  test('Prevents setting too many compartments', async () =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
-      config.maxCompartments = 3;
-      await initAppServices(config);
-
-      const { repo, client } = await createTestProject({ withRepo: true, withClient: true });
-      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
-      await expect(
-        repo.createResource<Patient>({
-          resourceType: 'Patient',
-          meta: { compartment: [createReference(practitioner), createReference(client)] },
-        })
-      ).rejects.toThrow('Too many compartments (Patient.meta.compartment)');
-    }));
-
   test('setTypedValue', () => {
     const patient: Patient = {
       resourceType: 'Patient',
