@@ -320,7 +320,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         </PillsInput>
       </Combobox.DropdownTarget>
 
-      <Combobox.Dropdown hidden={search.length === 0}>
+      <Combobox.Dropdown hidden={options.length === 0} data-testid={AsyncAutocompleteTestIds.options}>
         <Combobox.Options>
           <ScrollAreaAutosize type="scroll" mah={optionsDropdownMaxHeight}>
             {options.map((item) => {

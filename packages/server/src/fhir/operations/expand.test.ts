@@ -930,6 +930,7 @@ describe('Updated implementation', () => {
       .send(valueSetResource);
     expect(valueSetRes.status).toEqual(201);
     const valueSet = valueSetRes.body as ValueSet;
+
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=a&count=200`)
       .set('Authorization', 'Bearer ' + accessToken);
@@ -938,5 +939,15 @@ describe('Updated implementation', () => {
 
     const expandedCodes = expansion.contains?.map((coding) => coding.code);
     expect(expandedCodes).toHaveLength(0);
+  });
+
+  test('Expand with empty filter', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/task-status|4.0.1&filter=`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(12);
   });
 });
