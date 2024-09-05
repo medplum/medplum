@@ -11,11 +11,10 @@ import {
   checkForDuplicateEvent,
   getExistingMedicationRequest,
   handlePhotonAuth,
-  NEUTRON_HEALTH,
-  NEUTRON_HEALTH_WEBHOOKS,
   photonGraphqlFetch,
   verifyEvent,
 } from './utils';
+import { NEUTRON_HEALTH, NEUTRON_HEALTH_WEBHOOKS } from './system-strings';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<PhotonWebhook>): Promise<MedicationRequest> {
   const webhook = event.input;

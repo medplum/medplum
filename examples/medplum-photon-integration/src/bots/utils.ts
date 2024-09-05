@@ -2,6 +2,7 @@ import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Address, ContactPoint, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
 import { PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
+import { NEUTRON_HEALTH } from './system-strings';
 
 export async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {
   try {
@@ -159,8 +160,3 @@ export async function getExistingMedicationRequest(
 
   return existingPrescription;
 }
-
-export const NEUTRON_HEALTH = 'https://neutron.health';
-export const NEUTRON_HEALTH_WEBHOOKS = 'https://neutron.health/webhoooks';
-export const NEUTRON_HEALTH_PATIENTS = 'https://neutron.health/patients';
-export const NEUTRON_HEALTH_BOTS = 'https://neutron.health/bots';

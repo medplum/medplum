@@ -7,10 +7,9 @@ import {
   getSexType,
   getTelecom,
   handlePhotonAuth,
-  NEUTRON_HEALTH,
-  NEUTRON_HEALTH_PATIENTS,
   photonGraphqlFetch,
 } from './utils';
+import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './system-strings';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<PhotonPatient> {
   const patient = event.input;
