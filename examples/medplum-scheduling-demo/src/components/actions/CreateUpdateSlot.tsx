@@ -3,11 +3,11 @@ import { showNotification } from '@mantine/notifications';
 import { createReference, getQuestionnaireAnswers, normalizeErrorString } from '@medplum/core';
 import { Questionnaire, QuestionnaireItem, QuestionnaireResponse, Reference, Schedule, Slot } from '@medplum/fhirtypes';
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
-import { useContext } from 'react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import { useContext } from 'react';
 import { Event } from 'react-big-calendar';
-import { ScheduleContext } from '../Schedule.context';
-import { BlockAvailabilityEvent } from '../bots/core/block-availability';
+import { ScheduleContext } from '../../Schedule.context';
+import { BlockAvailabilityEvent } from '../../bots/core/block-availability';
 
 interface CreateUpdateSlotProps {
   event: Event | undefined;
@@ -19,6 +19,11 @@ interface CreateUpdateSlotProps {
   };
 }
 
+/**
+ * CreateUpdateSlot component that allows the user to create or update a slot.
+ * @param props - CreateUpdateSlotProps
+ * @returns A React component that displays the modal.
+ */
 export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
   const { event, opened, handlers } = props;
   const medplum = useMedplum();

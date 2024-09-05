@@ -8,16 +8,28 @@ import { useCallback, useContext, useState } from 'react';
 import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
-import { ScheduleContext } from '../Schedule.context';
-import { BlockAvailability } from '../components/BlockAvailability';
-import { SetAvailability } from '../components/SetAvailability';
+import { BlockAvailability } from '../components/actions/BlockAvailability';
+import { CreateAppointment } from '../components/actions/CreateAppointment';
+import { CreateUpdateSlot } from '../components/actions/CreateUpdateSlot';
+import { SetAvailability } from '../components/actions/SetAvailability';
 import { SlotDetails } from '../components/SlotDetails';
+import { ScheduleContext } from '../Schedule.context';
 
+/**
+ * Schedule page that displays the practitioner's schedule.
+ * Allows the practitioner to set availability, block availability, create/update slots, and create
+ * appointments.
+ * @returns A React component that displays the schedule page.
+ */
 export function SchedulePage(): JSX.Element {
   const navigate = useNavigate();
+
   const [blockAvailabilityOpened, blockAvailabilityHandlers] = useDisclosure(false);
   const [setAvailabilityOpened, setAvailabilityHandlers] = useDisclosure(false);
   const [slotDetailsOpened, slotDetailsHandlers] = useDisclosure(false);
+  const [createUpdateSlotOpened, createUpdateSlotHandlers] = useDisclosure(false);
+  const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
+
   const [selectedEvent, setSelectedEvent] = useState<Event>();
   const { schedule } = useContext(ScheduleContext);
 
@@ -55,28 +67,54 @@ export function SchedulePage(): JSX.Element {
       };
     });
 
-  // When a date/time range is selected, set the event object and open the modal
+  /**
+   * When a date/time range is selected, set the event object and open the create slot modal
+   */
   const handleSelectSlot = useCallback(
-    (event: Event) => {
+    (event: Event & { action?: string }) => {
+      if (event.action !== 'select') {
+        return;
+      }
       setSelectedEvent(event);
-      slotDetailsHandlers.open();
+      createUpdateSlotHandlers.open();
     },
-    [slotDetailsHandlers]
+    [createUpdateSlotHandlers]
   );
 
-  // When an exiting event is selected, set the event object and open the modal
+  /**
+   * When an exiting event (slot/appointment) is selected, set the event object and open the
+   * appropriate modal.
+   * - If the event is a free slot, open the create appointment modal.
+   * - If the event is a busy-unavailable slot, open the slot details modal.
+   * - If the event is an appointment, navigate to the appointment page.
+   */
   const handleSelectEvent = useCallback(
     (event: Event) => {
-      if (event.resource.resourceType === 'Slot') {
-        // If it's a slot open the management modal
+      const { resourceType, status, id } = event.resource;
+
+      function handleSlot(): void {
         setSelectedEvent(event);
-        slotDetailsHandlers.open();
-      } else if (event.resource.resourceType === 'Appointment') {
-        // If it's an appointment navigate to the appointment detail page
-        navigate(`/Appointment/${event.resource.id}`);
+        if (status === 'free') {
+          createAppointmentHandlers.open();
+        } else {
+          slotDetailsHandlers.open();
+        }
+      }
+
+      function handleAppointment(): void {
+        navigate(`/Appointment/${id}`);
+      }
+
+      if (resourceType === 'Slot') {
+        handleSlot();
+        return;
+      }
+
+      if (resourceType === 'Appointment') {
+        handleAppointment();
       }
     },
-    [slotDetailsHandlers, navigate]
+    [slotDetailsHandlers, createAppointmentHandlers, navigate]
   );
 
   return (
@@ -102,7 +140,7 @@ export function SchedulePage(): JSX.Element {
         backgroundEvents={slotEvents} // Background events don't show in the month view
         onSelectSlot={handleSelectSlot}
         onSelectEvent={handleSelectEvent}
-        scrollToTime={new Date()} // Scroll to current time
+        scrollToTime={new Date()} // Default scroll to current time
         style={{ height: 600 }}
         selectable
       />
@@ -110,7 +148,9 @@ export function SchedulePage(): JSX.Element {
       {/* Modals */}
       <SetAvailability opened={setAvailabilityOpened} handlers={setAvailabilityHandlers} />
       <BlockAvailability opened={blockAvailabilityOpened} handlers={blockAvailabilityHandlers} />
+      <CreateUpdateSlot event={selectedEvent} opened={createUpdateSlotOpened} handlers={createUpdateSlotHandlers} />
       <SlotDetails event={selectedEvent} opened={slotDetailsOpened} handlers={slotDetailsHandlers} />
+      <CreateAppointment event={selectedEvent} opened={createAppointmentOpened} handlers={createAppointmentHandlers} />
     </Document>
   );
 }
