@@ -37,6 +37,7 @@ export interface MedplumServerConfig {
   recaptchaSiteKey?: string;
   recaptchaSecretKey?: string;
   maxJsonSize: string;
+  maxBatchSize: string;
   allowedOrigins?: string;
   awsRegion: string;
   botLambdaRoleArn: string;
@@ -276,6 +277,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.userInfoUrl = config.userInfoUrl || config.baseUrl + '/userinfo';
   config.storageBaseUrl = config.storageBaseUrl || config.baseUrl + '/storage';
   config.maxJsonSize = config.maxJsonSize || '1mb';
+  config.maxBatchSize = config.maxBatchSize || '50mb';
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;

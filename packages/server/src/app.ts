@@ -1,5 +1,5 @@
-import { badRequest, ContentType } from '@medplum/core';
-import { OperationOutcome } from '@medplum/fhirtypes';
+import { accepted, badRequest, ContentType } from '@medplum/core';
+import { Bundle, OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
 import { Express, json, NextFunction, Request, Response, Router, text, urlencoded } from 'express';
@@ -15,6 +15,7 @@ import {
   attachRequestContext,
   AuthenticatedRequestContext,
   closeRequestContext,
+  getAuthenticatedContext,
   getLogger,
   getRequestContext,
   requestContextStore,
@@ -44,6 +45,9 @@ import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
+import { authenticateRequest } from './oauth/middleware';
+import { queueBatchProcessing } from './workers/batch';
+import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
 
 let server: http.Server | undefined = undefined;
 
@@ -145,6 +149,31 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(attachRequestContext);
   app.use(getRateLimiter(config));
   app.use('/fhir/R4/Binary', binaryRouter);
+
+  // Handle async batch by enqueueing job
+  app.post(
+    '/fhir/R4/',
+    authenticateRequest,
+    asyncWrap(async (req, res, next) => {
+      if (req.get('Prefer') !== 'respond-async') {
+        next();
+        return;
+      }
+
+      const { repo } = getAuthenticatedContext();
+
+      const bundle = req.body as Bundle;
+      const exec = new AsyncJobExecutor(repo);
+      await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
+      await exec.run(async (asyncJob) => {
+        await queueBatchProcessing(bundle, asyncJob);
+      });
+
+      const { baseUrl } = getConfig();
+      sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+    })
+  );
+
   app.use(
     urlencoded({
       extended: false,
