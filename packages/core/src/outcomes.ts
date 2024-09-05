@@ -84,6 +84,34 @@ export const unauthorized: OperationOutcome = {
   ],
 };
 
+export const unauthorizedTokenExpired: OperationOutcome = {
+  ...unauthorized,
+  issue: [
+    ...unauthorized.issue,
+    {
+      severity: 'error',
+      code: 'expired',
+      details: {
+        text: 'Token expired',
+      },
+    },
+  ],
+};
+
+export const unauthorizedTokenAudience: OperationOutcome = {
+  ...unauthorized,
+  issue: [
+    ...unauthorized.issue,
+    {
+      severity: 'error',
+      code: 'invalid',
+      details: {
+        text: 'Token not issued for this audience',
+      },
+    },
+  ],
+};
+
 export const forbidden: OperationOutcome = {
   resourceType: 'OperationOutcome',
   id: FORBIDDEN_ID,
@@ -262,6 +290,10 @@ export function isConflict(outcome: OperationOutcome): boolean {
 
 export function isGone(outcome: OperationOutcome): boolean {
   return outcome.id === GONE_ID;
+}
+
+export function isUnauthenticated(outcome: OperationOutcome): boolean {
+  return outcome.id === UNAUTHORIZED_ID;
 }
 
 export function getStatus(outcome: OperationOutcome): number {

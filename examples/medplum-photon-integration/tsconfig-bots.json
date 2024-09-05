@@ -26,7 +26,7 @@
     "strictPropertyInitialization": true,
     "allowJs": true,
     "resolveJsonModule": true,
-    "noEmit": false,
+    "noEmit": true,
     "isolatedModules": true
   },
   "include": ["src/bots/*.ts"]
