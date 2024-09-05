@@ -1,6 +1,6 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { createHmac } from 'crypto';
-import { PhotonWebhook } from './../photon-types';
+import { PhotonWebhook } from '../photon-types';
 
 export async function handler(_medplum: MedplumClient, event: BotEvent<PhotonWebhook>): Promise<void> {
   const webhook = event.input;
