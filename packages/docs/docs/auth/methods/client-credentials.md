@@ -30,8 +30,10 @@ curl -X POST https://api.medplum.com/oauth2/token \
     -H "Content-Type: application/x-www-form-urlencoded" \
     -d "grant_type=client_credentials&client_id=$MY_CLIENT_ID&client_secret=$MY_CLIENT_SECRET"
 ```
-
   </TabItem>
+  
+  Note: If you are hosting this on localhost, without editing the configuration file, the URL will be http:<nolink>//localhost:8103/oauth2/token .
+
   <TabItem value="python" label="Python">
 
 ```py
