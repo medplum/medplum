@@ -1,5 +1,5 @@
 import { PhotonWebhook } from '../photon-types';
-import { verifyEvent } from './handle-webhooks';
+import { verifyEvent } from './handle-order-event';
 
 test.skip('Verify photon signature', async () => {
   const result = verifyEvent(exampleWebhookEvent, 'example-secret');
@@ -8,6 +8,11 @@ test.skip('Verify photon signature', async () => {
 });
 
 const exampleWebhookEvent: PhotonWebhook = {
+  method: 'POST',
+  query: {},
+  path: '/',
+  client_ip: 'example-ip',
+  url: 'https://neutron.health',
   headers: {
     'Content-Type': 'application/json',
     'x-photon-signature': 'verification-test',

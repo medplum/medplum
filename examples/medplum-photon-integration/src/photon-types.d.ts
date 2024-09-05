@@ -209,6 +209,11 @@ export type PhotonMedHistoryInput = {
 };
 
 export interface PhotonWebhook {
+  method: 'POST';
+  path: string;
+  query: Record<string, string>;
+  client_ip: string;
+  url: string;
   headers: Record<string, string>;
   body: PhotonEvent;
 }
@@ -249,10 +254,10 @@ type OrderData = {
 
 type PrescriptionData = {
   id: string;
-  externalId: string;
+  externalId?: string;
   patient: {
     id: string;
-    externalId: string;
+    externalId?: string;
   };
 };
 
@@ -347,7 +352,7 @@ interface PrescriptionCreatedEvent extends BasePhotonEvent {
   data: PrescriptionCreatedData;
 }
 
-interface PrescriptionDepletedEvent extends BasePhotonEvent {
+export interface PrescriptionDepletedEvent extends BasePhotonEvent {
   type: 'photon:prescription:depleted';
   data: PrescriptionData;
 }

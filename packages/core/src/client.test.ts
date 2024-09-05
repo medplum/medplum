@@ -33,6 +33,8 @@ import {
   notFound,
   serverError,
   unauthorized,
+  unauthorizedTokenAudience,
+  unauthorizedTokenExpired,
 } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
@@ -996,13 +998,9 @@ describe('Client', () => {
     });
 
     const client = new MedplumClient({ fetch });
-    try {
-      client.setBasicAuth(clientId, clientSecret);
-      await client.startClientLogin(clientId, clientSecret);
-      throw new Error('test');
-    } catch (err) {
-      expect((err as Error).message).toBe('Token was not issued for this audience');
-    }
+    client.setBasicAuth(clientId, clientSecret);
+    const result = client.startClientLogin(clientId, clientSecret);
+    await expect(result).rejects.toThrow(new OperationOutcomeError(unauthorizedTokenAudience));
   });
 
   test('Basic auth and startClientLogin with fetched token contains mismatched cid', async () => {
@@ -1018,13 +1016,9 @@ describe('Client', () => {
     });
 
     const client = new MedplumClient({ fetch });
-    try {
-      client.setBasicAuth(clientId, clientSecret);
-      await client.startClientLogin(clientId, clientSecret);
-      throw new Error('test');
-    } catch (err) {
-      expect((err as Error).message).toBe('Token was not issued for this audience');
-    }
+    client.setBasicAuth(clientId, clientSecret);
+    const result = client.startClientLogin(clientId, clientSecret);
+    await expect(result).rejects.toThrow(new OperationOutcomeError(unauthorizedTokenAudience));
   });
 
   test('Basic auth and startClientLogin Failed to fetch tokens', async () => {
@@ -1055,13 +1049,9 @@ describe('Client', () => {
     });
 
     const client = new MedplumClient({ fetch });
-    try {
-      client.setBasicAuth(clientId, clientSecret);
-      await client.startClientLogin(clientId, clientSecret);
-      throw new Error('test');
-    } catch (err) {
-      expect((err as Error).message).toBe('Token expired');
-    }
+    client.setBasicAuth(clientId, clientSecret);
+    const result = client.startClientLogin(clientId, clientSecret);
+    await expect(result).rejects.toThrow(new OperationOutcomeError(unauthorizedTokenExpired));
   });
 
   test('Invite user', async () => {
@@ -1146,7 +1136,7 @@ describe('Client', () => {
     const onUnauthenticated = jest.fn();
     const client = new MedplumClient({ fetch, onUnauthenticated });
     const result = client.get('expired');
-    await expect(result).rejects.toThrow('Unauthenticated');
+    await expect(result).rejects.toThrow(new OperationOutcomeError(unauthorized));
     expect(onUnauthenticated).toHaveBeenCalled();
   });
 
@@ -2071,7 +2061,9 @@ describe('Client', () => {
           await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('The request is not good');
           break;
         case 401:
-          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Unauthenticated');
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
+            new OperationOutcomeError(unauthorized)
+          );
           break;
         case 404:
           await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Not found');
