@@ -5,12 +5,13 @@
   "type": "module",
   "scripts": {
     "build": "npm run build:bots && tsc && vite build",
-    "build:bots": "npm run clean && npm run lint && tsc --project tsconfig-bots.json && node --loader ts-node/esm src/scripts/deploy-bots.ts",
+    "build:bots": "npm run clean && tsc --project tsconfig-bots.json && node --no-warnings esbuild-script.mjs && node --loader ts-node/esm src/scripts/deploy-bots.ts",
     "clean": "rimraf dist",
     "dev": "vite",
     "preview": "vite preview",
     "lint": "eslint src/",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coveragex"
   },
   "prettier": {
     "printWidth": 120,
@@ -37,6 +38,7 @@
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
     "postcss": "8.4.44",
+    "esbuild": "0.23.0",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",

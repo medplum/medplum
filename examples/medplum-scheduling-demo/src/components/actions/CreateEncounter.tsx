@@ -39,7 +39,7 @@ export function CreateEncounter(props: CreateEncounterProps): JSX.Element {
       let encounter: Encounter = {
         resourceType: 'Encounter',
         status: 'finished',
-        subject: createReference(patient),
+        subject: patientReference,
         appointment: [createReference(appointment)],
         class: {
           system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',

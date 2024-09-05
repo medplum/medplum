@@ -1,10 +1,10 @@
 import { Button, Stack, Title } from '@mantine/core';
-import { IconClock } from '@tabler/icons-react';
 import { Patient } from '@medplum/fhirtypes';
-import { useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
-import { ScheduleContext } from '../Schedule.context';
 import { Loading } from '@medplum/react';
+import { IconClock } from '@tabler/icons-react';
+import { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ScheduleContext } from '../../Schedule.context';
 
 interface PatientActionsProps {
   patient: Patient;

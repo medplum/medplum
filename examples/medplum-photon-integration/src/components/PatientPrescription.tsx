@@ -5,6 +5,7 @@ import { Patient } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useState } from 'react';
+import { NEUTRON_HEALTH_BOTS, NEUTRON_HEALTH_PATIENTS } from './../bots/system-strings';
 
 interface PatientPrescriptionProps {
   patient: Patient;
@@ -13,7 +14,7 @@ interface PatientPrescriptionProps {
 export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.Element {
   const medplum = useMedplum();
 
-  const patientSynced = patient.identifier?.find((id) => id.system === 'https://neutron.health/patients');
+  const patientSynced = patient.identifier?.find((id) => id.system === NEUTRON_HEALTH_PATIENTS);
   const patientPhotonId = patientSynced?.value;
   const [syncDisabled, setSyncDisabled] = useState<boolean>(!!patientSynced);
 
@@ -21,7 +22,7 @@ export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.
     try {
       const result = await medplum.executeBot(
         {
-          system: 'https://neutron.health/bots',
+          system: NEUTRON_HEALTH_BOTS,
           value: 'test-auth',
         },
         {},
@@ -48,7 +49,7 @@ export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.
     try {
       await medplum.executeBot(
         {
-          system: 'https://neutron.health/bots',
+          system: NEUTRON_HEALTH_BOTS,
           value: 'sync-patient',
         },
         {
