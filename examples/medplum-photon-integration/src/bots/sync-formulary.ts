@@ -1,6 +1,6 @@
-import { BotEvent, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { BotEvent, MedplumClient } from '@medplum/core';
 import { List, MedicationKnowledge } from '@medplum/fhirtypes';
-import { handlePhotonAuth } from './utils';
+import { handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<List>) {
   const formulary = event.input;
@@ -74,7 +74,7 @@ async function getCatalogId(authToken: string): Promise<string> {
 
   const body = JSON.stringify({ query });
   const result = await photonGraphqlFetch(body, authToken);
-  return result.data.catalogs?.[0].id;
+  return result.data.catalogs?.[0]?.id;
 }
 
 async function getPhotonMedication(authToken: string, code?: string): Promise<string | undefined> {
@@ -98,27 +98,5 @@ async function getPhotonMedication(authToken: string, code?: string): Promise<st
   const body = JSON.stringify({ query, variables });
 
   const result = await photonGraphqlFetch(body, authToken);
-  return result.data.medications?.[0].id;
-}
-
-async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {
-  try {
-    const response = await fetch('https://api.neutron.health/graphql', {
-      method: 'POST',
-      headers: {
-        Authorization: 'Bearer ' + authToken,
-        'Content-Type': 'application/json',
-      },
-      body,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP Error! Status: ${response.status} ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    return result;
-  } catch (err) {
-    throw new Error(normalizeErrorString(err));
-  }
+  return result.data.medications?.[0]?.id;
 }
