@@ -7,6 +7,8 @@ import {
   getSexType,
   getTelecom,
   handlePhotonAuth,
+  NEUTRON_HEALTH,
+  NEUTRON_HEALTH_PATIENTS,
   photonGraphqlFetch,
 } from './utils';
 
@@ -93,7 +95,7 @@ async function updatePatient(medplum: MedplumClient, patient: Patient, result: a
   const photonId = patientData.id;
 
   const photonIdentifier: Identifier = {
-    system: 'https://neutron.health/patients',
+    system: NEUTRON_HEALTH_PATIENTS,
     value: photonId,
   };
 
@@ -249,7 +251,7 @@ function getIdentifier(identifiers?: Identifier[]): string | undefined {
     return undefined;
   }
 
-  const photonId = identifiers.find((id) => id.system === 'https://neutron.health')?.value;
+  const photonId = identifiers.find((id) => id.system === NEUTRON_HEALTH)?.value;
   return photonId;
 }
 

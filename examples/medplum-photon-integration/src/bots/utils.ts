@@ -146,7 +146,7 @@ export async function getExistingMedicationRequest(
   const photonId = data.id;
 
   let existingPrescription = await medplum.searchOne('MedicationRequest', {
-    identifier: `https://neutron.health|${photonId}`,
+    identifier: NEUTRON_HEALTH + `|${photonId}`,
   });
 
   if (existingPrescription) {
@@ -159,3 +159,8 @@ export async function getExistingMedicationRequest(
 
   return existingPrescription;
 }
+
+export const NEUTRON_HEALTH = 'https://neutron.health';
+export const NEUTRON_HEALTH_WEBHOOKS = 'https://neutron.health/webhoooks';
+export const NEUTRON_HEALTH_PATIENTS = 'https://neutron.health/patients';
+export const NEUTRON_HEALTH_BOTS = 'https://neutron.health/bots';

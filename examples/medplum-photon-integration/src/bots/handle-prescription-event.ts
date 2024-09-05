@@ -11,6 +11,8 @@ import {
   checkForDuplicateEvent,
   getExistingMedicationRequest,
   handlePhotonAuth,
+  NEUTRON_HEALTH,
+  NEUTRON_HEALTH_WEBHOOKS,
   photonGraphqlFetch,
   verifyEvent,
 } from './utils';
@@ -38,10 +40,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PhotonWebh
   }
 
   // Photon notes that webhooks may be duplicated. This checks if the current event has already been processed
-  const dupe = checkForDuplicateEvent(webhook, existingPrescription);
+  const isDuplicateEvent = checkForDuplicateEvent(webhook, existingPrescription);
 
   // If it is a dupe, return the already processed prescription
-  if (dupe && existingPrescription) {
+  if (isDuplicateEvent && existingPrescription) {
     return existingPrescription;
   }
 
@@ -82,8 +84,8 @@ export async function handleUpdatePrescription(
 
   const updatedStatus = body.type === 'photon:prescription:depleted' ? 'completed' : 'stopped';
   const identifiers = existingPrescription.identifier ?? [];
-  identifiers.push({ system: 'https://neutron.health/webhooks', value: body.id });
-  const op = existingPrescription.identifier ? 'replace' : 'add';
+  identifiers.push({ system: NEUTRON_HEALTH_WEBHOOKS, value: body.id });
+  const op = 'add';
 
   const id = body.data.externalId as string;
   const ops: PatchOperation[] = [
@@ -128,8 +130,8 @@ export async function handleCreatePrescription(
     intent: 'order',
     subject: { reference: `Patient/${data.patient.externalId}` },
     identifier: [
-      { system: 'https://neutron.health/webhooks', value: event.id },
-      { system: 'https://neutron.health', value: data.id },
+      { system: NEUTRON_HEALTH_WEBHOOKS, value: event.id },
+      { system: NEUTRON_HEALTH, value: data.id },
     ],
     dispenseRequest: {
       quantity: {
@@ -143,7 +145,7 @@ export async function handleCreatePrescription(
         end: data.expirationDate,
       },
     },
-    substitution: { allowedBoolean: data.dispenseAsWritten },
+    substitution: { allowedBoolean: !data.dispenseAsWritten },
     dosageInstruction: [{ patientInstruction: data.instructions }],
     note: [{ text: data.notes }],
   };
@@ -209,7 +211,7 @@ async function getPrescriber(
   const prescriberId = prescriptionData.prescriberId;
   // Search for an existing practitioner with a photon identifier
   const trackedPractitioner = await medplum.searchOne('Practitioner', {
-    identifier: `https://neutron.health|${prescriberId}`,
+    identifier: NEUTRON_HEALTH + `|${prescriberId}`,
   });
 
   // Return the practitioner if they are already tracked in Medplum
@@ -286,7 +288,7 @@ async function getMedicationKnowledge(
   authToken: string
 ): Promise<MedicationKnowledge | undefined> {
   const trackedMedication = await medplum.searchOne('MedicationKnowledge', {
-    identifier: `https://neutron.health|${photonMedicationId}`,
+    identifier: NEUTRON_HEALTH + `|${photonMedicationId}`,
   });
 
   if (trackedMedication) {

@@ -27,7 +27,7 @@ describe('Prescription webhooks', async () => {
     return {
       ...actualModule,
       verifyEvent: vi.fn().mockImplementation(() => true),
-      // handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+      handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
     };
   });
 
