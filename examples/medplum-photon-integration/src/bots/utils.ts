@@ -154,9 +154,10 @@ export async function getExistingMedicationRequest(
     return existingPrescription;
   }
 
-  existingPrescription = await medplum.searchOne('MedicationRequest', {
-    _id: id,
-  });
+  if (!id) {
+    return undefined;
+  }
+  existingPrescription = await medplum.readResource('MedicationRequest', id);
 
   return existingPrescription;
 }

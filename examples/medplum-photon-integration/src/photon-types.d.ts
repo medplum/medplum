@@ -93,7 +93,7 @@ export type PhotonOrder = {
 export type Fill = {
   id: string;
   treatment: PhotonTreatment;
-  prescription?: PhotonPrescription;
+  prescription?: Partial<PhotonPrescription>;
   state: 'SCHEDULED' | 'NEW' | 'SENT' | 'CANCELED';
   requestedAt: string;
   filledAt?: string;
@@ -263,13 +263,7 @@ type PrescriptionData = {
 
 interface OrderCreatedData extends OrderData {
   pharmacyId: string;
-  fills: {
-    id: string;
-    prescription: {
-      id: string;
-      externalId: string;
-    };
-  }[];
+  fills: Partial<Fill>[];
   createdAt: string;
 }
 
@@ -362,14 +356,15 @@ interface PrescriptionExpiredEvent extends BasePhotonEvent {
   data: PrescriptionData;
 }
 
-export type PhotonEvent =
+export type OrderEvent =
   | OrderCreatedEvent
   | OrderPlacedEvent
   | OrderFulfillmentEvent
   | OrderCompletedEvent
   | OrderCanceledEvent
   | OrderReroutedEvent
-  | OrderErrorEvent
-  | PrescriptionCreatedEvent
-  | PrescriptionDepletedEvent
-  | PrescriptionExpiredEvent;
+  | OrderErrorEvent;
+
+export type PrescriptionEvent = PrescriptionCreatedEvent | PrescriptionDepletedEvent | PrescriptionExpiredEvent;
+
+export type PhotonEvent = OrderEvent | PrescriptionEvent;
