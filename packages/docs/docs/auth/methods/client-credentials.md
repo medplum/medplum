@@ -32,7 +32,7 @@ curl -X POST https://api.medplum.com/oauth2/token \
 ```
   </TabItem>
   
-  Note: If you are hosting this on localhost, without editing the configuration file, the URL will be http:<nolink>//localhost:8103/oauth2/token .
+  Note: If you are hosting this on localhost, without editing the configuration file, the URL will be http:<nolink></nolink>//localhost:8103/oauth2/token .
 
   <TabItem value="python" label="Python">
 
