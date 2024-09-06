@@ -2776,7 +2776,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Authentication
    */
   isLoading(): boolean {
-    return !this.isInitialized || (!!this.profilePromise && !this.sessionDetails?.profile);
+    return !this.isInitialized || (Boolean(this.profilePromise) && !this.sessionDetails?.profile);
   }
 
   /**
