@@ -21,6 +21,7 @@ import {
   PhotonPrescription,
   PhotonWebhook,
 } from '../photon-types';
+import { NEUTRON_HEALTH, NEUTRON_HEALTH_WEBHOOKS } from './system-strings';
 import { getExistingMedicationRequest, handlePhotonAuth, photonGraphqlFetch, verifyEvent } from './utils';
 
 export async function handler(
@@ -90,7 +91,7 @@ export async function updateMedicationRequest(
   const updateStatus = checkForStatusUpdate(body.type, existingRequest.status);
 
   const identifier: Identifier[] = existingRequest.identifier ?? [];
-  identifier.push({ system: 'https://neutron.health/webhooks', value: body.id });
+  identifier.push({ system: NEUTRON_HEALTH_WEBHOOKS, value: body.id });
 
   // Create a medication request to hold the data and update the status if necessary
   const updatedRequestData: MedicationRequest = { ...existingRequest, identifier };
@@ -173,8 +174,8 @@ export async function createMedicationRequest(
     intent: 'order',
     subject: { reference: getReferenceString(patient) },
     identifier: [
-      { system: 'https://neutron.health', value: body.data.id },
-      { system: 'https://neutron.health/webhooks', value: body.id },
+      { system: NEUTRON_HEALTH, value: body.data.id },
+      { system: NEUTRON_HEALTH_WEBHOOKS, value: body.id },
     ],
   };
 
@@ -253,7 +254,7 @@ async function createMedicationDispense(
   const fillData = await getPhotonFillData(fill, authToken);
   // Search for the prescription linked to the fills
   const prescription = await medplum.searchOne('MedicationRequest', {
-    identifier: `https://neutron.health|${fillData.prescription?.id ?? ''}`,
+    identifier: NEUTRON_HEALTH + `|${fillData.prescription?.id ?? ''}`,
   });
 
   const pharmacy = request.dispenseRequest?.performer;
@@ -272,7 +273,7 @@ async function createMedicationDispense(
   const medicationDispenseData: MedicationDispense = {
     resourceType: 'MedicationDispense',
     status: getFillStatus(fillData.state),
-    identifier: [{ system: 'https://neutron.health', value: fillData.id }],
+    identifier: [{ system: NEUTRON_HEALTH, value: fillData.id }],
     authorizingPrescription,
     medicationCodeableConcept: {
       coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: fill.treatment?.codes.rxcui }],
@@ -392,7 +393,7 @@ async function updateExistingFill(
 async function getExistingFill(fill: Partial<Fill>, medplum: MedplumClient): Promise<MedicationDispense | undefined> {
   const photonId = fill.id;
   const existingFill = await medplum.searchOne('MedicationDispense', {
-    identifier: `https://neutron.health|${photonId}`,
+    identifier: NEUTRON_HEALTH + `|${photonId}`,
   });
 
   return existingFill;
@@ -407,7 +408,7 @@ async function getExistingFill(fill: Partial<Fill>, medplum: MedplumClient): Pro
  */
 export function handleErrorData(data: OrderErrorData, request: MedicationRequest): MedicationRequest {
   const updatedRequest = { ...request };
-  updatedRequest.statusReason = { coding: [{ system: 'https://neutron.health', code: data.reason }] };
+  updatedRequest.statusReason = { coding: [{ system: NEUTRON_HEALTH, code: data.reason }] };
   return updatedRequest;
 }
 
@@ -508,7 +509,7 @@ export async function getLinkedPrescription(
   }
 
   const medicationRequest: MedicationRequest | undefined = await medplum.searchOne('MedicationRequest', {
-    identifier: `https://neutron.health|${prescription.id}`,
+    identifier: NEUTRON_HEALTH + `|${prescription.id}`,
   });
 
   if (!medicationRequest) {
@@ -530,7 +531,7 @@ async function createPharmacy(data: OrderReroutedData, medplum: MedplumClient): 
   const pharmacy: Organization = {
     resourceType: 'Organization',
     name: pharmacyData.name,
-    identifier: [{ system: 'https://neutron.health', value: pharmacyData.id }],
+    identifier: [{ system: NEUTRON_HEALTH, value: pharmacyData.id }],
     type: [
       {
         coding: [
@@ -565,7 +566,7 @@ async function handleFulfillment(
 ): Promise<void> {
   const supplyDelivery: SupplyDelivery = {
     resourceType: 'SupplyDelivery',
-    identifier: [{ system: `https://neutron.health/${fulfillment.carrier}`, value: fulfillment.trackingNumber }],
+    identifier: [{ system: NEUTRON_HEALTH + `/${fulfillment.carrier}`, value: fulfillment.trackingNumber }],
     suppliedItem: {
       itemCodeableConcept: request.medicationCodeableConcept,
     },
@@ -616,7 +617,7 @@ export async function getPatient(
   let patient: Patient | undefined;
   // Search for the patient based on the photon ID
   patient = await medplum.searchOne('Patient', {
-    identifier: `https://neutron.health|${photonId}`,
+    identifier: NEUTRON_HEALTH + `|${photonId}`,
   });
 
   if (patient) {

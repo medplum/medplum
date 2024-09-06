@@ -5,7 +5,7 @@ import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
 import { PhotonWebhook } from '../photon-types';
 import { checkForStatusUpdate, getStatus, handler } from './handle-order-event';
-import { NEUTRON_HEALTH } from './system-strings';
+import { NEUTRON_HEALTH, NEUTRON_HEALTH_WEBHOOKS } from './system-strings';
 import {
   canceledWebhook,
   completedWebhook,
@@ -43,8 +43,8 @@ describe('Order webhook handler', async () => {
       intent: 'order',
       subject: { reference: 'Patient/123' },
       identifier: [
-        { system: 'https://neutron.health', value: 'ord_01J5RHM42NS4WA666RJVP02N45' },
-        { system: 'https://neutron.health/webhooks', value: '01J5RHM4DVKA7YGE0AR3J4MS31' },
+        { system: NEUTRON_HEALTH, value: 'ord_01J5RHM42NS4WA666RJVP02N45' },
+        { system: NEUTRON_HEALTH_WEBHOOKS, value: '01J5RHM4DVKA7YGE0AR3J4MS31' },
       ],
     });
 
@@ -64,14 +64,14 @@ describe('Order webhook handler', async () => {
     const medplum = new MockClient();
     const mockPatient: Patient = await medplum.createResource({
       resourceType: 'Patient',
-      identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'pat_ieUv67viS0lG18JN' }],
     });
     const existingRequest: MedicationRequest = await medplum.createResource({
       resourceType: 'MedicationRequest',
       status: 'active',
       intent: 'order',
       subject: { reference: getReferenceString(mockPatient) },
-      identifier: [{ system: 'https://neutron.health', value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
     });
 
     // Updating an order from a placed webhook does not provide any new data. However, it will still be updated with a new identifier, so the versionId should be updated.
@@ -85,14 +85,14 @@ describe('Order webhook handler', async () => {
     const medplum = new MockClient();
     const mockPatient: Patient = await medplum.createResource({
       resourceType: 'Patient',
-      identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'pat_ieUv67viS0lG18JN' }],
     });
     const existingRequest: MedicationRequest = await medplum.createResource({
       resourceType: 'MedicationRequest',
       status: 'active',
       intent: 'order',
       subject: { reference: getReferenceString(mockPatient) },
-      identifier: [{ system: 'https://neutron.health', value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
     });
 
     const updatedOrder = await handler(medplum, { bot, contentType, input: errorWebhook, secrets: {} });
@@ -107,14 +107,14 @@ describe('Order webhook handler', async () => {
     const medplum = new MockClient();
     const mockPatient: Patient = await medplum.createResource({
       resourceType: 'Patient',
-      identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'pat_ieUv67viS0lG18JN' }],
     });
     const existingRequest: MedicationRequest = await medplum.createResource({
       resourceType: 'MedicationRequest',
       status: 'active',
       intent: 'order',
       subject: { reference: getReferenceString(mockPatient) },
-      identifier: [{ system: 'https://neutron.health', value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
     });
 
     const updatedOrder = await handler(medplum, { bot, contentType, input: canceledWebhook, secrets: {} });
@@ -128,14 +128,14 @@ describe('Order webhook handler', async () => {
     const medplum = new MockClient();
     const mockPatient: Patient = await medplum.createResource({
       resourceType: 'Patient',
-      identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'pat_ieUv67viS0lG18JN' }],
     });
     const existingRequest: MedicationRequest = await medplum.createResource({
       resourceType: 'MedicationRequest',
       status: 'active',
       intent: 'order',
       subject: { reference: getReferenceString(mockPatient) },
-      identifier: [{ system: 'https://neutron.health', value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'ord_01G8AHAFDJ7FV2Y77FVWA19009' }],
     });
 
     const updatedOrder = await handler(medplum, { bot, contentType, input: completedWebhook, secrets: {} });
@@ -149,14 +149,14 @@ describe('Order webhook handler', async () => {
     const medplum = new MockClient();
     const mockPatient: Patient = await medplum.createResource({
       resourceType: 'Patient',
-      identifier: [{ system: 'https://neutron.health', value: 'pat_01J5RHGXB2ZJFQ7B694CQGSGT5' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'pat_01J5RHGXB2ZJFQ7B694CQGSGT5' }],
     });
     const existingRequest: MedicationRequest = await medplum.createResource({
       resourceType: 'MedicationRequest',
       status: 'active',
       intent: 'order',
       subject: { reference: getReferenceString(mockPatient) },
-      identifier: [{ system: 'https://neutron.health', value: 'ord_01J5RHM42NS4WA666RJVP02N45' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'ord_01J5RHM42NS4WA666RJVP02N45' }],
     });
     // Create a prescription that the order is linked to
     await medplum.createResource({
@@ -164,7 +164,7 @@ describe('Order webhook handler', async () => {
       status: 'active',
       intent: 'order',
       subject: { reference: getReferenceString(mockPatient) },
-      identifier: [{ system: 'https://neutron.health', value: 'rx_01J5RHKZZQXWAHMXKPT9CF1S6N' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'rx_01J5RHKZZQXWAHMXKPT9CF1S6N' }],
     });
 
     const testWebhook = { ...createdWebhook };
@@ -202,12 +202,12 @@ describe('Order webhook handler', async () => {
       status: 'active',
       intent: 'proposal',
       subject: { reference: getReferenceString(patient) },
-      identifier: [{ system: 'https://neutron.health', value: 'rx_01J5RHKZZQXWAHMXKPT9CF1S6N' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'rx_01J5RHKZZQXWAHMXKPT9CF1S6N' }],
     });
 
     const pharmacy: Organization = await medplum.createResource({
       resourceType: 'Organization',
-      identifier: [{ system: 'https://neutron.health', value: 'phr_01GA9HPXNXTFEQV4146CZ4BN6M' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'phr_01GA9HPXNXTFEQV4146CZ4BN6M' }],
     });
 
     const createdWebhook: PhotonWebhook = {
@@ -238,7 +238,7 @@ describe('Order webhook handler', async () => {
     const medplum = new MockClient();
     const patient: Patient = await medplum.createResource({
       resourceType: 'Patient',
-      identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
+      identifier: [{ system: NEUTRON_HEALTH, value: 'pat_ieUv67viS0lG18JN' }],
     });
 
     await medplum.createResource({
