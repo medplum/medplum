@@ -119,7 +119,7 @@ And we just have a built-in implementation as well as allowing people to [bring 
 
 So this is, this is the Medplum overview. And I'll just like compare and contrast that with traditional software healthcare software, which is like a full stack SaaS application that exposes some interfaces. In this model, it's hard to program a system like this. The developer experiences is poor.
 
-Systems that we've built like this tend to be **brittle and slow**, and introp is an afterthought. So we, want to think about how to do this a bit differently from the traditional way. We believe that, assume we are, go back to this view. Like all of the applications, like a LIS/LIMS or a custom EHR or patient facing apps, EDC can all be built in this simplified way.
+Systems that we've built like this tend to be **brittle and slow**, and interop is an afterthought. So we, want to think about how to do this a bit differently from the traditional way. We believe that, assume we are, go back to this view. Like all of the applications, like a LIS/LIMS or a custom EHR or patient facing apps, EDC can all be built in this simplified way.
 
 And it could be an effective developer model to get more productivity, leverage, better interop, and just reduce the investment overall and have better tooling and story. So that's kind of the thinking. So I'll summarize it here. So our approach, you know, interoperability is the product not an afterthought.
 

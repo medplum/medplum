@@ -81,4 +81,4 @@ After all the primitives are in place, test your implementation and ensure that 
 - [Medplum Agent Demo](https://youtu.be/MmE3Dn939B4) on Youtube - 15 min
 - [HL7 Demo Bot](https://github.com/medplum/medplum/blob/main/examples/medplum-demo-bots/src/hl7-bot.ts)
 - [HL7 Bots for Lab](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots/src/lab-integration) - ORU and OBX bots
-- [HL7 Bot Demo Video](https://youtu.be/q0SXeb_8H2Q) on Youtuve - 2 min
+- [HL7 Bot Demo Video](https://youtu.be/q0SXeb_8H2Q) on Youtube - 2 min

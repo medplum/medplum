@@ -55,7 +55,7 @@ TODO: Create an example Bot creates the ORM~001 method based off of `ServiceRequ
 
 ## Receiving Results
 
-Recieving results involves consuming an `ORU` message, which contains Observation Results, which roughly map to [Observations](/docs/api/fhir/resources/observation) in FHIR.  Below is an example: 
+Receiving results involves consuming an `ORU` message, which contains Observation Results, which roughly map to [Observations](/docs/api/fhir/resources/observation) in FHIR.  Below is an example: 
 
 ```
 MSH|^~\&|LAB|1234^LAB^DNS|EHR|5678^EHR^DNS|202404221430||ORU^R01|123456|P|2.5.1
