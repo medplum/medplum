@@ -241,7 +241,7 @@ describe('Order webhook handler', async () => {
       identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
     });
 
-    const linkedPrescription: MedicationRequest = await medplum.createResource({
+    await medplum.createResource({
       resourceType: 'MedicationRequest',
       status: 'active',
       intent: 'order',
