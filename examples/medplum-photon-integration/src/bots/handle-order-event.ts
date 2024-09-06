@@ -2,7 +2,6 @@ import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString, Patc
 import {
   Identifier,
   MedicationDispense,
-  MedicationKnowledge,
   MedicationRequest,
   MedicationRequestDispenseRequest,
   Organization,

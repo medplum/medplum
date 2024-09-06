@@ -3,8 +3,9 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bot, Bundle, MedicationRequest, Organization, Patient, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
-import { OrderErrorData, OrderEvent, PhotonWebhook } from '../photon-types';
-import * as myModule from './handle-order-event';
+import { PhotonWebhook } from '../photon-types';
+import { checkForStatusUpdate, getStatus, handler } from './handle-order-event';
+import { NEUTRON_HEALTH } from './system-strings';
 import {
   canceledWebhook,
   completedWebhook,
@@ -12,9 +13,6 @@ import {
   errorWebhook,
   placedWebhook,
 } from './test-data/order-event-test-data';
-
-const { handler, createMedicationRequest, updateMedicationRequest, getStatus, checkForStatusUpdate, handleErrorData } =
-  myModule;
 
 describe('Order webhook handler', async () => {
   beforeAll(() => {
@@ -30,7 +28,7 @@ describe('Order webhook handler', async () => {
     return {
       ...actualModule,
       verifyEvent: vi.fn().mockImplementation(() => true),
-      // handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+      handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
     };
   });
 
@@ -55,8 +53,8 @@ describe('Order webhook handler', async () => {
       contentType,
       input: createdWebhook,
       secrets: {
-        PHOTON_CLIENT_ID: { name: 'client id', valueString: 'example-id' },
-        PHOTON_CLIENT_SECRET: { name: 'client secret', valueString: 'example-secret' },
+        PHOTON_CLIENT_ID: { name: 'client id', valueString: 'client-id' },
+        PHOTON_CLIENT_SECRET: { name: 'client secret', valueString: 'client-secret' },
       },
     });
     expect(result).toEqual(existingRequest);
@@ -177,11 +175,8 @@ describe('Order webhook handler', async () => {
       contentType,
       input: testWebhook,
       secrets: {
-        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'example-id' },
-        PHOTON_CLIENT_SECRET: {
-          name: 'Photon Client Secret',
-          valueString: 'example-secret',
-        },
+        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
+        PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
       },
     });
     // Only the status and version ID should change
@@ -226,11 +221,8 @@ describe('Order webhook handler', async () => {
       contentType,
       input: createdWebhook,
       secrets: {
-        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'example-id' },
-        PHOTON_CLIENT_SECRET: {
-          name: 'Photon Client Secret',
-          valueString: 'example-secret',
-        },
+        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
+        PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
       },
     });
 
@@ -240,7 +232,6 @@ describe('Order webhook handler', async () => {
     expect(createdOrder?.subject.reference).toBe(getReferenceString(patient));
     expect(createdOrder?.dispenseRequest?.performer?.reference).toBe(getReferenceString(pharmacy));
     expect(dispense).toBeDefined();
-    // expect(dispense?.authorizingPrescription?.[0].reference).toBe(getReferenceString(createdOrder))
   }, 10000);
 
   test.skip('Idempotency test', async () => {
@@ -250,14 +241,13 @@ describe('Order webhook handler', async () => {
       identifier: [{ system: 'https://neutron.health', value: 'pat_ieUv67viS0lG18JN' }],
     });
 
-    const linkedPrescription: MedicationRequest = {
+    const linkedPrescription: MedicationRequest = await medplum.createResource({
       resourceType: 'MedicationRequest',
       status: 'active',
       intent: 'order',
       subject: { reference: getReferenceString(patient) },
-    };
-
-    vi.spyOn(myModule, 'getLinkedPrescription').mockResolvedValue(linkedPrescription);
+      identifier: [{ system: NEUTRON_HEALTH, value: 'rx_01J5RHKZZQXWAHMXKPT9CF1S6N' }],
+    });
 
     const idempotencyTestWebhook = {
       ...orderCreatedWebhook,
@@ -270,11 +260,8 @@ describe('Order webhook handler', async () => {
       input: idempotencyTestWebhook,
       contentType: 'application/json',
       secrets: {
-        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'example-id' },
-        PHOTON_CLIENT_SECRET: {
-          name: 'Photon Client Secret',
-          valueString: 'example-secret',
-        },
+        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
+        PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
       },
     });
 
@@ -287,8 +274,8 @@ describe('Order webhook handler', async () => {
       input: idempotencyTestWebhook,
       contentType: 'application/json',
       secrets: {
-        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'EXAMPLE_CLIENT_ID' },
-        PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'EXAMPLE_CLIENT_SECRET' },
+        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
+        PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
         PHOTON_ORDER_WEBHOOK_SECRET: { name: 'Photon Webhook Secret', valueString: 'EXAMPLE_ORDER_WEBHOOK_SECRET' },
       },
     });
