@@ -2,7 +2,7 @@
 sidebar_position: 100
 ---
 
-# Update Postgres Parameters
+# Update RDS Parameters
 
 Postgres exposes a wide variety of configuration settings that can be tuned to improve database performance. These
 settings can be changed via the CDK, which creates and associates the database cluster with an AWS Parameter Group
