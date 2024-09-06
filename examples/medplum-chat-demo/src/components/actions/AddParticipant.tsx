@@ -54,7 +54,7 @@ export function AddParticipant(props: AddParticipantProps): JSX.Element {
     const communicationId = props.communication.id as string;
     const currentParticipants = props.communication.recipient ?? [];
 
-    // If there are no participants, we will add a participant array, otherwise we will replace the current one with an udpated version.
+    // If there are no participants, we will add a participant array, otherwise we will replace the current one with an updated version.
     const op = currentParticipants.length === 0 ? 'add' : 'replace';
 
     // Add the new participants to the array

@@ -22,7 +22,7 @@ export const Image = (): JSX.Element => (
 export const Letter = (): JSX.Element => (
   <Document>
     <div style={{ display: 'flex', width: 168, justifyContent: 'space-between' }}>
-      <ResourceAvatar alt="George Wasington" />
+      <ResourceAvatar alt="George Washington" />
       <ResourceAvatar alt="Mona Lisa" color="blue" />
       <ResourceAvatar alt="Elmo" color="violet" />
     </div>
@@ -42,9 +42,9 @@ export const Sizes = (): JSX.Element => (
 export const LetterSizes = (): JSX.Element => (
   <Document>
     <div style={{ display: 'flex', width: 168, justifyContent: 'space-between' }}>
-      <ResourceAvatar alt="George Wasington" size="sm" />
-      <ResourceAvatar alt="George Wasington" color="blue" />
-      <ResourceAvatar alt="George Wasington" color="violet" size="lg" />
+      <ResourceAvatar alt="George Washington" size="sm" />
+      <ResourceAvatar alt="George Washington" color="blue" />
+      <ResourceAvatar alt="George Washington" color="violet" size="lg" />
     </div>
   </Document>
 );

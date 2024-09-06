@@ -11,8 +11,8 @@ import {
 import { Loading, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useContext } from 'react';
-import { ScheduleContext } from '../Schedule.context';
-import { SetAvailabilityEvent } from '../bots/core/set-availability';
+import { SetAvailabilityEvent } from '../../bots/core/set-availability';
+import { ScheduleContext } from '../../Schedule.context';
 
 interface SetAvailabilityProps {
   readonly opened: boolean;
