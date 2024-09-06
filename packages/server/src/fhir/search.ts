@@ -424,7 +424,7 @@ async function getExtraEntries<T extends Resource>(
   let depth = 0;
   while (base.length > 0) {
     // Circuit breaker / load limit
-    if (depth >= 5 || entries.length > 1000) {
+    if (depth >= 5 || entries.length > maxSearchResults) {
       throw new Error(`Search with _(rev)include reached query scope limit: depth=${depth}, results=${entries.length}`);
     }
 
