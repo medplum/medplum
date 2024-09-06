@@ -236,6 +236,8 @@ describe('Subscription Worker', () => {
               Authorization: 'Basic xyz',
               'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
               traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'X-Medplum-Subscription': subscription.id,
+              'X-Medplum-Interaction': 'create',
             },
           })
         );
@@ -363,6 +365,8 @@ describe('Subscription Worker', () => {
             body: '{}',
             headers: {
               'Content-Type': ContentType.FHIR_JSON,
+              'X-Medplum-Subscription': subscription.id,
+              'X-Medplum-Interaction': 'delete',
               'X-Medplum-Deleted-Resource': `Patient/${patient.id}`,
               'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
               traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
@@ -425,6 +429,8 @@ describe('Subscription Worker', () => {
               'X-Signature': signature,
               'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
               traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'X-Medplum-Subscription': subscription.id,
+              'X-Medplum-Interaction': 'create',
             },
           })
         );
@@ -484,6 +490,8 @@ describe('Subscription Worker', () => {
               'X-Signature': signature,
               'x-trace-id': '00-12345678901234567890123456789012-3456789012345678-01',
               traceparent: '00-12345678901234567890123456789012-3456789012345678-01',
+              'X-Medplum-Subscription': subscription.id,
+              'X-Medplum-Interaction': 'create',
             },
           })
         );
@@ -1711,7 +1719,7 @@ describe('Subscription Worker', () => {
 
         await assertPromise;
 
-        expect(console.log).toHaveBeenCalledWith(
+        expect(console.log).not.toHaveBeenCalledWith(
           expect.stringContaining('[Subscription Access Policy]: Access Policy not satisfied on')
         );
         console.log = originalConsoleLog;

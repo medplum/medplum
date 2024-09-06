@@ -1,18 +1,26 @@
 import {
   CloudFormationClient,
   CloudFormationClientResolvedConfig,
+  ServiceInputTypes as CloudFormationServiceInputTypes,
+  ServiceOutputTypes as CloudFormationServiceOutputTypes,
   DescribeStackResourcesCommand,
   DescribeStacksCommand,
   ListStacksCommand,
-  ServiceInputTypes,
-  ServiceOutputTypes,
 } from '@aws-sdk/client-cloudformation';
 import {
   CloudFrontClient,
   CloudFrontClientResolvedConfig,
+  ServiceInputTypes as CloudFrontServiceInputTypes,
+  ServiceOutputTypes as CloudFrontServiceOutputTypes,
   CreateInvalidationCommand,
 } from '@aws-sdk/client-cloudfront';
-import { PutObjectCommand, S3Client, S3ClientResolvedConfig } from '@aws-sdk/client-s3';
+import {
+  PutObjectCommand,
+  S3Client,
+  S3ClientResolvedConfig,
+  ServiceInputTypes as S3ServiceInputTypes,
+  ServiceOutputTypes as S3ServiceOutputTypes,
+} from '@aws-sdk/client-s3';
 import { AwsStub, mockClient } from 'aws-sdk-client-mock';
 import fastGlob from 'fast-glob';
 import fetch from 'node-fetch';
@@ -49,9 +57,13 @@ jest.mock('tar', () => ({
 
 const { Response: NodeFetchResponse } = jest.requireActual('node-fetch');
 
-let cfMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFormationClientResolvedConfig>;
-let s3Mock: AwsStub<ServiceInputTypes, ServiceOutputTypes, S3ClientResolvedConfig>;
-let cloudFrontMock: AwsStub<ServiceInputTypes, ServiceOutputTypes, CloudFrontClientResolvedConfig>;
+let cfMock: AwsStub<
+  CloudFormationServiceInputTypes,
+  CloudFormationServiceOutputTypes,
+  CloudFormationClientResolvedConfig
+>;
+let s3Mock: AwsStub<S3ServiceInputTypes, S3ServiceOutputTypes, S3ClientResolvedConfig>;
+let cloudFrontMock: AwsStub<CloudFrontServiceInputTypes, CloudFrontServiceOutputTypes, CloudFrontClientResolvedConfig>;
 
 describe('update-app command', () => {
   let processError: jest.SpyInstance;
@@ -144,11 +156,7 @@ describe('update-app command', () => {
     s3Mock = mockClient(S3Client);
     s3Mock.on(PutObjectCommand).resolves({});
 
-    cloudFrontMock = mockClient(CloudFrontClient) as AwsStub<
-      ServiceInputTypes,
-      ServiceOutputTypes,
-      CloudFrontClientResolvedConfig
-    >;
+    cloudFrontMock = mockClient(CloudFrontClient);
     cloudFrontMock.on(CreateInvalidationCommand).resolves({});
   });
 

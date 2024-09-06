@@ -13,8 +13,11 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { KeyboardEvent, ReactNode, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
+import { IconCheck } from '@tabler/icons-react';
+import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
 
 export interface AsyncAutocompleteOption<T> extends ComboboxItem {
+  readonly active?: boolean;
   readonly resource: T;
 }
 
@@ -28,6 +31,7 @@ export interface AsyncAutocompleteProps<T>
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
   readonly loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
+  readonly emptyComponent?: (props: { search: string }) => JSX.Element | ReactNode;
   readonly onChange: (item: T[]) => void;
   readonly onCreate?: (input: string) => T;
   readonly creatable?: boolean;
@@ -38,6 +42,7 @@ export interface AsyncAutocompleteProps<T>
   readonly leftSection?: ReactNode;
   readonly maxValues?: number;
   readonly optionsDropdownMaxHeight?: number;
+  readonly minInputLength?: number; // minimum number of input characters required before executing loadOptions
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
@@ -54,6 +59,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     toOption,
     loadOptions,
     itemComponent,
+    emptyComponent,
     onChange,
     onCreate,
     creatable,
@@ -63,6 +69,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     leftSection,
     maxValues,
     optionsDropdownMaxHeight = 320,
+    minInputLength = 0,
     ...rest
   } = props;
   const disabled = rest.disabled; // leave in rest so it also propagates to ComboBox
@@ -74,6 +81,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
   const ItemComponent = itemComponent ?? DefaultItemComponent;
+  const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
 
   const searchRef = useRef<string>();
   searchRef.current = search;
@@ -100,6 +108,9 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       // Same search input and loadOptions function, move on
       return;
     }
+    if ((searchRef.current?.length ?? 0) < minInputLength) {
+      return;
+    }
 
     lastValueRef.current = searchRef.current;
     lastLoadOptionsRef.current = loadOptions;
@@ -111,7 +122,6 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       .then((newValues: T[]) => {
         if (!newAbortController.signal.aborted) {
           setOptions(newValues.map(toOption));
-          setAbortController(undefined);
           if (autoSubmitRef.current) {
             if (newValues.length > 0) {
               onChange(newValues.slice(0, 1));
@@ -126,8 +136,13 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         if (!(newAbortController.signal.aborted || err.message.includes('aborted'))) {
           showNotification({ color: 'red', message: normalizeErrorString(err) });
         }
+      })
+      .finally(() => {
+        if (!newAbortController.signal.aborted) {
+          setAbortController(undefined);
+        }
       });
-  }, [combobox, loadOptions, onChange, toOption]);
+  }, [combobox, loadOptions, onChange, toOption, minInputLength]);
 
   const handleSearchChange = useCallback(
     (e: SyntheticEvent): void => {
@@ -155,22 +170,29 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
 
   const addSelected = useCallback(
     (newValue: string): void => {
-      const result: T[] = [];
-      const newSelected: AsyncAutocompleteOption<T>[] = [...selected];
-
+      const alreadySelected = selected.some((v) => v.value === newValue);
+      const newSelected = alreadySelected ? selected.filter((v) => v.value !== newValue) : [...selected];
       let option = options?.find((option) => option.value === newValue);
-      let item = option?.resource;
-      if (!item && creatable !== false && onCreate) {
-        item = onCreate(newValue);
-        option = toOption(item);
-      }
-
-      if (item) {
-        result.push(item);
+      if (!option && creatable !== false && onCreate) {
+        const createdResource = onCreate(newValue);
+        option = toOption(createdResource);
       }
 
       if (option) {
-        newSelected.push(option);
+        // when maxValues is 0, still fire the onChange when an item is selected
+        if (maxValues === 0) {
+          onChange([option.resource]);
+
+          // and clear selected if necessary
+          if (selected.length > 0) {
+            setSelected([]);
+          }
+          return;
+        }
+
+        if (!alreadySelected) {
+          newSelected.push(option);
+        }
       }
 
       if (maxValues !== undefined) {
@@ -180,7 +202,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         }
       }
 
-      onChange(result);
+      onChange(newSelected.map((v) => v.resource));
       setSelected(newSelected);
     },
     [creatable, options, selected, maxValues, onChange, onCreate, toOption]
@@ -195,9 +217,11 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       if (disabled) {
         return;
       }
-      setSearch('');
-      setOptions([]);
-      combobox.closeDropdown();
+      if (maxValues === 1) {
+        setSearch('');
+        setOptions([]);
+        combobox.closeDropdown();
+      }
       lastValueRef.current = undefined;
       if (val === '$create') {
         addSelected(search);
@@ -205,7 +229,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         addSelected(val);
       }
     };
-  }, [addSelected, combobox, disabled, search]);
+  }, [addSelected, combobox, disabled, maxValues, search]);
 
   const handleValueRemove = useCallback(
     (item: AsyncAutocompleteOption<T>): void => {
@@ -219,13 +243,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const handleKeyDown = useCallback(
     (e: KeyboardEvent): void => {
       if (e.key === 'Enter') {
-        if (!timer && !abortController) {
-          killEvent(e);
-          if (options && options.length > 0) {
-            setOptions(options.slice(0, 1));
-            addSelected(options[0].value);
-          }
-        } else {
+        if (timer || abortController) {
           // The user pressed enter, but we don't have results yet.
           // We need to wait for the results to come in.
           setAutoSubmit(true);
@@ -235,7 +253,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         handleValueRemove(selected[selected.length - 1]);
       }
     },
-    [search, selected, options, timer, abortController, addSelected, handleValueRemove]
+    [abortController, handleValueRemove, search.length, selected, timer]
   );
 
   useEffect(() => {
@@ -274,7 +292,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
           required={required}
           disabled={disabled}
         >
-          <Pill.Group>
+          <Pill.Group data-testid={AsyncAutocompleteTestIds.selectedItems}>
             {selected.map((item) => (
               <Pill key={item.value} withRemoveButton={!disabled} onRemove={() => handleValueRemove(item)}>
                 {item.label}
@@ -289,7 +307,10 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
                   value={search}
                   placeholder={placeholder}
                   onFocus={handleSearchChange}
-                  onBlur={() => combobox.closeDropdown()}
+                  onBlur={() => {
+                    combobox.closeDropdown();
+                    setSearch('');
+                  }}
                   onKeyDown={handleKeyDown}
                   onChange={handleSearchChange}
                 />
@@ -299,22 +320,23 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         </PillsInput>
       </Combobox.DropdownTarget>
 
-      <Combobox.Dropdown>
+      <Combobox.Dropdown hidden={search.length === 0}>
         <Combobox.Options>
           <ScrollAreaAutosize type="scroll" mah={optionsDropdownMaxHeight}>
-            {options.map((item) => (
-              <Combobox.Option value={item.value} key={item.value} active={selected.includes(item)}>
-                <ItemComponent {...item} />
-              </Combobox.Option>
-            ))}
+            {options.map((item) => {
+              const active = selected.some((v) => v.value === item.value);
+              return (
+                <Combobox.Option value={item.value} key={item.value} active={active}>
+                  <ItemComponent {...item} active={active} />
+                </Combobox.Option>
+              );
+            })}
 
             {creatable && search.trim().length > 0 && (
               <Combobox.Option value="$create">+ Create {search}</Combobox.Option>
             )}
 
-            {!creatable && search.trim().length > 0 && options.length === 0 && (
-              <Combobox.Empty>Nothing found</Combobox.Empty>
-            )}
+            {!creatable && search.trim().length > 0 && options.length === 0 && <EmptyComponent search={search} />}
           </ScrollAreaAutosize>
         </Combobox.Options>
       </Combobox.Dropdown>
@@ -332,10 +354,15 @@ function toDefaultItems<T>(defaultValue: T | T[] | undefined): T[] {
   return [defaultValue];
 }
 
-function DefaultItemComponent(props: ComboboxItem): JSX.Element {
+function DefaultItemComponent<T>(props: AsyncAutocompleteOption<T>): JSX.Element {
   return (
-    <Group gap="sm">
+    <Group gap="xs">
+      {props.active && <IconCheck size={12} />}
       <span>{props.label}</span>
     </Group>
   );
+}
+
+function DefaultEmptyComponent(): JSX.Element {
+  return <Combobox.Empty>Nothing found</Combobox.Empty>;
 }

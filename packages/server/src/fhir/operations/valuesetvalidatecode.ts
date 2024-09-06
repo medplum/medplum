@@ -9,6 +9,7 @@ import {
   ValueSetComposeIncludeFilter,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { DatabaseMode } from '../../database';
 import { Column, SelectQuery } from '../sql';
 import { validateCoding } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
@@ -127,9 +128,17 @@ async function satisfies(
 
   switch (filter.op) {
     case '=':
-      query = addPropertyFilter(query, filter.property, filter.value, true);
+      query = addPropertyFilter(query, filter.property, '=', filter.value);
+      break;
+    case 'in':
+      query = addPropertyFilter(query, filter.property, 'IN', filter.value.split(','));
       break;
     case 'is-a':
+    case 'descendent-of':
+      if (filter.op !== 'is-a') {
+        query.where('code', '!=', filter.value);
+      }
+
       // Recursively find parents until one matches
       query = findAncestor(query, codeSystem, filter.value);
       break;
@@ -138,6 +147,6 @@ async function satisfies(
       return false; // Unknown filter type, don't make DB query with incorrect filters
   }
 
-  const results = await query.execute(ctx.repo.getDatabaseClient());
+  const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));
   return results.length > 0;
 }

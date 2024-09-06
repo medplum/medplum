@@ -1,8 +1,8 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
 import {
-  ExtendedInternalSchemaElement,
   applyDefaultValuesToElement,
   capitalize,
+  ExtendedInternalSchemaElement,
   getPathDifference,
   HTTP_HL7_ORG,
   isComplexTypeCode,

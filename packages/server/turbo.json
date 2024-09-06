@@ -6,12 +6,13 @@
       "dependsOn": ["build"],
       "outputs": ["coverage/**"],
       "inputs": ["src/**/*.tsx", "src/**/*.ts"],
-      "env": ["SHOULD_RUN_SEED_TEST"]
+      "env": ["SHOULD_RUN_SEED_TEST", "POSTGRES_HOST", "POSTGRES_PORT"]
     },
     "test": {
       "dependsOn": ["test:seed"],
       "outputs": ["coverage/**"],
-      "inputs": ["src/**/*.tsx", "src/**/*.ts"]
+      "inputs": ["src/**/*.tsx", "src/**/*.ts"],
+      "env": ["REDIS_PASSWORD_DISABLED_IN_TESTS", "POSTGRES_HOST", "POSTGRES_PORT"]
     }
   }
 }

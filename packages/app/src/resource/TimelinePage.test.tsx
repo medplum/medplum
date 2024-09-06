@@ -1,6 +1,6 @@
 import { Notifications } from '@mantine/notifications';
 import { createReference, generateId, getReferenceString } from '@medplum/core';
-import { Communication } from '@medplum/fhirtypes';
+import { Communication, ProjectMembership } from '@medplum/fhirtypes';
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -11,7 +11,7 @@ describe('TimelinePage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
     await act(async () => {
       render(
-        <MedplumProvider medplum={medplum}>
+        <MedplumProvider medplum={medplum} navigate={jest.fn()}>
           <MemoryRouter initialEntries={[url]} initialIndex={0}>
             <Notifications />
             <AppRoutes />
@@ -186,6 +186,46 @@ describe('TimelinePage', () => {
     await act(async () => {
       fireEvent.click(editButton);
     });
+  });
+
+  test('Resend subscriptions', async () => {
+    const medplum = new MockClient();
+    const randomText = generateId();
+
+    // Mock project membership to return admin = true
+    medplum.getProjectMembership = () => ({ admin: true }) as ProjectMembership;
+
+    // Create a comment
+    const comment = await medplum.createResource<Communication>({
+      resourceType: 'Communication',
+      status: 'completed',
+      basedOn: [createReference(HomerServiceRequest)],
+      subject: createReference(HomerSimpson),
+      payload: [{ contentString: randomText }],
+    });
+
+    await setup(`/${getReferenceString(HomerServiceRequest)}`, medplum);
+
+    // See if the Communication timeline item is loaded
+    expect(await screen.findByText(randomText)).toBeInTheDocument();
+
+    // Check for the Actions menu icon
+    expect(screen.getByLabelText('Actions for ' + getReferenceString(comment))).toBeInTheDocument();
+
+    // Click on the actions link
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Actions for ' + getReferenceString(comment)));
+    });
+
+    // Click on the "Resend Subscriptions" menu item
+    const resendButton = await screen.findByLabelText('Resend Subscriptions ' + getReferenceString(comment));
+    await act(async () => {
+      fireEvent.click(resendButton);
+    });
+
+    // Now there should be a "Resend" modal and button
+    expect(await screen.findByText('Resend Subscriptions')).toBeInTheDocument();
+    expect(await screen.findByText('Resend')).toBeInTheDocument();
   });
 
   test('Delete comment', async () => {

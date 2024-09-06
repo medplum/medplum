@@ -329,6 +329,25 @@ describe('MockClient', () => {
     expect(fetchClientSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
   });
 
+  test('mockFhirHandler receives headers', async () => {
+    const baseUrl = 'https://example.com/';
+
+    const router = new FhirRouter();
+    const repo = new MemoryRepository();
+    const client = new MockFetchClient(router, repo, baseUrl);
+    const mockClient = new MockClient({
+      mockFetchOverride: { router, repo, client },
+    });
+
+    const handleRequestSpy = jest.spyOn(router, 'handleRequest');
+    await mockClient.search('Patient', 'name=Simpson', { headers: { 'X-Hello-World': 'hAi' } });
+    expect(handleRequestSpy).toHaveBeenCalledTimes(1);
+    expect(handleRequestSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ headers: expect.objectContaining({ 'x-hello-world': 'hAi' }) }),
+      repo
+    );
+  });
+
   test('Search', async () => {
     const client = new MockClient();
     const result = await client.search('Patient', 'name=Simpson');
@@ -872,7 +891,7 @@ describe('MockAsyncClientStorage', () => {
     expect(clientStorage.isInitialized).toEqual(false);
     const initPromise = clientStorage.getInitPromise();
     clientStorage.setInitialized();
-    await expect(initPromise).resolves;
+    await expect(initPromise).resolves.toBeUndefined();
     expect(clientStorage.isInitialized).toEqual(true);
   });
 

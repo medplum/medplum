@@ -65,6 +65,9 @@ import {
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
+  unauthorized,
+  unauthorizedTokenAudience,
+  unauthorizedTokenExpired,
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
@@ -97,6 +100,7 @@ const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
 const DEFAULT_BROWSER_CACHE_TIME = 60000; // 60 seconds
 const DEFAULT_NODE_CACHE_TIME = 0;
+const DEFAULT_REFRESH_GRACE_PERIOD = 300000; // 5 minutes
 const BINARY_URL_PREFIX = 'Binary/';
 
 const system: Device = {
@@ -217,6 +221,15 @@ export interface MedplumClientOptions {
   autoBatchTime?: number;
 
   /**
+   * The refresh grace period in milliseconds.
+   *
+   * This is the amount of time before the access token expires that the client will attempt to refresh the token.
+   *
+   * Default value is 300000 (5 minutes).
+   */
+  refreshGracePeriod?: number;
+
+  /**
    * Fetch implementation.
    *
    * Default is window.fetch (if available).
@@ -320,6 +333,10 @@ export interface MedplumRequestOptions extends RequestInit {
    * Default value is 1000 (1 second).
    */
   pollStatusPeriod?: number;
+  /**
+   * Optional max number of retries that should be made in the case of a failed request. Default is `2`.
+   */
+  maxRetries?: number;
 }
 
 export type FetchLike = (url: string, options?: any) => Promise<any>;
@@ -691,6 +708,7 @@ export type MedplumClientEventMap = {
   profileRefreshing: { type: 'profileRefreshing' };
   profileRefreshed: { type: 'profileRefreshed' };
   storageInitialized: { type: 'storageInitialized' };
+  storageInitFailed: { type: 'storageInitFailed'; payload: { error: Error } };
 };
 
 /**
@@ -765,6 +783,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private readonly refreshGracePeriod: number;
   private subscriptionManager?: SubscriptionManager;
   private medplumServer?: boolean;
   private clientId?: string;
@@ -802,6 +821,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
     this.onUnauthenticated = options?.onUnauthenticated;
+    this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
 
     this.cacheTime =
       options?.cacheTime ?? (typeof window === 'undefined' ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
@@ -840,7 +860,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           this.initComplete = true;
           this.dispatchEvent({ type: 'storageInitialized' });
         })
-        .catch(console.error);
+        .catch((err: Error) => {
+          console.error(err);
+          this.initComplete = true;
+          this.dispatchEvent({ type: 'storageInitFailed', payload: { error: err } });
+        });
     }
 
     this.setupStorageListener();
@@ -1349,7 +1373,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * Builds a FHIR URL from a collection of URL path components.
-   * For example, `buildUrl('/Patient', '123')` returns `fhir/R4/Patient/123`.
+   * For example, `fhirUrl('Patient', '123')` returns `fhir/R4/Patient/123`.
    * @category HTTP
    * @param path - The path component of the URL.
    * @returns The well-formed FHIR URL.
@@ -1656,6 +1680,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     id: string,
     options?: MedplumRequestOptions
   ): ReadablePromise<ExtractResource<K>> {
+    if (!id) {
+      throw new Error('The "id" parameter cannot be null, undefined, or an empty string.');
+    }
     return this.get<ExtractResource<K>>(this.fhirUrl(resourceType, id), options);
   }
 
@@ -1721,6 +1748,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         kind,
         description,
         type,
+        url,
         snapshot {
           element {
             id,
@@ -1774,11 +1802,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Schema
    * @param profileUrl - The FHIR URL of the profile
    * @param options - (optional) Additional options
-   * @returns Promise with an array of URLs of the profile(s) loaded.
+   * @returns Promise for schema request.
    */
-  requestProfileSchema(profileUrl: string, options?: RequestProfileSchemaOptions): Promise<string[]> {
+  requestProfileSchema(profileUrl: string, options?: RequestProfileSchemaOptions): Promise<void> {
     if (!options?.expandProfile && isProfileLoaded(profileUrl)) {
-      return Promise.resolve([profileUrl]);
+      return Promise.resolve();
     }
 
     const cacheKey = profileUrl + '-requestSchema' + (options?.expandProfile ? '-nested' : '');
@@ -1787,16 +1815,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return cached.value;
     }
 
-    const promise = new ReadablePromise<string[]>(
+    const promise = new ReadablePromise<void>(
       (async () => {
         if (options?.expandProfile) {
           const url = this.fhirUrl('StructureDefinition', '$expand-profile');
           url.search = new URLSearchParams({ url: profileUrl }).toString();
           const sdBundle = (await this.post(url.toString(), {})) as Bundle<StructureDefinition>;
-          return bundleToResourceArray(sdBundle).map((sd) => {
-            loadDataType(sd, sd.url);
-            return sd.url;
-          });
+          indexStructureDefinitionBundle(sdBundle);
         } else {
           // Just sort by lastUpdated. Ideally, it would also be based on a logical sort of version
           // See https://hl7.org/fhir/references.html#canonical-matching for more discussion
@@ -1807,11 +1832,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
           if (!sd) {
             console.warn(`No StructureDefinition found for ${profileUrl}!`);
-            return [];
+            return;
           }
 
-          indexStructureDefinitionBundle([sd], profileUrl);
-          return [profileUrl];
+          loadDataType(sd);
         }
       })()
     );
@@ -2166,7 +2190,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       };
 
       xhr.responseType = 'json';
-      xhr.onabort = () => sendResult(new Error('Request aborted'));
+      xhr.onabort = () => sendResult(new DOMException('Request aborted', 'AbortError'));
       xhr.onerror = () => sendResult(new Error('Request error'));
 
       if (onProgress) {
@@ -2372,14 +2396,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The result of the patch operations.
    */
-  patchResource<K extends ResourceType>(
+  async patchResource<K extends ResourceType>(
     resourceType: K,
     id: string,
     operations: PatchOperation[],
     options?: MedplumRequestOptions
   ): Promise<ExtractResource<K>> {
+    const result = await this.patch(this.fhirUrl(resourceType, id), operations, options);
+    this.cacheResource(result);
+    this.invalidateUrl(this.fhirUrl(resourceType, id, '_history'));
     this.invalidateSearches(resourceType);
-    return this.patch(this.fhirUrl(resourceType, id), operations, options);
+    return result;
   }
 
   /**
@@ -2701,7 +2728,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   setAccessToken(accessToken: string, refreshToken?: string): void {
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
-    this.sessionDetails = undefined;
     this.accessTokenExpires = tryGetJwtExpiration(accessToken);
     this.medplumServer = isMedplumAccessToken(accessToken);
   }
@@ -3129,27 +3155,42 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       url = concatUrls(this.baseUrl, url);
     }
 
-    const maxRetries = 3;
+    // Previously default for maxRetries was 3, but we will interpret maxRetries literally and not count first attempt
+    // Default of 2 matches old behavior with the new semantics
+    const maxRetries = options?.maxRetries ?? 2;
     const retryDelay = 200;
-    let response: Response | undefined = undefined;
-    for (let retry = 0; retry < maxRetries; retry++) {
+
+    // We use <= since we want to retry maxRetries times and first retry is when attemptNum === 1
+    for (let attemptNum = 0; attemptNum <= maxRetries; attemptNum++) {
       try {
         if (this.options.verbose) {
           this.logRequest(url, options);
         }
-        response = (await this.fetch(url, options)) as Response;
+        const response = (await this.fetch(url, options)) as Response;
         if (this.options.verbose) {
           this.logResponse(response);
         }
-        if (response.status < 500) {
+        // Handle non-500 response and max retries exceeded
+        // We return immediately for non-500 or 500 that has exceeded max retries
+        if (response.status < 500 || attemptNum === maxRetries) {
           return response;
         }
-      } catch (err: any) {
-        this.retryCatch(retry, maxRetries, err);
+      } catch (err) {
+        // This is for the 1st retry to avoid multiple notifications
+        if ((err as Error).message === 'Failed to fetch' && attemptNum === 0) {
+          this.dispatchEvent({ type: 'offline' });
+        }
+
+        // If we got an abort error or exceeded retries, then throw immediately
+        if ((err as Error).name === 'AbortError' || attemptNum === maxRetries) {
+          throw err;
+        }
       }
+
       await sleep(retryDelay);
     }
-    return response as Response;
+
+    throw new Error('Unreachable');
   }
 
   private logRequest(url: string, options: MedplumRequestOptions): void {
@@ -3332,7 +3373,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (this.onUnauthenticated) {
       this.onUnauthenticated();
     }
-    return Promise.reject(new Error('Unauthenticated'));
+    return Promise.reject(new OperationOutcomeError(unauthorized));
   }
 
   /**
@@ -3401,12 +3442,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * Refreshes the access token using the refresh token if available.
+   * @param gracePeriod - Optional grace period in milliseconds. If not specified, uses the client configured grace period (default 5 minutes).
    * @returns Promise to refresh the access token.
    */
-  refreshIfExpired(): Promise<void> {
+  refreshIfExpired(gracePeriod?: number): Promise<void> {
+    if (gracePeriod === undefined) {
+      gracePeriod = this.refreshGracePeriod;
+    }
     // If (1) not already refreshing, (2) we have an access token, and (3) the access token is expired,
     // then start a refresh.
-    if (!this.refreshPromise && this.accessTokenExpires !== undefined && this.accessTokenExpires < Date.now()) {
+    if (
+      !this.refreshPromise &&
+      this.accessTokenExpires !== undefined &&
+      Date.now() > this.accessTokenExpires - gracePeriod
+    ) {
       // The result of the `refresh()` function is cached in `this.refreshPromise`,
       // so we can safely ignore the return value here.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -3632,21 +3681,21 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     event: EventName,
     context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
     versionId?: never
-  ): Promise<void>;
+  ): Promise<Record<string, any>>;
 
   async fhircastPublish<RequiredVersionEvent extends FhircastEventVersionRequired>(
     topic: string,
     event: RequiredVersionEvent,
     context: FhircastEventContext<RequiredVersionEvent> | FhircastEventContext<RequiredVersionEvent>[],
     versionId: string
-  ): Promise<void>;
+  ): Promise<Record<string, any>>;
 
   async fhircastPublish<EventName extends FhircastEventVersionRequired | FhircastEventVersionOptional>(
     topic: string,
     event: EventName,
     context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
     versionId?: string | undefined
-  ): Promise<void> {
+  ): Promise<Record<string, any>> {
     if (isContextVersionRequired(event)) {
       return this.post(
         `/fhircast/STU3/${topic}`,
@@ -3740,18 +3789,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
       if (Date.now() >= (tokenPayload.exp as number) * 1000) {
         this.clearActiveLogin();
-        throw new Error('Token expired');
+        throw new OperationOutcomeError(unauthorizedTokenExpired);
       }
 
       // Verify app_client_id
       if (tokenPayload.cid) {
         if (tokenPayload.cid !== this.clientId) {
           this.clearActiveLogin();
-          throw new Error('Token was not issued for this audience');
+          throw new OperationOutcomeError(unauthorizedTokenAudience);
         }
       } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
         this.clearActiveLogin();
-        throw new Error('Token was not issued for this audience');
+        throw new OperationOutcomeError(unauthorizedTokenAudience);
       }
     }
 
@@ -3777,18 +3826,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           window.location.reload();
         }
       });
-    } catch (err) {
+    } catch (_err) {
       // Silently ignore if this environment does not support storage events
-    }
-  }
-
-  private retryCatch(retryNumber: number, maxRetries: number, err: Error): void {
-    // This is for the 1st retry to avoid multiple notifications
-    if (err.message === 'Failed to fetch' && retryNumber === 1) {
-      this.dispatchEvent({ type: 'offline' });
-    }
-    if (retryNumber >= maxRetries - 1) {
-      throw err;
     }
   }
 

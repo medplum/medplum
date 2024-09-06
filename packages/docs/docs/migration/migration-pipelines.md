@@ -9,10 +9,9 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-
 # Building Migration Pipelines
 
-When migrating data to Medplum, it's crucial to build efficient and reliable data pipelines. This section covers key strategies and best practices for constructing pipelines to migration data *into* Medplum.
+When migrating data to Medplum, it's crucial to build efficient and reliable data pipelines. This section covers key strategies and best practices for constructing pipelines to migration data _into_ Medplum.
 
 [patient]: /docs/api/fhir/resources/patient
 [condition]: /docs/api/fhir/resources/condition
@@ -24,7 +23,6 @@ When migrating data to Medplum, it's crucial to build efficient and reliable dat
 Conditional updates are essential to create idempotent migration pipelines. This means you can run your migration multiple times without creating duplicate data.
 
 To perform a conditional update, use a `PUT` operation with a search query in the URL:
-
 
 <Tabs groupId="language">
   <TabItem value="ts" label="TypeScript">
@@ -45,9 +43,10 @@ To perform a conditional update, use a `PUT` operation with a search query in th
 </Tabs>
 
 The semantics of this operation are:
-* If 0 resources are found matching the search query, a new resource is created.
-* If 1 resource is found, it is updated with the provided data.
-* If more than 1 resource is found, an error is returned.
+
+- If 0 resources are found matching the search query, a new resource is created.
+- If 1 resource is found, it is updated with the provided data.
+- If more than 1 resource is found, an error is returned.
 
 This approach ensures that your operation is idempotent and can be safely repeated.
 
@@ -71,7 +70,7 @@ This batch operation creates (or updates) two [`Patient`][patient] resources in 
 
 ## Using Transactions for Data Integrity
 
-[FHIR Transactions](/docs/fhir-datastore/fhir-batch-requests#creating-internal-references) ensure that a set of resources are written together or fail together, maintaining data integrity. However, transactions are generally slower and are capped at 20 resources per transaction.
+[FHIR Transactions](/docs/fhir-datastore/fhir-batch-requests#internal-references) ensure that a set of resources are written together or fail together, maintaining data integrity. However, transactions are generally slower and are capped at 20 resources per transaction.
 
 #### Example: Encounter with Clinical Impression
 
@@ -94,6 +93,7 @@ Let's demonstrate a complete data pipeline that incorporates all the concepts we
 ### Source Data
 
 #### Patients Table
+
 ```
 | patient_id | first_name | last_name | birth_date | gender |
 | ---------- | ---------- | --------- | ---------- | ------ |
@@ -102,6 +102,7 @@ Let's demonstrate a complete data pipeline that incorporates all the concepts we
 ```
 
 #### Conditions Table
+
 ```
 | condition_id | condition_name | icd10_code |
 | ------------ | -------------- | ---------- |
@@ -110,6 +111,7 @@ Let's demonstrate a complete data pipeline that incorporates all the concepts we
 ```
 
 #### Patient_Conditions Table:
+
 ```
 | patient_condition_id | patient_id | condition_id | onset_date |
 | -------------------- | ---------- | ------------ | ---------- |
@@ -119,6 +121,7 @@ Let's demonstrate a complete data pipeline that incorporates all the concepts we
 ```
 
 #### Encounters Table:
+
 ```
 | encounter_id | patient_id | date       | type      |
 | ------------ | ---------- | ---------- | --------- |
@@ -127,6 +130,7 @@ Let's demonstrate a complete data pipeline that incorporates all the concepts we
 ```
 
 ### Step 1: Create Patients
+
 Use a batch request to upload [`Patients`][patient] independently, using the primary key from the source system as the identifier.
 
 <MedplumCodeBlock language="ts" selectBlocks="create-patients-batch">
@@ -141,7 +145,6 @@ Use a batch request to upload [`Conditions`][condition] independently, using con
     {ExampleCode}
 </MedplumCodeBlock>
 
-
 ### Step 3: Create Encounters and ClinicalImpressions
 
 Here, we use a batch request, where each entry is a two-operation transaction to create the [`Encounter`][encounter] and dependent [`ClinicalImpression`][clinicalimpression] (i.e. note).
@@ -149,7 +152,6 @@ Here, we use a batch request, where each entry is a two-operation transaction to
 <MedplumCodeBlock language="ts" selectBlocks="create-encounters-and-impressions-batch-transaction">
     {ExampleCode}
 </MedplumCodeBlock>
-
 
 This example demonstrates:
 
@@ -161,7 +163,5 @@ This example demonstrates:
 6. Maintaining relationships between resources across different requests using conditional references.
 
 This approach allows for efficient bulk operations while ensuring data integrity for related resources. It also demonstrates how to handle different types of relationships and references in a complex data migration scenario.
-
-
 
 In the next guide, we'll talk about **best practices for adopting Medplum in end user workflows.**

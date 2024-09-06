@@ -10,9 +10,9 @@ import {
   createStructureIssue,
   validationError,
 } from '../outcomes';
-import { PropertyType, TypedValue, isReference } from '../types';
-import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
-import { ResourceVisitor, TypedValueWithPath, crawlResource, getNestedProperty } from './crawler';
+import { PropertyType, TypedValue, isReference, isResource } from '../types';
+import { arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
+import { CrawlerVisitor, TypedValueWithPath, crawlTypedValue, getNestedProperty } from './crawler';
 import {
   Constraint,
   InternalSchemaElement,
@@ -41,6 +41,7 @@ export const fhirTypeToJsType = {
   id: 'string',
   instant: 'string',
   integer: 'number',
+  integer64: 'string',
   markdown: 'string',
   oid: 'string',
   positiveInt: 'number',
@@ -53,6 +54,15 @@ export const fhirTypeToJsType = {
   xhtml: 'string',
   'http://hl7.org/fhirpath/System.String': 'string', // Not actually a FHIR type, but included in some StructureDefinition resources
 } as const satisfies Record<string, 'string' | 'boolean' | 'number'>;
+
+/**
+ * Returns true if the type code is a primitive type.
+ * @param code - The type code to check.
+ * @returns True if the type code is a primitive type.
+ */
+export function isPrimitiveType(code: string): boolean {
+  return code === 'undefined' || code in fhirTypeToJsType;
+}
 
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
@@ -95,38 +105,43 @@ export interface ValidatorOptions {
 }
 
 export function validateResource(resource: Resource, options?: ValidatorOptions): OperationOutcomeIssue[] {
-  return new ResourceValidator(resource.resourceType, resource, options).validate();
+  if (!resource.resourceType) {
+    throw new OperationOutcomeError(validationError('Missing resource type'));
+  }
+  return new ResourceValidator(toTypedValue(resource), options).validate();
 }
 
-class ResourceValidator implements ResourceVisitor {
+export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOptions): OperationOutcomeIssue[] {
+  return new ResourceValidator(typedValue, options).validate();
+}
+
+class ResourceValidator implements CrawlerVisitor {
   private issues: OperationOutcomeIssue[];
-  private rootResource: Resource;
+  private root: TypedValue;
   private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
 
-  constructor(resourceType: string, rootResource: Resource, options?: ValidatorOptions) {
+  constructor(typedValue: TypedValue, options?: ValidatorOptions) {
     this.issues = [];
-    this.rootResource = rootResource;
-    this.currentResource = [rootResource];
+    this.root = typedValue;
+    this.currentResource = [];
+    if (isResource(typedValue.value)) {
+      this.currentResource.push(typedValue.value);
+    }
     if (!options?.profile) {
-      this.schema = getDataType(resourceType);
+      this.schema = getDataType(typedValue.type);
     } else {
       this.schema = parseStructureDefinition(options.profile);
     }
   }
 
   validate(): OperationOutcomeIssue[] {
-    const resourceType = this.rootResource.resourceType;
-    if (!resourceType) {
-      throw new OperationOutcomeError(validationError('Missing resource type'));
-    }
-
     // Check root constraints
-    this.constraintsCheck(toTypedValue(this.rootResource), this.schema, resourceType);
+    this.constraintsCheck(this.root, this.schema, this.schema.path);
 
-    checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
+    checkObjectForNull(this.root.value as unknown as Record<string, unknown>, this.schema.path, this.issues);
 
-    crawlResource(this.rootResource, this, this.schema);
+    crawlTypedValue(this.root, this, { schema: this.schema, initialPath: this.schema.path });
 
     const issues = this.issues;
 
@@ -246,7 +261,7 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   private checkPropertyValue(value: TypedValue, path: string): void {
-    if (isLowerCase(value.type.charAt(0))) {
+    if (isPrimitiveType(value.type)) {
       this.validatePrimitiveType(value, path);
     }
   }
@@ -417,13 +432,21 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {
+    const variables: Record<string, TypedValue> = {
+      '%context': value,
+      '%ucum': toTypedValue(UCUM),
+    };
+
+    if (this.currentResource.length > 0) {
+      variables['%resource'] = toTypedValue(this.currentResource[this.currentResource.length - 1]);
+    }
+
+    if (isResource(this.root.value)) {
+      variables['%rootResource'] = this.root;
+    }
+
     try {
-      const evalValues = evalFhirPathTyped(constraint.expression, [value], {
-        '%context': value,
-        '%resource': toTypedValue(this.currentResource[this.currentResource.length - 1]),
-        '%rootResource': toTypedValue(this.rootResource),
-        '%ucum': toTypedValue(UCUM),
-      });
+      const evalValues = evalFhirPathTyped(constraint.expression, [value], variables);
 
       return evalValues.length === 1 && evalValues[0].value === true;
     } catch (e: any) {
@@ -461,7 +484,7 @@ class ResourceValidator implements ResourceVisitor {
       }
     }
     if (extensionElement) {
-      crawlResource(extensionElement.value, this, getDataType('Element'), path);
+      crawlTypedValue(extensionElement, this, { schema: getDataType('Element'), initialPath: path });
     }
   }
 

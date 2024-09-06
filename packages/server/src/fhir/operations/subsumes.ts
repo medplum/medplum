@@ -2,6 +2,7 @@ import { allOk, badRequest } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
+import { DatabaseMode } from '../../database';
 import { Column, SelectQuery } from '../sql';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -26,7 +27,7 @@ export async function codeSystemSubsumesOperation(req: FhirRequest): Promise<Fhi
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, params.version);
+    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, { version: params.version });
   } else {
     return [badRequest('No code system specified')];
   }
@@ -69,6 +70,6 @@ export async function isSubsumed(baseCode: string, ancestorCode: string, codeSys
     .where(new Column('Coding', 'code'), '=', baseCode);
 
   const query = findAncestor(base, codeSystem, ancestorCode);
-  const results = await query.execute(ctx.repo.getDatabaseClient());
+  const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));
   return results.length > 0;
 }

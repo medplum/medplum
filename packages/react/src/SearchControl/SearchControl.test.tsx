@@ -18,20 +18,26 @@ describe('SearchControl', () => {
     jest.useRealTimers();
   });
 
-  async function setup(args: SearchControlProps, returnVal?: Bundle): Promise<void> {
-    const medplum = new MockClient();
+  async function setup(
+    props: SearchControlProps,
+    returnVal?: Bundle,
+    medplum: MockClient = new MockClient()
+  ): Promise<{ rerender: (props: SearchControlProps) => Promise<void> }> {
     if (returnVal) {
       medplum.search = jest.fn().mockResolvedValue(returnVal);
     }
-    await act(async () => {
-      render(
+    const { rerender: _rerender } = await act(async () =>
+      render(<SearchControl {...props} />, ({ children }) => (
         <MemoryRouter>
-          <MedplumProvider medplum={medplum}>
-            <SearchControl {...args} />
-          </MedplumProvider>
+          <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
         </MemoryRouter>
-      );
-    });
+      ))
+    );
+    return {
+      rerender: async (props: SearchControlProps) => {
+        await act(async () => _rerender(<SearchControl {...props} />));
+      },
+    };
   }
 
   test('Renders results', async () => {
@@ -56,6 +62,93 @@ describe('SearchControl', () => {
 
     expect(props.onLoad).toHaveBeenCalled();
     expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+  });
+
+  test('Rerender does not trigger `loadResult` when `search` deep equals `memoizedSearch`', async () => {
+    const search = {
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Simpson',
+        },
+      ],
+      fields: ['id', '_lastUpdated', 'name'],
+    } as SearchRequest;
+
+    const props = {
+      search,
+      onLoad: jest.fn() as jest.Mock,
+    };
+
+    const { rerender } = await setup(props);
+
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    expect(props.onLoad).toHaveBeenCalled();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    props.onLoad.mockClear();
+
+    await rerender({ ...props, search: { ...search } });
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    expect(props.onLoad).not.toHaveBeenCalled();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+  });
+
+  test('Rerender triggers `loadResult` when `search` does is not deep equal to `memoizedSearch`', async () => {
+    const search = {
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'name',
+          operator: Operator.EQUALS,
+          value: 'Simpson',
+        },
+      ],
+      fields: ['id', '_lastUpdated', 'name'],
+    } as SearchRequest;
+
+    const props = {
+      search,
+      onLoad: jest.fn() as jest.Mock,
+    };
+
+    const { rerender } = await setup(props);
+
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+    expect(props.onLoad).toHaveBeenCalled();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+
+    const searchesToTest = [
+      {
+        ...search,
+        fields: ['id', 'name'],
+      },
+      {
+        ...search,
+        filters: [
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: 'Homer',
+          },
+        ],
+      },
+    ];
+
+    for (const search of searchesToTest) {
+      props.onLoad.mockClear();
+
+      await rerender({ ...props, search });
+      expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
+
+      expect(props.onLoad).toHaveBeenCalled();
+      expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    }
   });
 
   test('Renders _lastUpdated filter', async () => {

@@ -19,11 +19,11 @@ import express from 'express';
 import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
-import request, { Response } from 'supertest';
+import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { getRedis } from '../../redis';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import { AgentPushParameters } from './agentpush';
 import { cleanupMockAgents, configMockAgents, mockAgentResponse } from './utils/agenttestutils';
 
@@ -468,13 +468,12 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     );
 
     const res = await deferredResponse;
-    expect(res.status).toEqual(500);
+    expect(res.status).toEqual(400);
 
     const body = res.body as OperationOutcome;
     expect(body).toBeDefined();
     expect(body.issue[0].severity).toEqual('error');
-    expect(body.issue[0]?.details?.text).toEqual(expect.stringMatching(/internal server error/i));
-    expect(body.issue[0]?.diagnostics).toEqual(expect.stringMatching(/unable to ping/i));
+    expect(body.issue[0]?.details?.text).toEqual(expect.stringContaining('Error: Unable to ping "8.8.8.8"'));
 
     publishSpy.mockRestore();
   });
@@ -543,28 +542,8 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-
-    let res2: Response | undefined = undefined;
-
-    shouldThrow = false;
-    const asyncJobTimeout = setTimeout(() => {
-      shouldThrow = true;
-    }, 5000);
-
-    while (!((res2?.body as AsyncJob)?.status === 'completed')) {
-      if (shouldThrow) {
-        throw new Error('Timed out while waiting for async job to complete');
-      }
-      await sleep(10);
-      res2 = await request(app)
-        .get(new URL(res.headers['content-location']).pathname)
-        .set('Authorization', 'Bearer ' + accessToken);
-    }
-    clearTimeout(asyncJobTimeout);
-
-    const responseBody = (res2 as Response).body as AsyncJob;
-
-    expect(responseBody).toMatchObject<Partial<AsyncJob>>({
+    const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+    expect(asyncJob).toMatchObject<Partial<AsyncJob>>({
       resourceType: 'AsyncJob',
       status: 'completed',
       request: expect.stringContaining('$push'),

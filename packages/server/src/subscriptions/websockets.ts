@@ -3,6 +3,7 @@ import { Bundle, Resource, Subscription } from '@medplum/fhirtypes';
 import { Redis } from 'ioredis';
 import { JWTPayload } from 'jose';
 import crypto from 'node:crypto';
+import os from 'node:os';
 import ws from 'ws';
 import { AdditionalWsBindingClaims } from '../fhir/operations/getwsbindingtoken';
 import { CacheEntry } from '../fhir/repo';
@@ -10,6 +11,7 @@ import { getFullUrl } from '../fhir/response';
 import { heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
 import { verifyJwt } from '../oauth/keys';
+import { setGauge } from '../otel/otel';
 import { getRedis, getRedisSubscriber } from '../redis';
 
 interface BaseSubscriptionClientMsg {
@@ -27,7 +29,10 @@ export interface UnbindFromTokenMsg extends BaseSubscriptionClientMsg {
   payload: { token: string };
 }
 
-export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg;
+export type SubscriptionClientMsg = BindWithTokenMsg | UnbindFromTokenMsg | { type: 'ping' };
+
+const hostname = os.hostname();
+const METRIC_OPTIONS = { attributes: { hostname } };
 
 const wsToSubLookup = new Map<ws.WebSocket, Set<string>>();
 const subToWsLookup = new Map<string, Set<ws.WebSocket>>();
@@ -55,6 +60,8 @@ function ensureHeartbeatHandler(): void {
       for (const [ws, subscriptionIds] of wsToSubLookup.entries()) {
         ws.send(JSON.stringify(createSubHeartbeatEvent(subscriptionIds)));
       }
+      setGauge('medplum.subscription.websocketCount', wsToSubLookup.size, METRIC_OPTIONS);
+      setGauge('medplum.subscription.subscriptionCount', subToWsLookup.size, METRIC_OPTIONS);
     };
     heartbeat.addEventListener('heartbeat', heartbeatHandler);
   }
@@ -144,6 +151,8 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     }
     subscribeWsToSubscription(socket, subscriptionId);
     ensureHeartbeatHandler();
+    // Send a handshake to notify client that this subscription is active for this connection
+    socket.send(JSON.stringify(createHandshakeBundle(subscriptionId)));
 
     onDisconnect = async (): Promise<void> => {
       const subscriptionIds = wsToSubLookup.get(socket);
@@ -188,7 +197,9 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     const rawDataStr = (data as Buffer).toString();
     globalLogger.debug('[WS] received data', { data: rawDataStr });
     const msg = JSON.parse(rawDataStr) as SubscriptionClientMsg;
-    if (['bind-with-token', 'unbind-from-token'].includes(msg.type)) {
+    if (msg.type === 'ping') {
+      socket.send(JSON.stringify({ type: 'pong' }));
+    } else if (['bind-with-token', 'unbind-from-token'].includes(msg.type)) {
       const token = msg?.payload?.token;
       if (!token) {
         globalLogger.error('[WS]: invalid client message - missing token', { data, socket });
@@ -253,6 +264,27 @@ export function createSubHeartbeatEvent(subscriptionIds: Set<string>): Bundle {
         subscription: { reference: `Subscription/${subscriptionId}` },
       },
     })),
+  };
+}
+
+export function createHandshakeBundle(subscriptionId: string): Bundle {
+  const timestamp = new Date().toISOString();
+  return {
+    id: crypto.randomUUID(),
+    resourceType: 'Bundle',
+    type: 'history',
+    timestamp,
+    entry: [
+      {
+        resource: {
+          resourceType: 'SubscriptionStatus',
+          id: crypto.randomUUID(),
+          status: 'active',
+          type: 'handshake',
+          subscription: { reference: `Subscription/${subscriptionId}` },
+        },
+      },
+    ],
   };
 }
 

@@ -42,10 +42,12 @@ describe('EditPage', () => {
     });
 
     await setup(`/Practitioner/${practitioner.id}/edit`);
-    expect(screen.getByRole('button', { name: 'OK' })).toBeInTheDocument();
+
+    const updateButton = await screen.findByRole('button', { name: 'Update' });
+    expect(updateButton).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+      fireEvent.click(updateButton);
     });
 
     expect(screen.getByText('Success')).toBeInTheDocument();
@@ -53,12 +55,37 @@ describe('EditPage', () => {
 
   test('Delete button on edit page', async () => {
     await setup('/Practitioner/123/edit');
-    expect(await screen.findByText('Delete')).toBeInTheDocument();
 
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete'));
+      fireEvent.click(moreActions);
+    });
+
+    const deleteButton = await screen.findByText('Delete');
+    expect(deleteButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(deleteButton);
     });
 
     expect(await screen.findByText('Are you sure you want to delete this Practitioner?')).toBeInTheDocument();
+  });
+
+  test('Patch button on edit page', async () => {
+    await setup('/Practitioner/123/edit');
+
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
+    await act(async () => {
+      fireEvent.click(moreActions);
+    });
+
+    const patchButton = await screen.findByText('Patch');
+    expect(patchButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(patchButton);
+    });
+
+    expect(screen.getByText('Success')).toBeInTheDocument();
   });
 });

@@ -13,7 +13,7 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
-import { awsManagedRules } from './waf';
+import { buildWafConfig } from './waf';
 
 /**
  * Static app infrastructure, which deploys app content to an S3 bucket.
@@ -111,17 +111,11 @@ export class FrontEnd extends Construct {
       });
 
       // WAF
-      this.waf = new wafv2.CfnWebACL(this, 'FrontEndWAF', {
-        defaultAction: { allow: {} },
-        scope: 'CLOUDFRONT',
-        name: `${config.stackName}-FrontEndWAF`,
-        rules: awsManagedRules,
-        visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: `${config.stackName}-FrontEndWAF-Metric`,
-          sampledRequestsEnabled: false,
-        },
-      });
+      this.waf = new wafv2.CfnWebACL(
+        this,
+        'FrontEndWAF',
+        buildWafConfig(`${config.stackName}-FrontEndWAF`, 'CLOUDFRONT', config.appWafIpSetArn)
+      );
 
       // API Origin Cache Policy
       this.apiOriginCachePolicy = new cloudfront.CachePolicy(this, 'ApiOriginCachePolicy', {

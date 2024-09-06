@@ -1,6 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import {
   Account,
+  Address,
   Appointment,
   AppointmentParticipant,
   Binary,
@@ -35,8 +36,8 @@ import { HTTP_HL7_ORG, LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
 import { OperationOutcomeError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
-import { indexStructureDefinitionBundle } from './types';
-import { validateResource } from './validation';
+import { indexStructureDefinitionBundle, loadDataType } from './types';
+import { validateResource, validateTypedValue } from './validation';
 
 describe('FHIR resource validation', () => {
   let typesBundle: Bundle;
@@ -1514,6 +1515,154 @@ describe('FHIR resource validation', () => {
       },
     };
     expect(() => validateResource(consent)).not.toThrow();
+  });
+
+  test('Validate BackboneElement', () => {
+    const address: Address = {
+      use: 'home',
+      type: 'both',
+      text: '123 Main St',
+      line: ['123 Main St'],
+      city: 'Springfield',
+      district: 'Springfield',
+      state: 'IL',
+      postalCode: '62704',
+      country: 'USA',
+    };
+    expect(() => validateTypedValue({ type: 'Address', value: address })).not.toThrow();
+
+    expect(() => validateTypedValue({ type: 'Address', value: { foo: 'bar' } })).toThrow(
+      'Invalid additional property "foo" (Address.foo)'
+    );
+  });
+
+  test('Element type code different than path', () => {
+    // ClinicalDocument.realmCode
+    // Source: https://github.com/HL7/CDA-core-sd/blob/master/input/resources/ClinicalDocument.xml
+    // Note that the type code is disconnected from the path
+    const csSd: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: 'http://hl7.org/cda/stds/core/StructureDefinition/CS',
+      name: 'ClinicalDocument',
+      status: 'active',
+      kind: 'logical',
+      abstract: false,
+      type: 'http://hl7.org/cda/stds/core/StructureDefinition/CS',
+      snapshot: {
+        element: [
+          {
+            path: 'CS',
+          },
+          {
+            path: 'CS.code',
+            min: 0,
+            max: '1',
+            base: {
+              path: 'CD.code',
+              min: 0,
+              max: '1',
+            },
+            type: [{ code: 'code' }],
+          },
+        ],
+      },
+    };
+    loadDataType(csSd);
+
+    const clinicalDocumentSd: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: 'http://hl7.org/cda/stds/core/StructureDefinition/ClinicalDocument',
+      name: 'ClinicalDocument',
+      status: 'active',
+      kind: 'logical',
+      abstract: false,
+      type: 'http://hl7.org/cda/stds/core/StructureDefinition/ClinicalDocument',
+      snapshot: {
+        element: [
+          {
+            path: 'ClinicalDocument',
+          },
+          {
+            path: 'ClinicalDocument.realmCode',
+            min: 0,
+            max: '*',
+            base: {
+              path: 'ClinicalDocument.realmCode',
+              min: 0,
+              max: '*',
+            },
+            type: [
+              {
+                code: 'http://hl7.org/cda/stds/core/StructureDefinition/CS',
+              },
+            ],
+          },
+        ],
+      },
+    };
+    loadDataType(clinicalDocumentSd);
+
+    const typedValue1 = {
+      type: clinicalDocumentSd.type,
+      value: { realmCode: [{ code: 'foo' }] },
+    };
+    expect(() => validateTypedValue(typedValue1)).not.toThrow();
+
+    const typedValue2 = {
+      type: clinicalDocumentSd.type,
+      value: { realmCode: [{ foo: 'bar' }] },
+    };
+    expect(() => validateTypedValue(typedValue2)).toThrow(
+      'Invalid additional property "foo" (ClinicalDocument.realmCode.foo)'
+    );
+  });
+
+  test('Choice-of-type without [x]', () => {
+    // SubstanceAdministration.effectiveTime
+    // Source: https://github.com/HL7/CDA-core-sd/blob/master/input/resources/SubstanceAdministration.xml
+    // Note that there are multiple types for this property, but it does not have a [x] suffix
+    const sd: StructureDefinition = {
+      resourceType: 'StructureDefinition',
+      url: 'http://hl7.org/cda/stds/core/StructureDefinition/SubstanceAdministration',
+      name: 'SubstanceAdministration',
+      status: 'active',
+      kind: 'logical',
+      abstract: false,
+      type: 'http://hl7.org/cda/stds/core/StructureDefinition/SubstanceAdministration',
+      snapshot: {
+        element: [
+          {
+            path: 'SubstanceAdministration',
+          },
+          {
+            path: 'SubstanceAdministration.effectiveTime',
+            min: 0,
+            max: '*',
+            base: {
+              path: 'SubstanceAdministration.effectiveTime',
+              min: 0,
+              max: '*',
+            },
+            type: [{ code: 'dateTime' }, { code: 'time' }],
+          },
+        ],
+      },
+    };
+    loadDataType(sd);
+
+    const typedValue1 = {
+      type: sd.type,
+      value: { effectiveTime: ['2022-02-02T12:00:00Z'] },
+    };
+    expect(() => validateTypedValue(typedValue1)).not.toThrow();
+
+    const typedValue2 = {
+      type: sd.type,
+      value: { effectiveTime: ['foo'] },
+    };
+    expect(() => validateTypedValue(typedValue2)).toThrow(
+      'Invalid dateTime format (SubstanceAdministration.effectiveTime)'
+    );
   });
 });
 

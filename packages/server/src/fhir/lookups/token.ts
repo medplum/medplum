@@ -24,7 +24,17 @@ import {
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { getLogger } from '../../context';
-import { Column, Condition, Conjunction, Disjunction, Exists, Expression, Negation, SelectQuery } from '../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  Expression,
+  SqlFunction,
+  Negation,
+  SelectQuery,
+  escapeLikeString,
+} from '../sql';
 import { LookupTable } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
 
@@ -115,7 +125,9 @@ export class TokenTable extends LookupTable {
       conjunction.expressions.push(whereExpression);
     }
 
-    const exists = new Exists(new SelectQuery(lookupTableName).column('resourceId').whereExpr(conjunction));
+    const exists = new SqlFunction('EXISTS', [
+      new SelectQuery(lookupTableName).column('resourceId').whereExpr(conjunction),
+    ]);
 
     if (shouldTokenRowExist(filter)) {
       return exists;
@@ -134,7 +146,8 @@ export class TokenTable extends LookupTable {
     const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
-    selectQuery.innerJoin(
+    selectQuery.join(
+      'INNER JOIN',
       new SelectQuery(lookupTableName)
         .distinctOn('resourceId')
         .column('resourceId')
@@ -470,7 +483,7 @@ function buildValueCondition(tableName: string, operator: FhirOperator, value: s
     ]);
   } else if (operator === FhirOperator.CONTAINS) {
     getLogger().warn('Potentially expensive token lookup query', { operator });
-    return new Condition(column, 'LIKE', value.trim() + '%');
+    return new Condition(column, 'LIKE', escapeLikeString(value.trim()) + '%');
   } else {
     return new Condition(column, '=', value.trim());
   }

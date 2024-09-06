@@ -1,10 +1,12 @@
-import express from 'express';
+import express, { json } from 'express';
 import request from 'supertest';
-import { initApp, shutdownApp } from './app';
+import { initApp, JSON_TYPE, shutdownApp } from './app';
 import { getConfig, loadTestConfig } from './config';
-import { getDatabasePool } from './database';
+import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
+import { initTestAuth } from './test.setup';
+import { ContentType } from '@medplum/core';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
@@ -29,6 +31,39 @@ describe('App', () => {
     expect(res.headers['content-security-policy']).toBeDefined();
     expect(res.headers['referrer-policy']).toBeDefined();
     expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test.each<[string, boolean]>([
+    [ContentType.JSON, true],
+    [ContentType.FHIR_JSON, true],
+    [ContentType.JSON_PATCH, true],
+    [ContentType.SCIM_JSON, true],
+    ['application/cloudevents-batch+json', true],
+    ['application/gibberish+json', true],
+    ['application/text', false], // not JSON
+    ['text/json', false], // legacy mime type
+    ['text/x-json', false], // legacy mime type
+    ['json/application', false], // invalid
+  ])('JSON body parser with %s', async (contentType, shouldParse) => {
+    const app = express();
+    app.use(json({ type: JSON_TYPE }));
+    app.post('/post-me', (req, res) => {
+      if (req.body?.toEcho) {
+        res.json({ ok: true, echo: req.body?.toEcho });
+      } else {
+        res.json({ ok: false });
+      }
+    });
+
+    const res = await request(app)
+      .post('/post-me')
+      .set('Content-Type', contentType)
+      .send(JSON.stringify({ toEcho: 'hai' }));
+    if (shouldParse) {
+      expect(res.body).toEqual({ ok: true, echo: 'hai' });
+    } else {
+      expect(res.body).toEqual({ ok: false });
+    }
   });
 
   test('Get HTTPS config', async () => {
@@ -106,8 +141,24 @@ describe('App', () => {
 
     const loggerError = jest.spyOn(globalLogger, 'error').mockReturnValueOnce();
     const error = new Error('Mock database disconnect');
-    getDatabasePool().emit('error', error);
+    getDatabasePool(DatabaseMode.WRITER).emit('error', error);
     expect(loggerError).toHaveBeenCalledWith('Database connection error', error);
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test.skip('Database timeout', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const accessToken = await initTestAuth({ project: { superAdmin: true } });
+
+    config.database.queryTimeout = 1;
+    await initApp(app, config);
+    const res = await request(app)
+      .get(`/fhir/R4/SearchParameter?base=Observation`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(400);
+
     expect(await shutdownApp()).toBeUndefined();
   });
 

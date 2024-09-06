@@ -5,14 +5,18 @@ import {
   forbidden,
   getResourceTypes,
   OperationOutcomeError,
+  parseSearchRequest,
+  SearchRequest,
   validateResourceType,
 } from '@medplum/core';
+import { ResourceType } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
+import { getConfig } from '../config';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
@@ -23,9 +27,7 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { ResourceType } from '@medplum/fhirtypes';
 import { addReindexJob } from '../workers/reindex';
-import { getConfig } from '../config';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
@@ -78,16 +80,27 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    const resourceTypes = (req.body.resourceType as string).split(',').map((t) => t.trim());
-    for (const resourceType of resourceTypes) {
-      validateResourceType(resourceType);
+    let resourceTypes: string[];
+    if (req.body.resourceType === '*') {
+      resourceTypes = getResourceTypes().filter((rt) => rt !== 'Binary');
+    } else {
+      resourceTypes = (req.body.resourceType as string).split(',').map((t) => t.trim());
+      for (const resourceType of resourceTypes) {
+        validateResourceType(resourceType);
+      }
     }
-    const systemRepo = getSystemRepo();
 
+    let searchFilter: SearchRequest | undefined;
+    const filter = req.body.filter as string;
+    if (filter) {
+      searchFilter = parseSearchRequest((resourceTypes[0] ?? '') + '?' + filter);
+    }
+
+    const systemRepo = getSystemRepo();
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob);
+      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter);
     });
 
     const { baseUrl } = getConfig();
@@ -176,7 +189,7 @@ superAdminRouter.post(
     await sendAsyncResponse(req, res, async () => {
       const resourceTypes = getResourceTypes();
       for (const resourceType of resourceTypes) {
-        await getDatabasePool().query(
+        await getDatabasePool(DatabaseMode.WRITER).query(
           `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
         );
       }
@@ -196,7 +209,7 @@ superAdminRouter.post(
 
     await sendAsyncResponse(req, res, async () => {
       const systemRepo = getSystemRepo();
-      const client = getDatabasePool();
+      const client = getDatabasePool(DatabaseMode.WRITER);
       const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
       const version = result.rows[0]?.dataVersion as number;
       const migrationKeys = Object.keys(dataMigrations);

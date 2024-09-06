@@ -14,6 +14,8 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
+import { SelectQuery } from '../fhir/sql';
+import { DatabaseMode, getDatabasePool } from '../database';
 
 jest.mock('hibp');
 jest.mock('node-fetch');
@@ -82,6 +84,11 @@ describe('Admin Invite', () => {
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
 
     expect(parsed.subject).toBe('Welcome to Medplum');
+    const rows = await new SelectQuery('User')
+      .column('projectId')
+      .where('email', '=', bobEmail)
+      .execute(getDatabasePool(DatabaseMode.READER));
+    expect(rows[0].projectId).toEqual(null);
   });
 
   test('Existing user to project', async () => {
@@ -130,6 +137,12 @@ describe('Admin Invite', () => {
 
     const parsed = await simpleParser(Readable.from(inputArgs?.Content?.Raw?.Data ?? ''));
     expect(parsed.subject).toBe('Medplum: Welcome to Alice Project');
+
+    const rows = await new SelectQuery('User')
+      .column('projectId')
+      .where('email', '=', bobEmail)
+      .execute(getDatabasePool(DatabaseMode.READER));
+    expect(rows[0].projectId).toEqual(null);
   });
 
   test('Existing practitioner to project', async () => {
@@ -173,6 +186,12 @@ describe('Admin Invite', () => {
 
     expect(res3.status).toBe(200);
     expect(res3.body.profile.reference).toEqual(getReferenceString(res2.body));
+
+    const rows = await new SelectQuery('User')
+      .column('projectId')
+      .where('email', '=', bobEmail)
+      .execute(getDatabasePool(DatabaseMode.READER));
+    expect(rows[0].projectId).toEqual(null);
   });
 
   test('Specified practitioner to project', async () => {
@@ -218,6 +237,12 @@ describe('Admin Invite', () => {
 
     expect(res3.status).toBe(200);
     expect(res3.body.profile.reference).toEqual(getReferenceString(res2.body));
+
+    const rows = await new SelectQuery('User')
+      .column('projectId')
+      .where('email', '=', bobEmail)
+      .execute(getDatabasePool(DatabaseMode.READER));
+    expect(rows[0].projectId).toEqual(null);
   });
 
   test('Access denied', async () => {
@@ -328,6 +353,7 @@ describe('Admin Invite', () => {
 
     // Second, Alice invites Bob to the project
     const bobSub = randomUUID();
+    const bobEmail = `bob${randomUUID()}@example.com`;
     const res2 = await request(app)
       .post('/admin/projects/' + project.id + '/invite')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -335,6 +361,8 @@ describe('Admin Invite', () => {
         resourceType: 'Patient',
         firstName: 'Bob',
         lastName: 'Jones',
+        email: bobEmail,
+        sendEmail: false,
         externalId: bobSub,
       });
 
@@ -343,6 +371,12 @@ describe('Admin Invite', () => {
     expect(res2.body.admin).toBe(undefined);
     expect(mockSESv2Client.send.callCount).toBe(0);
     expect(mockSESv2Client).not.toHaveReceivedCommand(SendEmailCommand);
+
+    const rows = await new SelectQuery('User')
+      .column('projectId')
+      .where('email', '=', bobEmail)
+      .execute(getDatabasePool(DatabaseMode.READER));
+    expect(rows[0].projectId).toEqual(project.id);
   });
 
   test('Duplicate externalId', async () => {
@@ -522,6 +556,12 @@ describe('Admin Invite', () => {
     expect(res2.body.admin).toBe(true);
     expect(mockSESv2Client.send.callCount).toBe(1);
     expect(mockSESv2Client).toHaveReceivedCommandTimes(SendEmailCommand, 1);
+
+    const rows = await new SelectQuery('User')
+      .column('projectId')
+      .where('email', '=', bobEmail)
+      .execute(getDatabasePool(DatabaseMode.READER));
+    expect(rows[0].projectId).toEqual(project.id);
   });
 
   test('Invite user with admin flag as false', async () => {

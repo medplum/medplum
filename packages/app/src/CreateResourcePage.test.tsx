@@ -24,14 +24,16 @@ describe('CreateResourcePage', () => {
       await setup(url);
       expect(await screen.findByText('New Practitioner')).toBeInTheDocument();
       expect(screen.getByText('Resource Type')).toBeInTheDocument();
-      expect(screen.getByText('OK')).toBeInTheDocument();
+      expect(screen.getByText('Create')).toBeInTheDocument();
     });
 
     test('Form submit new Practitioner', async () => {
       await setup(url);
-      expect(await screen.findByText('OK')).toBeInTheDocument();
+
+      const createButton = await screen.findByText('Create');
+      expect(createButton).toBeInTheDocument();
       await act(async () => {
-        fireEvent.click(screen.getByText('OK'));
+        fireEvent.click(createButton);
       });
     });
   }

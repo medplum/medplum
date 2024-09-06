@@ -1,11 +1,7 @@
 ---
 slug: medplum-mitre-talk
 title: Medplum Talk at MITRE OHS
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [interop, fhir-datastore]
 ---
 
@@ -13,11 +9,15 @@ tags: [interop, fhir-datastore]
 
 [MITRE](https://www.mitre.org/) Open Health Solutions is a leader in healthcare open source and are the makers of [Inferno](https://inferno.healthit.gov/), [Synthea](https://synthea.mitre.org/) and more - which are tools we use all the time here.
 
+<!-- truncate -->
+
 Medplum gave a talk at MITRE last fall, that was [recently released](https://youtu.be/D_S7EKe-S5E), and this post contains an annotated transcript and clips, as well as some updates as the talk was last fall, shortly after Medplum's public launch. Transcript has been lightly edited for clarity.
 
 ## Medplum Intro and Team Story
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _5 minutes_
 
@@ -51,7 +51,9 @@ Our experience is also informed by building many applications that are in the he
 
 ## Healthcare Developer Pain Points
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=300" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=300" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _5 minutes_
 
@@ -79,7 +81,9 @@ So that leads me to the next part, which is our approach, how we've thought abou
 
 ## System Overview
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=590" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=590" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _3 minutes_
 
@@ -107,7 +111,9 @@ And we just have a built-in implementation as well as allowing people to [bring 
 
 ## Traditional Healthcare Applications
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=799" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=799" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 1 minute
 
@@ -121,7 +127,9 @@ So the, I'll emphasize that. It's very common to have a SaaS app with an API sof
 
 ## Developer Experience and Open Source
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=899" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=899" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _4 minutes_
 
@@ -143,7 +151,9 @@ We are early in our open source life, so I'm really excited for the chance to me
 
 ## Business Model
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1136" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1136" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _1 minute_
 
@@ -157,7 +167,9 @@ And again, this is a model that is, is modeled after GitLab and their very succe
 
 ## Demos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1243" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1243" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _10 minutes_
 

@@ -1,8 +1,9 @@
 import { CodeableConcept } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, within } from '../test-utils/render';
 import { CodeableConceptInput, CodeableConceptInputProps } from './CodeableConceptInput';
+import { AsyncAutocompleteTestIds } from '../AsyncAutocomplete/AsyncAutocomplete.utils';
 
 const medplum = new MockClient();
 const binding = 'https://example.com/test';
@@ -75,7 +76,8 @@ describe('CodeableConceptInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(screen.getByText('Test Display')).toBeDefined();
+    const selected = within(screen.getByTestId(AsyncAutocompleteTestIds.selectedItems));
+    expect(selected.getByText('Test Display')).toBeDefined();
   });
 
   test('Create unstructured value', async () => {

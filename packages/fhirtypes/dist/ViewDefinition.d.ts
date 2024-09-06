@@ -294,7 +294,7 @@ export interface ViewDefinitionConstant {
    *
    * Support for additional types may be added in the future.
    */
-  valueInteger64?: integer64;
+  valueInteger64?: string;
 
   /**
    * The value that will be substituted in place of the constant reference.
@@ -403,7 +403,7 @@ export interface ViewDefinitionConstant {
  *
  * Support for additional types may be added in the future.
  */
-export type ViewDefinitionConstantValue = boolean | integer64 | number | string;
+export type ViewDefinitionConstantValue = boolean | number | string;
 
 /**
  * The select structure defines the columns to be used in the resulting

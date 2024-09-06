@@ -1,8 +1,8 @@
+import { AccessPolicyInteraction, satisfiedAccessPolicy, tryGetProfile } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { BackboneElementDisplay } from '../BackboneElementDisplay/BackboneElementDisplay';
-import { AccessPolicyInteraction, satisfiedAccessPolicy, tryGetProfile } from '@medplum/core';
 
 export interface ResourceTableProps {
   /**
@@ -32,7 +32,7 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
   const medplum = useMedplum();
   const accessPolicy = medplum.getAccessPolicy();
   const value = useResource(props.value);
-  const [schemaLoaded, setSchemaLoaded] = useState<string>();
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
 
   useEffect(() => {
     if (!value) {
@@ -45,7 +45,7 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
         .then(() => {
           const profile = tryGetProfile(profileUrl);
           if (profile) {
-            setSchemaLoaded(profile.name);
+            setSchemaLoaded(true);
           } else {
             console.error(`Schema not found for ${profileUrl}`);
           }
@@ -58,7 +58,7 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
       medplum
         .requestSchema(schemaName)
         .then(() => {
-          setSchemaLoaded(schemaName);
+          setSchemaLoaded(true);
         })
         .catch(console.error);
     }
@@ -76,7 +76,7 @@ export function ResourceTable(props: ResourceTableProps): JSX.Element | null {
     <BackboneElementDisplay
       path={value.resourceType}
       value={{
-        type: schemaLoaded,
+        type: value.resourceType,
         value: props.forceUseInput ? props.value : value,
       }}
       profileUrl={profileUrl}

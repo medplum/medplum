@@ -1,6 +1,6 @@
 {
   "name": "@medplum/bot-layer",
-  "version": "3.1.10",
+  "version": "3.2.8",
   "description": "Medplum Bot Lambda Layer",
   "keywords": [
     "medplum",
@@ -22,20 +22,20 @@
   "author": "Medplum <hello@medplum.com>",
   "type": "module",
   "dependencies": {
-    "@medplum/core": "3.1.10",
-    "@medplum/definitions": "3.1.10",
+    "@medplum/core": "3.2.8",
+    "@medplum/definitions": "3.2.8",
     "form-data": "4.0.0",
-    "jose": "5.4.1",
+    "jose": "5.8.0",
     "node-fetch": "2.7.0",
-    "pdfmake": "0.2.10",
+    "pdfmake": "0.2.12",
     "ssh2": "1.15.0",
-    "ssh2-sftp-client": "10.0.3"
+    "ssh2-sftp-client": "11.0.0"
   },
   "devDependencies": {
     "@types/node-fetch": "2.6.11"
   },
   "peerDependencies": {
-    "@medplum/core": "3.1.10",
+    "@medplum/core": "3.2.8",
     "form-data": "^4.0.0",
     "node-fetch": "^2.7.0",
     "pdfmake": "^0.2.7",

@@ -1,5 +1,6 @@
 import {
   ClientStorage,
+  MedplumClientEventMap,
   MemoryStorage,
   MockAsyncClientStorage,
   ProfileResource,
@@ -323,6 +324,71 @@ describe('MedplumProvider', () => {
       await loginPromise;
 
       expect(mockFetchSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
+    });
+
+    test('Async ClientStorage.getInitPromise throws', async () => {
+      const originalConsoleError = console.error;
+      console.error = jest.fn();
+
+      class TestAsyncStorage extends MockAsyncClientStorage {
+        private promise: Promise<void>;
+        private reject!: (err: Error) => void;
+        constructor() {
+          super();
+          this.promise = new Promise((_resolve, reject) => {
+            this.reject = reject;
+          });
+        }
+
+        getInitPromise(): Promise<void> {
+          return this.promise;
+        }
+
+        rejectInitPromise(): void {
+          this.reject(new Error('Failed to init storage!'));
+        }
+      }
+
+      const storage = new TestAsyncStorage();
+      let medplum!: MockClient;
+      let dispatchEventSpy!: jest.SpyInstance;
+
+      act(() => {
+        medplum = new MockClient({
+          storage,
+        });
+        dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+      });
+
+      expect(medplum.isLoading()).toEqual(true);
+
+      act(() => {
+        render(
+          <MedplumProvider medplum={medplum}>
+            <MyComponent />
+          </MedplumProvider>
+        );
+      });
+
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(medplum.isLoading()).toEqual(true);
+
+      act(() => {
+        storage.rejectInitPromise();
+      });
+
+      expect(await screen.findByText('Loaded!')).toBeInTheDocument();
+      expect(medplum.isLoading()).toEqual(false);
+      expect(dispatchEventSpy).toHaveBeenCalledWith<[MedplumClientEventMap['storageInitFailed']]>({
+        type: 'storageInitFailed',
+        payload: { error: new Error('Failed to init storage!') },
+      });
+      expect(dispatchEventSpy).not.toHaveBeenCalledWith<[MedplumClientEventMap['storageInitialized']]>({
+        type: 'storageInitialized',
+      });
+
+      expect(console.error).toHaveBeenCalledWith(new Error('Failed to init storage!'));
+      console.error = originalConsoleError;
     });
   });
 });

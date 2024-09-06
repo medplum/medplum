@@ -2,7 +2,7 @@ import { Group, Text } from '@mantine/core';
 import { getDisplayString, getReferenceString, isPopulated } from '@medplum/core';
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { forwardRef, useCallback, useState } from 'react';
+import { forwardRef, ReactNode, useCallback, useState } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 
@@ -15,6 +15,7 @@ import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 const SEARCH_CODES: Record<string, string> = {
   Device: 'device-name',
   Observation: 'code',
+  Subscription: 'criteria',
   User: 'email:contains',
 };
 
@@ -80,6 +81,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly placeholder?: string;
   readonly loadOnFocus?: boolean;
   readonly required?: boolean;
+  readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
   readonly onChange?: (value: T | undefined) => void;
   readonly disabled?: boolean;
 }
@@ -97,6 +99,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   const { resourceType, searchCriteria } = props;
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const defaultValue = useResource(props.defaultValue, setOutcome);
+  const ItemComponent = props.itemComponent ?? DefaultItemComponent;
   const onChange = props.onChange;
 
   const loadValues = useCallback(
@@ -147,8 +150,8 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   );
 }
 
-const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resource>>(
-  ({ label, resource, ...others }: AsyncAutocompleteOption<Resource>, ref) => {
+const DefaultItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resource>>(
+  ({ label, resource, active: _active, ...others }: AsyncAutocompleteOption<Resource>, ref) => {
     return (
       <div ref={ref} {...others}>
         <Group wrap="nowrap">
@@ -156,7 +159,7 @@ const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resourc
           <div>
             <Text>{label}</Text>
             <Text size="xs" c="dimmed">
-              {(resource as Patient).birthDate}
+              {(resource as Patient).birthDate || resource.id}
             </Text>
           </div>
         </Group>

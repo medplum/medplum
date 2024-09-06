@@ -85,7 +85,8 @@ import {
 } from './mocks/workflow';
 import { MockSubscriptionManager } from './subscription-manager';
 
-export interface MockClientOptions extends MedplumClientOptions {
+export interface MockClientOptions
+  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime'> {
   readonly debug?: boolean;
   /**
    * Override currently logged in user. Specifying null results in
@@ -147,6 +148,7 @@ export class MockClient extends MedplumClient {
       baseUrl,
       clientId: clientOptions?.clientId,
       storage: clientOptions?.storage,
+      cacheTime: clientOptions?.cacheTime,
       createPdf: (
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
@@ -161,7 +163,7 @@ export class MockClient extends MedplumClient {
     this.repo = repo;
     this.client = client;
     // if null is specified, treat it as if no one is logged in
-    this.profile = clientOptions?.profile === null ? undefined : clientOptions?.profile ?? DrAliceSmith;
+    this.profile = clientOptions?.profile === null ? undefined : (clientOptions?.profile ?? DrAliceSmith);
     this.debug = !!clientOptions?.debug;
   }
 
@@ -289,10 +291,17 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
   getSubscriptionManager(): MockSubscriptionManager {
     if (!this.subManager) {
       this.subManager = new MockSubscriptionManager(this, 'wss://example.com/ws/subscriptions-r4', {
-        mockRobustWebSocket: true,
+        mockReconnectingWebSocket: true,
       });
     }
     return this.subManager;
+  }
+
+  setSubscriptionManager(subManager: MockSubscriptionManager): void {
+    if (this.subManager) {
+      this.subManager.closeWebSocket();
+    }
+    this.subManager = subManager;
   }
 
   subscribeToCriteria(criteria: string, subscriptionProps?: Partial<Subscription>): SubscriptionEmitter {
@@ -683,6 +692,7 @@ export class MockFetchClient {
 
     for (const structureDefinition of StructureDefinitionList as StructureDefinition[]) {
       structureDefinition.kind = 'resource';
+      structureDefinition.url = 'http://hl7.org/fhir/StructureDefinition/' + structureDefinition.name;
       loadDataType(structureDefinition);
       await this.repo.createResource(structureDefinition);
     }
@@ -711,7 +721,7 @@ export class MockFetchClient {
     if (options.body) {
       try {
         body = JSON.parse(options.body);
-      } catch (err) {
+      } catch (_err) {
         body = options.body;
       }
     }
@@ -722,6 +732,7 @@ export class MockFetchClient {
       body,
       params: Object.create(null),
       query: Object.fromEntries(parsedUrl.searchParams),
+      headers: toIncomingHttpHeaders(options.headers),
     };
 
     const result = await this.router.handleRequest(request, this.repo);
@@ -735,4 +746,26 @@ export class MockFetchClient {
 
 function base64Encode(str: string): string {
   return typeof window !== 'undefined' ? window.btoa(str) : Buffer.from(str).toString('base64');
+}
+
+// even though it's just a type, avoid importing IncomingHttpHeaders from node:http
+// since MockClient needs to work in the browser. Use a reasonable approximation instead
+interface PseudoIncomingHttpHeaders {
+  [key: string]: string | undefined;
+}
+function toIncomingHttpHeaders(headers: HeadersInit | undefined): PseudoIncomingHttpHeaders {
+  const result: PseudoIncomingHttpHeaders = {};
+
+  if (headers) {
+    for (const [key, value] of Object.entries(headers)) {
+      const lowerKey = key.toLowerCase();
+      if (typeof value === 'string') {
+        result[lowerKey] = value;
+      } else {
+        console.warn(`Ignoring non-string value ${value} for header ${lowerKey}`);
+      }
+    }
+  }
+
+  return result;
 }

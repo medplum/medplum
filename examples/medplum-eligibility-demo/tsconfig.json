@@ -15,5 +15,6 @@
     "noEmit": true,
     "jsx": "react-jsx"
   },
-  "include": ["src", "data/example/request-data.ts"]
+  "include": ["src", "data/example/request-data.ts"],
+  "exclude": ["dist"]
 }

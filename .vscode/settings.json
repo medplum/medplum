@@ -20,6 +20,5 @@
   },
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "never"
-  },
-  "vitest.disableWorkspaceWarning": true
+  }
 }

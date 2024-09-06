@@ -13,7 +13,8 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
-import { ReindexJobData, getReindexQueue } from '../workers/reindex';
+import { ReindexJobData, execReindexJob, getReindexQueue } from '../workers/reindex';
+import { Job } from 'bullmq';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -317,6 +318,8 @@ describe('Super Admin routes', () => {
         resourceTypes: ['PaymentNotice'],
       })
     );
+    await withTestContext(() => execReindexJob({ data: queue.add.mock.calls[0][1] } as Job));
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test('Reindex with multiple resource types', async () => {
@@ -329,7 +332,7 @@ describe('Super Admin routes', () => {
       .set('Prefer', 'respond-async')
       .type('json')
       .send({
-        resourceType: 'PaymentNotice, MedicinalProductManufactured,BiologicallyDerivedProduct',
+        resourceType: 'PaymentNotice,MedicinalProductManufactured,BiologicallyDerivedProduct',
       });
 
     expect(res.status).toEqual(202);
@@ -340,6 +343,33 @@ describe('Super Admin routes', () => {
         resourceTypes: ['PaymentNotice', 'MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
       })
     );
+    let job = { data: queue.add.mock.calls[0][1] } as Job;
+    queue.add.mockClear();
+
+    await withTestContext(() => execReindexJob(job));
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
+      })
+    );
+    job = { data: queue.add.mock.calls[0][1] } as Job;
+    queue.add.mockClear();
+
+    await withTestContext(() => execReindexJob(job));
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['BiologicallyDerivedProduct'],
+      })
+    );
+    job = { data: queue.add.mock.calls[0][1] } as Job;
+    queue.add.mockClear();
+
+    await withTestContext(() => execReindexJob(job));
+    expect(queue.add).not.toHaveBeenCalled();
+
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test('Set password access denied', async () => {

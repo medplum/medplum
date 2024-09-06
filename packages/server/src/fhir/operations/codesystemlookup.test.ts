@@ -24,6 +24,12 @@ const testCodeSystem: CodeSystem = {
       description: 'Test parent property',
       type: 'code',
     },
+    {
+      code: 'abstract',
+      uri: 'http://hl7.org/fhir/concept-properties#notSelectable',
+      description: 'Code is not a real thing',
+      type: 'string',
+    },
   ],
   concept: [
     {
@@ -33,7 +39,19 @@ const testCodeSystem: CodeSystem = {
         {
           code: '3',
           display: 'Procedure on head',
-          concept: [{ code: '2', display: 'Biopsy of head', concept: [{ code: '1', display: 'Biopsy of brain' }] }],
+          concept: [
+            {
+              code: '2',
+              display: 'Biopsy of head',
+              concept: [{ code: '1', display: 'Biopsy of brain' }],
+              property: [
+                {
+                  code: 'abstract',
+                  valueBoolean: true,
+                },
+              ],
+            },
+          ],
         },
       ],
     },
@@ -87,10 +105,48 @@ describe('CodeSystem lookup', () => {
           part: [
             { name: 'code', valueCode: 'parent' },
             { name: 'value', valueCode: '2' },
-            { name: 'description', valueString: 'Test parent property' },
+            { name: 'description', valueString: 'Biopsy of head' },
           ],
         },
       ],
+    });
+  });
+
+  test('Renders description for relationship and simple properties', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/CodeSystem/$lookup')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/fhir+json')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          { name: 'system', valueUri: codeSystem.url },
+          { name: 'code', valueCode: '2' },
+        ],
+      } as Parameters);
+    expect(res.status).toEqual(200);
+    expect(res.body).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: expect.arrayContaining([
+        { name: 'name', valueString: 'Test Code System' },
+        { name: 'display', valueString: 'Biopsy of head' },
+        {
+          name: 'property',
+          part: [
+            { name: 'code', valueCode: 'parent' },
+            { name: 'value', valueCode: '3' },
+            { name: 'description', valueString: 'Procedure on head' },
+          ],
+        },
+        {
+          name: 'property',
+          part: [
+            { name: 'code', valueCode: 'abstract' },
+            { name: 'value', valueString: 'true' },
+            { name: 'description', valueString: 'Code is not a real thing' },
+          ],
+        },
+      ]),
     });
   });
 
@@ -114,7 +170,7 @@ describe('CodeSystem lookup', () => {
           part: [
             { name: 'code', valueCode: 'parent' },
             { name: 'value', valueCode: '2' },
-            { name: 'description', valueString: 'Test parent property' },
+            { name: 'description', valueString: 'Biopsy of head' },
           ],
         },
       ],
@@ -225,7 +281,7 @@ describe('CodeSystem lookup', () => {
           part: [
             { name: 'code', valueCode: 'parent' },
             { name: 'value', valueCode: '2' },
-            { name: 'description', valueString: 'Test parent property' },
+            { name: 'description', valueString: 'Biopsy of head' },
           ],
         },
       ],
@@ -249,7 +305,7 @@ describe('CodeSystem lookup', () => {
           part: [
             { name: 'code', valueCode: 'parent' },
             { name: 'value', valueCode: '2' },
-            { name: 'description', valueString: 'Test parent property' },
+            { name: 'description', valueString: 'Biopsy of head' },
           ],
         },
       ],
@@ -289,7 +345,7 @@ describe('CodeSystem lookup', () => {
           part: [
             { name: 'code', valueCode: 'parent' },
             { name: 'value', valueCode: '2' },
-            { name: 'description', valueString: 'Test parent property' },
+            { name: 'description', valueString: 'Biopsy of head' },
           ],
         },
       ],

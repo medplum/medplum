@@ -46,9 +46,9 @@ async function validateReference(
   }
 }
 
-function isCheckableReference(propertyValue: TypedValue | TypedValue[], parent: TypedValue): boolean {
+function isCheckableReference(propertyValue: TypedValue | TypedValue[]): boolean {
   const valueType = Array.isArray(propertyValue) ? propertyValue[0].type : propertyValue.type;
-  return valueType === PropertyType.Reference && parent.type !== PropertyType.Meta;
+  return valueType === PropertyType.Reference;
 }
 
 export async function validateReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
@@ -57,7 +57,7 @@ export async function validateReferences<T extends Resource>(repo: Repository, r
     resource,
     {
       async visitPropertyAsync(parent, _key, path, propertyValue, _schema) {
-        if (!isCheckableReference(propertyValue, parent)) {
+        if (!isCheckableReference(propertyValue) || parent.type === PropertyType.Meta) {
           return;
         }
 
@@ -114,7 +114,7 @@ export async function replaceConditionalReferences<T extends Resource>(repo: Rep
     resource,
     {
       async visitPropertyAsync(parent, key, path, propertyValue, _schema) {
-        if (!isCheckableReference(propertyValue, parent)) {
+        if (!isCheckableReference(propertyValue)) {
           return;
         }
 

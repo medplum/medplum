@@ -1,6 +1,6 @@
 import {
-  Bundle,
   Attachment,
+  Bundle,
   CodeableConcept,
   DeviceDeviceName,
   Observation,
@@ -28,6 +28,7 @@ import {
   findObservationInterval,
   findObservationReferenceRange,
   findResourceByCode,
+  flatMapFilter,
   getAllQuestionnaireAnswers,
   getCodeBySystem,
   getDateProperty,
@@ -182,6 +183,15 @@ describe('Core Utils', () => {
     expect(
       getDisplayString({
         resourceType: 'MedicationRequest',
+        id: '123',
+        status: 'active',
+        intent: 'order',
+        subject: { reference: 'Patient/123' },
+      })
+    ).toEqual('MedicationRequest/123');
+    expect(
+      getDisplayString({
+        resourceType: 'MedicationRequest',
         status: 'active',
         intent: 'order',
         subject: { reference: 'Patient/123' },
@@ -189,6 +199,25 @@ describe('Core Utils', () => {
       })
     ).toEqual('foo');
     expect(getDisplayString({ resourceType: 'PractitionerRole', code: [{ text: 'foo' }] })).toEqual('foo');
+    expect(
+      getDisplayString({
+        resourceType: 'Subscription',
+        id: '123',
+        status: 'active',
+        reason: 'Test',
+        criteria: '',
+        channel: { type: 'rest-hook' },
+      })
+    ).toEqual('Subscription/123');
+    expect(
+      getDisplayString({
+        resourceType: 'Subscription',
+        status: 'active',
+        reason: 'Test',
+        criteria: 'Observation?code=123',
+        channel: { type: 'rest-hook' },
+      })
+    ).toEqual('Observation?code=123');
   });
 
   const EMPTY = [true, false];
@@ -698,6 +727,11 @@ describe('Core Utils', () => {
     expect(
       deepEquals({ resourceType: 'Patient', meta: { author: '1' } }, { resourceType: 'Patient', meta: { author: '2' } })
     ).toEqual(true);
+
+    // Functions
+    const onConnect = (): void => undefined;
+    expect(deepEquals({ onConnect }, { onConnect })).toEqual(true);
+    expect(deepEquals({ onConnect: () => undefined }, { onConnect: () => undefined })).toEqual(false);
   });
 
   test('deepIncludes', () => {
@@ -1490,5 +1524,17 @@ describe('mapByIdentifier', () => {
     const map = mapByIdentifier(bundle, 'http://example.com');
 
     expect(map.size).toBe(0);
+  });
+});
+
+describe('flatMapFilter', () => {
+  test('maps and filters scalar values', () => {
+    const input = [1, 2, 3];
+    expect(flatMapFilter(input, (x) => (x >= 2 ? x * x : undefined))).toEqual([4, 9]);
+  });
+
+  test('flattens nested arrays', () => {
+    const input = [1, 2, 3];
+    expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, [x, x]] : undefined))).toEqual([2, 2, 2]);
   });
 });

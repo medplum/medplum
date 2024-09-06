@@ -1,4 +1,5 @@
 import { Menu } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
 import { Communication, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
@@ -10,15 +11,27 @@ import {
   useMedplum,
   useMedplumNavigate,
 } from '@medplum/react';
-import { IconEdit, IconListDetails, IconPin, IconPinnedOff, IconTrash } from '@tabler/icons-react';
-import { ReactNode } from 'react';
+import {
+  IconEdit,
+  IconListDetails,
+  IconPin,
+  IconPinnedOff,
+  IconRepeat,
+  IconTextRecognition,
+  IconTrash,
+} from '@tabler/icons-react';
+import { ReactNode, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { isAwsTextractEnabled } from '../config';
+import { ResendSubscriptionsModal } from './ResendSubscriptionsModal';
 
 export function TimelinePage(): JSX.Element | null {
   const medplum = useMedplum();
   const navigate = useMedplumNavigate();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
   const reference = { reference: resourceType + '/' + id };
+  const [resendSubscriptionsResource, setResendSubscriptionsResource] = useState<Resource | undefined>();
+  const resendSubscriptiosnDisclosure = useDisclosure(false);
 
   function setPriority(
     communication: Communication,
@@ -47,8 +60,20 @@ export function TimelinePage(): JSX.Element | null {
     navigate(`/${timelineItem.resourceType}/${timelineItem.id}/delete`);
   }
 
+  function onResend(timelineItem: Resource): void {
+    setResendSubscriptionsResource(timelineItem);
+    resendSubscriptiosnDisclosure[1].open();
+  }
+
   function onVersionDetails(version: Resource): void {
     navigate(`/${version.resourceType}/${version.id}/_history/${version.meta?.versionId}`);
+  }
+
+  function onAwsTextract(resource: Resource, reloadTimeline: () => void): void {
+    medplum
+      .post(medplum.fhirUrl(resource.resourceType, resource.id as string, '$aws-textract'), {})
+      .then(reloadTimeline)
+      .catch(console.error);
   }
 
   function getMenu(context: ResourceTimelineMenuItemContext): ReactNode {
@@ -65,6 +90,13 @@ export function TimelinePage(): JSX.Element | null {
 
     const canEdit = !isHistoryResource;
     const canDelete = !isHistoryResource;
+
+    const isProjectAdmin = medplum.getProjectMembership()?.admin;
+    const canResend = isProjectAdmin;
+
+    const showAwsAi =
+      isAwsTextractEnabled() &&
+      (currentResource.resourceType === 'DocumentReference' || currentResource.resourceType === 'Media');
 
     return (
       <Menu.Dropdown>
@@ -114,6 +146,34 @@ export function TimelinePage(): JSX.Element | null {
             Edit
           </Menu.Item>
         )}
+        {isProjectAdmin && (
+          <>
+            <Menu.Divider />
+            <Menu.Label>Admin</Menu.Label>
+            {canResend && (
+              <Menu.Item
+                leftSection={<IconRepeat size={14} />}
+                onClick={() => onResend(currentResource)}
+                aria-label={`Resend Subscriptions ${getReferenceString(currentResource)}`}
+              >
+                Resend Subscriptions
+              </Menu.Item>
+            )}
+          </>
+        )}
+        {showAwsAi && (
+          <>
+            <Menu.Divider />
+            <Menu.Label>AWS AI</Menu.Label>
+            <Menu.Item
+              leftSection={<IconTextRecognition size={14} />}
+              onClick={() => onAwsTextract(currentResource, reloadTimeline)}
+              aria-label={`AWS Textract ${getReferenceString(currentResource)}`}
+            >
+              AWS Textract
+            </Menu.Item>
+          </>
+        )}
         {canDelete && (
           <>
             <Menu.Divider />
@@ -132,14 +192,20 @@ export function TimelinePage(): JSX.Element | null {
     );
   }
 
-  switch (resourceType) {
-    case 'Encounter':
-      return <EncounterTimeline encounter={reference} getMenu={getMenu} />;
-    case 'Patient':
-      return <PatientTimeline patient={reference} getMenu={getMenu} />;
-    case 'ServiceRequest':
-      return <ServiceRequestTimeline serviceRequest={reference} getMenu={getMenu} />;
-    default:
-      return <DefaultResourceTimeline resource={reference} getMenu={getMenu} />;
-  }
+  return (
+    <>
+      {resourceType === 'Encounter' && <EncounterTimeline encounter={reference} getMenu={getMenu} />}
+      {resourceType === 'Patient' && <PatientTimeline patient={reference} getMenu={getMenu} />}
+      {resourceType === 'ServiceRequest' && <ServiceRequestTimeline serviceRequest={reference} getMenu={getMenu} />}
+      {resourceType !== 'Encounter' && resourceType !== 'Patient' && resourceType !== 'ServiceRequest' && (
+        <DefaultResourceTimeline resource={reference} getMenu={getMenu} />
+      )}
+      <ResendSubscriptionsModal
+        key={`resend-subscriptions-${resendSubscriptionsResource?.id}`}
+        resource={resendSubscriptionsResource}
+        opened={resendSubscriptiosnDisclosure[0]}
+        onClose={resendSubscriptiosnDisclosure[1].close}
+      />
+    </>
+  );
 }

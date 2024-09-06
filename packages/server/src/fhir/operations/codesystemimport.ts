@@ -1,8 +1,7 @@
-import { OperationOutcomeError, allOk, badRequest, normalizeOperationOutcome } from '@medplum/core';
+import { OperationOutcomeError, allOk, badRequest, forbidden, normalizeOperationOutcome } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { CodeSystem, Coding, OperationDefinition } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { requireSuperAdmin } from '../../admin/super';
 import { getAuthenticatedContext } from '../../context';
 import { InsertQuery, SelectQuery } from '../sql';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -59,7 +58,11 @@ export type CodeSystemImportParameters = {
  * @returns The FHIR response.
  */
 export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirResponse> {
-  const ctx = requireSuperAdmin();
+  const repo = getAuthenticatedContext().repo;
+  const isSuperAdmin = repo.isSuperAdmin();
+  if (!repo.isProjectAdmin() && !isSuperAdmin) {
+    return [forbidden];
+  }
 
   const params = parseInputParameters<CodeSystemImportParameters>(operation, req);
 
@@ -67,13 +70,15 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system);
+    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, {
+      ownProjectOnly: !isSuperAdmin,
+    });
   } else {
     return [badRequest('No code system specified')];
   }
 
   try {
-    await ctx.repo.withTransaction(async (db) => {
+    await repo.withTransaction(async (db) => {
       await importCodeSystem(db, codeSystem, params.concept, params.property);
     });
   } catch (err) {
@@ -89,20 +94,27 @@ export async function importCodeSystem(
   properties?: ImportedProperty[]
 ): Promise<void> {
   if (concepts?.length) {
-    for (const concept of concepts) {
-      const row = {
-        system: codeSystem.id,
-        code: concept.code,
-        display: concept.display,
-      };
-      const query = new InsertQuery('Coding', [row]).mergeOnConflict(['system', 'code']);
-      await query.execute(db);
-    }
+    const rows = uniqueOn(concepts, (c) => c.code as string).map((c) => ({
+      system: codeSystem.id,
+      code: c.code,
+      display: c.display,
+    }));
+    const query = new InsertQuery('Coding', rows).mergeOnConflict(['system', 'code']);
+    await query.execute(db);
   }
 
   if (properties?.length) {
     await processProperties(properties, codeSystem, db);
   }
+}
+
+function uniqueOn<T>(arr: T[], keyFn: (el: T) => string): T[] {
+  const seen = Object.create(null);
+  for (const el of arr) {
+    const key = keyFn(el);
+    seen[key] = el;
+  }
+  return Object.values(seen);
 }
 
 async function processProperties(
@@ -111,18 +123,8 @@ async function processProperties(
   db: PoolClient
 ): Promise<void> {
   const cache: Record<string, { id: number; isRelationship: boolean }> = Object.create(null);
+  const rows = [];
   for (const imported of importedProperties) {
-    const codingId = (
-      await new SelectQuery('Coding')
-        .column('id')
-        .where('system', '=', codeSystem.id)
-        .where('code', '=', imported.code)
-        .execute(db)
-    )[0]?.id;
-    if (!codingId) {
-      throw new OperationOutcomeError(badRequest(`Unknown code: ${codeSystem.url}|${imported.code}`));
-    }
-
     const propertyCode = imported.property;
     const cacheKey = codeSystem.url + '|' + propertyCode;
     let { id: propId, isRelationship } = cache[cacheKey] ?? {};
@@ -131,28 +133,31 @@ async function processProperties(
       cache[cacheKey] = { id: propId, isRelationship };
     }
 
-    const property: Record<string, any> = {
-      coding: codingId,
-      property: propId,
-      value: imported.value,
-    };
-
-    if (isRelationship) {
-      const targetId = (
-        await new SelectQuery('Coding')
-          .column('id')
-          .where('system', '=', codeSystem.id)
-          .where('code', '=', imported.value)
-          .execute(db)
-      )[0]?.id;
-      if (targetId) {
-        property.target = targetId;
-      }
+    const lookupCodes = isRelationship ? [imported.code, imported.value] : [imported.code];
+    const codingIds = await new SelectQuery('Coding')
+      .column('id')
+      .column('code')
+      .where('system', '=', codeSystem.id)
+      .where('code', 'IN', lookupCodes)
+      .execute(db);
+    const sourceCodingId = codingIds.find((r) => r.code === imported.code)?.id;
+    if (!sourceCodingId) {
+      throw new OperationOutcomeError(badRequest(`Unknown code: ${codeSystem.url}|${imported.code}`));
     }
 
-    const query = new InsertQuery('Coding_Property', [property]).ignoreOnConflict();
-    await query.execute(db);
+    const targetCodingId = codingIds.find((r) => r.code === imported.value)?.id;
+    const property: Record<string, any> = {
+      coding: sourceCodingId,
+      property: propId,
+      value: imported.value,
+      target: isRelationship && targetCodingId ? targetCodingId : null,
+    };
+
+    rows.push(property);
   }
+
+  const query = new InsertQuery('Coding_Property', rows).ignoreOnConflict();
+  await query.execute(db);
 }
 
 async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolClient): Promise<[number, boolean]> {
@@ -189,6 +194,6 @@ async function resolveProperty(codeSystem: CodeSystem, code: string, db: PoolCli
     ])
       .returnColumn('id')
       .execute(db)
-  )[0];
+  ).rows[0];
   return [newProp.id, isRelationship];
 }
