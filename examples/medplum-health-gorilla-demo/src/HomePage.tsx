@@ -1,15 +1,14 @@
 import { Button, Code, Container, Group, Input, Radio, Stack, Text, TextInput } from '@mantine/core';
+import { ContentType, MedplumClient } from '@medplum/core';
+import { Bundle, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
 import {
   BillingInformation,
   DiagnosisCodeableConcept,
-  HealthGorillaLabOrderProvider,
   LabOrderValidationError,
   NPI_SYSTEM,
   TestCoding,
-  useHealthGorillaLabOrder,
-} from '@medplum-ee/hg-client';
-import { ContentType, MedplumClient } from '@medplum/core';
-import { Bundle, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtypes';
+} from '@medplum/health-gorilla-core';
+import { HealthGorillaLabOrderProvider, useHealthGorillaLabOrder } from '@medplum/health-gorilla-ui';
 import {
   AsyncAutocomplete,
   AsyncAutocompleteOption,
@@ -20,9 +19,9 @@ import {
   ValueSetAutocomplete,
 } from '@medplum/react';
 import { useState } from 'react';
+import { CoverageInput } from './components/CoverageInput';
 import { PerformingLabInput } from './components/PerformingLabInput';
 import { TestMetadataCardInput } from './components/TestMetadataCardInput';
-import { CoverageInput } from './components/CoverageInput';
 
 async function sendLabOrderToHealthGorilla(medplum: MedplumClient, labOrder: ServiceRequest): Promise<void> {
   return medplum.executeBot(

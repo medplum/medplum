@@ -4,11 +4,7 @@
 
 By default, this app is configured to use the production Medplum server. You can change the `baseUrl` and other `MepdlumClient` configuration options in `src/main.tsx`.
 
-Before continuing, you must obtain a tarball of the Medplum Health Gorilla client package, e.g. `medplum-ee-hg-client-0.0.2.tgz` and place it in the root of this repository, i.e. alongside this `README.md` and `package.json`.
-
 ```
-# ensure the Medplum Health Gorilla client package is present, e.g. medplum-ee-hg-client-0.0.2.tgz
-
 npm i
 npm run dev
 ```

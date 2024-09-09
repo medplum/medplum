@@ -1,6 +1,7 @@
-import { LabOrganization, useHealthGorillaLabOrderContext } from '@medplum-ee/hg-client';
 import { getDisplayString, getReferenceString } from '@medplum/core';
 import { Patient, Resource } from '@medplum/fhirtypes';
+import { LabOrganization } from '@medplum/health-gorilla-core';
+import { useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-ui';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '@medplum/react';
 
 export type PractitionerInputProps = {
