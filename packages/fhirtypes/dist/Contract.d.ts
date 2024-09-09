@@ -362,6 +362,20 @@ export interface Contract {
 }
 
 /**
+ * Narrows the range of legal concerns to focus on the achievement of
+ * specific contractual objectives.
+ */
+export type ContractTopic = CodeableConcept | Reference<Resource>;
+
+/**
+ * Legally binding Contract: This is the signed and legally recognized
+ * representation of the Contract, which is considered the &quot;source of
+ * truth&quot; and which would be the basis for legal action related to
+ * enforcement of this Contract.
+ */
+export type ContractLegallyBinding = Attachment | Reference<Composition | DocumentReference | QuestionnaireResponse | Contract>;
+
+/**
  * Precusory content developed with a focus and intent of supporting the
  * formation a Contract instance, which may be associated with and
  * transformable into a Contract.
@@ -408,7 +422,7 @@ export interface ContractContentDefinition {
    * application for a contract such as an insurance policy or benefits
    * under a program, e.g., workers compensation.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Detailed Precusory content type.
@@ -434,7 +448,7 @@ export interface ContractContentDefinition {
    * executable | executed | negotiable | offered | policy | rejected |
    * renewed | revoked | resolved | terminated.
    */
-  publicationStatus?: 'amended' | 'appended' | 'cancelled' | 'disputed' | 'entered-in-error' | 'executable' |
+  publicationStatus: 'amended' | 'appended' | 'cancelled' | 'disputed' | 'entered-in-error' | 'executable' |
       'executed' | 'negotiable' | 'offered' | 'policy' | 'rejected' | 'renewed' | 'revoked' | 'resolved' | 'terminated';
 
   /**
@@ -507,6 +521,13 @@ export interface ContractFriendly {
 }
 
 /**
+ * Human readable rendering of this Contract in a format and
+ * representation intended to enhance comprehension and ensure
+ * understandability.
+ */
+export type ContractFriendlyContent = Attachment | Reference<Composition | DocumentReference | QuestionnaireResponse>;
+
+/**
  * List of Legal expressions or representations of this Contract.
  */
 export interface ContractLegal {
@@ -556,6 +577,11 @@ export interface ContractLegal {
    */
   contentReference?: Reference<Composition | DocumentReference | QuestionnaireResponse>;
 }
+
+/**
+ * Contract legal text in human renderable form.
+ */
+export type ContractLegalContent = Attachment | Reference<Composition | DocumentReference | QuestionnaireResponse>;
 
 /**
  * List of Computable Policy Rule Language Representations of this
@@ -612,6 +638,12 @@ export interface ContractRule {
 }
 
 /**
+ * Computable Contract conveyed using a policy rule language (e.g. XACML,
+ * DKAL, SecPal).
+ */
+export type ContractRuleContent = Attachment | Reference<DocumentReference>;
+
+/**
  * Parties with legal standing in the Contract, including the principal
  * parties, the grantor(s) and grantee(s), which are any person or
  * organization bound by the contract, and any ancillary parties, which
@@ -657,17 +689,17 @@ export interface ContractSigner {
   /**
    * Role of this Contract signer, e.g. notary, grantee.
    */
-  type?: Coding;
+  type: Coding;
 
   /**
    * Party which is a signator to this Contract.
    */
-  party?: Reference<Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>;
+  party: Reference<Organization | Patient | Practitioner | PractitionerRole | RelatedPerson>;
 
   /**
    * Legally binding Contract DSIG signature contents in Base64.
    */
-  signature?: Signature[];
+  signature: Signature[];
 }
 
 /**
@@ -766,7 +798,7 @@ export interface ContractTerm {
    * The matter of concern in the context of this provision of the
    * agrement.
    */
-  offer?: ContractTermOffer;
+  offer: ContractTermOffer;
 
   /**
    * Contract Term Asset List.
@@ -784,6 +816,11 @@ export interface ContractTerm {
    */
   group?: ContractTerm[];
 }
+
+/**
+ * The entity that the term applies to.
+ */
+export type ContractTermTopic = CodeableConcept | Reference<Resource>;
 
 /**
  * An actor taking a role in an activity for which it can be assigned
@@ -835,7 +872,7 @@ export interface ContractTermAction {
    * Activity or service obligation to be done or not done, performed or
    * not performed, effectuated or not by this Contract term.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Entity of the action.
@@ -846,7 +883,7 @@ export interface ContractTermAction {
    * Reason or purpose for the action stipulated by this Contract
    * Provision.
    */
-  intent?: CodeableConcept;
+  intent: CodeableConcept;
 
   /**
    * Id [identifier??] of the clause or question text related to this
@@ -857,7 +894,7 @@ export interface ContractTermAction {
   /**
    * Current state of the term action.
    */
-  status?: CodeableConcept;
+  status: CodeableConcept;
 
   /**
    * Encounter or Episode with primary association to specified term
@@ -963,6 +1000,11 @@ export interface ContractTermAction {
 }
 
 /**
+ * When action happens.
+ */
+export type ContractTermActionOccurrence = Period | string | Timing;
+
+/**
  * Entity of the action.
  */
 export interface ContractTermActionSubject {
@@ -1005,7 +1047,7 @@ export interface ContractTermActionSubject {
   /**
    * The entity the action is performed or not performed on or for.
    */
-  reference?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
+  reference: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
 
   /**
    * Role type of agent assigned roles in this Contract.
@@ -1326,6 +1368,11 @@ export interface ContractTermAssetValuedItem {
 }
 
 /**
+ * Specific type of Contract Valued Item that may be priced.
+ */
+export type ContractTermAssetValuedItemEntity = CodeableConcept | Reference<Resource>;
+
+/**
  * The matter of concern in the context of this provision of the
  * agrement.
  */
@@ -1561,6 +1608,14 @@ export interface ContractTermOfferAnswer {
 }
 
 /**
+ * Response to an offer clause or question text,  which enables selection
+ * of values to be agreed to, e.g., the period of participation, the date
+ * of occupancy of a rental, warrently duration, or whether biospecimen
+ * may be used for further research.
+ */
+export type ContractTermOfferAnswerValue = Attachment | boolean | Coding | number | Quantity | Reference<Resource> | string;
+
+/**
  * Offer Recipient.
  */
 export interface ContractTermOfferParty {
@@ -1603,12 +1658,12 @@ export interface ContractTermOfferParty {
   /**
    * Participant in the offer.
    */
-  reference?: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
+  reference: Reference<Patient | RelatedPerson | Practitioner | PractitionerRole | Device | Group | Organization>[];
 
   /**
    * How the party participates in the offer.
    */
-  role?: CodeableConcept;
+  role: CodeableConcept;
 }
 
 /**
@@ -1662,7 +1717,7 @@ export interface ContractTermSecurityLabel {
    * Security label privacy tag that species the level of confidentiality
    * protection required for this term and/or term elements.
    */
-  classification?: Coding;
+  classification: Coding;
 
   /**
    * Security label privacy tag that species the applicable privacy and

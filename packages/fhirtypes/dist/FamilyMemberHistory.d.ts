@@ -129,7 +129,7 @@ export interface FamilyMemberHistory {
    * A code specifying the status of the record of the family history of a
    * specific family member.
    */
-  status?: 'partial' | 'completed' | 'entered-in-error' | 'health-unknown';
+  status: 'partial' | 'completed' | 'entered-in-error' | 'health-unknown';
 
   /**
    * Describes why the family member's history is not available.
@@ -139,7 +139,7 @@ export interface FamilyMemberHistory {
   /**
    * The person who this history concerns.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The date (and possibly time) when the family member history was
@@ -157,7 +157,7 @@ export interface FamilyMemberHistory {
    * The type of relationship this person has to the patient (father,
    * mother, brother etc.).
    */
-  relationship?: CodeableConcept;
+  relationship: CodeableConcept;
 
   /**
    * The birth sex of the family member.
@@ -261,6 +261,23 @@ export interface FamilyMemberHistory {
 }
 
 /**
+ * The actual or approximate date of birth of the relative.
+ */
+export type FamilyMemberHistoryBorn = Period | string;
+
+/**
+ * The age of the relative at the time the family member history is
+ * recorded.
+ */
+export type FamilyMemberHistoryAge = Age | Range | string;
+
+/**
+ * Deceased flag or the actual or approximate age of the relative at the
+ * time of death for the family member history record.
+ */
+export type FamilyMemberHistoryDeceased = Age | boolean | Range | string;
+
+/**
  * The significant Conditions (or condition) that the family member had.
  * This is a repeating section to allow a system to represent more than
  * one condition per resource, though there is nothing stopping multiple
@@ -309,7 +326,7 @@ export interface FamilyMemberHistoryCondition {
    * much is known about the condition and the capabilities of the creating
    * system.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * Indicates what happened following the condition.  If the condition
@@ -357,3 +374,10 @@ export interface FamilyMemberHistoryCondition {
    */
   note?: Annotation[];
 }
+
+/**
+ * Either the age of onset, range of approximate age or descriptive
+ * string can be recorded.  For conditions with multiple occurrences,
+ * this describes the first known occurrence.
+ */
+export type FamilyMemberHistoryConditionOnset = Age | Period | Range | string;

@@ -10,7 +10,7 @@ There are also three common workflow challenges are prominent in pediatrics.
 
 ## Caregiver Access
 
-Parental and caregiver access is supported through Medplum [access controls](/docs/auth/access-control), and supports multiple caregivers having access to multiple siblings or children. Read our guide on [modeling family relationships](/docs/fhir-datastore/family-relationships) for information on how to enable this feature. A [explainer video](https://youtu.be/IDhsWiIxK3o) on the mechanics of the access controls is also available.
+Parental and caregiver access is supported through Medplum [access controls](/docs/access/access-policies), and supports multiple caregivers having access to multiple siblings or children. Read our guide on [modeling family relationships](/docs/fhir-datastore/family-relationships) for information on how to enable this feature. A [explainer video](https://youtu.be/IDhsWiIxK3o) on the mechanics of the access controls is also available.
 
 ## Messaging
 
@@ -22,4 +22,5 @@ Patient-provider messaging is a common feature of pediatric applications. Organi
 
 ## Case Studies
 
+- [Develo Pediatric EHR](/blog/develo-case-study)
 - [24/7 Pediatrician Access](/blog/summer-case-study) - Summer Health Case Study

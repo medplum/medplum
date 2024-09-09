@@ -1,6 +1,5 @@
 import { HomerSimpson } from '@medplum/mock';
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { PatientTimeline } from './PatientTimeline';
 
 export default {

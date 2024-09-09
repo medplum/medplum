@@ -1,5 +1,4 @@
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { SearchExportDialog } from './SearchExportDialog';
 
 export default {

@@ -7,10 +7,11 @@ import {
   normalizeOperationOutcome,
 } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import React, { useCallback, useState } from 'react';
+import { useMedplum } from '@medplum/react-hooks';
+import { ReactNode, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
-import { getGoogleClientId, GoogleButton } from '../GoogleButton/GoogleButton';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { GoogleButton } from '../GoogleButton/GoogleButton';
+import { getGoogleClientId } from '../GoogleButton/GoogleButton.utils';
 import { OperationOutcomeAlert } from '../OperationOutcomeAlert/OperationOutcomeAlert';
 import { getErrorsForInput, getIssuesForExpression } from '../utils/outcomes';
 
@@ -20,7 +21,7 @@ export interface AuthenticationFormProps extends BaseLoginRequest {
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function AuthenticationForm(props: AuthenticationFormProps): JSX.Element {
@@ -39,13 +40,15 @@ export interface EmailFormProps extends BaseLoginRequest {
   readonly onRegister?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
   readonly setEmail: (email: string) => void;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function EmailForm(props: EmailFormProps): JSX.Element {
   const { setEmail, onRegister, handleAuthResponse, children, disableEmailAuth, ...baseLoginRequest } = props;
   const medplum = useMedplum();
   const googleClientId = !props.disableGoogleAuth && getGoogleClientId(props.googleClientId);
+  const [outcome, setOutcome] = useState<OperationOutcome>();
+  const issues = getIssuesForExpression(outcome, undefined);
 
   const isExternalAuth = useCallback(
     async (authMethod: any): Promise<boolean> => {
@@ -77,23 +80,28 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
 
   const handleGoogleCredential = useCallback(
     async (response: GoogleCredentialResponse) => {
-      const authResponse = await medplum.startGoogleLogin({
-        ...baseLoginRequest,
-        googleCredential: response.credential,
-      } as GoogleLoginRequest);
-      if (!(await isExternalAuth(authResponse))) {
-        handleAuthResponse(authResponse);
+      try {
+        const authResponse = await medplum.startGoogleLogin({
+          ...baseLoginRequest,
+          googleCredential: response.credential,
+        } as GoogleLoginRequest);
+        if (!(await isExternalAuth(authResponse))) {
+          handleAuthResponse(authResponse);
+        }
+      } catch (err) {
+        setOutcome(normalizeOperationOutcome(err));
       }
     },
     [medplum, baseLoginRequest, isExternalAuth, handleAuthResponse]
   );
 
   return (
-    <Form style={{ maxWidth: 400 }} onSubmit={handleSubmit}>
-      <Center sx={{ flexDirection: 'column' }}>{children}</Center>
+    <Form onSubmit={handleSubmit}>
+      <Center style={{ flexDirection: 'column' }}>{children}</Center>
+      <OperationOutcomeAlert issues={issues} />
       {googleClientId && (
         <>
-          <Group position="center" p="xl" style={{ height: 70 }}>
+          <Group justify="center" p="xl" style={{ height: 70 }}>
             <GoogleButton googleClientId={googleClientId} handleGoogleCredential={handleGoogleCredential} />
           </Group>
           {!disableEmailAuth && <Divider label="or" labelPosition="center" my="lg" />}
@@ -107,9 +115,10 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           placeholder="name@domain.com"
           required={true}
           autoFocus={true}
+          error={getErrorsForInput(outcome, 'email')}
         />
       )}
-      <Group position="apart" mt="xl" spacing={0} noWrap>
+      <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
         <div>
           {onRegister && (
             <Anchor component="button" type="button" color="dimmed" onClick={onRegister} size="xs">
@@ -127,7 +136,7 @@ export interface PasswordFormProps extends BaseLoginRequest {
   readonly email: string;
   readonly onForgotPassword?: () => void;
   readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function PasswordForm(props: PasswordFormProps): JSX.Element {
@@ -151,10 +160,10 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
   );
 
   return (
-    <Form style={{ maxWidth: 400 }} onSubmit={handleSubmit}>
-      <Center sx={{ flexDirection: 'column' }}>{children}</Center>
+    <Form onSubmit={handleSubmit}>
+      <Center style={{ flexDirection: 'column' }}>{children}</Center>
       <OperationOutcomeAlert issues={issues} />
-      <Stack spacing="xl">
+      <Stack gap="xl">
         <PasswordInput
           name="password"
           label="Password"
@@ -164,13 +173,13 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
           error={getErrorsForInput(outcome, 'password')}
         />
       </Stack>
-      <Group position="apart" mt="xl" spacing={0} noWrap>
+      <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
         {onForgotPassword && (
-          <Anchor component="button" type="button" color="dimmed" onClick={onForgotPassword} size="xs">
+          <Anchor component="button" type="button" c="dimmed" onClick={onForgotPassword} size="xs">
             Forgot password
           </Anchor>
         )}
-        <Checkbox id="remember" name="remember" label="Remember me" size="xs" sx={{ lineHeight: 1 }} />
+        <Checkbox id="remember" name="remember" label="Remember me" size="xs" style={{ lineHeight: 1 }} />
         <Button type="submit">Sign in</Button>
       </Group>
     </Form>

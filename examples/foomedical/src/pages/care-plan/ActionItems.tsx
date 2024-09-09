@@ -18,11 +18,11 @@ export function ActionItems(): JSX.Element {
     <Box p="xl">
       <Title mb="lg">Action Items</Title>
       <InfoSection title="Action Items">
-        <Stack spacing={0}>
+        <Stack gap={0}>
           {carePlans.map((resource) => (
             <InfoButton key={resource.id} onClick={() => navigate(`./${resource.id}`)}>
               <div>
-                <Text c={theme.fn.primaryColor()} fw={500}>
+                <Text c={theme.primaryColor} fw={500}>
                   {resource.title}
                 </Text>
                 <Text mt="sm" c="gray.5" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

@@ -1,18 +1,20 @@
 import { createReference, getReferenceString } from '@medplum/core';
-import { ClientApplication, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { AuthenticatedRequestContext, requestContextStore } from '../context';
+import { getSystemRepo } from '../fhir/repo';
 import { generateAccessToken } from '../oauth/keys';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
-import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
-import { AuthenticatedRequestContext, requestContextStore } from '../context';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
+import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { ReindexJobData, execReindexJob, getReindexQueue } from '../workers/reindex';
+import { Job } from 'bullmq';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -20,7 +22,6 @@ jest.mock('../seeds/searchparameters');
 
 const app = express();
 let project: Project;
-let client: ClientApplication;
 let adminAccessToken: string;
 let nonAdminAccessToken: string;
 
@@ -30,10 +31,11 @@ describe('Super Admin routes', () => {
     await initApp(app, config);
 
     requestContextStore.enterWith(AuthenticatedRequestContext.system());
-    ({ project, client } = await createTestProject());
+    ({ project } = await createTestProject({ withClient: true, superAdmin: true }));
 
-    // Mark the project as a "Super Admin" project
-    await systemRepo.updateResource({ ...project, superAdmin: true });
+    const normalProject = await createTestProject();
+
+    const systemRepo = getSystemRepo();
 
     const practitioner1 = await systemRepo.createResource<Practitioner>({ resourceType: 'Practitioner' });
 
@@ -49,9 +51,9 @@ describe('Super Admin routes', () => {
 
     const user2 = await systemRepo.createResource<User>({
       resourceType: 'User',
-      firstName: 'Super',
-      lastName: 'Admin',
-      email: `normie${randomUUID()}@example.com`,
+      firstName: 'Normal',
+      lastName: 'User',
+      email: `normal${randomUUID()}@example.com`,
       passwordHash: 'abc',
     });
 
@@ -64,7 +66,7 @@ describe('Super Admin routes', () => {
 
     const membership2 = await systemRepo.createResource<ProjectMembership>({
       resourceType: 'ProjectMembership',
-      project: createReference(project),
+      project: createReference(normalProject.project),
       user: createReference(user2),
       profile: createReference(practitioner2),
     });
@@ -72,30 +74,25 @@ describe('Super Admin routes', () => {
     const login1 = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       authMethod: 'client',
-      client: createReference(client),
       user: createReference(user1),
       membership: createReference(membership1),
       authTime: new Date().toISOString(),
       scope: 'openid',
-      superAdmin: true,
     });
 
     const login2 = await systemRepo.createResource<Login>({
       resourceType: 'Login',
       authMethod: 'client',
-      client: createReference(client),
       user: createReference(user2),
       membership: createReference(membership2),
       authTime: new Date().toISOString(),
       scope: 'openid',
-      superAdmin: false,
     });
 
     adminAccessToken = await generateAccessToken({
       login_id: login1.id as string,
       sub: user1.id as string,
       username: user1.id as string,
-      client_id: client.id as string,
       profile: getReferenceString(practitioner1 as Practitioner),
       scope: 'openid',
     });
@@ -104,7 +101,6 @@ describe('Super Admin routes', () => {
       login_id: login2.id as string,
       sub: user2.id as string,
       username: user2.id as string,
-      client_id: client.id as string,
       profile: getReferenceString(practitioner2 as Practitioner),
       scope: 'openid',
     });
@@ -140,24 +136,6 @@ describe('Super Admin routes', () => {
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
-  });
-
-  test('Rebuild ValueSetElements as super admin with respond-async error', async () => {
-    const err = new Error('createvalueSet test error');
-    (rebuildR4ValueSets as unknown as jest.Mock).mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(err);
-    });
-
-    const res = await request(app)
-      .post('/admin/super/valuesets')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .set('Prefer', 'respond-async')
-      .type('json')
-      .send({});
-
-    expect(res.status).toEqual(202);
-    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
-    expect(job.status).toEqual('error');
   });
 
   test('Rebuild ValueSetElements access denied', async () => {
@@ -320,6 +298,9 @@ describe('Super Admin routes', () => {
   });
 
   test('Reindex with respond-async', async () => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
+
     const res = await request(app)
       .post('/admin/super/reindex')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -331,14 +312,19 @@ describe('Super Admin routes', () => {
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['PaymentNotice'],
+      })
+    );
+    await withTestContext(() => execReindexJob({ data: queue.add.mock.calls[0][1] } as Job));
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
-  test('Reindex with respond-async error', async () => {
-    const err = new Error('reindex test error');
-    jest.spyOn(systemRepo, 'reindexResourceType').mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(err);
-    });
+  test('Reindex with multiple resource types', async () => {
+    const queue = getReindexQueue() as any;
+    queue.add.mockClear();
 
     const res = await request(app)
       .post('/admin/super/reindex')
@@ -346,83 +332,44 @@ describe('Super Admin routes', () => {
       .set('Prefer', 'respond-async')
       .type('json')
       .send({
-        resourceType: 'PaymentNotice',
-      });
-
-    expect(res.status).toEqual(202);
-    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
-    expect(job.status).toEqual('error');
-  });
-
-  test('Rebuild compartments access denied', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + nonAdminAccessToken)
-      .type('json')
-      .send({
-        resourceType: 'PaymentNotice',
-      });
-
-    expect(res.status).toBe(403);
-  });
-
-  test('Rebuild compartments require async', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .type('json')
-      .send({
-        resourceType: 'PaymentNotice',
-      });
-
-    expect(res.status).toEqual(400);
-    expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
-  });
-
-  test('Rebuild compartments invalid resource type', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .type('json')
-      .send({
-        resourceType: 'XYZ',
-      });
-
-    expect(res.status).toBe(400);
-  });
-
-  test('Rebuild compartments with respond-async', async () => {
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .set('Prefer', 'respond-async')
-      .type('json')
-      .send({
-        resourceType: 'PaymentNotice',
+        resourceType: 'PaymentNotice,MedicinalProductManufactured,BiologicallyDerivedProduct',
       });
 
     expect(res.status).toEqual(202);
     expect(res.headers['content-location']).toBeDefined();
-  });
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['PaymentNotice', 'MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
+      })
+    );
+    let job = { data: queue.add.mock.calls[0][1] } as Job;
+    queue.add.mockClear();
 
-  test('Rebuild compartments with respond-async error', async () => {
-    const err = new Error('rebuildCompartmentsForResourceType test error');
-    jest.spyOn(systemRepo, 'rebuildCompartmentsForResourceType').mockImplementationOnce((): Promise<any> => {
-      return Promise.reject(err);
-    });
+    await withTestContext(() => execReindexJob(job));
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['MedicinalProductManufactured', 'BiologicallyDerivedProduct'],
+      })
+    );
+    job = { data: queue.add.mock.calls[0][1] } as Job;
+    queue.add.mockClear();
 
-    const res = await request(app)
-      .post('/admin/super/compartments')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .set('Prefer', 'respond-async')
-      .type('json')
-      .send({
-        resourceType: 'PaymentNotice',
-      });
+    await withTestContext(() => execReindexJob(job));
+    expect(queue.add).toHaveBeenCalledWith(
+      'ReindexJobData',
+      expect.objectContaining<Partial<ReindexJobData>>({
+        resourceTypes: ['BiologicallyDerivedProduct'],
+      })
+    );
+    job = { data: queue.add.mock.calls[0][1] } as Job;
+    queue.add.mockClear();
 
-    expect(res.status).toEqual(202);
-    const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
-    expect(job.status).toEqual('error');
+    await withTestContext(() => execReindexJob(job));
+    expect(queue.add).not.toHaveBeenCalled();
+
+    await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
   test('Set password access denied', async () => {

@@ -5,6 +5,7 @@ import {
   deepClone,
   getQuestionnaireAnswers,
   getReferenceString,
+  resolveId,
 } from '@medplum/core';
 import {
   Identifier,
@@ -135,6 +136,33 @@ export function linkPatientRecords(src: Patient, target: Patient): MergedPatient
 
 // end-block linkPatientRecords
 
+// start-block unLinkPatientRecords
+
+/**
+ * Unlink two patient that have been merged
+ *
+ * @param src - The source patient record which is marked as replaced.
+ * @param target - The target patient marked as the master record.
+ * @returns - Object containing updated source and target patient records with their links.
+ */
+export function unlinkPatientRecords(src: Patient, target: Patient): MergedPatients {
+  const targetCopy = deepClone(target);
+  const srcCopy = deepClone(src);
+  // Filter out links from the target to the source
+  targetCopy.link = targetCopy.link?.filter((link) => resolveId(link.other) !== src.id);
+  // Filter out links from the source to the target
+  srcCopy.link = srcCopy.link?.filter((link) => resolveId(link.other) !== target.id);
+
+  // If the source record is no longer replaced, make it active again
+  if (!srcCopy.link?.filter((link) => link.type === 'replaced-by')?.length) {
+    srcCopy.active = true;
+  }
+
+  return { src: srcCopy, target: targetCopy };
+}
+
+// end-block unLinkPatientRecords
+
 // start-block mergeIdentifiers
 /**
  * Merges contact information (identifiers) of two patient records, where the source patient record will be marked as
@@ -171,16 +199,58 @@ export function mergePatientRecords(src: Patient, target: Patient, fields?: Part
 }
 // end-block mergeIdentifiers
 
+/**
+ * Returns true if both the source and target patients are part of the same merged "cluster" of records.
+ * There are three cases to handle:
+ *   1. Both the source and target patients share the same master record (i.e. both replaced by the same record)
+ *   2. The target record is the master record (i.e. target 'replaces' source)
+ *   3. The source record is the master record (i.e. source 'replaces' target)
+ *
+ * @param src - The source patient record
+ * @param target - The target patient record
+ * @returns true if both the source and target patients are part of the same merged "cluster" of records.
+ */
+export function patientsAlreadyMerged(src: Patient, target: Patient): boolean {
+  const srcMaster = src.link?.find((link) => link.type === 'replaced-by')?.other;
+  const targetMaster = target.link?.find((link) => link.type === 'replaced-by')?.other;
+
+  // Case 1: Both patients share the same master record
+  if (srcMaster && targetMaster && resolveId(srcMaster) === resolveId(targetMaster)) {
+    return true;
+  }
+
+  // Case 2: The target record is the master record
+  if (resolveId(srcMaster) === target.id) {
+    if (!target.link?.find((link) => link.type === 'replaces' && resolveId(link.other) === src.id)) {
+      throw new Error(
+        `Target Patient ${getReferenceString(target)} missing a 'replaces' link to ${getReferenceString(src)}`
+      );
+    }
+    return true;
+  }
+
+  if (resolveId(targetMaster) === src.id) {
+    if (!src.link?.find((link) => link.type === 'replaces' && resolveId(link.other) === target.id)) {
+      throw new Error(
+        `Source Patient ${getReferenceString(target)} missing a 'replaces' link to ${getReferenceString(src)}`
+      );
+    }
+    return true;
+  }
+
+  return false;
+}
+
 // start-block updateReferences
 /**
  * Rewrites all references to source patient to the target patient, for the given resource type.
  *
- * @param medplum The MedplumClient
- * @param sourcePatient Source `Patient` resource. After this operation, no resources of the specified type will refer
+ * @param medplum - The MedplumClient
+ * @param sourcePatient - Source `Patient` resource. After this operation, no resources of the specified type will refer
  * to this `Patient`
- * @param targetPatient Target `Patient` resource. After this operation, no resources of the specified type will refer
+ * @param targetPatient - Target `Patient` resource. After this operation, no resources of the specified type will refer
  * to this `Patient`
- * @param resourceType Resource type to rewrite (e.g. `Encounter`)
+ * @param resourceType - Resource type to rewrite (e.g. `Encounter`)
  */
 export async function updateResourceReferences<T extends ResourceType>(
   medplum: MedplumClient,
@@ -203,9 +273,9 @@ export async function updateResourceReferences<T extends ResourceType>(
 
 /**
  * Recursive function to search for all references to the source resource, and translate them to the target resource
- * @param obj A FHIR resource or element
- * @param srcReference The reference string referring to the source resource
- * @param targetReference The reference string referring to the target resource
+ * @param obj - A FHIR resource or element
+ * @param srcReference - The reference string referring to the source resource
+ * @param targetReference - The reference string referring to the target resource
  */
 function replaceReferences(obj: any, srcReference: string, targetReference: string): void {
   for (const key in obj) {

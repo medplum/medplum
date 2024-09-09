@@ -1,16 +1,13 @@
 import { ActionIcon, Box, CopyButton, Tooltip } from '@mantine/core';
 import {
+  InternalSchemaElement,
+  PropertyType,
   formatDateTime,
   formatPeriod,
   formatTiming,
-  getElementDefinitionTypeName,
-  getTypedPropertyValue,
-  PropertyType,
-  TypedValue,
+  isEmpty,
 } from '@medplum/core';
-import { ElementDefinition } from '@medplum/fhirtypes';
 import { IconCheck, IconCopy } from '@tabler/icons-react';
-import React from 'react';
 import { AddressDisplay } from '../AddressDisplay/AddressDisplay';
 import { AttachmentArrayDisplay } from '../AttachmentArrayDisplay/AttachmentArrayDisplay';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
@@ -27,51 +24,72 @@ import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { RatioDisplay } from '../RatioDisplay/RatioDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceArrayDisplay } from '../ResourceArrayDisplay/ResourceArrayDisplay';
+import { ExtensionDisplay } from '../ExtensionDisplay/ExtensionDisplay';
+import { ElementDefinitionType } from '@medplum/fhirtypes';
 
 export interface ResourcePropertyDisplayProps {
-  property?: ElementDefinition;
-  propertyType: PropertyType;
-  value: any;
-  arrayElement?: boolean;
-  maxWidth?: number;
-  ignoreMissingValues?: boolean;
-  link?: boolean;
+  readonly property?: InternalSchemaElement;
+  /** The path identifies the element and is expressed as a "."-separated list of ancestor elements, beginning with the name of the resource or extension. */
+  readonly path?: string;
+  readonly propertyType: string;
+  readonly value: any;
+  readonly arrayElement?: boolean;
+  readonly maxWidth?: number;
+  readonly ignoreMissingValues?: boolean;
+  readonly link?: boolean;
+  /** (Optional) The `ElemendDefinitionType` to display the property against. Used when displaying extensions.  */
+  readonly elementDefinitionType?: ElementDefinitionType;
+  /** (Optional) If true and `property` is an array, output is wrapped with a DescriptionListEntry */
+  readonly includeArrayDescriptionListEntry?: boolean;
 }
 
 /**
  * Low-level component that renders a property from a given resource, given type information.
- * @param props The ResourcePropertyDisplay React props.
+ * @param props - The ResourcePropertyDisplay React props.
  * @returns The ResourcePropertyDisplay React node.
  */
-export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element {
+export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JSX.Element | null {
   const { property, propertyType, value } = props;
 
   const isIdProperty = property?.path?.endsWith('.id');
   if (isIdProperty) {
     return (
-      <Box component="div" sx={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+      <Box component="div" style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
         {value}
-        <CopyButton value={value} timeout={2000}>
-          {({ copied, copy }) => (
-            <Tooltip label={copied ? 'Copied' : 'Copy'} withArrow position="right">
-              <ActionIcon color={copied ? 'teal' : 'gray'} onClick={copy}>
-                {copied ? <IconCheck size="1rem" /> : <IconCopy size="1rem" />}
-              </ActionIcon>
-            </Tooltip>
-          )}
-        </CopyButton>
+        {!isEmpty(value) && (
+          <CopyButton value={value} timeout={2000}>
+            {({ copied, copy }) => (
+              <Tooltip label={copied ? 'Copied' : 'Copy'} withArrow position="right">
+                <ActionIcon variant="subtle" color={copied ? 'teal' : 'gray'} onClick={copy}>
+                  {copied ? <IconCheck size="1rem" /> : <IconCopy size="1rem" />}
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </CopyButton>
+        )}
       </Box>
     );
   }
 
-  if (property?.max === '*' && !props.arrayElement) {
+  if (property && (property.isArray || property.max > 1) && !props.arrayElement) {
     if (propertyType === PropertyType.Attachment) {
-      return <AttachmentArrayDisplay values={value} maxWidth={props.maxWidth} />;
+      return (
+        <AttachmentArrayDisplay
+          values={value}
+          maxWidth={props.maxWidth}
+          includeDescriptionListEntry={props.includeArrayDescriptionListEntry}
+          property={property}
+          path={props.path}
+        />
+      );
     }
     return (
       <ResourceArrayDisplay
+        path={props.path}
         property={property}
+        propertyType={propertyType}
         values={value}
+        includeDescriptionListEntry={props.includeArrayDescriptionListEntry}
         ignoreMissingValues={props.ignoreMissingValues}
         link={props.link}
       />
@@ -87,6 +105,7 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
     case PropertyType.code:
     case PropertyType.date:
     case PropertyType.decimal:
+    case PropertyType.id:
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
@@ -135,46 +154,44 @@ export function ResourcePropertyDisplay(props: ResourcePropertyDisplayProps): JS
       return <>{formatTiming(value)}</>;
     case PropertyType.Dosage:
     case PropertyType.UsageContext:
+      if (!props.path) {
+        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+      }
       return (
         <BackboneElementDisplay
+          path={props.path}
           value={{ type: propertyType, value }}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
         />
       );
+    case PropertyType.Extension:
+      if (!props.path) {
+        throw Error(`Displaying property of type ${props.propertyType} requires path`);
+      }
+      return (
+        <ExtensionDisplay
+          path={props.path}
+          value={value}
+          compact={true}
+          ignoreMissingValues={props.ignoreMissingValues}
+          elementDefinitionType={props.elementDefinitionType}
+        />
+      );
     default:
-      if (!property?.path) {
-        throw Error(`Displaying property of type ${props.propertyType} requires element definition path`);
+      if (!property) {
+        throw Error(`Displaying property of type ${props.propertyType} requires element schema`);
+      }
+      if (!props.path) {
+        throw Error(`Displaying property of type ${props.propertyType} requires path`);
       }
       return (
         <BackboneElementDisplay
-          value={{ type: getElementDefinitionTypeName(property), value }}
+          path={props.path}
+          value={{ type: property.type[0].code, value }}
           compact={true}
           ignoreMissingValues={props.ignoreMissingValues}
         />
       );
   }
-}
-
-/**
- * Returns the value of the property and the property type.
- * Some property definitions support multiple types.
- * For example, "Observation.value[x]" can be "valueString", "valueInteger", "valueQuantity", etc.
- * According to the spec, there can only be one property for a given element definition.
- * This function returns the value and the type.
- * @param context The base context (usually a FHIR resource).
- * @param path The property path.
- * @returns The value of the property and the property type.
- */
-export function getValueAndType(context: TypedValue, path: string): [any, PropertyType] {
-  const typedResult = getTypedPropertyValue(context, path);
-  if (!typedResult) {
-    return [undefined, 'undefined' as PropertyType];
-  }
-
-  if (Array.isArray(typedResult)) {
-    return [typedResult.map((e) => e.value), typedResult[0].type as PropertyType];
-  }
-
-  return [typedResult.value, typedResult.type as PropertyType];
 }

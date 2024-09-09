@@ -1,90 +1,125 @@
-import { OperationOutcomeError, unauthorized } from '@medplum/core';
+import {
+  OperationOutcomeError,
+  Operator,
+  ProfileResource,
+  createReference,
+  getReferenceString,
+  isString,
+  unauthorized,
+} from '@medplum/core';
 import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
-import { systemRepo } from '../fhir/repo';
-import { getClientApplicationMembership, getLoginForAccessToken, timingSafeEqualStr } from './utils';
-import { getRequestContext, requestContextStore, AuthenticatedRequestContext } from '../context';
+import { IncomingMessage } from 'http';
+import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import { getRepoForLogin } from '../fhir/accesspolicy';
+import { getSystemRepo } from '../fhir/repo';
+import { getClientApplicationMembership, getLoginForAccessToken, timingSafeEqualStr } from './utils';
 
 export interface AuthState {
   login: Login;
   project: Project;
   membership: ProjectMembership;
+  accessToken?: string;
+
+  onBehalfOf?: ProfileResource;
+  onBehalfOfMembership?: ProjectMembership;
 }
 
-export function authenticateRequest(req: Request, res: Response, next: NextFunction): Promise<void> {
-  return authenticateTokenImpl(req)
-    .then(async ({ login, project, membership }) => {
-      const ctx = getRequestContext();
-      const repo = await getRepoForLogin(
-        login,
-        membership,
-        project.strictMode,
-        isExtendedMode(req),
-        project.checkReferencesOnWrite
-      );
-      requestContextStore.run(new AuthenticatedRequestContext(ctx, login, project, membership, repo), () => next());
-    })
-    .catch(next);
+export function authenticateRequest(req: Request, res: Response, next: NextFunction): void {
+  const ctx = getRequestContext();
+  if (ctx instanceof AuthenticatedRequestContext) {
+    next();
+  } else {
+    next(new OperationOutcomeError(unauthorized));
+  }
 }
 
-export async function authenticateTokenImpl(req: Request): Promise<AuthState> {
-  const [tokenType, token] = req.headers.authorization?.split(' ') ?? [];
+export async function authenticateTokenImpl(req: IncomingMessage): Promise<AuthState | undefined> {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return undefined;
+  }
+
+  const [tokenType, token] = authHeader.split(' ');
   if (!tokenType || !token) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   if (tokenType === 'Bearer') {
-    return authenticateBearerToken(req, token);
-  } else if (tokenType === 'Basic') {
-    return authenticateBasicAuth(req, token);
-  } else {
-    throw new OperationOutcomeError(unauthorized);
+    return getLoginForAccessToken(token);
   }
+
+  if (tokenType === 'Basic') {
+    return authenticateBasicAuth(req, token);
+  }
+
+  return undefined;
 }
 
-function authenticateBearerToken(req: Request, token: string): Promise<AuthState> {
-  return getLoginForAccessToken(token).catch(() => {
-    throw new OperationOutcomeError(unauthorized);
-  });
-}
-
-async function authenticateBasicAuth(req: Request, token: string): Promise<AuthState> {
+async function authenticateBasicAuth(req: IncomingMessage, token: string): Promise<AuthState | undefined> {
   const credentials = Buffer.from(token, 'base64').toString('ascii');
   const [username, password] = credentials.split(':');
   if (!username || !password) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
-  let client = undefined;
+  const systemRepo = getSystemRepo();
+  let client: ClientApplication;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
-  } catch (err) {
-    throw new OperationOutcomeError(unauthorized);
-  }
-  if (!client) {
-    throw new OperationOutcomeError(unauthorized);
+  } catch (_err) {
+    return undefined;
   }
 
   if (!timingSafeEqualStr(client.secret as string, password)) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   const membership = await getClientApplicationMembership(client);
   if (!membership) {
-    throw new OperationOutcomeError(unauthorized);
+    return undefined;
   }
 
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
   const login: Login = {
     resourceType: 'Login',
+    user: createReference(client),
     authMethod: 'client',
-    superAdmin: project.superAdmin,
+    authTime: new Date().toISOString(),
   };
 
-  return { login, project, membership };
+  const onBehalfOfHeader = req.headers['x-medplum-on-behalf-of'];
+  let onBehalfOf: ProfileResource | undefined = undefined;
+  let onBehalfOfMembership: ProjectMembership | undefined = undefined;
+
+  if (onBehalfOfHeader && isString(onBehalfOfHeader)) {
+    if (!membership.admin) {
+      throw new OperationOutcomeError(unauthorized);
+    }
+
+    const adminRepo = await getRepoForLogin({ login, project, membership });
+
+    if (onBehalfOfHeader.startsWith('ProjectMembership/')) {
+      onBehalfOfMembership = await adminRepo.readReference<ProjectMembership>({ reference: onBehalfOfHeader });
+    } else {
+      onBehalfOfMembership = await adminRepo.searchOne({
+        resourceType: 'ProjectMembership',
+        filters: [
+          { code: 'profile', operator: Operator.EQUALS, value: onBehalfOfHeader },
+          { code: 'project', operator: Operator.EQUALS, value: getReferenceString(project) },
+        ],
+      });
+      if (!onBehalfOfMembership) {
+        return undefined;
+      }
+    }
+
+    onBehalfOf = await adminRepo.readReference(onBehalfOfMembership.profile as Reference<ProfileResource>);
+  }
+
+  return { login, project, membership, onBehalfOf, onBehalfOfMembership };
 }
 
-function isExtendedMode(req: Request): boolean {
+export function isExtendedMode(req: Request): boolean {
   return req.headers['x-medplum'] === 'extended';
 }

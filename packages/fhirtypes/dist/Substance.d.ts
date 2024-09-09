@@ -113,7 +113,7 @@ export interface Substance {
   /**
    * A code (or set of codes) that identify this substance.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * A description of the substance - its appearance, handling
@@ -188,6 +188,11 @@ export interface SubstanceIngredient {
    */
   substanceReference?: Reference<Substance>;
 }
+
+/**
+ * Another substance that is a component of this substance.
+ */
+export type SubstanceIngredientSubstance = CodeableConcept | Reference<Substance>;
 
 /**
  * Substance may be used to describe a kind of substance, or a specific

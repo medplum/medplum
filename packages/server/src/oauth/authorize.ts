@@ -4,10 +4,10 @@ import { Request, Response } from 'express';
 import { URL } from 'url';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getLogger } from '../context';
+import { getSystemRepo } from '../fhir/repo';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';
-import { getClient } from './utils';
-import { getRequestContext } from '../context';
+import { getClientApplication } from './utils';
 
 /*
  * Handles the OAuth/OpenID Authorization Endpoint.
@@ -43,9 +43,9 @@ export const authorizePostHandler = asyncWrap(async (req: Request, res: Response
  * This is used for both GET and POST requests.
  * We currently only support query string parameters.
  * See: https://openid.net/specs/openid-connect-core-1_0.html#AuthorizationEndpoint
- * @param req The HTTP request.
- * @param res The HTTP response.
- * @param params The params (query string params for GET, form body params for POST).
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
+ * @param params - The params (query string params for GET, form body params for POST).
  * @returns True on success; false on error.
  */
 async function validateAuthorizeRequest(req: Request, res: Response, params: Record<string, any>): Promise<boolean> {
@@ -53,8 +53,8 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   // If these are invalid, then show an error page.
   let client = undefined;
   try {
-    client = await getClient(params.client_id as string);
-  } catch (err) {
+    client = await getClientApplication(params.client_id as string);
+  } catch (_err) {
     res.status(400).send('Client not found');
     return false;
   }
@@ -110,6 +110,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   }
 
   if (prompt !== 'login' && existingLogin) {
+    const systemRepo = getSystemRepo();
     await systemRepo.updateResource<Login>({
       ...existingLogin,
       nonce: params.nonce as string,
@@ -128,7 +129,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
 
 /**
  * Returns true if the audience is valid.
- * @param aud The user provided audience.
+ * @param aud - The user provided audience.
  * @returns True if the audience is valid; false otherwise.
  */
 function isValidAudience(aud: string | undefined): boolean {
@@ -143,15 +144,15 @@ function isValidAudience(aud: string | undefined): boolean {
     const audUrl = new URL(aud);
     const serverUrl = new URL(getConfig().baseUrl);
     return audUrl.protocol === serverUrl.protocol && audUrl.host === serverUrl.host;
-  } catch (err) {
+  } catch (_err) {
     return false;
   }
 }
 
 /**
  * Tries to get an existing login for the current request.
- * @param req The HTTP request.
- * @param client The current client application.
+ * @param req - The HTTP request.
+ * @param client - The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
 async function getExistingLogin(req: Request, client: ClientApplication): Promise<Login | undefined> {
@@ -173,7 +174,7 @@ async function getExistingLogin(req: Request, client: ClientApplication): Promis
 
 /**
  * Tries to get an existing login based on the "id_token_hint" query string parameter.
- * @param req The HTTP request.
+ * @param req - The HTTP request.
  * @returns Existing login if found; undefined otherwise.
  */
 async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | undefined> {
@@ -186,7 +187,7 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
   try {
     verifyResult = await verifyJwt(idTokenHint);
   } catch (err: any) {
-    getRequestContext().logger.debug('Error verifying id_token_hint', err);
+    getLogger().debug('Error verifying id_token_hint', err);
     return undefined;
   }
 
@@ -196,13 +197,14 @@ async function getExistingLoginFromIdTokenHint(req: Request): Promise<Login | un
     return undefined;
   }
 
+  const systemRepo = getSystemRepo();
   return systemRepo.readResource<Login>('Login', existingLoginId);
 }
 
 /**
  * Tries to get an existing login based on the HTTP cookies.
- * @param req The HTTP request.
- * @param client The current client application.
+ * @param req - The HTTP request.
+ * @param client - The current client application.
  * @returns Existing login if found; undefined otherwise.
  */
 async function getExistingLoginFromCookie(req: Request, client: ClientApplication): Promise<Login | undefined> {
@@ -212,6 +214,7 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
     return undefined;
   }
 
+  const systemRepo = getSystemRepo();
   const bundle = await systemRepo.search<Login>({
     resourceType: 'Login',
     filters: [
@@ -229,10 +232,10 @@ async function getExistingLoginFromCookie(req: Request, client: ClientApplicatio
 
 /**
  * Sends a redirect back to the client application with error codes and state.
- * @param res The response.
- * @param redirectUri The client redirect URI.  This URI may already have query string parameters.
- * @param error The OAuth/OpenID error code.
- * @param state The client state.
+ * @param res - The response.
+ * @param redirectUri - The client redirect URI.  This URI may already have query string parameters.
+ * @param error - The OAuth/OpenID error code.
+ * @param state - The client state.
  */
 function sendErrorRedirect(res: Response, redirectUri: string, error: string, state: string): void {
   const url = new URL(redirectUri);
@@ -243,9 +246,9 @@ function sendErrorRedirect(res: Response, redirectUri: string, error: string, st
 
 /**
  * Sends a successful redirect.
- * @param req The HTTP request.
- * @param res The HTTP response.
- * @param params The redirect parameters.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
+ * @param params - The redirect parameters.
  */
 function sendSuccessRedirect(req: Request, res: Response, params: Record<string, any>): void {
   const redirectUrl = new URL(getConfig().appBaseUrl + 'oauth');

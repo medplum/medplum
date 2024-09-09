@@ -1,4 +1,4 @@
-import { createReference, getReferenceString } from '@medplum/core';
+import { SNOMED, createReference, getReferenceString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { DrAliceSmith, HomerSimpson, MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
@@ -26,7 +26,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '38341003',
                 display: 'Hypertension',
               },
@@ -38,7 +38,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '44054006',
                 display: 'Type 2 diabetes',
               },
@@ -50,7 +50,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '414915002',
                 display: 'Obesity',
               },
@@ -62,7 +62,7 @@ test('Success', async () => {
             type: 'boolean',
             code: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '195967001',
                 display: 'Asthma',
               },
@@ -78,6 +78,7 @@ test('Success', async () => {
   const encounter = await medplum.createResource({
     resourceType: 'Encounter',
     status: 'in-progress',
+    class: { code: 'ambulatory' },
     subject: createReference(HomerSimpson),
     participant: [{ individual: createReference(DrAliceSmith) }], // Dr. Alice Smith is the Practitioner who performed the encounter
   });
@@ -108,6 +109,11 @@ test('Success', async () => {
     authored: new Date().toISOString(),
     status: 'completed',
   };
-  const result = await handler(medplum, { input, contentType, secrets: {} });
+  const result = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
+    input,
+    contentType,
+    secrets: {},
+  });
   expect(result).toBe(true);
 });

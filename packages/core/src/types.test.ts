@@ -1,111 +1,51 @@
-import { ResourceType } from '@medplum/fhirtypes';
 import {
+  Address,
+  CodeableConcept,
+  Coding,
+  ContactPoint,
+  ElementDefinition,
+  Extension,
+  HumanName,
+  Identifier,
+  Patient,
+  Quantity,
+  Reference,
+} from '@medplum/fhirtypes';
+import { LOINC, UCUM } from './constants';
+import {
+  TypedValue,
+  getElementDefinitionFromElements,
   getElementDefinitionTypeName,
+  getPathDisplayName,
   getPropertyDisplayName,
-  getResourceTypes,
-  getResourceTypeSchema,
-  getSearchParameters,
-  globalSchema,
-  indexSearchParameter,
-  indexStructureDefinition,
   isReference,
   isResource,
-  isResourceTypeSchema,
-  TypeSchema,
+  stringifyTypedValue,
 } from './types';
 
 describe('Type Utils', () => {
-  test('indexStructureDefinition', () => {
-    // Silently ignore empty structure definitions
-    indexStructureDefinition({ resourceType: 'StructureDefinition' });
-
-    // Silently ignore structure definitions without any elements
-    indexStructureDefinition({
-      resourceType: 'StructureDefinition',
-      name: 'EmptyStructureDefinition',
-      snapshot: {},
-    });
-
-    // Index a patient definition
-    indexStructureDefinition({
-      resourceType: 'StructureDefinition',
-      id: '123',
-      name: 'Patient',
-      baseDefinition: 'http://hl7.org/fhir/StructureDefinition/DomainResource',
-      kind: 'resource',
-      snapshot: {
-        element: [
-          {
-            id: 'Patient',
-            path: 'Patient',
-          },
-          {
-            id: 'Patient.name',
-            path: 'Patient.name',
-            type: [
-              {
-                code: 'HumanName',
-              },
-            ],
-            max: '*',
-          },
-        ],
-      },
-    });
-    expect(globalSchema.types['Patient']).toBeDefined();
-    expect(globalSchema.types['Patient'].properties).toBeDefined();
-    expect(globalSchema.types['Patient'].properties['name']).toBeDefined();
-    expect(getResourceTypes()).toContain('Patient');
-    expect(getResourceTypeSchema('Patient')).toBeDefined();
-
-    // Silently ignore search parameters without base
-    indexSearchParameter({ resourceType: 'SearchParameter' });
-
-    // Silently ignore search parameters for types without a StructureDefinition
-    indexSearchParameter({ resourceType: 'SearchParameter', base: ['XYZ' as ResourceType] });
-    expect(globalSchema.types['XYZ']).toBeUndefined();
-
-    // Index a patient search parameter
-    indexSearchParameter({
-      resourceType: 'SearchParameter',
-      id: 'Patient-name',
-      base: ['Patient'],
-      code: 'name',
-      name: 'name',
-      type: 'string',
-      expression: 'Patient.name',
-    });
-    expect(globalSchema.types['Patient'].searchParams?.['name']).toBeDefined();
-    expect(getSearchParameters('Patient')).toBeDefined();
-
-    // Expect base search parameters to be indexed
-    expect(globalSchema.types['Patient'].searchParams?.['_id']).toBeDefined();
-    expect(globalSchema.types['Patient'].searchParams?.['_lastUpdated']).toBeDefined();
-
-    // Index again and silently ignore
-    indexSearchParameter({
-      resourceType: 'SearchParameter',
-      id: 'Patient-name',
-      base: ['Patient'],
-      code: 'name',
-      name: 'name',
-      type: 'string',
-      expression: 'Patient.name',
-    });
-    expect(globalSchema.types['Patient'].searchParams?.['name']).toBeDefined();
+  test('getPathDisplayName', () => {
+    expect(getPathDisplayName('Patient.id')).toEqual('ID');
+    expect(getPathDisplayName('Patient.name')).toEqual('Name');
+    expect(getPathDisplayName('Patient.birthDate')).toEqual('Birth Date');
+    expect(getPathDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
+    expect(getPathDisplayName('ClientApplication.jwksUri')).toEqual('JWKS URI');
+    expect(getPathDisplayName('ClientApplication.redirectUri')).toEqual('Redirect URI');
+    expect(getPathDisplayName('Device.udiCarrier')).toEqual('UDI Carrier');
+    expect(getPathDisplayName('Patient.withASingleCharacterWord')).toEqual('With A Single Character Word');
+    expect(getPathDisplayName('Device.udiCarrier.carrierAIDC')).toEqual('Carrier AIDC');
+    expect(getPathDisplayName('Device.udiCarrier.carrierHRF')).toEqual('Carrier HRF');
+    expect(getPathDisplayName('Patient.digitAtEnd8')).toEqual('Digit At End 8');
+    expect(getPathDisplayName('Patient.8digitAtStart')).toEqual('8 Digit At Start');
+    expect(getPathDisplayName('Patient.digit8InMiddle')).toEqual('Digit 8 In Middle');
   });
 
   test('getPropertyDisplayName', () => {
-    expect(getPropertyDisplayName('Patient.id')).toEqual('ID');
-    expect(getPropertyDisplayName('Patient.name')).toEqual('Name');
-    expect(getPropertyDisplayName('Patient.birthDate')).toEqual('Birth Date');
-    expect(getPropertyDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
-    expect(getPropertyDisplayName('ClientApplication.jwksUri')).toEqual('JWKS URI');
-    expect(getPropertyDisplayName('ClientApplication.redirectUri')).toEqual('Redirect URI');
+    expect(getPropertyDisplayName('_lastUpdated')).toEqual('Last Updated');
   });
 
   test('getElementDefinitionTypeName', () => {
-    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] })).toEqual('string');
+    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] } as ElementDefinition)).toEqual('string');
     expect(getElementDefinitionTypeName({ path: 'Patient.address', type: [{ code: 'Address' }] })).toEqual('Address');
     expect(getElementDefinitionTypeName({ path: 'Patient.contact', type: [{ code: 'BackboneElement' }] })).toEqual(
       'PatientContact'
@@ -121,92 +61,29 @@ describe('Type Utils', () => {
     expect(
       getElementDefinitionTypeName({
         path: 'Questionnaire.item.item',
-        base: { path: 'Questionnaire.item' },
+        base: { path: 'Questionnaire.item', min: 0, max: '*' },
         type: [{ code: 'Element' }],
       })
     ).toEqual('QuestionnaireItem');
   });
 
-  test('isResourceTypeSchema', () => {
-    indexStructureDefinition({
-      resourceType: 'StructureDefinition',
-      id: '123',
-      name: 'Patient',
-      baseDefinition: 'http://hl7.org/fhir/StructureDefinition/DomainResource',
-      kind: 'resource',
-      snapshot: {
-        element: [
-          {
-            id: 'Patient',
-            path: 'Patient',
-          },
-          {
-            id: 'Patient.name',
-            path: 'Patient.name',
-            type: [{ code: 'HumanName' }],
-            max: '*',
-          },
-          {
-            id: 'Patient.contact',
-            path: 'Patient.contact',
-            max: '*',
-            type: [{ code: 'BackboneElement' }],
-          },
-          {
-            id: 'Patient.contact.id',
-            path: 'Patient.contact.id',
-            type: [{ code: 'string' }],
-          },
-        ],
-      },
-    });
+  test('getElementDefinitionFromElements', () => {
+    const elements = {
+      address: { path: 'Patient.address', type: [{ code: 'Address' }], description: '', min: 0, max: 1 },
+      'value[x]': { path: 'Patient.value[x]', type: [{ code: 'string' }], description: '', min: 0, max: 1 },
+    };
 
-    expect(globalSchema.types['Patient']).toBeDefined();
-    expect(isResourceTypeSchema(globalSchema.types['Patient'])).toBeTruthy();
+    // should be found
+    expect(getElementDefinitionFromElements(elements, 'address')).toBeDefined();
+    expect(getElementDefinitionFromElements(elements, 'value[x]')).toBeDefined();
+    expect(getElementDefinitionFromElements(elements, 'value')).toBeDefined();
 
-    expect(globalSchema.types['PatientContact']).toBeDefined();
-    expect(isResourceTypeSchema(globalSchema.types['PatientContact'])).toBeFalsy();
+    expect(getElementDefinitionFromElements(elements, 'value')).toEqual(
+      getElementDefinitionFromElements(elements, 'value[x]')
+    );
 
-    expect(
-      isResourceTypeSchema({
-        structureDefinition: {
-          name: 'XYZ',
-          kind: 'resource',
-          abstract: false,
-        },
-        elementDefinition: {
-          path: 'XYZ',
-        },
-      } as unknown as TypeSchema)
-    ).toBeTruthy();
-
-    expect(
-      isResourceTypeSchema({
-        structureDefinition: {
-          name: 'XYZ',
-          kind: 'resource',
-          abstract: true,
-          snapshot: { element: [{ path: 'XYZ' }] },
-        },
-        elementDefinition: {
-          path: 'XYZ',
-        },
-      } as unknown as TypeSchema)
-    ).not.toBeTruthy();
-
-    expect(
-      isResourceTypeSchema({
-        structureDefinition: {
-          name: 'XYZ',
-          kind: 'logical',
-          abstract: false,
-          snapshot: { element: [{ path: 'XYZ' }] },
-        },
-        elementDefinition: {
-          path: 'XYZ',
-        },
-      } as unknown as TypeSchema)
-    ).not.toBeTruthy();
+    // shoudl NOT be found
+    expect(getElementDefinitionFromElements(elements, 'notreal')).toBeUndefined();
   });
 
   test('isResource', () => {
@@ -225,5 +102,54 @@ describe('Type Utils', () => {
     expect(isReference({})).toBe(false);
     expect(isReference({ resourceType: 'Patient' })).toBe(false);
     expect(isReference({ reference: 'Patient/123' })).toBe(true);
+    expect(isReference({ reference: { value: '123' } })).toBe(false);
+  });
+
+  test.each<[TypedValue, string]>([
+    [{ type: 'string', value: 'foo' }, 'foo'],
+    [{ type: 'date', value: '2020-01-01' }, '2020-01-01'],
+    [{ type: 'Coding', value: { system: LOINC, code: '00000-0', display: 'unused' } as Coding }, `${LOINC}|00000-0`],
+    [
+      { type: 'Identifier', value: { system: 'urn:oid:2.16.840.1.113883.4.3.6', value: 'F9999999' } as Identifier },
+      'urn:oid:2.16.840.1.113883.4.3.6|F9999999',
+    ],
+    [
+      {
+        type: 'CodeableConcept',
+        value: {
+          coding: [
+            { system: LOINC, code: '00000-0' },
+            { system: LOINC, code: '11111-1' },
+          ],
+        } as CodeableConcept,
+      },
+      `${LOINC}|00000-0,${LOINC}|11111-1`,
+    ],
+    [
+      { type: 'HumanName', value: { text: 'Santa Claus', given: ['Kris'], family: 'Kringle' } as HumanName },
+      'Santa Claus',
+    ],
+    [{ type: 'HumanName', value: { given: ['Kris'], family: 'Kringle' } as HumanName }, 'Kris Kringle'],
+    [{ type: 'integer', value: 12345 }, '12345'],
+    [{ type: 'positiveInt', value: 12345 }, '12345'],
+    [{ type: 'decimal', value: 123.45 }, '123.45'],
+    [{ type: 'boolean', value: true }, 'true'],
+    [{ type: 'boolean', value: false }, 'false'],
+    [{ type: 'ContactPoint', value: { value: '555-555-5555' } as ContactPoint }, '555-555-5555'],
+    [
+      { type: 'Extension', value: { url: 'http://example.com/ext1', valueString: 'unused' } as Extension },
+      'http://example.com/ext1',
+    ],
+    [{ type: 'Reference', value: { reference: 'Patient/example' } as Reference }, 'Patient/example'],
+    [{ type: 'Patient', value: { resourceType: 'Patient', id: 'example' } as Patient }, 'Patient/example'],
+    [
+      { type: 'Address', value: { country: 'US', state: 'CA' } as Address },
+      `{"type":"Address","value":{"country":"US","state":"CA"}}`,
+    ],
+    [{ type: 'Quantity', value: { unit: 'mg', value: 100 } as Quantity }, '100||mg'],
+    [{ type: 'Age', value: { code: 'a', system: UCUM, value: 34.9 } as Quantity }, `34.9|${UCUM}|a`],
+  ])('formatTypedValue()', (value, expected) => {
+    const actual = stringifyTypedValue(value);
+    expect(actual).toEqual(expected);
   });
 });

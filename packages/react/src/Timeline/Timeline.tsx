@@ -2,28 +2,30 @@ import { ActionIcon, Group, Menu, Text } from '@mantine/core';
 import { formatDateTime, getReferenceString } from '@medplum/core';
 import { Reference, Resource } from '@medplum/fhirtypes';
 import { IconDots } from '@tabler/icons-react';
-import React from 'react';
+import cx from 'clsx';
+import { ReactNode } from 'react';
 import { Container } from '../Container/Container';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { Panel, PanelProps } from '../Panel/Panel';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceName } from '../ResourceName/ResourceName';
+import classes from './Timeline.module.css';
 
 export interface TimelineProps {
-  children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
 export function Timeline(props: TimelineProps): JSX.Element {
   return <Container>{props.children}</Container>;
 }
 
-export interface TimelineItemProps extends PanelProps {
-  resource: Resource;
-  profile?: Reference;
-  dateTime?: string;
-  padding?: boolean;
-  popupMenuItems?: React.ReactNode;
+export interface TimelineItemProps<T extends Resource = Resource> extends PanelProps {
+  readonly resource: T;
+  readonly profile?: Reference;
+  readonly dateTime?: string;
+  readonly padding?: boolean;
+  readonly popupMenuItems?: ReactNode;
 }
 
 export function TimelineItem(props: TimelineItemProps): JSX.Element {
@@ -33,20 +35,20 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
 
   return (
     <Panel data-testid="timeline-item" fill={true} {...others}>
-      <Group position="apart" spacing={8} mx="xs" my="sm">
+      <Group justify="space-between" gap={8} mx="xs" my="sm">
         <ResourceAvatar value={author} link={true} size="md" />
         <div style={{ flex: 1 }}>
           <Text size="sm">
-            <ResourceName color="dark" weight={500} value={author} link={true} />
+            <ResourceName c="dark" fw={500} value={author} link={true} />
           </Text>
           <Text size="xs">
-            <MedplumLink color="dimmed" to={props.resource}>
+            <MedplumLink c="dimmed" to={props.resource}>
               {formatDateTime(dateTime)}
             </MedplumLink>
-            <Text component="span" color="dimmed" mx={8}>
+            <Text component="span" c="dimmed" mx={8}>
               &middot;
             </Text>
-            <MedplumLink color="dimmed" to={props.resource}>
+            <MedplumLink c="dimmed" to={props.resource}>
               {props.resource.resourceType}
             </MedplumLink>
           </Text>
@@ -54,7 +56,12 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         {popupMenuItems && (
           <Menu position="bottom-end" shadow="md" width={200}>
             <Menu.Target>
-              <ActionIcon radius="xl" aria-label={`Actions for ${getReferenceString(props.resource)}`}>
+              <ActionIcon
+                color="gray"
+                variant="subtle"
+                radius="xl"
+                aria-label={`Actions for ${getReferenceString(props.resource)}`}
+              >
                 <IconDots />
               </ActionIcon>
             </Menu.Target>
@@ -63,8 +70,7 @@ export function TimelineItem(props: TimelineItemProps): JSX.Element {
         )}
       </Group>
       <ErrorBoundary>
-        {padding && <div style={{ padding: '0 16px 16px 16px' }}>{props.children}</div>}
-        {!padding && <>{props.children}</>}
+        <div className={cx(classes.item, { [classes.itemPadding]: padding })}>{props.children}</div>
       </ErrorBoundary>
     </Panel>
   );

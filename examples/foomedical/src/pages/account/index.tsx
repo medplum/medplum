@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { SideMenu } from '../../components/SideMenu';
 
-export const sideMenu = {
+const sideMenu = {
   title: 'Account',
   menu: [
     { name: 'Profile', href: '/account/profile' },

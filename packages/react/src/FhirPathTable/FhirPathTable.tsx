@@ -1,42 +1,42 @@
 import { Button, Loader, Table } from '@mantine/core';
-import { IndexedStructureDefinition, normalizeOperationOutcome, PropertyType } from '@medplum/core';
+import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
-import React, { useEffect, useRef, useState } from 'react';
+import { useMedplum } from '@medplum/react-hooks';
+import { ChangeEvent, MouseEvent, memo, useEffect, useRef, useState } from 'react';
 import { FhirPathDisplay } from '../FhirPathDisplay/FhirPathDisplay';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { SearchClickEvent } from '../SearchControl/SearchControl';
 import { isCheckboxCell, killEvent } from '../utils/dom';
 
 export interface FhirPathTableField {
-  readonly propertyType: PropertyType;
+  readonly propertyType: string;
   readonly name: string;
   readonly fhirPath: string;
 }
 
 export interface FhirPathTableProps {
-  resourceType: string;
-  query: string;
-  fields: FhirPathTableField[];
-  checkboxesEnabled?: boolean;
-  onClick?: (e: SearchClickEvent) => void;
-  onAuxClick?: (e: SearchClickEvent) => void;
-  onBulk?: (ids: string[]) => void;
+  readonly resourceType: string;
+  readonly query: string;
+  readonly fields: FhirPathTableField[];
+  readonly checkboxesEnabled?: boolean;
+  readonly onClick?: (e: SearchClickEvent) => void;
+  readonly onAuxClick?: (e: SearchClickEvent) => void;
+  readonly onBulk?: (ids: string[]) => void;
 }
 
 export interface SmartSearchResponse {
-  data: {
+  readonly data: {
     ResourceList: Resource[];
   };
 }
 
 /**
  * The FhirPathTable component represents the embeddable search table control.
- * @param props FhirPathTable React props.
+ * @param props - FhirPathTable React props.
  * @returns FhirPathTable React node.
  */
 export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   const medplum = useMedplum();
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [outcome, setOutcome] = useState<OperationOutcome | undefined>();
   const { query, fields } = props;
   const [response, setResponse] = useState<SmartSearchResponse | undefined>();
@@ -56,7 +56,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
       .catch((err) => setOutcome(normalizeOperationOutcome(err)));
   }, [medplum, query]);
 
-  function handleSingleCheckboxClick(e: React.ChangeEvent, id: string): void {
+  function handleSingleCheckboxClick(e: ChangeEvent, id: string): void {
     e.stopPropagation();
 
     const el = e.target as HTMLInputElement;
@@ -70,7 +70,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
     setSelected(newSelected);
   }
 
-  function handleAllCheckboxClick(e: React.ChangeEvent): void {
+  function handleAllCheckboxClick(e: ChangeEvent): void {
     e.stopPropagation();
 
     const el = e.target as HTMLInputElement;
@@ -100,7 +100,7 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
     return true;
   }
 
-  function handleRowClick(e: React.MouseEvent, resource: Resource): void {
+  function handleRowClick(e: MouseEvent, resource: Resource): void {
     if (isCheckboxCell(e.target as Element)) {
       // Ignore clicks on checkboxes
       return;
@@ -120,16 +120,11 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   useEffect(() => {
     medplum
       .requestSchema(props.resourceType)
-      .then((newSchema) => {
-        // The schema could have the same object identity,
-        // so need to use the spread operator to kick React re-render.
-        setSchema({ ...newSchema });
-      })
+      .then(() => setSchemaLoaded(true))
       .catch(console.log);
   }, [medplum, props.resourceType]);
 
-  const typeSchema = schema?.types[props.resourceType];
-  if (!typeSchema) {
+  if (!schemaLoaded) {
     return <Loader />;
   }
 
@@ -138,10 +133,10 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   return (
     <div onContextMenu={(e) => killEvent(e)} data-testid="search-control">
       <Table>
-        <thead>
-          <tr>
+        <Table.Thead>
+          <Table.Tr>
             {checkboxColumn && (
-              <th>
+              <Table.Th>
                 <input
                   type="checkbox"
                   value="checked"
@@ -150,25 +145,25 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
                   checked={isAllSelected()}
                   onChange={(e) => handleAllCheckboxClick(e)}
                 />
-              </th>
+              </Table.Th>
             )}
             {fields.map((field) => (
-              <th key={field.name}>{field.name}</th>
+              <Table.Th key={field.name}>{field.name}</Table.Th>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
           {response?.data.ResourceList.map(
             (resource) =>
               resource && (
-                <tr
+                <Table.Tr
                   key={resource.id}
                   data-testid="search-control-row"
                   onClick={(e) => handleRowClick(e, resource)}
                   onAuxClick={(e) => handleRowClick(e, resource)}
                 >
                   {checkboxColumn && (
-                    <td>
+                    <Table.Td>
                       <input
                         type="checkbox"
                         value="checked"
@@ -177,19 +172,19 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
                         checked={!!selected[resource.id as string]}
                         onChange={(e) => handleSingleCheckboxClick(e, resource.id as string)}
                       />
-                    </td>
+                    </Table.Td>
                   )}
                   {fields.map((field) => {
                     return (
-                      <td key={field.name}>
+                      <Table.Td key={field.name}>
                         <FhirPathDisplay propertyType={field.propertyType} path={field.fhirPath} resource={resource} />
-                      </td>
+                      </Table.Td>
                     );
                   })}
-                </tr>
+                </Table.Tr>
               )
           )}
-        </tbody>
+        </Table.Tbody>
       </Table>
       {response?.data.ResourceList.length === 0 && <div data-testid="empty-search">No results</div>}
       {outcome && (
@@ -206,4 +201,4 @@ export function FhirPathTable(props: FhirPathTableProps): JSX.Element {
   );
 }
 
-export const MemoizedFhirPathTable = React.memo(FhirPathTable);
+export const MemoizedFhirPathTable = memo(FhirPathTable);

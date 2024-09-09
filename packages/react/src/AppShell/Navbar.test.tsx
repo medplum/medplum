@@ -1,8 +1,8 @@
+import { AppShell as MantineAppShell } from '@mantine/core';
 import { MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { IconStar } from '@tabler/icons-react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { Navbar } from './Navbar';
 
 const medplum = new MockClient();
@@ -37,30 +37,32 @@ async function setup(initial = '/'): Promise<void> {
   await act(async () => {
     render(
       <MedplumProvider medplum={medplum} navigate={navigateMock}>
-        <Navbar
-          pathname={initialUrl.pathname}
-          searchParams={initialUrl.searchParams}
-          closeNavbar={closeMock}
-          menus={[
-            {
-              title: 'Menu 1',
-              links: [
-                { label: 'Link 1', href: '/link1' },
-                { label: 'Link 2', href: '/link2' },
-                { label: 'Link 3', href: '/link3' },
-              ],
-            },
-            {
-              title: 'Menu 2',
-              links: [
-                { label: 'Link 4', href: '/link?key=4&_offset=0' },
-                { label: 'Link 5', href: '/link?key=5' },
-                { label: 'Link 6', href: '/link?key=6', icon: <IconStar /> },
-              ],
-            },
-          ]}
-          displayAddBookmark={true}
-        />
+        <MantineAppShell>
+          <Navbar
+            pathname={initialUrl.pathname}
+            searchParams={initialUrl.searchParams}
+            closeNavbar={closeMock}
+            menus={[
+              {
+                title: 'Menu 1',
+                links: [
+                  { label: 'Link 1', href: '/link1' },
+                  { label: 'Link 2', href: '/link2' },
+                  { label: 'Link 3', href: '/link3' },
+                ],
+              },
+              {
+                title: 'Menu 2',
+                links: [
+                  { label: 'Link 4', href: '/link?key=4&_offset=0' },
+                  { label: 'Link 5', href: '/link?key=5' },
+                  { label: 'Link 6', href: '/link?key=6', icon: <IconStar /> },
+                ],
+              },
+            ]}
+            displayAddBookmark={true}
+          />
+        </MantineAppShell>
       </MedplumProvider>
     );
   });
@@ -160,8 +162,8 @@ describe('Navbar', () => {
       fireEvent.click(screen.getByText('Link 1'));
     });
 
-    expect(navigateMock).toBeCalledWith('/link1');
-    expect(closeMock).not.toBeCalled();
+    expect(navigateMock).toHaveBeenCalledWith('/link1');
+    expect(closeMock).not.toHaveBeenCalled();
   });
 
   test('Click link on mobile', async () => {
@@ -173,8 +175,8 @@ describe('Navbar', () => {
       fireEvent.click(screen.getByText('Link 1'));
     });
 
-    expect(navigateMock).toBeCalledWith('/link1');
-    expect(closeMock).toBeCalled();
+    expect(navigateMock).toHaveBeenCalledWith('/link1');
+    expect(closeMock).toHaveBeenCalled();
   });
 
   test('Resource Type Search', async () => {
@@ -202,7 +204,7 @@ describe('Navbar', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    expect(navigateMock).toBeCalledWith('/test-code');
+    expect(navigateMock).toHaveBeenCalledWith('/test-code');
   });
 
   test('Add Bookmark render and submit', async () => {
@@ -214,7 +216,7 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
@@ -226,8 +228,6 @@ describe('Navbar', () => {
     await act(async () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
-
-    expect(input).not.toBeVisible();
   });
 
   test('Add Bookmark close', async () => {
@@ -239,15 +239,13 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     });
-
-    expect(input).not.toBeVisible();
   });
 
   test('Add Bookmark save', async () => {
@@ -259,14 +257,12 @@ describe('Navbar', () => {
       fireEvent.click(button);
     });
 
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = (await screen.findByPlaceholderText('Bookmark Name')) as HTMLInputElement;
 
     expect(input).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'OK' }));
     });
-
-    expect(input).not.toBeVisible();
   });
 });

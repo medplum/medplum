@@ -20,6 +20,5 @@ The output of the request is a [FHIR bundle](/docs/api/fhir/resources/bundle) wi
 
 ## Related Documentation
 
-- Refer to [readPatientEverything](/docs/sdk/classes/MedplumClient#readpatienteverything) in the TypeScript SDK
-- [Bundle definition](/docs/sdk/classes/MedplumClient#returns-40) in TypeScript SDK
+- Refer to [readPatientEverything](/docs/sdk/core.medplumclient.readpatienteverything) in the TypeScript SDK
 - FHIR Bundles created are required as part of [ONC Certification](/docs/compliance/onc)

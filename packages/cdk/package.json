@@ -1,34 +1,42 @@
 {
   "name": "@medplum/cdk",
-  "version": "2.1.1",
+  "version": "3.2.8",
   "description": "Medplum CDK Infra as Code",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
   "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
+    "url": "git+https://github.com/medplum/medplum.git",
     "directory": "packages/cdk"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
+    "cdk": "cdk",
+    "clean": "rimraf dist cdk.out",
+    "lint": "eslint .",
+    "test": "jest --runInBand"
+  },
+  "dependencies": {
+    "@aws-sdk/types": "3.609.0",
+    "@medplum/core": "3.2.8",
+    "aws-cdk-lib": "2.155.0",
+    "cdk": "2.155.0",
+    "cdk-nag": "2.28.195",
+    "cdk-serverless-clamscan": "2.8.27",
+    "constructs": "10.3.0",
+    "object-hash": "3.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
   },
-  "scripts": {
-    "clean": "rimraf dist cdk.out",
-    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs",
-    "cdk": "cdk",
-    "test": "jest --runInBand"
-  },
-  "dependencies": {
-    "@aws-sdk/types": "3.413.0",
-    "@medplum/core": "*",
-    "aws-cdk-lib": "2.96.2",
-    "cdk": "2.96.2",
-    "cdk-nag": "2.27.133",
-    "cdk-serverless-clamscan": "2.5.87",
-    "constructs": "10.2.70"
-  },
-  "bin": {
-    "medplum-cdk-init": "./dist/cjs/init.cjs"
+  "devDependencies": {
+    "@types/object-hash": "3.0.6"
   }
 }

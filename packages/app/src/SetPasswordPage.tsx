@@ -1,8 +1,17 @@
 import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/core';
 import { badRequest, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { Document, Form, getErrorsForInput, Logo, MedplumLink, useMedplum } from '@medplum/react';
-import React, { useState } from 'react';
+import {
+  Document,
+  Form,
+  Logo,
+  MedplumLink,
+  OperationOutcomeAlert,
+  getErrorsForInput,
+  getIssuesForExpression,
+  useMedplum,
+} from '@medplum/react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 export function SetPasswordPage(): JSX.Element {
@@ -10,11 +19,12 @@ export function SetPasswordPage(): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const [success, setSuccess] = useState(false);
+  const issues = getIssuesForExpression(outcome, undefined);
 
   return (
     <Document width={450}>
+      <OperationOutcomeAlert issues={issues} />
       <Form
-        style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
           if (formData.password !== formData.confirmPassword) {
             setOutcome(badRequest('Passwords do not match', 'confirmPassword'));
@@ -32,7 +42,7 @@ export function SetPasswordPage(): JSX.Element {
             .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
-        <Center sx={{ flexDirection: 'column' }}>
+        <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
           <Title>Set password</Title>
         </Center>
@@ -50,7 +60,7 @@ export function SetPasswordPage(): JSX.Element {
               required={true}
               error={getErrorsForInput(outcome, 'confirmPassword')}
             />
-            <Group position="right" mt="xl">
+            <Group justify="flex-end" mt="xl">
               <Button type="submit">Set password</Button>
             </Group>
           </Stack>

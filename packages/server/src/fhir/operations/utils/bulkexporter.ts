@@ -1,7 +1,7 @@
-import { Binary, BulkDataExport, Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getReferenceString } from '@medplum/core';
-import { Repository, systemRepo } from '../../repo';
+import { Binary, BulkDataExport, Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
+import { Repository, getSystemRepo } from '../../repo';
 import { getBinaryStorage } from '../../storage';
 
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
@@ -104,6 +104,7 @@ export class BulkExporter {
     }
 
     // Update the BulkDataExport
+    const systemRepo = getSystemRepo();
     return systemRepo.updateResource<BulkDataExport>({
       ...this.resource,
       meta: {

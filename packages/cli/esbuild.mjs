@@ -2,7 +2,7 @@
 /* eslint no-console: "off" */
 
 import esbuild from 'esbuild';
-import { writeFileSync } from 'fs';
+import { writeFileSync } from 'node:fs';
 
 const options = {
   entryPoints: ['./src/index.ts'],
@@ -26,10 +26,8 @@ const options = {
     'commander',
     'dotenv',
     'fast-glob',
-    'fs',
+    'iconv-lite',
     'node-fetch',
-    'path',
-    'readline',
     'tar',
   ],
   banner: { js: '#!/usr/bin/env node' },

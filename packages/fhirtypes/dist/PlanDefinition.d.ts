@@ -170,7 +170,7 @@ export interface PlanDefinition {
    * The status of this plan definition. Enables tracking the life-cycle of
    * the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this plan definition is authored for
@@ -327,6 +327,12 @@ export interface PlanDefinition {
    */
   action?: PlanDefinitionAction[];
 }
+
+/**
+ * A code or group definition that describes the intended subject of the
+ * plan definition.
+ */
+export type PlanDefinitionSubject = CodeableConcept | Reference<Group>;
 
 /**
  * An action or group of actions to be taken as part of the plan.
@@ -567,6 +573,24 @@ export interface PlanDefinitionAction {
 }
 
 /**
+ * A code or group definition that describes the intended subject of the
+ * action and its children, if any.
+ */
+export type PlanDefinitionActionSubject = CodeableConcept | Reference<Group>;
+
+/**
+ * An optional value describing when the action should be performed.
+ */
+export type PlanDefinitionActionTiming = Age | Duration | Period | Range | string | Timing;
+
+/**
+ * A reference to an ActivityDefinition that describes the action to be
+ * taken in detail, or a PlanDefinition that describes a series of
+ * actions to be taken.
+ */
+export type PlanDefinitionActionDefinition = string;
+
+/**
  * An expression that describes applicability criteria or start/stop
  * conditions for the action.
  */
@@ -610,7 +634,7 @@ export interface PlanDefinitionActionCondition {
   /**
    * The kind of condition.
    */
-  kind?: 'applicability' | 'start' | 'stop';
+  kind: 'applicability' | 'start' | 'stop';
 
   /**
    * An expression that returns true or false, indicating whether the
@@ -725,7 +749,7 @@ export interface PlanDefinitionActionParticipant {
   /**
    * The type of participant in the action.
    */
-  type?: 'patient' | 'practitioner' | 'related-person' | 'device';
+  type: 'patient' | 'practitioner' | 'related-person' | 'device';
 
   /**
    * The role the participant should play in performing the described
@@ -778,12 +802,12 @@ export interface PlanDefinitionActionRelatedAction {
   /**
    * The element id of the related action.
    */
-  actionId?: string;
+  actionId: string;
 
   /**
    * The relationship of this action to the related action.
    */
-  relationship?: 'before-start' | 'before' | 'before-end' | 'concurrent-with-start' | 'concurrent' |
+  relationship: 'before-start' | 'before' | 'before-end' | 'concurrent-with-start' | 'concurrent' |
       'concurrent-with-end' | 'after-start' | 'after' | 'after-end';
 
   /**
@@ -798,6 +822,12 @@ export interface PlanDefinitionActionRelatedAction {
    */
   offsetRange?: Range;
 }
+
+/**
+ * A duration or range of durations to apply to the relationship. For
+ * example, 30-60 minutes before.
+ */
+export type PlanDefinitionActionRelatedActionOffset = Duration | Range;
 
 /**
  * Goals that describe what the activities within the plan are intended
@@ -852,7 +882,7 @@ export interface PlanDefinitionGoal {
    * objective of care, such as &quot;control blood pressure&quot; or &quot;negotiate an
    * obstacle course&quot; or &quot;dance with child at wedding&quot;.
    */
-  description?: CodeableConcept;
+  description: CodeableConcept;
 
   /**
    * Identifies the expected level of importance associated with
@@ -967,3 +997,13 @@ export interface PlanDefinitionGoalTarget {
    */
   due?: Duration;
 }
+
+/**
+ * The target value of the measure to be achieved to signify fulfillment
+ * of the goal, e.g. 150 pounds or 7.0%. Either the high or low or both
+ * values of the range can be specified. When a low value is missing, it
+ * indicates that the goal is achieved at any value at or below the high
+ * value. Similarly, if the high value is missing, it indicates that the
+ * goal is achieved at any value at or above the low value.
+ */
+export type PlanDefinitionGoalTargetDetail = CodeableConcept | Quantity | Range;

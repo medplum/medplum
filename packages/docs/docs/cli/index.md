@@ -31,7 +31,7 @@ Use one of these authentication options:
 - `--client-id <clientId>`
   - FHIR server client id
 - `--client-secret <clientSecret>`
-  - FHIR server client id
+  - FHIR server client secret
 
 ## Usage
 
@@ -59,6 +59,10 @@ By default, the `medplum` command uses the Medplum hosted API at "https://api.me
   - FHIR server token url
 - `--authorizeUrl <authorizeUrl>`
   - FHIR server authorize url
+
+```bash
+medplum get --base-url https://api.example.com 'Patient/homer-simpson'
+```
 
 ### Auth
 
@@ -184,7 +188,7 @@ medplum delete Patient/$id
 
 ### Project
 
-`project` will have administration commands for visibilty and management
+`project` will have administration commands for visibility and management
 
 #### `current`
 
@@ -263,7 +267,7 @@ medplum aws describe <name>
 
 #### update-app
 
-Updates the app S3 buckeet in a Medplum deployment to the latest version.
+Updates the app S3 bucket in a Medplum deployment to the latest version.
 
 ```bash
 medplum aws update-app <name>

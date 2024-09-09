@@ -1,13 +1,23 @@
-import { Coding, Identifier, Reference, Resource } from '@medplum/fhirtypes';
+import { Coding, Identifier, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, render, screen, waitFor } from '@testing-library/react';
 import { randomUUID } from 'crypto';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { act, render, screen } from '../test-utils/render';
 import { ResourceHeader } from './ResourceHeader';
 
 const medplum = new MockClient();
+
+const baseServiceRequest: ServiceRequest = {
+  resourceType: 'ServiceRequest',
+  status: 'active',
+  intent: 'order',
+  identifier: [
+    { system: 'abc', value: '456' },
+    { system: 'def', value: '789' },
+  ],
+  subject: { reference: 'Patient/123' },
+};
 
 describe('ResourceHeader', () => {
   async function setup(resource: Resource | Reference): Promise<void> {
@@ -51,7 +61,7 @@ describe('ResourceHeader', () => {
     const id = randomUUID();
 
     await setup({
-      resourceType: 'ServiceRequest',
+      ...baseServiceRequest,
       id,
       identifier: [
         { system: 'abc', value: '456' },
@@ -82,16 +92,14 @@ describe('ResourceHeader', () => {
       reference: 'Organization/123',
     });
 
-    await waitFor(() => screen.getByText('Test Organization'));
-
-    expect(screen.getByText('Test Organization')).toBeInTheDocument();
+    expect(await screen.findByText('Test Organization')).toBeInTheDocument();
   });
 
   test('Handles null identifier', async () => {
     const id = randomUUID();
 
     await setup({
-      resourceType: 'ServiceRequest',
+      ...baseServiceRequest,
       id,
       identifier: [null as unknown as Identifier],
     });
@@ -103,7 +111,7 @@ describe('ResourceHeader', () => {
     const id = randomUUID();
 
     await setup({
-      resourceType: 'ServiceRequest',
+      ...baseServiceRequest,
       id,
       identifier: [{ value: 'abc' }],
     });
@@ -116,7 +124,7 @@ describe('ResourceHeader', () => {
     const id = randomUUID();
 
     await setup({
-      resourceType: 'ServiceRequest',
+      ...baseServiceRequest,
       id,
       identifier: [{ system: 'abc' }],
     });
@@ -129,7 +137,7 @@ describe('ResourceHeader', () => {
     const id = randomUUID();
 
     await setup({
-      resourceType: 'ServiceRequest',
+      ...baseServiceRequest,
       id,
       code: { text: 'TEST_CODE' },
       category: [{ text: 'TEST_CATEGORY' }],

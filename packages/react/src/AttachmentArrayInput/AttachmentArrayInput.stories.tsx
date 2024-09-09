@@ -1,5 +1,4 @@
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { AttachmentArrayInput } from './AttachmentArrayInput';
 
@@ -16,6 +15,12 @@ export const Basic = (): JSX.Element => (
 
 export const DefaultValue = (): JSX.Element => (
   <Document>
-    <AttachmentArrayInput name="photo" defaultValue={[{}]} />
+    <AttachmentArrayInput name="photo" defaultValue={[{ title: 'default.png' }]} />
+  </Document>
+);
+
+export const Disabled = (): JSX.Element => (
+  <Document>
+    <AttachmentArrayInput name="photo" defaultValue={[{}]} disabled={true} />
   </Document>
 );

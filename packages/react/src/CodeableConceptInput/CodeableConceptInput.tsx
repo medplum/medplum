@@ -1,34 +1,41 @@
-import { CodeableConcept, ElementDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
-import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import { CodeableConcept, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { useState } from 'react';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 
-export interface CodeableConceptInputProps {
-  property: ElementDefinition;
-  name: string;
-  placeholder?: string;
-  defaultValue?: CodeableConcept;
-  onChange?: (value: CodeableConcept | undefined) => void;
+export interface CodeableConceptInputProps
+  extends Omit<ValueSetAutocompleteProps, 'name' | 'defaultValue' | 'onChange' | 'disabled'>,
+    ComplexTypeInputProps<CodeableConcept> {
+  readonly onChange?: (value: CodeableConcept | undefined) => void;
 }
 
 export function CodeableConceptInput(props: CodeableConceptInputProps): JSX.Element {
-  const [value, setValue] = useState<CodeableConcept | undefined>(props.defaultValue);
+  const {
+    defaultValue,
+    onChange,
+    withHelpText,
+    // spread these unused props so they don't get passed to ValueSetAutocomplete in `rest`
+    outcome: _outcome,
+    path: _path,
+    valuePath: _valuePath,
+    ...rest
+  } = props;
+  const [value, setValue] = useState<CodeableConcept | undefined>(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     const newConcept = valueSetElementToCodeableConcept(newValues);
     setValue(newConcept);
-    if (props.onChange) {
-      props.onChange(newConcept);
+    if (onChange) {
+      onChange(newConcept);
     }
   }
 
   return (
     <ValueSetAutocomplete
-      elementDefinition={props.property}
-      name={props.name}
-      placeholder={props.placeholder}
       defaultValue={value && codeableConceptToValueSetElement(value)}
-      maxSelectedValues={1}
       onChange={handleChange}
+      withHelpText={withHelpText ?? true}
+      {...rest}
     />
   );
 }

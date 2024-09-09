@@ -132,7 +132,7 @@ export interface MedicationDispense {
   /**
    * A code specifying the state of the set of dispense events.
    */
-  status?: 'preparation' | 'in-progress' | 'cancelled' | 'on-hold' | 'completed' | 'entered-in-error' | 'stopped' | 'declined' | 'unknown';
+  status: 'preparation' | 'in-progress' | 'cancelled' | 'on-hold' | 'completed' | 'entered-in-error' | 'stopped' | 'declined' | 'unknown';
 
   /**
    * Indicates the reason why a dispense was not performed.
@@ -276,6 +276,19 @@ export interface MedicationDispense {
 }
 
 /**
+ * Indicates the reason why a dispense was not performed.
+ */
+export type MedicationDispenseStatusReason = CodeableConcept | Reference<DetectedIssue>;
+
+/**
+ * Identifies the medication being administered. This is either a link to
+ * a resource representing the details of the medication or a simple
+ * attribute carrying a code that identifies the medication from a known
+ * list of medications.
+ */
+export type MedicationDispenseMedication = CodeableConcept | Reference<Medication>;
+
+/**
  * Indicates who or what performed the event.
  */
 export interface MedicationDispensePerformer {
@@ -325,7 +338,7 @@ export interface MedicationDispensePerformer {
    * The device, practitioner, etc. who performed the action.  It should be
    * assumed that the actor is the dispenser of the medication.
    */
-  actor?: Reference<Practitioner | PractitionerRole | Organization | Patient | Device | RelatedPerson>;
+  actor: Reference<Practitioner | PractitionerRole | Organization | Patient | Device | RelatedPerson>;
 }
 
 /**
@@ -376,7 +389,7 @@ export interface MedicationDispenseSubstitution {
    * True if the dispenser dispensed a different drug or product from what
    * was prescribed.
    */
-  wasSubstituted?: boolean;
+  wasSubstituted: boolean;
 
   /**
    * A code signifying whether a different drug was dispensed from what was

@@ -1,35 +1,14 @@
-import { createStyles, Group, Text } from '@mantine/core';
+import { Group, Text } from '@mantine/core';
 import { formatHumanName, getDisplayString, getReferenceString, isUUID } from '@medplum/core';
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
+import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
-import React, { forwardRef, useCallback } from 'react';
+import { forwardRef, useCallback } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import classes from './HeaderSearchInput.module.css';
 
 export type HeaderSearchTypes = Patient | ServiceRequest;
-
-const useStyles = createStyles(() => {
-  return {
-    searchInput: {
-      input: {
-        width: 220,
-        transition: 'width 0.2s',
-      },
-      'input:focus': {
-        width: 400,
-      },
-      '@media (max-width: 800px)': {
-        input: {
-          width: 150,
-        },
-        'input:focus': {
-          width: 150,
-        },
-      },
-    },
-  };
-});
 
 interface SearchGraphQLResponse {
   readonly data: {
@@ -37,10 +16,6 @@ interface SearchGraphQLResponse {
     readonly Patients2: Patient[] | undefined;
     readonly ServiceRequestList: ServiceRequest[] | undefined;
   };
-}
-
-function toKey(resource: HeaderSearchTypes): string {
-  return resource.id as string;
 }
 
 function toOption(resource: HeaderSearchTypes): AsyncAutocompleteOption<HeaderSearchTypes> {
@@ -52,12 +27,11 @@ function toOption(resource: HeaderSearchTypes): AsyncAutocompleteOption<HeaderSe
 }
 
 export interface HeaderSearchInputProps {
-  pathname?: string;
-  searchParams?: URLSearchParams;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
 }
 
 export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
-  const { classes } = useStyles();
   const navigate = useMedplumNavigate();
   const medplum = useMedplum();
 
@@ -86,22 +60,20 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
       size="sm"
       radius="md"
       className={classes.searchInput}
-      icon={<IconSearch size={16} />}
+      leftSection={<IconSearch size={16} />}
       placeholder="Search"
       itemComponent={ItemComponent}
-      toKey={toKey}
       toOption={toOption}
       onChange={handleSelect}
       loadOptions={loadData}
-      maxSelectedValues={0}
-      clearSearchOnChange
+      maxValues={0}
       clearable={false}
     />
   );
 }
 
-const ItemComponent = forwardRef<HTMLDivElement, any>(
-  ({ resource, ...others }: AsyncAutocompleteOption<HeaderSearchTypes>, ref) => {
+const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<HeaderSearchTypes>>(
+  ({ resource, active: _active, ...others }: AsyncAutocompleteOption<HeaderSearchTypes>, ref) => {
     let helpText: string | undefined = undefined;
 
     if (resource.resourceType === 'Patient') {
@@ -112,11 +84,11 @@ const ItemComponent = forwardRef<HTMLDivElement, any>(
 
     return (
       <div ref={ref} {...others}>
-        <Group noWrap>
+        <Group wrap="nowrap">
           <ResourceAvatar value={resource} />
           <div>
             <Text>{getDisplayString(resource)}</Text>
-            <Text size="xs" color="dimmed">
+            <Text size="xs" c="dimmed">
               {helpText}
             </Text>
           </div>
@@ -201,8 +173,8 @@ function buildGraphQLQuery(input: string): string {
  * Returns a de-duped and sorted list of resources from the search response.
  * The search request is actually 3+ separate searches, which can include duplicates.
  * This function combines the results, de-dupes, and sorts by relevance.
- * @param response The response from a search query.
- * @param query The user entered search query.
+ * @param response - The response from a search query.
+ * @param query - The user entered search query.
  * @returns The resources to display in the autocomplete.
  */
 function getResourcesFromResponse(response: SearchGraphQLResponse, query: string): HeaderSearchTypes[] {
@@ -221,7 +193,7 @@ function getResourcesFromResponse(response: SearchGraphQLResponse, query: string
 
 /**
  * Removes duplicate resources from an array by ID.
- * @param resources The array of resources with possible duplicates.
+ * @param resources - The array of resources with possible duplicates.
  * @returns The array of resources with no duplicates.
  */
 function dedupeResources(resources: HeaderSearchTypes[]): HeaderSearchTypes[] {
@@ -240,8 +212,8 @@ function dedupeResources(resources: HeaderSearchTypes[]): HeaderSearchTypes[] {
 
 /**
  * Sorts an array of resources by relevance.
- * @param resources The candidate resources.
- * @param query The user entered search string.
+ * @param resources - The candidate resources.
+ * @param query - The user entered search string.
  * @returns The sorted array of resources.
  */
 function sortByRelevance(resources: HeaderSearchTypes[], query: string): HeaderSearchTypes[] {
@@ -253,8 +225,8 @@ function sortByRelevance(resources: HeaderSearchTypes[], query: string): HeaderS
 /**
  * Calculates a relevance score of a candidate resource.
  * Higher scores are better.
- * @param resource The candidate resource.
- * @param query The user entered search string.
+ * @param resource - The candidate resource.
+ * @param query - The user entered search string.
  * @returns The relevance score of the candidate resource.
  */
 function getResourceScore(resource: HeaderSearchTypes, query: string): number {
@@ -278,8 +250,8 @@ function getResourceScore(resource: HeaderSearchTypes, query: string): number {
 /**
  * Calculates a relevance score of a candidate display string.
  * Higher scores are better.
- * @param str The candidate display string.
- * @param query The user entered search string.
+ * @param str - The candidate display string.
+ * @param query - The user entered search string.
  * @returns The relevance score of the candidate string.
  */
 function getStringScore(str: string | undefined, query: string): number {

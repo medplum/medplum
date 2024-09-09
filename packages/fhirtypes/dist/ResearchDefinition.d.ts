@@ -162,7 +162,7 @@ export interface ResearchDefinition {
    * The status of this research definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this research definition is authored
@@ -319,7 +319,7 @@ export interface ResearchDefinition {
    * A reference to a ResearchElementDefinition resource that defines the
    * population for the research.
    */
-  population?: Reference<ResearchElementDefinition>;
+  population: Reference<ResearchElementDefinition>;
 
   /**
    * A reference to a ResearchElementDefinition resource that defines the
@@ -339,3 +339,10 @@ export interface ResearchDefinition {
    */
   outcome?: Reference<ResearchElementDefinition>;
 }
+
+/**
+ * The intended subjects for the ResearchDefinition. If this element is
+ * not provided, a Patient subject is assumed, but the subject of the
+ * ResearchDefinition can be anything.
+ */
+export type ResearchDefinitionSubject = CodeableConcept | Reference<Group>;

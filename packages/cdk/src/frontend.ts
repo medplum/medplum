@@ -3,6 +3,7 @@ import {
   aws_certificatemanager as acm,
   aws_cloudfront as cloudfront,
   Duration,
+  aws_iam as iam,
   aws_cloudfront_origins as origins,
   RemovalPolicy,
   aws_route53 as route53,
@@ -12,7 +13,7 @@ import {
 } from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { grantBucketAccessToOriginAccessIdentity } from './oai';
-import { awsManagedRules } from './waf';
+import { buildWafConfig } from './waf';
 
 /**
  * Static app infrastructure, which deploys app content to an S3 bucket.
@@ -21,14 +22,21 @@ import { awsManagedRules } from './waf';
  * Route53 alias record, and ACM certificate.
  */
 export class FrontEnd extends Construct {
+  appBucket: s3.IBucket;
+  responseHeadersPolicy?: cloudfront.IResponseHeadersPolicy;
+  waf?: wafv2.CfnWebACL;
+  apiOriginCachePolicy?: cloudfront.ICachePolicy;
+  originAccessIdentity?: cloudfront.OriginAccessIdentity;
+  originAccessPolicyStatement?: iam.PolicyStatement;
+  distribution?: cloudfront.IDistribution;
+  dnsRecord?: route53.IRecordSet;
+
   constructor(parent: Construct, config: MedplumInfraConfig, region: string) {
     super(parent, 'FrontEnd');
 
-    let appBucket: s3.IBucket;
-
     if (region === config.region) {
       // S3 bucket
-      appBucket = new s3.Bucket(this, 'AppBucket', {
+      this.appBucket = new s3.Bucket(this, 'AppBucket', {
         bucketName: config.appDomainName,
         publicReadAccess: false,
         blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -39,7 +47,7 @@ export class FrontEnd extends Construct {
       });
     } else {
       // Otherwise, reference the bucket by name and region
-      appBucket = s3.Bucket.fromBucketAttributes(this, 'AppBucket', {
+      this.appBucket = s3.Bucket.fromBucketAttributes(this, 'AppBucket', {
         bucketName: config.appDomainName,
         region: config.region,
       });
@@ -47,7 +55,17 @@ export class FrontEnd extends Construct {
 
     if (region === 'us-east-1') {
       // HTTP response headers policy
-      const responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
+      this.responseHeadersPolicy = new cloudfront.ResponseHeadersPolicy(this, 'ResponseHeadersPolicy', {
+        customHeadersBehavior: {
+          customHeaders: [
+            {
+              header: 'Permission-Policy',
+              value:
+                'accelerometer=(), camera=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()',
+              override: true,
+            },
+          ],
+        },
         securityHeadersBehavior: {
           contentSecurityPolicy: {
             contentSecurityPolicy: [
@@ -58,7 +76,7 @@ export class FrontEnd extends Construct {
               `font-src 'self' fonts.gstatic.com`,
               `form-action 'self' *.gstatic.com *.google.com`,
               `frame-ancestors 'none'`,
-              `frame-src 'self' *.medplum.com *.gstatic.com *.google.com`,
+              `frame-src 'self' ${config.storageDomainName} *.medplum.com *.gstatic.com *.google.com`,
               `img-src 'self' data: ${config.storageDomainName} *.gstatic.com *.google.com *.googleapis.com`,
               `manifest-src 'self'`,
               `media-src 'self' ${config.storageDomainName}`,
@@ -70,10 +88,18 @@ export class FrontEnd extends Construct {
             override: true,
           },
           contentTypeOptions: { override: true },
-          frameOptions: { frameOption: cloudfront.HeadersFrameOption.DENY, override: true },
+          frameOptions: {
+            frameOption: cloudfront.HeadersFrameOption.DENY,
+            override: true,
+          },
+          referrerPolicy: {
+            referrerPolicy: cloudfront.HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+            override: true,
+          },
           strictTransportSecurity: {
             accessControlMaxAge: Duration.seconds(63072000),
             includeSubdomains: true,
+            preload: true,
             override: true,
           },
           xssProtection: {
@@ -85,20 +111,14 @@ export class FrontEnd extends Construct {
       });
 
       // WAF
-      const waf = new wafv2.CfnWebACL(this, 'FrontEndWAF', {
-        defaultAction: { allow: {} },
-        scope: 'CLOUDFRONT',
-        name: `${config.stackName}-FrontEndWAF`,
-        rules: awsManagedRules,
-        visibilityConfig: {
-          cloudWatchMetricsEnabled: true,
-          metricName: `${config.stackName}-FrontEndWAF-Metric`,
-          sampledRequestsEnabled: false,
-        },
-      });
+      this.waf = new wafv2.CfnWebACL(
+        this,
+        'FrontEndWAF',
+        buildWafConfig(`${config.stackName}-FrontEndWAF`, 'CLOUDFRONT', config.appWafIpSetArn)
+      );
 
       // API Origin Cache Policy
-      const apiOriginCachePolicy = new cloudfront.CachePolicy(this, 'ApiOriginCachePolicy', {
+      this.apiOriginCachePolicy = new cloudfront.CachePolicy(this, 'ApiOriginCachePolicy', {
         cachePolicyName: `${config.stackName}-ApiOriginCachePolicy`,
         cookieBehavior: cloudfront.CacheCookieBehavior.all(),
         headerBehavior: cloudfront.CacheHeaderBehavior.allowList(
@@ -115,15 +135,20 @@ export class FrontEnd extends Construct {
       });
 
       // Origin access identity
-      const originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {});
-      grantBucketAccessToOriginAccessIdentity(appBucket, originAccessIdentity);
+      this.originAccessIdentity = new cloudfront.OriginAccessIdentity(this, 'OriginAccessIdentity', {});
+      this.originAccessPolicyStatement = grantBucketAccessToOriginAccessIdentity(
+        this.appBucket,
+        this.originAccessIdentity
+      );
 
       // CloudFront distribution
-      const distribution = new cloudfront.Distribution(this, 'AppDistribution', {
+      this.distribution = new cloudfront.Distribution(this, 'AppDistribution', {
         defaultRootObject: 'index.html',
         defaultBehavior: {
-          origin: new origins.S3Origin(appBucket, { originAccessIdentity }),
-          responseHeadersPolicy,
+          origin: new origins.S3Origin(this.appBucket, {
+            originAccessIdentity: this.originAccessIdentity,
+          }),
+          responseHeadersPolicy: this.responseHeadersPolicy,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         },
         additionalBehaviors: config.appApiProxy
@@ -131,7 +156,7 @@ export class FrontEnd extends Construct {
               '/api/*': {
                 origin: new origins.HttpOrigin(config.apiDomainName),
                 allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
-                cachePolicy: apiOriginCachePolicy,
+                cachePolicy: this.apiOriginCachePolicy,
                 viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
               },
             }
@@ -150,7 +175,7 @@ export class FrontEnd extends Construct {
             responsePagePath: '/index.html',
           },
         ],
-        webAclId: waf.attrArn,
+        webAclId: this.waf.attrArn,
         logBucket: config.appLoggingBucket
           ? s3.Bucket.fromBucketName(this, 'LoggingBucket', config.appLoggingBucket)
           : undefined,
@@ -158,22 +183,17 @@ export class FrontEnd extends Construct {
       });
 
       // DNS
-      let record = undefined;
       if (!config.skipDns) {
-        const zone = route53.HostedZone.fromLookup(this, 'Zone', {
-          domainName: config.domainName.split('.').slice(-2).join('.'),
-        });
+        const hostedZoneName = config.hostedZoneName ?? config.domainName.split('.').slice(-2).join('.');
+        const zone = route53.HostedZone.fromLookup(this, 'Zone', { domainName: hostedZoneName });
 
         // Route53 alias record for the CloudFront distribution
-        record = new route53.ARecord(this, 'AppAliasRecord', {
+        this.dnsRecord = new route53.ARecord(this, 'AppAliasRecord', {
           recordName: config.appDomainName,
-          target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
+          target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(this.distribution)),
           zone,
         });
       }
-
-      // Debug
-      console.log('ARecord', record?.domainName);
     }
   }
 }

@@ -1,20 +1,23 @@
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { deepClone, IndexedStructureDefinition, normalizeOperationOutcome } from '@medplum/core';
+import { InternalSchemaElement, deepClone, getElementDefinition, normalizeOperationOutcome } from '@medplum/core';
 import { ProjectSite } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
 export function SitesPage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
   const projectDetails = medplum.get(`admin/projects/${projectId}`).read();
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState<boolean>(false);
   const [sites, setSites] = useState<ProjectSite[] | undefined>();
 
   useEffect(() => {
-    medplum.requestSchema('Project').then(setSchema).catch(console.log);
+    medplum
+      .requestSchema('Project')
+      .then(() => setSchemaLoaded(true))
+      .catch(console.log);
   }, [medplum]);
 
   useEffect(() => {
@@ -23,7 +26,7 @@ export function SitesPage(): JSX.Element {
     }
   }, [medplum, projectDetails]);
 
-  if (!schema || !sites) {
+  if (!schemaLoaded || !sites) {
     return <div>Loading...</div>;
   }
 
@@ -31,7 +34,7 @@ export function SitesPage(): JSX.Element {
     <form
       noValidate
       autoComplete="off"
-      onSubmit={(e: React.FormEvent) => {
+      onSubmit={(e: FormEvent) => {
         e.preventDefault();
         medplum
           .post(`admin/projects/${projectId}/sites`, sites)
@@ -43,6 +46,7 @@ export function SitesPage(): JSX.Element {
             showNotification({
               color: 'red',
               message: `Error ${operationOutcome.issue?.[0].details?.text} ${operationOutcome.issue?.[0].expression?.[0]}`,
+              autoClose: false,
             });
           });
       }}
@@ -50,10 +54,12 @@ export function SitesPage(): JSX.Element {
       <Title>Project Sites</Title>
       <p>Use project sites configure your project on a separate domain.</p>
       <ResourcePropertyInput
-        property={schema.types['Project'].properties['site']}
+        property={getElementDefinition('Project', 'site') as InternalSchemaElement}
         name="site"
+        path="Project.site"
         defaultValue={sites}
         onChange={setSites}
+        outcome={undefined}
       />
       <Button type="submit">Save</Button>
     </form>

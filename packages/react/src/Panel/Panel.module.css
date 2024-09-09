@@ -1,0 +1,22 @@
+.paper {
+  margin: var(--mantine-spacing-xl) auto;
+  padding: var(--mantine-spacing-md);
+
+  @media (max-width: 800px) {
+    padding: 8px;
+  }
+
+  & img {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  & video {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+.fill {
+  padding: 0;
+}

@@ -82,7 +82,7 @@ export interface ElementDefinition {
    * list of ancestor elements, beginning with the name of the resource or
    * extension.
    */
-  path?: string;
+  path: string;
 
   /**
    * Codes that define how this element is represented in instances, when
@@ -2317,6 +2317,67 @@ export interface ElementDefinition {
 }
 
 /**
+ * The value that should be used if there is no value stated in the
+ * instance (e.g. 'if not otherwise specified, the abstract is false').
+ */
+export type ElementDefinitionDefaultValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding
+    | ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+
+/**
+ * Specifies a value that SHALL be exactly the value  for this element in
+ * the instance. For purposes of comparison, non-significant whitespace
+ * is ignored, and all values must be an exact match (case and accent
+ * sensitive). Missing elements/attributes must also be missing.
+ */
+export type ElementDefinitionFixed = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+
+/**
+ * Specifies a value that the value in the instance SHALL follow - that
+ * is, any value in the pattern must be found in the instance. Other
+ * additional values may be found too. This is effectively constraint by
+ * example.
+ *
+ * When pattern[x] is used to constrain a primitive, it means that the
+ * value provided in the pattern[x] must match the instance value
+ * exactly.
+ *
+ * When pattern[x] is used to constrain an array, it means that each
+ * element provided in the pattern[x] array must (recursively) match at
+ * least one element from the instance array.
+ *
+ * When pattern[x] is used to constrain a complex object, it means that
+ * each property in the pattern must be present in the complex object,
+ * and its value must recursively match -- i.e.,
+ *
+ * 1. If primitive: it must match exactly the pattern value
+ * 2. If a complex object: it must match (recursively) the pattern value
+ * 3. If an array: it must match (recursively) the pattern value.
+ */
+export type ElementDefinitionPattern = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+
+/**
+ * The minimum allowed value for the element. The value is inclusive.
+ * This is allowed for the types date, dateTime, instant, time, decimal,
+ * integer, and Quantity.
+ */
+export type ElementDefinitionMinValue = number | Quantity | string;
+
+/**
+ * The maximum allowed value for the element. The value is inclusive.
+ * This is allowed for the types date, dateTime, instant, time, decimal,
+ * integer, and Quantity.
+ */
+export type ElementDefinitionMaxValue = number | Quantity | string;
+
+/**
  * Information about the base definition of the element, provided to make
  * it unnecessary for tools to trace the deviation of the element through
  * the derived and related profiles. When the element definition is not
@@ -2351,17 +2412,17 @@ export interface ElementDefinitionBase {
    * a [StructureDefinition](structuredefinition.html#) without a
    * StructureDefinition.base.
    */
-  path?: string;
+  path: string;
 
   /**
    * Minimum cardinality of the base element identified by the path.
    */
-  min?: number;
+  min: number;
 
   /**
    * Maximum cardinality of the base element identified by the path.
    */
-  max?: string;
+  max: string;
 }
 
 /**
@@ -2391,7 +2452,7 @@ export interface ElementDefinitionBinding {
    * binding - that is, the degree to which the provided value set must be
    * adhered to in the instances.
    */
-  strength?: 'required' | 'extensible' | 'preferred' | 'example';
+  strength: 'required' | 'extensible' | 'preferred' | 'example';
 
   /**
    * Describes the intended use of this particular set of codes.
@@ -2432,7 +2493,7 @@ export interface ElementDefinitionConstraint {
    * impacted by the constraint.  Will not be referenced for constraints
    * that do not affect cardinality.
    */
-  key?: string;
+  key: string;
 
   /**
    * Description of why this constraint is necessary or appropriate.
@@ -2443,13 +2504,13 @@ export interface ElementDefinitionConstraint {
    * Identifies the impact constraint violation has on the conformance of
    * the instance.
    */
-  severity?: 'error' | 'warning';
+  severity: 'error' | 'warning';
 
   /**
    * Text that can be used to describe the constraint in messages
    * identifying that the constraint has been violated.
    */
-  human?: string;
+  human: string;
 
   /**
    * A [FHIRPath](fhirpath.html) expression of constraint that can be
@@ -2495,7 +2556,7 @@ export interface ElementDefinitionExample {
   /**
    * Describes the purpose of this example amoung the set of examples.
    */
-  label?: string;
+  label: string;
 
   /**
    * The actual value for the element, which must be one of the types
@@ -2799,6 +2860,15 @@ export interface ElementDefinitionExample {
 }
 
 /**
+ * The actual value for the element, which must be one of the types
+ * allowed for this element.
+ */
+export type ElementDefinitionExampleValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding
+    | ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+
+/**
  * Identifies a concept from an external specification that roughly
  * corresponds to this element.
  */
@@ -2823,7 +2893,7 @@ export interface ElementDefinitionMapping {
   /**
    * An internal reference to the definition of a mapping.
    */
-  identity?: string;
+  identity: string;
 
   /**
    * Identifies the computable language in which mapping.map is expressed.
@@ -2834,7 +2904,7 @@ export interface ElementDefinitionMapping {
    * Expresses what part of the target specification corresponds to this
    * element.
    */
-  map?: string;
+  map: string;
 
   /**
    * Comments that provide information about the mapping or its use.
@@ -2898,7 +2968,7 @@ export interface ElementDefinitionSlicing {
    * ordered, profile authors can also say that additional slices are only
    * allowed at the end.
    */
-  rules?: 'closed' | 'open' | 'openAtEnd';
+  rules: 'closed' | 'open' | 'openAtEnd';
 }
 
 /**
@@ -2929,14 +2999,14 @@ export interface ElementDefinitionSlicingDiscriminator {
   /**
    * How the element value is interpreted when discrimination is evaluated.
    */
-  type?: 'value' | 'exists' | 'pattern' | 'type' | 'profile';
+  type: 'value' | 'exists' | 'pattern' | 'type' | 'profile';
 
   /**
    * A FHIRPath expression, using [the simple subset of
    * FHIRPath](fhirpath.html#simple), that is used to identify the element
    * on which discrimination is based.
    */
-  path?: string;
+  path: string;
 }
 
 /**
@@ -2968,7 +3038,7 @@ export interface ElementDefinitionType {
    * to http://hl7.org/fhir/StructureDefinition/string. Absolute URLs are
    * only allowed in logical models.
    */
-  code?: string;
+  code: string;
 
   /**
    * Identifies a profile structure or implementation Guide that applies to

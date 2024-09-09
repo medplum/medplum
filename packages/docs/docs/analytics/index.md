@@ -6,7 +6,7 @@ The following features should be used in concert to build out an analytics progr
 
 1. Store data in the [FHIR Datastore](/docs/fhir-datastore) with emphasis on standard fields, especially on `Patient`, `Observation` and other common resources.
 2. Use [Bots](/docs/bots) and [Subscriptions](/docs/subscriptions) to help maintain quality and correctness in real time, for example, ensuring all `Encounter.type` are is tagged with the appropriate ontology, if not throw an error.
-3. Use [Access Policies](/docs/auth/access-control.md) to secure and de-identify data pipelines for privacy-aware analysis
+3. Use [Access Policies](/docs/access/access-policies) to secure and de-identify data pipelines for privacy-aware analysis
 4. Use [Bots](/docs/bots) to synchronize with common tools, machine learning pipelines and more.
 
 Analytics on healthcare data generally have two broad areas of application: **retroactive analysis** of performance and quality metrics, and **predictive modeling** to make recommendations for future behavior.
@@ -32,7 +32,7 @@ A common pattern for ad-hoc reports is to first ingest FHIR resources into the d
 
 Analytics pipelines should use the [FHIR Bulk Data Export API](/docs/api/fhir/operations/bulk-fhir.mdx) to extract FHIR resources into a data lake. The [FHIR Datastore](/docs/fhir-datastore) supports bulk export.
 
-Analytics workflows often require de-identified or redacted data for compliance reasons. [Access Policies](/docs/auth/access-control.md) are common for this purpose.
+Analytics workflows often require de-identified or redacted data for compliance reasons. [Access Policies](/docs/access/access-policies) are common for this purpose.
 
 For machine learning applications, separate pipelines are recommended for training vs. inference. Training can be done as an offline batch process; inference as a serverless compute operation.
 

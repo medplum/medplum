@@ -150,7 +150,7 @@ export interface Communication {
   /**
    * The status of the transmission.
    */
-  status?: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
+  status: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Captures the reason for the current state of the Communication.
@@ -307,3 +307,9 @@ export interface CommunicationPayload {
    */
   contentReference?: Reference<Resource>;
 }
+
+/**
+ * A communicated content (or for multi-part communications, one portion
+ * of the communication).
+ */
+export type CommunicationPayloadContent = Attachment | Reference<Resource> | string;

@@ -1,73 +1,23 @@
-import { Button, createStyles, Group } from '@mantine/core';
+import { Button, Group } from '@mantine/core';
 import { Slot } from '@medplum/fhirtypes';
-import React, { useMemo, useState } from 'react';
-
-const useStyles = createStyles((theme) => ({
-  table: {
-    width: 350,
-
-    '& th': {
-      fontWeight: 'normal',
-      fontSize: 11,
-      padding: 8,
-      textAlign: 'center',
-    },
-
-    '& td': {
-      padding: '2px 4px',
-    },
-
-    '& td button': {
-      width: 44,
-      height: 44,
-      color: theme.colors[theme.primaryColor][5],
-      fontSize: 16,
-      fontWeight: 500,
-      textAlign: 'center',
-      padding: 0,
-      backgroundColor: theme.colors[theme.primaryColor][0],
-      border: 0,
-      borderRadius: '50%',
-      cursor: 'pointer',
-    },
-
-    '& td button:hover': {
-      backgroundColor: theme.colors[theme.primaryColor][1],
-    },
-
-    '& td button:disabled': {
-      backgroundColor: 'transparent',
-      cursor: 'default',
-      color: theme.colors.gray[4],
-      fontWeight: 'normal',
-    },
-  },
-}));
+import { useMemo, useState } from 'react';
+import classes from './CalendarInput.module.css';
+import { getMonthString, getStartMonth } from './CalendarInput.utils';
 
 export interface CalendarInputProps {
-  slots: Slot[];
-  onChangeMonth: (date: Date) => void;
-  onClick: (date: Date) => void;
-}
-
-/**
- * Returns a month display string (e.g. "January 2020").
- * @param date Any date within the month.
- * @returns The month display string (e.g. "January 2020")
- */
-export function getMonthString(date: Date): string {
-  return date.toLocaleString('default', { month: 'long' }) + ' ' + date.getFullYear();
+  readonly slots: Slot[];
+  readonly onChangeMonth: (date: Date) => void;
+  readonly onClick: (date: Date) => void;
 }
 
 interface CalendarCell {
-  date: Date;
-  available: boolean;
+  readonly date: Date;
+  readonly available: boolean;
 }
 
 type OptionalCalendarCell = CalendarCell | undefined;
 
 export function CalendarInput(props: CalendarInputProps): JSX.Element {
-  const { classes } = useStyles();
   const { onChangeMonth, onClick } = props;
   const [month, setMonth] = useState<Date>(getStartMonth);
 
@@ -84,9 +34,9 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
 
   return (
     <div>
-      <Group position="apart" spacing="xs" grow noWrap>
+      <Group justify="space-between" gap="xs" grow wrap="nowrap">
         <p style={{ flex: 1 }}>{getMonthString(month)}</p>
-        <Group position="right" spacing="xs">
+        <Group justify="flex-end" gap="xs">
           <Button variant="outline" aria-label="Previous month" onClick={() => moveMonth(-1)}>
             &lt;
           </Button>
@@ -113,7 +63,7 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
               {week.map((day, dayIndex) => (
                 <td key={'day-' + dayIndex}>
                   {day && (
-                    <Button disabled={!day.available} onClick={() => onClick(day.date)}>
+                    <Button variant="light" disabled={!day.available} onClick={() => onClick(day.date)}>
                       {day.date.getDate()}
                     </Button>
                   )}
@@ -125,13 +75,6 @@ export function CalendarInput(props: CalendarInputProps): JSX.Element {
       </table>
     </div>
   );
-}
-
-export function getStartMonth(): Date {
-  const result = new Date();
-  result.setDate(1);
-  result.setHours(0, 0, 0, 0);
-  return result;
 }
 
 function buildGrid(startDate: Date, slots: Slot[]): OptionalCalendarCell[][] {
@@ -171,8 +114,8 @@ function buildGrid(startDate: Date, slots: Slot[]): OptionalCalendarCell[][] {
 
 /**
  * Returns true if the given date is available for booking.
- * @param day The day to check.
- * @param slots The list of available slots.
+ * @param day - The day to check.
+ * @param slots - The list of available slots.
  * @returns True if there are any available slots for the day.
  */
 function isDayAvailable(day: Date, slots: Slot[]): boolean {

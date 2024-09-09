@@ -28,6 +28,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     const encounter = await medplum.createResourceIfNoneExist(
       {
         resourceType: 'Encounter',
+        status: 'finished',
+        class: { code: 'inpatient' },
         identifier: [
           {
             system: 'https://joincandidhealth.com/encounter/id',
@@ -40,6 +42,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     await medplum.createResourceIfNoneExist(
       {
         resourceType: 'Task',
+        status: 'in-progress',
+        intent: 'order',
         identifier: [
           {
             system: 'https://api-staging.joincandidhealth.com/task/id',
@@ -86,9 +90,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 /**
  * Authenticates into the Candid Health API using API key and API secret, and gets the Task object from
  * Candid's /v1/tasks endpoint
- * @param candidCodedEncounter The CodedEncounter object to send to Candid Health
- * @param apiKey  Candid Health API Key
- * @param apiSecret Candid Health API Secret
+ * @param candidCodedEncounter - The CodedEncounter object to send to Candid Health
+ * @param apiKey - Candid Health API Key
+ * @param apiSecret - Candid Health API Secret
  * @returns The response from the Candid Health API
  */
 async function getCandidTasks(candidCodedEncounter: any, apiKey: string, apiSecret: string): Promise<any> {

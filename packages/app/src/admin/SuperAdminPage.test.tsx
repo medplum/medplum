@@ -1,11 +1,11 @@
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { Notifications, notifications } from '@mantine/notifications';
+import { allOk } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -13,7 +13,7 @@ function setup(): void {
   render(
     <MedplumProvider medplum={medplum}>
       <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
-        <MantineProvider withGlobalStyles withNormalizeCSS>
+        <MantineProvider>
           <Notifications />
           <AppRoutes />
         </MantineProvider>
@@ -25,6 +25,10 @@ function setup(): void {
 describe('SuperAdminPage', () => {
   beforeEach(() => {
     jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
+  });
+
+  afterEach(async () => {
+    await act(async () => notifications.clean());
   });
 
   test('Rebuild StructureDefinitions', async () => {
@@ -66,20 +70,6 @@ describe('SuperAdminPage', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText('Reindex'));
-    });
-
-    expect(screen.getByText('Done')).toBeInTheDocument();
-  });
-
-  test('Rebuild compartments for resource type', async () => {
-    setup();
-
-    await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Compartments Resource Type'), { target: { value: 'Project' } });
-    });
-
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Rebuild Compartments' }));
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();
@@ -133,6 +123,23 @@ describe('SuperAdminPage', () => {
     });
 
     expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
+  test('Database Stats', async () => {
+    setup();
+
+    medplum.router.add('POST', '$db-stats', async () => {
+      return [
+        allOk,
+        { resourceType: 'Parameters', parameter: [{ name: 'tableString', valueString: 'table1: 100\n' }] },
+      ];
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Get Database Stats' }));
+    });
+
+    expect(await screen.findByText('table1: 100')).toBeInTheDocument();
   });
 
   test('Access denied', async () => {

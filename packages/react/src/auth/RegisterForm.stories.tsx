@@ -1,11 +1,10 @@
 import { Title } from '@mantine/core';
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { RegisterForm } from '../auth/RegisterForm';
 import { Logo } from '../Logo/Logo';
 
 export default {
-  title: 'Medplum/RegisterForm',
+  title: 'Medplum/Auth/RegisterForm',
   component: RegisterForm,
 } as Meta;
 

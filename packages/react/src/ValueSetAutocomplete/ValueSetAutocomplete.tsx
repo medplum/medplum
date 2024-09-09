@@ -1,17 +1,22 @@
-import { ElementDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import React, { useCallback } from 'react';
+import { Group, Text } from '@mantine/core';
+import { ValueSetExpandParams } from '@medplum/core';
+import { ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
+import { forwardRef, useCallback } from 'react';
 import {
   AsyncAutocomplete,
   AsyncAutocompleteOption,
   AsyncAutocompleteProps,
 } from '../AsyncAutocomplete/AsyncAutocomplete';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { IconCheck } from '@tabler/icons-react';
 
 export interface ValueSetAutocompleteProps
   extends Omit<AsyncAutocompleteProps<ValueSetExpansionContains>, 'loadOptions' | 'toKey' | 'toOption'> {
-  elementDefinition: ElementDefinition;
-  creatable?: boolean;
-  clearable?: boolean;
+  readonly binding: string | undefined;
+  readonly creatable?: boolean;
+  readonly clearable?: boolean;
+  readonly expandParams?: Partial<ValueSetExpandParams>;
+  readonly withHelpText?: boolean;
 }
 
 function toKey(element: ValueSetExpansionContains): string {
@@ -46,20 +51,26 @@ function createValue(input: string): ValueSetExpansionContains {
 /**
  * A low-level component to autocomplete based on a FHIR Valueset.
  * This is the base component for CodeableConceptInput, CodingInput, and CodeInput.
- * @param props The ValueSetAutocomplete React props.
+ * @param props - The ValueSetAutocomplete React props.
  * @returns The ValueSetAutocomplete React node.
  */
 export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Element {
   const medplum = useMedplum();
-  const { elementDefinition, creatable, clearable, ...rest } = props;
+  const { binding, creatable, clearable, expandParams, withHelpText, ...rest } = props;
 
   const loadValues = useCallback(
     async (input: string, signal: AbortSignal): Promise<ValueSetExpansionContains[]> => {
-      if (!elementDefinition.binding) {
+      if (!binding) {
         return [];
       }
-      const system = elementDefinition.binding.valueSet as string;
-      const valueSet = await medplum.searchValueSet(system, input, { signal });
+      const valueSet = await medplum.valueSetExpand(
+        {
+          ...expandParams,
+          url: binding,
+          filter: input,
+        },
+        { signal }
+      );
       const valueSetElements = valueSet.expansion?.contains as ValueSetExpansionContains[];
       const newData: ValueSetExpansionContains[] = [];
       for (const valueSetElement of valueSetElements) {
@@ -70,7 +81,7 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
 
       return newData;
     },
-    [medplum, elementDefinition]
+    [medplum, expandParams, binding]
   );
 
   return (
@@ -78,11 +89,28 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
       {...rest}
       creatable={creatable ?? true}
       clearable={clearable ?? true}
-      toKey={toKey}
       toOption={toOption}
       loadOptions={loadValues}
       onCreate={createValue}
-      getCreateLabel={creatable === false ? undefined : (query: any) => `+ Create ${query}`}
+      itemComponent={withHelpText ? ItemComponent : undefined}
     />
   );
 }
+
+const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<ValueSetExpansionContains>>(
+  ({ label, resource, active, ...others }: AsyncAutocompleteOption<ValueSetExpansionContains>, ref) => {
+    return (
+      <div ref={ref} {...others}>
+        <Group wrap="nowrap" gap="xs">
+          {active && <IconCheck size={12} />}
+          <div>
+            <Text>{label}</Text>
+            <Text size="xs" c="dimmed">
+              {`${resource.system}#${resource.code}`}
+            </Text>
+          </div>
+        </Group>
+      </div>
+    );
+  }
+);

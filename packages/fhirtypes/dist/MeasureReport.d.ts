@@ -3,10 +3,12 @@
  * Do not edit manually.
  */
 
+import { CareTeam } from './CareTeam';
 import { CodeableConcept } from './CodeableConcept';
 import { Device } from './Device';
 import { Extension } from './Extension';
 import { Group } from './Group';
+import { HealthcareService } from './HealthcareService';
 import { Identifier } from './Identifier';
 import { List } from './List';
 import { Location } from './Location';
@@ -116,7 +118,7 @@ export interface MeasureReport {
    * The MeasureReport status. No data will be available until the
    * MeasureReport status is complete.
    */
-  status?: 'complete' | 'pending' | 'error';
+  status: 'complete' | 'pending' | 'error';
 
   /**
    * The type of measure report. This may be an individual report, which
@@ -127,18 +129,18 @@ export interface MeasureReport {
    * a data-collection, which enables the MeasureReport to be used to
    * exchange the data-of-interest for a quality measure.
    */
-  type?: 'individual' | 'subject-list' | 'summary' | 'data-collection';
+  type: 'individual' | 'subject-list' | 'summary' | 'data-collection';
 
   /**
    * A reference to the Measure that was calculated to produce this report.
    */
-  measure?: string;
+  measure: string;
 
   /**
    * Optional subject identifying the individual or individuals the report
    * is for.
    */
-  subject?: Reference<Patient | Practitioner | PractitionerRole | Location | Device | RelatedPerson | Group>;
+  subject?: Reference<Patient | Practitioner | PractitionerRole | Location | Device | RelatedPerson | Organization | CareTeam | HealthcareService | Group>;
 
   /**
    * The date this measure report was generated.
@@ -153,7 +155,7 @@ export interface MeasureReport {
   /**
    * The reporting period for which the report was calculated.
    */
-  period?: Period;
+  period: Period;
 
   /**
    * Whether improvement in the measure is noted by an increase or decrease
@@ -464,12 +466,12 @@ export interface MeasureReportGroupStratifierStratumComponent {
   /**
    * The code for the stratum component value.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The stratum component value.
    */
-  value?: CodeableConcept;
+  value: CodeableConcept;
 }
 
 /**

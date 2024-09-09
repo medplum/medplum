@@ -7,7 +7,7 @@ export interface HL7BodyParserOptions {
 
 /**
  * Returns an Express middleware handler for parsing HL7 messages.
- * @param options HL7 parser options to specify content types.
+ * @param options - HL7 parser options to specify content types.
  * @returns Express middleware request handler.
  */
 export function hl7BodyParser(options: HL7BodyParserOptions): RequestHandler {

@@ -1,37 +1,93 @@
-import { Loader, MultiSelect, MultiSelectProps, SelectItem } from '@mantine/core';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Combobox,
+  ComboboxItem,
+  ComboboxProps,
+  Group,
+  Loader,
+  Pill,
+  PillsInput,
+  ScrollAreaAutosize,
+  useCombobox,
+} from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
+import { KeyboardEvent, ReactNode, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
+import { IconCheck } from '@tabler/icons-react';
+import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
 
-export interface AsyncAutocompleteOption<T> extends SelectItem {
-  resource: T;
+export interface AsyncAutocompleteOption<T> extends ComboboxItem {
+  readonly active?: boolean;
+  readonly resource: T;
 }
 
 export interface AsyncAutocompleteProps<T>
-  extends Omit<MultiSelectProps, 'data' | 'defaultValue' | 'loadOptions' | 'onChange' | 'onCreate' | 'searchable'> {
-  defaultValue?: T | T[];
-  toKey: (item: T) => string;
-  toOption: (item: T) => AsyncAutocompleteOption<T>;
-  loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
-  onChange: (item: T[]) => void;
-  onCreate?: (input: string) => T;
-  creatable?: boolean;
+  extends Omit<ComboboxProps, 'data' | 'defaultValue' | 'loadOptions' | 'onChange' | 'onCreate' | 'searchable'> {
+  readonly name?: string;
+  readonly label?: ReactNode;
+  readonly description?: ReactNode;
+  readonly error?: ReactNode;
+  readonly defaultValue?: T | T[];
+  readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
+  readonly loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
+  readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
+  readonly emptyComponent?: (props: { search: string }) => JSX.Element | ReactNode;
+  readonly onChange: (item: T[]) => void;
+  readonly onCreate?: (input: string) => T;
+  readonly creatable?: boolean;
+  readonly clearable?: boolean;
+  readonly required?: boolean;
+  readonly className?: string;
+  readonly placeholder?: string;
+  readonly leftSection?: ReactNode;
+  readonly maxValues?: number;
+  readonly optionsDropdownMaxHeight?: number;
+  readonly minInputLength?: number; // minimum number of input characters required before executing loadOptions
 }
 
 export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Element {
-  const { defaultValue, toKey, toOption, loadOptions, onChange, onCreate, creatable, ...rest } = props;
+  const combobox = useCombobox({
+    onDropdownClose: () => combobox.resetSelectedOption(),
+    onDropdownOpen: () => combobox.updateSelectedOptionIndex('active'),
+  });
+  const {
+    name,
+    label,
+    description,
+    error,
+    defaultValue,
+    toOption,
+    loadOptions,
+    itemComponent,
+    emptyComponent,
+    onChange,
+    onCreate,
+    creatable,
+    clearable,
+    required,
+    placeholder,
+    leftSection,
+    maxValues,
+    optionsDropdownMaxHeight = 320,
+    minInputLength = 0,
+    ...rest
+  } = props;
+  const disabled = rest.disabled; // leave in rest so it also propagates to ComboBox
   const defaultItems = toDefaultItems(defaultValue);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [lastValue, setLastValue] = useState<string | undefined>(undefined);
+  const [search, setSearch] = useState('');
   const [timer, setTimer] = useState<number>();
   const [abortController, setAbortController] = useState<AbortController>();
   const [autoSubmit, setAutoSubmit] = useState<boolean>();
   const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
+  const ItemComponent = itemComponent ?? DefaultItemComponent;
+  const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
 
+  const searchRef = useRef<string>();
+  searchRef.current = search;
+
+  const lastLoadOptionsRef = useRef<AsyncAutocompleteProps<T>['loadOptions']>();
   const lastValueRef = useRef<string>();
-  lastValueRef.current = lastValue;
 
   const timerRef = useRef<number>();
   timerRef.current = timer;
@@ -48,27 +104,31 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const handleTimer = useCallback((): void => {
     setTimer(undefined);
 
-    const value = inputRef.current?.value.trim() || '';
-    if (value === lastValueRef.current) {
-      // Nothing has changed, move on
+    if (searchRef.current === lastValueRef.current && loadOptions === lastLoadOptionsRef.current) {
+      // Same search input and loadOptions function, move on
+      return;
+    }
+    if ((searchRef.current?.length ?? 0) < minInputLength) {
       return;
     }
 
-    setLastValue(value);
+    lastValueRef.current = searchRef.current;
+    lastLoadOptionsRef.current = loadOptions;
 
     const newAbortController = new AbortController();
     setAbortController(newAbortController);
 
-    loadOptions(value, newAbortController.signal)
+    loadOptions(searchRef.current ?? '', newAbortController.signal)
       .then((newValues: T[]) => {
         if (!newAbortController.signal.aborted) {
           setOptions(newValues.map(toOption));
-          setAbortController(undefined);
           if (autoSubmitRef.current) {
             if (newValues.length > 0) {
               onChange(newValues.slice(0, 1));
             }
             setAutoSubmit(false);
+          } else if (newValues.length > 0) {
+            combobox.openDropdown();
           }
         }
       })
@@ -76,78 +136,125 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         if (!(newAbortController.signal.aborted || err.message.includes('aborted'))) {
           showNotification({ color: 'red', message: normalizeErrorString(err) });
         }
+      })
+      .finally(() => {
+        if (!newAbortController.signal.aborted) {
+          setAbortController(undefined);
+        }
       });
-  }, [loadOptions, onChange, toOption]);
+  }, [combobox, loadOptions, onChange, toOption, minInputLength]);
 
-  const handleSearchChange = useCallback((): void => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-      setAbortController(undefined);
-    }
+  const handleSearchChange = useCallback(
+    (e: SyntheticEvent): void => {
+      if ((options && options.length > 0) || creatable) {
+        combobox.openDropdown();
+      }
 
-    if (timerRef.current !== undefined) {
-      window.clearTimeout(timerRef.current);
-    }
+      combobox.updateSelectedOptionIndex();
+      setSearch((e.currentTarget as HTMLInputElement).value);
 
-    const newTimer = window.setTimeout(() => handleTimer(), 100);
-    setTimer(newTimer);
-  }, [handleTimer]);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        setAbortController(undefined);
+      }
 
-  const handleChange = useCallback(
-    (values: string[]): void => {
-      const result: T[] = [];
-      const newSelected: AsyncAutocompleteOption<T>[] = [];
-      for (const value of values) {
-        let option = optionsRef.current?.find((option) => option.value === value);
-        let item = option?.resource;
-        if (!item && creatable !== false && onCreate) {
-          item = onCreate(value);
-          option = toOption(item);
+      if (timerRef.current !== undefined) {
+        window.clearTimeout(timerRef.current);
+      }
+
+      const newTimer = window.setTimeout(() => handleTimer(), 100);
+      setTimer(newTimer);
+    },
+    [combobox, options, creatable, handleTimer]
+  );
+
+  const addSelected = useCallback(
+    (newValue: string): void => {
+      const alreadySelected = selected.some((v) => v.value === newValue);
+      const newSelected = alreadySelected ? selected.filter((v) => v.value !== newValue) : [...selected];
+      let option = options?.find((option) => option.value === newValue);
+      if (!option && creatable !== false && onCreate) {
+        const createdResource = onCreate(newValue);
+        option = toOption(createdResource);
+      }
+
+      if (option) {
+        // when maxValues is 0, still fire the onChange when an item is selected
+        if (maxValues === 0) {
+          onChange([option.resource]);
+
+          // and clear selected if necessary
+          if (selected.length > 0) {
+            setSelected([]);
+          }
+          return;
         }
 
-        if (item) {
-          result.push(item);
-        }
-
-        if (option) {
+        if (!alreadySelected) {
           newSelected.push(option);
         }
       }
-      onChange(result);
+
+      if (maxValues !== undefined) {
+        while (newSelected.length > maxValues) {
+          // Remove from the front
+          newSelected.shift();
+        }
+      }
+
+      onChange(newSelected.map((v) => v.resource));
       setSelected(newSelected);
     },
-    [creatable, onChange, onCreate, toOption]
+    [creatable, options, selected, maxValues, onChange, onCreate, toOption]
+  );
+
+  const handleValueSelect = useMemo(() => {
+    if (disabled) {
+      return undefined;
+    }
+
+    return (val: string): void => {
+      if (disabled) {
+        return;
+      }
+      if (maxValues === 1) {
+        setSearch('');
+        setOptions([]);
+        combobox.closeDropdown();
+      }
+      lastValueRef.current = undefined;
+      if (val === '$create') {
+        addSelected(search);
+      } else {
+        addSelected(val);
+      }
+    };
+  }, [addSelected, combobox, disabled, maxValues, search]);
+
+  const handleValueRemove = useCallback(
+    (item: AsyncAutocompleteOption<T>): void => {
+      const newSelected = selected.filter((v) => v.value !== item.value);
+      onChange(newSelected.map((v) => v.resource));
+      setSelected(newSelected);
+    },
+    [selected, onChange]
   );
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent): void => {
+    (e: KeyboardEvent): void => {
       if (e.key === 'Enter') {
-        if (!timerRef.current && !abortControllerRef.current) {
-          killEvent(e);
-          if (optionsRef.current && optionsRef.current.length > 0) {
-            setOptions(optionsRef.current.slice(0, 1));
-            handleChange([optionsRef.current[0].value]);
-          }
-        } else {
+        if (timer || abortController) {
           // The user pressed enter, but we don't have results yet.
           // We need to wait for the results to come in.
           setAutoSubmit(true);
         }
+      } else if (e.key === 'Backspace' && search.length === 0) {
+        killEvent(e);
+        handleValueRemove(selected[selected.length - 1]);
       }
     },
-    [handleChange]
+    [abortController, handleValueRemove, search.length, selected, timer]
   );
-
-  const handleCreate = useCallback(
-    (input: string): AsyncAutocompleteOption<T> => {
-      const option = toOption((onCreate as (input: string) => T)(input));
-      setOptions([...(optionsRef.current as AsyncAutocompleteOption<T>[]), option]);
-      return option;
-    },
-    [onCreate, setOptions, toOption]
-  );
-
-  const handleFilter = useCallback((_value: string, selected: boolean) => !selected, []);
 
   useEffect(() => {
     return () => {
@@ -157,23 +264,83 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     };
   }, []);
 
-  return (
-    <MultiSelect
-      {...rest}
-      ref={inputRef}
-      defaultValue={defaultItems.map(toKey)}
-      searchable
-      onKeyDown={handleKeyDown}
-      onSearchChange={handleSearchChange}
-      data={[...selected, ...options]}
-      onFocus={handleTimer}
-      onChange={handleChange}
-      onCreate={handleCreate}
-      rightSectionWidth={40}
-      rightSection={abortController ? <Loader size={16} /> : null}
-      filter={handleFilter}
-      creatable
+  // Based on Mantine MultiSelect:
+  // https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/MultiSelect/MultiSelect.tsx
+  const clearButton = !disabled && clearable && selected.length > 0 && (
+    <Combobox.ClearButton
+      title="Clear all"
+      size={16}
+      onClear={() => {
+        setSearch('');
+        setSelected([]);
+        onChange([]);
+        combobox.closeDropdown();
+      }}
     />
+  );
+
+  return (
+    <Combobox store={combobox} onOptionSubmit={handleValueSelect} withinPortal={true} shadow="xl" {...rest}>
+      <Combobox.DropdownTarget>
+        <PillsInput
+          label={label}
+          description={description}
+          error={error}
+          className={props.className}
+          leftSection={leftSection}
+          rightSection={abortController ? <Loader size={16} /> : clearButton}
+          required={required}
+          disabled={disabled}
+        >
+          <Pill.Group data-testid={AsyncAutocompleteTestIds.selectedItems}>
+            {selected.map((item) => (
+              <Pill key={item.value} withRemoveButton={!disabled} onRemove={() => handleValueRemove(item)}>
+                {item.label}
+              </Pill>
+            ))}
+
+            {!disabled && (maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
+              <Combobox.EventsTarget>
+                <PillsInput.Field
+                  role="searchbox"
+                  name={name}
+                  value={search}
+                  placeholder={placeholder}
+                  onFocus={handleSearchChange}
+                  onBlur={() => {
+                    combobox.closeDropdown();
+                    setSearch('');
+                  }}
+                  onKeyDown={handleKeyDown}
+                  onChange={handleSearchChange}
+                />
+              </Combobox.EventsTarget>
+            )}
+          </Pill.Group>
+        </PillsInput>
+      </Combobox.DropdownTarget>
+
+      <Combobox.Dropdown hidden={search.length === 0}>
+        <Combobox.Options>
+          <ScrollAreaAutosize type="scroll" mah={optionsDropdownMaxHeight}>
+            {options.map((item) => {
+              const active = selected.some((v) => v.value === item.value);
+              return (
+                <Combobox.Option value={item.value} key={item.value} active={active}>
+                  <ItemComponent {...item} active={active} />
+                </Combobox.Option>
+              );
+            })}
+
+            {creatable && search.trim().length > 0 && (
+              <Combobox.Option value="$create">+ Create {search}</Combobox.Option>
+            )}
+
+            {!creatable && search.trim().length > 0 && options.length === 0 && <EmptyComponent search={search} />}
+          </ScrollAreaAutosize>
+        </Combobox.Options>
+      </Combobox.Dropdown>
+    </Combobox>
   );
 }
 
@@ -185,4 +352,17 @@ function toDefaultItems<T>(defaultValue: T | T[] | undefined): T[] {
     return defaultValue;
   }
   return [defaultValue];
+}
+
+function DefaultItemComponent<T>(props: AsyncAutocompleteOption<T>): JSX.Element {
+  return (
+    <Group gap="xs">
+      {props.active && <IconCheck size={12} />}
+      <span>{props.label}</span>
+    </Group>
+  );
+}
+
+function DefaultEmptyComponent(): JSX.Element {
+  return <Combobox.Empty>Nothing found</Combobox.Empty>;
 }

@@ -196,7 +196,7 @@ export interface PersonLink {
   /**
    * The resource to which this actual person is associated.
    */
-  target?: Reference<Patient | Practitioner | RelatedPerson | Person>;
+  target: Reference<Patient | Practitioner | RelatedPerson | Person>;
 
   /**
    * Level of assurance that this link is associated with the target

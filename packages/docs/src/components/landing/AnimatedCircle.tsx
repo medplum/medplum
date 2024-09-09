@@ -1,10 +1,10 @@
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useInView } from 'react-intersection-observer';
 import './animations.css';
 
 export interface AnimatedCircleProps {
-  value: number;
-  suffix?: string;
+  readonly value: number;
+  readonly suffix?: string;
 }
 
 export function AnimatedCircle(props: AnimatedCircleProps): JSX.Element {

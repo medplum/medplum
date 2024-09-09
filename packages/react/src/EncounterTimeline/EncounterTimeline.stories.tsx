@@ -1,6 +1,5 @@
 import { HomerEncounter } from '@medplum/mock';
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { EncounterTimeline } from './EncounterTimeline';
 
 export default {

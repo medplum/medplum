@@ -130,7 +130,7 @@ export interface DiagnosticReport {
   /**
    * The status of the diagnostic report.
    */
-  status?: 'registered' | 'partial' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'appended' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status: 'registered' | 'partial' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'appended' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * A code that classifies the clinical discipline, department or
@@ -143,7 +143,7 @@ export interface DiagnosticReport {
   /**
    * A code or name that describes this diagnostic report.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The subject of the report. Usually, but not always, this is a patient.
@@ -239,6 +239,14 @@ export interface DiagnosticReport {
 }
 
 /**
+ * The time or time-period the observed values are related to. When the
+ * subject of the report is a patient, this is usually either the time of
+ * the procedure or of specimen collection(s), but very often the source
+ * of the date/time is not known, only the date/time itself.
+ */
+export type DiagnosticReportEffective = Period | string;
+
+/**
  * A list of key images associated with this report. The images are
  * generally created during the diagnostic process, and may be directly
  * of the patient, or of treated specimens (i.e. slides of interest).
@@ -290,5 +298,5 @@ export interface DiagnosticReportMedia {
   /**
    * Reference to the image source.
    */
-  link?: Reference<Media>;
+  link: Reference<Media>;
 }

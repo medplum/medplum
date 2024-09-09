@@ -1,7 +1,7 @@
 /* eslint-disable no-duplicate-imports */
 
 // start-block core-imports
-import { createReference, getReferenceString, MedplumClient } from '@medplum/core';
+import { createReference, getReferenceString, MedplumClient, UCUM } from '@medplum/core';
 import fetch from 'node-fetch';
 
 // end-block core-imports
@@ -36,7 +36,7 @@ await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
  * We will use this in the "conditional create".
  * When creating an order, and if you don't know if the patient exists,
  * you can use this MRN to check.
- * @param patientMrn The patient medical record number (MRN).
+ * @param patientMrn - The patient medical record number (MRN).
  */
 async function createServiceRequest(patientMrn: string): Promise<void> {
   // First, create the patient if they don't exist.
@@ -59,6 +59,8 @@ async function createServiceRequest(patientMrn: string): Promise<void> {
 
   const serviceRequest = await medplum.createResource({
     resourceType: 'ServiceRequest',
+    status: 'active',
+    intent: 'order',
     subject: createReference(patient),
     code: {
       coding: [
@@ -83,7 +85,7 @@ await createServiceRequest('MRN1234');
 // start-block create-specimen
 /**
  * Creates a Specimen for a given ServiceRequest
- * @param serviceRequestId The ServiceRequest ID.
+ * @param serviceRequestId - The ServiceRequest ID.
  */
 async function createSpecimenForServiceRequest(serviceRequestId: string): Promise<void> {
   // First, create the specimen resource
@@ -134,6 +136,7 @@ async function createReport(patientId: string, serviceRequestId: string): Promis
   // Create the first Observation resource.
   const observation: Observation = await medplum.createResource({
     resourceType: 'Observation',
+    status: 'final',
     basedOn: [createReference(serviceRequest)],
     subject: createReference(patient),
     code: {
@@ -148,7 +151,7 @@ async function createReport(patientId: string, serviceRequestId: string): Promis
     valueQuantity: {
       value: 5.7,
       unit: 'mg/dL',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       code: 'mg/dL',
     },
   });
@@ -156,6 +159,7 @@ async function createReport(patientId: string, serviceRequestId: string): Promis
   // Create a DiagnosticReport resource.
   const report: DiagnosticReport = await medplum.createResource({
     resourceType: 'DiagnosticReport',
+    status: 'final',
     basedOn: [
       {
         reference: serviceRequestId,

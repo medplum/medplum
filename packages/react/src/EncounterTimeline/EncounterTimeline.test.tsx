@@ -1,10 +1,9 @@
 import { createReference } from '@medplum/core';
 import { HomerEncounter, MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
 import { EncounterTimeline, EncounterTimelineProps } from './EncounterTimeline';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 
 const medplum = new MockClient();
 

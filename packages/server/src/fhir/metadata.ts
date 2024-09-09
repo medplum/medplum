@@ -1,4 +1,4 @@
-import { ContentType, isResourceType, TypeSchema } from '@medplum/core';
+import { ContentType, getAllDataTypes, getSearchParameters, InternalTypeSchema, isResourceType } from '@medplum/core';
 import {
   CapabilityStatement,
   CapabilityStatementRest,
@@ -9,7 +9,6 @@ import {
   ResourceType,
 } from '@medplum/fhirtypes';
 import { getConfig, MedplumServerConfig } from '../config';
-import { getStructureDefinitions } from './structure';
 
 /**
  * The base CapabilityStatement that seeds the server generated statement.
@@ -114,6 +113,38 @@ const supportedOperations: Record<string, CapabilityStatementRestResourceOperati
   ],
 };
 
+/**
+ * A list of the advanced search parameters that are FHIR Search Result Parameters applicable to the server.
+ * See: https://www.hl7.org/fhir/search.html#modifyingresults
+ */
+const supportedSearchParams: CapabilityStatementRestResourceSearchParam[] = [
+  {
+    name: '_sort',
+    definition: 'https://www.hl7.org/fhir/search.html#_sort',
+    type: 'string',
+  },
+  {
+    name: '_total',
+    definition: 'https://www.hl7.org/fhir/search.html#_total',
+    type: 'string',
+  },
+  {
+    name: '_count',
+    definition: 'https://www.hl7.org/fhir/search.html#_count',
+    type: 'number',
+  },
+  {
+    name: '_summary',
+    definition: 'https://www.hl7.org/fhir/search.html#_summary',
+    type: 'token',
+  },
+  {
+    name: '_elements',
+    definition: 'https://www.hl7.org/fhir/search.html#_elements',
+    type: 'string',
+  },
+];
+
 let capabilityStatement: CapabilityStatement | undefined = undefined;
 
 export function getCapabilityStatement(): CapabilityStatement {
@@ -153,6 +184,7 @@ function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
       security: buildSecurity(config),
       resource: buildResourceTypes(),
       interaction: [{ code: 'transaction' }, { code: 'batch' }],
+      searchParam: supportedSearchParams,
     },
   ];
 }
@@ -178,16 +210,14 @@ function buildSecurity(config: MedplumServerConfig): CapabilityStatementRestSecu
 }
 
 function buildResourceTypes(): CapabilityStatementRestResource[] {
-  const schema = getStructureDefinitions();
-  return Object.entries(schema.types)
+  return Object.entries(getAllDataTypes())
     .filter(
       ([resourceType, typeSchema]) =>
-        isResourceType(resourceType) &&
-        typeSchema.structureDefinition.url?.startsWith('http://hl7.org/fhir/StructureDefinition/')
+        isResourceType(resourceType) && typeSchema.url?.startsWith('http://hl7.org/fhir/StructureDefinition/')
     )
     .map(([resourceType, typeSchema]) => ({
       type: resourceType as ResourceType,
-      profile: typeSchema.structureDefinition.url,
+      profile: typeSchema.url,
       supportedProfile: supportedProfiles[resourceType] || undefined,
       interaction: [
         { code: 'read' }, // Read the current state of the resource.
@@ -211,11 +241,14 @@ function buildResourceTypes(): CapabilityStatementRestResource[] {
     }));
 }
 
-function buildSearchParameters(typeSchema: TypeSchema): CapabilityStatementRestResourceSearchParam[] | undefined {
-  if (!typeSchema.searchParams) {
+function buildSearchParameters(
+  typeSchema: InternalTypeSchema
+): CapabilityStatementRestResourceSearchParam[] | undefined {
+  const searchParams = getSearchParameters(typeSchema.name);
+  if (!searchParams) {
     return undefined;
   }
-  const entries = Object.values(typeSchema.searchParams);
+  const entries = Object.values(searchParams);
   if (entries.length === 0) {
     return undefined;
   }

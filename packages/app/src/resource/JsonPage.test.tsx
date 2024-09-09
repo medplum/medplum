@@ -1,9 +1,9 @@
 import { MantineProvider } from '@mantine/core';
-import { Notifications } from '@mantine/notifications';
+import { Notifications, notifications } from '@mantine/notifications';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React, { Suspense } from 'react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
 
@@ -27,16 +27,20 @@ describe('JsonPage', () => {
     });
   }
 
+  afterEach(async () => {
+    await act(async () => notifications.clean());
+  });
+
   test('JSON tab renders', async () => {
     await setup('/Practitioner/123/json');
-    await waitFor(() => screen.getByTestId('resource-json'));
+    expect(await screen.findByTestId('resource-json')).toBeInTheDocument();
 
     expect(screen.getByTestId('resource-json')).toBeInTheDocument();
   });
 
   test('JSON submit', async () => {
     await setup('/Practitioner/123/json');
-    await waitFor(() => screen.getByTestId('resource-json'));
+    expect(await screen.findByTestId('resource-json')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('resource-json'), {
@@ -53,7 +57,7 @@ describe('JsonPage', () => {
 
   test('JSON submit with meta', async () => {
     await setup('/Practitioner/123/json');
-    await waitFor(() => screen.getByTestId('resource-json'));
+    expect(await screen.findByTestId('resource-json')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.change(screen.getByTestId('resource-json'), {

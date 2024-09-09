@@ -3,19 +3,25 @@ sidebar_position: 1
 tags: [auth]
 ---
 
-# Auth and Identity
+# Authentication and Identity
 
-Medplum supports multiple authentication and authorization configurations, with the intent to **enable required compliance and integration scenarios**. Implementations commonly use multiple authentication and authorization methods.
+Medplum supports multiple authentication configurations, with the intent to **enable required compliance and integration scenarios**. Implementations commonly use multiple authentication and authorization methods.
 
-Authentication (_are you who you say you are?_) and authorization (_what can you do?_) are distinct in Medplum. Several authentication methods (e.g. Google Authentication) are supported. Authorization can be determined by [Access Policies](./access-control.md) or SMART-on-FHIR scopes.
+This section covers Medplum's authentication tools (_are you who you say you are?_). Several authentication methods (e.g. Google Authentication) are supported.
 
-## Patients, Practitioners and Bots
-
-Users are the representation of identities in Medplum, and each user belongs to one or more Medplum Projects. For a specific project, a user can be either a [Practitioner](../api/fhir/resources/practitioner.mdx), [Patient](../api/fhir/resources/patient.mdx) or [Bot](../bots/index.md). At a high level, Practitioners are staff or administrators, Patients are those receiving care and Bots are designed for programmatic access or integrations.
+Authorization (what can you do?) are distinct in Medplum, and covered in the [Authorization and Access Controls](/docs/access) section.
 
 ## Login Flowchart
 
-Users can belong to multiple Medplum projects, and the service supports multiple types of authentication. Below is a diagram that steps through the login logic and process. There are four major stages in the login flow.
+The [User Management Guide](/docs/auth/user-management-guide) describes the Medplum user and project isolation model. Users can belong to multiple Medplum projects, and the service supports multiple types of authentication.
+
+The following diagram shows an overview of the process. Endpoints are provided to illustrate and inform, but implementors should only use [OAuth](/docs/api/oauth) endpoints or React components.
+
+![Auth flow](/img/auth/auth-flow.png)
+
+[Click to Enlarge](/img/auth/auth-flow.png)
+
+There are four major stages in the login flow: **Domain**, **Credentials**, **Profile**, **Scope**. The table below describes the authentication actions the Medplum server performs at each stage, along with the associated endpoints.
 
 | Stage       | Description                                                                                                                                                             | Involved endpoints                                           |
 | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
@@ -24,16 +30,10 @@ Users can belong to multiple Medplum projects, and the service supports multiple
 | Profile     | In the Profile phase, if the user is a member of multiple projects, one must be selected to proceed                                                                     | `auth/profile`<br /> `auth/me` <br />                        |
 | Scope       | If SMART-on-FHIR scopes were provided, they need to be selected and access to them determined. Access control is applied where configured and authorization determined. | `auth/scope`                                                 |
 
-The following diagram shows an overview of the process. Endpoints are provided to illustrate and inform, but implementors should only use [OAuth](/docs/api/oauth) endpoints or React components.
-
-![Auth flow](/img/auth/auth-flow.png)
-
-[Click to Enlarge](/img/auth/auth-flow.png)
-
 ## Resources and Reference
 
-- See [authentication functions](./sdk/classes/MedplumClient#authentication) in the TypeScript SDK
-- [User profile](./sdk/classes/MedplumClient#user-profile) in the TypeScript SDK
+- See [authentication functions](./sdk/core.medplumclient) in the TypeScript SDK
+- [User profile](./sdk/core.medplumclient.getprofile) in the TypeScript SDK
 - [OAuth endpoints](./api/oauth) reference
 - [Medplum resources](./api/fhir/medplum) related to authentication and authorization
 - [User registration](https://storybook.medplum.com/?path=/docs/medplum-registerform--basic) react component

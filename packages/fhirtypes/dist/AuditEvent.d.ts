@@ -3,6 +3,8 @@
  * Do not edit manually.
  */
 
+import { Bot } from './Bot';
+import { ClientApplication } from './ClientApplication';
 import { CodeableConcept } from './CodeableConcept';
 import { Coding } from './Coding';
 import { Device } from './Device';
@@ -18,6 +20,7 @@ import { PractitionerRole } from './PractitionerRole';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
+import { Subscription } from './Subscription';
 
 /**
  * A record of an event made for purposes of maintaining a security log.
@@ -107,7 +110,7 @@ export interface AuditEvent {
    * program, rule, policy, function code, application name or URL. It
    * identifies the performed function.
    */
-  type?: Coding;
+  type: Coding;
 
   /**
    * Identifier for the category of event.
@@ -128,7 +131,7 @@ export interface AuditEvent {
   /**
    * The time when the event was recorded.
    */
-  recorded?: string;
+  recorded: string;
 
   /**
    * Indicates whether the event succeeded or failed.
@@ -150,12 +153,12 @@ export interface AuditEvent {
    * An actor taking an active role in the event or activity that is
    * logged.
    */
-  agent?: AuditEventAgent[];
+  agent: AuditEventAgent[];
 
   /**
    * The system that is reporting the event.
    */
-  source?: AuditEventSource;
+  source: AuditEventSource;
 
   /**
    * Specific instances of data or objects that have been accessed.
@@ -239,7 +242,7 @@ export interface AuditEventAgent {
    * Indicator that the user is or is not the requestor, or initiator, for
    * the event being audited.
    */
-  requestor?: boolean;
+  requestor: boolean;
 
   /**
    * Where the event occurred.
@@ -460,7 +463,7 @@ export interface AuditEventEntityDetail {
   /**
    * The type of extra detail provided in the value.
    */
-  type?: string;
+  type: string;
 
   /**
    * The  value of the extra detail.
@@ -472,6 +475,11 @@ export interface AuditEventEntityDetail {
    */
   valueBase64Binary?: string;
 }
+
+/**
+ * The  value of the extra detail.
+ */
+export type AuditEventEntityDetailValue = string;
 
 /**
  * The system that is reporting the event.
@@ -523,7 +531,7 @@ export interface AuditEventSource {
   /**
    * Identifier of the source where the event was detected.
    */
-  observer?: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson>;
+  observer: Reference<PractitionerRole | Practitioner | Organization | Device | Patient | RelatedPerson | Subscription | Bot | ClientApplication>;
 
   /**
    * Code specifying the type of source where event originated.

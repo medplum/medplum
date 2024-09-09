@@ -1,26 +1,38 @@
-import { AppShell as MantineAppShell, useMantineTheme } from '@mantine/core';
-import React, { Suspense, useState } from 'react';
+import { AppShell as MantineAppShell } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { useMedplum, useMedplumProfile } from '@medplum/react-hooks';
+import { ReactNode, Suspense, useEffect, useState } from 'react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { Loading } from '../Loading/Loading';
-import { useMedplum, useMedplumProfile } from '../MedplumProvider/MedplumProvider';
+import classes from './AppShell.module.css';
 import { Header } from './Header';
 import { Navbar, NavbarMenu } from './Navbar';
 
 export interface AppShellProps {
-  logo: React.ReactNode;
-  pathname?: string;
-  searchParams?: URLSearchParams;
-  version?: string;
-  menus?: NavbarMenu[];
-  children: React.ReactNode;
-  displayAddBookmark?: boolean;
+  readonly logo: ReactNode;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
+  readonly headerSearchDisabled?: boolean;
+  readonly version?: string;
+  readonly menus?: NavbarMenu[];
+  readonly children: ReactNode;
+  readonly displayAddBookmark?: boolean;
+  readonly resourceTypeSearchDisabled?: boolean;
+  readonly notifications?: ReactNode;
 }
 
 export function AppShell(props: AppShellProps): JSX.Element {
-  const theme = useMantineTheme();
   const [navbarOpen, setNavbarOpen] = useState(localStorage['navbarOpen'] === 'true');
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+
+  useEffect(() => {
+    function eventListener(): void {
+      showNotification({ color: 'red', message: 'No connection to server', autoClose: false });
+    }
+    medplum.addEventListener('offline', eventListener);
+    return () => medplum.removeEventListener('offline', eventListener);
+  }, [medplum]);
 
   function setNavbarOpenWrapper(open: boolean): void {
     localStorage['navbarOpen'] = open.toString();
@@ -41,39 +53,43 @@ export function AppShell(props: AppShellProps): JSX.Element {
 
   return (
     <MantineAppShell
-      styles={{
-        main: {
-          background: theme.colorScheme === 'dark' ? theme.colors.dark[8] : theme.colors.gray[0],
+      header={{ height: 60 }}
+      navbar={{
+        width: 250,
+        breakpoint: 'sm',
+        collapsed: {
+          desktop: !profile || !navbarOpen,
+          mobile: !profile || !navbarOpen,
         },
       }}
       padding={0}
-      fixed={true}
-      header={
-        profile && (
-          <Header
-            pathname={props.pathname}
-            searchParams={props.searchParams}
-            logo={props.logo}
-            version={props.version}
-            navbarToggle={toggleNavbar}
-          />
-        )
-      }
-      navbar={
-        profile && navbarOpen ? (
-          <Navbar
-            pathname={props.pathname}
-            searchParams={props.searchParams}
-            menus={props.menus}
-            closeNavbar={closeNavbar}
-            displayAddBookmark={props.displayAddBookmark}
-          />
-        ) : undefined
-      }
     >
-      <ErrorBoundary key={`${props.pathname}?${props.searchParams?.toString()}`}>
-        <Suspense fallback={<Loading />}>{props.children}</Suspense>
-      </ErrorBoundary>
+      {profile && (
+        <Header
+          pathname={props.pathname}
+          searchParams={props.searchParams}
+          headerSearchDisabled={props.headerSearchDisabled}
+          logo={props.logo}
+          version={props.version}
+          navbarToggle={toggleNavbar}
+          notifications={props.notifications}
+        />
+      )}
+      {profile && navbarOpen ? (
+        <Navbar
+          pathname={props.pathname}
+          searchParams={props.searchParams}
+          menus={props.menus}
+          closeNavbar={closeNavbar}
+          displayAddBookmark={props.displayAddBookmark}
+          resourceTypeSearchDisabled={props.resourceTypeSearchDisabled}
+        />
+      ) : undefined}
+      <MantineAppShell.Main className={classes.main}>
+        <ErrorBoundary>
+          <Suspense fallback={<Loading />}>{props.children}</Suspense>
+        </ErrorBoundary>
+      </MantineAppShell.Main>
     </MantineAppShell>
   );
 }

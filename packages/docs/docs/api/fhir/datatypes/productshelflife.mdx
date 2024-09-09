@@ -3,6 +3,7 @@ title: ProductShelfLife
 sidebar_position: 27
 ---
 
+import Link from '@docusaurus/Link';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import definition from '@site/static/data/datatypeDefinitions/productshelflife.json';
@@ -10,19 +11,17 @@ import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components
 
 # ProductShelfLife
 
-Base <a href="/docs/api/fhir/resources/structuredefinition">StructureDefinition</a> for <a href="/docs/api/fhir/datatypes/productshelflife">ProductShelfLife</a> Type: The shelf-life and storage information for a medicinal product item or container can be described using this class.
+Base <Link to="/docs/api/fhir/resources/structuredefinition">StructureDefinition</Link> for <Link to="/docs/api/fhir/datatypes/productshelflife">ProductShelfLife</Link> Type: The shelf-life and storage information for a medicinal product item or container can be described using this class.
 
 <Tabs queryString="section">
-<TabItem value="schema" label="Schema" default>
+  <TabItem value="schema" label="Schema" default>
 
-## Properties
+## Elements
 
 <ResourcePropertiesTable
   properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
 />
 
-</TabItem>
-  
-
+  </TabItem>
 
 </Tabs>

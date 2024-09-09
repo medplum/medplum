@@ -1,14 +1,15 @@
-import { badRequest, Operator } from '@medplum/core';
+import { badRequest, isString, isUUID, Operator } from '@medplum/core';
 import { Project, ResourceType, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body } from 'express-validator';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
 import { URL } from 'url';
 import { getConfig } from '../config';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { sendOutcome } from '../fhir/outcomes';
+import { getSystemRepo } from '../fhir/repo';
 import { getUserByEmail, GoogleCredentialClaims, tryLogin } from '../oauth/utils';
+import { makeValidationMiddleware } from '../util/validator';
 import { isExternalAuth } from './method';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
 
@@ -28,24 +29,18 @@ const JWKS = createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/ce
  * A request to the /auth/google endpoint is expected to satisfy these validators.
  * These values are obtained from the Google Sign-in button.
  */
-export const googleValidators = [
+export const googleValidator = makeValidationMiddleware([
   body('googleClientId').notEmpty().withMessage('Missing googleClientId'),
   body('googleCredential').notEmpty().withMessage('Missing googleCredential'),
-];
+]);
 
 /**
  * Google authentication request handler.
  * This handles POST requests to /auth/google.
- * @param req The request.
- * @param res The response.
+ * @param req - The request.
+ * @param res - The response.
  */
 export async function googleHandler(req: Request, res: Response): Promise<void> {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
-
   // Resource type can optionally be specified.
   // If specified, only memberships of that type will be returned.
   // If not specified, all memberships will be considered.
@@ -56,7 +51,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   // 2) Implicit with clientId
   // 3) Implicit with googleClientId
   // The only rule is that they have to match
-  let projectId = req.body.projectId as string | undefined;
+  let projectId = validateProjectId(req.body.projectId);
   const clientId = req.body.clientId;
   projectId = await getProjectIdByClientId(clientId, projectId);
 
@@ -65,13 +60,15 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
     // If the Google Client ID is not the main Medplum Client ID,
     // then it must be associated with a Project.
     // The user can only authenticate with that project.
-    const project = await getProjectByGoogleClientId(googleClientId, projectId);
-    if (!project) {
+    const projects = await getProjectsByGoogleClientId(googleClientId, projectId);
+    if (projects.length === 0) {
       sendOutcome(res, badRequest('Invalid googleClientId'));
       return;
     }
 
-    projectId = project.id;
+    if (projects.length === 1) {
+      projectId = projects[0].id;
+    }
   }
 
   const googleJwt = req.body.googleCredential as string;
@@ -104,6 +101,7 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
       sendOutcome(res, badRequest('User not found'));
       return;
     }
+    const systemRepo = getSystemRepo();
     await systemRepo.createResource<User>({
       resourceType: 'User',
       firstName: claims.given_name,
@@ -132,10 +130,11 @@ export async function googleHandler(req: Request, res: Response): Promise<void> 
   await sendLoginResult(res, login);
 }
 
-function getProjectByGoogleClientId(
-  googleClientId: string,
-  projectId: string | undefined
-): Promise<Project | undefined> {
+function validateProjectId(inputProjectId: unknown): string | undefined {
+  return isString(inputProjectId) && isUUID(inputProjectId) ? inputProjectId : undefined;
+}
+
+function getProjectsByGoogleClientId(googleClientId: string, projectId: string | undefined): Promise<Project[]> {
   const filters = [
     {
       code: 'google-client-id',
@@ -152,5 +151,6 @@ function getProjectByGoogleClientId(
     });
   }
 
-  return systemRepo.searchOne<Project>({ resourceType: 'Project', filters });
+  const systemRepo = getSystemRepo();
+  return systemRepo.searchResources<Project>({ resourceType: 'Project', filters });
 }

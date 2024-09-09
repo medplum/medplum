@@ -1,89 +1,39 @@
-import { Button, createStyles, Navbar as MantineNavbar, ScrollArea, Space, Text } from '@mantine/core';
+import { Button, AppShell as MantineAppShell, ScrollArea, Space, Text } from '@mantine/core';
+import { useMedplumNavigate } from '@medplum/react-hooks';
 import { IconPlus } from '@tabler/icons-react';
-import React, { useState } from 'react';
+import cx from 'clsx';
+import { Fragment, MouseEventHandler, ReactNode, SyntheticEvent, useState } from 'react';
 import { BookmarkDialog } from '../BookmarkDialog/BookmarkDialog';
-import { CodeInput } from '../CodeInput/CodeInput';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
-
-const useStyles = createStyles((theme) => {
-  return {
-    menuTitle: {
-      margin: '20px 0 4px 6px',
-      fontSize: '9px',
-      fontWeight: 'normal',
-      textTransform: 'uppercase',
-      letterSpacing: '2px',
-    },
-
-    link: {
-      ...theme.fn.focusStyles(),
-      display: 'flex',
-      alignItems: 'center',
-      textDecoration: 'none',
-      fontSize: theme.fontSizes.sm,
-      color: theme.colorScheme === 'dark' ? theme.colors.dark[1] : theme.colors.gray[7],
-      padding: `8px 12px`,
-      borderRadius: theme.radius.sm,
-      fontWeight: 500,
-
-      '&:hover': {
-        backgroundColor: theme.colorScheme === 'dark' ? theme.colors.dark[6] : theme.colors.gray[0],
-        color: theme.colorScheme === 'dark' ? theme.white : theme.black,
-        textDecoration: 'none',
-
-        [`& svg`]: {
-          color: theme.colorScheme === 'dark' ? theme.white : theme.black,
-        },
-      },
-
-      '& svg': {
-        color: theme.colorScheme === 'dark' ? theme.colors.dark[2] : theme.colors.gray[6],
-        marginRight: theme.spacing.sm,
-        strokeWidth: 1.5,
-        width: 18,
-        height: 18,
-      },
-    },
-
-    linkActive: {
-      '&, &:hover': {
-        backgroundColor: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).background,
-        color: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).color,
-        [`& svg`]: {
-          color: theme.fn.variant({ variant: 'light', color: theme.primaryColor }).color,
-        },
-      },
-    },
-  };
-});
+import { ResourceTypeInput } from '../ResourceTypeInput/ResourceTypeInput';
+import classes from './Navbar.module.css';
 
 export interface NavbarLink {
-  icon?: JSX.Element;
-  label?: string;
-  href: string;
+  readonly icon?: JSX.Element;
+  readonly label?: string;
+  readonly href: string;
 }
 
 export interface NavbarMenu {
-  title?: string;
-  links?: NavbarLink[];
+  readonly title?: string;
+  readonly links?: NavbarLink[];
 }
 
 export interface NavbarProps {
-  pathname?: string;
-  searchParams?: URLSearchParams;
-  menus?: NavbarMenu[];
-  closeNavbar: () => void;
-  displayAddBookmark?: boolean;
+  readonly pathname?: string;
+  readonly searchParams?: URLSearchParams;
+  readonly menus?: NavbarMenu[];
+  readonly closeNavbar: () => void;
+  readonly displayAddBookmark?: boolean;
+  readonly resourceTypeSearchDisabled?: boolean;
 }
 
 export function Navbar(props: NavbarProps): JSX.Element {
-  const { classes } = useStyles();
   const navigate = useMedplumNavigate();
   const activeLink = getActiveLink(props.pathname, props.searchParams, props.menus);
   const [bookmarkDialogVisible, setBookmarkDialogVisible] = useState(false);
 
-  function onLinkClick(e: React.SyntheticEvent, to: string): void {
+  function onLinkClick(e: SyntheticEvent, to: string): void {
     e.stopPropagation();
     e.preventDefault();
     navigate(to);
@@ -100,28 +50,22 @@ export function Navbar(props: NavbarProps): JSX.Element {
 
   return (
     <>
-      <MantineNavbar width={{ sm: 250 }} p="xs">
-        <ScrollArea>
-          <MantineNavbar.Section mb="sm">
-            <CodeInput
-              key={window.location.pathname}
-              name="resourceType"
-              placeholder="Resource Type"
-              property={{
-                binding: {
-                  valueSet: 'https://medplum.com/fhir/ValueSet/resource-types',
-                },
-              }}
-              onChange={(newValue) => navigateResourceType(newValue)}
-              creatable={false}
-              maxSelectedValues={0}
-              clearSearchOnChange={true}
-              clearable={false}
-            />
-          </MantineNavbar.Section>
-          <MantineNavbar.Section grow>
+      <MantineAppShell.Navbar>
+        <ScrollArea p="xs">
+          {!props.resourceTypeSearchDisabled && (
+            <MantineAppShell.Section mb="sm">
+              <ResourceTypeInput
+                key={window.location.pathname}
+                name="resourceType"
+                placeholder="Resource Type"
+                maxValues={0}
+                onChange={(newValue) => navigateResourceType(newValue)}
+              />
+            </MantineAppShell.Section>
+          )}
+          <MantineAppShell.Section grow>
             {props.menus?.map((menu) => (
-              <React.Fragment key={`menu-${menu.title}`}>
+              <Fragment key={`menu-${menu.title}`}>
                 <Text className={classes.menuTitle}>{menu.title}</Text>
                 {menu.links?.map((link) => (
                   <NavbarLink
@@ -134,22 +78,22 @@ export function Navbar(props: NavbarProps): JSX.Element {
                     <span>{link.label}</span>
                   </NavbarLink>
                 ))}
-              </React.Fragment>
+              </Fragment>
             ))}
             {props.displayAddBookmark && (
               <Button
                 variant="subtle"
                 size="xs"
                 mt="xl"
-                leftIcon={<IconPlus size="0.75rem" />}
+                leftSection={<IconPlus size="0.75rem" />}
                 onClick={() => setBookmarkDialogVisible(true)}
               >
                 Add Bookmark
               </Button>
             )}
-          </MantineNavbar.Section>
+          </MantineAppShell.Section>
         </ScrollArea>
-      </MantineNavbar>
+      </MantineAppShell.Navbar>
       {props.pathname && props.searchParams && (
         <BookmarkDialog
           pathname={props.pathname}
@@ -164,14 +108,13 @@ export function Navbar(props: NavbarProps): JSX.Element {
 }
 
 interface NavbarLinkProps {
-  to: string;
-  active: boolean;
-  onClick: React.MouseEventHandler;
-  children: React.ReactNode;
+  readonly to: string;
+  readonly active: boolean;
+  readonly onClick: MouseEventHandler;
+  readonly children: ReactNode;
 }
 
 function NavbarLink(props: NavbarLinkProps): JSX.Element {
-  const { classes, cx } = useStyles();
   return (
     <MedplumLink
       onClick={props.onClick}
@@ -184,8 +127,8 @@ function NavbarLink(props: NavbarLinkProps): JSX.Element {
 }
 
 interface NavLinkIconProps {
-  to: string;
-  icon?: JSX.Element;
+  readonly to: string;
+  readonly icon?: JSX.Element;
 }
 
 function NavLinkIcon(props: NavLinkIconProps): JSX.Element {
@@ -201,9 +144,9 @@ function NavLinkIcon(props: NavLinkIconProps): JSX.Element {
  * However, we ignore some search parameters to support pagination.
  * But we cannot ignore all search parameters, to support separate links based on search filters.
  * So in the end, we use a simple scoring system based on the number of matching query search params.
- * @param currentPathname The web browser current pathname.
- * @param currentSearchParams The web browser current search parameters.
- * @param menus Collection of navbar menus and links.
+ * @param currentPathname - The web browser current pathname.
+ * @param currentSearchParams - The web browser current search parameters.
+ * @param menus - Collection of navbar menus and links.
  * @returns The active link if one is found.
  */
 function getActiveLink(
@@ -239,9 +182,9 @@ function getActiveLink(
  * One means "matches the pathname only".
  * Additional increases for each matching search parameter.
  * Ignores pagination parameters "_count" and "_offset".
- * @param currentPathname The web browser current pathname.
- * @param currentSearchParams The web browser current search parameters.
- * @param linkHref A candidate link href.
+ * @param currentPathname - The web browser current pathname.
+ * @param currentSearchParams - The web browser current search parameters.
+ * @param linkHref - A candidate link href.
  * @returns The link score.
  */
 function getLinkScore(currentPathname: string, currentSearchParams: URLSearchParams, linkHref: string): number {

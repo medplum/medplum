@@ -182,7 +182,7 @@ export interface SpecimenDefinitionTypeTested {
   /**
    * The preference for this type of conditioned specimen.
    */
-  preference?: 'preferred' | 'alternate';
+  preference: 'preferred' | 'alternate';
 
   /**
    * The specimen's container.
@@ -303,6 +303,11 @@ export interface SpecimenDefinitionTypeTestedContainer {
 }
 
 /**
+ * The minimum volume to be conditioned in the container.
+ */
+export type SpecimenDefinitionTypeTestedContainerMinimumVolume = Quantity | string;
+
+/**
  * Substance introduced in the kind of container to preserve, maintain or
  * enhance the specimen. Examples: Formalin, Citrate, EDTA.
  */
@@ -355,6 +360,12 @@ export interface SpecimenDefinitionTypeTestedContainerAdditive {
    */
   additiveReference?: Reference<Substance>;
 }
+
+/**
+ * Substance introduced in the kind of container to preserve, maintain or
+ * enhance the specimen. Examples: Formalin, Citrate, EDTA.
+ */
+export type SpecimenDefinitionTypeTestedContainerAdditiveAdditive = CodeableConcept | Reference<Substance>;
 
 /**
  * Set of instructions for preservation/transport of the specimen at a

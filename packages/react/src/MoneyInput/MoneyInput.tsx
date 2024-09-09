@@ -1,7 +1,9 @@
 import { NativeSelect, TextInput } from '@mantine/core';
 import { Money } from '@medplum/fhirtypes';
 import { IconCurrencyDollar } from '@tabler/icons-react';
-import React, { useCallback, useState } from 'react';
+import { ChangeEvent, useCallback, useContext, useMemo, useState } from 'react';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 /*
  * Based on: https://github.com/mantinedev/ui.mantine.dev/blob/master/components/CurrencyInput/CurrencyInput.tsx
@@ -20,17 +22,19 @@ import React, { useCallback, useState } from 'react';
  */
 const data = ['USD', 'EUR', 'CAD', 'GBP', 'AUD'];
 
-export interface MoneyInputProps {
-  name: string;
-  label?: string;
-  placeholder?: string;
-  defaultValue?: Money;
-  onChange?: (value: Money) => void;
+export interface MoneyInputProps extends ComplexTypeInputProps<Money> {
+  readonly label?: string;
+  readonly placeholder?: string;
 }
 
 export function MoneyInput(props: MoneyInputProps): JSX.Element {
   const { onChange } = props;
   const [value, setValue] = useState(props.defaultValue);
+  const { getExtendedProps } = useContext(ElementsContext);
+  const [currencyProps, valueProps] = useMemo(
+    () => ['currency', 'value'].map((field) => getExtendedProps(props.path + '.' + field)),
+    [getExtendedProps, props.path]
+  );
 
   const setValueWrapper = useCallback(
     (newValue: Money): void => {
@@ -43,7 +47,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
   );
 
   const handleCurrencyChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
+    (e: ChangeEvent<HTMLSelectElement>) => {
       setValueWrapper({
         ...value,
         currency: e.currentTarget.value,
@@ -53,7 +57,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
   );
 
   const handleValueChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    (e: ChangeEvent<HTMLInputElement>) => {
       setValueWrapper({
         ...value,
         value: e.currentTarget.valueAsNumber,
@@ -64,6 +68,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
 
   const select = (
     <NativeSelect
+      disabled={props.disabled || currencyProps?.readonly}
       defaultValue={value?.currency}
       data={data}
       styles={{
@@ -80,11 +85,13 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
 
   return (
     <TextInput
+      disabled={props.disabled || valueProps?.readonly}
       type="number"
+      name={props.name}
       label={props.label}
       placeholder={props.placeholder ?? 'Value'}
       defaultValue={value?.value?.toString() ?? 'USD'}
-      icon={<IconCurrencyDollar size={14} />}
+      leftSection={<IconCurrencyDollar size={14} />}
       rightSection={select}
       rightSectionWidth={92}
       onChange={handleValueChange}

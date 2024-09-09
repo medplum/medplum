@@ -1,0 +1,162 @@
+name: Build agent
+
+concurrency:
+  group: ci-build-agent-${{ github.sha }}
+  cancel-in-progress: true
+
+on: workflow_dispatch
+
+jobs:
+  build_agent_win64:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install NSIS
+        run: choco install nsis
+
+      - name: Install Wget
+        run: choco install wget
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --maxsockets 1
+
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
+
+      - name: Find signtool
+        uses: actions/github-script@v6
+        id: find-signtool
+        with:
+          result-encoding: string
+          script: |
+            const fs = require('node:fs/promises');
+
+            /**
+            * Searches the installed Windows SDKs for the most recent signtool.exe version
+            * Taken from https://github.com/dlemstra/code-sign-action
+            * @returns Path to most recent signtool.exe (x86 version)
+            */
+            async function getSigntoolLocation() {
+                const windowsKitsFolder = 'C:/Program Files (x86)/Windows Kits/10/bin/';
+                const folders = await fs.readdir(windowsKitsFolder);
+                let fileName = '';
+                let maxVersion = 0;
+                for (const folder of folders) {
+                    if (!folder.endsWith('.0')) {
+                        continue;
+                    }
+                    const folderVersion = parseInt(folder.replace(/\./g,''));
+                    if (folderVersion > maxVersion) {
+                        const signtoolFilename = `${windowsKitsFolder}${folder}/x64/signtool.exe`;
+                        try {
+                            const stat = await fs.stat(signtoolFilename);
+                            if (stat.isFile()) {
+                                fileName = signtoolFilename;
+                                maxVersion = folderVersion;
+                            }
+                        } catch {
+                            console.warn('Skipping %s due to error.', signtoolFilename);
+                        }
+                    }
+                }
+                if(fileName == '') {
+                    throw new Error('Unable to find signtool.exe in ' + windowsKitsFolder);
+                }
+                
+                console.log(fileName);
+                return fileName;
+            }
+
+            const path = await getSigntoolLocation();
+            return path.replace(' ', '\ ');
+
+      - name: Build Agent installer
+        shell: bash
+        run: ./scripts/build-agent-installer-win64.sh
+        env:
+          SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
+          SKIP_SIGNING: 1
+
+      - name: Set Medplum version
+        shell: bash
+        run: |
+          set -e
+          echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+      - name: Upload agent installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: medplum-agent-installer-${{ env.MEDPLUM_VERSION }}-windows
+          path: packages/agent/medplum-agent-installer-*
+
+  build_agent_linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --maxsockets 1
+
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
+
+      - name: Build Agent
+        shell: bash
+        run: ./scripts/build-agent-installer-linux.sh
+
+      - name: Set Medplum version
+        shell: bash
+        run: |
+          set -e
+          echo "MEDPLUM_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_ENV
+
+      - name: Make tarball
+        shell: bash
+        run: |
+          set -e
+
+          mkdir medplum-agent-$MEDPLUM_VERSION-linux
+
+          cp packages/agent/medplum-agent-$MEDPLUM_VERSION-linux ./medplum-agent-$MEDPLUM_VERSION-linux
+          cp packages/agent/medplum-agent-$MEDPLUM_VERSION-linux.sha256 ./medplum-agent-$MEDPLUM_VERSION-linux
+
+          tar -czvf ./medplum-agent-$MEDPLUM_VERSION-linux.tar.gz ./medplum-agent-$MEDPLUM_VERSION-linux
+
+      - name: Upload agent installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux
+          path: medplum-agent-${{ env.MEDPLUM_VERSION }}-linux.tar.gz

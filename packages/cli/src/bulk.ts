@@ -1,9 +1,9 @@
 import { MedplumClient } from '@medplum/core';
 import { BundleEntry, ExplanationOfBenefit, ExplanationOfBenefitItem, Resource } from '@medplum/fhirtypes';
 import { Command } from 'commander';
-import { createReadStream, writeFile } from 'fs';
-import { resolve } from 'path';
-import { createInterface } from 'readline';
+import { createReadStream, writeFile } from 'node:fs';
+import { resolve } from 'node:path';
+import { createInterface } from 'node:readline';
 import { createMedplumClient } from './util/client';
 import { createMedplumCommand } from './util/command';
 import { getUnsupportedExtension, prettyPrint } from './utils';
@@ -30,7 +30,7 @@ bulkExportCommand
   .action(async (options) => {
     const { exportLevel, types, since, targetDirectory } = options;
     const medplum = await createMedplumClient(options);
-    const response = await medplum.bulkExport(exportLevel, types, since);
+    const response = await medplum.bulkExport(exportLevel, types, since, { pollStatusOnAccepted: true });
 
     response.output?.forEach(async ({ type, url }) => {
       const fileUrl = new URL(url as string);

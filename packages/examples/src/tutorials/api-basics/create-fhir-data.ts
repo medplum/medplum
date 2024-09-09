@@ -1,7 +1,7 @@
 /* eslint-disable no-duplicate-imports */
 
 // start-block core-imports
-import { MedplumClient } from '@medplum/core';
+import { MedplumClient, UCUM } from '@medplum/core';
 import fetch from 'node-fetch';
 
 // end-block core-imports
@@ -38,7 +38,7 @@ await medplum.startClientLogin(MY_CLIENT_ID, MY_CLIENT_SECRET);
 
 // start-block create-patient
 // Generate an example MRN (Medical Record Number)
-// We will use this in the "conditional create"
+// We will use this in the "conditional create" and "upsert"
 const exampleMrn = randomUUID();
 const patientData: Patient = {
   resourceType: 'Patient',
@@ -54,15 +54,43 @@ const patientData: Patient = {
 };
 
 // When creating an order, and if you don't know if the patient exists,
-// you can use this MRN to check. Use this search criterion to make sure the 'identifier=' criterion
-// for a conditional create
+// you can use this MRN to check. Use the 'identifier=' search criterion for a
+// conditional create: if a resource with the given `identifier` already exists,
+// that resource will be returned instead.
 const patient = await medplum.createResourceIfNoneExist(patientData, 'identifier=' + exampleMrn);
-console.log('Created Patient', patient.id);
+console.log('Patient record created', patient);
 // end-block create-patient
 
+/*
+
+// start-block upsertCli
+medplum put 'Patient?identifier=<exampleMrn>'  <patientResource>
+// end-block upsertCli
+
+
+// start-block upsertCurl
+curl -X PUT 'https://api.medplum.com/fhir/R4/Patient?identifier=<exampleMrn>' \
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+  -d '<patientResource>'
+// end-block upsertCurl
+
+*/
+
+// start-block upsertTs
+// An "upsert" (i.e. update/insert) will either update the resource in place if it
+// already exists, otherwise is will be created.  This is performed in a single,
+// transactional request to guarantee data consistency.
+const updatedPatient = medplum.upsertResource(patient, 'identifier=' + exampleMrn);
+console.log('Patient record updated', updatedPatient);
+// end-block upsertTs
+
 // start-block create-service-request
+
 const serviceRequestData: ServiceRequest = {
   resourceType: 'ServiceRequest',
+  status: 'active',
+  intent: 'order',
   subject: createReference(patient), // link this ServiceRequest to the Patient
   code: {
     coding: [
@@ -98,7 +126,7 @@ const observationData: Observation[] = [
     valueQuantity: {
       value: 5.7,
       unit: 'mg/dL',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       code: 'mg/dL',
     },
   },
@@ -119,7 +147,7 @@ const observationData: Observation[] = [
     valueQuantity: {
       value: 100,
       unit: 'mg/dL',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       code: 'mg/dL',
     },
   },

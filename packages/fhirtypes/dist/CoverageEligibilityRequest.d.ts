@@ -114,7 +114,7 @@ export interface CoverageEligibilityRequest {
   /**
    * The status of the resource instance.
    */
-  status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
+  status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
    * When the requestor expects the processor to complete processing.
@@ -128,13 +128,13 @@ export interface CoverageEligibilityRequest {
    * patient; and/or validation that the specified coverage is in-force at
    * the date/period specified or 'now' if not specified.
    */
-  purpose?: ('auth-requirements' | 'benefits' | 'discovery' | 'validation')[];
+  purpose: ('auth-requirements' | 'benefits' | 'discovery' | 'validation')[];
 
   /**
    * The party who is the beneficiary of the supplied coverage and for whom
    * eligibility is sought.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The date or dates when the enclosed suite of services were performed
@@ -151,7 +151,7 @@ export interface CoverageEligibilityRequest {
   /**
    * The date when this resource was created.
    */
-  created?: string;
+  created: string;
 
   /**
    * Person who created the request.
@@ -167,7 +167,7 @@ export interface CoverageEligibilityRequest {
    * The Insurer who issued the coverage in question and is the recipient
    * of the request.
    */
-  insurer?: Reference<Organization>;
+  insurer: Reference<Organization>;
 
   /**
    * Facility where the services are intended to be provided.
@@ -193,6 +193,12 @@ export interface CoverageEligibilityRequest {
    */
   item?: CoverageEligibilityRequestItem[];
 }
+
+/**
+ * The date or dates when the enclosed suite of services were performed
+ * or completed.
+ */
+export type CoverageEligibilityRequestServiced = Period | string;
 
 /**
  * Financial instruments for reimbursement for the health care products
@@ -247,7 +253,7 @@ export interface CoverageEligibilityRequestInsurance {
    * to locate the patient's actual coverage within the insurer's
    * information system.
    */
-  coverage?: Reference<Coverage>;
+  coverage: Reference<Coverage>;
 
   /**
    * A business agreement number established between the provider and the
@@ -408,6 +414,12 @@ export interface CoverageEligibilityRequestItemDiagnosis {
 }
 
 /**
+ * The nature of illness or problem in a coded form or as a reference to
+ * an external defined Condition.
+ */
+export type CoverageEligibilityRequestItemDiagnosisDiagnosis = CodeableConcept | Reference<Condition>;
+
+/**
  * Additional information codes regarding exceptions, special
  * considerations, the condition, situation, prior or concurrent issues.
  */
@@ -451,14 +463,14 @@ export interface CoverageEligibilityRequestSupportingInfo {
   /**
    * A number to uniquely identify supporting information entries.
    */
-  sequence?: number;
+  sequence: number;
 
   /**
    * Additional data or information such as resources, documents, images
    * etc. including references to the data or the actual inclusion of the
    * data.
    */
-  information?: Reference<Resource>;
+  information: Reference<Resource>;
 
   /**
    * The supporting materials are applicable for all detail items,

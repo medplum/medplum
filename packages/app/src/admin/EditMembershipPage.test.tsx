@@ -1,9 +1,8 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 let medplum = new MockClient();
 
@@ -45,9 +44,7 @@ describe('EditMembershipPage', () => {
 
   test('Renders', async () => {
     await setup('/admin/members/456');
-    await waitFor(() => screen.getByText('Save'));
-
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     const badgeElement = screen.getByText('Alice Smith');
     expect(badgeElement).toBeInTheDocument();
@@ -56,9 +53,7 @@ describe('EditMembershipPage', () => {
 
   test('Submit success', async () => {
     await setup('/admin/members/456');
-    await waitFor(() => screen.getByText('Save'));
-
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Save'));
@@ -69,9 +64,7 @@ describe('EditMembershipPage', () => {
 
   test('Submit with access policy', async () => {
     await setup('/admin/members/456');
-    await waitFor(() => screen.getByText('Save'));
-
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     const input = screen.getByPlaceholderText('Access Policy') as HTMLInputElement;
 
@@ -104,9 +97,7 @@ describe('EditMembershipPage', () => {
 
   test('Submit with user configuration', async () => {
     await setup('/admin/members/456');
-    await waitFor(() => screen.getByText('Save'));
-
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     const input = screen.getByPlaceholderText('User Configuration') as HTMLInputElement;
 
@@ -141,9 +132,7 @@ describe('EditMembershipPage', () => {
     const medplumPostSpy = jest.spyOn(medplum, 'post');
 
     await setup('/admin/members/456');
-    await waitFor(() => screen.getByText('Save'));
-
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     const input = screen.getByLabelText('Admin') as HTMLInputElement;
 
@@ -169,9 +158,7 @@ describe('EditMembershipPage', () => {
     const medplumPostSpy = jest.spyOn(medplum, 'post');
 
     await setup('/admin/members/456');
-    await waitFor(() => screen.getByText('Save'));
-
-    expect(screen.getByText('Save')).toBeInTheDocument();
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     const input = screen.getByLabelText('Admin') as HTMLInputElement;
 
@@ -201,7 +188,7 @@ describe('EditMembershipPage', () => {
 
   test('Remove user accept confirm', async () => {
     await setup('/admin/members/456');
-    await waitFor(() => screen.getByText('Save'));
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     expect(screen.getByText('Remove user')).toBeInTheDocument();
 
@@ -216,7 +203,7 @@ describe('EditMembershipPage', () => {
 
   test('Remove user reject confirm', async () => {
     await setup('/admin/members/456');
-    await waitFor(() => screen.getByText('Save'));
+    expect(await screen.findByText('Save')).toBeInTheDocument();
 
     expect(screen.getByText('Remove user')).toBeInTheDocument();
 

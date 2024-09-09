@@ -132,19 +132,19 @@ export interface NutritionOrder {
   /**
    * The workflow status of the nutrition order/request.
    */
-  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
+  status: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Indicates the level of authority/intentionality associated with the
    * NutrionOrder and where the request fits into the workflow chain.
    */
-  intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+  intent: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * The person (patient) who needs the nutrition order for an oral diet,
    * nutritional supplement and/or enteral or formula feeding.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * An encounter that provides additional information about the healthcare
@@ -155,7 +155,7 @@ export interface NutritionOrder {
   /**
    * The date and time that this nutrition order was requested.
    */
-  dateTime?: string;
+  dateTime: string;
 
   /**
    * The practitioner that holds legal responsibility for ordering the
@@ -390,6 +390,12 @@ export interface NutritionOrderEnteralFormulaAdministration {
    */
   rateRatio?: Ratio;
 }
+
+/**
+ * The rate of administration of formula via a feeding pump, e.g. 60 mL
+ * per hour, according to the specified schedule.
+ */
+export type NutritionOrderEnteralFormulaAdministrationRate = Quantity | Ratio;
 
 /**
  * Diet given orally in contrast to enteral (tube) feeding.

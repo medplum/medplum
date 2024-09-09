@@ -5,25 +5,29 @@ import {
   forbidden,
   getResourceTypes,
   OperationOutcomeError,
+  parseSearchRequest,
+  SearchRequest,
   validateResourceType,
 } from '@medplum/core';
+import { ResourceType } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { body, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config';
-import { getClient } from '../database';
-import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
+import { DatabaseMode, getDatabasePool } from '../database';
+import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { authenticateRequest } from '../oauth/middleware';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import * as dataMigrations from '../migrations/data';
+import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
-import { getAuthenticatedContext, getRequestContext } from '../context';
+import { addReindexJob } from '../workers/reindex';
 
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
@@ -37,7 +41,7 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, () => rebuildR4ValueSets());
+    await sendAsyncResponse(req, res, async () => rebuildR4ValueSets());
   })
 );
 
@@ -76,30 +80,31 @@ superAdminRouter.post(
     requireSuperAdmin();
     requireAsync(req);
 
-    const resourceType = req.body.resourceType;
-    validateResourceType(resourceType);
+    let resourceTypes: string[];
+    if (req.body.resourceType === '*') {
+      resourceTypes = getResourceTypes().filter((rt) => rt !== 'Binary');
+    } else {
+      resourceTypes = (req.body.resourceType as string).split(',').map((t) => t.trim());
+      for (const resourceType of resourceTypes) {
+        validateResourceType(resourceType);
+      }
+    }
 
-    await sendAsyncResponse(req, res, async () => {
-      await systemRepo.reindexResourceType(resourceType);
+    let searchFilter: SearchRequest | undefined;
+    const filter = req.body.filter as string;
+    if (filter) {
+      searchFilter = parseSearchRequest((resourceTypes[0] ?? '') + '?' + filter);
+    }
+
+    const systemRepo = getSystemRepo();
+    const exec = new AsyncJobExecutor(systemRepo);
+    await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
+    await exec.run(async (asyncJob) => {
+      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter);
     });
-  })
-);
 
-// POST to /admin/super/compartments
-// to rebuild compartments for a resource type.
-// Run this after major changes to how compartments are constructed.
-superAdminRouter.post(
-  '/compartments',
-  asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
-    requireAsync(req);
-
-    const resourceType = req.body.resourceType;
-    validateResourceType(resourceType);
-
-    await sendAsyncResponse(req, res, async () => {
-      await systemRepo.rebuildCompartmentsForResourceType(resourceType);
-    });
+    const { baseUrl } = getConfig();
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   })
 );
 
@@ -140,8 +145,7 @@ superAdminRouter.post(
     body('before').isISO8601().withMessage('Invalid before date'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
-    const ctx = getAuthenticatedContext();
-    requireSuperAdmin();
+    const ctx = requireSuperAdmin();
 
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -185,7 +189,7 @@ superAdminRouter.post(
     await sendAsyncResponse(req, res, async () => {
       const resourceTypes = getResourceTypes();
       for (const resourceType of resourceTypes) {
-        await getClient().query(
+        await getDatabasePool(DatabaseMode.WRITER).query(
           `UPDATE "${resourceType}" SET "projectId"="compartments"[1] WHERE "compartments" IS NOT NULL AND cardinality("compartments")>0`
         );
       }
@@ -200,42 +204,36 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/migrate',
   asyncWrap(async (req: Request, res: Response) => {
-    requireSuperAdmin();
+    const ctx = requireSuperAdmin();
     requireAsync(req);
 
-    const ctx = getRequestContext();
     await sendAsyncResponse(req, res, async () => {
-      const client = getClient();
+      const systemRepo = getSystemRepo();
+      const client = getDatabasePool(DatabaseMode.WRITER);
       const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
       const version = result.rows[0]?.dataVersion as number;
       const migrationKeys = Object.keys(dataMigrations);
       for (let i = version + 1; i <= migrationKeys.length; i++) {
         const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
-        ctx.logger.info('Running data migration', { version: `v${i}` });
+        const start = Date.now();
         await migration.run(systemRepo);
+        ctx.logger.info('Data migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
         await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
       }
     });
   })
 );
 
-function requireSuperAdmin(): void {
-  if (!getAuthenticatedContext().login.superAdmin) {
+export function requireSuperAdmin(): AuthenticatedRequestContext {
+  const ctx = getAuthenticatedContext();
+  if (!ctx.project.superAdmin) {
     throw new OperationOutcomeError(forbidden);
   }
+  return ctx;
 }
 
 function requireAsync(req: Request): void {
   if (req.header('Prefer') !== 'respond-async') {
     throw new OperationOutcomeError(badRequest('Operation requires "Prefer: respond-async"'));
   }
-}
-
-async function sendAsyncResponse(req: Request, res: Response, callback: () => Promise<any>): Promise<void> {
-  const ctx = getAuthenticatedContext();
-  const { baseUrl } = getConfig();
-  const exec = new AsyncJobExecutor(ctx.repo);
-  await exec.init(req.protocol + '://' + req.get('host') + req.originalUrl);
-  exec.start(callback);
-  sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
 }

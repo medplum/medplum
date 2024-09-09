@@ -3,10 +3,10 @@ import { Notifications } from '@mantine/notifications';
 import { Practitioner } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -32,8 +32,7 @@ describe('EditPage', () => {
 
   test('Edit tab renders', async () => {
     await setup('/Practitioner/123/edit');
-    await waitFor(() => screen.getByText('Edit'));
-    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(await screen.findByText('Edit')).toBeInTheDocument();
   });
 
   test('Submit', async () => {
@@ -43,10 +42,12 @@ describe('EditPage', () => {
     });
 
     await setup(`/Practitioner/${practitioner.id}/edit`);
-    expect(screen.getByRole('button', { name: 'OK' })).toBeInTheDocument();
+
+    const updateButton = await screen.findByRole('button', { name: 'Update' });
+    expect(updateButton).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'OK' }));
+      fireEvent.click(updateButton);
     });
 
     expect(screen.getByText('Success')).toBeInTheDocument();
@@ -54,14 +55,37 @@ describe('EditPage', () => {
 
   test('Delete button on edit page', async () => {
     await setup('/Practitioner/123/edit');
-    await waitFor(() => screen.getByText('Delete'));
-    expect(screen.getByText('Delete')).toBeInTheDocument();
 
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
     await act(async () => {
-      fireEvent.click(screen.getByText('Delete'));
+      fireEvent.click(moreActions);
     });
 
-    await waitFor(() => screen.getByText('Are you sure you want to delete this Practitioner?'));
-    expect(screen.getByText('Are you sure you want to delete this Practitioner?')).toBeInTheDocument();
+    const deleteButton = await screen.findByText('Delete');
+    expect(deleteButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(deleteButton);
+    });
+
+    expect(await screen.findByText('Are you sure you want to delete this Practitioner?')).toBeInTheDocument();
+  });
+
+  test('Patch button on edit page', async () => {
+    await setup('/Practitioner/123/edit');
+
+    const moreActions = screen.getByLabelText('More actions');
+    expect(moreActions).toBeDefined();
+    await act(async () => {
+      fireEvent.click(moreActions);
+    });
+
+    const patchButton = await screen.findByText('Patch');
+    expect(patchButton).toBeInTheDocument();
+    await act(async () => {
+      fireEvent.click(patchButton);
+    });
+
+    expect(screen.getByText('Success')).toBeInTheDocument();
   });
 });

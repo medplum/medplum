@@ -1,0 +1,255 @@
+---
+id: binary-data
+toc_max_heading_level: 4
+sidebar_position: 3
+---
+
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';
+import TabItem from '@theme/TabItem';
+
+import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/binary-data.ts';
+
+# Binary Data
+
+Managing, storing, and retrieving binary files is a fundamental requirement in modern healthcare applications. Medplum, an open-source, API-first healthcare technology platform, provides a structured approach to this. This article dives into how to upload binary files to Medplum using the FHIR `Binary` resource type, detailing the process and Medplum's specific optimizations.
+
+## Introduction to FHIR `Binary`
+
+The FHIR (Fast Healthcare Interoperability Resources) standard introduces the `Binary` resource type. It's designed to hold any kind of data in a binary form, encompassing but not limited to, images, PDFs, audio, and even video. This allows a standardized means to store and reference raw content, simplifying integration between healthcare systems.
+
+## Creating a FHIR `Binary`
+
+To upload binary files to Medplum, you'll first need to create a `Binary` resource.
+
+### Using raw HTTP via `curl`
+
+The HTTP API to upload a `Binary` is straightforward:
+
+```bash
+curl -X POST \
+     -H "Authorization: Bearer YOUR_TOKEN" \
+     -H "Content-Type: image/jpeg" \
+     --data-binary "@./yourfile.jpg" \
+     https://api.medplum.com/fhir/R4/Binary
+```
+
+This is a short snippet, but each line has significant meaning.
+
+First, the `Authorization` header is required to authenticate the request. See the [**Client Credentials tutorial**](/docs/auth/methods/client-credentials) guide for how to obtain an access token.
+
+Next, the `Content-Type` header is required to specify the MIME type of the file being uploaded. You can always use the generic `application/octet-stream` type if you don't know the exact type, but beware that this may cause issues when consuming the `Binary` in an application. It is always recommended to use the correct MIME type if possible. See [Common MIME types](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types).
+
+To upload a file, use the `--data-binary` flag. The `--data-binary` flag is used to upload the raw binary data to avoid any encoding issues. Also note `curl`'s special syntax for referencing a file by file name using the "@" character.
+
+### Using the Medplum SDK `MedplumClient`
+
+Medplum provides a JavaScript/TypeScript SDK that makes it easy to upload binary files.
+
+```ts
+const medplum = new MedplumClient({
+  clientId: 'YOUR_CLIENT_ID',
+  clientSecret: 'YOUR_CLIENT_SECRET',
+});
+
+const binary = await medplum.createBinary(myFile, 'test.jpg', 'image/jpeg');
+console.log(result.id);
+```
+
+The return value is the newly created resource, including the ID and meta.
+
+The `data` parameter can be `string | File | Blob | Uint8Array`.
+
+A `File` object often comes from a `<input type="file">` element.
+
+A `Blob` object often comes from a `fetch()` call.
+
+A `Uint8Array` object often comes from a `FileReader` or `ArrayBuffer`.
+
+Beware passing in a `string`! This will cause the string to be encoded as UTF-8, which may not be what you want. If you have base-64 encoded content, you must first decode it to one of the binary types first before passing it to `createBinary()`.
+
+In addition to `medplum.createBinary()`, the Medplum SDK also provides `medplum.createAttachment()` which is similar but also creates an `Attachment` object. Note that `Attachment` is not a resource type, it is merely an in memory object to make it easier to work with binary data.
+
+## Referencing a `Binary` in an Attachment
+
+Once uploaded, the `Binary` resource can be referenced in various FHIR resources.
+
+**a. Patient Profile Picture - `Patient.photo`:**
+
+```javascript
+const photo = await medplum.createAttachment(myFile, 'test.jpg', 'image/jpeg');
+
+const patient = await medplum.createResource('Patient', {
+  resourceType: 'Patient',
+  photo: [photo],
+});
+```
+
+**b. Message Attachment - `Communication.payload.contentAttachment`:**
+
+```javascript
+const document = await medplum.createAttachment(myFile, 'test.pdf', 'application/pdf');
+
+const communication = await medplum.createResource('Communication', {
+  resourceType: 'Communication',
+  payload: {
+    contentAttachment: document,
+  },
+});
+```
+
+:::caution Attachment Data
+When creating an [`Attachment`](/docs/api/fhir/datatypes/attachment), we recommend that you _do not_ use the `data` field to provide the full binary data string. This can make the attachment very large and can cause issues when making HTTP requests. See the [Handling External Files guide](/docs/charting/external-documents#example-creating-a-documentreference-for-a-binary-file) for an example of how to upload and reference [`Binary`](/docs/api/fhir/resources/binary) resources.
+:::
+
+## Consuming a FHIR `Binary` in an Application
+
+In a normal FHIR server, when reading a FHIR resource that references a `Binary`, you'd receive a URL to the `Binary` resource.
+
+For example:
+
+```json
+{
+  "resourceType": "Patient",
+  "photo": [
+    {
+      "contentType": "image/jpeg",
+      "url": "Binary/12345"
+    }
+  ]
+}
+```
+
+And then you would be responsible for downloading the `Binary` resource.
+
+Unfortunately, this poses of challenges:
+
+1. Accessing content in a browser can be tricky. Elements like `<img>` or `<video>` can't easily set the `Authorization` header.
+2. When dealing with massive files, especially videos, downloading the whole file isn't optimal. Instead, HTTP range requests, which fetch specific byte ranges, are preferred.
+
+**Medplum's Solution: AWS CloudFront Presigned URLs:**
+
+Medplum bypasses these limitations by automatically rewriting FHIR Attachment URLs referencing `Binary` resources to short-lived presigned URLs.
+
+Instead of a normal `Binary/{id}` URL, the Attachment URL will look like this:
+
+```json
+{
+  "resourceType": "Patient",
+  "photo": [
+    {
+      "contentType": "image/jpeg",
+      "url": "https://storage.medplum.com/12345?token=..."
+    }
+  ]
+}
+```
+
+This powerful feature grants several benefits:
+
+- **Short-lived Access:** These URLs expire after 60 minutes, ensuring data remains secure.
+- **No Need for Authorization Header:** Presigned URLs inherently carry authorization, meaning no additional headers are required.
+- **Compatibility with Media Tags:** Works seamlessly with HTML tags like `<img>` and `<video>`.
+- **Supports Range Requests:** Perfect for streaming large media files.
+
+Using this feature in the browser can potentially cause CORS issues. If you are displaying the `[Binary](https://www.notion.so/docs/api/fhir/resources/binary)` in `<a>` or `<object>` tags, you can use the URL as is.
+
+However, if you want to allow users to download the [`Binary`](/docs/api/fhir/resources/binary) you will need to use the Medplum provided `download` helper function. This function takes a URL in the `Binary/{id}` format. This string is included in the presigned URL, so you will need to parse it to use the function.
+
+<details>
+  <summary>Example: Download a Binary</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="downloadBinary">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+In essence, Medplum elevates the utility of the FHIR `Binary` resource type. By streamlining the upload and retrieval processes, Medplum provides developers with a straightforward, optimized, and user-friendly means to manage binary files in healthcare applications.
+
+## Deep Dive on Storage URLs
+
+Medplum's special treatment of `Attachment.url` and `Binary` references is powerful, but it can be confusing to understand how it works.
+
+Here are some additional implementation details that may be helpful.
+
+### Write Time
+
+When you create or update a FHIR resource with an `Attachment` that references a `Binary`, Medplum will "normalize" the URL to `Binary/{id}` form.
+
+Medplum server can detect and rewrite URLs in the following cases:
+
+1. `Attachment.url` is a relative URL, e.g., `Binary/12345`
+2. `Attachment.url` is a full URL, e.g., `https://api.medplum.com/fhir/R4/Binary/12345`
+3. `Attachment.url` is a full URL, e.g., `https://storage.medplum.com/12345`
+
+In all cases, Medplum will rewrite the URL to `Binary/{id}` form.
+
+### Read Time
+
+When you read a FHIR resource (read by ID, read history, or search) that references a `Binary`, Medplum will generate a unique presigned URL.
+
+When using the Medplum cloud service, this feature is enabled by default.
+
+When self-hosting, this feature requires configuring a signing key. The Medplum CDK construct includes this automatically.
+
+Learn more about AWS CloudFront presigned URLs: [Using signed URLs](https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/private-content-signed-urls.html)
+
+## Create `Binary` via external URL
+
+For large files such as videos and images, it can be inconvenient to download contents to the client before uploading to Medplum. In these situations, you can create a [`Media`](../api/fhir/resources/media) resource with a `url` parameter pointing to the location of the content.
+
+<BrowserOnlyTabs groupId="language">
+  <TabItem value="typescript" label="TypeScript">
+
+```ts
+import { Media } from '@medplum/fhirtypes';
+
+// Create a Media Resource
+const MEDIA_URL = 'https://images.unsplash.com/photo-1581385339821-5b358673a883';
+const media: Media = {
+  resourceType: 'Media',
+  basedOn: [
+    {
+      reference: 'ServiceRequest/12345',
+    },
+  ],
+  status: 'completed', // `status` is a required field
+  content: {
+    title: 'plums-ts.jpg',
+    contentType: 'image/jpeg',
+    url: MEDIA_URL,
+  },
+};
+
+await medplum.createResource(media);
+```
+
+  </TabItem>
+  <TabItem value="python" label="Python">
+
+```py
+
+API_URL = 'https://api.medplum.com/fhir/R4'
+MEDIA_URL = 'https://images.unsplash.com/photo-1581385339821-5b358673a883'
+media = {
+  'resourceType': 'Media',
+  'basedOn': [{
+    'reference': 'ServiceRequest/12345'
+  }],
+  'status': 'completed',    # `status` is a required field
+  'content': {
+    'title': 'plums-python.jpg',
+    'contentType': 'image/jpeg',
+    'url': MEDIA_URL,
+  }
+};
+
+requests.post(f'{API_URL}/Media', json=media, headers={
+  'Authorization': f'Bearer {auth_token}'
+})
+
+```
+
+  </TabItem>
+</BrowserOnlyTabs>
+
+See the [**Client Credentials tutorial**](/docs/auth/methods/client-credentials) guide for how to obtain an access token

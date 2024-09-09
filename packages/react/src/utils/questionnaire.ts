@@ -1,9 +1,26 @@
-import { TypedValue, evalFhirPathTyped, getTypedPropertyValue } from '@medplum/core';
 import {
+  TypedValue,
+  deepClone,
+  evalFhirPathTyped,
+  formatCoding,
+  getExtension,
+  getReferenceString,
+  getTypedPropertyValue,
+  splitN,
+  stringify,
+} from '@medplum/core';
+import {
+  Encounter,
+  Questionnaire,
   QuestionnaireItem,
+  QuestionnaireItemAnswerOption,
   QuestionnaireItemEnableWhen,
+  QuestionnaireItemInitial,
+  QuestionnaireResponse,
   QuestionnaireResponseItem,
   QuestionnaireResponseItemAnswer,
+  Reference,
+  ResourceType,
 } from '@medplum/fhirtypes';
 
 export enum QuestionnaireItemType {
@@ -60,24 +77,38 @@ export function isQuestionEnabled(item: QuestionnaireItem, responseItems: Questi
   return enableBehavior !== 'any';
 }
 
+export function getNewMultiSelectValues(
+  selected: string[],
+  propertyName: string,
+  item: QuestionnaireItem
+): QuestionnaireResponseItemAnswer[] {
+  return selected.map((o) => {
+    const option = item.answerOption?.find(
+      (option) =>
+        formatCoding(option.valueCoding) === o || option[propertyName as keyof QuestionnaireItemAnswerOption] === o
+    );
+    const optionValue = getTypedPropertyValue(
+      { type: 'QuestionnaireItemAnswerOption', value: option },
+      'value'
+    ) as TypedValue;
+    return { [propertyName]: optionValue?.value };
+  });
+}
+
 function getByLinkId(
   responseItems: QuestionnaireResponseItem[] | undefined,
   linkId: string
 ): QuestionnaireResponseItemAnswer[] | undefined {
-  if (!Array.isArray(responseItems)) {
+  if (!responseItems) {
     return undefined;
   }
 
-  const response = responseItems.find((response) => response.linkId === linkId);
-
-  if (response) {
-    return response.answer;
-  }
-
-  // If not found at the current level, search in nested items
-  for (const nestedResponse of responseItems) {
-    if (nestedResponse.item) {
-      const nestedAnswer = getByLinkId(nestedResponse.item, linkId);
+  for (const response of responseItems) {
+    if (response.linkId === linkId) {
+      return response.answer;
+    }
+    if (response.item) {
+      const nestedAnswer = getByLinkId(response.item, linkId);
       if (nestedAnswer) {
         return nestedAnswer;
       }
@@ -100,8 +131,8 @@ function evaluateMatch(actualAnswer: TypedValue | undefined, expectedAnswer: Typ
     // All other operators should be unmodified
     const fhirPathOperator = operator === '=' || operator === '!=' ? operator?.replace('=', '~') : operator;
     const [{ value }] = evalFhirPathTyped(`%actualAnswer ${fhirPathOperator} %expectedAnswer`, [actualAnswer], {
-      actualAnswer,
-      expectedAnswer,
+      '%actualAnswer': actualAnswer,
+      '%expectedAnswer': expectedAnswer,
     });
     return value;
   }
@@ -146,4 +177,151 @@ function checkAnswers(
   }
 
   return { anyMatch, allMatch };
+}
+
+export function getQuestionnaireItemReferenceTargetTypes(item: QuestionnaireItem): ResourceType[] | undefined {
+  const extension = getExtension(item, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource');
+  if (!extension) {
+    return undefined;
+  }
+  if (extension.valueCode !== undefined) {
+    return [extension.valueCode] as ResourceType[];
+  }
+  if (extension.valueCodeableConcept) {
+    return extension.valueCodeableConcept?.coding?.map((c) => c.code) as ResourceType[];
+  }
+  return undefined;
+}
+
+export function setQuestionnaireItemReferenceTargetTypes(
+  item: QuestionnaireItem,
+  targetTypes: ResourceType[] | undefined
+): QuestionnaireItem {
+  const result = deepClone(item);
+  let extension = getExtension(result, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource');
+
+  if (!targetTypes || targetTypes.length === 0) {
+    if (extension) {
+      result.extension = result.extension?.filter((e) => e !== extension);
+    }
+    return result;
+  }
+
+  if (!extension) {
+    if (!result.extension) {
+      result.extension = [];
+    }
+    extension = { url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource' };
+    result.extension.push(extension);
+  }
+
+  if (targetTypes.length === 1) {
+    extension.valueCode = targetTypes[0];
+    delete extension.valueCodeableConcept;
+  } else {
+    extension.valueCodeableConcept = { coding: targetTypes.map((t) => ({ code: t })) };
+    delete extension.valueCode;
+  }
+
+  return result;
+}
+
+/**
+ * Returns the reference filter for the given questionnaire item.
+ * @see https://build.fhir.org/ig/HL7/fhir-extensions//StructureDefinition-questionnaire-referenceFilter-definitions.html
+ * @param item - The questionnaire item to get the reference filter for.
+ * @param subject - Optional subject reference.
+ * @param encounter - Optional encounter reference.
+ * @returns The reference filter as a map of key/value pairs.
+ */
+export function getQuestionnaireItemReferenceFilter(
+  item: QuestionnaireItem,
+  subject: Reference | undefined,
+  encounter: Reference<Encounter> | undefined
+): Record<string, string> | undefined {
+  const extension = getExtension(item, 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceFilter');
+  if (!extension?.valueString) {
+    return undefined;
+  }
+
+  // Replace variables
+  let filter = extension.valueString;
+  if (subject?.reference) {
+    filter = filter.replaceAll('$subj', subject.reference);
+  }
+  if (encounter?.reference) {
+    filter = filter.replaceAll('$encounter', encounter.reference);
+  }
+
+  // Parse the valueString into a map
+  const result: Record<string, string> = {};
+  const parts = filter.split('&');
+  for (const part of parts) {
+    const [key, value] = splitN(part, '=', 2);
+    result[key] = value;
+  }
+  return result;
+}
+
+export function buildInitialResponse(questionnaire: Questionnaire): QuestionnaireResponse {
+  const response: QuestionnaireResponse = {
+    resourceType: 'QuestionnaireResponse',
+    questionnaire: getReferenceString(questionnaire),
+    item: buildInitialResponseItems(questionnaire.item),
+    status: 'in-progress',
+  };
+
+  return response;
+}
+
+function buildInitialResponseItems(items: QuestionnaireItem[] | undefined): QuestionnaireResponseItem[] {
+  return items?.map(buildInitialResponseItem) ?? [];
+}
+
+export function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
+  return {
+    id: generateId(),
+    linkId: item.linkId,
+    text: item.text,
+    item: buildInitialResponseItems(item.item),
+    answer: item.initial?.map(buildInitialResponseAnswer) ?? [],
+  };
+}
+
+let nextId = 1;
+function generateId(): string {
+  return 'id-' + nextId++;
+}
+
+function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): QuestionnaireResponseItemAnswer {
+  // This works because QuestionnaireItemInitial and QuestionnaireResponseItemAnswer
+  // have the same properties.
+  return { ...answer };
+}
+
+export function formatReferenceString(typedValue: TypedValue): string {
+  return typedValue.value.display || typedValue.value.reference || stringify(typedValue.value);
+}
+
+/**
+ * Returns the number of pages in the questionnaire.
+ *
+ * By default, a questionnaire is represented as a simple single page questionnaire,
+ * so the default return value is 1.
+ *
+ * If the questionnaire has a page extension on the first item, then the number of pages
+ * is the number of top level items in the questionnaire.
+ *
+ * @param questionnaire - The questionnaire to get the number of pages for.
+ * @returns The number of pages in the questionnaire. Default is 1.
+ */
+export function getNumberOfPages(questionnaire: Questionnaire): number {
+  const firstItem = questionnaire?.item?.[0];
+  if (firstItem) {
+    const extension = getExtension(firstItem, 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl');
+    if (extension?.valueCodeableConcept?.coding?.[0]?.code === 'page') {
+      return (questionnaire.item as QuestionnaireItem[]).length;
+    }
+  }
+  return 1;
 }

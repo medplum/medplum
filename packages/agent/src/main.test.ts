@@ -1,115 +1,60 @@
-import { allOk, createReference, Hl7Message } from '@medplum/core';
-import { Agent, Bot, Endpoint, Resource } from '@medplum/fhirtypes';
-import { Hl7Client } from '@medplum/hl7';
-import { MockClient } from '@medplum/mock';
-import { Server } from 'mock-socket';
-import { App } from './main';
+import { randomUUID } from 'node:crypto';
+import os from 'node:os';
+import * as agentMainFile from './agent-main';
+import { App } from './app';
+import { main } from './main';
+import * as upgraderFile from './upgrader';
 
-jest.mock('node-windows');
-
-const medplum = new MockClient();
-let bot: Bot;
-let endpoint: Endpoint;
-
-describe('Agent', () => {
-  beforeAll(async () => {
+describe('Main', () => {
+  beforeEach(() => {
     console.log = jest.fn();
 
-    medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
-      return [allOk, {} as Resource];
+    jest.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error('process.exit');
     });
 
-    bot = await medplum.createResource<Bot>({ resourceType: 'Bot' });
+    jest.spyOn(App.prototype, 'start').mockImplementation(() => Promise.resolve());
 
-    endpoint = await medplum.createResource<Endpoint>({
-      resourceType: 'Endpoint',
-      address: 'mllp://0.0.0.0:56000',
+    jest.spyOn(globalThis, 'fetch').mockImplementation(async () => {
+      return {
+        ok: true,
+        json: async () => ({
+          access_token: 'foo',
+        }),
+      } as Response;
     });
   });
 
-  test('Runs successfully', async () => {
-    const agent = await medplum.createResource<Agent>({
-      resourceType: 'Agent',
-      channel: [
-        {
-          endpoint: createReference(endpoint),
-          targetReference: createReference(bot),
-        },
-      ],
-    });
-
-    const app = new App(medplum, agent.id as string);
-    await app.start();
-    app.stop();
-    app.stop();
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  test('Send and receive', async () => {
-    const mockServer = new Server('wss://example.com/ws/agent');
+  test('Calling main without --upgrade', async () => {
+    const agentMainSpy = jest.spyOn(agentMainFile, 'agentMain');
+    const upgradeMainSpy = jest.spyOn(upgraderFile, 'upgraderMain');
 
-    mockServer.on('connection', (socket) => {
-      socket.on('message', (data) => {
-        const command = JSON.parse((data as Buffer).toString('utf8'));
-        if (command.type === 'connect') {
-          socket.send(
-            Buffer.from(
-              JSON.stringify({
-                type: 'connected',
-              })
-            )
-          );
-        }
+    // Invalid number of args
+    await expect(main(['node', 'main.ts', 'https://example.com/', randomUUID()])).rejects.toThrow('process.exit');
+    expect(upgradeMainSpy).not.toHaveBeenCalled();
+    expect(agentMainSpy).toHaveBeenCalledWith(['node', 'main.ts', 'https://example.com/', expect.any(String)]);
 
-        if (command.type === 'transmit') {
-          const hl7Message = Hl7Message.parse(command.message);
-          const ackMessage = hl7Message.buildAck();
-          socket.send(
-            Buffer.from(
-              JSON.stringify({
-                type: 'transmit',
-                message: ackMessage.toString(),
-              })
-            )
-          );
-        }
-      });
-    });
+    agentMainSpy.mockRestore();
+    upgradeMainSpy.mockRestore();
+  });
 
-    const agent = await medplum.createResource<Agent>({
-      resourceType: 'Agent',
-      channel: [
-        {
-          endpoint: createReference(endpoint),
-          targetReference: createReference(bot),
-        },
-      ],
-    });
+  test('Calling main with --upgrade', async () => {
+    const platformSpy = jest.spyOn(os, 'platform').mockImplementation(() => 'linux');
+    const agentMainSpy = jest.spyOn(agentMainFile, 'agentMain');
+    const upgradeMainSpy = jest.spyOn(upgraderFile, 'upgraderMain');
 
-    const app = new App(medplum, agent.id as string);
-    await app.start();
-
-    const client = new Hl7Client({
-      host: 'localhost',
-      port: 56000,
-    });
-
-    await client.connect();
-
-    const response = await client.sendAndWait(
-      Hl7Message.parse(
-        'MSH|^~\\&|ADT1|MCM|LABADT|MCM|198808181126|SECURITY|ADT^A01|MSG00001|P|2.2\r' +
-          'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
-          'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
-          'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-'
-      )
+    await expect(main(['node', 'main.ts', '--upgrade'])).rejects.toThrow(
+      'Unsupported platform: linux. Agent upgrader currently only supports Windows'
     );
-    expect(response).toBeDefined();
-    expect(response.header.getComponent(9, 1)).toBe('ACK');
-    expect(response.segments).toHaveLength(2);
-    expect(response.segments[1].name).toBe('MSA');
+    expect(agentMainSpy).not.toHaveBeenCalled();
+    expect(upgradeMainSpy).toHaveBeenCalledWith(['node', 'main.ts', '--upgrade']);
 
-    client.close();
-    app.stop();
-    mockServer.stop();
+    platformSpy.mockRestore();
+    agentMainSpy.mockRestore();
+    upgradeMainSpy.mockRestore();
   });
 });

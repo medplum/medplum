@@ -1,29 +1,33 @@
 import {
   ContentType,
-  createReference,
-  getStatus,
-  normalizeErrorString,
-  normalizeOperationOutcome,
   OAuthClientAssertionType,
   OAuthGrantType,
   OAuthTokenType,
   Operator,
-  parseJWTPayload,
   ProfileResource,
+  createReference,
+  getStatus,
+  isJwt,
+  normalizeErrorString,
+  normalizeOperationOutcome,
+  parseJWTPayload,
   resolveId,
 } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { createHash, randomUUID } from 'crypto';
 import { Request, RequestHandler, Response } from 'express';
-import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
+import { JWTVerifyOptions, createRemoteJWKSet, jwtVerify } from 'jose';
 import { asyncWrap } from '../async';
 import { getProjectIdByClientId } from '../auth/utils';
 import { getConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
-import { generateSecret, MedplumRefreshTokenClaims, verifyJwt } from './keys';
+import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
+import { getSystemRepo } from '../fhir/repo';
+import { getTopicForUser } from '../fhircast/utils';
+import { MedplumRefreshTokenClaims, generateSecret, verifyJwt } from './keys';
 import {
+  checkIpAccessRules,
   getAuthTokens,
-  getClient,
+  getClientApplication,
   getClientApplicationMembership,
   getExternalUserInfo,
   revokeLogin,
@@ -33,6 +37,7 @@ import {
 } from './utils';
 
 type ClientIdAndSecret = { error?: string; clientId?: string; clientSecret?: string };
+type FhircastProps = { 'hub.topic': string; 'hub.url': string };
 
 /**
  * Handles the OAuth/OpenID Token Endpoint.
@@ -77,8 +82,8 @@ export const tokenHandler: RequestHandler = asyncWrap(async (req: Request, res: 
 /**
  * Handles the "Client Credentials" OAuth flow.
  * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.4
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 async function handleClientCredentials(req: Request, res: Response): Promise<void> {
   const { clientId, clientSecret, error } = await getClientIdAndSecret(req);
@@ -97,10 +102,16 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const systemRepo = getSystemRepo();
   let client: ClientApplication;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  } catch (err) {
+  } catch (_err) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
+  }
+
+  if (client.status && client.status !== 'active') {
     sendTokenError(res, 'invalid_request', 'Invalid client');
     return;
   }
@@ -126,18 +137,29 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     membership: createReference(membership),
     authTime: new Date().toISOString(),
     granted: true,
-    superAdmin: project.superAdmin,
     scope,
+    remoteAddress: req.ip,
+    userAgent: req.get('User-Agent'),
   });
 
-  await sendTokenResponse(res, login, membership);
+  // TODO: build full AuthState object, including on-behalf-of
+
+  try {
+    const accessPolicy = await getAccessPolicyForLogin({ project, login, membership });
+    await checkIpAccessRules(login, accessPolicy);
+  } catch (err) {
+    sendTokenError(res, 'invalid_request', normalizeErrorString(err));
+    return;
+  }
+
+  await sendTokenResponse(res, login, client.refreshTokenLifetime);
 }
 
 /**
  * Handles the "Authorization Code Grant" flow.
  * See: https://datatracker.ietf.org/doc/html/rfc6749#section-4.1
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 async function handleAuthorizationCode(req: Request, res: Response): Promise<void> {
   const { clientId, clientSecret, error } = await getClientIdAndSecret(req);
@@ -152,6 +174,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     return;
   }
 
+  const systemRepo = getSystemRepo();
   const searchResult = await systemRepo.search({
     resourceType: 'Login',
     filters: [
@@ -192,13 +215,15 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
   }
 
   let client: ClientApplication | undefined;
-  if (clientId) {
-    try {
-      client = await getClient(clientId);
-    } catch (err) {
-      sendTokenError(res, 'invalid_request', 'Invalid client');
-      return;
+  try {
+    if (clientId) {
+      client = await getClientApplication(clientId);
+    } else if (login.client) {
+      client = await getClientApplication(resolveId(login.client) as string);
     }
+  } catch (_err) {
+    sendTokenError(res, 'invalid_request', 'Invalid client');
+    return;
   }
 
   if (clientSecret) {
@@ -223,15 +248,14 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     }
   }
 
-  const membership = await systemRepo.readReference<ProjectMembership>(login.membership);
-  await sendTokenResponse(res, login, membership);
+  await sendTokenResponse(res, login, client?.refreshTokenLifetime);
 }
 
 /**
  * Handles the "Refresh" flow.
  * See: https://datatracker.ietf.org/doc/html/rfc6749#section-6
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   const refreshToken = req.body.refresh_token;
@@ -243,11 +267,12 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
   let claims: MedplumRefreshTokenClaims;
   try {
     claims = (await verifyJwt(refreshToken)).payload as MedplumRefreshTokenClaims;
-  } catch (err) {
+  } catch (_err) {
     sendTokenError(res, 'invalid_request', 'Invalid refresh token');
     return;
   }
 
+  const systemRepo = getSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', claims.login_id);
 
   if (login.refreshSecret === undefined) {
@@ -287,6 +312,19 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     }
   }
 
+  let client: ClientApplication | undefined;
+  if (login.client) {
+    const clientId = resolveId(login.client) ?? '';
+    try {
+      client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
+    } catch (_err) {
+      sendTokenError(res, 'invalid_request', 'Invalid client');
+      return;
+    }
+  }
+
+  const refreshTokenLifetime = client?.refreshTokenLifetime;
+
   // Refresh token rotation
   // Generate a new refresh secret and update the login
   const updatedLogin = await systemRepo.updateResource<Login>({
@@ -296,18 +334,14 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     userAgent: req.get('User-Agent'),
   });
 
-  const membership = await systemRepo.readReference<ProjectMembership>(
-    login.membership as Reference<ProjectMembership>
-  );
-
-  await sendTokenResponse(res, updatedLogin, membership);
+  await sendTokenResponse(res, updatedLogin, refreshTokenLifetime);
 }
 
 /**
  * Handles the "Exchange" flow.
  * See: https://datatracker.ietf.org/doc/html/rfc8693
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  * @returns Promise to complete.
  */
 async function handleTokenExchange(req: Request, res: Response): Promise<void> {
@@ -317,11 +351,11 @@ async function handleTokenExchange(req: Request, res: Response): Promise<void> {
 /**
  * Exchanges an existing token for a new set of tokens.
  * See: https://datatracker.ietf.org/doc/html/rfc8693
- * @param req The HTTP request.
- * @param res The HTTP response.
- * @param clientId The client application ID.
- * @param subjectToken The subject token. Only access tokens are currently supported.
- * @param subjectTokenType The subject token type as defined in Section 3.  Only "urn:ietf:params:oauth:token-type:access_token" is currently supported.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
+ * @param clientId - The client application ID.
+ * @param subjectToken - The subject token. Only access tokens are currently supported.
+ * @param subjectTokenType - The subject token type as defined in Section 3.  Only "urn:ietf:params:oauth:token-type:access_token" is currently supported.
  */
 export async function exchangeExternalAuthToken(
   req: Request,
@@ -345,6 +379,7 @@ export async function exchangeExternalAuthToken(
     return;
   }
 
+  const systemRepo = getSystemRepo();
   const projectId = await getProjectIdByClientId(clientId, undefined);
   const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   const idp = client.identityProvider;
@@ -382,11 +417,7 @@ export async function exchangeExternalAuthToken(
     userAgent: req.get('User-Agent'),
   });
 
-  const membership = await systemRepo.readReference<ProjectMembership>(
-    login.membership as Reference<ProjectMembership>
-  );
-
-  await sendTokenResponse(res, login, membership);
+  await sendTokenResponse(res, login, client.refreshTokenLifetime);
 }
 
 /**
@@ -398,7 +429,7 @@ export async function exchangeExternalAuthToken(
  * 3. Form body (client_secret_post)
  *
  * See SMART "token_endpoint_auth_methods_supported"
- * @param req The HTTP request.
+ * @param req - The HTTP request.
  * @returns The client ID and secret on success, or an error message on failure.
  */
 async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
@@ -432,8 +463,8 @@ async function getClientIdAndSecret(req: Request): Promise<ClientIdAndSecret> {
  * 2. https://www.hl7.org/fhir/smart-app-launch/example-backend-services.html#step-2-discovery
  * 3. https://docs.oracle.com/en/cloud/get-started/subscriptions-cloud/csimg/obtaining-access-token-using-self-signed-client-assertion.html
  * 4. https://darutk.medium.com/oauth-2-0-client-authentication-4b5f929305d4
- * @param clientAssertionType The client assertion type.
- * @param clientAssertion The client assertion JWT.
+ * @param clientAssertionType - The client assertion type.
+ * @param clientAssertion - The client assertion JWT.
  * @returns The parsed client ID and secret on success, or an error message on failure.
  */
 async function parseClientAssertion(
@@ -442,6 +473,10 @@ async function parseClientAssertion(
 ): Promise<ClientIdAndSecret> {
   if (clientAssertionType !== OAuthClientAssertionType.JwtBearer) {
     return { error: 'Unsupported client assertion type' };
+  }
+
+  if (!clientAssertion || !isJwt(clientAssertion)) {
+    return { error: 'Invalid client assertion' };
   }
 
   const { tokenUrl } = getConfig();
@@ -455,11 +490,12 @@ async function parseClientAssertion(
     return { error: 'Invalid client assertion issuer' };
   }
 
+  const systemRepo = getSystemRepo();
   const clientId = claims.iss as string;
   let client: ClientApplication;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
-  } catch (err) {
+  } catch (_err) {
     return { error: 'Client not found' };
   }
 
@@ -493,7 +529,7 @@ async function parseClientAssertion(
 
 /**
  * Tries to parse the client ID and secret from the Authorization header.
- * @param authHeader The Authorizaiton header string.
+ * @param authHeader - The Authorizaiton header string.
  * @returns Client ID and secret on success, or an error message on failure.
  */
 async function parseAuthorizationHeader(authHeader: string): Promise<ClientIdAndSecret> {
@@ -528,13 +564,20 @@ async function validateClientIdAndSecret(
 
 /**
  * Sends a successful token response.
- * @param res The HTTP response.
- * @param login The user login.
- * @param membership The project membership.
+ * @param res - The HTTP response.
+ * @param login - The user login.
+ * @param refreshLifetime - The refresh token duration.
  */
-async function sendTokenResponse(res: Response, login: Login, membership: ProjectMembership): Promise<void> {
+async function sendTokenResponse(res: Response, login: Login, refreshLifetime?: string): Promise<void> {
   const config = getConfig();
-  const tokens = await getAuthTokens(login, membership.profile as Reference<ProfileResource>);
+
+  const systemRepo = getSystemRepo();
+  const user = await systemRepo.readReference<User>(login.user as Reference<User>);
+  const membership = await systemRepo.readReference<ProjectMembership>(
+    login.membership as Reference<ProjectMembership>
+  );
+
+  const tokens = await getAuthTokens(user, login, membership.profile as Reference<ProfileResource>, refreshLifetime);
   let patient = undefined;
   let encounter = undefined;
 
@@ -546,6 +589,20 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
 
   if (membership.profile?.reference?.startsWith('Patient/')) {
     patient = membership.profile.reference.replace('Patient/', '');
+  }
+
+  const fhircastProps = {} as FhircastProps;
+  if (login.scope?.includes('fhircast/')) {
+    const userId = resolveId(login.user) as string;
+    let topic: string;
+    try {
+      topic = await getTopicForUser(userId);
+    } catch (err: unknown) {
+      sendTokenError(res, normalizeErrorString(err));
+      return;
+    }
+    fhircastProps['hub.url'] = config.baseUrl + 'fhircast/STU3/'; // TODO: Figure out how to handle the split between STU2 and STU3...
+    fhircastProps['hub.topic'] = topic;
   }
 
   res.status(200).json({
@@ -561,15 +618,16 @@ async function sendTokenResponse(res: Response, login: Login, membership: Projec
     encounter,
     smart_style_url: config.baseUrl + 'fhir/R4/.well-known/smart-styles.json',
     need_patient_banner: !!patient,
+    ...fhircastProps, // Spreads no props when FHIRcast scopes not present
   });
 }
 
 /**
  * Sends an OAuth2 response.
- * @param res The HTTP response.
- * @param error The error code.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.7
- * @param description The error description.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.8
- * @param status The HTTP status code.
+ * @param res - The HTTP response.
+ * @param error - The error code.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.7
+ * @param description - The error description.  See: https://datatracker.ietf.org/doc/html/rfc6749#appendix-A.8
+ * @param status - The HTTP status code.
  * @returns Reference to the HTTP response.
  */
 function sendTokenError(res: Response, error: string, description?: string, status = 400): Response {
@@ -581,9 +639,9 @@ function sendTokenError(res: Response, error: string, description?: string, stat
 
 /**
  * Verifies the code challenge and verifier.
- * @param challenge The code_challenge from the authorization.
- * @param method The code_challenge_method from the authorization.
- * @param verifier The code_verifier from the token request.
+ * @param challenge - The code_challenge from the authorization.
+ * @param method - The code_challenge_method from the authorization.
+ * @param verifier - The code_verifier from the token request.
  * @returns True if the verifier succeeds; false otherwise.
  */
 function verifyCode(challenge: string, method: string, verifier: string): boolean {
@@ -603,7 +661,7 @@ function verifyCode(challenge: string, method: string, verifier: string): boolea
  * The details around '+', '/', and '=' are important for compatibility.
  * See: https://auth0.com/docs/flows/call-your-api-using-the-authorization-code-flow-with-pkce
  * See: packages/client/src/crypto.ts
- * @param code The input code.
+ * @param code - The input code.
  * @returns The base64-url-encoded SHA256 hash.
  */
 export function hashCode(code: string): string {

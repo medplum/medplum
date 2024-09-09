@@ -1,6 +1,5 @@
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, ResourceHistoryTable, useMedplum } from '@medplum/react';
-import React from 'react';
 import { useParams } from 'react-router-dom';
 
 export function HistoryPage(): JSX.Element | null {

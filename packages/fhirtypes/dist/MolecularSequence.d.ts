@@ -114,7 +114,7 @@ export interface MolecularSequence {
    * coordinates, inclusive start, exclusive end) or starting at 1 (1-based
    * numbering, inclusive start and inclusive end).
    */
-  coordinateSystem?: number;
+  coordinateSystem: number;
 
   /**
    * The patient whose sequencing results are described by this resource.
@@ -238,7 +238,7 @@ export interface MolecularSequenceQuality {
   /**
    * INDEL / SNP / Undefined variant.
    */
-  type?: 'indel' | 'snp' | 'unknown';
+  type: 'indel' | 'snp' | 'unknown';
 
   /**
    * Gold standard sequence used for comparing against.
@@ -569,7 +569,7 @@ export interface MolecularSequenceRepository {
    * Click and see / RESTful API / Need login to see / RESTful API with
    * authentication / Other ways to see resource.
    */
-  type?: 'directlink' | 'openapi' | 'login' | 'oauth' | 'other';
+  type: 'directlink' | 'openapi' | 'login' | 'oauth' | 'other';
 
   /**
    * URI of an external repository which contains further details about the

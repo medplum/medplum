@@ -1,16 +1,16 @@
 import { GraphiQLPlugin } from '@graphiql/react';
 import { FetcherParams, SyncExecutionResult } from '@graphiql/toolkit';
-import { MantineProvider, MantineThemeOverride, Title } from '@mantine/core';
-import { decodeBase64, encodeBase64, getDisplayString, MedplumClient, ProfileResource } from '@medplum/core';
+import { MantineProvider, Title, createTheme } from '@mantine/core';
+import '@mantine/core/styles.css';
+import { MedplumClient, ProfileResource, decodeBase64, encodeBase64, getDisplayString } from '@medplum/core';
 import { Logo, MedplumProvider, SignInForm, useMedplumProfile } from '@medplum/react';
+import '@medplum/react/styles.css';
 import GraphiQL from 'graphiql';
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import { getConfig } from './config';
-
-import 'regenerator-runtime/runtime.js';
-
 import 'graphiql/graphiql.css';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import 'regenerator-runtime/runtime.js';
+import { getConfig } from './config';
 
 const HELP_TEXT = `# Welcome to Medplum GraphiQL
 #
@@ -42,13 +42,13 @@ const medplum = new MedplumClient({
   baseUrl: import.meta.env.MEDPLUM_BASE_URL,
 });
 
-const theme: MantineThemeOverride = {
+const theme = createTheme({
   headings: {
     sizes: {
       h1: {
         fontSize: '1.125rem',
-        fontWeight: 500,
-        lineHeight: 2.0,
+        fontWeight: '500',
+        lineHeight: '2.0',
       },
     },
   },
@@ -59,7 +59,7 @@ const theme: MantineThemeOverride = {
     lg: '1.0rem',
     xl: '1.125rem',
   },
-};
+});
 
 function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
@@ -125,7 +125,7 @@ function tryEncodeBase64(value: string | null | undefined): string {
   }
   try {
     return encodeBase64(value);
-  } catch (err) {
+  } catch (_err) {
     return '';
   }
 }
@@ -136,12 +136,12 @@ function tryDecodeBase64(value: string | null): string {
   }
   try {
     return decodeBase64(value);
-  } catch (err) {
+  } catch (_err) {
     return '';
   }
 }
 
-function App(): JSX.Element {
+export function App(): JSX.Element {
   const profile = useMedplumProfile();
   return profile ? (
     <GraphiQL
@@ -165,11 +165,11 @@ function App(): JSX.Element {
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
-  <React.StrictMode>
+  <StrictMode>
     <MedplumProvider medplum={medplum}>
-      <MantineProvider theme={theme} withGlobalStyles withNormalizeCSS>
+      <MantineProvider theme={theme}>
         <App />
       </MantineProvider>
     </MedplumProvider>
-  </React.StrictMode>
+  </StrictMode>
 );

@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { SNOMED, UCUM, createReference } from '@medplum/core';
 import { DiagnosticReport, Observation, ObservationDefinition } from '@medplum/fhirtypes';
 import { HomerDiagnosticReport } from '@medplum/mock';
 
@@ -34,7 +34,7 @@ export const TestosteroneDefinition: ObservationDefinition = {
         {
           code: 'ng/dL',
           display: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       ],
       text: 'ng/dL',
@@ -49,19 +49,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         high: {
           value: 563,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 11,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 14,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -72,19 +72,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 563.1,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 11,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 14,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -95,19 +95,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         high: {
           value: 48.9,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 15,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 19,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -118,24 +118,24 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 49,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 769,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 15,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 19,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -146,19 +146,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 769.1,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 15,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 19,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -169,19 +169,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         high: {
           value: 248.9,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 20,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 49,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -192,24 +192,24 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 249,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 836,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 20,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 49,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -220,19 +220,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 836.1,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 20,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 49,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -243,14 +243,14 @@ export const TestosteroneDefinition: ObservationDefinition = {
         high: {
           value: 192.9,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 50,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -261,19 +261,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 193,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 740,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 50,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -284,14 +284,14 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 740.1,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 50,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -302,19 +302,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         high: {
           value: 52,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 11,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 19,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -325,19 +325,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 52.1,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 11,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 19,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -348,19 +348,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         high: {
           value: 8.3,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 20,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 49,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -371,24 +371,24 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 8.4,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 48.1,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 20,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 49,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -399,19 +399,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 48.2,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 20,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 49,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -422,14 +422,14 @@ export const TestosteroneDefinition: ObservationDefinition = {
         high: {
           value: 2.8,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 50,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -440,19 +440,19 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 2.9,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 40.8,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 50,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -463,14 +463,14 @@ export const TestosteroneDefinition: ObservationDefinition = {
         low: {
           value: 40.9,
           unit: 'ng/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
       age: {
         low: {
           value: 50,
           unit: 'years',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -510,7 +510,7 @@ export const HDLDefinition: ObservationDefinition = {
         {
           code: 'mg/dL',
           display: 'mg/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       ],
       text: 'mg/dL',
@@ -524,7 +524,7 @@ export const HDLDefinition: ObservationDefinition = {
         high: {
           value: 39,
           unit: 'mg/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -534,12 +534,12 @@ export const HDLDefinition: ObservationDefinition = {
         low: {
           value: 40,
           unit: 'mg/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 60,
           unit: 'mg/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -549,7 +549,7 @@ export const HDLDefinition: ObservationDefinition = {
         low: {
           value: 61,
           unit: 'mg/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -584,7 +584,7 @@ export const CreatinineObservation: Observation = {
   valueQuantity: {
     value: 122,
     unit: 'umol/L',
-    system: 'http://snomed.info/sct',
+    system: SNOMED,
     code: '258814008',
   },
   interpretation: [
@@ -636,7 +636,7 @@ export const ExampleReport: DiagnosticReport = {
     {
       coding: [
         {
-          system: 'http://snomed.info/sct',
+          system: SNOMED,
           code: '15220000',
           display: 'Laboratory test',
         },
@@ -687,7 +687,7 @@ export const KidneyLabDefinition: ObservationDefinition = {
         {
           code: 'mg/g{creat}',
           display: 'mg/g',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       ],
       text: 'mg/g',
@@ -702,12 +702,12 @@ export const KidneyLabDefinition: ObservationDefinition = {
         low: {
           value: 29,
           unit: 'mg/g',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 226,
           unit: 'mg/g',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -718,12 +718,12 @@ export const KidneyLabDefinition: ObservationDefinition = {
         low: {
           value: 0,
           unit: 'mg/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 29,
           unit: 'mg/dL',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -734,12 +734,12 @@ export const KidneyLabDefinition: ObservationDefinition = {
         low: {
           value: 30,
           unit: 'mg/g',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
         high: {
           value: 299,
           unit: 'mg/g',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },
@@ -750,7 +750,7 @@ export const KidneyLabDefinition: ObservationDefinition = {
         low: {
           value: 300,
           unit: 'mg/g',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
         },
       },
     },

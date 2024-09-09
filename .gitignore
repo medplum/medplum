@@ -14,28 +14,22 @@ prettier-fmt.err
 prettier-fmt1.err
 
 # Output
-packages/agent/dist/
-packages/app/dist/
-packages/cdk/dist/
-packages/cli/dist/
-packages/core/dist/
+dist/
 packages/core/docs/
+!packages/definitions/dist/
 packages/definitions/dist/**/*.js
 packages/definitions/dist/**/*.js.map
 packages/definitions/dist/**/*.d.ts
-packages/examples/dist/
-packages/fhir-router/dist/
-packages/generator/dist/
+packages/definitions/dist/**/*.d.ts.map
 packages/generator/output/
-packages/graphiql/dist/
+packages/generator/compare.html
 packages/graphiql/public/
-packages/hl7/dist/
-packages/mock/dist/
-packages/react/dist/
-packages/server/dist/
 
 # Storybook output
 storybook-static/
+
+# Chromatic
+packages/react/build-storybook.log
 
 # Jest code coverage
 coverage/
@@ -57,3 +51,14 @@ medplum-server.tar.gz
 
 # All executables
 *.exe
+
+# All Java JAR files
+*.jar
+
+# All certificate files
+*.p12
+
+# Agent artifacts
+packages/agent/*agent-*-linux*
+packages/agent/sea-prep.blob
+packages/agent/src/upgrader-logs-*.txt

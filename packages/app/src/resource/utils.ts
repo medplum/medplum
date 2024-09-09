@@ -5,7 +5,7 @@ import { Resource } from '@medplum/fhirtypes';
  * For most users, this will not matter, because meta values are set by the server.
  * However, some administrative users are allowed to specify some meta values.
  * The admin use case is special though, and unwanted here on the resource page.
- * @param resource The input resource.
+ * @param resource - The input resource.
  * @returns The cleaned output resource.
  */
 export function cleanResource(resource: Resource): Resource {

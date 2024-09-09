@@ -1,9 +1,8 @@
 import { showNotification } from '@mantine/notifications';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { BookmarkDialog } from './BookmarkDialog';
 
 jest.mock('@mantine/notifications');
@@ -49,7 +48,7 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    expect(screen.queryAllByPlaceholderText('bookmark name')).toHaveLength(0);
+    expect(screen.queryAllByPlaceholderText('Bookmark Name')).toHaveLength(0);
   });
 
   test('Render visible', async () => {
@@ -64,7 +63,7 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    expect(screen.queryAllByPlaceholderText('bookmark name')).not.toHaveLength(0);
+    expect(screen.queryAllByPlaceholderText('Bookmark Name')).not.toHaveLength(0);
   });
 
   test('Render and Submit', async () => {
@@ -85,7 +84,7 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     // Enter random text
     await act(async () => {
@@ -97,7 +96,7 @@ describe('BookmarkDialog', () => {
     });
     expect(onOk).toHaveBeenCalled();
 
-    expect(screen.queryAllByPlaceholderText('bookmark name')).not.toHaveLength(0);
+    expect(screen.queryAllByPlaceholderText('Bookmark Name')).not.toHaveLength(0);
   });
 
   test('Render and Cancel', async () => {
@@ -114,7 +113,7 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    const input = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     // Enter random text
     await act(async () => {
@@ -127,7 +126,7 @@ describe('BookmarkDialog', () => {
     expect(onOk).not.toHaveBeenCalled();
     expect(onCancel).toHaveBeenCalled();
 
-    expect(screen.queryAllByPlaceholderText('bookmark name')).not.toHaveLength(0);
+    expect(screen.queryAllByPlaceholderText('Bookmark Name')).not.toHaveLength(0);
   });
 
   test('Render and update existing config', async () => {
@@ -150,8 +149,8 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    const menuInput = screen.getByPlaceholderText('Menu') as HTMLInputElement;
-    const bookmarkInput = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const menuInput = screen.getByLabelText('Select Menu Option *') as HTMLSelectElement;
+    const bookmarkInput = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     await act(async () => {
       fireEvent.focus(menuInput);
@@ -177,7 +176,7 @@ describe('BookmarkDialog', () => {
     });
     expect(onOk).toHaveBeenCalled();
 
-    expect(screen.getByPlaceholderText('bookmark name')).toBeDefined();
+    expect(screen.getByPlaceholderText('Bookmark Name')).toBeDefined();
     expect(showNotification).toHaveBeenCalled();
   });
 
@@ -200,8 +199,8 @@ describe('BookmarkDialog', () => {
         />
       </MedplumProvider>
     );
-    const menuInput = screen.getByPlaceholderText('Menu') as HTMLInputElement;
-    const bookmarkInput = screen.getByPlaceholderText('bookmark name') as HTMLInputElement;
+    const menuInput = screen.getByLabelText('Select Menu Option *') as HTMLSelectElement;
+    const bookmarkInput = screen.getByPlaceholderText('Bookmark Name') as HTMLInputElement;
 
     await act(async () => {
       fireEvent.focus(menuInput);

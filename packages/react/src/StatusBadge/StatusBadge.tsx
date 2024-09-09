@@ -1,5 +1,4 @@
 import { Badge, DefaultMantineColor } from '@mantine/core';
-import React from 'react';
 
 /*
  * Request status: https://hl7.org/fhir/valueset-request-status.html
@@ -19,6 +18,9 @@ import React from 'react';
  *
  * Appointment status: https://www.hl7.org/fhir/valueset-appointmentstatus.html
  * proposed, pending, booked, arrived, fulfilled, cancelled, noshow, entered-in-error, chcked-in, waitlist
+ *
+ * Immunization status: https://hl7.org/fhir/r4/valueset-immunization-status.html
+ * completed, entered-in-error, not-done
  */
 
 const statusToColor: Record<string, DefaultMantineColor> = {
@@ -55,6 +57,9 @@ const statusToColor: Record<string, DefaultMantineColor> = {
   urgent: 'red',
   asap: 'red',
   stat: 'red',
+  'not-done': 'red',
+  connected: 'green',
+  disconnected: 'red',
 };
 
 export interface StatusBadgeProps {

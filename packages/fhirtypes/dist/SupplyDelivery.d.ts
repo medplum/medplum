@@ -179,6 +179,11 @@ export interface SupplyDelivery {
 }
 
 /**
+ * The date or time(s) the activity occurred.
+ */
+export type SupplyDeliveryOccurrence = Period | string | Timing;
+
+/**
  * The item that is being delivered or has been supplied.
  */
 export interface SupplyDeliverySuppliedItem {
@@ -238,3 +243,10 @@ export interface SupplyDeliverySuppliedItem {
    */
   itemReference?: Reference<Medication | Substance | Device>;
 }
+
+/**
+ * Identifies the medication, substance or device being dispensed. This
+ * is either a link to a resource representing the details of the item or
+ * a code that identifies the item from a known list.
+ */
+export type SupplyDeliverySuppliedItemItem = CodeableConcept | Reference<Medication | Substance | Device>;

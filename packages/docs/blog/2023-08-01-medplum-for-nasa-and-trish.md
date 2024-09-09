@@ -1,17 +1,15 @@
 ---
 slug: medplum-for-nasa-and-trish
 title: Medplum's Proposal for NASA's Health Tech RFP
-authors:
-  name: Cody Ebberson
-  title: Medplum Core Team
-  url: https://github.com/codyebberson
-  image_url: https://github.com/codyebberson.png
+authors: cody
 tags: [react, self-host]
 ---
 
 # Medplum's Proposal for NASA's Health Tech RFP
 
 NASA's [TRISH team](https://www.nasa.gov/hrp/tri) (Translational Research Institute for Space Health) recently issued an RFP for a healthcare tech platform designed for monitoring spaceflight participant health metrics during space missions. TRISH is a virtual consortium focused on applied research to ensure astronaut health during space exploration.
+
+<!-- truncate -->
 
 As avid space enthusiasts, and [NASA Space Camp](https://www.rocketcenter.com/SpaceCamp) alumni, we were eager to apply.
 
@@ -47,7 +45,7 @@ With everything up and running, it became pertinent to gauge the power consumpti
 
 ### UI Development
 
-Once power constraints were addressed, we used the [Medplum React components](/docs/ui-components) to assemble a mock dashboard showcasing health metrics of Artemis mission astronauts, monitoring vital signs and other crucial health parameters. We also included the spacecraft's intrinsic metrics, such as cabin temperature, pressure, oxygen levels, CO2 concentrations, and radiation readings.
+Once power constraints were addressed, we used the [Medplum React components](/docs/react) to assemble a mock dashboard showcasing health metrics of Artemis mission astronauts, monitoring vital signs and other crucial health parameters. We also included the spacecraft's intrinsic metrics, such as cabin temperature, pressure, oxygen levels, CO2 concentrations, and radiation readings.
 
 ![Medplum Space EHR](/img/blog/space-ehr-screenshot.png)
 

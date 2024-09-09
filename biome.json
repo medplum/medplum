@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.0.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.8.1/schema.json",
   "organizeImports": {
     "enabled": false
   },
@@ -16,6 +16,8 @@
         "noUnusedVariables": "warn"
       },
       "style": {
+        "useImportType": "off",
+
         "useTemplate": "warn",
         "noParameterAssign": "warn",
         "noUnusedTemplateLiteral": "warn",
@@ -34,6 +36,12 @@
         "useLiteralKeys": "warn",
         "useFlatMap": "warn",
         "noUselessFragments": "warn",
+        "noExcessiveCognitiveComplexity": {
+          "level": "warn",
+          "options": {
+            "maxAllowedComplexity": 15
+          }
+        },
 
         "noForEach": "warn",
         "useSimplifiedLogicExpression": "warn"
@@ -54,21 +62,13 @@
         "noPositiveTabindex": "warn",
         "useMediaCaption": "warn",
         "useAltText": "warn"
-      },
-      "nursery": {
-        "noExcessiveComplexity": {
-          "level": "warn",
-          "options": {
-            "maxAllowedComplexity": 15
-          }
-        }
       }
     }
   },
   "javascript": {
     "formatter": {
       "quoteStyle": "single",
-      "trailingComma": "es5"
+      "trailingCommas": "es5"
     }
   },
   "files": {

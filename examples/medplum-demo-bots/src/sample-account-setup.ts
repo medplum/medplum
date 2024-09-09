@@ -1,4 +1,4 @@
-import { BotEvent, createReference, getReferenceString, MedplumClient } from '@medplum/core';
+import { BotEvent, createReference, getReferenceString, LOINC, MedplumClient, SNOMED, UCUM } from '@medplum/core';
 import {
   AllergyIntolerance,
   BundleEntry,
@@ -76,10 +76,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 }
 
 /**
- * Returns a practitioner resource.
- * Creates the practitioner if one does not already exist.
- * @param medplum The medplum client.
- * @returns The practitioner resource.
+ * Creates the questionnaire if one does not already exist.
+ * @param medplum - The medplum client.
  */
 async function ensureQuestionnaire(medplum: MedplumClient): Promise<void> {
   const questionnaire = await medplum.searchOne('Questionnaire', 'title=Order Lab Tests');
@@ -95,7 +93,7 @@ async function ensureQuestionnaire(medplum: MedplumClient): Promise<void> {
       {
         id: 'id-4',
         linkId: 'g2',
-        type: 'group',
+        type: 'display',
         text: 'For guidance on which labs to order visit: https://www.uptodate.com/contents/search?search=lab%20orders',
       },
       {
@@ -142,7 +140,7 @@ async function ensureQuestionnaire(medplum: MedplumClient): Promise<void> {
 /**
  * Returns a practitioner resource.
  * Creates the practitioner if one does not already exist.
- * @param medplum The medplum client.
+ * @param medplum - The medplum client.
  * @returns The practitioner resource.
  */
 async function getPractitioner(medplum: MedplumClient): Promise<Practitioner> {
@@ -179,8 +177,8 @@ async function getPractitioner(medplum: MedplumClient): Promise<Practitioner> {
 
 /**
  * Ensures that the practitioner has a schedule, and that the schedule has slots.
- * @param medplum The medplum client.
- * @param practitioner The practitioner.
+ * @param medplum - The medplum client.
+ * @param practitioner - The practitioner.
  */
 async function ensureSchedule(medplum: MedplumClient, practitioner: Practitioner): Promise<void> {
   // Try to get the schedule
@@ -204,9 +202,9 @@ async function ensureSchedule(medplum: MedplumClient, practitioner: Practitioner
 
 /**
  * Ensures that the schedule has slots for the given date.
- * @param medplum The medplum client.
- * @param schedule The practitioner's schedule.
- * @param slotDate The day of slots.
+ * @param medplum - The medplum client.
+ * @param schedule - The practitioner's schedule.
+ * @param slotDate - The day of slots.
  */
 async function ensureSlots(medplum: MedplumClient, schedule: Schedule, slotDate: Date): Promise<void> {
   const existingSlots = await medplum.search(
@@ -227,7 +225,9 @@ async function ensureSlots(medplum: MedplumClient, schedule: Schedule, slotDate:
     slotDate.setHours(hour, 0, 0, 0);
     await medplum.createResource({
       resourceType: 'Slot',
+      status: 'free',
       start: slotDate.toISOString(),
+      end: new Date(slotDate.getTime() + 30 * 60 * 1000).toISOString(),
       schedule: createReference(schedule),
     });
   }
@@ -235,8 +235,8 @@ async function ensureSlots(medplum: MedplumClient, schedule: Schedule, slotDate:
 
 /**
  * Creates a CarePlan that was completed in the past.
- * @param medplum The medplum client
- * @param patient The patient.
+ * @param medplum - The medplum client
+ * @param patient - The patient.
  */
 async function createCompletedCarePlan(medplum: MedplumClient, patient: Patient): Promise<void> {
   const tasks: Task[] = [
@@ -275,8 +275,8 @@ async function createCompletedCarePlan(medplum: MedplumClient, patient: Patient)
 
 /**
  * Creates an active CarePlan that starts today.
- * @param medplum The medplum client
- * @param patient The patient.
+ * @param medplum - The medplum client
+ * @param patient - The patient.
  */
 async function createActiveCarePlan(medplum: MedplumClient, patient: Patient): Promise<void> {
   const tasks: Task[] = [
@@ -301,9 +301,9 @@ async function createActiveCarePlan(medplum: MedplumClient, patient: Patient): P
 
 /**
  * Creates a Care Plan based on the tasks for the given patient
- * @param medplum The medplum client
- * @param patient The patient
- * @param tasks The set of tasks to complete for the care plan
+ * @param medplum - The medplum client
+ * @param patient - The patient
+ * @param tasks - The set of tasks to complete for the care plan
  * @returns The created care plan
  */
 async function createCarePlan(medplum: MedplumClient, patient: Patient, tasks: Task[]): Promise<CarePlan> {
@@ -347,6 +347,7 @@ async function createCarePlan(medplum: MedplumClient, patient: Patient, tasks: T
 function createA1CObservation(patient: Patient): Observation {
   return {
     resourceType: 'Observation',
+    status: 'final',
     subject: createReference(patient),
     code: {
       text: 'Hemoglobin A1c',
@@ -367,8 +368,8 @@ function createA1CObservation(patient: Patient): Observation {
 
 /**
  * Creates a DiagnosticReport with an A1C observation.
- * @param patient The patient.
- * @param a1c The A1C observation.
+ * @param patient - The patient.
+ * @param a1c - The A1C observation.
  * @returns The DiagnosticReport.
  */
 function createDiagnosticReport(patient: Patient, a1c: Observation): DiagnosticReport {
@@ -522,7 +523,7 @@ function createMedicalCondition(patient: Patient, practitioner: Practitioner): C
     code: {
       coding: [
         {
-          system: 'http://snomed.info/sct',
+          system: SNOMED,
           code: '192127007',
           display: 'Child attention deficit disorder',
         },
@@ -582,7 +583,7 @@ function createBloodPressureObservation(patient: Patient, date: Date): Observati
         {
           code: '85354-9',
           display: 'Blood Pressure',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Blood Pressure',
@@ -594,14 +595,14 @@ function createBloodPressureObservation(patient: Patient, date: Date): Observati
             {
               code: '8462-4',
               display: 'Diastolic Blood Pressure',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'Diastolic Blood Pressure',
         },
         valueQuantity: {
           code: 'mm[Hg]',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
           unit: 'mm[Hg]',
           value: 80 * observationRandomizer(),
         },
@@ -612,14 +613,14 @@ function createBloodPressureObservation(patient: Patient, date: Date): Observati
             {
               code: '8480-6',
               display: 'Systolic Blood Pressure',
-              system: 'http://loinc.org',
+              system: LOINC,
             },
           ],
           text: 'Systolic Blood Pressure',
         },
         valueQuantity: {
           code: 'mm[Hg]',
-          system: 'http://unitsofmeasure.org',
+          system: UCUM,
           unit: 'mm[Hg]',
           value: 120 * observationRandomizer(),
         },
@@ -640,19 +641,19 @@ function createTemperatureObservation(patient: Patient, date: Date): Observation
         {
           code: '8310-5',
           display: 'Body temperature',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
         {
           code: '8331-1',
           display: 'Oral temperature',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Body temperature',
     },
     valueQuantity: {
       code: 'Cel',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       unit: 'Cel',
       value: 36.6 * observationRandomizer(),
     },
@@ -671,14 +672,14 @@ function createHeightObservation(patient: Patient, date: Date): Observation {
         {
           code: '8302-2',
           display: 'Body Height',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Body Height',
     },
     valueQuantity: {
       code: 'cm',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       unit: 'cm',
       value: 175 * observationRandomizer(),
     },
@@ -697,14 +698,14 @@ function createWeightObservation(patient: Patient, date: Date): Observation {
         {
           code: '29463-7',
           display: 'Body Weight',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Body Weight',
     },
     valueQuantity: {
       code: 'kg',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       unit: 'kg',
       value: 70 * observationRandomizer(),
     },
@@ -723,14 +724,14 @@ function createRespiratoryRateObservation(patient: Patient, date: Date): Observa
         {
           code: '9279-1',
           display: 'Respiratory rate',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Respiratory rate',
     },
     valueQuantity: {
       code: '/min',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       unit: '/min',
       value: 15 * observationRandomizer(),
     },
@@ -749,14 +750,14 @@ function createHeartRateObservation(patient: Patient, date: Date): Observation {
         {
           code: '8867-4',
           display: 'Heart rate',
-          system: 'http://loinc.org',
+          system: LOINC,
         },
       ],
       text: 'Heart rate',
     },
     valueQuantity: {
       code: '/min',
-      system: 'http://unitsofmeasure.org',
+      system: UCUM,
       unit: '/min',
       value: 80 * observationRandomizer(),
     },
@@ -767,6 +768,7 @@ function createHeartRateObservation(patient: Patient, date: Date): Observation {
 function createWelcomeMessage(patient: Patient, practitioner: Practitioner): Communication {
   return {
     resourceType: 'Communication',
+    status: 'completed',
     subject: createReference(patient),
     recipient: [createReference(patient)],
     sender: createReference(practitioner),

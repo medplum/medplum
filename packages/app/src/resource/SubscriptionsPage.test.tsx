@@ -2,10 +2,9 @@ import { getReferenceString } from '@medplum/core';
 import { Bot, Subscription } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -67,6 +66,7 @@ describe('SubscriptionsPage', () => {
       resourceType: 'Subscription',
       reason: 'test',
       status: 'active',
+      criteria: 'Patient',
       channel: {
         type: 'rest-hook',
         endpoint: `${getReferenceString(bot)}`,
@@ -83,8 +83,10 @@ describe('SubscriptionsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Last Updated' }));
     });
 
+    const sortButton = await screen.findByRole('menuitem', { name: 'Sort Newest to Oldest' });
+
     await act(async () => {
-      fireEvent.click(screen.getByRole('menuitem', { name: 'Sort Newest to Oldest' }));
+      fireEvent.click(sortButton);
     });
 
     expect(screen.getByText(`${subscription.id}`)).toBeInTheDocument();

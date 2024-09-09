@@ -9,22 +9,22 @@ import {
 } from '@medplum/core';
 import { HumanName, UserConfiguration } from '@medplum/fhirtypes';
 import { DescriptionList, DescriptionListEntry, Document, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface UserSession {
-  id: string;
-  lastUpdated: string;
-  authMethod: string;
-  remoteAddress: string;
-  browser?: string;
-  os?: string;
+  readonly id: string;
+  readonly lastUpdated: string;
+  readonly authMethod: string;
+  readonly remoteAddress: string;
+  readonly browser?: string;
+  readonly os?: string;
 }
 
 interface SecurityDetails {
-  profile: ProfileResource;
-  config: UserConfiguration;
-  security: {
+  readonly profile: ProfileResource;
+  readonly config: UserConfiguration;
+  readonly security: {
     mfaEnrolled: boolean;
     sessions: UserSession[];
   };
@@ -39,7 +39,7 @@ export function SecurityPage(): JSX.Element | null {
     medplum
       .get('auth/me')
       .then(setDetails)
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum]);
 
   function revokeLogin(loginId: string): void {
@@ -48,7 +48,7 @@ export function SecurityPage(): JSX.Element | null {
       .then(() => medplum.get('auth/me', { cache: 'no-cache' }))
       .then(setDetails)
       .then(() => showNotification({ color: 'green', message: 'Login revoked' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   if (!details) {

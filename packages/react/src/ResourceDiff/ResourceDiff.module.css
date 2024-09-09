@@ -1,0 +1,9 @@
+
+.removed {
+  color: var(--mantine-color-red-7);
+  text-decoration: line-through;
+}
+
+.added {
+  color: var(--mantine-color-green-7);
+}

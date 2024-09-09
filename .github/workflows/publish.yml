@@ -8,25 +8,30 @@ jobs:
   build_and_check:
     name: publish
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NODE_VERSION: '20'
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
     permissions:
       actions: read
       contents: write
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Install NSIS
-        run: sudo apt-get install -y nsis
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18.x'
+          node-version: 20
           registry-url: 'https://registry.npmjs.org'
 
       - name: Cache node modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         env:
           cache-name: cache-node-modules
         with:
@@ -37,11 +42,17 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
 
+      - name: Slack start message
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          payload: |
+            {"text": "Starting publish: ${{ github.ref_name }}"}
+
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --maxsockets 1
 
       - name: Build
-        run: npm run build
+        run: npm run build:all
         env:
           MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
           MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
@@ -54,15 +65,22 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
-      - name: Check for changes
-        id: check_changes
-        run: |
-          echo "changed_paths=$(./scripts/check-changes.sh ${{ github.event.before }} ${{ github.event.after }})" >> $GITHUB_ENV
-
       - name: Sync example repos
-        if: env.changed_paths != ''
-        run: |
-          ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}" "${{ env.changed_paths }}"
+        run: ./scripts/update-example-changes.sh "${{ secrets.SYNC_REPO_TOKEN }}"
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and push Docker images
+        run: ./scripts/build-docker.sh --release
+        env:
+          DOCKERHUB_REPOSITORY: ${{ secrets.DOCKERHUB_REPOSITORY }}
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -74,27 +92,184 @@ jobs:
       - name: Deploy bot layer
         run: ./scripts/deploy-bot-layer.sh
 
+  build_agent_win64:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install NSIS
+        run: choco install nsis
+
+      - name: Install Wget
+        run: choco install wget
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --maxsockets 1
+
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
+
+      - name: Find signtool
+        uses: actions/github-script@v6
+        id: find-signtool
+        with:
+          result-encoding: string
+          script: |
+            const fs = require('node:fs/promises');
+
+            /**
+            * Searches the installed Windows SDKs for the most recent signtool.exe version
+            * Taken from https://github.com/dlemstra/code-sign-action
+            * @returns Path to most recent signtool.exe (x86 version)
+            */
+            async function getSigntoolLocation() {
+                const windowsKitsFolder = 'C:/Program Files (x86)/Windows Kits/10/bin/';
+                const folders = await fs.readdir(windowsKitsFolder);
+                let fileName = '';
+                let maxVersion = 0;
+                for (const folder of folders) {
+                    if (!folder.endsWith('.0')) {
+                        continue;
+                    }
+                    const folderVersion = parseInt(folder.replace(/\./g,''));
+                    if (folderVersion > maxVersion) {
+                        const signtoolFilename = `${windowsKitsFolder}${folder}/x64/signtool.exe`;
+                        try {
+                            const stat = await fs.stat(signtoolFilename);
+                            if (stat.isFile()) {
+                                fileName = signtoolFilename;
+                                maxVersion = folderVersion;
+                            }
+                        } catch {
+                            console.warn('Skipping %s due to error.', signtoolFilename);
+                        }
+                    }
+                }
+                if(fileName == '') {
+                    throw new Error('Unable to find signtool.exe in ' + windowsKitsFolder);
+                }
+                
+                console.log(fileName);
+                return fileName;
+            }
+
+            const path = await getSigntoolLocation();
+            return path.replace(' ', '\ ');
+
       - name: Build Agent installer
-        working-directory: ./packages/agent
-        run: |
-          npm run package
-          npm run installer
+        shell: bash
+        run: ./scripts/build-agent-installer-win64.sh
+        env:
+          SIGNTOOL_PATH: ${{steps.find-signtool.outputs.result}}
+          SM_HOST: ${{ secrets.SM_HOST }}
+          SM_API_KEY: ${{ secrets.SM_API_KEY }}
+          SM_CLIENT_CERT_FILE_BASE64: ${{ secrets.SM_CLIENT_CERT_FILE_BASE64 }}
+          SM_CLIENT_CERT_PASSWORD: ${{ secrets.SM_CLIENT_CERT_PASSWORD }}
+          SM_CERT_ALIAS: ${{ secrets.SM_CERT_ALIAS }}
 
       - name: Upload Agent installer
-        uses: actions/github-script@v4
+        uses: actions/github-script@v6
         with:
           script: |
+            const packageJson = require('./packages/agent/package.json');
             const fs = require('fs');
             const tag = context.ref.replace("refs/tags/", "");
-            const release = await github.repos.getReleaseByTag({
+            const release = await github.rest.repos.getReleaseByTag({
               owner: context.repo.owner,
               repo: context.repo.repo,
               tag
             });
-            await github.repos.uploadReleaseAsset({
+            await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-agent-win-x64.exe",
-              data: await fs.readFileSync("packages/agent/medplum-agent-installer.exe")
+              name: "medplum-agent-installer-" + packageJson.version + ".exe",
+              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe")
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-installer-" + packageJson.version + ".exe.sha256",
+              data: await fs.readFileSync("packages/agent/medplum-agent-installer-" + packageJson.version + ".exe.sha256")
+            });
+
+  build_agent_linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --maxsockets 1
+
+      - name: Build
+        run: npm run build -- --filter=@medplum/agent
+
+      - name: Build Agent
+        shell: bash
+        run: ./scripts/build-agent-installer-linux.sh
+
+      - name: Upload Agent
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const packageJson = require('./packages/agent/package.json');
+            const fs = require('fs');
+            const tag = context.ref.replace("refs/tags/", "");
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-linux",
+              data: await fs.readFileSync("packages/agent/medplum-agent-" + packageJson.version + "-linux")
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-agent-" + packageJson.version + "-linux.sha256",
+              data: await fs.readFileSync("packages/agent/medplum-agent-" + packageJson.version + "-linux.sha256")
             });

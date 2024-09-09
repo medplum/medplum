@@ -46,7 +46,7 @@ export interface UsageContext {
    * A code that identifies the type of context being specified by this
    * usage context.
    */
-  code?: Coding;
+  code: Coding;
 
   /**
    * A value that defines the context specified in this context of use. The
@@ -72,3 +72,10 @@ export interface UsageContext {
    */
   valueReference?: Reference<PlanDefinition | ResearchStudy | InsurancePlan | HealthcareService | Group | Location | Organization>;
 }
+
+/**
+ * A value that defines the context specified in this context of use. The
+ * interpretation of the value is defined by the code.
+ */
+export type UsageContextValue = CodeableConcept | Quantity | Range | Reference<PlanDefinition | ResearchStudy |
+    InsurancePlan | HealthcareService | Group | Location | Organization>;

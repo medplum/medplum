@@ -1,4 +1,4 @@
-import { createReference, evalFhirPathTyped, getExtension, isResource, Operator, toTypedValue } from '@medplum/core';
+import { createReference, getExtension, isResource, Operator } from '@medplum/core';
 import {
   AuditEvent,
   AuditEventEntity,
@@ -10,11 +10,12 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { systemRepo } from '../fhir/repo';
+import { buildTracingExtension, getLogger } from '../context';
+import { getSystemRepo } from '../fhir/repo';
 import { AuditEventOutcome } from '../util/auditevent';
-import { getRequestContext } from '../context';
 
 export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
     filters: [
@@ -34,12 +35,12 @@ export function findProjectMembership(project: string, profile: Reference): Prom
 
 /**
  * Creates an AuditEvent for a subscription attempt.
- * @param resource The resource that triggered the subscription.
- * @param startTime The time the subscription attempt started.
- * @param outcome The outcome code.
- * @param outcomeDesc The outcome description text.
- * @param subscription Optional rest-hook subscription.
- * @param bot Optional bot that was executed.
+ * @param resource - The resource that triggered the subscription.
+ * @param startTime - The time the subscription attempt started.
+ * @param outcome - The outcome code.
+ * @param outcomeDesc - The outcome description text.
+ * @param subscription - Optional rest-hook subscription.
+ * @param bot - Optional bot that was executed.
  */
 export async function createAuditEvent(
   resource: Resource,
@@ -49,6 +50,7 @@ export async function createAuditEvent(
   subscription?: Subscription,
   bot?: Bot
 ): Promise<void> {
+  const systemRepo = getSystemRepo();
   const auditedEvent = subscription ?? resource;
 
   await systemRepo.createResource<AuditEvent>({
@@ -81,6 +83,7 @@ export async function createAuditEvent(
     entity: createAuditEventEntities(resource, subscription, bot),
     outcome,
     outcomeDesc,
+    extension: buildTracingExtension(),
   });
 }
 
@@ -106,35 +109,6 @@ export function getAuditEventEntityRole(resource: Resource): Coding {
   }
 }
 
-export function isDeleteInteraction(subscription: Subscription): boolean {
-  const supportedInteractionExtension = getExtension(
-    subscription,
-    'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction'
-  );
-  return supportedInteractionExtension?.valueCode === 'delete';
-}
-
-export async function isFhirCriteriaMet(subscription: Subscription, currentResource: Resource): Promise<boolean> {
-  const criteria = getExtension(
-    subscription,
-    'https://medplum.com/fhir/StructureDefinition/fhir-path-criteria-expression'
-  );
-  if (!criteria?.valueString) {
-    return true;
-  }
-  const history = await systemRepo.readHistory(currentResource.resourceType, currentResource?.id as string);
-  const evalInput = { current: toTypedValue(currentResource), previous: toTypedValue({}) };
-  const previousResource = history.entry?.[1]?.resource as Resource;
-  if (previousResource) {
-    evalInput.previous = toTypedValue(previousResource);
-  }
-  const evalValue = evalFhirPathTyped(criteria.valueString, [toTypedValue(currentResource)], evalInput);
-  if (evalValue?.[0]?.value === true) {
-    return true;
-  }
-  return false;
-}
-
 export function isJobSuccessful(subscription: Subscription, status: number): boolean {
   const successCodes = getExtension(
     subscription,
@@ -155,7 +129,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
       const lowerBound = Number(codeRange[0]);
       const upperBound = Number(codeRange[1]);
       if (!(Number.isInteger(lowerBound) && Number.isInteger(upperBound))) {
-        getRequestContext().logger.debug(
+        getLogger().debug(
           `${lowerBound} and ${upperBound} aren't an integer, configured status codes need to be changed. Resorting to default codes`
         );
         return defaultStatusCheck(status);
@@ -166,7 +140,7 @@ export function isJobSuccessful(subscription: Subscription, status: number): boo
     } else {
       const codeValue = Number(code);
       if (!Number.isInteger(codeValue)) {
-        getRequestContext().logger.debug(
+        getLogger().debug(
           `${code} isn't an integer, configured status codes need to be changed. Resorting to default codes`
         );
         return defaultStatusCheck(status);

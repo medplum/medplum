@@ -1,8 +1,7 @@
 import { MedplumClient } from '@medplum/core';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { act, render, screen } from '../test-utils/render';
 import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 
 function mockFetch(url: string, options: any): Promise<any> {
   const result: any = {};
@@ -53,7 +52,7 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.jpg',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-image'));
+    expect(await screen.findByTestId('attachment-image')).toBeInTheDocument();
   });
 
   test('Renders video', async () => {
@@ -63,7 +62,7 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.mp4',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-video'));
+    expect(await screen.findByTestId('attachment-video')).toBeInTheDocument();
   });
 
   test('Renders PDF', async () => {
@@ -73,36 +72,33 @@ describe('AttachmentDisplay', () => {
         url: 'https://example.com/test.pdf',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-pdf'));
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 
-  test('Does not renders PDF with filename', async () => {
-    // This is a workaround for the Content-Disposition bug.
-    // In the past, files with a filename were downloaded via Content-Disposition.
-    // Those files do not work with the PDF-in-iframe viewer.
-    // So we do not show them.
+  test('Renders plain text', async () => {
     await setup({
-      value: {
-        contentType: 'application/pdf',
-        url: 'https://example.com/test.pdf',
-        title: 'test.pdf',
-      },
+      value: { contentType: 'text/plain', url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL' },
     });
-    await waitFor(() => screen.getByText('test.pdf'));
-    expect(screen.getByText('test.pdf')).toBeInTheDocument();
-    expect(screen.queryByTestId('attachment-pdf')).toBeNull();
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
+    expect(screen.getByText('Download')).toBeInTheDocument();
+  });
+
+  test('Renders JSON', async () => {
+    await setup({ value: { contentType: 'application/json', url: 'https://example.com/test.json' } });
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
+    expect(screen.getByText('Download')).toBeInTheDocument();
   });
 
   test('Renders other file with title', async () => {
     await setup({
       value: {
         contentType: 'text/plain',
-        url: 'https://example.com/test.txt',
+        url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL',
         title: 'test.txt',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-details'));
+    expect(await screen.findByTestId('attachment-details')).toBeInTheDocument();
     expect(screen.getByText('test.txt')).toBeInTheDocument();
   });
 
@@ -110,10 +106,10 @@ describe('AttachmentDisplay', () => {
     await setup({
       value: {
         contentType: 'text/plain',
-        url: 'https://example.com/test.txt',
+        url: 'data:text/plain,This%20is%20a%20text/plain%20data%20URL',
       },
     });
-    await waitFor(() => screen.getByTestId('attachment-details'));
+    expect(await screen.findByTestId('attachment-details')).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
   });
 });

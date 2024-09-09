@@ -108,7 +108,7 @@ export interface DetectedIssue {
   /**
    * Indicates the status of the detected issue.
    */
-  status?: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status: 'preliminary' | 'final' | 'entered-in-error' | 'mitigated';
 
   /**
    * Identifies the general type of issue identified.
@@ -176,6 +176,11 @@ export interface DetectedIssue {
    */
   mitigation?: DetectedIssueMitigation[];
 }
+
+/**
+ * The date or period when the detected issue was initially identified.
+ */
+export type DetectedIssueIdentified = Period | string;
 
 /**
  * Supporting evidence or manifestations that provide the basis for
@@ -278,7 +283,7 @@ export interface DetectedIssueMitigation {
    * Describes the action that was taken or the observation that was made
    * that reduces/eliminates the risk associated with the identified issue.
    */
-  action?: CodeableConcept;
+  action: CodeableConcept;
 
   /**
    * Indicates when the mitigating action was documented.

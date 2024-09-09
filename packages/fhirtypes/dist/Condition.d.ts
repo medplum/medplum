@@ -149,7 +149,7 @@ export interface Condition {
    * Indicates the patient or group who the condition record is associated
    * with.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this Condition was created or to which the
@@ -264,6 +264,20 @@ export interface Condition {
    */
   note?: Annotation[];
 }
+
+/**
+ * Estimated or actual date or date-time  the condition began, in the
+ * opinion of the clinician.
+ */
+export type ConditionOnset = Age | Period | Range | string;
+
+/**
+ * The date or estimated date that the condition resolved or went into
+ * remission. This is called &quot;abatement&quot; because of the many overloaded
+ * connotations associated with &quot;remission&quot; or &quot;resolution&quot; - Conditions
+ * are never really resolved, but they can abate.
+ */
+export type ConditionAbatement = Age | Period | Range | string;
 
 /**
  * Supporting evidence / manifestations that are the basis of the

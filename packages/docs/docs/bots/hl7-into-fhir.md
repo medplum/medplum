@@ -2,15 +2,9 @@
 sidebar_position: 8
 ---
 
-# Converting HL7 to FHIR
+# HL7 to FHIR
 
-HL7 interfaces are common in healthcare, and widely supported by legacy EHRs, RIS/PACS systems, lab machines and more. Some common HL7 feeds include:
-
-- Admission, Discharge and Transfer fees (ADT Feed)
-- Observation Results (OBX Feed)
-- Scheduling Information Unsolicited (SIU feed)
-
-These feeds contain a wealth of information, but can be hard to manage, programmatically. Medplum makes consuming and managing these feeds straightforward.
+HL7 interfaces are common in healthcare, and widely supported by legacy EHRs, RIS/PACS systems, lab machines and more. Medplum provides a [HL7 Interfacing engine](/docs/integration/hl7-interfacing) that supports consumption and production of HL7 feeds, and the [Medplum Agent](/docs/agent) supports connecting to systems on-premises.
 
 ## This guide will show you
 
@@ -93,7 +87,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 }
 ```
 
-Functionally, the code above will create a new patient with the `mrnNumber` provided, assuming that patient isn't aready in this system.
+Functionally, the code above will create a new patient with the `mrnNumber` provided, assuming that patient isn't already in this system.
 
 ### Testing your Bot
 
@@ -111,7 +105,7 @@ PV1|1|N||||||||||||||||||||||||||||||||||||||||||||||||||||
 PV2||||||||||||||||||||||N|||||||||||||||||||||||||||'
 ```
 
-If all goes well, you should see the following HL7 acknowldgement message in the console.
+If all goes well, you should see the following HL7 acknowledgement message in the console.
 
 ```bash
 MSH|^~\\&|CL|PDMT|Primary||2022-05-10T16:19:50.244Z||ACK|1652199590244|P|2.5.1\rMSA|AA|203598|OK

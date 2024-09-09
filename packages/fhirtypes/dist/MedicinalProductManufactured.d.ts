@@ -99,7 +99,7 @@ export interface MedicinalProductManufactured {
    * Dose form as manufactured and before any transformation into the
    * pharmaceutical product.
    */
-  manufacturedDoseForm?: CodeableConcept;
+  manufacturedDoseForm: CodeableConcept;
 
   /**
    * The &ldquo;real world&rdquo; units in which the quantity of the manufactured item
@@ -110,7 +110,7 @@ export interface MedicinalProductManufactured {
   /**
    * The quantity or &quot;count number&quot; of the manufactured item.
    */
-  quantity?: Quantity;
+  quantity: Quantity;
 
   /**
    * Manufacturer of the item (Note that this should be named

@@ -115,7 +115,7 @@ export interface Flag {
   /**
    * Supports basic workflow.
    */
-  status?: 'active' | 'inactive' | 'entered-in-error';
+  status: 'active' | 'inactive' | 'entered-in-error';
 
   /**
    * Allows a flag to be divided into different categories like clinical,
@@ -128,13 +128,13 @@ export interface Flag {
    * The coded value or textual component of the flag to display to the
    * user.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The patient, location, group, organization, or practitioner etc. this
    * is about record this flag is associated with.
    */
-  subject?: Reference<Patient | Location | Group | Organization | Practitioner | PlanDefinition | Medication | Procedure>;
+  subject: Reference<Patient | Location | Group | Organization | Practitioner | PlanDefinition | Medication | Procedure>;
 
   /**
    * The period of time from the activation of the flag to inactivation of

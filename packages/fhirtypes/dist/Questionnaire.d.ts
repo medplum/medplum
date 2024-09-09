@@ -152,7 +152,7 @@ export interface Questionnaire {
    * The status of this questionnaire. Enables tracking the life-cycle of
    * the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this questionnaire is authored for
@@ -299,7 +299,7 @@ export interface QuestionnaireItem {
    * An identifier that is unique within the Questionnaire allowing linkage
    * to the equivalent item in a QuestionnaireResponse resource.
    */
-  linkId?: string;
+  linkId: string;
 
   /**
    * This element is a URI that refers to an
@@ -345,8 +345,8 @@ export interface QuestionnaireItem {
    * grouping of other items or a particular type of data to be captured
    * (string, integer, coded choice, etc.).
    */
-  type?: 'group' | 'display' | 'question' | 'boolean' | 'decimal' | 'integer' | 'date' | 'dateTime' | 'time' |
-      'string' | 'text' | 'url' | 'choice' | 'open-choice' | 'attachment' | 'reference' | 'quantity';
+  type: 'group' | 'display' | 'question' | 'boolean' | 'decimal' | 'integer' | 'date' | 'dateTime' | 'time' | 'string'
+      | 'text' | 'url' | 'choice' | 'open-choice' | 'attachment' | 'reference' | 'quantity';
 
   /**
    * A constraint indicating that this item should only be enabled
@@ -489,6 +489,11 @@ export interface QuestionnaireItemAnswerOption {
 }
 
 /**
+ * A potential answer that's allowed as the answer to this question.
+ */
+export type QuestionnaireItemAnswerOptionValue = Coding | number | Reference<Resource> | string;
+
+/**
  * A constraint indicating that this item should only be enabled
  * (displayed/allow answers to be captured) when the specified condition
  * is true.
@@ -534,12 +539,12 @@ export interface QuestionnaireItemEnableWhen {
    * The linkId for the question whose answer (or lack of answer) governs
    * whether this item is enabled.
    */
-  question?: string;
+  question: string;
 
   /**
    * Specifies the criteria by which the question is enabled.
    */
-  operator?: 'exists' | '=' | '!=' | '>' | '<' | '>=' | '<=';
+  operator: 'exists' | '=' | '!=' | '>' | '<' | '>=' | '<=';
 
   /**
    * A value that the referenced question is tested using the specified
@@ -601,6 +606,12 @@ export interface QuestionnaireItemEnableWhen {
    */
   answerReference?: Reference<Resource>;
 }
+
+/**
+ * A value that the referenced question is tested using the specified
+ * operator in order for the item to be enabled.
+ */
+export type QuestionnaireItemEnableWhenAnswer = boolean | Coding | number | Quantity | Reference<Resource> | string;
 
 /**
  * One or more values that should be pre-populated in the answer when
@@ -703,3 +714,8 @@ export interface QuestionnaireItemInitial {
    */
   valueReference?: Reference<Resource>;
 }
+
+/**
+ * The actual value to for an initial answer.
+ */
+export type QuestionnaireItemInitialValue = Attachment | boolean | Coding | number | Quantity | Reference<Resource> | string;

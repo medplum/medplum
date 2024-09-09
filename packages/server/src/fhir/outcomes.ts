@@ -3,6 +3,7 @@ import { OperationOutcome } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Response } from 'express';
 import { Result, ValidationError } from 'express-validator';
+import { buildTracingExtension } from '../context';
 
 export function invalidRequest(errors: Result<ValidationError>): OperationOutcome {
   return {
@@ -29,5 +30,8 @@ export function sendOutcome(res: Response, outcome: OperationOutcome): Response 
   if (isAccepted(outcome) && outcome.issue?.[0].diagnostics) {
     res.set('Content-Location', outcome.issue[0].diagnostics);
   }
-  return res.status(getStatus(outcome)).json(outcome);
+  return res.status(getStatus(outcome)).json({
+    ...outcome,
+    extension: buildTracingExtension(),
+  } as OperationOutcome);
 }

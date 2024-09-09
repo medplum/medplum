@@ -1,0 +1,20 @@
+/*
+ * Extra styles to contain the AppShell inside of a Storybook story
+ * By default, the Mantine AppShell component is position: fixed
+ * But that breaks out of the Storybook story container
+ * By using position: absolute, we can keep the AppShell inside the story
+ */
+
+.root {
+  position: relative;
+  margin: 0;
+  padding: 0;
+
+  header {
+    position: absolute;
+  }
+
+  nav {
+    position: absolute;
+  }
+}

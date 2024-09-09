@@ -1,4 +1,4 @@
-# medplum-react-native-example
+# Medplum React Native Example
 
 This is a basic starter app that demonstrates how to sign into Medplum with React Native.
 
@@ -6,14 +6,45 @@ This only demonstrates React Native in "web" mode. Android and iOS are out of sc
 
 ## Setup
 
-To clone and run this project:
+Clone and run this project:
 
 ```bash
 git clone git@github.com:medplum/medplum-react-native-example.git
 cd medplum-react-native-example
 npm ci
+```
+
+In [`App.tsx`](./src/App.tsx#L6-L20):
+
+1. Update your `baseUrl`. If you are testing this out against a server on your localhost, you will need to put your computer's local IP address here, for example: `baseUrl: 'http://192.168.x.x:8103`
+Metro will usually emit this address in the line: 'Metro waiting on exp://192.168.1.216:8081'
+but you will need to change the protocol to 'http://' and the port to 8103 (the Medplum server's default) or whatever port your server is using
+2. Add your Medplum Client ID
+
+
+### Web
+```bash
 npm run web
 ```
+
+### Android Emulator
+
+1. Follow [these instructions](https://docs.expo.dev/workflow/android-studio-emulator/) to download Android Studio and set up an emulated device
+2. Run
+   ```bash
+   npm run android
+   ```
+
+
+### iOS Emulator
+
+1. Follow [these instructions](https://docs.expo.dev/workflow/ios-simulator/) to download Xcode and set up an emulated device
+2. Follow [these instructions](https://developer.apple.com/documentation/safari-developer-tools/adding-additional-simulators) to add an iOS device to your simulator
+3. Run
+   ```bash
+   npm run ios
+   ```
+
 
 ## Medplum Login
 
@@ -24,10 +55,9 @@ This app includes a very basic sign-in form that only supports email and passwor
 First, we setup `MedplumClient` which is the Medplum API client:
 
 ```js
-import { getDisplayString, MedplumClient } from "@medplum/core";
+import { getDisplayString, MedplumClient } from '@medplum/core';
 
 const medplum = new MedplumClient();
-```
 
 `MedplumClient` supports many configuration options which control the behavior. For example, you may want to specify a `clientId` and/or `projectId` to restrict access to specific Medplum projects. Or you may want to specify `baseUrl` to specify your self-hosted Medplum server.
 
@@ -36,8 +66,8 @@ const medplum = new MedplumClient();
 Next, we define a very simple email and password login form:
 
 ```jsx
-const [email, setEmail] = useState("");
-const [password, setPassword] = useState("");
+const [email, setEmail] = useState('');
+const [password, setPassword] = useState('');
 
 // ...
 
@@ -94,7 +124,7 @@ function handleAuthResponse(response) {
     // In a real app, you would present a list of memberships to the user
     // For this example, just use the first membership
     medplum
-      .post("auth/profile", {
+      .post('auth/profile', {
         login: response.login,
         profile: response.memberships[0].id,
       })

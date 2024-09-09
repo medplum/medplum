@@ -1,0 +1,49 @@
+{
+  "resourceType": "ValueSet",
+  "id": "urn:uuid:7869c2b5-77a3-428b-9088-0401e3632c87",
+  "url": "http://medplum.com/medplum-task-demo/practitioner-role-codes",
+  "name": "Practitioner Role Codes",
+  "title": "Practitioner Role Codes",
+  "status": "active",
+  "compose": {
+    "include": [
+      {
+        "system": "http://snomed.info/sct",
+        "concept": [
+          {
+            "code": "158965000",
+            "display": "Doctor"
+          },
+          {
+            "code": "224571005",
+            "display": "Nurse Practitioner"
+          },
+          {
+            "code": "224535009",
+            "display": "Registered Nurse"
+          },
+          {
+            "code": "768820003",
+            "display": "Care Coordinator"
+          },
+          {
+            "code": "768821004",
+            "display": "Care Team Coordinator"
+          },
+          {
+            "code": "1251542004",
+            "display": "Medical Billing Specialist"
+          },
+          {
+            "code": "56542007",
+            "display": "Quality Assurance"
+          },
+          {
+            "code": "449161006",
+            "display": "Assistant"
+          }
+        ]
+      }
+    ]
+  }
+}

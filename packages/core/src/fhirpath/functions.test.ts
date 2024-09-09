@@ -1,5 +1,5 @@
 import { Patient } from '@medplum/fhirtypes';
-import { Atom, AtomContext } from '../fhirlexer';
+import { Atom, AtomContext } from '../fhirlexer/parse';
 import { PropertyType, TypedValue } from '../types';
 import { createReference, getReferenceString } from '../utils';
 import { LiteralAtom } from './atoms';
@@ -29,6 +29,7 @@ const TYPED_Y = toTypedValue('y');
 const TYPED_Z = toTypedValue('z');
 const TYPED_APPLE = toTypedValue('apple');
 const TYPED_XYZ = toTypedValue('xyz');
+const TYPED_EMPTY = toTypedValue({});
 
 const LITERAL_TRUE = new LiteralAtom(TYPED_TRUE);
 const LITERAL_FALSE = new LiteralAtom(TYPED_FALSE);
@@ -40,12 +41,20 @@ describe('FHIRPath functions', () => {
 
   test('empty', () => {
     expect(functions.empty(context, [])).toEqual([TYPED_TRUE]);
+    expect(functions.empty(context, [TYPED_EMPTY])).toEqual([TYPED_TRUE]);
     expect(functions.empty(context, [TYPED_1])).toEqual([TYPED_FALSE]);
     expect(functions.empty(context, [TYPED_1, TYPED_2])).toEqual([TYPED_FALSE]);
   });
 
+  test('hasValue', () => {
+    expect(functions.hasValue(context, [])).toEqual([TYPED_FALSE]);
+    expect(functions.hasValue(context, [TYPED_1])).toEqual([TYPED_TRUE]);
+    expect(functions.hasValue(context, [TYPED_1, TYPED_2])).toEqual([TYPED_TRUE]);
+  });
+
   test('exists', () => {
     expect(functions.exists(context, [])).toEqual([TYPED_FALSE]);
+    expect(functions.exists(context, [TYPED_EMPTY])).toEqual([TYPED_FALSE]);
     expect(functions.exists(context, [TYPED_1])).toEqual([TYPED_TRUE]);
     expect(functions.exists(context, [TYPED_1, TYPED_2])).toEqual([TYPED_TRUE]);
     expect(functions.exists(context, [], isEven)).toEqual([TYPED_FALSE]);
@@ -137,7 +146,7 @@ describe('FHIRPath functions', () => {
   test('single', () => {
     expect(functions.single(context, [])).toEqual([]);
     expect(functions.single(context, [TYPED_1])).toEqual([TYPED_1]);
-    expect(() => functions.single(context, [TYPED_1, TYPED_2])).toThrowError('Expected input length one for single()');
+    expect(() => functions.single(context, [TYPED_1, TYPED_2])).toThrow('Expected input length one for single()');
   });
 
   test('first', () => {
@@ -166,7 +175,7 @@ describe('FHIRPath functions', () => {
 
   test('skip', () => {
     const nonNumber: Atom = { eval: () => [TYPED_XYZ] };
-    expect(() => functions.skip(context, [TYPED_1, TYPED_2, TYPED_3], nonNumber)).toThrowError(
+    expect(() => functions.skip(context, [TYPED_1, TYPED_2, TYPED_3], nonNumber)).toThrow(
       'Expected a number for skip(num)'
     );
 
@@ -191,7 +200,7 @@ describe('FHIRPath functions', () => {
 
   test('take', () => {
     const nonNumber: Atom = { eval: () => [TYPED_XYZ] };
-    expect(() => functions.take(context, [TYPED_1, TYPED_2, TYPED_3], nonNumber)).toThrowError(
+    expect(() => functions.take(context, [TYPED_1, TYPED_2, TYPED_3], nonNumber)).toThrow(
       'Expected a number for take(num)'
     );
 
@@ -560,6 +569,26 @@ describe('FHIRPath functions', () => {
     expect(functions.toChars(context, [toTypedValue('x')])).toEqual([TYPED_X]);
     expect(functions.toChars(context, [toTypedValue('xy')])).toEqual([TYPED_X, TYPED_Y]);
     expect(functions.toChars(context, [toTypedValue('xyz')])).toEqual([TYPED_X, TYPED_Y, TYPED_Z]);
+  });
+
+  // Additional string functions
+  // STU Note: the contents of this section are Standard for Trial Use (STU)
+
+  test('join', () => {
+    expect(functions.join(context, [toTypedValue('')])).toEqual([toTypedValue('')]);
+    expect(functions.join(context, [toTypedValue('a'), toTypedValue('b'), toTypedValue('c')])).toEqual([
+      toTypedValue('abc'),
+    ]);
+    expect(
+      functions.join(
+        context,
+        [toTypedValue('a'), toTypedValue('b'), toTypedValue('c')],
+        new LiteralAtom(toTypedValue(','))
+      )
+    ).toEqual([toTypedValue('a,b,c')]);
+    expect(() => functions.join(context, [toTypedValue('')], new LiteralAtom(toTypedValue(1)))).toThrow(
+      'Separator must be a string'
+    );
   });
 
   // 5.7. Math

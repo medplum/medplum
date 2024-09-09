@@ -1,11 +1,10 @@
 import { stringify } from '@medplum/core';
 import { Reference } from '@medplum/fhirtypes';
-import React from 'react';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 export interface ReferenceDisplayProps {
-  value?: Reference;
-  link?: boolean;
+  readonly value?: Reference;
+  readonly link?: boolean;
 }
 
 export function ReferenceDisplay(props: ReferenceDisplayProps): JSX.Element | null {

@@ -42,7 +42,7 @@ Review and refer to the following items in preparation for your inspection.
     - [ ] [Specimen Quality](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,status&_offset=0&_sort=-_lastUpdated&status=unsatisfactory)
     - [ ] [Specimen.condition](https://app.medplum.com/Specimen?_count=20&_fields=id,_lastUpdated,condition&_offset=0&_sort=-_lastUpdated) should include codes from the [`SpecimenRejectionReason` code system](https://terminology.hl7.org/CodeSystem-v2-0490.html) that will be the basis for rejecting.
 - GEN.43800 Data Input ID Phase II
-  - All data in Medplum is versioned, and [version history](/docs/sdk/classes/MedplumClient#readhistory) for each resource is available
+  - All data in Medplum is versioned, and [version history](/docs/sdk/core.medplumclient.readhistory) for each resource is available
 - GEN.43825 Result Verification Phase II
   - [ ] Diagnostic report related queries
     - [ ] All [Diagnostic Reports](https://app.medplum.com/DiagnosticReport)

@@ -1,5 +1,5 @@
 import { readJson } from '@medplum/definitions';
-import { AccessPolicy, Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { AccessPolicy, Bundle, Communication, Observation, SearchParameter } from '@medplum/fhirtypes';
 import {
   AccessPolicyInteraction,
   canReadResourceType,
@@ -8,7 +8,8 @@ import {
   matchesAccessPolicy,
   satisfiedAccessPolicy,
 } from './access';
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from './types';
+import { indexSearchParameterBundle } from './types';
+import { indexStructureDefinitionBundle } from './typeschema/types';
 
 const nullPolicy: AccessPolicy = {
   resourceType: 'AccessPolicy',
@@ -85,8 +86,8 @@ describe('Access', () => {
     expect(canWriteResource(wildcardPolicy, { resourceType: 'Patient' })).toBe(true);
 
     expect(canWriteResource(restrictedPolicy, { resourceType: 'Patient' })).toBe(false);
-    expect(canWriteResource(restrictedPolicy, { resourceType: 'Observation' })).toBe(true);
-    expect(canWriteResource(restrictedPolicy, { resourceType: 'Communication' })).toBe(false);
+    expect(canWriteResource(restrictedPolicy, { resourceType: 'Observation' } as Observation)).toBe(true);
+    expect(canWriteResource(restrictedPolicy, { resourceType: 'Communication' } as Communication)).toBe(false);
     expect(canWriteResource(restrictedPolicy, { resourceType: 'Communication', status: 'in-progress' })).toBe(true);
     expect(canWriteResource(restrictedPolicy, { resourceType: 'Communication', status: 'completed' })).toBe(false);
   });
@@ -107,8 +108,11 @@ describe('Access', () => {
       satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, restrictedPolicy)
     ).toBeUndefined();
     expect(
-      satisfiedAccessPolicy({ resourceType: 'Observation' }, AccessPolicyInteraction.UPDATE, restrictedPolicy)
-        ?.resourceType
+      satisfiedAccessPolicy(
+        { resourceType: 'Observation' } as Observation,
+        AccessPolicyInteraction.UPDATE,
+        restrictedPolicy
+      )?.resourceType
     ).toEqual('Observation');
     expect(
       satisfiedAccessPolicy(

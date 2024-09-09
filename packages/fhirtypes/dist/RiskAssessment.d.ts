@@ -126,7 +126,7 @@ export interface RiskAssessment {
    * The status of the RiskAssessment, using the same statuses as an
    * Observation.
    */
-  status?: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
+  status: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
    * The algorithm, process or mechanism used to evaluate the risk.
@@ -141,7 +141,7 @@ export interface RiskAssessment {
   /**
    * The patient or group the risk assessment applies to.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The encounter where the assessment was performed.
@@ -201,6 +201,11 @@ export interface RiskAssessment {
    */
   note?: Annotation[];
 }
+
+/**
+ * The date (and possibly time) the risk assessment was performed.
+ */
+export type RiskAssessmentOccurrence = Period | string;
 
 /**
  * Describes the expected outcome for the subject.
@@ -289,3 +294,14 @@ export interface RiskAssessmentPrediction {
    */
   rationale?: string;
 }
+
+/**
+ * Indicates how likely the outcome is (in the specified timeframe).
+ */
+export type RiskAssessmentPredictionProbability = number | Range;
+
+/**
+ * Indicates the period of time or age range of the subject to which the
+ * specified probability applies.
+ */
+export type RiskAssessmentPredictionWhen = Period | Range;

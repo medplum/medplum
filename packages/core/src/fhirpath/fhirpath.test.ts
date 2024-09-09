@@ -1,7 +1,9 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle } from '@medplum/fhirtypes';
-import { indexStructureDefinitionBundle } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { evalFhirPath } from './parse';
+import { LOINC, SNOMED, UCUM } from '../constants';
+import { PropertyType, TypedValue } from '../types';
 
 const observation = {
   resourceType: 'Observation',
@@ -25,17 +27,17 @@ const observation = {
   code: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: '29463-7',
         display: 'Body Weight',
       },
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: '3141-9',
         display: 'Body weight Measured',
       },
       {
-        system: 'http://snomed.info/sct',
+        system: SNOMED,
         code: '27113001',
         display: 'Body weight',
       },
@@ -56,7 +58,7 @@ const observation = {
   valueQuantity: {
     value: 185,
     unit: 'lbs',
-    system: 'http://unitsofmeasure.org',
+    system: UCUM,
     code: '[lb_av]',
   },
 };
@@ -289,7 +291,7 @@ const questionnaire = {
                           display: 'Angina Pectoris',
                         },
                         {
-                          system: 'http://snomed.info/sct',
+                          system: SNOMED,
                           code: '194828000',
                           display: 'Angina (disorder)',
                         },
@@ -302,7 +304,7 @@ const questionnaire = {
                       linkId: '1.1.1.1.2',
                       code: [
                         {
-                          system: 'http://snomed.info/sct',
+                          system: SNOMED,
                           code: '22298006',
                           display: 'Myocardial infarction (disorder)',
                         },
@@ -403,7 +405,7 @@ const valueset = {
   compose: {
     include: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         filter: [
           {
             property: 'parent',
@@ -433,7 +435,7 @@ const valueset = {
     ],
     contains: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         version: '2.50',
         code: '14647-2',
         display: 'Cholesterol [Moles/volume] in Serum or Plasma',
@@ -443,19 +445,19 @@ const valueset = {
         display: 'Cholesterol codes',
         contains: [
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             version: '2.50',
             code: '2093-3',
             display: 'Cholesterol [Mass/volume] in Serum or Plasma',
           },
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             version: '2.50',
             code: '48620-9',
             display: 'Cholesterol [Mass/volume] in Serum or Plasma ultracentrifugate',
           },
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             version: '2.50',
             code: '9342-7',
             display: 'Cholesterol [Percentile]',
@@ -467,25 +469,25 @@ const valueset = {
         display: 'Cholesterol Ratios',
         contains: [
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             version: '2.50',
             code: '2096-6',
             display: 'Cholesterol/Triglyceride [Mass Ratio] in Serum or Plasma',
           },
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             version: '2.50',
             code: '35200-5',
             display: 'Cholesterol/Triglyceride [Mass Ratio] in Serum or Plasma',
           },
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             version: '2.50',
             code: '48089-7',
             display: 'Cholesterol/Apolipoprotein B [Molar ratio] in Serum or Plasma',
           },
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             version: '2.50',
             code: '55838-7',
             display: 'Cholesterol/Phospholipid [Molar ratio] in Serum or Plasma',
@@ -1383,7 +1385,7 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testAll', () => {
+  describe('testAll', () => {
     test('testAllTrue1', () => {
       expect(evalFhirPath('Patient.name.select(given.exists()).allTrue()', patient)).toEqual([true]);
     });
@@ -1401,7 +1403,7 @@ describe('FHIRPath Test Suite', () => {
     });
   });
 
-  describe.skip('testSubSetOf', () => {
+  describe('testSubSetOf', () => {
     test('testSubSetOf1', () => {
       expect(evalFhirPath('Patient.name.first().subsetOf($this.name)', patient)).toEqual([true]);
     });
@@ -1409,15 +1411,30 @@ describe('FHIRPath Test Suite', () => {
     test('testSubSetOf2', () => {
       expect(evalFhirPath('Patient.name.subsetOf($this.name.first()).not()', patient)).toEqual([true]);
     });
+
+    test('testSubSetOf3', () => {
+      expect(evalFhirPath('{}.subsetOf(Patient.name)', patient)).toEqual([true]);
+    });
+
+    test('testSubSetOf4', () => {
+      expect(evalFhirPath('Patient.name.subsetOf({})', patient)).toEqual([false]);
+    });
   });
 
-  describe.skip('testSuperSetOf', () => {
+  describe('testSuperSetOf', () => {
     test('testSuperSetOf1', () => {
       expect(evalFhirPath('Patient.name.first().supersetOf($this.name).not()', patient)).toEqual([true]);
     });
 
     test('testSuperSetOf2', () => {
       expect(evalFhirPath('Patient.name.supersetOf($this.name.first())', patient)).toEqual([true]);
+    });
+    test('testSuperSetOf3', () => {
+      expect(evalFhirPath('{}.supersetOf(Patient.name)', patient)).toEqual([false]);
+    });
+
+    test('testSuperSetOf4', () => {
+      expect(evalFhirPath('Patient.name.supersetOf({})', patient)).toEqual([true]);
     });
   });
 
@@ -1554,7 +1571,7 @@ describe('FHIRPath Test Suite', () => {
       expect(evalFhirPath("Patient.name.where(given = 'X').count() = 0", patient)).toEqual([true]);
     });
 
-    test.skip('testWhere4', () => {
+    test('testWhere4', () => {
       expect(evalFhirPath("Patient.name.where($this.given = 'Jim').count() = 1", patient)).toEqual([true]);
     });
   });
@@ -2862,6 +2879,29 @@ describe('FHIRPath Test Suite', () => {
     test('testUnion8', () => {
       expect(evalFhirPath('1.combine(1).union(2).count() = 2', patient)).toEqual([true]);
     });
+    test('testUnion9', () => {
+      expect(evalFhirPath('Patient.name.family.union(Patient.name.given)', patient)).toEqual([
+        'Chalmers',
+        'Windsor',
+        'Peter',
+        'James',
+        'Jim',
+      ]);
+    });
+  });
+
+  describe('testCombine', () => {
+    test('testCombine1', () => {
+      expect(evalFhirPath('Patient.name.family.combine(Patient.name.given)', patient)).toEqual([
+        'Chalmers',
+        'Windsor',
+        'Peter',
+        'James',
+        'Jim',
+        'Peter',
+        'James',
+      ]);
+    });
   });
 
   describe('testIntersect', () => {
@@ -2880,6 +2920,10 @@ describe('FHIRPath Test Suite', () => {
     test('testIntersect4', () => {
       expect(evalFhirPath('1.combine(1).intersect(1).count() = 1', patient)).toEqual([true]);
     });
+
+    test('testIntersect5', () => {
+      expect(evalFhirPath('Patient.name.given.intersect(Patient.name.given).count() = 3', patient)).toEqual([true]);
+    });
   });
 
   describe('testExclude', () => {
@@ -2897,6 +2941,11 @@ describe('FHIRPath Test Suite', () => {
 
     test('testExclude4', () => {
       expect(evalFhirPath('1.combine(1).exclude(2).count() = 2', patient)).toEqual([true]);
+    });
+    test('testExclude5', () => {
+      expect(
+        evalFhirPath("Patient.name.given.exclude(Patient.name.given.where(startsWith('J').not())).distinct()", patient)
+      ).toEqual(['James', 'Jim']);
     });
   });
 
@@ -3513,6 +3562,33 @@ describe('FHIRPath Test Suite', () => {
 
     test('testConformsTo', () => {
       expect(() => evalFhirPath("conformsTo('http://trash')", patient)).toThrow();
+    });
+  });
+
+  // a more "real-world" test of using FHIRPath to evaluate a hypothetical constraint on AccessPolicy
+  describe('testAccessPolicyConstraints', () => {
+    const validResource: TypedValue = {
+      type: PropertyType.BackboneElement,
+      value: { resourceType: 'Patient', hiddenFields: ['name.use', 'name.given'], readonlyFields: ['name'] },
+    };
+
+    const invalidResource: TypedValue = {
+      type: PropertyType.BackboneElement,
+      value: {
+        resourceType: 'Observation',
+        hiddenFields: ['category', 'component.code'],
+        // readonlyFields: ['component'], // this would make it valid
+      },
+    };
+
+    const RESOURCE_CONSTRAINT = "hiddenFields.select(substring(0, indexOf('.'))).distinct().subsetOf(readonlyFields)";
+
+    test('testAccessPolicyResourceConstraint positive', () => {
+      expect(evalFhirPath(RESOURCE_CONSTRAINT, validResource)).toEqual([true]);
+    });
+
+    test('testAccessPolicyResourceConstraint negative', () => {
+      expect(evalFhirPath(RESOURCE_CONSTRAINT, invalidResource)).toEqual([false]);
     });
   });
 });

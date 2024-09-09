@@ -1,11 +1,7 @@
 ---
 slug: medplum-mitre-talk
 title: Medplum Talk at MITRE OHS
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [interop, fhir-datastore]
 ---
 
@@ -13,11 +9,15 @@ tags: [interop, fhir-datastore]
 
 [MITRE](https://www.mitre.org/) Open Health Solutions is a leader in healthcare open source and are the makers of [Inferno](https://inferno.healthit.gov/), [Synthea](https://synthea.mitre.org/) and more - which are tools we use all the time here.
 
+<!-- truncate -->
+
 Medplum gave a talk at MITRE last fall, that was [recently released](https://youtu.be/D_S7EKe-S5E), and this post contains an annotated transcript and clips, as well as some updates as the talk was last fall, shortly after Medplum's public launch. Transcript has been lightly edited for clarity.
 
 ## Medplum Intro and Team Story
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _5 minutes_
 
@@ -51,7 +51,9 @@ Our experience is also informed by building many applications that are in the he
 
 ## Healthcare Developer Pain Points
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=300" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=300" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _5 minutes_
 
@@ -79,7 +81,9 @@ So that leads me to the next part, which is our approach, how we've thought abou
 
 ## System Overview
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=590" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=590" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _3 minutes_
 
@@ -97,23 +101,25 @@ And they don't have to think about the complexities of the data model, and the [
 
 And we think of, integrations are the product so that this is crucial. And we have our infrastructure here called [bots](/docs/bots). You can think of these as like lambdas, you know for example, if you create a new patient, You can invoke one of these lambdas to synchronize that data to a legacy EHR, either via FHIR, HL7.
 
-We support a bunch of data types and we have a [streamlined developer kit](/docs/sdk/modules#interfaces) so that, again one of these developers who don't have a lot of history or training in the domain can be very productive very quickly using this technique. So, and these, we provide the environment, which in which to develop these, and then all the tooling so that you can run them.
+We support a bunch of data types and we have a [streamlined developer kit](/docs/sdk/core) so that, again one of these developers who don't have a lot of history or training in the domain can be very productive very quickly using this technique. So, and these, we provide the environment, which in which to develop these, and then all the tooling so that you can run them.
 
 So there's really no DevOps from the perspective of the developer. They're just writing their code and hooking it up. And this is a big productivity win. And people bring their own code here. We have some partners who have written their own integrations and we also provide some built-in integrations.
 
-So that's part of the customer experience. We also have [access policies](/docs/auth/access-control) and [identity](/docs/auth/user-management-guide), literacy in general on FHIR and [SMART-on-FHIR](/docs/auth/smart-scopes) is growing, and we're part of the message there helping people understand how to use these tools and the scopes and the auth part of what we provide as well.
+So that's part of the customer experience. We also have [access policies](/docs/access/access-policies) and [identity](/docs/auth/user-management-guide), literacy in general on FHIR and [SMART-on-FHIR](/docs/access/smart-scopes) is growing, and we're part of the message there helping people understand how to use these tools and the scopes and the auth part of what we provide as well.
 
-And we just have a built-in implementation as well as allowing people to [bring their own auth](/docs/auth/external-identity-providers) if that's what they want as a developer. And then [subscriptions](/docs/subscriptions), you can think of these as webhooks, you know allow event driven applications to be built, and I'll show some examples of those in the demo.
+And we just have a built-in implementation as well as allowing people to [bring their own auth](/docs/auth/methods/external-identity-providers) if that's what they want as a developer. And then [subscriptions](/docs/subscriptions), you can think of these as webhooks, you know allow event driven applications to be built, and I'll show some examples of those in the demo.
 
 ## Traditional Healthcare Applications
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=799" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=799" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 1 minute
 
 So this is, this is the Medplum overview. And I'll just like compare and contrast that with traditional software healthcare software, which is like a full stack SaaS application that exposes some interfaces. In this model, it's hard to program a system like this. The developer experiences is poor.
 
-Systems that we've built like this tend to be **brittle and slow**, and introp is an afterthought. So we, want to think about how to do this a bit differently from the traditional way. We believe that, assume we are, go back to this view. Like all of the applications, like a LIS/LIMS or a custom EHR or patient facing apps, EDC can all be built in this simplified way.
+Systems that we've built like this tend to be **brittle and slow**, and interop is an afterthought. So we, want to think about how to do this a bit differently from the traditional way. We believe that, assume we are, go back to this view. Like all of the applications, like a LIS/LIMS or a custom EHR or patient facing apps, EDC can all be built in this simplified way.
 
 And it could be an effective developer model to get more productivity, leverage, better interop, and just reduce the investment overall and have better tooling and story. So that's kind of the thinking. So I'll summarize it here. So our approach, you know, interoperability is the product not an afterthought.
 
@@ -121,7 +127,9 @@ So the, I'll emphasize that. It's very common to have a SaaS app with an API sof
 
 ## Developer Experience and Open Source
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=899" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/BIlwyJAFN04?start=899" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _4 minutes_
 
@@ -143,7 +151,9 @@ We are early in our open source life, so I'm really excited for the chance to me
 
 ## Business Model
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1136" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1136" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _1 minute_
 
@@ -157,7 +167,9 @@ And again, this is a model that is, is modeled after GitLab and their very succe
 
 ## Demos
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1243" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe width="560" height="315" src="https://www.youtube.com/embed/BIlwyJAFN04?start=1243" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _10 minutes_
 
@@ -179,7 +191,7 @@ And other things this way. It's a great tool for teaching and it's a great way t
 
 You can, if you do the same, inspect and copy as curl. You can view the queries to query all the resources related to the patient. Let's see. These are all FHIR objects, so you can, you know, look at 'em, browse 'em, and then this is generated from the FHIR spec. So this is just a very good debugging tool where you can see all the fields.
 
-Great. You can touch them up if you need to. This is common when doing a deployment. Just add your identifiers, for example, or change address. If you don't yet have an app that's fully functioning, you can see the history started by Synthea. And blame. So if you're running a deployment, it's very often that you wanna be, who [changed this data](/docs/sdk#read-resource-history). So this is a great tool for that. JSON representation. And then there's this concept of apps basically if you have. [Questionnaires](/docs/questionnaires) that are linked to this, to the patient object, then you can just link them here. They are automatically linked here. So that's a example. So yeah, that this is, this is the admin console.
+Great. You can touch them up if you need to. This is common when doing a deployment. Just add your identifiers, for example, or change address. If you don't yet have an app that's fully functioning, you can see the history started by Synthea. And blame. So if you're running a deployment, it's very often that you wanna be, who [changed this data](/docs/sdk/core.medplumclient.readhistory). So this is a great tool for that. JSON representation. And then there's this concept of apps basically if you have. [Questionnaires](/docs/questionnaires) that are linked to this, to the patient object, then you can just link them here. They are automatically linked here. So that's a example. So yeah, that this is, this is the admin console.
 
 It's very powerful. It helps. The developer have like an on-ramp into FHIR that you know, for a novice developer it can be pretty intimidating. For this crew, I'll show the batch upload like. I, I think one of the top search items on our website is Synthea. People generate their Synthea, or use Synthea from files from GitHub and just upload them here or paste them as JSON here and then, use that to quick start and prototype their application.
 

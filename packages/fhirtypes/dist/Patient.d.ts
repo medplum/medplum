@@ -208,6 +208,17 @@ export interface Patient {
 }
 
 /**
+ * Indicates if the individual is deceased or not.
+ */
+export type PatientDeceased = boolean | string;
+
+/**
+ * Indicates whether the patient is part of a multiple (boolean) or
+ * indicates the actual birth order (integer).
+ */
+export type PatientMultipleBirth = boolean | number;
+
+/**
  * A language which may be used to communicate with the patient about his
  * or her health.
  */
@@ -254,7 +265,7 @@ export interface PatientCommunication {
    * upper case; e.g. &quot;en&quot; for English, or &quot;en-US&quot; for American English
    * versus &quot;en-EN&quot; for England English.
    */
-  language?: CodeableConcept;
+  language: CodeableConcept;
 
   /**
    * Indicates whether or not the patient prefers this language (over other
@@ -388,11 +399,11 @@ export interface PatientLink {
   /**
    * The other patient resource that the link refers to.
    */
-  other?: Reference<Patient | RelatedPerson>;
+  other: Reference<Patient | RelatedPerson>;
 
   /**
    * The type of link between this patient resource and another patient
    * resource.
    */
-  type?: 'replaced-by' | 'replaces' | 'refer' | 'seealso';
+  type: 'replaced-by' | 'replaces' | 'refer' | 'seealso';
 }

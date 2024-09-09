@@ -1,38 +1,46 @@
 {
   "name": "@medplum/generator",
-  "version": "2.1.1",
+  "version": "3.2.8",
   "description": "Medplum Code Generator",
-  "author": "Medplum <hello@medplum.com>",
-  "license": "Apache-2.0",
   "homepage": "https://www.medplum.com/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/medplum/medplum.git",
+    "url": "git+https://github.com/medplum/medplum.git",
     "directory": "packages/generator"
   },
-  "engines": {
-    "node": ">=18.0.0"
-  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "clean": "rimraf dist",
-    "build": "npm run clean && tsc",
-    "generate": "ts-node src/index.ts && ts-node src/jsonschema.ts",
-    "migrate": "ts-node src/migrate.ts",
-    "docs": "ts-node src/docs.ts",
+    "baseschema": "ts-node src/baseschema.ts && npx prettier ../core/src/base-schema.json --write",
     "benchmark": "ts-node src/benchmarks.ts",
+    "build": "npm run clean && tsc",
+    "clean": "rimraf dist",
+    "compare": "ts-node src/compare.ts",
+    "docs": "ts-node src/docs.ts && cd ../.. && patch -p1 apply src/ONC-compliance-text.patch",
+    "fhirtypes": "ts-node src/index.ts",
+    "generate": "npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient",
+    "jsonschema": "ts-node src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",
+    "lint": "eslint .",
+    "migrate": "ts-node src/migrate.ts",
+    "mockclient": "ts-node src/mockclient.ts && npx prettier ../mock/src/mocks/*.json --write",
     "test": "jest"
   },
   "devDependencies": {
-    "@medplum/core": "*",
-    "@medplum/definitions": "*",
-    "@medplum/fhirtypes": "*",
-    "@types/json-schema": "7.0.13",
-    "@types/unzipper": "0.10.7",
-    "fast-xml-parser": "4.2.7",
-    "fhirpath": "3.6.1",
+    "@medplum/core": "3.2.8",
+    "@medplum/definitions": "3.2.8",
+    "@medplum/fhirtypes": "3.2.8",
+    "@types/json-schema": "7.0.15",
+    "@types/pg": "8.11.8",
+    "@types/unzipper": "0.10.10",
+    "fast-xml-parser": "4.4.1",
+    "fhirpath": "3.15.2",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
-    "tinybench": "2.5.1",
-    "unzipper": "0.10.14"
+    "pg": "8.12.0",
+    "tinybench": "2.9.0",
+    "unzipper": "0.12.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

@@ -1,0 +1,97 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:bfd1a286-5bea-4c35-b9b6-d27137eaafe3",
+      "request": { "method": "PUT", "url": "ValueSet?name=encounter-type-codes" },
+      "resource": {
+        "resourceType": "ValueSet",
+        "status": "active",
+        "url": "https://example.com/encounter-types",
+        "name": "encounter-type-codes",
+        "title": "Encounter Type Codes",
+        "description": "These codes are used to classify Encounter resources into various types.",
+        "compose": {
+          "include": [
+            {
+              "system": "http://snomed.info/sct",
+              "concept": [
+                {
+                  "code": "11429006",
+                  "display": "Consultation"
+                },
+                {
+                  "code": "308540004",
+                  "display": "Inpatient stay"
+                },
+                {
+                  "code": "371883000",
+                  "display": "Outpatient procedure"
+                },
+                {
+                  "code": "185317003",
+                  "display": "Telephone encounter"
+                },
+                {
+                  "code": "439708006",
+                  "display": "Home visit"
+                },
+                {
+                  "code": "390906007",
+                  "display": "Follow-up encounter"
+                },
+                {
+                  "code": "50849002",
+                  "display": "Emergency room admission"
+                },
+                {
+                  "code": "255327002",
+                  "display": "Ambulatory"
+                },
+                {
+                  "code": "110466009",
+                  "display": "Pre-operative evaluation"
+                },
+                {
+                  "code": "91251008",
+                  "display": "Physical therapy procedure"
+                },
+                {
+                  "code": "31205005",
+                  "display": "Psychiatric therapy"
+                },
+                {
+                  "code": "163497009",
+                  "display": "Obstetrics"
+                },
+                {
+                  "code": "83607001",
+                  "display": "Gynecology"
+                },
+                {
+                  "code": "225362009",
+                  "display": "Dental care"
+                },
+                {
+                  "code": "304567001",
+                  "display": "Admission for long-term care"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:a20cc3ed-56ce-4e0a-ac86-e70063be3c6f",
+      "request": { "method": "PUT", "url": "ValueSet?url=http://hl7.org/fhir/ValueSet/icd-10" },
+      "resource": {
+        "resourceType": "ValueSet",
+        "status": "active",
+        "url": "http://hl7.org/fhir/ValueSet/icd-10",
+        "compose": { "include": [{ "system": "http://hl7.org/fhir/ValueSet/icd-10" }] }
+      }
+    }
+  ]
+}

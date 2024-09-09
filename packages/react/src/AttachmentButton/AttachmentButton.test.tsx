@@ -1,15 +1,15 @@
 import { Button } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { ReactNode } from 'react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { AttachmentButton } from './AttachmentButton';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 
 const medplum = new MockClient();
 
 describe('AttachmentButton', () => {
-  const setup = (children: React.ReactNode): void => {
+  const setup = (children: ReactNode): void => {
     render(<MedplumProvider medplum={medplum}>{children}</MedplumProvider>);
   };
 
@@ -99,9 +99,13 @@ describe('AttachmentButton', () => {
   });
 
   test('Error handling', async () => {
-    window.alert = jest.fn();
+    const errorFn = jest.fn();
 
-    setup(<AttachmentButton onUpload={console.log}>{(props) => <Button {...props}>Upload</Button>}</AttachmentButton>);
+    setup(
+      <AttachmentButton onUpload={console.log} onUploadError={errorFn}>
+        {(props) => <Button {...props}>Upload</Button>}
+      </AttachmentButton>
+    );
 
     await act(async () => {
       const files = [new File(['exe'], 'hello.exe', { type: 'application/exe' })];
@@ -110,7 +114,10 @@ describe('AttachmentButton', () => {
       });
     });
 
-    expect(window.alert).toHaveBeenCalledWith('Invalid file type');
+    expect(errorFn).toHaveBeenCalledWith({
+      resourceType: 'OperationOutcome',
+      issue: [{ code: 'invalid', details: { text: 'Invalid file type' }, severity: 'error' }],
+    });
   });
 
   test('Custom text', async () => {

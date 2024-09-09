@@ -1,36 +1,55 @@
-import { Bundle, Coding, ElementDefinition, Resource, ResourceType, StructureDefinition } from '@medplum/fhirtypes';
-import { getTypedPropertyValue } from '../fhirpath';
-import { OperationOutcomeError, serverError } from '../outcomes';
-import { getElementDefinitionTypeName, TypedValue } from '../types';
-import { capitalize, isEmpty } from '../utils';
+import {
+  Bundle,
+  Coding,
+  ElementDefinition,
+  ElementDefinitionBinding,
+  Resource,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
+import { DataTypesMap, inflateBaseSchema } from '../base-schema';
+import baseSchema from '../base-schema.json';
+import { getTypedPropertyValue } from '../fhirpath/utils';
+import { OperationOutcomeError, badRequest } from '../outcomes';
+import { TypedValue, getElementDefinitionTypeName, isResourceTypeSchema } from '../types';
+import { capitalize, getExtension, isEmpty } from '../utils';
 
 /**
  * Internal representation of a non-primitive FHIR type, suitable for use in resource validation
  */
 export interface InternalTypeSchema {
   name: string;
-  fields: Record<string, ElementValidator>;
-  constraints: Constraint[];
+  type: string;
+  path: string;
+  title?: string;
+  url?: string;
+  kind?: string;
+  description?: string;
+  elements: Record<string, InternalSchemaElement>;
+  constraints?: Constraint[];
+  parentType?: InternalTypeSchema;
   innerTypes: InternalTypeSchema[];
   summaryProperties?: Set<string>;
   mandatoryProperties?: Set<string>;
 }
 
-export interface ElementValidator {
+export interface InternalSchemaElement {
+  description: string;
+  path: string;
   min: number;
   max: number;
-  isArray: boolean;
-  constraints: Constraint[];
+  isArray?: boolean;
+  constraints?: Constraint[];
   type: ElementType[];
   slicing?: SlicingRules;
   fixed?: TypedValue;
   pattern?: TypedValue;
-  binding?: string;
+  binding?: ElementDefinitionBinding;
 }
 
 export interface ElementType {
   code: string;
-  targetProfile: string[];
+  targetProfile?: string[];
+  profile?: string[];
 }
 
 export interface Constraint {
@@ -47,12 +66,10 @@ export interface SlicingRules {
   slices: SliceDefinition[];
 }
 
-export interface SliceDefinition {
+export interface SliceDefinition extends Omit<InternalSchemaElement, 'slicing'> {
   name: string;
-  type?: ElementType[];
-  fields: Record<string, ElementValidator>;
-  min: number;
-  max: number;
+  definition?: string;
+  elements: Record<string, InternalSchemaElement>;
 }
 
 export interface SliceDiscriminator {
@@ -63,7 +80,7 @@ export interface SliceDiscriminator {
 /**
  * Parses a StructureDefinition resource into an internal schema better suited for
  * programmatic validation and usage in internal systems
- * @param sd The StructureDefinition resource to parse
+ * @param sd - The StructureDefinition resource to parse
  * @returns The parsed schema for the given resource type
  * @experimental
  */
@@ -71,30 +88,138 @@ export function parseStructureDefinition(sd: StructureDefinition): InternalTypeS
   return new StructureDefinitionParser(sd).parse();
 }
 
-const DATA_TYPES: Record<string, InternalTypeSchema> = Object.create(null);
+const DATA_TYPES: DataTypesMap = inflateBaseSchema(baseSchema);
 
-export function loadDataTypes(bundle: Bundle<StructureDefinition>): void {
-  for (const { resource: sd } of bundle.entry ?? []) {
-    if (!sd?.name) {
-      throw new Error(`Failed loading StructureDefinition from bundle`);
-    }
-    if (sd.resourceType !== 'StructureDefinition') {
-      continue;
-    }
-    const schema = parseStructureDefinition(sd);
-    DATA_TYPES[sd.name] = schema;
-    for (const inner of schema.innerTypes) {
-      DATA_TYPES[inner.name] = inner;
-    }
+// profiles are referenced by URL instead of name
+const PROFILE_SCHEMAS_BY_URL: { [profileUrl: string]: InternalTypeSchema } = Object.create(null);
+
+// Since profiles alter the schemas of their elements, a mapping of type names to schemas
+// is maintained per profile URL
+const PROFILE_DATA_TYPES: { [profileUrl: string]: DataTypesMap } = Object.create(null);
+
+// Special case names for StructureDefinitions that are technically "profiles", but are used as base types.
+// This is for backwards compatibility with R4 StructureDefinitions that are used as base types.
+// MoneyQuantity and SimpleQuantity are technically "profiles" on Quantity, but we allow them to be used as base types.
+// ViewDefinition is a special case for SQL-on-FHIR.
+// We can add more types here in the future as necessary, when we want them to be used as base types.
+// For example, exporting new types in "@medplum/fhirtypes".
+const TYPE_SPECIAL_CASES: { [url: string]: string } = {
+  'http://hl7.org/fhir/StructureDefinition/MoneyQuantity': 'MoneyQuantity',
+  'http://hl7.org/fhir/StructureDefinition/SimpleQuantity': 'SimpleQuantity',
+  'http://hl7.org/fhir/uv/sql-on-fhir/StructureDefinition/ViewDefinition': 'ViewDefinition',
+};
+
+function getDataTypesMap(profileUrl: string): DataTypesMap {
+  let dataTypes: DataTypesMap;
+  dataTypes = PROFILE_DATA_TYPES[profileUrl];
+  if (!dataTypes) {
+    dataTypes = PROFILE_DATA_TYPES[profileUrl] = Object.create(null);
+  }
+  return dataTypes;
+}
+
+/**
+ * Parses and indexes structure definitions
+ * @param bundle - Bundle or array of structure definitions to be parsed and indexed
+ */
+export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
+  const sds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource as StructureDefinition) ?? []);
+  for (const sd of sds) {
+    loadDataType(sd);
   }
 }
 
-export function getDataType(type: string): InternalTypeSchema {
-  const schema = DATA_TYPES[type];
+export function loadDataType(sd: StructureDefinition): void {
+  if (!sd?.name) {
+    throw new Error(`Failed loading StructureDefinition from bundle`);
+  }
+  if (sd.resourceType !== 'StructureDefinition') {
+    return;
+  }
+  const schema = parseStructureDefinition(sd);
+  const specialCase = TYPE_SPECIAL_CASES[sd.url];
+  let dataTypes: DataTypesMap;
+  let typeName: string;
+
+  if (specialCase) {
+    // Special cases by "name"
+    // These are StructureDefinitions that are technically "profiles", but are used as base types
+    dataTypes = DATA_TYPES;
+    typeName = specialCase;
+  } else if (
+    // By default, only index by "type" for "official" FHIR types
+    sd.url === `http://hl7.org/fhir/StructureDefinition/${sd.type}` ||
+    sd.url === `https://medplum.com/fhir/StructureDefinition/${sd.type}` ||
+    sd.type?.startsWith('http://') ||
+    sd.type?.startsWith('https://')
+  ) {
+    dataTypes = DATA_TYPES;
+    typeName = sd.type;
+  } else {
+    dataTypes = getDataTypesMap(sd.url);
+    typeName = sd.type;
+  }
+
+  dataTypes[typeName] = schema;
+
+  for (const inner of schema.innerTypes) {
+    inner.parentType = schema;
+    dataTypes[inner.name] = inner;
+  }
+
+  PROFILE_SCHEMAS_BY_URL[sd.url] = schema;
+}
+
+export function getAllDataTypes(): DataTypesMap {
+  return DATA_TYPES;
+}
+
+export function isDataTypeLoaded(type: string): boolean {
+  return !!DATA_TYPES[type];
+}
+
+export function tryGetDataType(type: string, profileUrl?: string): InternalTypeSchema | undefined {
+  if (profileUrl) {
+    const profileType = getDataTypesMap(profileUrl)[type];
+    if (profileType) {
+      return profileType;
+    }
+  }
+  // Fallback to base schema if no result found in profileUrl namespace
+  return DATA_TYPES[type];
+}
+
+export function getDataType(type: string, profileUrl?: string): InternalTypeSchema {
+  const schema = tryGetDataType(type, profileUrl);
   if (!schema) {
-    throw new OperationOutcomeError(serverError(Error('Unknown data type: ' + type)));
+    throw new OperationOutcomeError(badRequest('Unknown data type: ' + type));
   }
   return schema;
+}
+
+/**
+ * Returns true if the given string is a valid FHIR resource type.
+ *
+ * @example
+ * ```ts
+ * isResourceType('Patient'); // true
+ * isResourceType('XYZ'); // false
+ * ```
+ *
+ * @param resourceType - The candidate resource type string.
+ * @returns True if the resource type is a valid FHIR resource type.
+ */
+export function isResourceType(resourceType: string): boolean {
+  const typeSchema = DATA_TYPES[resourceType];
+  return typeSchema && isResourceTypeSchema(typeSchema);
+}
+
+export function isProfileLoaded(profileUrl: string): boolean {
+  return !!PROFILE_SCHEMAS_BY_URL[profileUrl];
+}
+
+export function tryGetProfile(profileUrl: string): InternalTypeSchema | undefined {
+  return PROFILE_SCHEMAS_BY_URL[profileUrl];
 }
 
 interface BackboneContext {
@@ -117,7 +242,7 @@ class StructureDefinitionParser {
   private backboneContext: BackboneContext | undefined;
 
   /**
-   * @param sd The StructureDefinition to parse
+   * @param sd - The StructureDefinition to parse
    * @throws Throws when the StructureDefinition does not have a populated `snapshot` field
    */
   constructor(sd: StructureDefinition) {
@@ -130,9 +255,15 @@ class StructureDefinitionParser {
     this.elementIndex = Object.create(null);
     this.index = 0;
     this.resourceSchema = {
-      name: sd.type as ResourceType,
-      fields: {},
-      constraints: this.parseFieldDefinition(this.root).constraints,
+      name: sd.name as string,
+      path: this.root.path,
+      title: sd.title,
+      type: sd.type,
+      url: sd.url as string,
+      kind: sd.kind,
+      description: getDescription(sd),
+      elements: {},
+      constraints: this.parseElementDefinition(this.root).constraints,
       innerTypes: [],
       summaryProperties: new Set(),
       mandatoryProperties: new Set(),
@@ -150,18 +281,18 @@ class StructureDefinitionParser {
         // Slice element, part of some slice definition
         if (this.slicingContext?.current) {
           const path = elementPath(element, this.slicingContext.path);
-          this.slicingContext.current.fields[path] = this.parseFieldDefinition(element);
+          this.slicingContext.current.elements[path] = this.parseElementDefinition(element);
         }
       } else {
         // Normal field definition
-        const field = this.parseFieldDefinition(element);
+        const field = this.parseElementDefinition(element);
         this.checkFieldEnter(element, field);
 
         // Record field in schema
         let parentContext: BackboneContext | undefined = this.backboneContext;
         while (parentContext) {
           if (element.path?.startsWith(parentContext.path + '.')) {
-            parentContext.type.fields[elementPath(element, parentContext.path)] = field;
+            parentContext.type.elements[elementPath(element, parentContext.path)] = field;
             break;
           }
           parentContext = parentContext.parent;
@@ -178,7 +309,7 @@ class StructureDefinitionParser {
           if (field.min > 0) {
             this.resourceSchema.mandatoryProperties?.add(path.replace('[x]', ''));
           }
-          this.resourceSchema.fields[path] = field;
+          this.resourceSchema.elements[path] = field;
         }
 
         // Clean up contextual book-keeping
@@ -197,47 +328,65 @@ class StructureDefinitionParser {
     return this.resourceSchema;
   }
 
-  private checkFieldEnter(element: ElementDefinition, field: ElementValidator): void {
+  private checkFieldEnter(element: ElementDefinition, field: InternalSchemaElement): void {
     if (this.isInnerType(element)) {
-      while (this.backboneContext && !pathsCompatible(this.backboneContext?.path, element.path)) {
-        // Starting new inner type, unwind type stack to this property's parent
-        this.innerTypes.push(this.backboneContext.type);
-        this.backboneContext = this.backboneContext.parent;
-      }
-      this.backboneContext = {
-        type: {
-          name: getElementDefinitionTypeName(element),
-          fields: {},
-          constraints: this.parseFieldDefinition(element).constraints,
-          innerTypes: [],
-        },
-        path: element.path ?? '',
-        parent: pathsCompatible(this.backboneContext?.path, element.path)
-          ? this.backboneContext
-          : this.backboneContext?.parent,
-      };
+      this.enterInnerType(element);
+    }
+    if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path as string)) {
+      // Path must be compatible with the sliced field path (i.e. have it as a prefix) to be a part of the
+      // same slice group; otherwise, that group is finished and this is the start of a new field
+      this.slicingContext = undefined;
     }
     if (element.slicing && !this.slicingContext) {
-      if (hasDefaultExtensionSlice(element) && !this.peek()?.sliceName) {
-        // Extensions are always sliced by URL; don't start slicing context if no slices follow
-        return;
-      }
-      field.slicing = {
-        discriminator: (element.slicing?.discriminator ?? []).map((d) => {
-          if (d.type !== 'value' && d.type !== 'pattern' && d.type !== 'type') {
-            throw new Error(`Unsupported slicing discriminator type: ${d.type}`);
-          }
-          return {
-            path: d.path as string,
-            type: d.type as string,
-          };
-        }),
-        slices: [],
-        ordered: element.slicing?.ordered ?? false,
-        rule: element.slicing?.rules,
-      };
-      this.slicingContext = { field: field.slicing, path: element.path ?? '' };
+      this.enterSlice(element, field);
     }
+  }
+
+  private enterInnerType(element: ElementDefinition): void {
+    while (this.backboneContext && !pathsCompatible(this.backboneContext?.path, element.path)) {
+      // Starting new inner type, unwind type stack to this property's parent
+      this.innerTypes.push(this.backboneContext.type);
+      this.backboneContext = this.backboneContext.parent;
+    }
+    const typeName = getElementDefinitionTypeName(element);
+    this.backboneContext = {
+      type: {
+        name: typeName,
+        type: typeName,
+        path: element.path,
+        title: element.label,
+        description: element.definition,
+        elements: {},
+        constraints: this.parseElementDefinition(element).constraints,
+        innerTypes: [],
+      },
+      path: element.path,
+      parent: pathsCompatible(this.backboneContext?.path, element.path)
+        ? this.backboneContext
+        : this.backboneContext?.parent,
+    };
+  }
+
+  private enterSlice(element: ElementDefinition, field: InternalSchemaElement): void {
+    if (hasDefaultExtensionSlice(element) && !this.peek()?.sliceName) {
+      // Extensions are always sliced by URL; don't start slicing context if no slices follow
+      return;
+    }
+    field.slicing = {
+      discriminator: (element.slicing?.discriminator ?? []).map((d) => {
+        if (d.type !== 'value' && d.type !== 'pattern' && d.type !== 'type') {
+          throw new Error(`Unsupported slicing discriminator type: ${d.type}`);
+        }
+        return {
+          path: d.path as string,
+          type: d.type as string,
+        };
+      }),
+      slices: [],
+      ordered: element.slicing?.ordered ?? false,
+      rule: element.slicing?.rules,
+    };
+    this.slicingContext = { field: field.slicing, path: element.path ?? '' };
   }
 
   private checkFieldExit(element: ElementDefinition | undefined = undefined): void {
@@ -250,16 +399,8 @@ class StructureDefinitionParser {
         } while (this.backboneContext && !pathsCompatible(this.backboneContext.path, element?.path));
       } else {
         this.innerTypes.push(this.backboneContext.type);
-        delete this.backboneContext;
+        this.backboneContext = undefined;
       }
-    }
-    if (this.slicingContext && !pathsCompatible(this.slicingContext.path, element?.path as string)) {
-      // Path must be compatible with the sliced field path (i.e. have it as a prefix) to be a part of the
-      // same slice group; otherwise, that group is finished and this is the start of a new field
-      if (this.slicingContext?.current) {
-        this.slicingContext.field.slices.push(this.slicingContext.current);
-      }
-      delete this.slicingContext;
     }
   }
 
@@ -277,7 +418,8 @@ class StructureDefinitionParser {
     if (element) {
       this.elementIndex[element.path ?? ''] = element;
       if (element.contentReference) {
-        const ref = this.elementIndex[element.contentReference.slice(element.contentReference.indexOf('#') + 1)];
+        const contentRefPath = element.contentReference.slice(element.contentReference.indexOf('#') + 1);
+        const ref = this.elementIndex[contentRefPath];
         if (!ref) {
           return undefined;
         }
@@ -287,6 +429,13 @@ class StructureDefinitionParser {
           path: element.path,
           min: element.min ?? ref.min,
           max: element.max ?? ref.max,
+          base: {
+            path: ref.base?.path ?? contentRefPath,
+            min: element.base?.min ?? ref.base?.min ?? (ref.min as number),
+            max: element.base?.max ?? ref.base?.max ?? (ref.max as string),
+          },
+          contentReference: element.contentReference,
+          definition: element.definition,
         };
       }
       return element;
@@ -304,25 +453,50 @@ class StructureDefinitionParser {
 
   private parseSliceStart(element: ElementDefinition): void {
     if (!this.slicingContext) {
-      throw new Error('Invalid slice start before discriminator: ' + element.sliceName);
+      throw new Error(`Invalid slice start before discriminator: ${element.sliceName} (${element.id})`);
     }
-    if (this.slicingContext.current) {
-      this.slicingContext.field.slices.push(this.slicingContext.current);
-    }
+
     this.slicingContext.current = {
+      ...this.parseElementDefinition(element),
       name: element.sliceName ?? '',
-      type: element.type?.map((t) => ({ code: t.code ?? '', targetProfile: t.targetProfile ?? [] })),
-      fields: {},
-      min: element.min ?? 0,
-      max: element.max === '*' ? Number.POSITIVE_INFINITY : Number.parseInt(element.max as string, 10),
+      definition: element.definition,
+      elements: {},
     };
+    this.slicingContext.field.slices.push(this.slicingContext.current);
   }
 
-  private parseFieldDefinition(ed: ElementDefinition): ElementValidator {
+  private parseElementDefinitionType(ed: ElementDefinition): ElementType[] {
+    return (ed.type ?? []).map((type) => {
+      let code: string | undefined;
+
+      if (type.code === 'BackboneElement' || type.code === 'Element') {
+        code = getElementDefinitionTypeName(ed);
+      }
+
+      if (!code) {
+        // This is a low-level extension that we optimize handling for
+        code = getExtension(type, 'http://hl7.org/fhir/StructureDefinition/structuredefinition-fhir-type')?.valueUrl;
+      }
+
+      if (!code) {
+        code = type.code ?? '';
+      }
+
+      return {
+        code,
+        targetProfile: type.targetProfile,
+        profile: type.profile,
+      };
+    });
+  }
+
+  private parseElementDefinition(ed: ElementDefinition): InternalSchemaElement {
     const max = parseCardinality(ed.max as string);
     const baseMax = ed.base?.max ? parseCardinality(ed.base.max) : max;
     const typedElementDef = { type: 'ElementDefinition', value: ed };
     return {
+      description: ed.definition || '',
+      path: ed.path || ed.base?.path || '',
       min: ed.min ?? 0,
       max: max,
       isArray: baseMax > 1,
@@ -332,15 +506,10 @@ class StructureDefinitionParser {
         expression: c.expression ?? '',
         description: c.human ?? '',
       })),
-      type: (ed.type ?? []).map((t) => ({
-        code: ['BackboneElement', 'Element'].includes(t.code as string)
-          ? getElementDefinitionTypeName(ed)
-          : t.code ?? '',
-        targetProfile: t.targetProfile ?? [],
-      })),
-      fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed')),
-      pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern')),
-      binding: ed.binding?.strength === 'required' ? ed.binding.valueSet : undefined,
+      type: this.parseElementDefinitionType(ed),
+      fixed: firstValue(getTypedPropertyValue(typedElementDef, 'fixed[x]')),
+      pattern: firstValue(getTypedPropertyValue(typedElementDef, 'pattern[x]')),
+      binding: ed.binding,
     };
   }
 }
@@ -349,8 +518,8 @@ class StructureDefinitionParser {
  * Construct the subset of a resource containing a minimum set of fields.  The returned resource is not guaranteed
  * to contain only the provided properties, and may contain others (e.g. `resourceType` and `id`)
  *
- * @param resource The resource to subset
- * @param properties The minimum properties to include in the subset
+ * @param resource - The resource to subset
+ * @param properties - The minimum properties to include in the subset
  * @returns The modified resource, containing the listed properties and possibly other mandatory ones
  */
 export function subsetResource<T extends Resource>(resource: T | undefined, properties: string[]): T | undefined {
@@ -360,7 +529,7 @@ export function subsetResource<T extends Resource>(resource: T | undefined, prop
   const extraProperties = [];
   for (const property of properties) {
     extraProperties.push('_' + property);
-    const choiceTypeField = DATA_TYPES[resource.resourceType].fields[property + '[x]'];
+    const choiceTypeField = DATA_TYPES[resource.resourceType].elements[property + '[x]'];
     if (choiceTypeField) {
       extraProperties.push(...choiceTypeField.type.map((t) => property + capitalize(t.code)));
     }
@@ -407,8 +576,8 @@ function trimPrefix(str: string | undefined, prefix: string): string {
 
 /**
  * Tests whether two element paths are compatible, i.e. whether the child path is nested under the parent.
- * @param parent The expected parent path, which should be a prefix of the child path.
- * @param child The child path to test for compatibility with the parent path.
+ * @param parent - The expected parent path, which should be a prefix of the child path.
+ * @param child - The child path to test for compatibility with the parent path.
  * @returns True if the given path is a child of the parent.
  */
 function pathsCompatible(parent: string | undefined, child: string | undefined): boolean {
@@ -436,4 +605,18 @@ function hasDefaultExtensionSlice(element: ElementDefinition): boolean {
       discriminators[0].type === 'value' &&
       discriminators[0].path === 'url'
   );
+}
+
+function getDescription(sd: StructureDefinition): string | undefined {
+  let result = sd.description;
+
+  // Many description strings start with an unwanted prefix "Base StructureDefinition for X Type: "
+  // For example:
+  // Base StructureDefinition for Age Type: A duration of time during which an organism (or a process) has existed.
+  // If the description starts with the name of the resource type, remove it.
+  if (result?.startsWith(`Base StructureDefinition for ${sd.name} Type: `)) {
+    result = result.substring(`Base StructureDefinition for ${sd.name} Type: `.length);
+  }
+
+  return result;
 }

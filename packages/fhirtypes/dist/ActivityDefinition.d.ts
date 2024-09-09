@@ -166,7 +166,7 @@ export interface ActivityDefinition {
    * The status of this activity definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this activity definition is authored
@@ -467,6 +467,24 @@ export interface ActivityDefinition {
 }
 
 /**
+ * A code or group definition that describes the intended subject of the
+ * activity being defined.
+ */
+export type ActivityDefinitionSubject = CodeableConcept | Reference<Group>;
+
+/**
+ * The period, timing or frequency upon which the described activity is
+ * to occur.
+ */
+export type ActivityDefinitionTiming = Age | Duration | Period | Range | string | Timing;
+
+/**
+ * Identifies the food, drug or other product being consumed or supplied
+ * in the activity.
+ */
+export type ActivityDefinitionProduct = CodeableConcept | Reference<Medication | Substance>;
+
+/**
  * Dynamic values that will be evaluated to produce values for elements
  * of the resulting resource. For example, if the dosage of a medication
  * must be computed based on the patient's weight, a dynamic value would
@@ -521,12 +539,12 @@ export interface ActivityDefinitionDynamicValue {
    * multiple-cardinality sub-elements (see the [Simple FHIRPath
    * Profile](fhirpath.html#simple) for full details).
    */
-  path?: string;
+  path: string;
 
   /**
    * An expression specifying the value of the customized element.
    */
-  expression?: Expression;
+  expression: Expression;
 }
 
 /**
@@ -572,7 +590,7 @@ export interface ActivityDefinitionParticipant {
   /**
    * The type of participant in the action.
    */
-  type?: 'patient' | 'practitioner' | 'related-person' | 'device';
+  type: 'patient' | 'practitioner' | 'related-person' | 'device';
 
   /**
    * The role the participant should play in performing the described

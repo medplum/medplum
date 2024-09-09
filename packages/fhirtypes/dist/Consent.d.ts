@@ -117,19 +117,19 @@ export interface Consent {
   /**
    * Indicates the current state of this consent.
    */
-  status?: 'draft' | 'proposed' | 'active' | 'rejected' | 'inactive' | 'entered-in-error';
+  status: 'draft' | 'proposed' | 'active' | 'rejected' | 'inactive' | 'entered-in-error';
 
   /**
    * A selector of the type of consent being presented: ADR, Privacy,
    * Treatment, Research.  This list is now extensible.
    */
-  scope?: CodeableConcept;
+  scope: CodeableConcept;
 
   /**
    * A classification of the type of consents found in the statement. This
    * element supports indexing and retrieval of consent statements.
    */
-  category?: CodeableConcept[];
+  category: CodeableConcept[];
 
   /**
    * The patient/healthcare consumer to whom this consent applies.
@@ -197,6 +197,14 @@ export interface Consent {
    */
   provision?: ConsentProvision;
 }
+
+/**
+ * The source on which this consent statement is based. The source might
+ * be a scanned original paper form, or a reference to a consent that
+ * links back to such a source, a reference to a document repository
+ * (e.g. XDS) that stores the original consent document.
+ */
+export type ConsentSource = Attachment | Reference<Consent | DocumentReference | Contract | QuestionnaireResponse>;
 
 /**
  * The references to the policies that are included in this consent
@@ -405,14 +413,14 @@ export interface ConsentProvisionActor {
    * How the individual is involved in the resources content that is
    * described in the exception.
    */
-  role?: CodeableConcept;
+  role: CodeableConcept;
 
   /**
    * The resource that identifies the actor. To identify actors by type,
    * use group to identify a set of actors by some property they share
    * (e.g. 'admitting officers').
    */
-  reference?: Reference<Device | Group | CareTeam | Organization | Patient | Practitioner | RelatedPerson | PractitionerRole>;
+  reference: Reference<Device | Group | CareTeam | Organization | Patient | Practitioner | RelatedPerson | PractitionerRole>;
 }
 
 /**
@@ -460,13 +468,13 @@ export interface ConsentProvisionData {
    * How the resource reference is interpreted when testing consent
    * restrictions.
    */
-  meaning?: 'instance' | 'related' | 'dependents' | 'authoredby';
+  meaning: 'instance' | 'related' | 'dependents' | 'authoredby';
 
   /**
    * A reference to a specific resource that defines which resources are
    * covered by this consent.
    */
-  reference?: Reference<Resource>;
+  reference: Reference<Resource>;
 }
 
 /**
@@ -514,7 +522,7 @@ export interface ConsentVerification {
   /**
    * Has the instruction been verified.
    */
-  verified?: boolean;
+  verified: boolean;
 
   /**
    * Who verified the instruction (Patient, Relative or other Authorized

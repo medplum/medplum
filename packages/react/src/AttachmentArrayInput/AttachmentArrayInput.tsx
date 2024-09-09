@@ -1,16 +1,17 @@
 import { ActionIcon } from '@mantine/core';
 import { Attachment } from '@medplum/fhirtypes';
 import { IconCircleMinus, IconCloudUpload } from '@tabler/icons-react';
-import React, { useRef, useState } from 'react';
+import { MouseEvent, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { killEvent } from '../utils/dom';
 
 export interface AttachmentArrayInputProps {
-  name: string;
-  defaultValue?: Attachment[];
-  arrayElement?: boolean;
-  onChange?: (value: Attachment[]) => void;
+  readonly name: string;
+  readonly defaultValue?: Attachment[];
+  readonly arrayElement?: boolean;
+  readonly onChange?: (value: Attachment[]) => void;
+  readonly disabled?: boolean;
 }
 
 export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Element {
@@ -40,9 +41,12 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
             </td>
             <td>
               <ActionIcon
+                disabled={props.disabled}
                 title="Remove"
+                variant="subtle"
                 size="sm"
-                onClick={(e: React.MouseEvent) => {
+                color="gray"
+                onClick={(e: MouseEvent) => {
                   killEvent(e);
                   const copy = values.slice();
                   copy.splice(index, 1);
@@ -58,13 +62,14 @@ export function AttachmentArrayInput(props: AttachmentArrayInputProps): JSX.Elem
           <td></td>
           <td>
             <AttachmentButton
+              disabled={props.disabled}
               onUpload={(attachment: Attachment) => {
                 setValuesWrapper([...(valuesRef.current as Attachment[]), attachment]);
               }}
             >
               {(props) => (
-                <ActionIcon {...props} title="Add" size="sm" color="green">
-                  <IconCloudUpload size={16} />
+                <ActionIcon {...props} title="Add" variant="subtle" size="sm" color={props.disabled ? 'gray' : 'green'}>
+                  <IconCloudUpload />
                 </ActionIcon>
               )}
             </AttachmentButton>

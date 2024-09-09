@@ -1,22 +1,15 @@
-import { globalSchema, TypeSchema } from '@medplum/core';
-import { ElementDefinition } from '@medplum/fhirtypes';
-import { MockClient } from '@medplum/mock';
-import { act, render, screen } from '@testing-library/react';
-import React from 'react';
+import { globalSchema, InternalSchemaElement, loadDataType, TypeInfo } from '@medplum/core';
+import { FishPatientResources, MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router-dom';
+import { act, render, screen, within } from '../test-utils/render';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 
-const valueSetComposeProperty: ElementDefinition = {
-  id: 'ValueSet.compose',
+const valueSetComposeProperty: InternalSchemaElement = {
   path: 'ValueSet.compose',
+  description: 'Include or exclude codes from a code system or other value sets',
   min: 0,
-  max: '1',
-  base: {
-    path: 'ValueSet.compose',
-    min: 0,
-    max: '1',
-  },
+  max: 1,
   type: [
     {
       code: 'BackboneElement',
@@ -24,12 +17,11 @@ const valueSetComposeProperty: ElementDefinition = {
   ],
 };
 
-const valueSetComposeLockedDateProperty: ElementDefinition = {
-  id: 'ValueSet.compose.lockedDate',
+const valueSetComposeLockedDateProperty: InternalSchemaElement = {
   path: 'ValueSet.compose.lockedDate',
-  short: 'Locked date',
+  description: 'Locked date',
   min: 0,
-  max: '1',
+  max: 1,
   type: [
     {
       code: 'date',
@@ -37,18 +29,16 @@ const valueSetComposeLockedDateProperty: ElementDefinition = {
   ],
 };
 
-const valueSetComposeExcludeProperty: ElementDefinition = {
-  id: 'ValueSet.compose.exclude',
+const valueSetComposeExcludeProperty: InternalSchemaElement = {
   path: 'ValueSet.compose.exclude',
-  short: 'Explicitly exclude codes from a code system or other value sets',
+  description: 'Explicitly exclude codes from a code system or other value sets',
   min: 0,
-  max: '*',
-  base: {
-    path: 'ValueSet.compose.exclude',
-    min: 0,
-    max: '*',
-  },
-  contentReference: '#ValueSet.compose.include',
+  max: Infinity,
+  type: [
+    {
+      code: 'ValueSetComposeInclude',
+    },
+  ],
 };
 
 globalSchema.types['ValueSet'] = {
@@ -56,7 +46,7 @@ globalSchema.types['ValueSet'] = {
   properties: {
     compose: valueSetComposeProperty,
   },
-} as unknown as TypeSchema;
+} as unknown as TypeInfo;
 
 globalSchema.types['ValueSetCompose'] = {
   display: 'Value Set Compose',
@@ -64,7 +54,7 @@ globalSchema.types['ValueSetCompose'] = {
     lockedDate: valueSetComposeLockedDateProperty,
     exclude: valueSetComposeExcludeProperty,
   },
-} as unknown as TypeSchema;
+} as unknown as TypeInfo;
 
 const medplum = new MockClient();
 
@@ -83,19 +73,58 @@ describe('BackboneElementInput', () => {
 
   test('Renders', async () => {
     await medplum.requestSchema('Patient');
-    await setup({ typeName: 'PatientContact' });
+    await setup({ typeName: 'PatientContact', path: 'Patient.contact' });
     expect(screen.getByText('Name')).toBeDefined();
   });
 
   test('Handles content reference', async () => {
     await medplum.requestSchema('ValueSet');
-    await setup({ typeName: 'ValueSetCompose' });
+    await setup({ typeName: 'ValueSetCompose', path: 'ValueSet.compose' });
     expect(screen.getByText('Locked Date')).toBeInTheDocument();
-    expect(screen.queryByText('Exclude')).toBeNull();
+    expect(screen.getByText('Exclude')).toBeInTheDocument();
   });
 
   test('Not implemented', async () => {
-    await setup({ typeName: 'Foo' });
+    await setup({ typeName: 'Foo', path: 'Foo' });
     expect(screen.getByText('Foo not implemented')).toBeInTheDocument();
+  });
+
+  test('Resource with profile', async () => {
+    const fishPatientProfile = FishPatientResources.getFishPatientProfileSD();
+    const fishSpeciesProfile = FishPatientResources.getFishSpeciesExtensionSD();
+    const fishPatient = FishPatientResources.getSampleFishPatient();
+
+    for (const profile of [fishPatientProfile, fishSpeciesProfile]) {
+      loadDataType(profile);
+    }
+    await setup({
+      path: fishPatientProfile.type,
+      typeName: fishPatientProfile.type,
+      profileUrl: fishPatientProfile.url,
+      defaultValue: fishPatient,
+      onChange: () => {},
+    });
+
+    // Name is required
+    expect(screen.getByText('Name')).toBeInTheDocument();
+    expect(within(screen.getByText('Name')).getByText('*')).toBeInTheDocument();
+
+    // Marital Status and Communication eliminated
+    expect(screen.queryByText('Marital Status')).toBeNull();
+    expect(screen.queryByText('Communication')).toBeNull();
+
+    // Fish Patient has an extension defined as shown below; the sliceName and definition appear in the form
+    /*{
+      "id": "Patient.extension:species",
+      "path": "Patient.extension",
+      "sliceName": "species",
+      "definition": "The species of the fish.",
+      ...
+    }*/
+    expect(screen.getByText('Species')).toBeInTheDocument();
+    expect(screen.getByText('The species of the fish.')).toBeInTheDocument();
+
+    // fishPatient's species
+    expect(screen.getByText('Carpiodes cyprinus (organism)')).toBeInTheDocument();
   });
 });

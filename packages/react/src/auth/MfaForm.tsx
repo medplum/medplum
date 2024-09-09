@@ -1,22 +1,21 @@
 import { Alert, Button, Center, Group, Stack, TextInput, Title } from '@mantine/core';
 import { LoginAuthenticationResponse, normalizeErrorString } from '@medplum/core';
+import { useMedplum } from '@medplum/react-hooks';
 import { IconAlertCircle } from '@tabler/icons-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
 
 export interface MfaFormProps {
-  login: string;
-  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly login: string;
+  readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
 export function MfaForm(props: MfaFormProps): JSX.Element {
   const medplum = useMedplum();
-  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const [errorMessage, setErrorMessage] = useState<string>();
   return (
     <Form
-      style={{ maxWidth: 400 }}
       onSubmit={(formData: Record<string, string>) => {
         setErrorMessage(undefined);
         medplum
@@ -29,7 +28,7 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
       }}
     >
       <Stack>
-        <Center sx={{ flexDirection: 'column' }}>
+        <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
           <Title>Enter MFA code</Title>
         </Center>
@@ -39,9 +38,9 @@ export function MfaForm(props: MfaFormProps): JSX.Element {
           </Alert>
         )}
         <Stack>
-          <TextInput name="token" label="MFA code" required />
+          <TextInput name="token" label="MFA code" required autoFocus />
         </Stack>
-        <Group position="right" mt="xl">
+        <Group justify="flex-end" mt="xl">
           <Button type="submit">Submit code</Button>
         </Group>
       </Stack>

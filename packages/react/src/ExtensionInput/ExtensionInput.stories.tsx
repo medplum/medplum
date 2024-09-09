@@ -1,6 +1,5 @@
 import { Extension } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { ExtensionInput } from './ExtensionInput';
 
@@ -17,6 +16,10 @@ export const Basic = (): JSX.Element => (
       defaultValue={
         { url: 'http://hl7.org/fhir/StructureDefinition/patient-interpreterRequired', valueBoolean: true } as Extension
       }
+      path="Patient.interpreterRequired"
+      onChange={undefined}
+      outcome={undefined}
+      propertyType={{ code: 'Extension' }}
     />
   </Document>
 );

@@ -1,5 +1,5 @@
-import { Parser } from '../fhirlexer';
-import { initFhirPathParserBuilder } from '../fhirpath';
+import { Parser } from '../fhirlexer/parse';
+import { initFhirPathParserBuilder } from '../fhirpath/parse';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import { Operator } from '../search/search';
 import { tokenize } from './tokenize';
@@ -33,7 +33,7 @@ const operatorMap: Record<string, Operator | undefined> = {
   // eb - The value ends before the specified value
   eb: Operator.ENDS_BEFORE,
   // pr - The set is empty or not (value is false or true)
-  pr: Operator.MISSING,
+  pr: Operator.PRESENT,
   // po - True if a (implied) date period in the set overlaps with the implied period in the value
   po: undefined,
   // ss - True if the value subsumes a concept in the set
@@ -45,7 +45,7 @@ const operatorMap: Record<string, Operator | undefined> = {
   // ni - True if none of the concepts are in the nominated value set by URI, either a relative, literal or logical vs
   ni: Operator.NOT_IN,
   // re - True if one of the references in set points to the given URL
-  re: undefined,
+  re: Operator.EQUALS,
   // identifier - True if the identifier is in the identifier set (Medplum extension)
   identifier: Operator.IDENTIFIER,
 };
@@ -95,7 +95,7 @@ const fhirPathParserBuilder = initFhirPathParserBuilder();
 
 /**
  * Parses a FHIR _filter parameter expression into an AST.
- * @param input The FHIR _filter parameter expression.
+ * @param input - The FHIR _filter parameter expression.
  * @returns The AST representing the filters.
  */
 export function parseFilterParameter(input: string): FhirFilterExpression {

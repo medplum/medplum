@@ -1,12 +1,11 @@
 import { Button, Menu } from '@mantine/core';
-import { Filter, globalSchema, Operator, SearchRequest } from '@medplum/core';
+import { Filter, Operator, SearchRequest, globalSchema } from '@medplum/core';
 import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { getFieldDefinitions } from '../SearchControl/SearchControlField';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { SearchPopupMenu, SearchPopupMenuProps } from './SearchPopupMenu';
 
 const medplum = new MockClient();
@@ -60,12 +59,11 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
+    const sortOldest = await screen.findByText('Sort Oldest to Newest');
     await act(async () => {
-      fireEvent.click(screen.getByText('Sort Oldest to Newest'));
+      fireEvent.click(sortOldest);
     });
 
     expect(currSearch.sortRules).toBeDefined();
@@ -73,12 +71,11 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.[0].code).toEqual('birthdate');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
+    const sortNewest = await screen.findByText('Sort Newest to Oldest');
     await act(async () => {
-      fireEvent.click(screen.getByText('Sort Newest to Oldest'));
+      fireEvent.click(sortNewest);
     });
 
     expect(currSearch.sortRules).toBeDefined();
@@ -110,15 +107,14 @@ describe('SearchPopupMenu', () => {
     for (const option of options) {
       onPrompt.mockClear();
 
+      await toggleMenu();
+
+      const optionButton = await screen.findByText(option.text);
       await act(async () => {
-        fireEvent.click(screen.getByText('Toggle menu'));
+        fireEvent.click(optionButton);
       });
 
-      await act(async () => {
-        fireEvent.click(screen.getByText(option.text));
-      });
-
-      expect(onPrompt).toBeCalledWith(searchParam, {
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
         code: 'birthdate',
         operator: option.operator,
         value: '',
@@ -139,12 +135,11 @@ describe('SearchPopupMenu', () => {
         onChange: (e) => (currSearch = e),
       });
 
-      await act(async () => {
-        fireEvent.click(screen.getByText('Toggle menu'));
-      });
+      await toggleMenu();
 
+      const optionButton = await screen.findByText(option);
       await act(async () => {
-        fireEvent.click(screen.getByText(option));
+        fireEvent.click(optionButton);
       });
 
       expect(currSearch.filters).toBeDefined();
@@ -175,12 +170,11 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
-      await act(async () => {
-        fireEvent.click(screen.getByText('Toggle menu'));
-      });
+      await toggleMenu();
 
+      const optionButton = await screen.findByText(option);
       await act(async () => {
-        fireEvent.click(screen.getByText(option));
+        fireEvent.click(optionButton);
       });
 
       expect(currSearch.filters).toBeDefined();
@@ -212,12 +206,11 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
+    const clearButton = await screen.findByText('Clear filters');
     await act(async () => {
-      fireEvent.click(screen.getByText('Clear filters'));
+      fireEvent.click(clearButton);
     });
 
     expect(currSearch.filters?.length).toEqual(0);
@@ -236,12 +229,11 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
+    const sortSmallest = await screen.findByText('Sort Smallest to Largest');
     await act(async () => {
-      fireEvent.click(screen.getByText('Sort Smallest to Largest'));
+      fireEvent.click(sortSmallest);
     });
 
     expect(currSearch.sortRules).toBeDefined();
@@ -249,12 +241,11 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.[0].code).toEqual('value-quantity');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
+    const sortLargest = await screen.findByText('Sort Largest to Smallest');
     await act(async () => {
-      fireEvent.click(screen.getByText('Sort Largest to Smallest'));
+      fireEvent.click(sortLargest);
     });
 
     expect(currSearch.sortRules).toBeDefined();
@@ -287,15 +278,14 @@ describe('SearchPopupMenu', () => {
     for (const option of options) {
       onPrompt.mockClear();
 
+      await toggleMenu();
+
+      const optionButton = await screen.findByText(option.text);
       await act(async () => {
-        fireEvent.click(screen.getByText('Toggle menu'));
+        fireEvent.click(optionButton);
       });
 
-      await act(async () => {
-        fireEvent.click(screen.getByText(option.text));
-      });
-
-      expect(onPrompt).toBeCalledWith(searchParam, {
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
         code: 'value-quantity',
         operator: option.operator,
         value: '',
@@ -318,12 +308,11 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
-      await act(async () => {
-        fireEvent.click(screen.getByText('Toggle menu'));
-      });
+      await toggleMenu();
 
+      const optionButton = await screen.findByText(option);
       await act(async () => {
-        fireEvent.click(screen.getByText(option));
+        fireEvent.click(optionButton);
       });
 
       expect(currSearch.filters).toBeDefined();
@@ -357,12 +346,11 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
+    const clearButton = await screen.findByText('Clear filters');
     await act(async () => {
-      fireEvent.click(screen.getByText('Clear filters'));
+      fireEvent.click(clearButton);
     });
 
     expect(currSearch.filters?.length).toEqual(0);
@@ -386,12 +374,11 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
+    const clearButton = await screen.findByText('Clear filters');
     await act(async () => {
-      fireEvent.click(screen.getByText('Clear filters'));
+      fireEvent.click(clearButton);
     });
 
     expect(currSearch.filters?.length).toEqual(0);
@@ -417,15 +404,14 @@ describe('SearchPopupMenu', () => {
     for (const option of options) {
       onPrompt.mockClear();
 
+      await toggleMenu();
+
+      const optionButton = await screen.findByText(option.text);
       await act(async () => {
-        fireEvent.click(screen.getByText('Toggle menu'));
+        fireEvent.click(optionButton);
       });
 
-      await act(async () => {
-        fireEvent.click(screen.getByText(option.text));
-      });
-
-      expect(onPrompt).toBeCalledWith(searchParam, {
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
         code: 'organization',
         operator: option.operator,
         value: '',
@@ -448,12 +434,11 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
-      await act(async () => {
-        fireEvent.click(screen.getByText('Toggle menu'));
-      });
+      await toggleMenu();
 
+      const optionButton = await screen.findByText(option);
       await act(async () => {
-        fireEvent.click(screen.getByText(option));
+        fireEvent.click(optionButton);
       });
 
       expect(currSearch.filters).toBeDefined();
@@ -478,12 +463,11 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
+    const sortAtoZ = await screen.findByText('Sort A to Z');
     await act(async () => {
-      fireEvent.click(screen.getByText('Sort A to Z'));
+      fireEvent.click(sortAtoZ);
     });
 
     expect(currSearch.sortRules).toBeDefined();
@@ -491,12 +475,11 @@ describe('SearchPopupMenu', () => {
     expect(currSearch.sortRules?.[0].code).toEqual('name');
     expect(currSearch.sortRules?.[0].descending).toEqual(false);
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
+    const sortZtoA = await screen.findByText('Sort Z to A');
     await act(async () => {
-      fireEvent.click(screen.getByText('Sort Z to A'));
+      fireEvent.click(sortZtoA);
     });
 
     expect(currSearch.sortRules).toBeDefined();
@@ -523,12 +506,11 @@ describe('SearchPopupMenu', () => {
       onChange: (e) => (currSearch = e),
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
+    const clearButton = await screen.findByText('Clear filters');
     await act(async () => {
-      fireEvent.click(screen.getByText('Clear filters'));
+      fireEvent.click(clearButton);
     });
 
     expect(currSearch.filters?.length).toEqual(0);
@@ -556,15 +538,14 @@ describe('SearchPopupMenu', () => {
     for (const option of options) {
       onPrompt.mockClear();
 
+      await toggleMenu();
+
+      const optionButton = await screen.findByText(option.text);
       await act(async () => {
-        fireEvent.click(screen.getByText('Toggle menu'));
+        fireEvent.click(optionButton);
       });
 
-      await act(async () => {
-        fireEvent.click(screen.getByText(option.text));
-      });
-
-      expect(onPrompt).toBeCalledWith(searchParam, {
+      expect(onPrompt).toHaveBeenCalledWith(searchParam, {
         code: 'name',
         operator: option.operator,
         value: '',
@@ -587,12 +568,11 @@ describe('SearchPopupMenu', () => {
 
     const options = ['Missing', 'Not missing'];
     for (const option of options) {
-      await act(async () => {
-        fireEvent.click(screen.getByText('Toggle menu'));
-      });
+      await toggleMenu();
 
+      const optionButton = await screen.findByText(option);
       await act(async () => {
-        fireEvent.click(screen.getByText(option));
+        fireEvent.click(optionButton);
       });
 
       expect(currSearch.filters).toBeDefined();
@@ -619,11 +599,9 @@ describe('SearchPopupMenu', () => {
       searchParams: fields[0].searchParams,
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
-    expect(screen.getByText('Equals...')).toBeDefined();
+    expect(await screen.findByText('Equals...')).toBeDefined();
   });
 
   test('Renders _lastUpdated', async () => {
@@ -641,12 +619,10 @@ describe('SearchPopupMenu', () => {
       searchParams: fields[0].searchParams,
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
-    expect(screen.getByText('Before...')).toBeDefined();
-    expect(screen.getByText('After...')).toBeDefined();
+    expect(await screen.findByText('Before...')).toBeDefined();
+    expect(await screen.findByText('After...')).toBeDefined();
   });
 
   test('Search parameter choice', async () => {
@@ -664,12 +640,10 @@ describe('SearchPopupMenu', () => {
       searchParams: fields[0].searchParams,
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
-    expect(screen.getByText('Value Quantity')).toBeDefined();
-    expect(screen.getByText('Value String')).toBeDefined();
+    expect(await screen.findByText('Value Quantity')).toBeDefined();
+    expect(await screen.findByText('Value String')).toBeDefined();
   });
 
   test('Only one search parameter on exact match', async () => {
@@ -679,7 +653,7 @@ describe('SearchPopupMenu', () => {
         code: 'patient',
         type: 'reference',
         expression: 'Observation.patient',
-      },
+      } as SearchParameter,
     };
 
     const search: SearchRequest = {
@@ -696,11 +670,16 @@ describe('SearchPopupMenu', () => {
       searchParams: fields[0].searchParams,
     });
 
-    await act(async () => {
-      fireEvent.click(screen.getByText('Toggle menu'));
-    });
+    await toggleMenu();
 
-    expect(screen.getByText('Equals...')).toBeDefined();
+    expect(await screen.findByText('Equals...')).toBeDefined();
     expect(screen.queryByText('Patient')).toBeNull();
   });
 });
+
+async function toggleMenu(): Promise<void> {
+  const toggleMenuButton = await screen.findByText('Toggle menu');
+  await act(async () => {
+    fireEvent.click(toggleMenuButton);
+  });
+}

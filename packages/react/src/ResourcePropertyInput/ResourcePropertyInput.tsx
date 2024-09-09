@@ -1,7 +1,17 @@
 import { Checkbox, Group, NativeSelect, Textarea, TextInput } from '@mantine/core';
-import { capitalize, getElementDefinitionTypeName, PropertyType } from '@medplum/core';
-import { ElementDefinition, ElementDefinitionType, OperationOutcome } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
+import {
+  applyDefaultValuesToElement,
+  capitalize,
+  ExtendedInternalSchemaElement,
+  getPathDifference,
+  HTTP_HL7_ORG,
+  isComplexTypeCode,
+  isEmpty,
+  isPopulated,
+  PropertyType,
+} from '@medplum/core';
+import { ElementDefinitionBinding, ElementDefinitionType } from '@medplum/fhirtypes';
+import { useContext, useMemo, useState } from 'react';
 import { AddressInput } from '../AddressInput/AddressInput';
 import { AnnotationInput } from '../AnnotationInput/AnnotationInput';
 import { AttachmentArrayInput } from '../AttachmentArrayInput/AttachmentArrayInput';
@@ -13,6 +23,7 @@ import { CodingInput } from '../CodingInput/CodingInput';
 import { ContactDetailInput } from '../ContactDetailInput/ContactDetailInput';
 import { ContactPointInput } from '../ContactPointInput/ContactPointInput';
 import { DateTimeInput } from '../DateTimeInput/DateTimeInput';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 import { ExtensionInput } from '../ExtensionInput/ExtensionInput';
 import { HumanNameInput } from '../HumanNameInput/HumanNameInput';
 import { IdentifierInput } from '../IdentifierInput/IdentifierInput';
@@ -23,42 +34,82 @@ import { RangeInput } from '../RangeInput/RangeInput';
 import { RatioInput } from '../RatioInput/RatioInput';
 import { ReferenceInput } from '../ReferenceInput/ReferenceInput';
 import { ResourceArrayInput } from '../ResourceArrayInput/ResourceArrayInput';
+import { SensitiveTextarea } from '../SensitiveTextarea/SensitiveTextarea';
 import { TimingInput } from '../TimingInput/TimingInput';
 import { getErrorsForInput } from '../utils/outcomes';
+import { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from './ResourcePropertyInput.utils';
 
-export interface ResourcePropertyInputProps {
-  property: ElementDefinition;
-  name: string;
-  defaultPropertyType?: PropertyType;
-  defaultValue?: any;
-  arrayElement?: boolean;
-  onChange?: (value: any, propName?: string) => void;
-  outcome?: OperationOutcome;
+export interface ResourcePropertyInputProps extends BaseInputProps {
+  readonly property: ExtendedInternalSchemaElement;
+  readonly name: string;
+  readonly defaultPropertyType?: string | undefined;
+  readonly defaultValue: any;
+  readonly arrayElement?: boolean | undefined;
+  readonly onChange?: (value: any, propName?: string) => void;
 }
 
 export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.Element {
-  const property = props.property;
-  const propertyType = props.defaultPropertyType ?? (property.type?.[0]?.code as PropertyType);
-  const name = props.name;
-  const value = props.defaultValue;
-
-  if (property.max === '*' && !props.arrayElement) {
-    if (propertyType === PropertyType.Attachment) {
-      return <AttachmentArrayInput name={name} defaultValue={value} onChange={props.onChange} />;
-    }
-    return <ResourceArrayInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
-  }
-
+  const { property, name, onChange, defaultValue } = props;
+  const defaultPropertyType =
+    props.defaultPropertyType && props.defaultPropertyType !== 'undefined'
+      ? props.defaultPropertyType
+      : property.type[0].code;
   const propertyTypes = property.type as ElementDefinitionType[];
-  if (propertyTypes.length > 1) {
+
+  if ((property.isArray || property.max > 1) && !props.arrayElement) {
+    if (defaultPropertyType === PropertyType.Attachment) {
+      return (
+        <AttachmentArrayInput
+          name={name}
+          defaultValue={defaultValue}
+          onChange={onChange}
+          disabled={property.readonly}
+        />
+      );
+    }
+
+    // Extensions are a special type of array that shouldn't be indented
+    const indent = propertyTypes[0]?.code !== PropertyType.Extension;
+    return (
+      <ResourceArrayInput
+        property={property}
+        name={name}
+        path={props.path}
+        valuePath={props.valuePath}
+        defaultValue={defaultValue}
+        indent={indent}
+        onChange={onChange}
+        outcome={props.outcome}
+      />
+    );
+  } else if (propertyTypes.length > 1) {
     return <ElementDefinitionInputSelector elementDefinitionTypes={propertyTypes} {...props} />;
   } else {
-    return <ElementDefinitionTypeInput elementDefinitionType={propertyTypes[0]} {...props} />;
+    return (
+      <ElementDefinitionTypeInput
+        name={name}
+        defaultValue={defaultValue}
+        onChange={(newValue: any) => {
+          if (props.onChange) {
+            const newPropName = props.name.replace('[x]', capitalize(propertyTypes[0].code as string));
+            props.onChange(newValue, newPropName);
+          }
+        }}
+        outcome={props.outcome}
+        elementDefinitionType={propertyTypes[0]}
+        min={property.min}
+        max={property.min}
+        binding={property.binding}
+        path={props.path}
+        valuePath={props.valuePath}
+        readOnly={property.readonly}
+      />
+    );
   }
 }
 
 export interface ElementDefinitionSelectorProps extends ResourcePropertyInputProps {
-  elementDefinitionTypes: ElementDefinitionType[];
+  readonly elementDefinitionTypes: ElementDefinitionType[];
 }
 
 export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorProps): JSX.Element {
@@ -72,10 +123,12 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
   }
   const [selectedType, setSelectedType] = useState(initialPropertyType);
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" grow wrap="nowrap" align="flex-start">
       <NativeSelect
+        disabled={props.property.readonly}
         style={{ width: '200px' }}
         defaultValue={selectedType.code}
+        data-testid={props.name && props.name + '-selector'}
         onChange={(e) => {
           setSelectedType(
             propertyTypes.find(
@@ -89,28 +142,90 @@ export function ElementDefinitionInputSelector(props: ElementDefinitionSelectorP
         }))}
       />
       <ElementDefinitionTypeInput
-        {...props}
+        name={props.name}
+        defaultValue={props.defaultValue}
+        outcome={props.outcome}
         elementDefinitionType={selectedType}
         onChange={(newValue: any) => {
           if (props.onChange) {
             props.onChange(newValue, props.name.replace('[x]', capitalize(selectedType.code as string)));
           }
         }}
+        min={props.property.min}
+        max={props.property.max}
+        binding={props.property.binding}
+        path={props.property.path}
+        valuePath={props.valuePath}
+        readOnly={props.property.readonly}
       />
     </Group>
   );
 }
 
-export interface ElementDefinitionTypeInputProps extends ResourcePropertyInputProps {
-  elementDefinitionType: ElementDefinitionType;
+// Avoiding optional props on lower-level components like to make it more difficult to misuse
+export interface ElementDefinitionTypeInputProps
+  extends Pick<ResourcePropertyInputProps, 'name' | 'path' | 'valuePath' | 'defaultValue' | 'onChange' | 'outcome'> {
+  readonly elementDefinitionType: ElementDefinitionType;
+  readonly min: number;
+  readonly max: number;
+  readonly binding: ElementDefinitionBinding | undefined;
+  readonly readOnly?: boolean;
 }
 
 export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProps): JSX.Element {
-  const property = props.property;
-  const propertyType = props.elementDefinitionType.code as PropertyType;
-  const name = props.name;
-  const value = props.defaultValue;
-  const required = property.min !== undefined && property.min > 0;
+  const { name, onChange, outcome, binding, path, valuePath, readOnly } = props;
+  const required = props.min !== undefined && props.min > 0;
+
+  const propertyType = props.elementDefinitionType.code;
+
+  const elementsContext = useContext(ElementsContext);
+  const defaultValue = useMemo(() => {
+    if (!isComplexTypeCode(propertyType)) {
+      return props.defaultValue;
+    }
+
+    if (!isEmpty(props.defaultValue)) {
+      return props.defaultValue;
+    }
+
+    const withDefaults = Object.create(null);
+    if (elementsContext.path === props.path) {
+      applyDefaultValuesToElement(withDefaults, elementsContext.elements);
+    } else {
+      const key = getPathDifference(elementsContext.path, props.path);
+      if (key === undefined) {
+        return props.defaultValue;
+      }
+      applyDefaultValuesToElement(withDefaults, elementsContext.elements, key);
+    }
+
+    if (isPopulated(withDefaults)) {
+      return withDefaults;
+    }
+
+    return props.defaultValue;
+  }, [propertyType, elementsContext.path, elementsContext.elements, props.path, props.defaultValue]);
+
+  if (!propertyType) {
+    return <div>Property type not specified </div>;
+  }
+
+  function getComplexInputProps(): ComplexTypeInputProps<any> {
+    return { name, defaultValue, onChange, outcome, path, valuePath, disabled: readOnly };
+  }
+
+  function getPrimitiveInputProps(): PrimitiveTypeInputProps {
+    const error = getErrorsForInput(props.outcome, valuePath ?? path);
+    return {
+      id: name,
+      name,
+      'data-testid': name,
+      defaultValue,
+      required,
+      error,
+      disabled: readOnly,
+    };
+  }
 
   switch (propertyType) {
     // 2.24.0.1 Primitive Types
@@ -122,88 +237,87 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.time:
     case PropertyType.uri:
     case PropertyType.url:
+      if (props.path === 'Project.secret.value[x]') {
+        return (
+          <SensitiveTextarea
+            {...getPrimitiveInputProps()}
+            onChange={(e) => {
+              if (props.onChange) {
+                props.onChange(e.currentTarget.value);
+              }
+            }}
+          />
+        );
+      }
+
       return (
         <TextInput
-          id={name}
-          name={name}
-          data-testid={name}
-          defaultValue={value}
-          required={required}
+          {...getPrimitiveInputProps()}
           onChange={(e) => {
-            if (props.onChange) {
-              props.onChange(e.currentTarget.value);
+            if (onChange) {
+              onChange(e.currentTarget.value);
             }
           }}
-          error={getErrorsForInput(props.outcome, name)}
         />
       );
     case PropertyType.date:
       return (
         <TextInput
+          {...getPrimitiveInputProps()}
           type="date"
-          id={name}
-          name={name}
-          data-testid={name}
-          defaultValue={value}
-          required={required}
           onChange={(e) => {
-            if (props.onChange) {
-              props.onChange(e.currentTarget.value);
+            if (onChange) {
+              onChange(e.currentTarget.value);
             }
           }}
-          error={getErrorsForInput(props.outcome, name)}
         />
       );
     case PropertyType.dateTime:
     case PropertyType.instant:
-      return <DateTimeInput name={name} defaultValue={value} onChange={props.onChange} outcome={props.outcome} />;
+      return <DateTimeInput {...getPrimitiveInputProps()} onChange={onChange} outcome={outcome} />;
     case PropertyType.decimal:
     case PropertyType.integer:
     case PropertyType.positiveInt:
     case PropertyType.unsignedInt:
       return (
         <TextInput
+          {...getPrimitiveInputProps()}
           type="number"
           step={propertyType === PropertyType.decimal ? 'any' : '1'}
-          id={name}
-          name={name}
-          data-testid={name}
-          defaultValue={value}
-          required={required}
           onChange={(e) => {
-            if (props.onChange) {
-              props.onChange(e.currentTarget.valueAsNumber);
+            if (onChange) {
+              const num = e.currentTarget.valueAsNumber;
+              onChange(Number.isNaN(num) ? undefined : num);
             }
           }}
         />
       );
     case PropertyType.code:
-      return <CodeInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
+      // overwrite getPrimitiveInputProps().error since FormSection already shows errors
+      return (
+        <CodeInput {...getPrimitiveInputProps()} error={undefined} onChange={onChange} binding={binding?.valueSet} />
+      );
     case PropertyType.boolean:
       return (
         <Checkbox
-          id={name}
-          name={name}
-          data-testid={name}
-          defaultChecked={!!value}
+          {...getPrimitiveInputProps()}
+          defaultChecked={Boolean(defaultValue)}
           onChange={(e) => {
-            if (props.onChange) {
-              props.onChange(e.currentTarget.checked);
+            if (onChange) {
+              onChange(e.currentTarget.checked);
             }
           }}
         />
       );
+    case PropertyType.base64Binary:
     case PropertyType.markdown:
       return (
         <Textarea
-          id={name}
-          name={name}
-          data-testid={name}
-          defaultValue={value}
-          required={required}
+          {...getPrimitiveInputProps()}
+          spellCheck={propertyType !== PropertyType.base64Binary}
           onChange={(e) => {
-            if (props.onChange) {
-              props.onChange(e.currentTarget.value);
+            if (onChange) {
+              onChange(e.currentTarget.value);
             }
           }}
         />
@@ -213,69 +327,58 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     // https://www.hl7.org/fhir/datatypes.html#complex
 
     case PropertyType.Address:
-      return <AddressInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <AddressInput {...getComplexInputProps()} />;
     case PropertyType.Annotation:
-      return <AnnotationInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <AnnotationInput {...getComplexInputProps()} />;
     case PropertyType.Attachment:
-      return <AttachmentInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <AttachmentInput {...getComplexInputProps()} />;
     case PropertyType.CodeableConcept:
-      return <CodeableConceptInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
+      return <CodeableConceptInput binding={binding?.valueSet} {...getComplexInputProps()} />;
     case PropertyType.Coding:
-      return <CodingInput property={property} name={name} defaultValue={value} onChange={props.onChange} />;
+      return <CodingInput binding={binding?.valueSet} {...getComplexInputProps()} />;
     case PropertyType.ContactDetail:
-      return <ContactDetailInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <ContactDetailInput {...getComplexInputProps()} />;
     case PropertyType.ContactPoint:
-      return <ContactPointInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <ContactPointInput {...getComplexInputProps()} />;
     case PropertyType.Extension:
-      return <ExtensionInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <ExtensionInput {...getComplexInputProps()} propertyType={props.elementDefinitionType} />;
     case PropertyType.HumanName:
-      return <HumanNameInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <HumanNameInput {...getComplexInputProps()} />;
     case PropertyType.Identifier:
-      return <IdentifierInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <IdentifierInput {...getComplexInputProps()} />;
     case PropertyType.Money:
-      return <MoneyInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <MoneyInput {...getComplexInputProps()} />;
     case PropertyType.Period:
-      return <PeriodInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <PeriodInput {...getComplexInputProps()} />;
     case PropertyType.Duration:
     case PropertyType.Quantity:
-      return <QuantityInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <QuantityInput {...getComplexInputProps()} />;
     case PropertyType.Range:
-      return <RangeInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <RangeInput {...getComplexInputProps()} />;
     case PropertyType.Ratio:
-      return <RatioInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <RatioInput {...getComplexInputProps()} />;
     case PropertyType.Reference:
-      return (
-        <ReferenceInput
-          name={name}
-          defaultValue={value}
-          targetTypes={getTargetTypes(property)}
-          onChange={props.onChange}
-        />
-      );
+      return <ReferenceInput {...getComplexInputProps()} targetTypes={getTargetTypes(props.elementDefinitionType)} />;
     case PropertyType.Timing:
-      return <TimingInput name={name} defaultValue={value} onChange={props.onChange} />;
+      return <TimingInput {...getComplexInputProps()} />;
     case PropertyType.Dosage:
     case PropertyType.UsageContext:
-      return (
-        <BackboneElementInput
-          typeName={propertyType}
-          defaultValue={value}
-          onChange={props.onChange}
-          outcome={props.outcome}
-        />
-      );
     default:
-      return (
-        <BackboneElementInput
-          typeName={getElementDefinitionTypeName(property)}
-          defaultValue={value}
-          onChange={props.onChange}
-          outcome={props.outcome}
-        />
-      );
+      return <BackboneElementInput {...getComplexInputProps()} typeName={propertyType} />;
   }
 }
 
-function getTargetTypes(property?: ElementDefinition): string[] | undefined {
-  return property?.type?.[0]?.targetProfile?.map((p) => p.split('/').pop() as string);
+const RESOURCE_TYPE_URL_PREFIXES = [
+  `${HTTP_HL7_ORG}/fhir/StructureDefinition/`,
+  'https://medplum.com/fhir/StructureDefinition/',
+];
+function getTargetTypes(elementDefinitionType?: ElementDefinitionType): string[] | undefined {
+  return elementDefinitionType?.targetProfile?.map((p) => {
+    const resourceTypePrefix = RESOURCE_TYPE_URL_PREFIXES.find((prefix) => p.startsWith(prefix));
+    if (resourceTypePrefix) {
+      return p.slice(resourceTypePrefix.length);
+    } else {
+      return p;
+    }
+  });
 }

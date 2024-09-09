@@ -1,17 +1,16 @@
 import { Box, Button, Modal, Text } from '@mantine/core';
-import React from 'react';
 
 interface SearchExportDialogProps {
-  visible: boolean;
-  exportCsv?: () => void;
-  exportTransactionBundle?: () => void;
-  onCancel: () => void;
+  readonly visible: boolean;
+  readonly exportCsv?: () => void;
+  readonly exportTransactionBundle?: () => void;
+  readonly onCancel: () => void;
 }
 
 export function SearchExportDialog(props: SearchExportDialogProps): JSX.Element | null {
   return (
     <Modal title="Export" closeButtonProps={{ 'aria-label': 'Close' }} opened={props.visible} onClose={props.onCancel}>
-      <Box display="flex" sx={{ justifyContent: 'space-between' }}>
+      <Box display="flex" style={{ justifyContent: 'space-between' }}>
         {props.exportCsv && <ExportButton text="CSV" exportLogic={props.exportCsv} onCancel={props.onCancel} />}
         {props.exportTransactionBundle && (
           <ExportButton
@@ -21,15 +20,15 @@ export function SearchExportDialog(props: SearchExportDialogProps): JSX.Element 
           />
         )}
       </Box>
-      <Text sx={{ marginTop: '10px', marginLeft: '2px' }}>Limited to 1000 records</Text>
+      <Text style={{ marginTop: '10px', marginLeft: '2px' }}>Limited to 1000 records</Text>
     </Modal>
   );
 }
 
 interface ExportButtonProps {
-  text: string;
-  exportLogic: () => void;
-  onCancel: () => void;
+  readonly text: string;
+  readonly exportLogic: () => void;
+  readonly onCancel: () => void;
 }
 
 export function ExportButton(props: ExportButtonProps): JSX.Element {

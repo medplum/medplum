@@ -1,13 +1,13 @@
 import { Operator, SearchRequest } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
-import { MemoizedSearchControl, useMedplum } from '@medplum/react';
-import React, { useState } from 'react';
+import { SearchControl, useMedplum } from '@medplum/react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProjectId } from '../utils';
 
 export interface MemberTableProps {
-  resourceType: ResourceType;
-  fields: string[];
+  readonly resourceType: ResourceType;
+  readonly fields: string[];
 }
 
 export function MemberTable(props: MemberTableProps): JSX.Element {
@@ -25,7 +25,7 @@ export function MemberTable(props: MemberTableProps): JSX.Element {
   });
 
   return (
-    <MemoizedSearchControl
+    <SearchControl
       search={search}
       onClick={(e) => navigate(`/admin/members/${e.resource.id}`)}
       onChange={(e) => setSearch(e.definition)}

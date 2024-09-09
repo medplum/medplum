@@ -1,9 +1,9 @@
 import { showNotification } from '@mantine/notifications';
 import { BaseLoginRequest, LoginAuthenticationResponse, normalizeErrorString } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
-import React, { useCallback, useEffect, useState } from 'react';
+import { useMedplum } from '@medplum/react-hooks';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Document } from '../Document/Document';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { AuthenticationForm } from './AuthenticationForm';
 import { ChooseProfileForm } from './ChooseProfileForm';
 import { ChooseScopeForm } from './ChooseScopeForm';
@@ -19,7 +19,7 @@ export interface SignInFormProps extends BaseLoginRequest {
   readonly onForgotPassword?: () => void;
   readonly onRegister?: () => void;
   readonly onCode?: (code: string) => void;
-  readonly children?: React.ReactNode;
+  readonly children?: ReactNode;
 }
 
 /**
@@ -31,7 +31,7 @@ export interface SignInFormProps extends BaseLoginRequest {
  * 3) Choose profile - If the user has multiple profiles, prompt to choose one
  * 4) Choose scope - If the user has multiple scopes, prompt to choose one
  * 5) Success - Return to the caller with either a code or a redirect
- * @param props The SignInForm React props.
+ * @param props - The SignInForm React props.
  * @returns The SignInForm React node.
  */
 export function SignInForm(props: SignInFormProps): JSX.Element {
@@ -45,9 +45,10 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     ...baseLoginRequest
   } = props;
   const medplum = useMedplum();
-  const [login, setLogin] = useState<string | undefined>(undefined);
+  const [login, setLogin] = useState<string>();
+  const loginRequested = useRef(false);
   const [mfaRequired, setAuthenticatorRequired] = useState(false);
-  const [memberships, setMemberships] = useState<ProjectMembership[] | undefined>(undefined);
+  const [memberships, setMemberships] = useState<ProjectMembership[]>();
 
   const handleCode = useCallback(
     (code: string): void => {
@@ -102,16 +103,17 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
     // The `useMedplum` hook will return a new instance of the MedplumClient on login
     // We do not want to request the login status again in that case
     // Only request login status once
-    if (loginCode && !login) {
+    if (loginCode && !loginRequested.current && !login) {
+      loginRequested.current = true;
       medplum
         .get('auth/login/' + loginCode)
         .then(handleAuthResponse)
         .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
     }
-  }, [medplum, loginCode, login, handleAuthResponse]);
+  }, [medplum, loginCode, loginRequested, login, handleAuthResponse]);
 
   return (
-    <Document width={450}>
+    <Document width={450} px="sm" py="md">
       {(() => {
         if (!login) {
           return (

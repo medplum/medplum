@@ -1,0 +1,52 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+import ExampleCode from '!!raw-loader!@site/../examples/src/api/fhir/operations/codesystem-import.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
+# CodeSystem Import
+
+Load codes and metadata into the database for a given `CodeSystem`. This is used to build large code systems with
+many thousands of codes, which would not fit inside a single FHIR resource.
+
+```
+[baseUrl]/CodeSystem/$import
+[baseUrl]/CodeSystem/[id]/$import
+```
+
+:::warning Privileged Operation
+
+This operation is only available to Super Admins.
+
+:::
+
+## Parameters
+
+| Name       | Type                 | Description                                                        | Required        |
+| ---------- | -------------------- | ------------------------------------------------------------------ | --------------- |
+| `system`   | `uri`                | The canonical URL of the code system to import into                | No<sup>\*</sup> |
+| `concept`  | `Coding`             | A code, along with optional display text to add to the code system | No              |
+| `property` | `Part[]` (see below) | Metadata about codes in the code system to be imported             | No              |
+
+<sup>\*</sup> If `system` is not provided, the operation must be invoked on a specific `CodeSystem` instance by ID.
+
+Each `property` parameter contains a `part` array with three nested parameters:
+
+| Name       | Type     | Description                            | Required |
+| ---------- | -------- | -------------------------------------- | -------- |
+| `code`     | `code`   | The code to which the property applies | Yes      |
+| `property` | `code`   | The property name                      | Yes      |
+| `value`    | `string` | The value of the property              | Yes      |
+
+## Output
+
+The operation returns the `CodeSystem` resource representing the code system into which the given concepts and
+properties were imported.
+
+## Examples
+
+**Request**:
+
+<MedplumCodeBlock language="ts" selectBlocks="import">
+  {ExampleCode}
+</MedplumCodeBlock>

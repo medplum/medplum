@@ -1,11 +1,10 @@
 import { formatDateTime } from '@medplum/core';
 import { Reference, Specimen } from '@medplum/fhirtypes';
 import { useResource } from '@medplum/react';
-import React from 'react';
 import { InfoBar } from './InfoBar';
 
 export interface SpecimenHeaderProps {
-  specimen: Specimen | Reference<Specimen>;
+  readonly specimen: Specimen | Reference<Specimen>;
 }
 
 export function SpecimenHeader(props: SpecimenHeaderProps): JSX.Element | null {

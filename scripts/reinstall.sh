@@ -7,7 +7,6 @@ set -e
 set -x
 
 rm -rf node_modules
-rm -rf package-lock.json
 
 for dir in `ls packages`; do
   if test -d "packages/$dir/node_modules"; then
@@ -21,4 +20,10 @@ for dir in `ls examples`; do
   fi
 done
 
-npm i --strict-peer-deps
+# If called with "--update", then use npm i
+if [ "$1" == "--update" ]; then
+  rm -rf package-lock.json
+  npm i --strict-peer-deps
+else
+  npm ci --strict-peer-deps
+fi

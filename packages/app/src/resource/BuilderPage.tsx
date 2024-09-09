@@ -2,7 +2,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
 import { Resource, ResourceType } from '@medplum/fhirtypes';
 import { Document, PlanDefinitionBuilder, QuestionnaireBuilder, useMedplum } from '@medplum/react';
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { cleanResource } from './utils';
 
@@ -19,7 +19,7 @@ export function BuilderPage(): JSX.Element | null {
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {
-          showNotification({ color: 'red', message: normalizeErrorString(err) });
+          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
         });
     },
     [medplum]

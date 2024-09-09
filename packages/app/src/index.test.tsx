@@ -1,5 +1,5 @@
-import { act, screen, waitFor } from '@testing-library/react';
 import { initApp } from './index';
+import { act, screen } from './test-utils/render';
 
 describe('App Index', () => {
   beforeAll(() => {
@@ -23,10 +23,6 @@ describe('App Index', () => {
       await initApp();
     });
 
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    await act(async () => {
-      document.getElementById('root')?.remove();
-    });
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 });

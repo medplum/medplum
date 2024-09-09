@@ -1,11 +1,11 @@
-import { QuestionnaireItemEnableWhen } from '@medplum/fhirtypes';
-import { isChoiceQuestion, isQuestionEnabled } from './questionnaire';
+import { QuestionnaireItem, QuestionnaireItemEnableWhen } from '@medplum/fhirtypes';
+import { formatReferenceString, getNewMultiSelectValues, isChoiceQuestion, isQuestionEnabled } from './questionnaire';
 
 describe('QuestionnaireUtils', () => {
   test('isChoiceQuestion', () => {
-    expect(isChoiceQuestion({ type: 'string' })).toBe(false);
-    expect(isChoiceQuestion({ type: 'choice' })).toBe(true);
-    expect(isChoiceQuestion({ type: 'open-choice' })).toBe(true);
+    expect(isChoiceQuestion({ linkId: 'q3', type: 'string' })).toBe(false);
+    expect(isChoiceQuestion({ linkId: 'q3', type: 'choice' })).toBe(true);
+    expect(isChoiceQuestion({ linkId: 'q3', type: 'open-choice' })).toBe(true);
   });
 });
 
@@ -13,14 +13,18 @@ test('isQuestionEnabled', () => {
   expect(
     isQuestionEnabled(
       {
+        linkId: 'q3',
+        type: 'string',
         enableBehavior: 'any',
         enableWhen: [
           {
             question: 'q1',
+            operator: '=',
             answerString: 'Yes',
           },
           {
             question: 'q2',
+            operator: '=',
             answerString: 'Yes',
           },
         ],
@@ -44,17 +48,19 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableBehavior: 'any',
           enableWhen: [
             {
               question: 'q1',
-              answerString: 'Yes',
               operator: '=',
+              answerString: 'Yes',
             },
             {
               question: 'q2',
-              answerString: 'Yes',
               operator: '=',
+              answerString: 'Yes',
             },
           ],
         },
@@ -76,6 +82,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableBehavior: 'any',
           enableWhen: [
             {
@@ -108,6 +116,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableBehavior: 'all',
           enableWhen: [
             {
@@ -140,6 +150,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableBehavior: 'all',
           enableWhen: [
             {
@@ -172,6 +184,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableBehavior: 'any',
           enableWhen: [
             {
@@ -205,6 +219,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableBehavior: 'all',
           enableWhen: [
             {
@@ -237,6 +253,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableBehavior: 'any',
           enableWhen: [
             {
@@ -269,6 +287,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableBehavior: 'all',
           enableWhen: [
             {
@@ -301,6 +321,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableBehavior: 'all',
           enableWhen: [
             {
@@ -333,6 +355,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen: [
             {
               question: 'q1',
@@ -359,6 +383,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen: [
             {
               question: 'q1',
@@ -385,6 +411,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen: [
             {
               question: 'q1',
@@ -407,6 +435,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen: [
             {
               question: 'q1',
@@ -429,6 +459,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen: [
             {
               question: 'q1',
@@ -451,6 +483,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen: [
             {
               question: 'q1',
@@ -473,6 +507,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen: [
             {
               question: 'q1',
@@ -499,6 +535,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen: [
             {
               question: 'q1',
@@ -525,6 +563,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen: [
             {
               question: 'q3',
@@ -551,6 +591,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen: [
             {
               question: 'q3',
@@ -585,6 +627,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -599,6 +643,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -623,6 +669,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -637,6 +685,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -661,6 +711,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -675,6 +727,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -699,6 +753,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -713,6 +769,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -737,6 +795,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -751,6 +811,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -765,6 +827,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -785,6 +849,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -799,6 +865,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -807,15 +875,14 @@ describe('isQuestionEnabled', () => {
             answer: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
           },
         ]
-        // {
-        //   q1: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
-        // }
       )
     ).toBe(true);
 
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -836,6 +903,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -850,6 +919,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -864,6 +935,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -878,6 +951,8 @@ describe('isQuestionEnabled', () => {
     expect(
       isQuestionEnabled(
         {
+          linkId: 'q3',
+          type: 'string',
           enableWhen,
         },
         [
@@ -888,5 +963,110 @@ describe('isQuestionEnabled', () => {
         ]
       )
     ).toBe(false);
+  });
+
+  test('multi-select map selected values', () => {
+    const selected = ['value1', 'value2'];
+    const propertyName = 'valueString';
+    const item: QuestionnaireItem = {
+      linkId: 'q3',
+      type: 'string',
+      answerOption: [
+        {
+          valueString: 'value1',
+        },
+        {
+          valueString: 'value2',
+        },
+      ],
+    };
+
+    const result = getNewMultiSelectValues(selected, propertyName, item);
+
+    expect(result).toEqual([{ valueString: 'value1' }, { valueString: 'value2' }]);
+  });
+
+  test('multi-select non selected values', () => {
+    const selected = ['nonMatchingValue'];
+    const propertyName = 'valueString';
+    const item: QuestionnaireItem = {
+      linkId: 'q3',
+      type: 'string',
+      answerOption: [
+        {
+          valueString: 'value1',
+        },
+        {
+          valueString: 'value2',
+        },
+      ],
+    };
+
+    const result = getNewMultiSelectValues(selected, propertyName, item);
+
+    expect(result).toEqual([{ valueString: undefined }]);
+  });
+
+  test('multi-select empty array', () => {
+    const selected: string[] = [];
+    const propertyName = 'valueString';
+    const item: QuestionnaireItem = {
+      linkId: 'q3',
+      type: 'string',
+      answerOption: [{ valueString: 'value1' }, { valueString: 'value2' }],
+    };
+
+    const result = getNewMultiSelectValues(selected, propertyName, item);
+
+    expect(result).toEqual([]);
+  });
+
+  test('multi-select with value coding', () => {
+    const selected = ['code1'];
+    const propertyName = 'valueCoding';
+    const item: QuestionnaireItem = {
+      linkId: 'q3',
+      type: 'string',
+      answerOption: [
+        {
+          valueCoding: { code: 'code1' },
+        },
+        {
+          valueCoding: { code: 'code2' },
+        },
+      ],
+    };
+
+    const result = getNewMultiSelectValues(selected, propertyName, item);
+    expect(result).toEqual([{ valueCoding: { code: 'code1' } }]);
+  });
+
+  test('multi-select with non existing values', () => {
+    const selected = ['value1'];
+    const propertyName = 'nonExistingProperty';
+    const item: QuestionnaireItem = {
+      linkId: 'q3',
+      type: 'string',
+      answerOption: [{ valueString: 'value1' }],
+    };
+
+    const result = getNewMultiSelectValues(selected, propertyName, item);
+
+    expect(result).toEqual([{ nonExistingProperty: undefined }]);
+  });
+
+  test('Reference with display', () => {
+    const reference = { type: 'valueReference', value: { reference: 'Patient/123', display: 'Patient 123' } };
+    expect(formatReferenceString(reference)).toBe('Patient 123');
+  });
+
+  test('Reference with no display', () => {
+    const reference = { type: 'valueReference', value: { reference: 'Patient/123', display: undefined } };
+    expect(formatReferenceString(reference)).toBe('Patient/123');
+  });
+
+  test('Reference String with no display or reference', () => {
+    const reference = { type: 'valueReference', value: { reference: undefined, display: undefined, id: '123' } };
+    expect(formatReferenceString(reference)).toBe('{"id":"123"}');
   });
 });

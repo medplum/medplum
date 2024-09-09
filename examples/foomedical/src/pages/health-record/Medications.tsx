@@ -18,11 +18,11 @@ export function Medications(): JSX.Element {
     <Box p="xl">
       <Title mb="lg">Medications</Title>
       <InfoSection title="Medications">
-        <Stack spacing={0}>
+        <Stack gap={0}>
           {medications.map((med) => (
             <InfoButton key={med.id} onClick={() => navigate(`./${med.id}`)}>
               <div>
-                <Text c={theme.fn.primaryColor()} fw={500} mb={4}>
+                <Text c={theme.primaryColor} fw={500} mb={4}>
                   {med?.medicationCodeableConcept?.text}
                 </Text>
                 <Text c="gray.6">{med.requester?.display}</Text>

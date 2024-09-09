@@ -2,7 +2,6 @@ import { Alert, Anchor } from '@mantine/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm, useResource } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import React from 'react';
 import { useParams } from 'react-router-dom';
 
 export function PreviewPage(): JSX.Element | null {

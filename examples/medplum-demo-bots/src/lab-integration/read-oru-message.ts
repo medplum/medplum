@@ -5,9 +5,13 @@ import {
   getReferenceString,
   Hl7Message,
   Hl7Segment,
+  LOINC,
   MedplumClient,
+  normalizeErrorString,
   parseHl7DateTime,
+  SNOMED,
   streamToBuffer,
+  UCUM,
 } from '@medplum/core';
 import {
   Attachment,
@@ -33,8 +37,8 @@ const PARTNER_TIMEZONE = '-05:00';
  * resources. Incoming data is the the form of HL7v2 ORU messages
  *
  * See: https://v2plus.hl7.org/2021Jan/message-structure/ORU_R01.html
- * @param medplum The Medplum client
- * @param event The Bot event
+ * @param medplum - The Medplum client
+ * @param event - The Bot event
  * @returns The Bot result
  */
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
@@ -92,9 +96,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
  *
  * Note: While ORU is an HL7 standard, every LIS/EHR system implements the standard in a slightly different way
  *
- * @param medplum The Medplum Client object
- * @param message Parsed ORU message.
- * @param performer The `Organization` resource corresponding to the lab that performed the test.
+ * @param medplum - The Medplum Client object
+ * @param message - Parsed ORU message.
+ * @param performer - The `Organization` resource corresponding to the lab that performed the test.
  */
 export async function processOruMessage(
   medplum: MedplumClient,
@@ -158,9 +162,10 @@ export async function processOruMessage(
   let observations = processObxSegments(message, serviceRequest, performer);
 
   // If there's an existing report, just update it with the new values
-  const report = existingReport || {
+  const report: DiagnosticReport = existingReport ?? {
     resourceType: 'DiagnosticReport',
-    code: serviceRequest.code,
+    status: 'preliminary',
+    code: serviceRequest.code as CodeableConcept,
     subject: serviceRequest.subject,
     basedOn: [createReference(serviceRequest)],
     performer: [createReference(performer)],
@@ -193,12 +198,12 @@ export async function processOruMessage(
 
 /**
  * Check if the order was cancelled and set the appropriate status fields if so
- * @param medplum MedplumClient object
- * @param message  parsed HL7 message
- * @param serviceRequest `ServiceRequest` representing this order
- * @param observations  parsed `Observation` resources
- * @param report `DiagnosticReport` for these results
- * @param specimens `Specimen` associated with the results
+ * @param medplum - MedplumClient object
+ * @param message - parsed HL7 message
+ * @param serviceRequest - `ServiceRequest` representing this order
+ * @param observations - parsed `Observation` resources
+ * @param report - `DiagnosticReport` for these results
+ * @param specimens - `Specimen` associated with the results
  */
 async function handleOrderCancellation(
   medplum: MedplumClient,
@@ -231,9 +236,9 @@ async function handleOrderCancellation(
 /**
  * Check to see if the order was cancelled. If so, return the cancellation reason
  *
- * @param medplum The MedplumClient object.
- * @param message The parsed HL7 message.
- * @param serviceRequest The ServiceRequest resource.
+ * @param medplum - The MedplumClient object.
+ * @param message - The parsed HL7 message.
+ * @param serviceRequest - The ServiceRequest resource.
  * @returns The cancellation reason, if any.
  */
 async function getCancellationReason(
@@ -284,10 +289,10 @@ async function readSFTPDirectory(sftp: SftpClient, dir: string, batchSize = 25):
         try {
           stream = sftp.createReadStream(filePath);
           result = await streamToBuffer(stream);
-        } catch (err: any) {
+        } catch (err) {
           // Throw any errors related to file reading
-          console.error(`[${filePath}] Error processing file: ${err.message}`);
-          throw err as Error;
+          console.error(`[${filePath}] Error processing file: ${normalizeErrorString(err)}`);
+          throw err;
         } finally {
           if (stream) {
             stream.destroy();
@@ -313,9 +318,9 @@ async function readSFTPDirectory(sftp: SftpClient, dir: string, batchSize = 25):
  * Some observations have notes that are stored in subsequent lines, so we need to keep a pointer to the last
  * processed observation
  *
- * @param message Parsed HL7 Message
- * @param serviceRequest Current `ServiceRequest` representing the lab order
- * @param performer A reference to the performing lab
+ * @param message - Parsed HL7 Message
+ * @param serviceRequest - Current `ServiceRequest` representing the lab order
+ * @param performer - A reference to the performing lab
  * @returns An array of `Observation` resources.
  */
 function processObxSegments(
@@ -365,9 +370,9 @@ function processObxSegments(
  *
  * Note that some systems send numerical values with comparators (e.g. <, >) as structured text fields
  *
- * @param segment The OBX segment to convert.
- * @param serviceRequest The current `ServiceRequest` representing the lab order.
- * @param performer The performing lab.
+ * @param segment - The OBX segment to convert.
+ * @param serviceRequest - The current `ServiceRequest` representing the lab order.
+ * @param performer - The performing lab.
  * @returns The converted `Observation` resource.
  */
 function processObservation(
@@ -402,7 +407,7 @@ function processObservation(
   const value = segment.getComponent(5, 1);
   const unit = segment.getComponent(6, 1);
   const refRange = segment.getComponent(7, 1);
-  let quantity: Quantity | undefined = { unit, system: 'http://unitsofmeasure.org' };
+  let quantity: Quantity | undefined = { unit, system: UCUM };
   let interpretation: CodeableConcept | undefined;
 
   if (valueType === 'NM') {
@@ -434,9 +439,9 @@ function processObservation(
 
 /**
  * Check if there is an existing `Observation` resource with the same LOINC code, and update if necessary
- * @param medplum The Medplum Client
- * @param updatedObservation The latest `Observation`
- * @param existingObservations The existing `Observation` on the server
+ * @param medplum - The Medplum Client
+ * @param updatedObservation - The latest `Observation`
+ * @param existingObservations - The existing `Observation` on the server
  * @returns The updated `Observation` resource.
  */
 function createOrUpdateObservation(
@@ -447,7 +452,7 @@ function createOrUpdateObservation(
   const existingObservation = findResourceByCode(
     existingObservations,
     updatedObservation.code as CodeableConcept,
-    'http://loinc.org'
+    LOINC
   );
   if (existingObservation) {
     return medplum.updateResource({
@@ -461,10 +466,10 @@ function createOrUpdateObservation(
 /**
  * Upload any embedded rendered PDF reports in the HL7 message as a FHIR `Media` resource
  * and attach it to the diagnostic report in the `DiagnosticReport.presentedForm` property
- * @param medplum The Medplum Client.
- * @param report The current `DiagnosticReport` resource.
- * @param fileName The name of the PDF file.
- * @param message The HL7 message.
+ * @param medplum - The Medplum Client.
+ * @param report - The current `DiagnosticReport` resource.
+ * @param fileName - The name of the PDF file.
+ * @param message - The HL7 message.
  * @returns The uploaded `Media` resources.
  */
 async function uploadEmbeddedPdfs(
@@ -511,7 +516,7 @@ function parseValueWithComparator(value: string): Quantity | undefined {
 
 function parseReferenceRange(rangeString: string, unit: string): Range {
   rangeString = rangeString.trim();
-  const system = 'http://unitsofmeasure.org';
+  const system = UCUM;
   if (rangeString.includes('-')) {
     const [low, high, ..._] = rangeString.split('-');
     return {
@@ -619,7 +624,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   BUN: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'BUN',
         display: 'BUN',
       },
@@ -629,7 +634,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   CHOL: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'CHOL',
         display: 'CHOL',
       },
@@ -639,7 +644,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   CREA: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'CREAT',
         display: 'CREAT',
       },
@@ -649,7 +654,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   HDLC3: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'HDL',
         display: 'HDL',
       },
@@ -659,7 +664,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   TRIG: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'TRIG',
         display: 'TRIG',
       },
@@ -669,7 +674,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   TSH: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'TSH',
         display: 'TSH',
       },
@@ -679,7 +684,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   DLDL: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'LDL',
         display: 'LDL-direct',
       },
@@ -689,7 +694,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   HGBA1C: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'HBA1C',
         display: 'HBA1C',
       },
@@ -699,7 +704,7 @@ const LOINC_CODES: Record<string, CodeableConcept> = {
   LDL: {
     coding: [
       {
-        system: 'http://loinc.org',
+        system: LOINC,
         code: 'LDL-CALCULATED',
         display: 'LDL-CALCULATED',
       },
@@ -718,8 +723,7 @@ export const CANCELLATION_REASONS: Record<string, CodeableConcept> = {
         display: 'Clotting',
       },
       {
-        // snomed
-        system: 'http://snomed.info/sct',
+        system: SNOMED,
         code: '281279002',
         display: 'Sample clotted',
       },
@@ -734,8 +738,7 @@ export const CANCELLATION_REASONS: Record<string, CodeableConcept> = {
         display: 'Quantity not sufficient',
       },
       {
-        // snomed
-        system: 'http://snomed.info/sct',
+        system: SNOMED,
         code: '281268007',
         display: 'Insufficient sample',
       },
@@ -750,8 +753,7 @@ export const CANCELLATION_REASONS: Record<string, CodeableConcept> = {
         display: 'Hemolysis',
       },
       {
-        // snomed
-        system: 'http://snomed.info/sct',
+        system: SNOMED,
         code: '281288006',
         display: 'Sample grossly hemolyzed',
       },
@@ -776,8 +778,7 @@ export const CANCELLATION_REASONS: Record<string, CodeableConcept> = {
         display: 'Labeling',
       },
       {
-        // snomed
-        system: 'http://snomed.info/sct',
+        system: SNOMED,
         code: '281265005',
         display: 'Sample incorrectly labeled',
       },

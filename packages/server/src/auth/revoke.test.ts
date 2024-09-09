@@ -5,11 +5,9 @@ import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { tryLogin } from '../oauth/utils';
+import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
 import { setPassword } from './setpassword';
-import { withTestContext } from '../test.setup';
-
-jest.mock('@aws-sdk/client-sesv2');
 
 const app = express();
 

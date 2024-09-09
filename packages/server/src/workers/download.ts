@@ -1,13 +1,14 @@
 import { arrayify, crawlResource, isGone, normalizeOperationOutcome, TypedValue } from '@medplum/core';
-import { Attachment, Binary, Meta, Resource } from '@medplum/fhirtypes';
+import { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
-import { getConfig, MedplumRedisConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getConfig, MedplumServerConfig } from '../config';
+import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { globalLogger } from '../logger';
-import { getRequestContext } from '../context';
+import { parseTraceparent } from '../traceparent';
 
 /*
  * The download worker inspects resources,
@@ -21,9 +22,11 @@ import { getRequestContext } from '../context';
  */
 
 export interface DownloadJobData {
-  readonly resourceType: string;
+  readonly resourceType: ResourceType;
   readonly id: string;
   readonly url: string;
+  readonly requestId?: string;
+  readonly traceId?: string;
 }
 
 const queueName = 'DownloadQueue';
@@ -35,11 +38,11 @@ let worker: Worker<DownloadJobData> | undefined = undefined;
  * Initializes the download worker.
  * Sets up the BullMQ job queue.
  * Sets up the BullMQ worker.
- * @param config The Redis config.
+ * @param config - The Medplum server config to use.
  */
-export function initDownloadWorker(config: MedplumRedisConfig): void {
+export function initDownloadWorker(config: MedplumServerConfig): void {
   const defaultOptions: QueueBaseOptions = {
-    connection: config,
+    connection: config.redis,
   };
 
   queue = new Queue<DownloadJobData>(queueName, {
@@ -53,7 +56,14 @@ export function initDownloadWorker(config: MedplumRedisConfig): void {
     },
   });
 
-  worker = new Worker<DownloadJobData>(queueName, execDownloadJob, defaultOptions);
+  worker = new Worker<DownloadJobData>(
+    queueName,
+    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execDownloadJob(job)),
+    {
+      ...defaultOptions,
+      ...config.bullmq,
+    }
+  );
   worker.on('completed', (job) => globalLogger.info(`Completed job ${job.id} successfully`));
   worker.on('failed', (job, err) => globalLogger.info(`Failed job ${job?.id} with ${err}`));
 }
@@ -61,17 +71,17 @@ export function initDownloadWorker(config: MedplumRedisConfig): void {
 /**
  * Shuts down the download worker.
  * Closes the BullMQ job queue.
- * Clsoes the BullMQ worker.
+ * Closes the BullMQ worker.
  */
 export async function closeDownloadWorker(): Promise<void> {
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-
   if (worker) {
     await worker.close();
     worker = undefined;
+  }
+
+  if (queue) {
+    await queue.close();
+    queue = undefined;
   }
 }
 
@@ -96,15 +106,18 @@ export function getDownloadQueue(): Queue<DownloadJobData> | undefined {
  * at that moment in time.  For each matching download, we enqueue the job.
  * The only purpose of the job is to make the outbound HTTP request,
  * not to re-evaluate the download.
- * @param resource The resource that was created or updated.
+ * @param resource - The resource that was created or updated.
  */
 export async function addDownloadJobs(resource: Resource): Promise<void> {
+  const ctx = tryGetRequestContext();
   for (const attachment of getAttachments(resource)) {
     if (isExternalUrl(attachment.url)) {
       await addDownloadJobData({
         resourceType: resource.resourceType,
         id: resource.id as string,
         url: attachment.url,
+        requestId: ctx?.requestId,
+        traceId: ctx?.traceId,
       });
     }
   }
@@ -117,7 +130,7 @@ export async function addDownloadJobs(resource: Resource): Promise<void> {
  *  1) They refer to a fully qualified fhir/R4/Binary/ endpoint.
  *  2) They refer to the Medplum storage URL.
  *  3) They refer to a Binary in canonical form (i.e., "Binary/123").
- * @param url The Media content URL.
+ * @param url - The Media content URL.
  * @returns True if the URL is an external URL.
  */
 function isExternalUrl(url: string | undefined): url is string {
@@ -131,29 +144,26 @@ function isExternalUrl(url: string | undefined): url is string {
 
 /**
  * Adds a download job to the queue.
- * @param job The download job details.
+ * @param job - The download job details.
  */
 async function addDownloadJobData(job: DownloadJobData): Promise<void> {
-  const ctx = getRequestContext();
-  ctx.logger.debug(`Adding Download job`);
   if (queue) {
     await queue.add(jobName, job);
-  } else {
-    ctx.logger.debug(`Download queue not initialized`);
   }
 }
 
 /**
  * Executes a download job.
- * @param job The download job details.
+ * @param job - The download job details.
  */
-export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> {
+export async function execDownloadJob<T extends Resource = Resource>(job: Job<DownloadJobData>): Promise<void> {
+  const systemRepo = getSystemRepo();
   const ctx = getRequestContext();
   const { resourceType, id, url } = job.data;
 
-  let resource;
+  let resource: T;
   try {
-    resource = await systemRepo.readResource(resourceType, id);
+    resource = await systemRepo.readResource<T>(resourceType, id);
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
     if (isGone(outcome)) {
@@ -168,9 +178,20 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     return;
   }
 
+  const headers: HeadersInit = {};
+  const traceId = job.data.traceId;
+  if (traceId) {
+    headers['x-trace-id'] = traceId;
+    if (parseTraceparent(traceId)) {
+      headers['traceparent'] = traceId;
+    }
+  }
+
   try {
     ctx.logger.info('Requesting content at: ' + url);
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers,
+    });
 
     ctx.logger.info('Received status: ' + response.status);
     if (response.status >= 400) {
@@ -178,12 +199,15 @@ export async function execDownloadJob(job: Job<DownloadJobData>): Promise<void> 
     }
 
     const contentDisposition = response.headers.get('content-disposition') as string | undefined;
-    const contentType = response.headers.get('content-type') as string | undefined;
+    const contentType = response.headers.get('content-type') as string;
     const binary = await systemRepo.createResource<Binary>({
       resourceType: 'Binary',
       contentType,
       meta: {
         project: resource.meta?.project,
+      },
+      securityContext: {
+        reference: `${resource.resourceType}/${resource.id}`,
       },
     });
     if (response.body === null) {

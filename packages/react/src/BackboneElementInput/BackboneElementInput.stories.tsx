@@ -1,5 +1,4 @@
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { BackboneElementInput } from './BackboneElementInput';
 
@@ -10,6 +9,6 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <BackboneElementInput typeName="PatientContact" />
+    <BackboneElementInput typeName="PatientContact" path="Patient.contact" />
   </Document>
 );

@@ -7,5 +7,6 @@
   "testMatch": ["**/src/**/*.test.ts"],
   "coverageDirectory": "coverage",
   "coverageReporters": ["json", "text"],
-  "collectCoverageFrom": ["**/src/**/*.ts"]
+  "collectCoverageFrom": ["**/src/**/*.ts"],
+  "setupFiles": ["./test.setup.cjs"]
 }

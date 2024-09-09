@@ -1,0 +1,30 @@
+name: Upgrade dependencies
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every Monday at 9:00 AM UTC
+    # Every Monday at 1:00 AM PST (2:00 AM PDT)
+    - cron: '0 9 * * 1'
+
+jobs:
+  upgrade-dependencies:
+    name: Upgrade dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+      - name: Setup git
+        run: |
+          git config --global user.email "${{ secrets.MEDPLUM_BOT_EMAIL }}"
+          git config --global user.name "${{ secrets.MEDPLUM_BOT_NAME }}"
+      - name: Upgrade dependencies
+        run: ./scripts/upgrade.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}

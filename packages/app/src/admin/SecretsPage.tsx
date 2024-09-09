@@ -1,20 +1,23 @@
 import { Button, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { deepClone, IndexedStructureDefinition } from '@medplum/core';
-import { ProjectSecret } from '@medplum/fhirtypes';
+import { InternalSchemaElement, deepClone, getElementDefinition } from '@medplum/core';
+import { ProjectSetting } from '@medplum/fhirtypes';
 import { ResourcePropertyInput, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { getProjectId } from '../utils';
 
 export function SecretsPage(): JSX.Element {
   const medplum = useMedplum();
   const projectId = getProjectId(medplum);
   const projectDetails = medplum.get(`admin/projects/${projectId}`).read();
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>();
-  const [secrets, setSecrets] = useState<ProjectSecret[] | undefined>();
+  const [schemaLoaded, setSchemaLoaded] = useState<boolean>(false);
+  const [secrets, setSecrets] = useState<ProjectSetting[] | undefined>();
 
   useEffect(() => {
-    medplum.requestSchema('Project').then(setSchema).catch(console.log);
+    medplum
+      .requestSchema('Project')
+      .then(() => setSchemaLoaded(true))
+      .catch(console.log);
   }, [medplum]);
 
   useEffect(() => {
@@ -23,7 +26,7 @@ export function SecretsPage(): JSX.Element {
     }
   }, [medplum, projectDetails]);
 
-  if (!schema || !secrets) {
+  if (!schemaLoaded || !secrets) {
     return <div>Loading...</div>;
   }
 
@@ -31,7 +34,7 @@ export function SecretsPage(): JSX.Element {
     <form
       noValidate
       autoComplete="off"
-      onSubmit={(e: React.FormEvent) => {
+      onSubmit={(e: FormEvent) => {
         e.preventDefault();
         medplum
           .post(`admin/projects/${projectId}/secrets`, secrets)
@@ -43,10 +46,12 @@ export function SecretsPage(): JSX.Element {
       <Title>Project Secrets</Title>
       <p>Use project secrets to store sensitive information such as API keys or other access credentials.</p>
       <ResourcePropertyInput
-        property={schema.types['Project'].properties['secret']}
+        property={getElementDefinition('Project', 'secret') as InternalSchemaElement}
         name="secret"
+        path="Project.secret"
         defaultValue={secrets}
         onChange={setSecrets}
+        outcome={undefined}
       />
       <Button type="submit">Save</Button>
     </form>

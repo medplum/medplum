@@ -1,4 +1,4 @@
-import { createReference } from '@medplum/core';
+import { SNOMED, createReference } from '@medplum/core';
 import { DiagnosticReport, Observation } from '@medplum/fhirtypes';
 import { HomerSimpson, TestOrganization } from '@medplum/mock';
 
@@ -166,11 +166,12 @@ export const HealthGorillaDiagnosticReport: DiagnosticReport = {
   resourceType: 'DiagnosticReport',
   id: 'hg-report-1',
   status: 'final',
+  code: { text: 'Example Panel' },
   category: [
     {
       coding: [
         {
-          system: 'http://snomed.info/sct',
+          system: SNOMED,
           code: '15220000',
           display: 'Laboratory test',
         },

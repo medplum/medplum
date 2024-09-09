@@ -2,7 +2,7 @@ import { Button, Checkbox, Group, Stack, Title } from '@mantine/core';
 import { normalizeOperationOutcome } from '@medplum/core';
 import { AccessPolicy, OperationOutcome, ProjectMembership, Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { Form, FormSection, MedplumLink, ResourceBadge, useMedplum } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
@@ -73,7 +73,7 @@ export function EditMembershipPage(): JSX.Element {
                 onChange={(e) => setAdmin(e.currentTarget.checked)}
               />
             </FormSection>
-            <Group position="right" mt="xl">
+            <Group justify="flex-end" mt="xl">
               <Button type="submit">Save</Button>
               <Button type="button" color="red" variant="outline" onClick={deleteMembership}>
                 Remove user

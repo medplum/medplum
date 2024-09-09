@@ -1,7 +1,7 @@
+import { OAuthGrantType, OAuthTokenAuthMethod } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { getConfig } from './config';
 import { getJwks } from './oauth/keys';
-import { OAuthGrantType } from '@medplum/core';
 
 export const wellKnownRouter = Router();
 
@@ -27,7 +27,11 @@ wellKnownRouter.get('/openid-configuration', (_req: Request, res: Response) => {
     response_types_supported: ['code', 'id_token', 'token id_token'],
     subject_types_supported: ['pairwise', 'public'],
     scopes_supported: ['openid', 'profile', 'email', 'phone', 'address'],
-    token_endpoint_auth_methods_supported: ['client_secret_basic', 'client_secret_post'],
+    token_endpoint_auth_methods_supported: [
+      OAuthTokenAuthMethod.ClientSecretBasic,
+      OAuthTokenAuthMethod.ClientSecretPost,
+      OAuthTokenAuthMethod.PrivateKeyJwt,
+    ],
     request_object_signing_alg_values_supported: ['none'],
   });
 });

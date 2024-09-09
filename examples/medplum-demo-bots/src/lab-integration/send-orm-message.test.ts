@@ -1,5 +1,5 @@
-import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { readJson } from '@medplum/definitions';
+import { SNOMED, createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, Patient, SearchParameter, ServiceRequest, Specimen } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import * as dotenv from 'dotenv';
@@ -8,9 +8,9 @@ import { createOrmMessage, handler } from './send-orm-message';
 dotenv.config();
 
 const CONNECTION_DETAILS = {
-  SFTP_USER: { valueString: 'user' },
-  SFTP_HOST: { valueString: '123456.transfer.us-east-1.amazonaws.com' },
-  SFTP_PRIVATE_KEY: { valueString: process.env.PRIVATE_KEY },
+  SFTP_USER: { name: 'SFTP_USER', valueString: 'user' },
+  SFTP_HOST: { name: 'SFTP_HOST', valueString: '123456.transfer.us-east-1.amazonaws.com' },
+  SFTP_PRIVATE_KEY: { name: 'SFTP_PRIVATE_KEY', valueString: process.env.PRIVATE_KEY },
 };
 
 vi.mock('ssh2-sftp-client');
@@ -19,7 +19,9 @@ describe('Send to Partner Lab', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
   });
 
   beforeEach(async (ctx: any) => {
@@ -75,7 +77,7 @@ describe('Send to Partner Lab', () => {
       type: {
         coding: [
           {
-            system: 'http://snomed.info/sct',
+            system: SNOMED,
             code: '122554006',
             display: 'Capillary blood specimen',
           },
@@ -120,7 +122,12 @@ describe('Send to Partner Lab', () => {
 
   test.skip('Test Connection', async (ctx: any) => {
     try {
-      await handler(ctx.medplum, { input: ctx.order, contentType: 'string', secrets: { ...CONNECTION_DETAILS } });
+      await handler(ctx.medplum, {
+        bot: { reference: 'Bot/123' },
+        input: ctx.order,
+        contentType: 'string',
+        secrets: { ...CONNECTION_DETAILS },
+      });
     } catch {
       console.error('Here');
     }

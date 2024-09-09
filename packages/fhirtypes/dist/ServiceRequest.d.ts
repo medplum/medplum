@@ -161,13 +161,13 @@ export interface ServiceRequest {
   /**
    * The status of the order.
    */
-  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
+  status: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Whether the request is a proposal, plan, an original order or a reflex
    * order.
    */
-  intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+  intent: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * A code that classifies the service for searching, sorting and display
@@ -230,7 +230,7 @@ export interface ServiceRequest {
    * or animals, devices such as dialysis machines, or even locations
    * (typically for environmental scans).
    */
-  subject?: Reference<Patient | Group | Location | Device>;
+  subject: Reference<Patient | Group | Location | Device>;
 
   /**
    * An encounter that provides additional information about the healthcare
@@ -360,3 +360,21 @@ export interface ServiceRequest {
    */
   relevantHistory?: Reference<Provenance>[];
 }
+
+/**
+ * An amount of service being requested which can be a quantity ( for
+ * example $1,500 home modification), a ratio ( for example, 20 half day
+ * visits per month), or a range (2.0 to 1.8 Gy per fraction).
+ */
+export type ServiceRequestQuantity = Quantity | Range | Ratio;
+
+/**
+ * The date/time at which the requested service should occur.
+ */
+export type ServiceRequestOccurrence = Period | string | Timing;
+
+/**
+ * If a CodeableConcept is present, it indicates the pre-condition for
+ * performing the service.  For example &quot;pain&quot;, &quot;on flare-up&quot;, etc.
+ */
+export type ServiceRequestAsNeeded = boolean | CodeableConcept;

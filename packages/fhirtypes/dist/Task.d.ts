@@ -176,7 +176,7 @@ export interface Task {
   /**
    * The current status of the task.
    */
-  status?: 'draft' | 'requested' | 'received' | 'accepted' | 'rejected' | 'ready' | 'cancelled' | 'in-progress' |
+  status: 'draft' | 'requested' | 'received' | 'accepted' | 'rejected' | 'ready' | 'cancelled' | 'in-progress' |
       'on-hold' | 'failed' | 'completed' | 'entered-in-error';
 
   /**
@@ -194,7 +194,7 @@ export interface Task {
    * i+R[9]Cs this a proposed task, a planned task, an actionable task,
    * etc.
    */
-  intent?: 'unknown' | 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+  intent: 'unknown' | 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * Indicates how quickly the Task should be addressed with respect to
@@ -361,7 +361,7 @@ export interface TaskInput {
    * A code or description indicating how the input is intended to be used
    * as part of the task execution.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The value of the input parameter as a basic type.
@@ -615,6 +615,14 @@ export interface TaskInput {
 }
 
 /**
+ * The value of the input parameter as a basic type.
+ */
+export type TaskInputValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+
+/**
  * Outputs produced by the Task.
  */
 export interface TaskOutput {
@@ -657,7 +665,7 @@ export interface TaskOutput {
   /**
    * The name of the Output parameter.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -909,6 +917,14 @@ export interface TaskOutput {
    */
   valueMeta?: Meta;
 }
+
+/**
+ * The value of the Output parameter as a basic type.
+ */
+export type TaskOutputValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
 
 /**
  * If the Task.focus is a request resource and the task is seeking

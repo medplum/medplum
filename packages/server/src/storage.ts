@@ -1,7 +1,7 @@
 import { Binary } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from './async';
-import { systemRepo } from './fhir/repo';
+import { getSystemRepo } from './fhir/repo';
 import { getBinaryStorage } from './fhir/storage';
 
 export const storageRouter = Router();
@@ -17,13 +17,14 @@ storageRouter.get(
     }
 
     const { id } = req.params;
+    const systemRepo = getSystemRepo();
     const binary = await systemRepo.readResource<Binary>('Binary', id);
 
     try {
       const stream = await getBinaryStorage().readBinary(binary);
       res.status(200).contentType(binary.contentType as string);
       stream.pipe(res);
-    } catch (err) {
+    } catch (_err) {
       res.sendStatus(404);
     }
   })

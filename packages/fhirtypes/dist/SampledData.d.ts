@@ -32,12 +32,12 @@ export interface SampledData {
    * The base quantity that a measured value of zero represents. In
    * addition, this provides the units of the entire measurement series.
    */
-  origin?: Quantity;
+  origin: Quantity;
 
   /**
    * The length of time between sampling times, measured in milliseconds.
    */
-  period?: number;
+  period: number;
 
   /**
    * A correction factor that is applied to the sampled data points before
@@ -64,7 +64,7 @@ export interface SampledData {
    * greater than one, then the dimensions will be interlaced - all the
    * sample points for a point in time will be recorded at once.
    */
-  dimensions?: number;
+  dimensions: number;
 
   /**
    * A series of data points which are decimal values separated by a single

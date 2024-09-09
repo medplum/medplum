@@ -2,7 +2,7 @@ import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
 import fs, { writeFileSync } from 'fs';
-import { JSDOM, DOMWindow } from 'jsdom';
+import { DOMWindow, JSDOM } from 'jsdom';
 import * as mkdirp from 'mkdirp';
 import fetch from 'node-fetch';
 import * as path from 'path';
@@ -40,7 +40,9 @@ export async function main(): Promise<void> {
 
   const indexedSearchParams = indexSearchParameters(searchParams);
   // Definitions for FHIR Spec resources
-  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`));
+  const fhirCoreDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-resources.json`)).filter(
+    (definition) => definition.id !== 'SubscriptionStatus'
+  );
   // Medplum-defined resources
   const medplumResourceDefinitions = filterDefinitions(readJson(`fhir/r4/profiles-medplum.json`));
   // StructureDefinitions for FHIR "Datatypes" (e.g. Address, ContactPoint, Identifier...)
@@ -71,7 +73,7 @@ export async function main(): Promise<void> {
 
 /**
  * Indexes search parameters by "base" resource type.
- * @param searchParams The bundle of SearchParameter resources.
+ * @param searchParams - The bundle of SearchParameter resources.
  * @returns A map from resourceType -> an array of associated SearchParameters
  */
 function indexSearchParameters(searchParams: SearchParameter[]): Record<string, SearchParameter[]> {
@@ -144,83 +146,112 @@ function buildDocsDefinition(
         | 'quantity'
         | 'special',
       description: getSearchParamDescription(param, result.name),
-      expression: getExpressionForResourceType(result.name, param.expression || '') || '',
+      expression: getExpressionForResourceType(result.name, param.expression || '') || (param.expression as string),
     }));
   }
   return result;
 }
 
 function buildDocsMarkdown(position: number, definition: ResourceDocsProps, resourceIntroduction?: any): string {
-  const resourceName = definition.name;
-  const description = rewriteLinksText(definition.description);
+  const replacements: any = {
+    position,
+    resourceName: definition.name,
+    resourceNameLowerCase: definition.name.toLowerCase(),
+    description: rewriteLinksText(definition.description).replaceAll(/\s\s+/g, ' '),
+    location: definition.location,
+    ...resourceIntroduction,
+  };
 
-  return `\
----
-title: ${resourceName}
-sidebar_position: ${position}
----
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-import definition from '@site/static/data/${definition.location}Definitions/${resourceName.toLowerCase()}.json';
-import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
-
-# ${resourceName}
-
-${description}
-
-<Tabs queryString="section">
-${`<TabItem value="schema" label="Schema" default>
-
-
-## Properties
-
-
-<ResourcePropertiesTable properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))} />
-
-${
-  definition.location === 'resource' || definition.location === 'medplum'
-    ? `## Search Parameters
+  if (['resource', 'medplum'].includes(replacements.location)) {
+    replacements.searchParameterTable = `\
+## Search Parameters
 
 <SearchParamsTable searchParams={definition.searchParameters} />
+`;
+    replacements.inheritedPropertiesTable = `\
+## Inherited Elements
 
-## Inherited Properties
+<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />`;
+  } else {
+    replacements.searchParameterTable = '';
+    replacements.inheritedPropertiesTable = '';
+  }
 
-<ResourcePropertiesTable properties={definition.properties.filter((p) => p.inherited && p.base.includes('Resource'))} />
-`
-    : ''
-}
-</TabItem>
-  ${
-    resourceIntroduction?.scopeAndUsage
-      ? `<TabItem value="usage" label="Usage">
-    ${rewriteLinksText(resourceIntroduction.scopeAndUsage)}
-    </TabItem>`
-      : ''
-  }
-  ${
-    resourceIntroduction?.boundariesAndRelationships
-      ? `<TabItem value="relationships" label="Relationships">
-    ${rewriteLinksText(resourceIntroduction.boundariesAndRelationships)}
-    </TabItem>`
-      : ''
-  }
-  ${
-    resourceIntroduction?.backgroundAndContext
-      ? `<TabItem value="backgroundAndContext" label="Background and Context">
-    ${rewriteLinksText(resourceIntroduction.backgroundAndContext)}
-    </TabItem>`
-      : ''
-  }
-  ${
-    resourceIntroduction?.referencedBy?.length > 0
-      ? `<TabItem value="referencedBy" label="Referenced By">
-    <ul>${resourceIntroduction.referencedBy.map((e: string) => `<li>${e}</li>`).join('\n')}</ul>
-    </TabItem>`
-      : ''
-  }`}
+  replacements.scopeAndUsage = createTabItem(
+    replacements.scopeAndUsage && rewriteLinksText(replacements.scopeAndUsage),
+    'usage',
+    'Usage'
+  );
+  replacements.boundariesAndRelationships = createTabItem(
+    replacements.boundariesAndRelationships && rewriteLinksText(replacements.boundariesAndRelationships),
+    'relationships',
+    'Relationships'
+  );
+  replacements.backgroundAndContext = createTabItem(
+    replacements.backgroundAndContext && rewriteLinksText(replacements.backgroundAndContext),
+    'backgroundAndContext',
+    'Background and Context'
+  );
+  replacements.referencedBy = createTabItem(
+    replacements.referencedBy?.length &&
+      `<ul>${replacements.referencedBy.map((e: string) => `<li>${e}</li>`).join('\n')}</ul>`,
+    'referencedBy',
+    'Referenced By'
+  );
 
+  const template = `\
+---
+title: $resourceName$
+sidebar_position: $position$
+---
+
+import Link from '@docusaurus/Link';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import definition from '@site/static/data/$location$Definitions/$resourceNameLowerCase$.json';
+import { ResourcePropertiesTable, SearchParamsTable } from '@site/src/components/ResourceTables';
+
+# $resourceName$
+
+$description$
+
+<Tabs queryString="section">
+  <TabItem value="schema" label="Schema" default>
+
+## Elements
+
+<ResourcePropertiesTable
+  properties={definition.properties.filter((p) => !(p.inherited && p.base.includes('Resource')))}
+/>
+
+$searchParameterTable$
+$inheritedPropertiesTable$
+
+  </TabItem>
+$scopeAndUsage$
+$boundariesAndRelationships$
+$backgroundAndContext$
+$referencedBy$
 </Tabs>
 `;
+
+  let result = template;
+  for (const key of Object.keys(replacements)) {
+    result = result.replaceAll('$' + key + '$', replacements[key]);
+  }
+  result = result.replaceAll(/^\n\n+$/gm, '');
+  return result;
+}
+
+function createTabItem(text: string | undefined, value: string, label: string): string {
+  if (!text) {
+    return '';
+  }
+
+  return `\
+  <TabItem value="${value}" label="${label}">
+${text}
+  </TabItem>`;
 }
 
 function writeDocs(
@@ -234,7 +265,7 @@ function writeDocs(
     printProgress(Math.round((i / definitions.length) * 100));
     writeFileSync(
       resolve(__dirname, `../../docs/static/data/${location}Definitions/${resourceType.toLowerCase()}.json`),
-      JSON.stringify(definition, null, 2),
+      JSON.stringify(definition, null, 2) + '\n',
       'utf8'
     );
 
@@ -318,7 +349,7 @@ function getInheritance(property: ElementDefinition): { inherited: boolean; base
 
 /**
  * Rewrite internal links from official FHIR site to medplum internal links
- * @param text text which contains internal links
+ * @param text - text which contains internal links
  * @returns returns text with internal links rewritten
  */
 function rewriteLinksText(text: string | undefined): string {
@@ -350,10 +381,18 @@ function rewriteLinksText(text: string | undefined): string {
 
   // Replace names of all Resources/datatypes with internal links
   const documentedTypeNames = Object.keys(documentedTypes);
-  const resourceTypeExp = new RegExp(`\\s((${documentedTypeNames.join('|')})[s]?)\\b`, 'g');
-  text = text.replace(
-    resourceTypeExp,
-    (_, resourceText, resourceName) => ` <a href="${getMedplumDocsPath(resourceName)}">${resourceText}</a>`
+  const resourceTypeExp = `(${documentedTypeNames.join('|')})`;
+  const resourceNameTextExp = new RegExp(`\\s(${resourceTypeExp}[s]?)\\b`, 'g');
+  text = text.replaceAll(
+    resourceNameTextExp,
+    (_, resourceText, resourceName) => ` <Link to="${getMedplumDocsPath(resourceName)}">${resourceText}</Link>`
+  );
+
+  const resourceNameLinkExp = new RegExp(`(\\[(.*?)\\])\\(${resourceTypeExp}.html\\)`, 'gi');
+  text = text.replaceAll(
+    resourceNameLinkExp,
+    (...matches: string[]) =>
+      `<Link to="${getMedplumDocsPath(lowerCaseResourceNames[matches[3].toLowerCase()])}">${matches[2]}</Link>`
   );
 
   return text;
@@ -361,9 +400,9 @@ function rewriteLinksText(text: string | undefined): string {
 
 /**
  * Download a Zip file from the given URL, and unzip to the given path
- * @param downloadURL Source URL
- * @param zipFilePath Destination path for *.zip
- * @param outputFolder Destination path for extracted contents
+ * @param downloadURL - Source URL
+ * @param zipFilePath - Destination path for *.zip
+ * @param outputFolder - Destination path for extracted contents
  */
 async function downloadAndUnzip(downloadURL: string, zipFilePath: string, outputFolder: string): Promise<void> {
   console.info('Downloading FHIR Spec...');
@@ -407,8 +446,8 @@ async function downloadAndUnzip(downloadURL: string, zipFilePath: string, output
 }
 /**
  * For each core FHIR resource type, find the corresponding HTML page and extract the relevant introductory sections.
- * @param htmlDirectory Directory containing HTML files for each resource ([resourceType].html)
- * @param definitions Array of all core FHIR StructureDefinitions
+ * @param htmlDirectory - Directory containing HTML files for each resource ([resourceType].html)
+ * @param definitions - Array of all core FHIR StructureDefinitions
  * @returns A map from resourcename to html description data
  */
 function extractResourceDescriptions(
@@ -471,7 +510,7 @@ function extractResourceDescriptions(
 
 /**
  * Converts local links to FHIR resources from the FHIR site to relative links in the medplum documentation site
- * @param anchorElement An Anchor tag, potentially referring to a resource page (e.g. "appointmentresponse.html")
+ * @param anchorElement - An Anchor tag, potentially referring to a resource page (e.g. "appointmentresponse.html")
  */
 function rewriteHtmlSpecHref(anchorElement: HTMLAnchorElement): void {
   const href = anchorElement.getAttribute('href'); // Get the href attribute of the anchor tag
@@ -558,14 +597,18 @@ function sanitizeNodeContent(node: HTMLElement, window: DOMWindow): string {
   // Remove comment nodes and style attributes.
   removeUnwantedNodes(node);
 
+  let result = clonedDiv.outerHTML.replaceAll('<br>', '<br/>');
+  result = result.replaceAll(/[\n\t]+/g, ' ');
+  result = result.replaceAll('<sup>*</sup>', '<sup>†</sup>');
+
   // Replace br tags with closed ones.
-  return clonedDiv.outerHTML.replaceAll('<br>', '<br/>').replace(/[\n\t]/g, ' ');
+  return result;
 }
 
 /**
  * Download the "entire fhir spec" as a zip file, and parse the HTML file for each resource to extract the detailed
  * information about usage and scope for each resource
- * @param definitions FHIR core profile definitions
+ * @param definitions - FHIR core profile definitions
  * @returns Map from resource name to extracted HTML data
  */
 async function fetchHtmlSpecContent(

@@ -1,24 +1,12 @@
-import { createStyles } from '@mantine/core';
 import { stringify } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
-import React from 'react';
 import { Delta, diff } from '../utils/diff';
-
-const useStyles = createStyles((theme) => ({
-  removed: {
-    color: theme.colors.red[7],
-    textDecoration: 'line-through',
-  },
-
-  added: {
-    color: theme.colors.green[7],
-  },
-}));
+import classes from './ResourceDiff.module.css';
 
 export interface ResourceDiffProps {
-  original: Resource;
-  revised: Resource;
-  ignoreMeta?: boolean;
+  readonly original: Resource;
+  readonly revised: Resource;
+  readonly ignoreMeta?: boolean;
 }
 
 export function ResourceDiff(props: ResourceDiffProps): JSX.Element {
@@ -43,7 +31,6 @@ export function ResourceDiff(props: ResourceDiffProps): JSX.Element {
 }
 
 function ChangeDiff(props: { delta: Delta }): JSX.Element {
-  const { classes } = useStyles();
   return (
     <>
       ...

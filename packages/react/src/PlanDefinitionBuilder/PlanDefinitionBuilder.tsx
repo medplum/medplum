@@ -1,58 +1,29 @@
-import { Anchor, Button, createStyles, NativeSelect, Stack, TextInput } from '@mantine/core';
-import { getReferenceString, IndexedStructureDefinition, PropertyType } from '@medplum/core';
-import { ElementDefinition, PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
-import React, { useEffect, useRef, useState } from 'react';
+import { Anchor, Button, NativeSelect, Stack, TextInput } from '@mantine/core';
+import { InternalSchemaElement, getReferenceString } from '@medplum/core';
+import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react-hooks';
+import cx from 'clsx';
+import { MouseEvent, SyntheticEvent, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { FormSection } from '../FormSection/FormSection';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
-import { setPropertyValue } from '../ResourceForm/ResourceForm';
+import { setPropertyValue } from '../ResourceForm/ResourceForm.utils';
 import { ResourceInput } from '../ResourceInput/ResourceInput';
-import { getValueAndType, ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { getValueAndType } from '../ResourcePropertyDisplay/ResourcePropertyDisplay.utils';
 import { ResourcePropertyInput } from '../ResourcePropertyInput/ResourcePropertyInput';
-import { useResource } from '../useResource/useResource';
 import { killEvent } from '../utils/dom';
-
-const useStyles = createStyles((theme) => ({
-  section: {
-    position: 'relative',
-    margin: '4px 4px 8px 0',
-    padding: '6px 12px 16px 6px',
-    border: `1.5px solid ${theme.colors.gray[1]}`,
-    borderRadius: theme.radius.sm,
-    transition: 'all 0.1s',
-  },
-
-  hovering: {
-    border: `1.5px solid ${theme.colors.blue[5]}`,
-  },
-
-  editing: {
-    border: `1.5px solid ${theme.colors.gray[1]}`,
-    borderLeft: `4px solid ${theme.colors.blue[5]}`,
-  },
-
-  bottomActions: {
-    position: 'absolute',
-    right: 4,
-    bottom: 0,
-    fontSize: theme.fontSizes.xs,
-
-    '& a': {
-      marginLeft: 8,
-    },
-  },
-}));
+import classes from './PlanDefinitionBuilder.module.css';
 
 export interface PlanDefinitionBuilderProps {
-  value: PlanDefinition | Reference<PlanDefinition>;
-  onSubmit: (result: PlanDefinition) => void;
+  readonly value: Partial<PlanDefinition> | Reference<PlanDefinition>;
+  readonly onSubmit: (result: PlanDefinition) => void;
 }
 
 export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.Element | null {
   const medplum = useMedplum();
   const defaultValue = useResource(props.value);
-  const [schema, setSchema] = useState<IndexedStructureDefinition | undefined>(undefined);
+  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string>();
   const [hoverKey, setHoverKey] = useState<string>();
   const [value, setValue] = useState<PlanDefinition>();
@@ -69,11 +40,14 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
   valueRef.current = value;
 
   useEffect(() => {
-    medplum.requestSchema('PlanDefinition').then(setSchema).catch(console.log);
+    medplum
+      .requestSchema('PlanDefinition')
+      .then(() => setSchemaLoaded(true))
+      .catch(console.log);
   }, [medplum]);
 
   useEffect(() => {
-    setValue(ensurePlanDefinitionKeys(defaultValue ?? { resourceType: 'PlanDefinition' }));
+    setValue(ensurePlanDefinitionKeys(defaultValue ?? { resourceType: 'PlanDefinition', status: 'active' }));
     document.addEventListener('mouseover', handleDocumentMouseOver);
     document.addEventListener('click', handleDocumentClick);
     return () => {
@@ -82,7 +56,7 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
     };
   }, [defaultValue]);
 
-  if (!schema || !value) {
+  if (!schemaLoaded || !value) {
     return null;
   }
 
@@ -116,16 +90,15 @@ export function PlanDefinitionBuilder(props: PlanDefinitionBuilderProps): JSX.El
 }
 
 interface ActionArrayBuilderProps {
-  actions: PlanDefinitionAction[];
-  selectedKey: string | undefined;
-  setSelectedKey: (key: string | undefined) => void;
-  hoverKey: string | undefined;
-  setHoverKey: (key: string | undefined) => void;
-  onChange: (actions: PlanDefinitionAction[]) => void;
+  readonly actions: PlanDefinitionAction[];
+  readonly selectedKey: string | undefined;
+  readonly setSelectedKey: (key: string | undefined) => void;
+  readonly hoverKey: string | undefined;
+  readonly setHoverKey: (key: string | undefined) => void;
+  readonly onChange: (actions: PlanDefinitionAction[]) => void;
 }
 
 function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
-  const { classes } = useStyles();
   const actionsRef = useRef<PlanDefinitionAction[]>();
   actionsRef.current = props.actions;
 
@@ -162,7 +135,7 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
       <div className={classes.bottomActions}>
         <Anchor
           href="#"
-          onClick={(e: React.MouseEvent) => {
+          onClick={(e: MouseEvent) => {
             killEvent(e);
             addAction({ id: generateId() });
           }}
@@ -175,28 +148,27 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
 }
 
 interface ActionBuilderProps {
-  action: PlanDefinitionAction;
-  selectedKey: string | undefined;
-  setSelectedKey: (key: string | undefined) => void;
-  hoverKey: string | undefined;
-  setHoverKey: (key: string | undefined) => void;
-  onChange: (action: PlanDefinitionAction) => void;
-  onRemove: () => void;
+  readonly action: PlanDefinitionAction;
+  readonly selectedKey: string | undefined;
+  readonly setSelectedKey: (key: string | undefined) => void;
+  readonly hoverKey: string | undefined;
+  readonly setHoverKey: (key: string | undefined) => void;
+  readonly onChange: (action: PlanDefinitionAction) => void;
+  readonly onRemove: () => void;
 }
 
 function ActionBuilder(props: ActionBuilderProps): JSX.Element {
-  const { classes, cx } = useStyles();
   const { action } = props;
   const actionType = getInitialActionType(action);
   const editing = props.selectedKey === props.action.id;
   const hovering = props.hoverKey === props.action.id;
 
-  function onClick(e: React.SyntheticEvent): void {
+  function onClick(e: SyntheticEvent): void {
     e.stopPropagation();
     props.setSelectedKey(props.action.id);
   }
 
-  function onHover(e: React.SyntheticEvent): void {
+  function onHover(e: SyntheticEvent): void {
     killEvent(e);
     props.setHoverKey(props.action.id);
   }
@@ -207,7 +179,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   });
 
   return (
-    <div data-testid={action.id} className={className} onClick={onClick} onMouseOver={onHover}>
+    <div data-testid={action.id} className={className} onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
       {editing ? (
         <ActionEditor
           action={action}
@@ -225,7 +197,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
       <div className={classes.bottomActions}>
         <Anchor
           href="#"
-          onClick={(e: React.MouseEvent) => {
+          onClick={(e: MouseEvent) => {
             e.preventDefault();
             props.onRemove();
           }}
@@ -237,16 +209,19 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   );
 }
 
-const timingProperty: ElementDefinition = {
+const timingProperty: InternalSchemaElement = {
   path: 'PlanDefinition.action.timing[x]',
   min: 0,
-  max: '1',
-  type: [{ code: 'dateTime' }, { code: 'Period' }, { code: 'Range' }, { code: 'Timing' }],
+  max: 1,
+  description: '',
+  isArray: false,
+  constraints: [],
+  type: ['dateTime', 'Period', 'Range', 'Timing'].map((t) => ({ code: t })),
 };
 
 interface ActionDisplayProps {
-  action: PlanDefinitionAction;
-  actionType: string | undefined;
+  readonly action: PlanDefinitionAction;
+  readonly actionType: string | undefined;
 }
 
 function ActionDisplay(props: ActionDisplayProps): JSX.Element {
@@ -272,14 +247,14 @@ function ActionDisplay(props: ActionDisplayProps): JSX.Element {
 }
 
 interface ActionEditorProps {
-  action: PlanDefinitionAction;
-  actionType: string | undefined;
-  selectedKey: string | undefined;
-  setSelectedKey: (key: string | undefined) => void;
-  hoverKey: string | undefined;
-  setHoverKey: (key: string | undefined) => void;
-  onChange: (action: PlanDefinitionAction) => void;
-  onRemove: () => void;
+  readonly action: PlanDefinitionAction;
+  readonly actionType: string | undefined;
+  readonly selectedKey: string | undefined;
+  readonly setSelectedKey: (key: string | undefined) => void;
+  readonly hoverKey: string | undefined;
+  readonly setHoverKey: (key: string | undefined) => void;
+  readonly onChange: (action: PlanDefinitionAction) => void;
+  readonly onRemove: () => void;
 }
 
 function ActionEditor(props: ActionEditorProps): JSX.Element {
@@ -294,7 +269,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
   }
 
   return (
-    <Stack spacing="xl">
+    <Stack gap="xl">
       <TextInput
         name={`actionTitle-${action.id}`}
         label="Title"
@@ -379,11 +354,11 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
 }
 
 interface ActionResourceTypeBuilderProps {
-  action: PlanDefinitionAction;
-  title: string;
-  description: string;
-  resourceType: ResourceType;
-  onChange: (action: PlanDefinitionAction) => void;
+  readonly action: PlanDefinitionAction;
+  readonly title: string;
+  readonly description: string;
+  readonly resourceType: ResourceType;
+  readonly onChange: (action: PlanDefinitionAction) => void;
 }
 
 function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.Element {
@@ -409,9 +384,9 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
 }
 
 interface ActionTimingInputProps {
-  name: string;
-  action: PlanDefinitionAction;
-  onChange: (action: PlanDefinitionAction) => void;
+  readonly name: string;
+  readonly action: PlanDefinitionAction;
+  readonly onChange: (action: PlanDefinitionAction) => void;
 }
 
 function ActionTimingInput(props: ActionTimingInputProps): JSX.Element {
@@ -422,11 +397,13 @@ function ActionTimingInput(props: ActionTimingInputProps): JSX.Element {
     <ResourcePropertyInput
       property={timingProperty}
       name="timing[x]"
+      path="PlanDefinition.timing[x]"
       defaultValue={propertyValue}
       defaultPropertyType={propertyType}
       onChange={(newValue: any, propName?: string) => {
         props.onChange(setPropertyValue(value, key, propName ?? key, timingProperty, newValue));
       }}
+      outcome={undefined}
     />
   );
 }
@@ -447,7 +424,7 @@ function getInitialActionType(action: PlanDefinitionAction): string | undefined 
   return undefined;
 }
 
-function getActionTiming(action: PlanDefinitionAction): [any, PropertyType] {
+function getActionTiming(action: PlanDefinitionAction): [any, string] {
   return getValueAndType({ type: 'PlanDefinitionAction', value: action }, 'timing');
 }
 
@@ -458,7 +435,7 @@ let nextId = 1;
  * React needs unique IDs for components for rendering performance.
  * All of the important components in the questionnaire builder have id properties for this:
  * Questionnaire, QuestionnaireItem, and QuestionnaireItemAnswerOption.
- * @param existing Optional existing id which will update nextId.
+ * @param existing - Optional existing id which will update nextId.
  * @returns A unique key.
  */
 function generateId(existing?: string): string {

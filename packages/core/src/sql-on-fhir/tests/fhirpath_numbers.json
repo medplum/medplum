@@ -1,0 +1,102 @@
+{
+  "title": "fhirpath_numbers",
+  "description": "fhirpath features",
+  "fhirVersion": ["5.0.0", "4.0.1"],
+  "resources": [
+    {
+      "resourceType": "Observation",
+      "id": "o1",
+      "code": {
+        "text": "code"
+      },
+      "status": "final",
+      "valueRange": {
+        "low": {
+          "value": 2
+        },
+        "high": {
+          "value": 3
+        }
+      }
+    }
+  ],
+  "tests": [
+    {
+      "title": "add observation",
+      "view": {
+        "resource": "Observation",
+        "status": "active",
+        "select": [
+          {
+            "column": [
+              {
+                "name": "id",
+                "path": "id",
+                "type": "id"
+              },
+              {
+                "name": "add",
+                "path": "value.ofType(Range).low.value + value.ofType(Range).high.value",
+                "type": "decimal"
+              },
+              {
+                "name": "sub",
+                "path": "value.ofType(Range).high.value - value.ofType(Range).low.value",
+                "type": "decimal"
+              },
+              {
+                "name": "mul",
+                "path": "value.ofType(Range).low.value * value.ofType(Range).high.value",
+                "type": "decimal"
+              },
+              {
+                "name": "div",
+                "path": "value.ofType(Range).high.value / value.ofType(Range).low.value",
+                "type": "decimal"
+              },
+              {
+                "name": "eq",
+                "path": "value.ofType(Range).high.value = value.ofType(Range).low.value",
+                "type": "boolean"
+              },
+              {
+                "name": "gt",
+                "path": "value.ofType(Range).high.value > value.ofType(Range).low.value",
+                "type": "boolean"
+              },
+              {
+                "name": "ge",
+                "path": "value.ofType(Range).high.value >= value.ofType(Range).low.value",
+                "type": "boolean"
+              },
+              {
+                "name": "lt",
+                "path": "value.ofType(Range).high.value < value.ofType(Range).low.value",
+                "type": "boolean"
+              },
+              {
+                "name": "le",
+                "path": "value.ofType(Range).high.value <= value.ofType(Range).low.value",
+                "type": "boolean"
+              }
+            ]
+          }
+        ]
+      },
+      "expect": [
+        {
+          "id": "o1",
+          "add": 5,
+          "sub": 1,
+          "mul": 6,
+          "div": 1.5,
+          "eq": false,
+          "gt": true,
+          "ge": true,
+          "lt": false,
+          "le": false
+        }
+      ]
+    }
+  ]
+}

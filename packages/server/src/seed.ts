@@ -2,12 +2,16 @@ import { createReference } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { NIL as nullUuid, v5 } from 'uuid';
 import { bcryptHashPassword } from './auth/utils';
-import { systemRepo } from './fhir/repo';
+import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
 
+/**
+ * The hardcoded ID for the base FHIR R4 Project.
+ * (161452d9-43b7-5c29-aa7b-c85680fa45c6)
+ */
 export const r4ProjectId = v5('R4', nullUuid);
 
 export async function seedDatabase(): Promise<void> {
@@ -15,6 +19,8 @@ export async function seedDatabase(): Promise<void> {
     globalLogger.info('Already seeded');
     return;
   }
+
+  const systemRepo = getSystemRepo();
 
   const [firstName, lastName, email] = ['Medplum', 'Admin', 'admin@example.com'];
   const passwordHash = await bcryptHashPassword('medplum_admin');
@@ -31,6 +37,7 @@ export async function seedDatabase(): Promise<void> {
     name: 'Super Admin',
     owner: createReference(superAdmin),
     superAdmin: true,
+    strictMode: true,
   });
 
   await systemRepo.updateResource<Project>({
@@ -77,5 +84,6 @@ export async function seedDatabase(): Promise<void> {
  * @returns True if already seeded.
  */
 function isSeeded(): Promise<User | undefined> {
+  const systemRepo = getSystemRepo();
   return systemRepo.searchOne({ resourceType: 'User' });
 }

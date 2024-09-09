@@ -1,12 +1,13 @@
-import { Button, createStyles, Grid, Group, JsonInput, NativeSelect, Paper } from '@mantine/core';
+import { Button, Grid, Group, JsonInput, NativeSelect, Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ContentType, isUUID, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { ContentType, MedplumClient, PatchOperation, isUUID, normalizeErrorString } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { sendCommand } from '../utils';
+import classes from './BotEditor.module.css';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
 
@@ -28,26 +29,14 @@ const DEFAULT_HL7_INPUT =
   'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
   'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-';
 
-const useStyles = createStyles(() => ({
-  hl7Input: {
-    fontFamily: 'monospace',
-    fontSize: '12px',
-    lineHeight: 1.55,
-    padding: '10px 12px',
-    whiteSpace: 'nowrap',
-    width: '100%',
-  },
-}));
-
 export function BotEditor(): JSX.Element | null {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
   const [bot, setBot] = useState<Bot>();
-  const [defaultCode, setDefaultCode] = useState<string | undefined>(undefined);
+  const [defaultCode, setDefaultCode] = useState<string>();
   const [fhirInput, setFhirInput] = useState(DEFAULT_FHIR_INPUT);
   const [hl7Input, setHl7Input] = useState(DEFAULT_HL7_INPUT);
-  const [contentType, setContentType] = useState(ContentType.FHIR_JSON);
-  const { classes } = useStyles();
+  const [contentType, setContentType] = useState<string>(ContentType.FHIR_JSON);
   const codeFrameRef = useRef<HTMLIFrameElement>(null);
   const outputFrameRef = useRef<HTMLIFrameElement>(null);
   const [loading, setLoading] = useState(false);
@@ -59,16 +48,16 @@ export function BotEditor(): JSX.Element | null {
         setBot(newBot);
         setDefaultCode(await getBotCode(medplum, newBot));
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum, id]);
 
   const getCode = useCallback(() => {
     return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
-  }, [codeFrameRef]);
+  }, []);
 
   const getCodeOutput = useCallback(() => {
     return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
-  }, [codeFrameRef]);
+  }, []);
 
   const getSampleInput = useCallback(async () => {
     if (contentType === ContentType.FHIR_JSON) {
@@ -79,7 +68,7 @@ export function BotEditor(): JSX.Element | null {
   }, [contentType, fhirInput, hl7Input]);
 
   const saveBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);
@@ -103,7 +92,7 @@ export function BotEditor(): JSX.Element | null {
         await medplum.patchResource('Bot', id, operations);
         showNotification({ color: 'green', message: 'Saved' });
       } catch (err) {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       } finally {
         setLoading(false);
       }
@@ -112,7 +101,7 @@ export function BotEditor(): JSX.Element | null {
   );
 
   const deployBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);
@@ -121,7 +110,7 @@ export function BotEditor(): JSX.Element | null {
         await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'), { code });
         showNotification({ color: 'green', message: 'Deployed' });
       } catch (err) {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       } finally {
         setLoading(false);
       }
@@ -130,7 +119,7 @@ export function BotEditor(): JSX.Element | null {
   );
 
   const executeBot = useCallback(
-    async (e: React.SyntheticEvent) => {
+    async (e: SyntheticEvent) => {
       e.preventDefault();
       e.stopPropagation();
       setLoading(true);
@@ -143,7 +132,7 @@ export function BotEditor(): JSX.Element | null {
         });
         showNotification({ color: 'green', message: 'Success' });
       } catch (err) {
-        showNotification({ color: 'red', message: normalizeErrorString(err) });
+        showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
       } finally {
         setLoading(false);
       }
@@ -167,14 +156,14 @@ export function BotEditor(): JSX.Element | null {
             defaultValue={defaultCode}
             minHeight="528px"
           />
-          <Group position="right" spacing="xs">
-            <Button type="button" onClick={saveBot} loading={loading} leftIcon={<IconDeviceFloppy size="1rem" />}>
+          <Group justify="flex-end" gap="xs">
+            <Button type="button" onClick={saveBot} loading={loading} leftSection={<IconDeviceFloppy size="1rem" />}>
               Save
             </Button>
-            <Button type="button" onClick={deployBot} loading={loading} leftIcon={<IconCloudUpload size="1rem" />}>
+            <Button type="button" onClick={deployBot} loading={loading} leftSection={<IconCloudUpload size="1rem" />}>
               Deploy
             </Button>
-            <Button type="button" onClick={executeBot} loading={loading} leftIcon={<IconPlayerPlay size="1rem" />}>
+            <Button type="button" onClick={executeBot} loading={loading} leftSection={<IconPlayerPlay size="1rem" />}>
               Execute
             </Button>
           </Group>
@@ -190,7 +179,7 @@ export function BotEditor(): JSX.Element | null {
             onChange={(e) => setContentType(e.currentTarget.value)}
           />
           {contentType === ContentType.FHIR_JSON ? (
-            <JsonInput value={fhirInput} onChange={(newValue) => setFhirInput(newValue)} minRows={15} />
+            <JsonInput value={fhirInput} onChange={(newValue) => setFhirInput(newValue)} autosize minRows={15} />
           ) : (
             <textarea
               className={classes.hl7Input}

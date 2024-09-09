@@ -1,10 +1,10 @@
 import { PropertyType } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
 import { FhirPathTableField, Loading, MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React, { Suspense } from 'react';
+import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from './AppRoutes';
+import { act, fireEvent, render, screen } from './test-utils/render';
 
 const query = `{
 ResourceList: ServiceRequestList {
@@ -113,17 +113,14 @@ describe('SmartSearchPage', () => {
 
   test('Renders success', async () => {
     await setup(`/smart?resourceType=ServiceRequest&query=${query}&fields=${JSON.stringify(fields)}`);
-    await waitFor(() => screen.getByTestId('search-control'));
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 
   test('Left click on row', async () => {
     window.open = jest.fn();
 
     await setup(`/smart?resourceType=ServiceRequest&query=${query}&fields=${JSON.stringify(fields)}`);
-    await waitFor(() => screen.getByTestId('search-control'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Homer Simpson'));
@@ -140,7 +137,7 @@ describe('SmartSearchPage', () => {
     window.open = jest.fn();
 
     await setup(`/smart?resourceType=ServiceRequest&query=${query}&fields=${JSON.stringify(fields)}`);
-    await waitFor(() => screen.getByTestId('search-control'));
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Homer Simpson'), { button: 1 });

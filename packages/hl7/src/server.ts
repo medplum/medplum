@@ -1,4 +1,4 @@
-import net from 'net';
+import net from 'node:net';
 import { Hl7Connection } from './connection';
 
 export class Hl7Server {
@@ -6,7 +6,7 @@ export class Hl7Server {
 
   constructor(public readonly handler: (connection: Hl7Connection) => void) {}
 
-  start(port: number, encoding?: BufferEncoding): void {
+  start(port: number, encoding?: string): void {
     const server = net.createServer((socket) => {
       const connection = new Hl7Connection(socket, encoding);
       this.handler(connection);
@@ -16,10 +16,20 @@ export class Hl7Server {
     this.server = server;
   }
 
-  stop(): void {
-    if (this.server) {
-      this.server.close();
+  async stop(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (!this.server) {
+        reject(new Error('Stop was called but there is no server running'));
+        return;
+      }
+      this.server.close((err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve();
+      });
       this.server = undefined;
-    }
+    });
   }
 }

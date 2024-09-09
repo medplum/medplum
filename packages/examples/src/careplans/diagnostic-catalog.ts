@@ -1,5 +1,5 @@
 // start-block imports
-import { MedplumClient } from '@medplum/core';
+import { LOINC, MedplumClient, SNOMED, UCUM } from '@medplum/core';
 import { ActivityDefinition, ObservationDefinition, PlanDefinition, SpecimenDefinition } from '@medplum/fhirtypes';
 
 // end-block imports
@@ -14,7 +14,7 @@ const sodiumLevel: ObservationDefinition =
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '2947-0',
           display: 'Sodium [Moles/volume] in Blood',
         },
@@ -25,7 +25,7 @@ const sodiumLevel: ObservationDefinition =
       unit: {
         coding: [
           {
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: 'mmol/L',
             display: 'millimoles per liter',
           },
@@ -59,7 +59,7 @@ const potassiumLevel: ObservationDefinition =
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '6298-4',
           display: 'Potassium [Moles/volume] in Blood',
         },
@@ -70,7 +70,7 @@ const potassiumLevel: ObservationDefinition =
       unit: {
         coding: [
           {
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: 'mmol/L',
             display: 'millimoles per liter',
           },
@@ -104,7 +104,7 @@ const chlorideLevel: ObservationDefinition =
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '2069-3',
           display: 'Chloride [Moles/volume] in Blood',
         },
@@ -115,7 +115,7 @@ const chlorideLevel: ObservationDefinition =
       unit: {
         coding: [
           {
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: 'mmol/L',
             display: 'millimoles per liter',
           },
@@ -149,7 +149,7 @@ const carbonDioxideLevel: ObservationDefinition =
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '20565-8',
           display: 'Carbon dioxide, total [Moles/volume] in Blood',
         },
@@ -160,7 +160,7 @@ const carbonDioxideLevel: ObservationDefinition =
       unit: {
         coding: [
           {
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: 'mmol/L',
             display: 'millimoles per liter',
           },
@@ -194,7 +194,7 @@ const testosteroneFreeWeaklyBound: ObservationDefinition =
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '41018-3',
           display: 'Testosterone.free+weakly bound [Moles/volume] in Serum or Plasma',
         },
@@ -205,7 +205,7 @@ const testosteroneFreeWeaklyBound: ObservationDefinition =
       unit: {
         coding: [
           {
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: 'nmol/L',
             display: 'nanomoles per liter',
           },
@@ -239,7 +239,7 @@ const estradiolE2: ObservationDefinition =
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '14715-7',
           display: 'Estradiol (E2) [Moles/volume] in Serum or Plasma',
         },
@@ -250,7 +250,7 @@ const estradiolE2: ObservationDefinition =
       unit: {
         coding: [
           {
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: 'pmol/L',
             display: 'picomoles per liter',
           },
@@ -287,7 +287,7 @@ const fingerprickSpecimen: SpecimenDefinition =
     typeCollected: {
       coding: [
         {
-          system: 'http://snomed.info/sct',
+          system: SNOMED,
           code: '122554006',
           display: 'Capillary Blood Specimen',
         },
@@ -298,7 +298,7 @@ const fingerprickSpecimen: SpecimenDefinition =
       {
         coding: [
           {
-            system: 'http://snomed.info/sct',
+            system: SNOMED,
             code: '278450005',
             display: 'Finger-prick sampling',
           },
@@ -314,7 +314,7 @@ const fingerprickSpecimen: SpecimenDefinition =
           type: {
             coding: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '467989009',
                 display: 'Capillary blood collection tube, no-additive',
               },
@@ -346,7 +346,7 @@ const fingerprickSpecimen: SpecimenDefinition =
             maxDuration: {
               value: 7,
               unit: 'day',
-              system: 'http://unitsofmeasure.org',
+              system: UCUM,
               code: 'd',
             },
           },
@@ -364,7 +364,7 @@ const fingerprickSpecimen: SpecimenDefinition =
             maxDuration: {
               value: 28,
               unit: 'day',
-              system: 'http://unitsofmeasure.org',
+              system: UCUM,
               code: 'd',
             },
           },
@@ -377,7 +377,7 @@ const fingerprickSpecimen: SpecimenDefinition =
           type: {
             coding: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '467989009',
                 display: 'Capillary blood collection tube, no-additive',
               },
@@ -431,7 +431,7 @@ const sodiumService: PlanDefinition =
           {
             coding: [
               {
-                system: 'http://loinc.org',
+                system: LOINC,
                 code: '2947-0',
                 display: 'Sodium [Moles/volume] in Blood',
               },
@@ -499,7 +499,7 @@ const electrolytesPanelService: PlanDefinition =
           {
             coding: [
               {
-                system: 'http://loinc.org',
+                system: LOINC,
                 code: '55231-5',
                 display: 'Electrolytes panel - Blood',
               },
@@ -567,7 +567,7 @@ const mensHealthService: PlanDefinition =
           {
             coding: [
               {
-                system: 'http://loinc.org',
+                system: LOINC,
                 code: '41018-3',
                 display: 'Testosterone.free+weakly bound [Moles/volume] in Serum or Plasma',
               },
@@ -581,7 +581,7 @@ const mensHealthService: PlanDefinition =
           {
             coding: [
               {
-                system: 'http://loinc.org',
+                system: LOINC,
                 code: '55231-5',
                 display: 'Electrolytes panel - Blood',
               },
@@ -647,7 +647,7 @@ const womensHealthService: PlanDefinition = {
         {
           coding: [
             {
-              system: 'http://loinc.org',
+              system: LOINC,
               code: '14715-7',
               display: 'Estradiol (E2) [Moles/volume] in Serum or Plasma',
             },
@@ -661,7 +661,7 @@ const womensHealthService: PlanDefinition = {
         {
           coding: [
             {
-              system: 'http://loinc.org',
+              system: LOINC,
               code: '55231-5',
               display: 'Electrolytes panel - Blood',
             },
@@ -710,7 +710,7 @@ const sodiumProcedure: ActivityDefinition =
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '2823-3',
           display: 'Sodium [Moles/volume] in Serum or Plasma',
         },
@@ -747,7 +747,7 @@ const electrolytesPanelProcedure: ActivityDefinition =
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '55231-5',
           display: 'Electrolytes panel - Blood',
         },
@@ -792,7 +792,7 @@ const testosteroneFreeWeaklyBoundProcedure: ActivityDefinition =
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '41018-3',
           display: 'Testosterone.free+weakly bound [Moles/volume] in Serum or Plasma',
         },
@@ -827,7 +827,7 @@ const estradiolE2Procedure: ActivityDefinition =
     code: {
       coding: [
         {
-          system: 'http://loinc.org',
+          system: LOINC,
           code: '14715-7',
           display: 'Estradiol (E2) [Moles/volume] in Serum or Plasma',
         },

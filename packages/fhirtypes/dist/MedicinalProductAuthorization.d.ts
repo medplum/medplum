@@ -301,7 +301,7 @@ export interface MedicinalProductAuthorizationProcedure {
   /**
    * Type of procedure.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Date of procedure.
@@ -318,3 +318,8 @@ export interface MedicinalProductAuthorizationProcedure {
    */
   application?: MedicinalProductAuthorizationProcedure[];
 }
+
+/**
+ * Date of procedure.
+ */
+export type MedicinalProductAuthorizationProcedureDate = Period | string;

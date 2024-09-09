@@ -1,16 +1,16 @@
 import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Group, Patient, Reference, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
-import React from 'react';
-import { ResourceTimeline } from '../ResourceTimeline/ResourceTimeline';
+import { ResourceTimeline, ResourceTimelineProps } from '../ResourceTimeline/ResourceTimeline';
 
-export interface ServiceRequestTimelineProps {
-  serviceRequest: ServiceRequest | Reference<ServiceRequest>;
+export interface ServiceRequestTimelineProps extends Pick<ResourceTimelineProps<ServiceRequest>, 'getMenu'> {
+  readonly serviceRequest: ServiceRequest | Reference<ServiceRequest>;
 }
 
 export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.Element {
+  const { serviceRequest, ...rest } = props;
   return (
     <ResourceTimeline
-      value={props.serviceRequest}
+      value={serviceRequest}
       loadTimelineResources={async (medplum: MedplumClient, resourceType: ResourceType, id: string) => {
         const ref = `${resourceType}/${id}`;
         const _count = 100;
@@ -41,6 +41,7 @@ export function ServiceRequestTimeline(props: ServiceRequestTimelineProps): JSX.
         issued: new Date().toISOString(),
         content,
       })}
+      {...rest}
     />
   );
 }

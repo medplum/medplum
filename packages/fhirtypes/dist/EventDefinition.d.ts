@@ -150,7 +150,7 @@ export interface EventDefinition {
    * The status of this event definition. Enables tracking the life-cycle
    * of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this event definition is authored for
@@ -293,5 +293,11 @@ export interface EventDefinition {
    * trigger condition is specified, the event fires whenever any one of
    * the trigger conditions is met.
    */
-  trigger?: TriggerDefinition[];
+  trigger: TriggerDefinition[];
 }
+
+/**
+ * A code or group definition that describes the intended subject of the
+ * event definition.
+ */
+export type EventDefinitionSubject = CodeableConcept | Reference<Group>;

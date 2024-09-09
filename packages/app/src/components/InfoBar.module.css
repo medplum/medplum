@@ -1,0 +1,25 @@
+.root {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 8px 10px;
+}
+
+.entry {
+  display: inline-block;
+  margin: 5px 20px 5px 5px;
+}
+
+.key {
+  color: var(--mantine-color-gray-6);
+  text-transform: uppercase;
+  font-size: var(--mantine-font-size-xs);
+  white-space: nowrap;
+}
+
+.value {
+  font-size: var(--mantine-font-size-md);
+  font-weight: 600;
+  margin-left: 0;
+  white-space: nowrap;
+}

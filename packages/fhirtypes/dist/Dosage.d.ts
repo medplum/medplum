@@ -131,6 +131,13 @@ export interface Dosage {
 }
 
 /**
+ * Indicates whether the Medication is only taken when needed within a
+ * specific dosing schedule (Boolean option), or it indicates the
+ * precondition for taking the Medication (CodeableConcept).
+ */
+export type DosageAsNeeded = boolean | CodeableConcept;
+
+/**
  * The amount of medication administered.
  */
 export interface DosageDoseAndRate {
@@ -182,3 +189,13 @@ export interface DosageDoseAndRate {
    */
   rateQuantity?: Quantity;
 }
+
+/**
+ * Amount of medication per dose.
+ */
+export type DosageDoseAndRateDose = Quantity | Range;
+
+/**
+ * Amount of medication per unit of time.
+ */
+export type DosageDoseAndRateRate = Quantity | Range | Ratio;

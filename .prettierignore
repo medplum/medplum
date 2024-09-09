@@ -4,3 +4,4 @@
 **/.next/**/*
 **/.docusaurus/**/*
 **/__test__/**/*.json
+**/mock/src/mocks/**/*.json

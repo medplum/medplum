@@ -2,18 +2,15 @@ import { randomUUID } from 'crypto';
 import { generateKeyPair, SignJWT } from 'jose';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { getClient } from '../database';
 import {
   generateAccessToken,
   generateIdToken,
   generateRefreshToken,
   generateSecret,
-  getJwks,
   getSigningKey,
   initKeys,
   verifyJwt,
 } from './keys';
-import { withTestContext } from '../test.setup';
 
 describe('Keys', () => {
   beforeAll(async () => {
@@ -24,25 +21,6 @@ describe('Keys', () => {
   afterAll(async () => {
     await shutdownApp();
   });
-
-  test('Init keys', () =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
-
-      // First, delete all existing keys
-      await getClient().query('DELETE FROM "JsonWebKey"');
-
-      // Init once
-      await initKeys(config);
-      const jwks1 = getJwks();
-      expect(jwks1.keys.length).toBe(1);
-
-      // Init again
-      await initKeys(config);
-      const jwks2 = getJwks();
-      expect(jwks2.keys.length).toBe(1);
-      expect(jwks2.keys[0].kid).toEqual(jwks2.keys[0].kid);
-    }));
 
   test('Missing issuer', async () => {
     const config = await loadTestConfig();

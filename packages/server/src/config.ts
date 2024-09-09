@@ -1,8 +1,9 @@
-import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
-import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
+import { splitN } from '@medplum/core';
+import { KeepJobs } from 'bullmq';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
+import { loadAwsConfig } from './cloud/aws/config';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -22,9 +23,15 @@ export interface MedplumServerConfig {
   signingKeyId: string;
   signingKeyPassphrase: string;
   supportEmail: string;
+  approvedSenderEmails?: string;
   database: MedplumDatabaseConfig;
+  databaseProxyEndpoint?: string;
+  readonlyDatabase?: MedplumDatabaseConfig;
+  readonlyDatabaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
+  emailProvider?: 'none' | 'awsses' | 'smtp';
   smtp?: MedplumSmtpConfig;
+  bullmq?: MedplumBullmqConfig;
   googleClientId?: string;
   googleClientSecret?: string;
   recaptchaSiteKey?: string;
@@ -35,15 +42,61 @@ export interface MedplumServerConfig {
   botLambdaRoleArn: string;
   botLambdaLayerName: string;
   botCustomFunctionsEnabled?: boolean;
+  logRequests?: boolean;
   logAuditEvents?: boolean;
   saveAuditEvents?: boolean;
-  auditEventLogGroup?: string;
-  auditEventLogStream?: string;
   registerEnabled?: boolean;
   bcryptHashSalt: number;
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;
   vmContextBotsEnabled?: boolean;
+  shutdownTimeoutMilliseconds?: number;
+  heartbeatMilliseconds?: number;
+  heartbeatEnabled?: boolean;
+  accurateCountThreshold: number;
+  slowQueryThresholdMilliseconds?: number;
+  slowQuerySampleRate?: number;
+  maxSearchOffset?: number;
+  defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
+  defaultProjectFeatures?:
+    | (
+        | 'email'
+        | 'bots'
+        | 'cron'
+        | 'google-auth-required'
+        | 'graphql-introspection'
+        | 'terminology'
+        | 'websocket-subscriptions'
+      )[]
+    | undefined;
+  defaultRateLimit?: number;
+  defaultAuthRateLimit?: number;
+
+  /** Max length of Bot AuditEvent.outcomeDesc when creating a FHIR Resource */
+  maxBotLogLengthForResource?: number;
+
+  /** Max length of Bot AuditEvent.outcomeDesc when logging to logger */
+  maxBotLogLengthForLogs?: number;
+
+  /** Temporary feature flag, to be removed */
+  chainedSearchWithReferenceTables?: boolean;
+
+  /** @deprecated */
+  auditEventLogGroup?: string;
+
+  /** @deprecated */
+  auditEventLogStream?: string;
+}
+
+/**
+ * The SSL configuration for the database.
+ */
+export interface MedplumDatabaseSslConfig {
+  ca?: string;
+  key?: string;
+  cert?: string;
+  rejectUnauthorized?: boolean;
+  require?: boolean;
 }
 
 /**
@@ -56,12 +109,19 @@ export interface MedplumDatabaseConfig {
   dbname?: string;
   username?: string;
   password?: string;
+  ssl?: MedplumDatabaseSslConfig;
+  queryTimeout?: number;
+  runMigrations?: boolean;
+  maxConnections?: number;
 }
 
 export interface MedplumRedisConfig {
   host?: string;
   port?: number;
   password?: string;
+  /** The logical database to use for Redis. See: https://redis.io/commands/select/. Default is `0`. */
+  db?: number;
+  tls?: Record<string, unknown>;
 }
 
 export interface MedplumSmtpConfig {
@@ -69,6 +129,16 @@ export interface MedplumSmtpConfig {
   port: number;
   username: string;
   password: string;
+}
+
+export interface MedplumBullmqConfig {
+  /**
+   * Amount of jobs that a single worker is allowed to work on in parallel.
+   * @see {@link https://docs.bullmq.io/guide/workers/concurrency}
+   */
+  concurrency?: number;
+  removeOnComplete: KeepJobs;
+  removeOnFail: KeepJobs;
 }
 
 let cachedConfig: MedplumServerConfig | undefined = undefined;
@@ -89,11 +159,11 @@ export function getConfig(): MedplumServerConfig {
  * The identifier must start with one of the following prefixes:
  *   1) "file:" string followed by relative path.
  *   2) "aws:" followed by AWS SSM path prefix.
- * @param configName The medplum config identifier.
+ * @param configName - The medplum config identifier.
  * @returns The loaded configuration.
  */
 export async function loadConfig(configName: string): Promise<MedplumServerConfig> {
-  const [configType, configPath] = splitOnce(configName, ':');
+  const [configType, configPath] = splitN(configName, ':', 2);
   switch (configType) {
     case 'env':
       cachedConfig = loadEnvConfig();
@@ -120,8 +190,21 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.binaryStorage = 'file:' + mkdtempSync(join(tmpdir(), 'medplum-temp-storage'));
   config.allowedOrigins = undefined;
   config.database.host = process.env['POSTGRES_HOST'] ?? 'localhost';
-  config.database.port = process.env['POSTGRES_PORT'] ? parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
+  config.database.port = process.env['POSTGRES_PORT'] ? Number.parseInt(process.env['POSTGRES_PORT'], 10) : 5432;
   config.database.dbname = 'medplum_test';
+  config.database.runMigrations = false;
+  config.readonlyDatabase = {
+    ...config.database,
+    username: 'medplum_test_readonly',
+    password: 'medplum_test_readonly',
+  };
+  config.redis.db = 7; // Select logical DB `7` so we don't collide with existing dev Redis cache.
+  config.redis.password = process.env['REDIS_PASSWORD_DISABLED_IN_TESTS'] ? undefined : config.redis.password;
+  config.approvedSenderEmails = 'no-reply@example.com';
+  config.emailProvider = 'none';
+  config.logLevel = 'error';
+  config.defaultRateLimit = -1; // Disable rate limiter by default in tests
+
   return config;
 }
 
@@ -154,9 +237,13 @@ function loadEnvConfig(): MedplumServerConfig {
     key = key.toLowerCase().replace(/_([a-z])/g, (g) => g[1].toUpperCase());
 
     if (isIntegerConfig(key)) {
-      currConfig.port = parseInt(value ?? '', 10);
+      currConfig[key] = parseInt(value ?? '', 10);
+    } else if (isFloatConfig(key)) {
+      currConfig[key] = parseFloat(value ?? '');
     } else if (isBooleanConfig(key)) {
       currConfig[key] = value === 'true';
+    } else if (isObjectConfig(key)) {
+      currConfig[key] = JSON.parse(value ?? '');
     } else {
       currConfig[key] = value;
     }
@@ -168,7 +255,7 @@ function loadEnvConfig(): MedplumServerConfig {
 /**
  * Loads configuration settings from a JSON file.
  * Path relative to the current working directory at runtime.
- * @param path The config file path.
+ * @param path - The config file path.
  * @returns The configuration.
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
@@ -176,71 +263,8 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
 }
 
 /**
- * Loads configuration settings from AWS SSM Parameter Store.
- * @param path The AWS SSM Parameter Store path prefix.
- * @returns The loaded configuration.
- */
-async function loadAwsConfig(path: string): Promise<MedplumServerConfig> {
-  let region = DEFAULT_AWS_REGION;
-  if (path.includes(':')) {
-    [region, path] = splitOnce(path, ':');
-  }
-
-  const client = new SSMClient({ region });
-  const config: Record<string, any> = {};
-
-  let nextToken: string | undefined;
-  do {
-    const response = await client.send(
-      new GetParametersByPathCommand({
-        Path: path,
-        NextToken: nextToken,
-        WithDecryption: true,
-      })
-    );
-    if (response.Parameters) {
-      for (const param of response.Parameters) {
-        const key = (param.Name as string).replace(path, '');
-        const value = param.Value as string;
-        if (key === 'DatabaseSecrets') {
-          config['database'] = await loadAwsSecrets(region, value);
-        } else if (key === 'RedisSecrets') {
-          config['redis'] = await loadAwsSecrets(region, value);
-        } else if (isIntegerConfig(key)) {
-          config.port = parseInt(value, 10);
-        } else if (isBooleanConfig(key)) {
-          config[key] = value === 'true';
-        } else {
-          config[key] = value;
-        }
-      }
-    }
-    nextToken = response.NextToken;
-  } while (nextToken);
-
-  return config as MedplumServerConfig;
-}
-
-/**
- * Returns the AWS Database Secret data as a JSON map.
- * @param region The AWS region.
- * @param secretId Secret ARN
- * @returns The secret data as a JSON map.
- */
-async function loadAwsSecrets(region: string, secretId: string): Promise<Record<string, any> | undefined> {
-  const client = new SecretsManagerClient({ region });
-  const result = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
-
-  if (!result.SecretString) {
-    return undefined;
-  }
-
-  return JSON.parse(result.SecretString);
-}
-
-/**
  * Adds default values to the config.
- * @param config The input config as loaded from the config file.
+ * @param config - The input config as loaded from the config file.
  * @returns The config with default values added.
  */
 function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
@@ -255,21 +279,38 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
+  config.bullmq = { concurrency: 10, removeOnComplete: { count: 1 }, removeOnFail: { count: 1 }, ...config.bullmq };
+  config.shutdownTimeoutMilliseconds = config.shutdownTimeoutMilliseconds ?? 30000;
+  config.accurateCountThreshold = config.accurateCountThreshold ?? 1000000;
+  config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
+  config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
+  config.emailProvider = config.emailProvider || (config.smtp ? 'smtp' : 'awsses');
   return config;
 }
 
-function splitOnce(value: string, delimiter: string): [string, string] {
-  const index = value.indexOf(delimiter);
-  if (index === -1) {
-    return [value, ''];
-  }
-  return [value.substring(0, index), value.substring(index + 1)];
-}
-
+const integerKeys = ['port', 'accurateCountThreshold', 'slowQueryThresholdMilliseconds'];
 function isIntegerConfig(key: string): boolean {
-  return key === 'port';
+  return integerKeys.includes(key);
 }
 
+function isFloatConfig(key: string): boolean {
+  return key === 'slowQuerySampleRate';
+}
+
+const booleanKeys = [
+  'botCustomFunctionsEnabled',
+  'database.ssl.rejectUnauthorized',
+  'database.ssl.require',
+  'logRequests',
+  'logAuditEvents',
+  'registerEnabled',
+  'require',
+  'rejectUnauthorized',
+];
 function isBooleanConfig(key: string): boolean {
-  return key === 'botCustomFunctionsEnabled' || key === 'logAuditEvents' || key === 'registerEnabled';
+  return booleanKeys.includes(key);
+}
+
+function isObjectConfig(key: string): boolean {
+  return key === 'tls' || key === 'ssl';
 }

@@ -1,4 +1,4 @@
-import { SendEmailCommand, SESv2Client } from '@aws-sdk/client-sesv2';
+import { createReference } from '@medplum/core';
 import { ProjectMembership } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
@@ -6,21 +6,34 @@ import { pwnedPassword } from 'hibp';
 import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { registerNew } from '../auth/register';
+import { RegisterResponse, registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { addTestUser, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
-import { createReference } from '@medplum/core';
+import { inviteUser } from './invite';
 
-jest.mock('@aws-sdk/client-sesv2');
 jest.mock('hibp');
 jest.mock('node-fetch');
 
 const app = express();
 
+// create testProjectAdmin to use for set password
+let testProjectAdmin: RegisterResponse;
+
 describe('Project Admin routes', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await withTestContext(() => initApp(app, config));
+
+    // Register and create a project
+    testProjectAdmin = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
   });
 
   afterAll(async () => {
@@ -28,8 +41,6 @@ describe('Project Admin routes', () => {
   });
 
   beforeEach(() => {
-    (SESv2Client as unknown as jest.Mock).mockClear();
-    (SendEmailCommand as unknown as jest.Mock).mockClear();
     (fetch as unknown as jest.Mock).mockClear();
     (pwnedPassword as unknown as jest.Mock).mockClear();
     setupPwnedPasswordMock(pwnedPassword as unknown as jest.Mock, 0);
@@ -66,7 +77,8 @@ describe('Project Admin routes', () => {
     // 3 members total (1 admin, 1 client, 1 invited)
     const res3 = await request(app)
       .get('/fhir/R4/ProjectMembership')
-      .set('Authorization', 'Bearer ' + accessToken);
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended');
     expect(res3.status).toBe(200);
     expect(res3.body.entry).toBeDefined();
     expect(res3.body.entry.length).toEqual(3);
@@ -76,6 +88,7 @@ describe('Project Admin routes', () => {
     expect(owner).toBeDefined();
     const member = members.find((m) => m.id === res2.body.id) as ProjectMembership;
     expect(member).toBeDefined();
+    expect(member.meta?.author?.reference).toEqual('system');
 
     // Get the new membership details
     const res4 = await request(app)
@@ -112,12 +125,14 @@ describe('Project Admin routes', () => {
     const res7 = await request(app)
       .post('/admin/projects/' + project.id + '/members/' + member.id)
       .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
       .type('json')
       .send({
         ...res4.body,
         admin: true,
       });
     expect(res7.status).toBe(200);
+    expect(res7.body.meta?.author?.reference).toEqual(owner?.profile?.reference);
 
     // Make sure the new member is an admin
     const res8 = await request(app)
@@ -452,5 +467,112 @@ describe('Project Admin routes', () => {
     expect(res3.status).toBe(200);
     expect(res3.body.project.site).toHaveLength(1);
     expect(res3.body.project.site[0].name).toEqual('test_site');
+  });
+
+  test('Set password access denied', async () => {
+    // Create test user in project
+    const testProjectUser = await addTestUser(testProjectAdmin.project, {
+      resourceType: 'AccessPolicy',
+    });
+
+    // Try to set password using user's access token
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectUser.accessToken)
+      .type('json')
+      .send({
+        email: 'alice@example.com',
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(403);
+  });
+
+  test('Set password missing password', async () => {
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
+      .type('json')
+      .send({
+        email: 'alice@example.com',
+        password: '',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Invalid password, must be at least 8 characters');
+  });
+
+  test('Set password user not found', async () => {
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
+      .type('json')
+      .send({
+        email: 'user-not-found@example.com',
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('Set password user not associated with project', async () => {
+    const testOtherProjectAdmin = await withTestContext(() =>
+      registerNew({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        projectName: 'Alice Project',
+        email: `alice${randomUUID()}@example.com`,
+        password: 'password!@#',
+      })
+    );
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
+      .type('json')
+      .send({
+        email: testOtherProjectAdmin.user.email,
+        password: 'password123',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('Set password for global scoped user', async () => {
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
+      .type('json')
+      .send({
+        email: testProjectAdmin.user.email,
+        password: 'new-password!@#',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('Set password for project scoped user', async () => {
+    const projectScopedUser = await withTestContext(() =>
+      inviteUser({
+        project: testProjectAdmin.project,
+        resourceType: 'Patient',
+        firstName: 'First',
+        lastName: 'Last',
+        email: `alice${randomUUID()}@example.com`,
+      })
+    );
+
+    const res = await request(app)
+      .post('/admin/projects/setpassword')
+      .set('Authorization', 'Bearer ' + testProjectAdmin.accessToken)
+      .type('json')
+      .send({
+        email: projectScopedUser.user.email,
+        password: 'new-password!@#',
+      });
+
+    expect(res.status).toBe(200);
   });
 });

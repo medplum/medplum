@@ -1,0 +1,19 @@
+.searchInput {
+  input {
+    width: 220px;
+    transition: width 0.1s ease-in-out;
+  }
+
+  input:focus {
+    width: 400px;
+  }
+
+  @media (max-width: 800px) {
+    input {
+      width: 150px;
+    }
+    input:focus {
+      width: 150px;
+    }
+  }
+}

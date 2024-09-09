@@ -1,10 +1,9 @@
 import { createReference } from '@medplum/core';
 import { DiagnosticReport, Patient } from '@medplum/fhirtypes';
 import { ExampleSubscription, MockClient } from '@medplum/mock';
-import { act, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { act, render, screen, waitFor } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { DefaultResourceTimeline, DefaultResourceTimelineProps } from './DefaultResourceTimeline';
 
 const medplum = new MockClient();

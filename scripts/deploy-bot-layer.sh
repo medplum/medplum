@@ -41,7 +41,6 @@ zip -r -q medplum-bot-layer.zip .
 
 # Publish the bot layer
 aws lambda publish-layer-version \
-  --region us-east-1 \
   --layer-name "$BOT_LAYER_NAME" \
   --description "Medplum Bot Layer" \
   --license-info "Apache-2.0" \

@@ -112,7 +112,7 @@ export interface Linkage {
    * real-world occurrence as well as how the items should be evaluated
    * within the collection of linked items.
    */
-  item?: LinkageItem[];
+  item: LinkageItem[];
 }
 
 /**
@@ -161,10 +161,10 @@ export interface LinkageItem {
    * Distinguishes which item is &quot;source of truth&quot; (if any) and which items
    * are no longer considered to be current representations.
    */
-  type?: 'source' | 'alternate' | 'historical';
+  type: 'source' | 'alternate' | 'historical';
 
   /**
    * The resource instance being linked as part of the group.
    */
-  resource?: Reference<Resource>;
+  resource: Reference<Resource>;
 }

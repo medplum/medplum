@@ -50,5 +50,10 @@ export interface Annotation {
   /**
    * The text of the annotation in markdown format.
    */
-  text?: string;
+  text: string;
 }
+
+/**
+ * The individual responsible for making the annotation.
+ */
+export type AnnotationAuthor = Reference<Practitioner | Patient | RelatedPerson | Organization> | string;

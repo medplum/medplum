@@ -55,7 +55,7 @@ export interface Bundle<T extends Resource = Resource> {
   /**
    * Indicates the purpose of this bundle - how it is intended to be used.
    */
-  type?: 'document' | 'message' | 'transaction' | 'transaction-response' | 'batch' | 'batch-response' | 'history' | 'searchset' | 'collection';
+  type: 'document' | 'message' | 'transaction' | 'transaction-response' | 'batch' | 'batch-response' | 'history' | 'searchset' | 'collection';
 
   /**
    * The date/time that the bundle was assembled - i.e. when the resources
@@ -221,13 +221,13 @@ export interface BundleEntryRequest {
    * this entry. In a history bundle, this indicates the HTTP action that
    * occurred.
    */
-  method?: 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  method: 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
 
   /**
    * The URL for this entry, relative to the root (the address to which the
    * request is posted).
    */
-  url?: string;
+  url: string;
 
   /**
    * If the ETag values match, return a 304 Not Modified status. See the
@@ -304,7 +304,7 @@ export interface BundleEntryResponse {
    * start with a 3 digit HTTP code (e.g. 404) and may contain the standard
    * HTTP description associated with the status code.
    */
-  status?: string;
+  status: string;
 
   /**
    * The location header created by processing this operation, populated if
@@ -430,10 +430,10 @@ export interface BundleLink {
    * A name which details the functional use for this link - see
    * [http://www.iana.org/assignments/link-relations/link-relations.xhtml#link-relations-1](http://www.iana.org/assignments/link-relations/link-relations.xhtml#link-relations-1).
    */
-  relation?: string;
+  relation: string;
 
   /**
    * The reference details for the link.
    */
-  url?: string;
+  url: string;
 }

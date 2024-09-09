@@ -6,9 +6,8 @@
 import { Extension } from './Extension';
 
 /**
- * There SHALL be a code if there is a value and it SHALL be an
- * expression of currency.  If system is present, it SHALL be ISO 4217
- * (system = &quot;urn:iso:std:iso:4217&quot; - currency).
+ * An amount of money. With regard to precision, see [Decimal
+ * Precision](datatypes.html#precision)
  */
 export interface MoneyQuantity {
 

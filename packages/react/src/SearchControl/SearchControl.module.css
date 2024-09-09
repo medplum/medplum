@@ -1,0 +1,35 @@
+.root {
+  max-width: 100%;
+  overflow: auto;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.table {
+  cursor: pointer;
+}
+
+.tr {
+  &:hover {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  }
+}
+
+.th {
+  padding: 0 !important;
+}
+
+.control {
+  width: 100%;
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-md);
+
+  &:hover {
+    background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  }
+}
+
+.icon {
+  width: 21px;
+  height: 21px;
+  border-radius: 21px;
+}

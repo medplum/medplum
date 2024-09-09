@@ -1,24 +1,27 @@
 import { OperationOutcomeIssue, Resource, StructureDefinition } from '@medplum/fhirtypes';
-import { evalFhirPathTyped, getTypedPropertyValue, toTypedValue } from '../fhirpath';
+import { HTTP_HL7_ORG, UCUM } from '../constants';
+import { evalFhirPathTyped } from '../fhirpath/parse';
+import { getTypedPropertyValue, toTypedValue } from '../fhirpath/utils';
 import {
+  OperationOutcomeError,
   createConstraintIssue,
+  createOperationOutcomeIssue,
   createProcessingIssue,
   createStructureIssue,
-  OperationOutcomeError,
   validationError,
 } from '../outcomes';
-import { PropertyType, TypedValue } from '../types';
-import { arrayify, deepEquals, deepIncludes, isEmpty, isLowerCase } from '../utils';
-import { crawlResource, getNestedProperty, ResourceVisitor } from './crawler';
+import { PropertyType, TypedValue, isReference, isResource } from '../types';
+import { arrayify, deepEquals, deepIncludes, isEmpty } from '../utils';
+import { CrawlerVisitor, TypedValueWithPath, crawlTypedValue, getNestedProperty } from './crawler';
 import {
   Constraint,
-  ElementValidator,
-  getDataType,
+  InternalSchemaElement,
   InternalTypeSchema,
-  parseStructureDefinition,
   SliceDefinition,
   SliceDiscriminator,
   SlicingRules,
+  getDataType,
+  parseStructureDefinition,
 } from './types';
 
 /*
@@ -38,6 +41,7 @@ export const fhirTypeToJsType = {
   id: 'string',
   instant: 'string',
   integer: 'number',
+  integer64: 'string',
   markdown: 'string',
   oid: 'string',
   positiveInt: 'number',
@@ -51,19 +55,28 @@ export const fhirTypeToJsType = {
   'http://hl7.org/fhirpath/System.String': 'string', // Not actually a FHIR type, but included in some StructureDefinition resources
 } as const satisfies Record<string, 'string' | 'boolean' | 'number'>;
 
+/**
+ * Returns true if the type code is a primitive type.
+ * @param code - The type code to check.
+ * @returns True if the type code is a primitive type.
+ */
+export function isPrimitiveType(code: string): boolean {
+  return code === 'undefined' || code in fhirTypeToJsType;
+}
+
 /*
  * This file provides schema validation utilities for FHIR JSON objects.
  *
  * See: [JSON Representation of Resources](https://hl7.org/fhir/json.html)
  * See: [FHIR Data Types](https://www.hl7.org/fhir/datatypes.html)
  */
-const validationRegexes: Record<string, RegExp> = {
+export const validationRegexes: Record<string, RegExp> = {
   base64Binary: /^([A-Za-z\d+/]{4})*([A-Za-z\d+/]{2}==|[A-Za-z\d+/]{3}=)?$/,
   canonical: /^\S*$/,
   code: /^[^\s]+( [^\s]+)*$/,
   date: /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1]))?)?$/,
   dateTime:
-    /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/,
+    /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)(-(0[1-9]|1[0-2])(-(0[1-9]|[1-2]\d|3[0-1])(T([01]\d|2[0-3])(:[0-5]\d:([0-5]\d|60)(\.\d{1,9})?)?)?)?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00)?)?)?$/,
   id: /^[A-Za-z0-9\-.]{1,64}$/,
   instant:
     /^(\d(\d(\d[1-9]|[1-9]0)|[1-9]00)|[1-9]000)-(0[1-9]|1[0-2])-(0[1-9]|[1-2]\d|3[0-1])T([01]\d|2[0-3]):[0-5]\d:([0-5]\d|60)(\.\d{1,9})?(Z|[+-]((0\d|1[0-3]):[0-5]\d|14:00))$/,
@@ -80,56 +93,82 @@ const validationRegexes: Record<string, RegExp> = {
 /**
  * List of constraint keys that aren't to be checked in an expression.
  */
-const skippedConstraintKeys: Record<string, boolean> = { 'ele-1': true };
+const skippedConstraintKeys: Record<string, boolean> = {
+  'ele-1': true,
+  'dom-3': true, // If the resource is contained in another resource, it SHALL be referred to from elsewhere in the resource (requries "descendants()")
+  'org-1': true, // The organization SHALL at least have a name or an identifier, and possibly more than one (back compat)
+  'sdf-19': true, // FHIR Specification models only use FHIR defined types
+};
 
-export function validate(resource: Resource, profile?: StructureDefinition): void {
-  new ResourceValidator(resource.resourceType, resource, profile).validate();
+export interface ValidatorOptions {
+  profile?: StructureDefinition;
 }
 
-class ResourceValidator implements ResourceVisitor {
+export function validateResource(resource: Resource, options?: ValidatorOptions): OperationOutcomeIssue[] {
+  if (!resource.resourceType) {
+    throw new OperationOutcomeError(validationError('Missing resource type'));
+  }
+  return new ResourceValidator(toTypedValue(resource), options).validate();
+}
+
+export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOptions): OperationOutcomeIssue[] {
+  return new ResourceValidator(typedValue, options).validate();
+}
+
+class ResourceValidator implements CrawlerVisitor {
   private issues: OperationOutcomeIssue[];
-  private rootResource: Resource;
+  private root: TypedValue;
   private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
 
-  constructor(resourceType: string, rootResource: Resource, profile?: StructureDefinition) {
+  constructor(typedValue: TypedValue, options?: ValidatorOptions) {
     this.issues = [];
-    this.rootResource = rootResource;
+    this.root = typedValue;
     this.currentResource = [];
-    if (!profile) {
-      this.schema = getDataType(resourceType);
+    if (isResource(typedValue.value)) {
+      this.currentResource.push(typedValue.value);
+    }
+    if (!options?.profile) {
+      this.schema = getDataType(typedValue.type);
     } else {
-      this.schema = parseStructureDefinition(profile);
+      this.schema = parseStructureDefinition(options.profile);
     }
   }
 
-  validate(): void {
-    const resourceType = this.rootResource.resourceType;
-    if (!resourceType) {
-      throw new OperationOutcomeError(validationError('Missing resource type'));
-    }
+  validate(): OperationOutcomeIssue[] {
+    // Check root constraints
+    this.constraintsCheck(this.root, this.schema, this.schema.path);
 
-    checkObjectForNull(this.rootResource as unknown as Record<string, unknown>, resourceType, this.issues);
+    checkObjectForNull(this.root.value as unknown as Record<string, unknown>, this.schema.path, this.issues);
 
-    crawlResource(this.rootResource, this, this.schema);
+    crawlTypedValue(this.root, this, { schema: this.schema, initialPath: this.schema.path });
 
     const issues = this.issues;
-    this.issues = []; // Reset issues to allow re-using the validator for other resources
-    if (issues.length > 0) {
+
+    let foundError = false;
+    for (const issue of issues) {
+      if (issue.severity === 'error') {
+        foundError = true;
+      }
+    }
+
+    if (foundError) {
       throw new OperationOutcomeError({
         resourceType: 'OperationOutcome',
         issue: issues,
       });
     }
+
+    return issues;
   }
 
-  onExitObject(path: string, obj: TypedValue, schema: InternalTypeSchema): void {
+  onExitObject(path: string, obj: TypedValueWithPath, schema: InternalTypeSchema): void {
     //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
     // were correctly matched to resource properties as elements are validated above
-    this.checkAdditionalProperties(obj, schema.fields, path);
+    this.checkAdditionalProperties(obj, schema.elements, path);
   }
 
-  onEnterResource(_path: string, obj: TypedValue): void {
+  onEnterResource(_path: string, obj: TypedValueWithPath): void {
     this.currentResource.push(obj.value);
   }
 
@@ -138,22 +177,23 @@ class ResourceValidator implements ResourceVisitor {
   }
 
   visitProperty(
-    _parent: TypedValue,
+    _parent: TypedValueWithPath,
     key: string,
     path: string,
-    propertyValues: (TypedValue | TypedValue[] | undefined)[],
+    propertyValues: (TypedValueWithPath | TypedValueWithPath[])[],
     schema: InternalTypeSchema
   ): void {
-    const element = schema.fields[key];
+    const element = schema.elements[key];
     if (!element) {
       throw new Error(`Missing element validation schema for ${key}`);
     }
+
     for (const value of propertyValues) {
       if (!this.checkPresence(value, element, path)) {
         return;
       }
       // Check cardinality
-      let values: TypedValue[];
+      let values: TypedValueWithPath[];
       if (element.isArray) {
         if (!Array.isArray(value)) {
           this.issues.push(createStructureIssue(path, 'Expected array of values for property'));
@@ -171,7 +211,7 @@ class ResourceValidator implements ResourceVisitor {
       if (values.length < element.min || values.length > element.max) {
         this.issues.push(
           createStructureIssue(
-            path,
+            element.path,
             `Invalid number of values: expected ${element.min}..${
               Number.isFinite(element.max) ? element.max : '*'
             }, but found ${values.length}`
@@ -182,40 +222,46 @@ class ResourceValidator implements ResourceVisitor {
       if (!matchesSpecifiedValue(value, element)) {
         this.issues.push(createStructureIssue(path, 'Value did not match expected pattern'));
       }
+
       const sliceCounts: Record<string, number> | undefined = element.slicing
         ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
         : undefined;
       for (const value of values) {
         this.constraintsCheck(value, element, path);
+        this.referenceTypeCheck(value, element, path);
         this.checkPropertyValue(value, path);
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
         }
       }
+
       this.validateSlices(element.slicing?.slices, sliceCounts, path);
     }
   }
 
   private checkPresence(
-    value: TypedValue | TypedValue[] | undefined,
-    element: ElementValidator,
+    value: TypedValueWithPath | TypedValueWithPath[],
+    field: InternalSchemaElement,
     path: string
-  ): value is TypedValue | TypedValue[] {
-    if (value === undefined) {
-      if (element.min > 0) {
-        this.issues.push(createStructureIssue(path, 'Missing required property'));
+  ): boolean {
+    if (!Array.isArray(value) && value.value === undefined) {
+      if (field.min > 0) {
+        this.issues.push(createStructureIssue(value.path, 'Missing required property'));
       }
       return false;
-    } else if (isEmpty(value)) {
+    }
+
+    if (isEmpty(value)) {
       this.issues.push(createStructureIssue(path, 'Invalid empty value'));
       return false;
     }
+
     return true;
   }
 
   private checkPropertyValue(value: TypedValue, path: string): void {
-    if (isLowerCase(value.type.charAt(0))) {
+    if (isPrimitiveType(value.type)) {
       this.validatePrimitiveType(value, path);
     }
   }
@@ -245,29 +291,72 @@ class ResourceValidator implements ResourceVisitor {
 
   private checkAdditionalProperties(
     parent: TypedValue,
-    properties: Record<string, ElementValidator>,
+    properties: Record<string, InternalSchemaElement>,
     path: string
   ): void {
     const object = parent.value as Record<string, unknown> | undefined;
     if (!object) {
       return;
     }
+    const choiceOfTypeElements: Record<string, string> = {};
     for (const key of Object.keys(object)) {
       if (key === 'resourceType') {
         continue; // Skip special resource type discriminator property in JSON
       }
-      if (
-        !(key in properties) &&
-        !(key.startsWith('_') && key.slice(1) in properties) &&
-        !isChoiceOfType(parent, key, properties)
-      ) {
+      const choiceOfTypeElementName = isChoiceOfType(parent, key, properties);
+      if (choiceOfTypeElementName) {
+        // check that the type of the primitive extension matches the type of the property
+        let relatedElementName: string;
+        let requiredRelatedElementName: string;
+        if (choiceOfTypeElementName.startsWith('_')) {
+          relatedElementName = choiceOfTypeElementName.slice(1);
+          requiredRelatedElementName = key.slice(1);
+        } else {
+          relatedElementName = '_' + choiceOfTypeElementName;
+          requiredRelatedElementName = '_' + key;
+        }
+
+        if (
+          relatedElementName in choiceOfTypeElements &&
+          choiceOfTypeElements[relatedElementName] !== requiredRelatedElementName
+        ) {
+          this.issues.push(
+            createOperationOutcomeIssue(
+              'warning',
+              'structure',
+              `Type of primitive extension does not match the type of property "${choiceOfTypeElementName.startsWith('_') ? choiceOfTypeElementName.slice(1) : choiceOfTypeElementName}"`,
+              choiceOfTypeElementName
+            )
+          );
+        }
+
+        if (choiceOfTypeElements[choiceOfTypeElementName]) {
+          // Found a duplicate choice of type property
+          // TODO: This should be an error, but it's currently a warning to avoid breaking existing code
+          // Warnings are logged, but do not cause validation to fail
+          this.issues.push(
+            createOperationOutcomeIssue(
+              'warning',
+              'structure',
+              `Duplicate choice of type property "${choiceOfTypeElementName}"`,
+              choiceOfTypeElementName
+            )
+          );
+        }
+        choiceOfTypeElements[choiceOfTypeElementName] = key;
+        continue;
+      }
+      if (!(key in properties) && !(key.startsWith('_') && key.slice(1) in properties)) {
         this.issues.push(createStructureIssue(`${path}.${key}`, `Invalid additional property "${key}"`));
       }
     }
   }
 
-  private constraintsCheck(value: TypedValue, element: ElementValidator, path: string): void {
-    const constraints = element.constraints;
+  private constraintsCheck(value: TypedValue, field: InternalTypeSchema | InternalSchemaElement, path: string): void {
+    const constraints = field.constraints;
+    if (!constraints) {
+      return;
+    }
     for (const constraint of constraints) {
       if (constraint.severity === 'error' && !(constraint.key in skippedConstraintKeys)) {
         const expression = this.isExpressionTrue(constraint, value, path);
@@ -279,14 +368,85 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
+  private referenceTypeCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
+    if (value.type !== 'Reference') {
+      return;
+    }
+
+    const reference = value.value;
+    if (!isReference(reference)) {
+      // Silently ignore unrecognized reference types
+      return;
+    }
+
+    const referenceResourceType = reference.reference.split('/')[0];
+    if (!referenceResourceType) {
+      // Silently ignore empty references - that will get picked up by constraint validation
+      return;
+    }
+
+    const targetProfiles = field.type.find((t) => t.code === 'Reference')?.targetProfile;
+    if (!targetProfiles) {
+      // No required target profiles
+      return;
+    }
+
+    const hl7BaseUrl = HTTP_HL7_ORG + '/fhir/StructureDefinition/';
+    const hl7AllResourcesUrl = hl7BaseUrl + 'Resource';
+    const hl7ResourceTypeUrl = hl7BaseUrl + referenceResourceType;
+
+    const medplumBaseUrl = 'https://medplum.com/fhir/StructureDefinition/';
+    const medplumResourceTypeUrl = medplumBaseUrl + referenceResourceType;
+
+    for (const targetProfile of targetProfiles) {
+      if (
+        targetProfile === hl7AllResourcesUrl ||
+        targetProfile === hl7ResourceTypeUrl ||
+        targetProfile === medplumResourceTypeUrl
+      ) {
+        // Found a matching profile
+        return;
+      }
+
+      if (!targetProfile.startsWith(hl7BaseUrl) && !targetProfile.startsWith(medplumBaseUrl)) {
+        // This is an unrecognized target profile string
+        // For example, it could be US-Core or a custom profile definition
+        // Example: http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient
+        // And therefore we cannot validate
+        return;
+      }
+    }
+
+    // All of the target profiles were recognized formats
+    // and we did not find a match
+    // TODO: This should be an error, but it's currently a warning to avoid breaking existing code
+    // Warnings are logged, but do not cause validation to fail
+    this.issues.push(
+      createOperationOutcomeIssue(
+        'warning',
+        'structure',
+        `Invalid reference for "${path}", got "${referenceResourceType}", expected "${targetProfiles.join('", "')}"`,
+        path
+      )
+    );
+  }
+
   private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {
+    const variables: Record<string, TypedValue> = {
+      '%context': value,
+      '%ucum': toTypedValue(UCUM),
+    };
+
+    if (this.currentResource.length > 0) {
+      variables['%resource'] = toTypedValue(this.currentResource[this.currentResource.length - 1]);
+    }
+
+    if (isResource(this.root.value)) {
+      variables['%rootResource'] = this.root;
+    }
+
     try {
-      const evalValues = evalFhirPathTyped(constraint.expression, [value], {
-        context: value,
-        resource: toTypedValue(this.currentResource[this.currentResource.length - 1]),
-        rootResource: toTypedValue(this.rootResource),
-        ucum: toTypedValue('http://unitsofmeasure.org'),
-      });
+      const evalValues = evalFhirPathTyped(constraint.expression, [value], variables);
 
       return evalValues.length === 1 && evalValues[0].value === true;
     } catch (e: any) {
@@ -307,7 +467,7 @@ class ResourceValidator implements ResourceVisitor {
         return;
       }
       const expectedType = fhirTypeToJsType[type as keyof typeof fhirTypeToJsType];
-      // rome-ignore lint/suspicious/useValidTypeof: expected value ensured to be one of: 'string' | 'boolean' | 'number'
+      // biome-ignore lint/suspicious/useValidTypeof: expected value ensured to be one of: 'string' | 'boolean' | 'number'
       if (typeof value !== expectedType) {
         if (value !== null) {
           this.issues.push(
@@ -318,17 +478,17 @@ class ResourceValidator implements ResourceVisitor {
       }
       // Then, perform additional checks for specialty types
       if (expectedType === 'string') {
-        this.validateString(value as string, type as PropertyType, path);
+        this.validateString(value as string, type, path);
       } else if (expectedType === 'number') {
-        this.validateNumber(value as number, type as PropertyType, path);
+        this.validateNumber(value as number, type, path);
       }
     }
     if (extensionElement) {
-      crawlResource(extensionElement.value, this, getDataType('Element'), path);
+      crawlTypedValue(extensionElement, this, { schema: getDataType('Element'), initialPath: path });
     }
   }
 
-  private validateString(str: string, type: PropertyType, path: string): void {
+  private validateString(str: string, type: string, path: string): void {
     if (!str.trim()) {
       this.issues.push(createStructureIssue(path, 'String must contain non-whitespace content'));
       return;
@@ -340,8 +500,8 @@ class ResourceValidator implements ResourceVisitor {
     }
   }
 
-  private validateNumber(n: number, type: PropertyType, path: string): void {
-    if (isNaN(n) || !isFinite(n)) {
+  private validateNumber(n: number, type: string, path: string): void {
+    if (Number.isNaN(n) || !Number.isFinite(n)) {
       this.issues.push(createStructureIssue(path, 'Invalid numeric value'));
     } else if (isIntegerType(type) && !Number.isInteger(n)) {
       this.issues.push(createStructureIssue(path, 'Expected number to be an integer'));
@@ -353,7 +513,7 @@ class ResourceValidator implements ResourceVisitor {
   }
 }
 
-function isIntegerType(propertyType: PropertyType): boolean {
+function isIntegerType(propertyType: string): boolean {
   return (
     propertyType === PropertyType.integer ||
     propertyType === PropertyType.positiveInt ||
@@ -361,22 +521,35 @@ function isIntegerType(propertyType: PropertyType): boolean {
   );
 }
 
+/**
+ * Returns the choice-of-type element name if the key is a choice of type property.
+ * Returns undefined if the key is not a choice of type property.
+ * @param typedValue - The value to check.
+ * @param key - The object key to check. This is different than the element name, which could contain "[x]".
+ * @param propertyDefinitions - The property definitions for the object..
+ * @returns The element name if a choice of type property is present, otherwise undefined.
+ */
 function isChoiceOfType(
   typedValue: TypedValue,
   key: string,
-  propertyDefinitions: Record<string, ElementValidator>
-): boolean {
+  propertyDefinitions: Record<string, InternalSchemaElement>
+): string | undefined {
+  let prefix = '';
+  if (key.startsWith('_')) {
+    key = key.slice(1);
+    prefix = '_';
+  }
   const parts = key.split(/(?=[A-Z])/g); // Split before capital letters
   let testProperty = '';
   for (const part of parts) {
     testProperty += part;
-    if (!propertyDefinitions[testProperty + '[x]']) {
-      continue;
+    const elementName = testProperty + '[x]';
+    if (propertyDefinitions[elementName]) {
+      const typedPropertyValue = getTypedPropertyValue(typedValue, testProperty);
+      return typedPropertyValue ? prefix + elementName : undefined;
     }
-    const typedPropertyValue = getTypedPropertyValue(typedValue, testProperty);
-    return !!typedPropertyValue;
   }
-  return false;
+  return undefined;
 }
 
 function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: OperationOutcomeIssue[]): void {
@@ -403,41 +576,66 @@ function checkObjectForNull(obj: Record<string, unknown>, path: string, issues: 
   }
 }
 
-function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: ElementValidator): boolean {
-  if (element.pattern && !deepIncludes(value, element.pattern)) {
+function matchesSpecifiedValue(value: TypedValue | TypedValue[], element: InternalSchemaElement): boolean {
+  // It is possible that `value` has additional keys beyond `type` and `value` (e.g. `expression` if a
+  // `TypedValueWithExpression` is being used), so ensure that only `type` and `value` are considered for comparison.
+  const typeAndValue = Array.isArray(value)
+    ? value.map((v) => ({ type: v.type, value: v.value }))
+    : { type: value.type, value: value.value };
+
+  if (element.pattern && !deepIncludes(typeAndValue, element.pattern)) {
     return false;
-  } else if (element.fixed && !deepEquals(value, element.fixed)) {
+  }
+  if (element.fixed && !deepEquals(typeAndValue, element.fixed)) {
     return false;
   }
   return true;
 }
 
-function matchDiscriminant(
+export function matchDiscriminant(
   value: TypedValue | TypedValue[] | undefined,
   discriminator: SliceDiscriminator,
-  slice: SliceDefinition
+  slice: SliceDefinition,
+  elements?: Record<string, InternalSchemaElement>
 ): boolean {
   if (Array.isArray(value)) {
     // Only single values can match
     return false;
   }
-  const sliceElement = slice.fields[discriminator.path];
+
+  let sliceElement: InternalSchemaElement | undefined;
+  if (discriminator.path === '$this') {
+    sliceElement = slice;
+  } else {
+    sliceElement = (elements ?? slice.elements)[discriminator.path];
+  }
+
   const sliceType = slice.type;
   switch (discriminator.type) {
     case 'value':
     case 'pattern':
       if (!value || !sliceElement) {
         return false;
-      } else if (matchesSpecifiedValue(value, sliceElement)) {
+      }
+      if (sliceElement.pattern) {
+        return deepIncludes(value, sliceElement.pattern);
+      }
+      if (sliceElement.fixed) {
+        return deepEquals(value, sliceElement.fixed);
+      }
+
+      if (sliceElement.binding?.strength === 'required' && sliceElement.binding.valueSet) {
+        // This cannot be implemented correctly without asynchronous validation, so make it permissive for now.
+        // Ideally this should check something like value.value.coding.some((code) => isValidCode(sliceElement.binding.valueSet, code))
+        // where isValidCode is a function that checks if the code is included in the expansion of the ValueSet
         return true;
       }
       break;
     case 'type':
       if (!value || !sliceType?.length) {
         return false;
-      } else {
-        return sliceType.some((t) => t.code === value.type);
       }
+      return sliceType.some((t) => t.code === value.type);
     // Other discriminator types are not yet supported, see http://hl7.org/fhir/R4/profiling.html#discriminator
   }
   // Default to no match
@@ -450,11 +648,8 @@ function checkSliceElement(value: TypedValue, slicingRules: SlicingRules | undef
   }
   for (const slice of slicingRules.slices) {
     if (
-      slicingRules.discriminator.every(
-        (discriminator) =>
-          arrayify(getNestedProperty(value, discriminator.path))?.some((v) =>
-            matchDiscriminant(v, discriminator, slice)
-          )
+      slicingRules.discriminator.every((discriminator) =>
+        arrayify(getNestedProperty(value, discriminator.path))?.some((v) => matchDiscriminant(v, discriminator, slice))
       )
     ) {
       return slice.name;

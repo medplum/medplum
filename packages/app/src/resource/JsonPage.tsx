@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString, stringify } from '@medplum/core';
 import { OperationOutcome, ResourceType } from '@medplum/fhirtypes';
 import { Document, Form, OperationOutcomeAlert, useMedplum, useResource } from '@medplum/react';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { cleanResource } from './utils';
 
@@ -24,7 +24,7 @@ export function JsonPage(): JSX.Element | null {
           showNotification({ color: 'green', message: 'Success' });
         })
         .catch((err) => {
-          showNotification({ color: 'red', message: normalizeErrorString(err) });
+          showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
         });
     },
     [medplum, resourceType, id, navigate]
@@ -41,12 +41,13 @@ export function JsonPage(): JSX.Element | null {
         <JsonInput
           name="resource"
           data-testid="resource-json"
+          autosize
           minRows={24}
           defaultValue={stringify(resource, true)}
           formatOnBlur
           deserialize={JSON.parse}
         />
-        <Group position="right" mt="xl" noWrap>
+        <Group justify="flex-end" mt="xl" wrap="nowrap">
           <Button type="submit">OK</Button>
         </Group>
       </Form>

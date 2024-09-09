@@ -1,4 +1,4 @@
-import { Bundle, BundleEntry, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, BundleEntryRequest, Resource } from '@medplum/fhirtypes';
 import { generateId } from './crypto';
 import { isReference } from './types';
 import { deepClone } from './utils';
@@ -10,14 +10,20 @@ import { deepClone } from './utils';
 
 /**
  * Takes a bundle and creates a Transaction Type bundle
- * @param bundle The Bundle object that we'll receive from the search query
+ * @param bundle - The Bundle object that we'll receive from the search query
  * @returns transaction type bundle
  */
 export function convertToTransactionBundle(bundle: Bundle): Bundle {
   const idToUuid: Record<string, string> = {};
   bundle = deepClone(bundle);
   for (const entry of bundle.entry || []) {
-    delete entry.resource?.meta;
+    if (entry.resource?.meta !== undefined) {
+      delete entry.resource.meta.author;
+      delete entry.resource.meta.compartment;
+      delete entry.resource.meta.lastUpdated;
+      delete entry.resource.meta.project;
+      delete entry.resource.meta.versionId;
+    }
     const id = entry.resource?.id;
     if (id) {
       idToUuid[id] = generateId();
@@ -54,7 +60,10 @@ function referenceReplacer(key: string, value: string, idToUuid: Record<string, 
       id = value.slice(1);
     }
     if (id) {
-      return 'urn:uuid:' + idToUuid[id];
+      const replacement = idToUuid[id];
+      if (replacement) {
+        return 'urn:uuid:' + replacement;
+      }
     }
   }
   return value;
@@ -67,7 +76,7 @@ function referenceReplacer(key: string, value: string, idToUuid: Record<string, 
  * In the event of cycles, this function will first create a POST request for each resource in the cycle, and then will
  * append a PUT request to the bundle. This ensures that each resources in the cycle is visited twice, and all
  * references can be resolved
- * @param bundle Input bundle with type `batch` or `transaction`
+ * @param bundle - Input bundle with type `batch` or `transaction`
  * @returns Bundle of the same type, with Bundle.entry reordered
  */
 export function reorderBundle(bundle: Bundle): Bundle {
@@ -91,7 +100,7 @@ export function reorderBundle(bundle: Bundle): Bundle {
       const putEntry: BundleEntry = {
         ...originalEntry,
         request: {
-          ...originalEntry.request,
+          ...(originalEntry.request as BundleEntryRequest),
           method: 'PUT',
         },
       };
@@ -212,7 +221,7 @@ function buildAdjacencyList(bundle: Bundle): AdjacencyList {
  * Converts a resource with contained resources to a transaction bundle.
  * This function is useful when creating a resource that contains other resources.
  * Handles local references and topological sorting.
- * @param resource The input resource which may or may not include contained resources.
+ * @param resource - The input resource which may or may not include contained resources.
  * @returns A bundle with the input resource and all contained resources.
  */
 export function convertContainedResourcesToBundle(resource: Resource & { contained?: Resource[] }): Bundle {

@@ -1,6 +1,6 @@
 import { AccessPolicy, AccessPolicyResource, Resource, ResourceType } from '@medplum/fhirtypes';
-import { parseCriteriaAsSearchRequest } from './search/search';
 import { matchesSearchRequest } from './search/match';
+import { parseSearchRequest } from './search/search';
 
 const universalAccessPolicy: AccessPolicyResource = {
   resourceType: '*',
@@ -10,13 +10,19 @@ const universalAccessPolicy: AccessPolicyResource = {
  * Protected resource types are in the "medplum" project.
  * Reading and writing is limited to the system account.
  */
-export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login', 'User'];
+export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login'];
 
 /**
  * Project admin resource types are special resources that are only
  * accessible to project administrators.
  */
-export const projectAdminResourceTypes = ['PasswordChangeRequest', 'Project', 'ProjectMembership'];
+export const projectAdminResourceTypes = [
+  'PasswordChangeRequest',
+  'UserSecurityRequest',
+  'Project',
+  'ProjectMembership',
+  'User',
+];
 
 /**
  * Interactions with a resource that can be controlled via an access policy.
@@ -52,8 +58,8 @@ const resourceReadInteractions = [
 
 /**
  * Determines if the current user can read the specified resource type.
- * @param accessPolicy The access policy.
- * @param resourceType The resource type.
+ * @param accessPolicy - The access policy.
+ * @param resourceType - The resource type.
  * @returns True if the current user can read the specified resource type.
  */
 export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: ResourceType): boolean {
@@ -71,8 +77,8 @@ export function canReadResourceType(accessPolicy: AccessPolicy, resourceType: Re
  * Determines if the current user can write the specified resource type.
  * This is a preliminary check before evaluating a write operation in depth.
  * If a user cannot write a resource type at all, then don't bother looking up previous versions.
- * @param accessPolicy The access policy.
- * @param resourceType The resource type.
+ * @param accessPolicy - The access policy.
+ * @param resourceType - The resource type.
  * @returns True if the current user can write the specified resource type.
  */
 export function canWriteResourceType(accessPolicy: AccessPolicy, resourceType: ResourceType): boolean {
@@ -92,8 +98,8 @@ export function canWriteResourceType(accessPolicy: AccessPolicy, resourceType: R
 /**
  * Determines if the current user can write the specified resource.
  * This is a more in-depth check after building the candidate result of a write operation.
- * @param accessPolicy The access policy.
- * @param resource The resource.
+ * @param accessPolicy - The access policy.
+ * @param resource - The resource.
  * @returns True if the current user can write the specified resource type.
  */
 export function canWriteResource(accessPolicy: AccessPolicy, resource: Resource): boolean {
@@ -106,9 +112,9 @@ export function canWriteResource(accessPolicy: AccessPolicy, resource: Resource)
 
 /**
  * Returns true if the resource satisfies the current access policy.
- * @param accessPolicy The access policy.
- * @param resource The resource.
- * @param readonlyMode True if the resource is being read.
+ * @param accessPolicy - The access policy.
+ * @param resource - The resource.
+ * @param readonlyMode - True if the resource is being read.
  * @returns True if the resource matches the access policy.
  * @deprecated Use satisfiedAccessPolicy() instead.
  */
@@ -131,9 +137,9 @@ export function matchesAccessPolicy(accessPolicy: AccessPolicy, resource: Resour
 
 /**
  * Checks that there is an access policy permitting the given resource interaction, returning the matching policy object.
- * @param resource The resource being acted upon.
- * @param interaction The interaction being performed on the resource.
- * @param accessPolicy The relevant access policy for the current user.
+ * @param resource - The resource being acted upon.
+ * @param interaction - The interaction being performed on the resource.
+ * @param accessPolicy - The relevant access policy for the current user.
  * @returns The satisfied access policy, or undefined if the access policy does not permit the given interaction.
  */
 export function satisfiedAccessPolicy(
@@ -156,9 +162,9 @@ export function satisfiedAccessPolicy(
 
 /**
  * Returns true if the resource satisfies the specified access policy resource policy.
- * @param resource The resource.
- * @param interaction The interaction being performed on the resource.
- * @param resourcePolicy One per-resource policy section from the access policy.
+ * @param resource - The resource.
+ * @param interaction - The interaction being performed on the resource.
+ * @param resourcePolicy - One per-resource policy section from the access policy.
  * @returns True if the resource matches the access policy.
  */
 function matchesAccessPolicyResourcePolicy(
@@ -180,10 +186,7 @@ function matchesAccessPolicyResourcePolicy(
     // Deprecated - to be removed
     return false;
   }
-  if (
-    resourcePolicy.criteria &&
-    !matchesSearchRequest(resource, parseCriteriaAsSearchRequest(resourcePolicy.criteria))
-  ) {
+  if (resourcePolicy.criteria && !matchesSearchRequest(resource, parseSearchRequest(resourcePolicy.criteria))) {
     return false;
   }
   return true;
@@ -191,8 +194,8 @@ function matchesAccessPolicyResourcePolicy(
 
 /**
  * Returns true if the resource type matches the access policy resource type.
- * @param accessPolicyResourceType The resource type from the access policy.
- * @param resourceType The candidate resource resource type.
+ * @param accessPolicyResourceType - The resource type from the access policy.
+ * @param resourceType - The candidate resource resource type.
  * @returns True if the resource type matches the access policy resource type.
  */
 function matchesAccessPolicyResourceType(

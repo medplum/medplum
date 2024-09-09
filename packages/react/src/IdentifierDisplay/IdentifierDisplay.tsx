@@ -1,8 +1,7 @@
 import { Identifier } from '@medplum/fhirtypes';
-import React from 'react';
 
 export interface IdentifierDisplayProps {
-  value?: Identifier;
+  readonly value?: Identifier;
 }
 
 export function IdentifierDisplay(props: IdentifierDisplayProps): JSX.Element {

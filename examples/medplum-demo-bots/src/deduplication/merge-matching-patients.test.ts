@@ -1,7 +1,13 @@
 import { ContentType, MedplumClient, createReference, getStatus, isOperationOutcome } from '@medplum/core';
-import { OperationOutcome, Patient, PatientLink, ServiceRequest } from '@medplum/fhirtypes';
+import { OperationOutcome, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { Mock, vi } from 'vitest';
-import { linkPatientRecords, mergePatientRecords, updateResourceReferences } from './merge-matching-patients';
+import {
+  linkPatientRecords,
+  mergePatientRecords,
+  patientsAlreadyMerged,
+  unlinkPatientRecords,
+  updateResourceReferences,
+} from './merge-matching-patients';
 
 function mockFetch(
   status: number,
@@ -66,7 +72,7 @@ describe('Deduplication', () => {
       resourceType: 'Patient',
       id: 'target',
       name: [{ given: ['Lisa'], family: 'Simpson' }],
-      link: [{ other: createReference({ resourceType: 'Patient', id: '123' }), type: 'seeAlso' }] as PatientLink,
+      link: [{ other: [createReference({ resourceType: 'Patient', id: '123' })], type: 'seealso' }],
     } as Patient;
 
     const result = linkPatientRecords(srcPatient, targetPatient);
@@ -77,6 +83,30 @@ describe('Deduplication', () => {
       other: { display: 'Homer Simpson', reference: 'Patient/src' },
       type: 'replaces',
     });
+  });
+
+  test('should unlink patients', () => {
+    const srcPatient = {
+      resourceType: 'Patient',
+      id: 'src',
+      active: false,
+      name: [{ given: ['Homer'], family: 'Simpson' }],
+      link: [{ other: { reference: 'Patient/target' }, type: 'replaced-by' }],
+    } as Patient;
+
+    const targetPatient = {
+      resourceType: 'Patient',
+      id: 'target',
+      active: true,
+      name: [{ given: ['Lisa'], family: 'Simpson' }],
+      link: [{ other: createReference(srcPatient), type: 'replaces' }],
+    } as Patient;
+
+    const result = unlinkPatientRecords(srcPatient, targetPatient);
+
+    expect(result.src.link?.length).toBe(0);
+    expect(result.target.link?.length).toBe(0);
+    expect(result.src.active).toBe(true);
   });
 
   test('should merge contact info correctly', () => {
@@ -166,5 +196,49 @@ describe('Deduplication', () => {
     await updateResourceReferences(client, srcPatient, targetPatient, 'ServiceRequest');
     const clinicalResourceUpdated = (await client.readResource('ServiceRequest', '123')) as ServiceRequest;
     expect(clinicalResourceUpdated.subject).toEqual({ reference: 'Patient/target' });
+  });
+
+  describe('Patients already linked', async () => {
+    interface TestMergedPatients {
+      master: Patient;
+      source: Patient;
+      target: Patient;
+    }
+    beforeEach<TestMergedPatients>((context) => {
+      context.master = {
+        resourceType: 'Patient',
+        id: 'src',
+        active: true,
+      } as Patient;
+      context.target = {
+        resourceType: 'Patient',
+        id: 'target',
+        name: [{ given: ['Lisa'], family: 'Simpson' }],
+        link: [{ other: createReference(context.master), type: 'replaced-by' }],
+      } as Patient;
+
+      context.source = {
+        resourceType: 'Patient',
+        id: 'target',
+        name: [{ given: ['Lisa', 'L'], family: 'Simpson' }],
+        link: [{ other: createReference(context.master), type: 'replaced-by' }],
+      } as Patient;
+
+      context.master.link = [
+        { type: 'replaces', other: createReference(context.source) },
+        { type: 'replaces', other: createReference(context.target) },
+      ];
+    });
+    test<TestMergedPatients>('Patients share a master resource', async ({ source, target }) => {
+      expect(patientsAlreadyMerged(source, target)).toBe(true);
+    });
+
+    test<TestMergedPatients>('Target is master resource', async ({ source, master }) => {
+      expect(patientsAlreadyMerged(source, master)).toBe(true);
+    });
+
+    test<TestMergedPatients>('Source is a master resource', async ({ master, target }) => {
+      expect(patientsAlreadyMerged(master, target)).toBe(true);
+    });
   });
 });

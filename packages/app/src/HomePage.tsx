@@ -1,35 +1,15 @@
-import { createStyles, Paper } from '@mantine/core';
+import { Paper } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import {
-  convertToTransactionBundle,
-  DEFAULT_SEARCH_COUNT,
-  Filter,
-  formatSearchQuery,
-  MedplumClient,
-  normalizeErrorString,
-  parseSearchDefinition,
-  SearchRequest,
-  SortRule,
-} from '@medplum/core';
-import { Bundle, ResourceType, UserConfiguration } from '@medplum/fhirtypes';
-import { Loading, MemoizedSearchControl, useMedplum } from '@medplum/react';
-import React, { useEffect, useState } from 'react';
+import { formatSearchQuery, normalizeErrorString, parseSearchRequest, SearchRequest } from '@medplum/core';
+import { ResourceType } from '@medplum/fhirtypes';
+import { Loading, SearchControl, useMedplum } from '@medplum/react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import classes from './HomePage.module.css';
+import { addSearchValues, getTransactionBundle, RESOURCE_TYPE_CREATION_PATHS, saveLastSearch } from './HomePage.utils';
 import { exportJsonFile } from './utils';
 
-const useStyles = createStyles((theme) => {
-  return {
-    paper: {
-      [`@media (max-width: ${theme.breakpoints.sm})`]: {
-        margin: 2,
-        padding: 4,
-      },
-    },
-  };
-});
-
 export function HomePage(): JSX.Element {
-  const { classes } = useStyles();
   const medplum = useMedplum();
   const navigate = useNavigate();
   const location = useLocation();
@@ -37,7 +17,7 @@ export function HomePage(): JSX.Element {
 
   useEffect(() => {
     // Parse the search from the URL
-    const parsedSearch = parseSearchDefinition(location.pathname + location.search);
+    const parsedSearch = parseSearchRequest(location.pathname + location.search);
 
     // Fill in the search with default values
     const populatedSearch = addSearchValues(parsedSearch, medplum.getUserConfiguration());
@@ -61,22 +41,17 @@ export function HomePage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs" className={classes.paper}>
-      <MemoizedSearchControl
+      <SearchControl
         checkboxesEnabled={true}
         search={search}
-        userConfig={medplum.getUserConfiguration()}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
           navigate(`/${search.resourceType}${formatSearchQuery(e.definition)}`);
         }}
-        onNew={
-          canCreate(search.resourceType)
-            ? () => {
-                navigate(`/${search.resourceType}/new`);
-              }
-            : undefined
-        }
+        onNew={() => {
+          navigate(RESOURCE_TYPE_CREATION_PATHS[search.resourceType] ?? `/${search.resourceType}/new`);
+        }}
         onExportCsv={() => {
           const url = medplum.fhirUrl(search.resourceType, '$csv') + formatSearchQuery(search);
           medplum
@@ -84,12 +59,12 @@ export function HomePage(): JSX.Element {
             .then((blob: Blob) => {
               window.open(window.URL.createObjectURL(blob), '_blank');
             })
-            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
         }}
         onExportTransactionBundle={async () => {
           getTransactionBundle(search, medplum)
             .then((bundle) => exportJsonFile(JSON.stringify(bundle, undefined, 2)))
-            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+            .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
         }}
         onDelete={(ids: string[]) => {
           if (window.confirm('Are you sure you want to delete these resources?')) {
@@ -106,7 +81,7 @@ export function HomePage(): JSX.Element {
                 })),
               })
               .then(() => setSearch({ ...search }))
-              .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+              .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
           }
         }}
         onBulk={(ids: string[]) => {
@@ -115,128 +90,4 @@ export function HomePage(): JSX.Element {
       />
     </Paper>
   );
-}
-
-function addSearchValues(search: SearchRequest, config: UserConfiguration | undefined): SearchRequest {
-  const resourceType = search.resourceType || getDefaultResourceType(config);
-  const fields = search.fields ?? getDefaultFields(resourceType);
-  const filters = search.filters ?? (!search.resourceType ? getDefaultFilters(resourceType) : undefined);
-  const sortRules = search.sortRules ?? getDefaultSortRules(resourceType);
-  const offset = search.offset ?? 0;
-  const count = search.count ?? DEFAULT_SEARCH_COUNT;
-
-  return {
-    ...search,
-    resourceType,
-    fields,
-    filters,
-    sortRules,
-    offset,
-    count,
-  };
-}
-
-function getDefaultResourceType(config: UserConfiguration | undefined): string {
-  return (
-    localStorage.getItem('defaultResourceType') ??
-    config?.option?.find((o) => o.id === 'defaultResourceType')?.valueString ??
-    'Patient'
-  );
-}
-
-export function getDefaultFields(resourceType: string): string[] {
-  const lastSearch = getLastSearch(resourceType);
-  if (lastSearch?.fields) {
-    return lastSearch.fields;
-  }
-  const fields = ['id', '_lastUpdated'];
-  switch (resourceType) {
-    case 'Patient':
-      fields.push('name', 'birthDate', 'gender');
-      break;
-    case 'AccessPolicy':
-    case 'Bot':
-    case 'ClientApplication':
-    case 'Practitioner':
-    case 'Project':
-    case 'Organization':
-    case 'Questionnaire':
-    case 'UserConfiguration':
-      fields.push('name');
-      break;
-    case 'CodeSystem':
-    case 'ValueSet':
-      fields.push('name', 'title', 'status');
-      break;
-    case 'Condition':
-      fields.push('subject', 'code', 'clinicalStatus');
-      break;
-    case 'Device':
-      fields.push('manufacturer', 'deviceName', 'patient');
-      break;
-    case 'DeviceDefinition':
-      fields.push('manufacturer[x]', 'deviceName');
-      break;
-    case 'DeviceRequest':
-      fields.push('code[x]', 'subject');
-      break;
-    case 'DiagnosticReport':
-    case 'Observation':
-      fields.push('subject', 'code', 'status');
-      break;
-    case 'Encounter':
-      fields.push('subject');
-      break;
-    case 'ServiceRequest':
-      fields.push('subject', 'code', 'status', 'orderDetail');
-      break;
-    case 'Subscription':
-      fields.push('criteria');
-      break;
-    case 'User':
-      fields.push('email');
-      break;
-  }
-  return fields;
-}
-
-function getDefaultFilters(resourceType: string): Filter[] | undefined {
-  return getLastSearch(resourceType)?.filters;
-}
-
-function getDefaultSortRules(resourceType: string): SortRule[] {
-  const lastSearch = getLastSearch(resourceType);
-  if (lastSearch?.sortRules) {
-    return lastSearch.sortRules;
-  }
-  return [{ code: '_lastUpdated', descending: true }];
-}
-
-function getLastSearch(resourceType: string): SearchRequest | undefined {
-  const value = localStorage.getItem(resourceType + '-defaultSearch');
-  return value ? (JSON.parse(value) as SearchRequest) : undefined;
-}
-
-function saveLastSearch(search: SearchRequest): void {
-  localStorage.setItem('defaultResourceType', search.resourceType);
-  localStorage.setItem(search.resourceType + '-defaultSearch', JSON.stringify(search));
-}
-
-function canCreate(resourceType: string): boolean {
-  return resourceType !== 'Bot' && resourceType !== 'ClientApplication';
-}
-
-async function getTransactionBundle(search: SearchRequest, medplum: MedplumClient): Promise<Bundle> {
-  const transactionBundleSearch: SearchRequest = {
-    resourceType: search.resourceType,
-    count: 1000,
-    offset: 0,
-    filters: search.filters,
-  };
-  const transactionBundleSearchValues = addSearchValues(transactionBundleSearch, medplum.getUserConfiguration());
-  const bundle = await medplum.search(
-    transactionBundleSearchValues.resourceType as ResourceType,
-    formatSearchQuery({ ...transactionBundleSearchValues, total: 'accurate', fields: undefined })
-  );
-  return convertToTransactionBundle(bundle);
 }

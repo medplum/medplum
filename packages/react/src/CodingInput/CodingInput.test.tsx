@@ -1,17 +1,11 @@
-import { ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { ReactNode } from 'react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { CodingInput } from './CodingInput';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-
-const statusProperty: ElementDefinition = {
-  binding: {
-    valueSet: 'https://example.com/test',
-  },
-};
 
 const medplum = new MockClient();
+const binding = 'https://example.com/test';
 
 describe('CodingInput', () => {
   beforeEach(() => {
@@ -25,27 +19,27 @@ describe('CodingInput', () => {
     jest.useRealTimers();
   });
 
-  async function setup(child: React.ReactNode): Promise<void> {
+  async function setup(child: ReactNode): Promise<void> {
     await act(async () => {
       render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
     });
   }
 
   test('Renders', async () => {
-    await setup(<CodingInput property={statusProperty} name="test" />);
+    await setup(<CodingInput path="" binding={binding} name="test" />);
 
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
 
   test('Renders Coding default value', async () => {
-    await setup(<CodingInput property={statusProperty} name="test" defaultValue={{ code: 'abc' }} />);
+    await setup(<CodingInput path="" binding={binding} name="test" defaultValue={{ code: 'abc' }} />);
 
-    expect(screen.getByRole('searchbox')).toBeInTheDocument();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
     expect(screen.getByText('abc')).toBeDefined();
   });
 
   test('Searches for results', async () => {
-    await setup(<CodingInput property={statusProperty} name="test" />);
+    await setup(<CodingInput path="" binding={binding} name="test" />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -73,11 +67,7 @@ describe('CodingInput', () => {
   });
 
   test('Renders with empty binding property', async () => {
-    const statusPropertyEmptyBinding: ElementDefinition = {
-      binding: undefined,
-    };
-
-    await setup(<CodingInput property={statusPropertyEmptyBinding} name="test" />);
+    await setup(<CodingInput path="" binding={undefined} name="test" />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -101,6 +91,6 @@ describe('CodingInput', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
     // Despite an undefined binding value, the app still renders and functions
-    expect(screen.getByDisplayValue('Test Empty')).toBeDefined();
+    expect(screen.getByText('Test Empty')).toBeDefined();
   });
 });

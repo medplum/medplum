@@ -1,8 +1,6 @@
-import http from 'http';
+import http from 'node:http';
 import { shutdownApp } from './app';
 import { main } from './index';
-
-jest.mock('ioredis');
 
 jest.mock('express', () => {
   const original = jest.requireActual('express');
@@ -21,14 +19,14 @@ jest.mock('express', () => {
 });
 
 jest.mock('pg', () => {
-  const original = jest.requireActual('express');
+  const original = jest.requireActual('pg');
 
   class MockPoolClient {
     async query(sql: string): Promise<any> {
       if (sql === 'SELECT "version" FROM "DatabaseMigration"') {
         return { rows: [{ version: 1000000 }] };
       }
-      if (sql === 'SELECT "User"."id", "User"."content" FROM "User" WHERE "User"."deleted"=$1 LIMIT 2') {
+      if (sql === 'SELECT "User"."id", "User"."content" FROM "User" WHERE "User"."deleted" = $1 LIMIT 2') {
         return { rows: [{ id: '1', content: '{}' }] };
       }
       return { rows: [] };
@@ -66,7 +64,7 @@ jest.mock('pg', () => {
 describe('Server', () => {
   test('Main', async () => {
     const createServerSpy = jest.spyOn(http, 'createServer');
-    await main('file:medplum.config.json');
+    await main('file:test.config.json');
     expect(createServerSpy).toHaveBeenCalled();
     await shutdownApp();
   });

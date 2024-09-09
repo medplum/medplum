@@ -1,30 +1,26 @@
 import { badRequest, createReference, OperationOutcomeError } from '@medplum/core';
 import { Login, Patient, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { body, validationResult } from 'express-validator';
-import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { systemRepo } from '../fhir/repo';
+import { body } from 'express-validator';
+import { sendOutcome } from '../fhir/outcomes';
+import { getSystemRepo } from '../fhir/repo';
 import { setLoginMembership } from '../oauth/utils';
+import { makeValidationMiddleware } from '../util/validator';
 import { createProfile, createProjectMembership } from './utils';
 
-export const newPatientValidators = [
+export const newPatientValidator = makeValidationMiddleware([
   body('login').notEmpty().withMessage('Missing login'),
   body('projectId').notEmpty().withMessage('Project ID is required'),
-];
+]);
 
 /**
  * Handles a HTTP request to /auth/newpatient.
  * Requires a partial login.
- * @param req The HTTP request.
- * @param res The HTTP response.
+ * @param req - The HTTP request.
+ * @param res - The HTTP response.
  */
 export async function newPatientHandler(req: Request, res: Response): Promise<void> {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    sendOutcome(res, invalidRequest(errors));
-    return;
-  }
-
+  const systemRepo = getSystemRepo();
   const login = await systemRepo.readResource<Login>('Login', req.body.login);
 
   if (login.membership) {
@@ -54,10 +50,10 @@ export async function newPatientHandler(req: Request, res: Response): Promise<vo
 
 /**
  * Creates a new patient.
- * @param login The partial login.
- * @param projectId The project ID.
- * @param firstName The patient's first name.
- * @param lastName The patient's last name.
+ * @param login - The partial login.
+ * @param projectId - The project ID.
+ * @param firstName - The patient's first name.
+ * @param lastName - The patient's last name.
  * @returns The new project membership.
  */
 export async function createPatient(
@@ -66,6 +62,7 @@ export async function createPatient(
   firstName: string,
   lastName: string
 ): Promise<ProjectMembership> {
+  const systemRepo = getSystemRepo();
   const user = await systemRepo.readReference<User>(login.user as Reference<User>);
   const project = await systemRepo.readResource<Project>('Project', projectId);
 

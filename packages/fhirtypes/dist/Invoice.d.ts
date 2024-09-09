@@ -113,7 +113,7 @@ export interface Invoice {
   /**
    * The current state of the Invoice.
    */
-  status?: 'draft' | 'issued' | 'balanced' | 'cancelled' | 'entered-in-error';
+  status: 'draft' | 'issued' | 'balanced' | 'cancelled' | 'entered-in-error';
 
   /**
    * In case of Invoice cancellation a reason must be given (entered in
@@ -275,6 +275,14 @@ export interface InvoiceLineItem {
 }
 
 /**
+ * The ChargeItem contains information such as the billing code, date,
+ * amount etc. If no further details are required for the lineItem,
+ * inline billing codes can be added using the CodeableConcept data type
+ * instead of the Reference.
+ */
+export type InvoiceLineItemChargeItem = CodeableConcept | Reference<ChargeItem>;
+
+/**
  * The price for a ChargeItem may be calculated as a base price with
  * surcharges/deductions that apply in certain conditions. A
  * ChargeItemDefinition resource that defines the prices, factors and
@@ -323,7 +331,7 @@ export interface InvoiceLineItemPriceComponent {
   /**
    * This code identifies the type of the component.
    */
-  type?: 'base' | 'surcharge' | 'deduction' | 'discount' | 'tax' | 'informational';
+  type: 'base' | 'surcharge' | 'deduction' | 'discount' | 'tax' | 'informational';
 
   /**
    * A code that identifies the component. Codes may be used to
@@ -395,5 +403,5 @@ export interface InvoiceParticipant {
    * The device, practitioner, etc. who performed or participated in the
    * service.
    */
-  actor?: Reference<Practitioner | Organization | Patient | PractitionerRole | Device | RelatedPerson>;
+  actor: Reference<Practitioner | Organization | Patient | PractitionerRole | Device | RelatedPerson>;
 }

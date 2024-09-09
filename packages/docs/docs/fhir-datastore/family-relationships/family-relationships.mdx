@@ -1,8 +1,10 @@
+---
+sidebar_position: 9
+---
+
 import BrowserOnlyTabs from '@site/src/components/BrowserOnlyTabs';
 import TabItem from '@theme/TabItem';
-
 import CodeBlock from '@theme/CodeBlock';
-
 import { HomerSimpson, LisaSimpson, SimpsonsFamily, HomerLisaRelatedPerson } from '@medplum/mock';
 
 # Family Relationships
@@ -167,9 +169,9 @@ import Approach2Diagram from './approach-2.png';
 
 If family members _do_ participate in clinical/billing activities, then it might make sense to model them explicitly as a separate resource.
 
-You can model a family member explicitly as a [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource. The [RelatedPerson](/docs/api/fhir/resources/relatedperson) has one required field, `RelatedPerson.patient`, which is a reference to the target patient. The `RelatedPerson.relationship` property is a [CodeableConcept](/docs/fhir-basics#codeable-concepts-standarding-data) that can be used to specify the relationship type. In simple use cases where patients rarely share family members, then you can store basic demographic information and contact information directly in the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource.
+You can model a family member explicitly as a [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource. The [RelatedPerson](/docs/api/fhir/resources/relatedperson) has one required field, `RelatedPerson.patient`, which is a reference to the target patient. The `RelatedPerson.relationship` property is a [CodeableConcept](/docs/fhir-basics#standardizing-data-codeable-concepts) that can be used to specify the relationship type. In simple use cases where patients rarely share family members, then you can store basic demographic information and contact information directly in the [RelatedPerson](/docs/api/fhir/resources/relatedperson) resource.
 
-This pattern, along with [Approach #3](#approach-3), is especially useful for situations where parents are logging in on behalf of minors. In these settings, the patient, a minor, can be modeled as a [Patient](/docs/api/fhir/resources/patient), and their parent/legal guardian would be a [RelatedPerson](/docs/api/fhir/resources/relatedperson). Medplum allows users to be registered either as a [Patient](/docs/api/fhir/resources/patient) or a [RelatedPerson](/docs/api/fhir/resources/relatedperson) (see the [user invitation tutorial](/docs/app/invite)), and you can create an [Access Policy](../auth/access-control#access-policies) to allow the parent access to minor's clinical information.
+This pattern, along with [Approach #3](#approach-3), is especially useful for situations where parents are logging in on behalf of minors. In these settings, the patient, a minor, can be modeled as a [Patient](/docs/api/fhir/resources/patient), and their parent/legal guardian would be a [RelatedPerson](/docs/api/fhir/resources/relatedperson). Medplum allows users to be registered either as a [Patient](/docs/api/fhir/resources/patient) or a [RelatedPerson](/docs/api/fhir/resources/relatedperson) (see the [user invitation tutorial](/docs/app/invite)), and you can create an [Access Policy](/docs/access/access-policies) to allow the parent access to minor's clinical information.
 
 This approach is also useful to model different insurance coverage for dependents. You can model the coverage using the [Coverage](/docs/api/fhir/resources/coverage) resource, with the [Patient](/docs/api/fhir/resources/patient) as the `Coverage.beneficiary` and the [RelatedPerson](/docs/api/fhir/resources/relatedperson) as the `Coverage.subscriber`.
 
@@ -291,7 +293,7 @@ Some examples of abstract groups are:
 - A generalized population of patients for a clinical trial.
 - A herd of animals for veterinary use cases.
 
-Adding a [Group](/docs/api/fhir/resources/group) resource for your families an orthogonal choice to Approaches #1-3. You may choose to model the individual relationships via [RelatedPersons](/docs/api/fhir/resources/relatedperson) _and_ also consolidate the entire family into a group. If modeling family groups is important, Medplum recommends modeling all the individuals as [`Patients`](docs/api/fhir/resources/patient), and then referencing them in the `Group.member.entity` array. If required, [`Patients`](docs/api/fhir/resources/patient) can also belong to more than one [`Group`](docs/api/fhir/resources/group)
+Adding a [Group](/docs/api/fhir/resources/group) resource for your families an orthogonal choice to Approaches #1-3. You may choose to model the individual relationships via [RelatedPersons](/docs/api/fhir/resources/relatedperson) _and_ also consolidate the entire family into a group. If modeling family groups is important, Medplum recommends modeling all the individuals as [`Patients`](/docs/api/fhir/resources/patient), and then referencing them in the `Group.member.entity` array. If required, [`Patients`](/docs/api/fhir/resources/patient) can also belong to more than one [`Group`](/docs/api/fhir/resources/group)
 
 In the case of abstract groups, you can use the `Group.quantity` field to record the size of the group, which may be important for analytics or billing workflows.
 

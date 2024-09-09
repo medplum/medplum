@@ -124,7 +124,7 @@ export interface ParametersParameter {
   /**
    * The name of the parameter (reference to the operation definition).
    */
-  name?: string;
+  name: string;
 
   /**
    * If the parameter is a data type.
@@ -386,3 +386,11 @@ export interface ParametersParameter {
    */
   part?: ParametersParameter[];
 }
+
+/**
+ * If the parameter is a data type.
+ */
+export type ParametersParameterValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
+    ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
+    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;

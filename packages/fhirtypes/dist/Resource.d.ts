@@ -146,6 +146,7 @@ import { SpecimenDefinition } from './SpecimenDefinition';
 import { StructureDefinition } from './StructureDefinition';
 import { StructureMap } from './StructureMap';
 import { Subscription } from './Subscription';
+import { SubscriptionStatus } from './SubscriptionStatus';
 import { Substance } from './Substance';
 import { SubstanceNucleicAcid } from './SubstanceNucleicAcid';
 import { SubstancePolymer } from './SubstancePolymer';
@@ -161,6 +162,7 @@ import { TestReport } from './TestReport';
 import { TestScript } from './TestScript';
 import { User } from './User';
 import { UserConfiguration } from './UserConfiguration';
+import { UserSecurityRequest } from './UserSecurityRequest';
 import { ValueSet } from './ValueSet';
 import { VerificationResult } from './VerificationResult';
 import { VisionPrescription } from './VisionPrescription';
@@ -308,6 +310,7 @@ export type Resource = AccessPolicy
   | StructureDefinition
   | StructureMap
   | Subscription
+  | SubscriptionStatus
   | Substance
   | SubstanceNucleicAcid
   | SubstancePolymer
@@ -323,6 +326,7 @@ export type Resource = AccessPolicy
   | TestScript
   | User
   | UserConfiguration
+  | UserSecurityRequest
   | ValueSet
   | VerificationResult
   | VisionPrescription;

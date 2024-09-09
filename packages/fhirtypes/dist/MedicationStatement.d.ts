@@ -163,7 +163,7 @@ export interface MedicationStatement {
    * state of the medication used that this statement is about.  Generally,
    * this will be active or completed.
    */
-  status?: 'active' | 'completed' | 'entered-in-error' | 'intended' | 'stopped' | 'on-hold' | 'unknown' | 'not-taken';
+  status: 'active' | 'completed' | 'entered-in-error' | 'intended' | 'stopped' | 'on-hold' | 'unknown' | 'not-taken';
 
   /**
    * Captures the reason for the current state of the MedicationStatement.
@@ -195,7 +195,7 @@ export interface MedicationStatement {
   /**
    * The person, animal or group who is/was taking the medication.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The encounter or episode of care that establishes the context for this
@@ -260,3 +260,18 @@ export interface MedicationStatement {
    */
   dosage?: Dosage[];
 }
+
+/**
+ * Identifies the medication being administered. This is either a link to
+ * a resource representing the details of the medication or a simple
+ * attribute carrying a code that identifies the medication from a known
+ * list of medications.
+ */
+export type MedicationStatementMedication = CodeableConcept | Reference<Medication>;
+
+/**
+ * The interval of time during which it is being asserted that the
+ * patient is/was/will be taking the medication (or was not taking, when
+ * the MedicationStatement.taken element is No).
+ */
+export type MedicationStatementEffective = Period | string;

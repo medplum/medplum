@@ -153,7 +153,7 @@ export interface Measure {
    * The status of this measure. Enables tracking the life-cycle of the
    * content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this measure is authored for testing
@@ -384,6 +384,13 @@ export interface Measure {
 }
 
 /**
+ * The intended subjects for the measure. If this element is not
+ * provided, a Patient subject is assumed, but the subject of the measure
+ * can be anything.
+ */
+export type MeasureSubject = CodeableConcept | Reference<Group>;
+
+/**
  * A group of population criteria for the measure.
  */
 export interface MeasureGroup {
@@ -503,7 +510,7 @@ export interface MeasureGroupPopulation {
    * An expression that specifies the criteria for the population,
    * typically the name of an expression in a library.
    */
-  criteria?: Expression;
+  criteria: Expression;
 }
 
 /**
@@ -637,7 +644,7 @@ export interface MeasureGroupStratifierComponent {
    * a referenced library, but it may also be a path to a stratifier
    * element.
    */
-  criteria?: Expression;
+  criteria: Expression;
 }
 
 /**
@@ -711,5 +718,5 @@ export interface MeasureSupplementalData {
    * also be a path to a specific data element. The criteria defines the
    * data to be returned for this element.
    */
-  criteria?: Expression;
+  criteria: Expression;
 }

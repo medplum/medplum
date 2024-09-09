@@ -1,21 +1,22 @@
 import { ContentType } from '@medplum/core';
-import { Writable } from 'stream';
-import tar from 'tar';
+import { Stats } from 'node:fs';
+import { Writable } from 'node:stream';
+import tar, { Unpack } from 'tar';
 import { getCodeContentType, safeTarExtractor } from './utils';
 
 jest.mock('tar', () => ({
-  x: jest.fn(),
+  extract: jest.fn(),
 }));
 
 describe('CLI utils', () => {
   test('safeTarExtractor throws an error when fileCount > MAX_FILES', async () => {
-    (tar as jest.Mocked<typeof tar>).x.mockImplementationOnce((options) => {
+    (tar as jest.Mocked<typeof tar>).extract.mockImplementationOnce((options) => {
       const writable = new Writable({
         write(chunk, _, callback) {
-          options.filter?.(chunk.toString(), { size: 1 } as tar.FileStat);
+          options.filter?.(chunk.toString(), { size: 1 } as Stats);
           callback();
         },
-      });
+      }) as unknown as Unpack;
       return writable;
     });
 
@@ -32,13 +33,13 @@ describe('CLI utils', () => {
   });
 
   test('safeTarExtractor throws an error when size > MAX_SIZE', async () => {
-    (tar as jest.Mocked<typeof tar>).x.mockImplementationOnce((options) => {
+    (tar as jest.Mocked<typeof tar>).extract.mockImplementationOnce((options) => {
       const writable = new Writable({
         write(chunk, _, callback) {
-          options.filter?.(chunk.toString(), { size: 1024 * 1024 } as tar.FileStat);
+          options.filter?.(chunk.toString(), { size: 1024 * 1024 } as Stats);
           callback();
         },
-      });
+      }) as unknown as Unpack;
       return writable;
     });
 

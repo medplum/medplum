@@ -122,7 +122,7 @@ export interface Goal {
   /**
    * The state of the goal throughout its lifecycle.
    */
-  lifecycleStatus?: 'proposed' | 'planned' | 'accepted' | 'active' | 'on-hold' | 'completed' | 'cancelled' | 'entered-in-error' | 'rejected';
+  lifecycleStatus: 'proposed' | 'planned' | 'accepted' | 'active' | 'on-hold' | 'completed' | 'cancelled' | 'entered-in-error' | 'rejected';
 
   /**
    * Describes the progression, or lack thereof, towards the goal against
@@ -146,13 +146,13 @@ export interface Goal {
    * objective of care, such as &quot;control blood pressure&quot; or &quot;negotiate an
    * obstacle course&quot; or &quot;dance with child at wedding&quot;.
    */
-  description?: CodeableConcept;
+  description: CodeableConcept;
 
   /**
    * Identifies the patient, group or organization for whom the goal is
    * being established.
    */
-  subject?: Reference<Patient | Group | Organization>;
+  subject: Reference<Patient | Group | Organization>;
 
   /**
    * The date or event after which the goal should begin being pursued.
@@ -207,6 +207,11 @@ export interface Goal {
    */
   outcomeReference?: Reference<Observation>[];
 }
+
+/**
+ * The date or event after which the goal should begin being pursued.
+ */
+export type GoalStart = CodeableConcept | string;
 
 /**
  * Indicates what should be done by when.
@@ -343,3 +348,20 @@ export interface GoalTarget {
    */
   dueDuration?: Duration;
 }
+
+/**
+ * The target value of the focus to be achieved to signify the
+ * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+ * or both values of the range can be specified. When a low value is
+ * missing, it indicates that the goal is achieved at any focus value at
+ * or below the high value. Similarly, if the high value is missing, it
+ * indicates that the goal is achieved at any focus value at or above the
+ * low value.
+ */
+export type GoalTargetDetail = boolean | CodeableConcept | number | Quantity | Range | Ratio | string;
+
+/**
+ * Indicates either the date or the duration after start by which the
+ * goal should be met.
+ */
+export type GoalTargetDue = Duration | string;

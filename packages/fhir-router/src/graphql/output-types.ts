@@ -1,20 +1,20 @@
 import {
   capitalize,
   evalFhirPathTyped,
-  getElementDefinition,
-  getElementDefinitionTypeName,
+  getDataType,
   getResourceTypes,
-  getResourceTypeSchema,
   getSearchParameters,
-  globalSchema,
+  InternalSchemaElement,
   isLowerCase,
+  isReference,
   isResourceTypeSchema,
   normalizeOperationOutcome,
   OperationOutcomeError,
   toJsBoolean,
   toTypedValue,
+  tryGetDataType,
 } from '@medplum/core';
-import { ElementDefinition, ElementDefinitionType, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
+import { ElementDefinitionType, Resource, ResourceType } from '@medplum/fhirtypes';
 import {
   GraphQLEnumType,
   GraphQLEnumValueConfigMap,
@@ -57,7 +57,7 @@ export function buildGraphQLOutputType(resourceType: string): GraphQLOutputType 
     });
   }
 
-  const schema = getResourceTypeSchema(resourceType);
+  const schema = getDataType(resourceType);
   return new GraphQLObjectType({
     name: resourceType,
     description: schema.description,
@@ -73,8 +73,7 @@ function buildGraphQLOutputFields(resourceType: ResourceType): GraphQLFieldConfi
 }
 
 function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldConfigMap<any, any>): void {
-  const schema = getResourceTypeSchema(resourceType);
-  const properties = schema.properties;
+  const schema = getDataType(resourceType);
 
   if (isResourceTypeSchema(schema)) {
     fields.resourceType = {
@@ -91,8 +90,7 @@ function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldCon
     };
   }
 
-  for (const key of Object.keys(properties)) {
-    const elementDefinition = getElementDefinition(resourceType, key) as ElementDefinition;
+  for (const [key, elementDefinition] of Object.entries(schema.elements)) {
     for (const type of elementDefinition.type as ElementDefinitionType[]) {
       buildOutputPropertyField(fields, key, elementDefinition, type);
     }
@@ -102,25 +100,31 @@ function buildOutputPropertyFields(resourceType: string, fields: GraphQLFieldCon
 function buildOutputPropertyField(
   fields: GraphQLFieldConfigMap<any, any>,
   key: string,
-  elementDefinition: ElementDefinition,
+  elementDefinition: InternalSchemaElement,
   elementDefinitionType: ElementDefinitionType
 ): void {
   let typeName = elementDefinitionType.code as string;
   if (typeName === 'Element' || typeName === 'BackboneElement') {
-    typeName = getElementDefinitionTypeName(elementDefinition);
+    typeName = elementDefinition.type[0].code;
+  }
+  if (typeName === 'Resource') {
+    typeName = 'ResourceList';
   }
 
   const fieldConfig: GraphQLFieldConfig<any, any> = {
-    description: elementDefinition.short,
-    type: getOutputPropertyType(elementDefinition, typeName),
+    description: elementDefinition.description, // TODO: elementDefinition.short
+    type: getOutputPropertyType(elementDefinition, typeName, key),
     resolve: resolveField,
   };
 
-  if (elementDefinition.max === '*') {
+  if (elementDefinition.max > 1) {
     fieldConfig.args = buildListPropertyFieldArgs(typeName);
   }
 
-  const propertyName = key.replace('[x]', capitalize(elementDefinitionType.code as string));
+  const propertyName = (key.split('.').pop() as string).replace(
+    '[x]',
+    capitalize(elementDefinitionType.code as string)
+  );
   fields[propertyName] = fieldConfig;
 }
 
@@ -134,7 +138,7 @@ function buildOutputPropertyField(
  *   4. All properties of the list element type.
  *
  * See: https://hl7.org/fhir/R4/graphql.html#list
- * @param fieldTypeName The type name of the field.
+ * @param fieldTypeName - The type name of the field.
  * @returns The arguments for the field.
  */
 function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigArgumentMap {
@@ -157,11 +161,10 @@ function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigAr
     };
 
     // Add all "string" and "code" properties as arguments
-    const fieldTypeSchema = globalSchema.types[fieldTypeName];
-    if (fieldTypeSchema.properties) {
-      for (const fieldKey of Object.keys(fieldTypeSchema.properties)) {
-        const fieldElementDefinition = getElementDefinition(fieldTypeName, fieldKey) as ElementDefinition;
-        for (const type of fieldElementDefinition.type as ElementDefinitionType[]) {
+    const fieldTypeSchema = tryGetDataType(fieldTypeName);
+    if (fieldTypeSchema?.elements) {
+      for (const [fieldKey, fieldElementDefinition] of Object.entries(fieldTypeSchema.elements)) {
+        for (const type of fieldElementDefinition.type) {
           buildListPropertyFieldArg(fieldArgs, fieldKey, fieldElementDefinition, type);
         }
       }
@@ -173,15 +176,15 @@ function buildListPropertyFieldArgs(fieldTypeName: string): GraphQLFieldConfigAr
 
 /**
  * Builds a field argument for a list property.
- * @param fieldArgs The output argument map.
- * @param fieldKey The key of the field.
- * @param elementDefinition The FHIR element definition of the field.
- * @param elementDefinitionType The FHIR element definition type of the field.
+ * @param fieldArgs - The output argument map.
+ * @param fieldKey - The key of the field.
+ * @param elementDefinition - The FHIR element definition of the field.
+ * @param elementDefinitionType - The FHIR element definition type of the field.
  */
 function buildListPropertyFieldArg(
   fieldArgs: GraphQLFieldConfigArgumentMap,
   fieldKey: string,
-  elementDefinition: ElementDefinition,
+  elementDefinition: InternalSchemaElement,
   elementDefinitionType: ElementDefinitionType
 ): void {
   const baseType = elementDefinitionType.code as string;
@@ -198,7 +201,7 @@ function buildListPropertyFieldArg(
     case 'http://hl7.org/fhirpath/System.String':
       fieldArgs[fieldName] = {
         type: GraphQLString,
-        description: elementDefinition.short,
+        description: elementDefinition.description, // TODO: elementDefinition.short
       };
       break;
   }
@@ -228,8 +231,8 @@ function buildListPropertyFieldArg(
  * (except that the "id" argument is prohibited here as nonsensical).
  *
  * See: https://www.hl7.org/fhir/graphql.html#reverse
- * @param resourceType The resource type to build fields for.
- * @param fields The fields object to add fields to.
+ * @param resourceType - The resource type to build fields for.
+ * @param fields - The fields object to add fields to.
  */
 function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFieldConfigMap<any, any>): void {
   for (const childResourceType of getResourceTypes()) {
@@ -265,12 +268,16 @@ function buildReverseLookupFields(resourceType: ResourceType, fields: GraphQLFie
   }
 }
 
-function getOutputPropertyType(elementDefinition: ElementDefinition, typeName: string): GraphQLOutputType {
+function getOutputPropertyType(
+  elementDefinition: InternalSchemaElement,
+  typeName: string,
+  path: string
+): GraphQLOutputType {
   let graphqlType = getGraphQLOutputType(typeName);
-  if (elementDefinition.max === '*') {
+  if (elementDefinition.max > 1) {
     graphqlType = new GraphQLList(new GraphQLNonNull(graphqlType));
   }
-  if (elementDefinition.min !== 0 && !elementDefinition.path?.endsWith('[x]')) {
+  if (elementDefinition.min !== 0 && !path.endsWith('[x]')) {
     graphqlType = new GraphQLNonNull(graphqlType);
   }
   return graphqlType;
@@ -280,10 +287,10 @@ function getOutputPropertyType(elementDefinition: ElementDefinition, typeName: s
  * GraphQL resolver for fields.
  * In the common case, this is just a matter of returning the field value from the source object.
  * If the field is a list and the user specifies list arguments, then we can apply those arguments here.
- * @param source The source. This is the object that contains the field.
- * @param args The GraphQL search arguments.
- * @param _ctx The GraphQL context.
- * @param info The GraphQL resolve info.  This includes the field name.
+ * @param source - The source. This is the object that contains the field.
+ * @param args - The GraphQL search arguments.
+ * @param _ctx - The GraphQL context.
+ * @param info - The GraphQL resolve info.  This includes the field name.
  * @returns Promise to read the resoure for the query.
  */
 async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: GraphQLResolveInfo): Promise<any> {
@@ -317,14 +324,17 @@ async function resolveField(source: any, args: any, _ctx: GraphQLContext, info: 
 /**
  * GraphQL data loader for Reference requests.
  * This is a special data loader for following Reference objects.
- * @param source The source/root.  This should always be null for our top level readers.
- * @param _args The GraphQL search arguments.
- * @param ctx The GraphQL context.
+ * @param source - The source/root.  This should always be null for our top level readers.
+ * @param _args - The GraphQL search arguments.
+ * @param ctx - The GraphQL context.
  * @returns Promise to read the resoure(s) for the query.
  */
 async function resolveByReference(source: any, _args: any, ctx: GraphQLContext): Promise<Resource | undefined> {
+  if (!isReference(source)) {
+    return undefined;
+  }
   try {
-    return await ctx.dataLoader.load(source as Reference);
+    return await ctx.dataLoader.load(source);
   } catch (err) {
     throw new OperationOutcomeError(normalizeOperationOutcome(err), err);
   }
@@ -333,7 +343,7 @@ async function resolveByReference(source: any, _args: any, ctx: GraphQLContext):
 /**
  * GraphQL type resolver for resources.
  * When loading a resource via reference, GraphQL needs to know the type of the resource.
- * @param resource The loaded resource.
+ * @param resource - The loaded resource.
  * @returns The GraphQL type of the resource.
  */
 function resolveTypeByReference(resource: Resource | undefined): string | undefined {

@@ -1,9 +1,8 @@
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
-import { render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { render, screen } from '../test-utils/render';
 import { ResourceBadge, ResourceBadgeProps } from './ResourceBadge';
 
 const medplum = new MockClient();
@@ -29,7 +28,7 @@ describe('ResourceBadge', () => {
       value: HomerSimpson,
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
 
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
@@ -40,7 +39,7 @@ describe('ResourceBadge', () => {
       link: true,
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
 
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });
@@ -50,7 +49,7 @@ describe('ResourceBadge', () => {
       value: createReference(HomerSimpson),
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
 
     expect(screen.getByText('Homer Simpson')).toBeDefined();
   });

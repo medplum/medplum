@@ -242,6 +242,11 @@ export interface DeviceDefinition {
 }
 
 /**
+ * A name of the manufacturer.
+ */
+export type DeviceDefinitionManufacturer = Reference<Organization> | string;
+
+/**
  * Device capabilities.
  */
 export interface DeviceDefinitionCapability {
@@ -284,7 +289,7 @@ export interface DeviceDefinitionCapability {
   /**
    * Type of capability.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Description of capability.
@@ -335,7 +340,7 @@ export interface DeviceDefinitionClassification {
   /**
    * A classification or risk class of the device model.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Further information qualifying this classification of the device
@@ -387,14 +392,14 @@ export interface DeviceDefinitionDeviceName {
   /**
    * The name of the device.
    */
-  name?: string;
+  name: string;
 
   /**
    * The type of deviceName.
    * UDILabelName | UserFriendlyName | PatientReportedName |
    * ManufactureDeviceName | ModelName.
    */
-  type?: 'udi-label-name' | 'user-friendly-name' | 'patient-reported-name' | 'manufacturer-name' | 'model-name' | 'other';
+  type: 'udi-label-name' | 'user-friendly-name' | 'patient-reported-name' | 'manufacturer-name' | 'model-name' | 'other';
 }
 
 /**
@@ -441,7 +446,7 @@ export interface DeviceDefinitionMaterial {
   /**
    * The substance.
    */
-  substance?: CodeableConcept;
+  substance: CodeableConcept;
 
   /**
    * Indicates an alternative material of the device.
@@ -499,7 +504,7 @@ export interface DeviceDefinitionProperty {
    * Code that specifies the property DeviceDefinitionPropetyCode
    * (Extensible).
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Property value as a quantity.
@@ -557,7 +562,7 @@ export interface DeviceDefinitionSpecialization {
   /**
    * The standard that is used to operate and communicate.
    */
-  systemType?: string;
+  systemType: string;
 
   /**
    * The version of the standard that is used to operate and communicate.
@@ -613,15 +618,15 @@ export interface DeviceDefinitionUdiDeviceIdentifier {
    * references this DeviceDefintiion for the issuer and jurisdication
    * porvided in the DeviceDefinition.udiDeviceIdentifier.
    */
-  deviceIdentifier?: string;
+  deviceIdentifier: string;
 
   /**
    * The organization that assigns the identifier algorithm.
    */
-  issuer?: string;
+  issuer: string;
 
   /**
    * The jurisdiction to which the deviceIdentifier applies.
    */
-  jurisdiction?: string;
+  jurisdiction: string;
 }

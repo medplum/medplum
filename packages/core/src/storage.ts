@@ -1,5 +1,14 @@
 import { stringify } from './utils';
 
+export interface IClientStorage {
+  getInitPromise?(): Promise<void>;
+  clear(): void;
+  getString(key: string): string | undefined;
+  setString(key: string, value: string | undefined): void;
+  getObject<T>(key: string): T | undefined;
+  setObject<T>(key: string, value: T): void;
+}
+
 /**
  * The ClientStorage class is a utility class for storing strings and objects.
  *
@@ -7,11 +16,11 @@ import { stringify } from './utils';
  *
  * When Using MedplumClient in the server, it will be backed by the MemoryStorage class.  For example, the Medplum CLI uses `FileSystemStorage`.
  */
-export class ClientStorage {
+export class ClientStorage implements IClientStorage {
   private readonly storage: Storage;
 
-  constructor() {
-    this.storage = typeof localStorage !== 'undefined' ? localStorage : new MemoryStorage();
+  constructor(storage?: Storage) {
+    this.storage = storage ?? (typeof localStorage !== 'undefined' ? localStorage : new MemoryStorage());
   }
 
   clear(): void {
@@ -67,7 +76,7 @@ export class MemoryStorage implements Storage {
 
   /**
    * Returns the current value associated with the given key, or null if the given key does not exist.
-   * @param key The specified storage key.
+   * @param key - The specified storage key.
    * @returns The current value associated with the given key, or null if the given key does not exist.
    */
   getItem(key: string): string | null {
@@ -76,8 +85,8 @@ export class MemoryStorage implements Storage {
 
   /**
    * Sets the value of the pair identified by key to value, creating a new key/value pair if none existed for key previously.
-   * @param key The storage key.
-   * @param value The new value.
+   * @param key - The storage key.
+   * @param value - The new value.
    */
   setItem(key: string, value: string | null): void {
     if (value) {
@@ -89,7 +98,7 @@ export class MemoryStorage implements Storage {
 
   /**
    * Removes the key/value pair with the given key, if a key/value pair with the given key exists.
-   * @param key The storage key.
+   * @param key - The storage key.
    */
   removeItem(key: string): void {
     this.data.delete(key);
@@ -97,10 +106,43 @@ export class MemoryStorage implements Storage {
 
   /**
    * Returns the name of the nth key, or null if n is greater than or equal to the number of key/value pairs.
-   * @param index The numeric index.
+   * @param index - The numeric index.
    * @returns The nth key.
    */
   key(index: number): string | null {
     return Array.from(this.data.keys())[index];
+  }
+}
+
+/**
+ * The MockAsyncClientStorage class is a mock implementation of the ClientStorage class.
+ * This can be used for testing async initialization of the MedplumClient.
+ */
+export class MockAsyncClientStorage extends ClientStorage implements IClientStorage {
+  private initialized: boolean;
+  private initPromise: Promise<void>;
+  private initResolve: () => void = () => undefined;
+
+  constructor() {
+    super();
+    this.initialized = false;
+    this.initPromise = new Promise((resolve) => {
+      this.initResolve = resolve;
+    });
+  }
+
+  setInitialized(): void {
+    if (!this.initialized) {
+      this.initResolve();
+      this.initialized = true;
+    }
+  }
+
+  getInitPromise(): Promise<void> {
+    return this.initPromise;
+  }
+
+  get isInitialized(): boolean {
+    return this.initialized;
   }
 }

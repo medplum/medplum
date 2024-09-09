@@ -156,13 +156,13 @@ export interface RequestGroup {
    * The current state of the request. For request groups, the status
    * reflects the status of all the requests in the group.
    */
-  status?: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
+  status: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Indicates the level of authority/intentionality associated with the
    * request and where the request fits into the workflow chain.
    */
-  intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+  intent: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * Indicates how quickly the request should be addressed with respect to
@@ -392,6 +392,11 @@ export interface RequestGroupAction {
 }
 
 /**
+ * An optional value describing when the action should be performed.
+ */
+export type RequestGroupActionTiming = Age | Duration | Period | Range | string | Timing;
+
+/**
  * An expression that describes applicability criteria, or start/stop
  * conditions for the action.
  */
@@ -435,7 +440,7 @@ export interface RequestGroupActionCondition {
   /**
    * The kind of condition.
    */
-  kind?: 'applicability' | 'start' | 'stop';
+  kind: 'applicability' | 'start' | 'stop';
 
   /**
    * An expression that returns true or false, indicating whether or not
@@ -488,12 +493,12 @@ export interface RequestGroupActionRelatedAction {
   /**
    * The element id of the action this is related to.
    */
-  actionId?: string;
+  actionId: string;
 
   /**
    * The relationship of this action to the related action.
    */
-  relationship?: 'before-start' | 'before' | 'before-end' | 'concurrent-with-start' | 'concurrent' |
+  relationship: 'before-start' | 'before' | 'before-end' | 'concurrent-with-start' | 'concurrent' |
       'concurrent-with-end' | 'after-start' | 'after' | 'after-end';
 
   /**
@@ -508,3 +513,9 @@ export interface RequestGroupActionRelatedAction {
    */
   offsetRange?: Range;
 }
+
+/**
+ * A duration or range of durations to apply to the relationship. For
+ * example, 30-60 minutes before.
+ */
+export type RequestGroupActionRelatedActionOffset = Duration | Range;

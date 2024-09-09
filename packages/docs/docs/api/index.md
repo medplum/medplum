@@ -41,15 +41,15 @@ Related material:
 - [Patient](/docs/api/fhir/resources/patient) FHIR resource
 - [User](/docs/api/fhir/medplum/user)
 - [Project Membership](/docs/api/fhir/medplum/projectmembership)
-- [Access Control](/docs/auth/access-control) documentation
+- [Access Control](/docs/access/access-policies) documentation
 
 ### Clinician User Access
 
-Clinician users of Medplum can also use approved SMART-on-FHIR applications to access patient data in the system. Clinicians need to be explicitly granted Practitioner accounts with the appropriate [access controls](/docs/auth/access-control) in order to consume patient data. They will need to be [invited](/docs/app/invite) by administrator.
+Clinician users of Medplum can also use approved SMART-on-FHIR applications to access patient data in the system. Clinicians need to be explicitly granted Practitioner accounts with the appropriate [access controls](/docs/access/access-policies) in order to consume patient data. They will need to be [invited](/docs/app/invite) by administrator.
 
 ## FHIR Resources
 
-For documentation on all the FHIR Resources that Medplum supports, check out our [**FHIR API docs**](./api/fhir). If you're asking yourself, "_What's FHIR?_", check out our [FHIR Basics page](/docs/fhir-basics.md). The full list of [FHIR resources](/docs/api/fhir/resources) page describes the resources and [data types](/docs/api/fhir/datatypes) in detail. This API reference is an Open Source implementation of the [ONC Certification (g)(10) Criteria](/docs/compliance/onc#standardized-api-for-patient-and-population-services-cures-update-g10)
+For documentation on all the FHIR Resources that Medplum supports, check out our [**FHIR API docs**](./api/fhir). If you're asking yourself, "_What's FHIR?_", check out our [FHIR Basics page](/docs/fhir-basics.md). The full list of [FHIR resources](/docs/api/fhir/resources) page describes the resources and [data types](/docs/api/fhir/datatypes) in detail. This API reference is an Open Source implementation of the [ONC Certification (g)(10) Criteria](/docs/compliance/onc)
 
 We also make available our [Open API Spec](https://api.medplum.com/openapi.json).
 
@@ -61,8 +61,8 @@ In case of server errors you can expect [HTTP Status codes](https://en.wikipedia
 
 ## SDK
 
-Our [**TypeScript SDK**](./sdk/classes/MedplumClient) provides a powerful, type-safe library to create and store healthcare data in Medplum. The SDK can be used in standalone applications and is used by [bots](/docs/bots).
+Our [**TypeScript SDK**](./sdk/core.medplumclient) provides a powerful, type-safe library to create and store healthcare data in Medplum. The SDK can be used in standalone applications and is used by [bots](/docs/bots).
 
 ## Prebuilt UI
 
-If you're building a [**React**](https://reactjs.org/) app with Medplum, our [**React Components**](./api/react-components) can give you building blocks to get you started.
+If you're building a [**React**](https://reactjs.org/) app with Medplum, our [**React Components**](./api/react) can give you building blocks to get you started.

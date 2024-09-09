@@ -1,9 +1,8 @@
 import { PropertyType } from '@medplum/core';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { FhirPathTable, FhirPathTableField, FhirPathTableProps } from './FhirPathTable';
 
 const query = `{
@@ -110,14 +109,8 @@ describe('FhirPathTable', () => {
     };
 
     await setup(props);
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
-    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Renders with checkboxes', async () => {
@@ -129,13 +122,7 @@ describe('FhirPathTable', () => {
     };
 
     await setup(props);
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
   });
 
   test('Bulk button', async () => {
@@ -149,14 +136,14 @@ describe('FhirPathTable', () => {
     });
 
     await act(async () => {
-      await waitFor(() => screen.getByText('Bulk...'));
+      expect(await screen.findByText('Bulk...')).toBeInTheDocument();
     });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Bulk...'));
     });
 
-    expect(onBulk).toBeCalled();
+    expect(onBulk).toHaveBeenCalled();
   });
 
   test('Click on row', async () => {
@@ -169,22 +156,14 @@ describe('FhirPathTable', () => {
     };
 
     await setup(props);
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
+      fireEvent.click(screen.getAllByTestId('search-control-row')[0]);
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('search-control-row'));
-    });
-
-    await act(async () => {
-      const rows = screen.getAllByTestId('search-control-row');
-      fireEvent.click(rows[0]);
-    });
-
-    expect(props.onClick).toBeCalled();
-    expect(props.onAuxClick).not.toBeCalled();
+    expect(props.onClick).toHaveBeenCalled();
+    expect(props.onAuxClick).not.toHaveBeenCalled();
   });
 
   test('Aux click on row', async () => {
@@ -197,22 +176,14 @@ describe('FhirPathTable', () => {
     };
 
     await setup(props);
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
+      fireEvent.click(screen.getAllByTestId('search-control-row')[0], { button: 1 });
     });
 
-    await act(async () => {
-      await waitFor(() => screen.getAllByTestId('search-control-row'));
-    });
-
-    await act(async () => {
-      const rows = screen.getAllByTestId('search-control-row');
-      fireEvent.click(rows[0], { button: 1 });
-    });
-
-    expect(props.onClick).not.toBeCalled();
-    expect(props.onAuxClick).toBeCalled();
+    expect(props.onClick).not.toHaveBeenCalled();
+    expect(props.onAuxClick).toHaveBeenCalled();
   });
 
   test('Click all checkbox', async () => {
@@ -224,13 +195,7 @@ describe('FhirPathTable', () => {
     };
 
     await setup(props);
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId('all-checkbox'));
@@ -255,13 +220,7 @@ describe('FhirPathTable', () => {
     };
 
     await setup(props);
-
-    await act(async () => {
-      await waitFor(() => screen.getByTestId('search-control'));
-    });
-
-    const control = screen.getByTestId('search-control');
-    expect(control).toBeDefined();
+    expect(await screen.findByTestId('search-control')).toBeInTheDocument();
 
     const allCheckbox = screen.getByTestId('all-checkbox');
     const rowCheckbox = screen.getByTestId('row-checkbox');

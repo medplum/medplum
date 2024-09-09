@@ -5,8 +5,8 @@ const BLOCK_START_PATTERN = /^\s*\/\/\s*start-block\s+([A-Za-z_-]*)/;
 const BLOCK_END_PATTERN = /^\s*\/\/\s*end-block\s+([A-Za-z_-]*)/;
 
 interface MedplumCodeBlockProps extends Props {
-  selectLines?: number[][];
-  selectBlocks?: string;
+  readonly selectLines?: number[][];
+  readonly selectBlocks?: string;
 }
 
 export default function MedplumCodeBlock({
@@ -55,13 +55,19 @@ export default function MedplumCodeBlock({
   // Filter out lines that were set to null
   codeLines = codeLines.filter((line) => line !== null);
 
+  // Find the minimum indentation
+  const minIndent = findMinimumIndentation(codeLines);
+
+  // Remove the minimum indentation from all lines
+  codeLines = codeLines.map((line) => removeIndentation(line, minIndent));
+
   code = codeLines.join('\n');
   return <CodeBlock {...props}>{code}</CodeBlock>;
 }
 
 /**
  * Returns an map from the block name to the start and stop lines for that block
- * @param codeLines Array of code lines.
+ * @param codeLines - Array of code lines.
  * @returns The code blocks.
  */
 function extractBlocks(codeLines: string[]): Record<string, [number, number]> {
@@ -98,4 +104,24 @@ function extractBlocks(codeLines: string[]): Record<string, [number, number]> {
     throw new Error(`Unterminated blocks: ${unterminatedBlocks.map((e) => e[0]).join(', ')}`);
   }
   return results;
+}
+
+/**
+ * Finds the minimum indentation across all non-empty lines
+ * @param lines - Array of code lines.
+ * @returns The minimum indentation.
+ */
+function findMinimumIndentation(lines: string[]): number {
+  const indentations = lines.filter((line) => line.trim().length > 0).map((line) => line.match(/^\s*/)[0].length);
+  return Math.min(...indentations);
+}
+
+/**
+ * Removes a specified amount of indentation from a line
+ * @param line - The line to remove indentation from.
+ * @param indent - The amount of indentation to remove.
+ * @returns The line with reduced indentation.
+ */
+function removeIndentation(line: string, indent: number): string {
+  return line.slice(indent);
 }

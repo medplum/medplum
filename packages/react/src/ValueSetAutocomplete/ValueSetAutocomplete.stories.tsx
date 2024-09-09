@@ -1,5 +1,4 @@
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { ValueSetAutocomplete } from './ValueSetAutocomplete';
 
@@ -8,8 +7,20 @@ export default {
   component: ValueSetAutocomplete,
 } as Meta;
 
-export const Basic = (): JSX.Element => (
+export const Single = (): JSX.Element => (
   <Document>
-    <ValueSetAutocomplete elementDefinition={{ binding: { valueSet: 'x' } }} onChange={console.log} />
+    <ValueSetAutocomplete binding="x" onChange={console.log} maxValues={1} />
+  </Document>
+);
+
+export const Multiple = (): JSX.Element => (
+  <Document>
+    <ValueSetAutocomplete binding="x" onChange={console.log} maxValues={3} />
+  </Document>
+);
+
+export const MinimumInput = (): JSX.Element => (
+  <Document>
+    <ValueSetAutocomplete binding="x" onChange={console.log} maxValues={3} minInputLength={3} />
   </Document>
 );

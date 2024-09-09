@@ -6,12 +6,15 @@ import { S3Client } from '@aws-sdk/client-s3';
 import { GetParameterCommand, PutParameterCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { mockClient } from 'aws-sdk-client-mock';
-import { randomUUID } from 'crypto';
-import { readFileSync, unlinkSync, writeFileSync } from 'fs';
-import readline from 'readline';
+import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
+import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import readline from 'node:readline';
 import { main } from '../index';
+import { mockReadline } from './test.utils';
 
-jest.mock('readline');
+jest.mock('node:readline');
+jest.mock('node-fetch');
 
 describe('init command', () => {
   beforeAll(() => {
@@ -21,6 +24,11 @@ describe('init command', () => {
   });
 
   beforeEach(() => {
+    (fetch as unknown as jest.Mock).mockClear();
+    (fetch as unknown as jest.Mock).mockResolvedValueOnce({
+      json: jest.fn().mockResolvedValueOnce([{ tag_name: 'v2.4.17' }]),
+    });
+
     const cloudFrontClient = mockClient(CloudFrontClient);
 
     cloudFrontClient.on(CreatePublicKeyCommand).resolves({ PublicKey: { Id: 'K1234' } as PublicKey });
@@ -102,13 +110,13 @@ describe('init command', () => {
       apiDomainName: 'api.test.example.com',
       appDomainName: 'app.test.example.com',
       storageDomainName: 'storage.test.example.com',
-      storageBucketName: 'medplum-foo-storage',
+      storageBucketName: 'storage.test.example.com',
       maxAzs: 2,
       rdsInstances: 1,
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -165,13 +173,13 @@ describe('init command', () => {
       apiDomainName: 'api.test.example.com',
       appDomainName: 'app.test.example.com',
       storageDomainName: 'storage.test.example.com',
-      storageBucketName: 'medplum-foo-storage',
+      storageBucketName: 'storage.test.example.com',
       maxAzs: 2,
       rdsInstances: 1,
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -238,13 +246,13 @@ describe('init command', () => {
       apiDomainName: 'api.test.example.com',
       appDomainName: 'app.test.example.com',
       storageDomainName: 'storage.test.example.com',
-      storageBucketName: 'medplum-foo-storage',
+      storageBucketName: 'storage.test.example.com',
       maxAzs: 2,
       rdsInstances: 1,
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'TODO',
       appSslCertArn: 'TODO',
@@ -298,13 +306,13 @@ describe('init command', () => {
       apiDomainName: 'api.test.example.com',
       appDomainName: 'app.test.example.com',
       storageDomainName: 'storage.test.example.com',
-      storageBucketName: 'medplum-foo-storage',
+      storageBucketName: 'storage.test.example.com',
       maxAzs: 2,
       rdsSecretsArn: 'TODO',
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -356,13 +364,13 @@ describe('init command', () => {
       apiDomainName: 'api.test.example.com',
       appDomainName: 'app.test.example.com',
       storageDomainName: 'storage.test.example.com',
-      storageBucketName: 'medplum-foo-storage',
+      storageBucketName: 'storage.test.example.com',
       maxAzs: 2,
       rdsInstances: 1,
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'TODO',
       appSslCertArn: 'TODO',
@@ -417,13 +425,13 @@ describe('init command', () => {
       apiDomainName: 'api.existing.example.com',
       appDomainName: 'app.existing.example.com',
       storageDomainName: 'storage.existing.example.com',
-      storageBucketName: 'medplum-foo-storage',
+      storageBucketName: 'storage.existing.example.com',
       maxAzs: 2,
       rdsInstances: 1,
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789013',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -478,13 +486,13 @@ describe('init command', () => {
       apiDomainName: 'api.test.example.com',
       appDomainName: 'app.test.example.com',
       storageDomainName: 'storage.test.example.com',
-      storageBucketName: 'medplum-foo-storage',
+      storageBucketName: 'storage.test.example.com',
       maxAzs: 2,
       rdsInstances: 1,
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -556,13 +564,13 @@ describe('init command', () => {
       apiDomainName: 'api.test.example.com',
       appDomainName: 'app.test.example.com',
       storageDomainName: 'storage.test.example.com',
-      storageBucketName: 'medplum-foo-storage',
+      storageBucketName: 'storage.test.example.com',
       maxAzs: 2,
       rdsInstances: 1,
       desiredServerCount: 1,
       serverMemory: 512,
       serverCpu: 256,
-      serverImage: 'medplum/medplum-server:latest',
+      serverImage: 'medplum/medplum-server:2.4.17',
       storagePublicKey: expect.stringContaining('-----BEGIN PUBLIC KEY-----'),
       apiSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
       appSslCertArn: 'arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012',
@@ -570,18 +578,67 @@ describe('init command', () => {
     });
     unlinkSync(filename);
   });
-});
 
-function mockReadline(...answers: string[]): readline.Interface {
-  const result = { write: jest.fn(), question: jest.fn(), close: jest.fn() };
-  const debug = false;
-  for (const answer of answers) {
-    result.question.mockImplementationOnce((q: string, cb: (answer: string) => void) => {
-      if (debug) {
-        console.log(q, answer);
-      }
-      cb(answer);
+  test('No AWS credentials', async () => {
+    const stsClient = mockClient(STSClient);
+    stsClient.on(GetCallerIdentityCommand).rejects('GetCallerIdentityCommand failed');
+
+    const cloudFrontClient = mockClient(CloudFrontClient);
+    cloudFrontClient.on(CreatePublicKeyCommand).rejects('CreatePublicKeyCommand failed');
+
+    const filename = `test-${randomUUID()}.json`;
+    readline.createInterface = jest.fn(() =>
+      mockReadline(
+        'y', // Yes, proceed without AWS credentials
+        'foo',
+        filename,
+        'us-east-1',
+        'account-123',
+        'TestStack',
+        'test.example.com',
+        'support@example.com',
+        '', // default API domain
+        '', // default app domain
+        '', // default storage domain
+        '', // default storage bucket
+        '', // default availability zones
+        'y', // Yes, create a database
+        '', // default database instances
+        '', // default server instances
+        '', // default server memory
+        '', // default server cpu
+        '', // default server image
+        'n', // No, do not request api certificate
+        'n', // No, do not request app certificate
+        'n', // No, do not request storage certificate
+        'n' // No, do not write to Parameter Store
+      )
+    );
+
+    await main(['node', 'index.js', 'aws', 'init']);
+
+    const config = JSON.parse(readFileSync(filename, 'utf8'));
+    expect(config).toMatchObject({
+      apiPort: 8103,
+      name: 'foo',
+      region: 'us-east-1',
+      accountNumber: 'account-123',
+      stackName: 'TestStack',
+      domainName: 'test.example.com',
+      apiDomainName: 'api.test.example.com',
+      appDomainName: 'app.test.example.com',
+      storageDomainName: 'storage.test.example.com',
+      storageBucketName: 'storage.test.example.com',
+      maxAzs: 2,
+      rdsInstances: 1,
+      desiredServerCount: 1,
+      serverMemory: 512,
+      serverCpu: 256,
+      serverImage: 'medplum/medplum-server:2.4.17',
+      apiSslCertArn: 'TODO',
+      appSslCertArn: 'TODO',
+      storageSslCertArn: 'TODO',
     });
-  }
-  return result as unknown as readline.Interface;
-}
+    unlinkSync(filename);
+  });
+});

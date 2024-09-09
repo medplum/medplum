@@ -302,6 +302,12 @@ export interface MedicationKnowledgeAdministrationGuidelines {
 }
 
 /**
+ * Indication for use that apply to the specific administration
+ * guidelines.
+ */
+export type MedicationKnowledgeAdministrationGuidelinesIndication = CodeableConcept | Reference<ObservationDefinition>;
+
+/**
  * Dosage for the medication for the specific guidelines.
  */
 export interface MedicationKnowledgeAdministrationGuidelinesDosage {
@@ -345,12 +351,12 @@ export interface MedicationKnowledgeAdministrationGuidelinesDosage {
    * The type of dosage (for example, prophylaxis, maintenance,
    * therapeutic, etc.).
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Dosage for the medication for the specific guidelines.
    */
-  dosage?: Dosage[];
+  dosage: Dosage[];
 }
 
 /**
@@ -413,6 +419,12 @@ export interface MedicationKnowledgeAdministrationGuidelinesPatientCharacteristi
 }
 
 /**
+ * Specific characteristic that is relevant to the administration
+ * guideline (e.g. height, weight, gender).
+ */
+export type MedicationKnowledgeAdministrationGuidelinesPatientCharacteristicsCharacteristic = CodeableConcept | Quantity;
+
+/**
  * The price of the medication.
  */
 export interface MedicationKnowledgeCost {
@@ -456,7 +468,7 @@ export interface MedicationKnowledgeCost {
    * The category of the cost information.  For example, manufacturers'
    * cost, patient cost, claim reimbursement cost, actual acquisition cost.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * The source or owner that assigns the price to the medication.
@@ -466,7 +478,7 @@ export interface MedicationKnowledgeCost {
   /**
    * The price of the medication.
    */
-  cost?: Money;
+  cost: Money;
 }
 
 /**
@@ -538,6 +550,11 @@ export interface MedicationKnowledgeDrugCharacteristic {
 }
 
 /**
+ * Description of the characteristic.
+ */
+export type MedicationKnowledgeDrugCharacteristicValue = CodeableConcept | Quantity | string;
+
+/**
  * Identifies a particular constituent of interest in the product.
  */
 export interface MedicationKnowledgeIngredient {
@@ -602,6 +619,12 @@ export interface MedicationKnowledgeIngredient {
    */
   strength?: Ratio;
 }
+
+/**
+ * The actual ingredient - either a substance (simple ingredient) or
+ * another medication.
+ */
+export type MedicationKnowledgeIngredientItem = CodeableConcept | Reference<Substance>;
 
 /**
  * The time course of drug absorption, distribution, metabolism and
@@ -706,7 +729,7 @@ export interface MedicationKnowledgeMedicineClassification {
    * The type of category for the medication (for example, therapeutic
    * classification, therapeutic sub-classification).
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Specific category assigned to the medication (e.g. anti-infective,
@@ -913,7 +936,7 @@ export interface MedicationKnowledgeRegulatory {
   /**
    * The authority that is specifying the regulations.
    */
-  regulatoryAuthority?: Reference<Organization>;
+  regulatoryAuthority: Reference<Organization>;
 
   /**
    * Specifies if changes are allowed when dispensing a medication from a
@@ -977,7 +1000,7 @@ export interface MedicationKnowledgeRegulatoryMaxDispense {
   /**
    * The maximum number of units of the medication that can be dispensed.
    */
-  quantity?: Quantity;
+  quantity: Quantity;
 
   /**
    * The period that applies to the maximum number of units.
@@ -1028,7 +1051,7 @@ export interface MedicationKnowledgeRegulatorySchedule {
   /**
    * Specifies the specific drug schedule.
    */
-  schedule?: CodeableConcept;
+  schedule: CodeableConcept;
 }
 
 /**
@@ -1075,13 +1098,13 @@ export interface MedicationKnowledgeRegulatorySubstitution {
   /**
    * Specifies the type of substitution allowed.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Specifies if regulation allows for changes in the medication when
    * dispensing.
    */
-  allowed?: boolean;
+  allowed: boolean;
 }
 
 /**
@@ -1127,10 +1150,10 @@ export interface MedicationKnowledgeRelatedMedicationKnowledge {
   /**
    * The category of the associated medication knowledge reference.
    */
-  type?: CodeableConcept;
+  type: CodeableConcept;
 
   /**
    * Associated documentation about the associated medication knowledge.
    */
-  reference?: Reference<MedicationKnowledge>[];
+  reference: Reference<MedicationKnowledge>[];
 }

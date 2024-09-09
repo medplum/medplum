@@ -5,25 +5,24 @@ import {
   OAuthGrantType,
   OAuthTokenType,
   parseJWTPayload,
-  parseSearchDefinition,
+  parseSearchRequest,
 } from '@medplum/core';
 import { AccessPolicy, ClientApplication, Login, Project, SmartAppLaunch } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import express from 'express';
 import { generateKeyPair, jwtVerify, SignJWT } from 'jose';
 import fetch from 'node-fetch';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { createClient } from '../admin/client';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
 import { loadTestConfig, MedplumServerConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
-import { generateSecret } from './keys';
+import { generateSecret, verifyJwt } from './keys';
 import { hashCode } from './token';
 
-jest.mock('@aws-sdk/client-sesv2');
 jest.mock('jose', () => {
   const core = jest.requireActual('@medplum/core');
   const original = jest.requireActual('jose');
@@ -34,7 +33,8 @@ jest.mock('jose', () => {
       const payload = core.parseJWTPayload(credential);
       if (payload.invalid) {
         throw new Error('Verification failed');
-      } else if (payload.multipleMatching) {
+      }
+      if (payload.multipleMatching) {
         count = payload.successVerified ? count + 1 : 0;
         let error: MockJoseMultipleMatchingError;
         if (count <= 1) {
@@ -56,24 +56,25 @@ jest.mock('jose', () => {
 
 jest.mock('node-fetch');
 
-const app = express();
-const domain = randomUUID() + '.example.com';
-const email = `text@${domain}`;
-const password = randomUUID();
-const redirectUri = `https://${domain}/auth/callback`;
-let config: MedplumServerConfig;
-let project: Project;
-let client: ClientApplication;
-let pkceOptionalClient: ClientApplication;
-let externalAuthClient: ClientApplication;
-
 describe('OAuth2 Token', () => {
+  const app = express();
+  const systemRepo = getSystemRepo();
+  const domain = randomUUID() + '.example.com';
+  const email = `text@${domain}`;
+  const password = randomUUID();
+  const redirectUri = `https://${domain}/auth/callback`;
+  let config: MedplumServerConfig;
+  let project: Project;
+  let client: ClientApplication;
+  let pkceOptionalClient: ClientApplication;
+  let externalAuthClient: ClientApplication;
+
   beforeAll(async () => {
     config = await loadTestConfig();
     await initApp(app, config);
 
     // Create a test project
-    ({ project, client } = await createTestProject());
+    ({ project, client } = await createTestProject({ withClient: true }));
 
     // Create a 2nd client with PKCE optional
     pkceOptionalClient = await systemRepo.createResource<ClientApplication>({
@@ -278,22 +279,69 @@ describe('OAuth2 Token', () => {
     expect(res.body.error_description).toBe('Invalid client');
   });
 
-  test('Token for client in super admin', async () => {
-    const { client } = await createTestProject({ superAdmin: true });
-    const res1 = await request(app).post('/oauth2/token').type('form').send({
+  test('Token for client in "off" status', async () => {
+    const { client } = await createTestProject({ withClient: true });
+    await withTestContext(() => systemRepo.updateResource<ClientApplication>({ ...client, status: 'off' }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'client_credentials',
       client_id: client.id,
       client_secret: client.secret,
     });
-    expect(res1.status).toBe(200);
-    expect(res1.body.error).toBeUndefined();
-    expect(res1.body.access_token).toBeDefined();
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('invalid_request');
+    expect(res.body.error_description).toBe('Invalid client');
+  });
 
-    // Expect login to be a super admin login
-    const claims = parseJWTPayload(res1.body.access_token);
-    expect(claims.login_id).toBeDefined();
-    const login = await systemRepo.readResource<Login>('Login', claims.login_id as string);
-    expect(login.superAdmin).toBe(true);
+  test('Token for client in "active" status', async () => {
+    const { client } = await createTestProject({ withClient: true });
+    await withTestContext(() => systemRepo.updateResource<ClientApplication>({ ...client, status: 'active' }));
+
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
+  });
+
+  test('Client credentials IP address restriction', async () => {
+    const { client } = await createTestProject({
+      withClient: true,
+      withAccessToken: true,
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [{ resourceType: '*' }],
+        ipAccessRule: [
+          { name: 'Block test', value: '6.6.6.6', action: 'block' },
+          { name: 'Allow by default', value: '*', action: 'allow' },
+        ],
+      },
+    });
+
+    // Login with client credentials from 6.6.6.6
+    // Should fail because of IP address block
+    const res1 = await request(app).post('/oauth2/token').set('X-Forwarded-For', '6.6.6.6').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res1.status).toBe(400);
+    expect(res1.body.error).toBe('invalid_request');
+    expect(res1.body.error_description).toBe('IP address not allowed');
+
+    // Login with client credentials from 5.5.5.5
+    // Should succeed
+    const res2 = await request(app).post('/oauth2/token').set('X-Forwarded-For', '5.5.5.5').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.error).toBeUndefined();
+    expect(res2.body.access_token).toBeDefined();
   });
 
   test('Token for authorization_code with missing code', async () => {
@@ -381,6 +429,7 @@ describe('OAuth2 Token', () => {
       password,
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
+      scope: 'openid profile email',
     });
     expect(res.status).toBe(200);
 
@@ -391,11 +440,14 @@ describe('OAuth2 Token', () => {
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
-    expect(res2.body.scope).toBe('openid');
+    expect(res2.body.scope).toBe('openid profile email');
     expect(res2.body.expires_in).toBe(3600);
     expect(res2.body.id_token).toBeDefined();
     expect(res2.body.access_token).toBeDefined();
     expect(res2.body.refresh_token).toBeUndefined();
+
+    const idToken = parseJWTPayload(res2.body.id_token);
+    expect(idToken.email).toBe(email);
   });
 
   test('Authorization code token with code challenge and PKCE optional', async () => {
@@ -411,14 +463,10 @@ describe('OAuth2 Token', () => {
       });
     expect(res.status).toBe(200);
 
-    const res2 = await request(app)
-      .post('/oauth2/token')
-      .type('form')
-      .send({
-        grant_type: 'authorization_code',
-        client_id: pkceOptionalClient.id as string,
-        code: res.body.code,
-      });
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+    });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid');
@@ -480,7 +528,7 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(200);
 
     // Find the login
-    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
     expect(loginBundle.entry).toHaveLength(1);
 
     // Revoke the login
@@ -836,7 +884,7 @@ describe('OAuth2 Token', () => {
     expect(res2.body.refresh_token).toBeDefined();
 
     // Find the login
-    const loginBundle = await systemRepo.search<Login>(parseSearchDefinition('Login?code=' + res.body.code));
+    const loginBundle = await systemRepo.search<Login>(parseSearchRequest('Login?code=' + res.body.code));
     expect(loginBundle.entry).toHaveLength(1);
 
     // Revoke the login
@@ -1089,6 +1137,76 @@ describe('OAuth2 Token', () => {
     });
     expect(res5.status).toBe(400);
     expect(res5.body).toMatchObject({ error: 'invalid_request', error_description: 'Invalid token' });
+  });
+
+  test('refreshTokenLifetime -- Valid duration', async () => {
+    // Create a new client application with external auth
+    const validLifetimeClient = await createClient(systemRepo, {
+      project,
+      name: 'refreshTokenLifetime - Valid Client',
+      refreshTokenLifetime: '60s',
+    });
+
+    expect(validLifetimeClient?.id).toBeDefined();
+    expect(validLifetimeClient?.secret).toBeDefined();
+
+    const res = await request(app)
+      .post('/auth/login')
+      .type('json')
+      .send({
+        clientId: validLifetimeClient.id as string,
+        email,
+        password,
+        codeChallenge: 'xyz',
+        codeChallengeMethod: 'plain',
+        scope: 'openid offline',
+      });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app)
+      .post('/oauth2/token')
+      .type('form')
+      .send({
+        grant_type: 'authorization_code',
+        client_id: validLifetimeClient.id as string,
+        code: res.body.code,
+        code_verifier: 'xyz',
+        scope: 'openid offline',
+      });
+
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeDefined();
+
+    const claims = (await verifyJwt(res2.body.refresh_token)).payload;
+    expect(claims.exp).toEqual((claims.iat as number) + 60);
+  });
+
+  test('refreshTokenLifetime -- Invalid duration', async () => {
+    // Create a new client application with external auth
+    await expect(
+      createClient(systemRepo, {
+        project,
+        name: 'refreshTokenLifetime - Invalid Client',
+        refreshTokenLifetime: 'medplum',
+      })
+    ).rejects.toThrow(
+      /Constraint clapp-1 not met: Token lifetime must be a valid string representing time duration (eg. 2w, 1h)*/
+    );
+
+    await expect(
+      createClient(systemRepo, {
+        project,
+        name: 'refreshTokenLifetime - Invalid Client',
+        refreshTokenLifetime: '300',
+      })
+    ).rejects.toThrow(
+      /Constraint clapp-1 not met: Token lifetime must be a valid string representing time duration (eg. 2w, 1h)*/
+    );
   });
 
   test('Patient in token response', async () => {
@@ -1354,7 +1472,7 @@ describe('OAuth2 Token', () => {
       client_assertion: jwt,
     });
     expect(res.status).toBe(200);
-    expect(jwtVerify).toBeCalledTimes(3);
+    expect(jwtVerify).toHaveBeenCalledTimes(3);
   });
 
   test('Client assertion multiple inner error', async () => {
@@ -1385,7 +1503,7 @@ describe('OAuth2 Token', () => {
       client_assertion: jwt,
     });
     expect(res.status).toBe(400);
-    expect(jwtVerify).toBeCalledTimes(2);
+    expect(jwtVerify).toHaveBeenCalledTimes(2);
   });
 
   test('Client assertion invalid assertion type', async () => {
@@ -1419,6 +1537,32 @@ describe('OAuth2 Token', () => {
     expect(res.body).toMatchObject({
       error: 'invalid_request',
       error_description: 'Unsupported client assertion type',
+    });
+  });
+
+  test('Client assertion missing JWT', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.ClientCredentials,
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
+      client_assertion: '', // empty JWT
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion',
+    });
+  });
+
+  test('Client assertion invalid JWT', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: OAuthGrantType.ClientCredentials,
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
+      client_assertion: 'foo', // not a valid JWT
+    });
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject({
+      error: 'invalid_request',
+      error_description: 'Invalid client assertion',
     });
   });
 
@@ -1579,6 +1723,72 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid subject_token_type');
+  });
+
+  test('FHIRcast scopes added to client credentials flow', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+      scope: 'openid fhircast/Patient-open.read',
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
+    expect(res.body['hub.topic']).toBeDefined();
+    expect(res.body['hub.url']).toBeDefined();
+  });
+
+  test('FHIRcast scopes NOT added - should not have Hub topic or URL', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.secret,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
+    expect(res.body['hub.topic']).not.toBeDefined();
+    expect(res.body['hub.url']).not.toBeDefined();
+  });
+
+  test('Refresh tokens disabled for super admins', async () => {
+    // Create a super admin project
+    const { project } = await createTestProject({ project: { superAdmin: true } });
+
+    // Create a test user
+    const email = `test-${randomUUID()}@example.com`;
+    const password = 'test-password';
+    await inviteUser({
+      project,
+      resourceType: 'Practitioner',
+      firstName: 'Test',
+      lastName: 'Test',
+      email,
+      password,
+    });
+
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      scope: 'openid offline', // Request offline access
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.token_type).toBe('Bearer');
+    expect(res2.body.scope).toBe('openid offline');
+    expect(res2.body.expires_in).toBe(3600);
+    expect(res2.body.id_token).toBeDefined();
+    expect(res2.body.access_token).toBeDefined();
+    expect(res2.body.refresh_token).toBeUndefined();
   });
 });
 

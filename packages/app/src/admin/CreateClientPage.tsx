@@ -3,7 +3,7 @@ import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { AccessPolicy, ClientApplication, OperationOutcome, Reference } from '@medplum/fhirtypes';
 import { Form, FormSection, getErrorsForInput, MedplumLink, useMedplum } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { getProjectId } from '../utils';
 import { AccessPolicyInput } from './AccessPolicyInput';
 
@@ -37,7 +37,7 @@ export function CreateClientPage(): JSX.Element {
               showNotification({ color: 'green', message: 'Client created' });
             })
             .catch((err) => {
-              showNotification({ color: 'red', message: normalizeErrorString(err) });
+              showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
               setOutcome(normalizeOperationOutcome(err));
             });
         }}
@@ -73,7 +73,7 @@ export function CreateClientPage(): JSX.Element {
             <FormSection title="Access Policy" htmlFor="accessPolicy" outcome={outcome}>
               <AccessPolicyInput name="accessPolicy" onChange={setAccessPolicy} />
             </FormSection>
-            <Group position="right">
+            <Group justify="flex-end">
               <Button type="submit">Create Client</Button>
             </Group>
           </Stack>

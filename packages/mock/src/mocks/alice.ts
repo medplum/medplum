@@ -1,4 +1,4 @@
-import { ContentType, createReference } from '@medplum/core';
+import { lazy, ContentType, createReference } from '@medplum/core';
 import { Organization, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
 
 export const TestOrganization: Organization = {
@@ -67,7 +67,7 @@ export const DrAliceSmithSchedule: Schedule = {
   ],
 };
 
-export const DrAliceSmithSlots: Slot[] = (() => {
+export const makeDrAliceSmithSlots = lazy((): Slot[] => {
   const schedule = createReference(DrAliceSmithSchedule);
   const result: Slot[] = [];
   const slotDate = new Date();
@@ -77,11 +77,13 @@ export const DrAliceSmithSlots: Slot[] = (() => {
       result.push({
         resourceType: 'Slot',
         id: `slot-${day}-${hour}`,
+        status: 'free',
         start: slotDate.toISOString(),
+        end: new Date(slotDate.getTime() + 60 * 60 * 1000).toISOString(),
         schedule,
       });
     }
     slotDate.setDate(slotDate.getDate() + 1);
   }
   return result;
-})();
+});

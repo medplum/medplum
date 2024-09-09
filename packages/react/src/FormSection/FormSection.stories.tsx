@@ -1,7 +1,6 @@
 import { Button, MultiSelect, NativeSelect, Stack } from '@mantine/core';
 import { HumanName } from '@medplum/fhirtypes';
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { Form } from '../Form/Form';
 import { HumanNameInput } from '../HumanNameInput/HumanNameInput';
@@ -21,7 +20,13 @@ export const Basic = (): JSX.Element => (
           description="Basic Patient Information
       "
         >
-          <HumanNameInput name="patient-name" defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName} />
+          <HumanNameInput
+            name="patient-name"
+            path="Patient.name"
+            defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName}
+            onChange={undefined}
+            outcome={undefined}
+          />
           <NativeSelect name="gender" data={['Male', 'Female', 'Other']} />
         </FormSection>
 
@@ -33,5 +38,25 @@ export const Basic = (): JSX.Element => (
         Submit
       </Button>
     </Form>
+  </Document>
+);
+
+export const Readonly = (): JSX.Element => (
+  <Document>
+    <FormSection
+      readonly
+      title="Demographics"
+      description="Basic Patient Information
+      "
+    >
+      <HumanNameInput
+        disabled
+        name="patient-name"
+        path="Patient.name"
+        defaultValue={{ given: ['Homer'], family: 'Simpson' } as HumanName}
+        onChange={undefined}
+        outcome={undefined}
+      />
+    </FormSection>
   </Document>
 );

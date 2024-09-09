@@ -2,10 +2,10 @@ import { getReferenceString, Operator, ProfileResource } from '@medplum/core';
 import { Login, Project, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { UAParser } from 'ua-parser-js';
-import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
-import { systemRepo } from '../fhir/repo';
-import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 import { getAuthenticatedContext } from '../context';
+import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
+import { getSystemRepo, Repository } from '../fhir/repo';
+import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
 
 interface UserSession {
   id: string;
@@ -22,15 +22,18 @@ interface UserSecurity {
 }
 
 export async function meHandler(req: Request, res: Response): Promise<void> {
-  const { login, project, membership, profile: profileRef } = getAuthenticatedContext();
+  const systemRepo = getSystemRepo();
+  const { authState } = getAuthenticatedContext();
+  const { project, membership } = authState;
+  const profileRef = membership.profile as Reference<ProfileResource>;
   const profile = await systemRepo.readReference<ProfileResource>(profileRef);
-  const config = await getUserConfiguration(project, membership);
-  const accessPolicy = await getAccessPolicyForLogin(login, membership);
+  const config = await getUserConfiguration(systemRepo, project, membership);
+  const accessPolicy = await getAccessPolicyForLogin(authState);
 
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {
     const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
-    const sessions = await getSessions(user);
+    const sessions = await getSessions(systemRepo, user);
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
       sessions,
@@ -62,7 +65,11 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   res.status(200).json(await rewriteAttachments(RewriteMode.PRESIGNED_URL, systemRepo, result));
 }
 
-async function getUserConfiguration(project: Project, membership: ProjectMembership): Promise<UserConfiguration> {
+async function getUserConfiguration(
+  systemRepo: Repository,
+  project: Project,
+  membership: ProjectMembership
+): Promise<UserConfiguration> {
   if (membership.userConfiguration) {
     return systemRepo.readReference<UserConfiguration>(membership.userConfiguration);
   }
@@ -87,6 +94,7 @@ async function getUserConfiguration(project: Project, membership: ProjectMembers
         { name: 'AccessPolicy', target: '/AccessPolicy' },
         { name: 'Subscriptions', target: '/Subscription' },
         { name: 'Batch', target: '/batch' },
+        ...(!project.superAdmin ? [{ name: 'Config', target: '/admin/config' }] : []),
       ],
     });
   }
@@ -104,7 +112,7 @@ async function getUserConfiguration(project: Project, membership: ProjectMembers
   return result;
 }
 
-async function getSessions(user: User): Promise<UserSession[]> {
+async function getSessions(systemRepo: Repository, user: User): Promise<UserSession[]> {
   const logins = await systemRepo.searchResources<Login>({
     resourceType: 'Login',
     filters: [

@@ -1,0 +1,54 @@
+.container {
+  overflow-x: auto;
+}
+
+.root {
+  border: 0.1px solid var(--mantine-color-gray-3);
+  border-collapse: collapse;
+  border-radius: var(--mantine-radius-sm);
+  border-spacing: 0;
+  font-size: var(--mantine-font-size-xs);
+  width: 100px;
+
+  & td {
+    padding: 2px 4px 0 4px;
+    vertical-align: top;
+    white-space: nowrap;
+  }
+}
+
+.startRow {
+  border-top: 0.1px solid var(--mantine-color-gray-3);
+}
+
+.normalRow {
+  border-top: 0;
+}
+
+.author {
+  line-height: 10px;
+}
+
+.dateTime {
+  border-right: 0.1px solid var(--mantine-color-gray-3);
+  line-height: 20px;
+}
+
+.lineNumber {
+  background-color: var(--mantine-color-gray-1);
+  border: 0;
+  color: var(--mantine-color-gray-5);
+  font-family: var(--mantine-font-family-monospace);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+  text-align: right;
+}
+
+.line {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-sm);
+  padding: var(--mantine-spacing-xs) var(--mantine-spacing-sm);
+}
+
+.pre {
+  margin: 0;
+}

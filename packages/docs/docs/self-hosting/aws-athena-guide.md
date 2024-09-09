@@ -45,7 +45,7 @@ Because ALB logs have a known structure whose partition scheme you can specify i
 Use this query from [Creating the table for ALB logs in Athena using partition projection](https://docs.aws.amazon.com/athena/latest/ug/application-load-balancer-logs.html#create-alb-table-partition-projection):
 
 ```sql
-CREATE EXTERNAL TABLE IF NOT EXISTS alb_logs (
+CREATE EXTERNAL TABLE IF NOT EXISTS alb_access_logs (
     type string,
     time string,
     elb string,
@@ -78,19 +78,20 @@ CREATE EXTERNAL TABLE IF NOT EXISTS alb_logs (
     target_port_list string,
     target_status_code_list string,
     classification string,
-    classification_reason string
+    classification_reason string,
+    conn_trace_id string
 ) PARTITIONED BY (day STRING) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.RegexSerDe' WITH SERDEPROPERTIES (
     'serialization.format' = '1',
-    'input.regex' = '([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*):([0-9]*) ([^ ]*)[:-]([0-9]*) ([-.0-9]*) ([-.0-9]*) ([-.0-9]*) (|[-0-9]*) (-|[-0-9]*) ([-0-9]*) ([-0-9]*) \"([^ ]*) (.*) (- |[^ ]*)\" \"([^\"]*)\" ([A-Z0-9-_]+) ([A-Za-z0-9.-]*) ([^ ]*) \"([^\"]*)\" \"([^\"]*)\" \"([^\"]*)\" ([-.0-9]*) ([^ ]*) \"([^\"]*)\" \"([^\"]*)\" \"([^ ]*)\" \"([^\s]+?)\" \"([^\s]+)\" \"([^ ]*)\" \"([^ ]*)\"'
-) LOCATION 's3://your-logs-bucket/your-logs-directory/AWSLogs/647991932601/elasticloadbalancing/us-east-1/' TBLPROPERTIES (
+    'input.regex' = '([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*):([0-9]*) ([^ ]*)[:-]([0-9]*) ([-.0-9]*) ([-.0-9]*) ([-.0-9]*) (|[-0-9]*) (-|[-0-9]*) ([-0-9]*) ([-0-9]*) \"([^ ]*) (.*) (- |[^ ]*)\" \"([^\"]*)\" ([A-Z0-9-_]+) ([A-Za-z0-9.-]*) ([^ ]*) \"([^\"]*)\" \"([^\"]*)\" \"([^\"]*)\" ([-.0-9]*) ([^ ]*) \"([^\"]*)\" \"([^\"]*)\" \"([^ ]*)\" \"([^\s]+?)\" \"([^\s]+)\" \"([^ ]*)\" \"([^ ]*)\" ?([^ ]*)?( .*)?'
+) LOCATION 's3://DOC-EXAMPLE-BUCKET/AWSLogs/<ACCOUNT-NUMBER>/elasticloadbalancing/<REGION>/' TBLPROPERTIES (
     "projection.enabled" = "true",
     "projection.day.type" = "date",
     "projection.day.range" = "2022/01/01,NOW",
     "projection.day.format" = "yyyy/MM/dd",
     "projection.day.interval" = "1",
     "projection.day.interval.unit" = "DAYS",
-    "storage.location.template" = "s3://your-logs-bucket/your-logs-directory/AWSLogs/647991932601/elasticloadbalancing/us-east-1/${day}"
-);
+    "storage.location.template" = "s3://DOC-EXAMPLE-BUCKET/AWSLogs/<ACCOUNT-NUMBER>/elasticloadbalancing/<REGION>/${day}"
+)
 ```
 
 Now Athena is ready for querying.
@@ -119,6 +120,28 @@ WHERE
     day = '2023/06/18'
 GROUP BY
     elb_status_code
+LIMIT
+    100;
+```
+
+Find all 500 errors
+
+```sql
+SELECT
+    elb_status_code,
+    time,
+    client_ip,
+    request_verb,
+    request_url,
+    request_processing_time,
+    target_processing_time,
+    response_processing_time
+FROM
+    alb_logs
+WHERE
+    day = '2023/09/27'
+    AND "elb_status_code">=500
+ORDER BY time
 LIMIT
     100;
 ```

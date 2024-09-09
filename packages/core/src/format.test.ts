@@ -1,3 +1,5 @@
+import { Observation } from '@medplum/fhirtypes';
+import { LOINC, UCUM } from './constants';
 import {
   formatAddress,
   formatCodeableConcept,
@@ -214,6 +216,8 @@ test('Format HumanName', () => {
       }
     )
   ).toEqual('Ms. Alice Gelato Smith III [official]');
+
+  expect(formatHumanName({ text: 'foo bar' })).toEqual('foo bar');
 });
 
 test('Format given name', () => {
@@ -383,35 +387,66 @@ test('Format Coding', () => {
   expect(formatCoding({})).toBe('');
   expect(formatCoding({ display: 'foo' })).toBe('foo');
   expect(formatCoding({ code: 'foo' })).toBe('foo');
+  expect(formatCoding({ code: { foo: 'bar' } as unknown as string })).toBe('');
 });
 
 test('Format Observation value', () => {
   expect(formatObservationValue(undefined)).toBe('');
-  expect(formatObservationValue({})).toBe('');
-  expect(formatObservationValue({ resourceType: 'Observation', valueString: 'foo' })).toBe('foo');
-  expect(formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } })).toBe('foo');
-  expect(formatObservationValue({ resourceType: 'Observation', valueQuantity: { value: 123, unit: 'mg' } })).toBe(
-    '123 mg'
-  );
+  expect(formatObservationValue({} as Observation)).toBe('');
+  expect(formatObservationValue({ resourceType: 'Observation', valueString: 'foo' } as Observation)).toBe('foo');
+  expect(
+    formatObservationValue({ resourceType: 'Observation', valueCodeableConcept: { text: 'foo' } } as Observation)
+  ).toBe('foo');
+  expect(
+    formatObservationValue({ resourceType: 'Observation', valueQuantity: { value: 123, unit: 'mg' } } as Observation)
+  ).toBe('123 mg');
   expect(
     formatObservationValue({
       resourceType: 'Observation',
       component: [
         {
+          code: { text: 'foo' },
           valueQuantity: {
             value: 110,
             unit: 'mmHg',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
         },
         {
+          code: { text: 'bar' },
           valueQuantity: {
             value: 75,
             unit: 'mmHg',
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
           },
         },
       ],
-    })
+    } as Observation)
   ).toBe('110 mmHg / 75 mmHg');
+  expect(
+    formatObservationValue({
+      resourceType: 'Observation',
+      code: { text: 'Body temperature' },
+      valueQuantity: {
+        value: 36.7,
+        unit: 'C',
+        code: 'Cel',
+        system: UCUM,
+      },
+      component: [
+        {
+          code: { text: 'Body temperature measurement site' },
+          valueCodeableConcept: {
+            coding: [
+              {
+                display: 'Oral',
+                code: 'LA9367-9',
+                system: LOINC,
+              },
+            ],
+          },
+        },
+      ],
+    } as Observation)
+  ).toBe('36.7 C / Oral');
 });

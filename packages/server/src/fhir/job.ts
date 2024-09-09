@@ -2,8 +2,8 @@ import { allOk } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { sendResponse } from './routes';
 import { getAuthenticatedContext } from '../context';
+import { sendResponse } from './response';
 
 // Asychronous Job Status API
 // https://hl7.org/fhir/async-bundle.html
@@ -20,11 +20,11 @@ jobRouter.get(
     const asyncJob = await ctx.repo.readResource<AsyncJob>('AsyncJob', id);
 
     if (!finalJobStatusCodes.includes(asyncJob.status as string)) {
-      res.status(202).end();
+      res.status(202).send(asyncJob).end();
       return;
     }
 
-    await sendResponse(res, allOk, asyncJob);
+    await sendResponse(req, res, allOk, asyncJob);
   })
 );
 

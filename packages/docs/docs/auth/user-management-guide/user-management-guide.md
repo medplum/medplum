@@ -50,17 +50,8 @@ graph TD
 | Resource                                                        | Description                                                                                                                                                                                                                       | Medplum App                                                                                                              |
 | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | [`User`](/docs/api/fhir/medplum/user)                           | A resource that represents a user identity. Users exist above the Project level and can only be self-updated.                                                                                                                     | None                                                                                                                     |
-| [`Project`](/docs/api/fhir/medplum/project)                     | A [Project](/docs/tutorials/register#medplum-projects) is an isolated set of resources.                                                                                                                                           | [Project Admin](https://app.medplum.com/admin/project)                                                                   |
+| [`Project`](/docs/api/fhir/medplum/project)                     | A [Project](/docs/tutorials/register#medplum-projects) is an isolated set of resources. See the [Projects guide](/docs/access/projects)                                                                                           | [Project Admin](https://app.medplum.com/admin/project)                                                                   |
 | [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) | A ProjectMembership represents granting a user access to the resources within a Project. Inviting a user to a project, and specifying their `profile` and `accessPolicy` you can determine what set of resources they can access. | [Invite (Admins only)](https://app.medplum.com/admin/invite), [Users (Admins only)](https://app.medplum.com/admin/users) |
-
-### Projects
-
-Medplum has the concept of [`Projects`](/docs/api/fhir/medplum/project), which are isolated containers of resources of FHIR resources. Each project is administered separately, and users can have different privileges between projects. [`Projects`](/docs/api/fhir/medplum/project) create a "hard boundary" between resources, and resources within one project cannot reference resources from another project.
-
-Some common use cases for projects are:
-
-- **Multi-tenancy:** In [B2B2C environments](https://a16z.com/b2c2b-in-digital-health-a-founders-playbook/), a service provider may partner with multiple healthcare organizations to deliver care to patients. Each of [`Projects`](/docs/api/fhir/medplum/project) can provide each of these partners their own isolated environments, that have their own patient data, log-in flows, and project administrators. The [Medplum hosted service](/pricing) uses a multi-tenant instance of Medplum to service our hosted customers.
-- **Development vs. Production:** A common requirement for development teams to have a separate [`Project`](/docs/api/fhir/medplum/project) , with non-protected data, for testing and debugging purposes, before deploying workflow changes to production. A common Medplum usage pattern is to create a "development", "staging", and "production" [`Project`](/docs/api/fhir/medplum/project).
 
 ### Users
 
@@ -73,11 +64,11 @@ The [User](/docs/api/fhir/medplum/user) resource is the main resource that repre
 
 #### Server Scoped Users
 
-**Server scoped [`Users`](/docs/api/fhir/medplum/user)** are typically used for `Practitioners`. Practitioners can be members of multiple projects (e.g. "staging" and "prod"), and having their `Users` at the server level allows them to easily sign into multiple projects.
+Server scoped [`Users`](/docs/api/fhir/medplum/user) are typically used for `Practitioners`. Practitioners can be members of multiple projects (e.g. "staging" and "prod"), and having their `Users` at the server level allows them to easily sign into multiple projects.
 
 #### Project Scoped Users
 
-**Project scoped [`Users`](/docs/api/fhir/medplum/user)** only exist inside a project level, and cannot sign into server-level tools such as the [Medplum App](/docs/app). The most common use case is for [`Patient`](/docs/api/fhir/resources/patient) users. These users will have to be invited and enrolled separately to each[ `Project` ](/docs/api/fhir/medplum/project) they are a part of, and there will be no link between their identities across projects.
+Project scoped [`Users`](/docs/api/fhir/medplum/user) only exist inside a project level, and cannot sign into server-level tools such as the [Medplum App](/docs/app). The most common use case is for [`Patient`](/docs/api/fhir/resources/patient) users. These users will have to be invited and enrolled separately to each[ `Project` ](/docs/api/fhir/medplum/project) they are a part of, and there will be no link between their identities across projects.
 
 This is desirable in multi-tenant use cases, where patients enrolled with one tenant should not be aware of other tenants.
 
@@ -87,7 +78,7 @@ By default, the server scopes all users [`Users`](/docs/api/fhir/medplum/user) e
 
 _Within_ each project, a project member is represented by a specific FHIR resource, known as their **profile**. The `ProjectMembership.profile` element links the [` ProjectMembership`](/docs/api/fhir/medplum/projectmembership) to the profile resource.
 
-A user's profile can be one of the three resource types in the table below. Incorporating the resources in the table below into ProjectMembership enable sophisticated access controls, as [Access Policies](/docs/auth/access-control) can access the profile of the current user ([read more](/docs/auth/access-control#patient-access))
+A user's profile can be one of the three resource types in the table below. Incorporating the resources in the table below into ProjectMembership enable sophisticated access controls, as [Access Policies](/docs/access/access-policies) can access the profile of the current user ([read more](/docs/access/access-policies#patient-access))
 
 | Resource                                                  | Description                                                                                                                             | Medplum App                                            |
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
@@ -120,7 +111,7 @@ To create a new `Project` resource via the API, you will need to create a `Clien
 
 :::warning
 
-Super admin features can cause unrepairable damage. We highly recommend adding an [Access Policy](/docs/auth/access-control) to this `ClientApplication` to reduce it's privileges.
+Super admin features can cause unrepairable damage. We highly recommend adding an [Access Policy](/docs/access/access-policies) to this `ClientApplication` to reduce it's privileges.
 
 :::
 
@@ -172,22 +163,22 @@ Users in Medplum can be members of multiple projects, so cannot be edited direct
 
 ### Creating Memberships
 
-Only administrators can invite users, and can do so on the [Invite](https://app.medplum.com/admin/invite) page. You can specify a role and [AccessPolicy](/docs/auth/access-control) at time of invite. The invite flow will do the following:
+Only administrators can invite users, and can do so on the [Invite](https://app.medplum.com/admin/invite) page. You can specify a role and [AccessPolicy](/docs/access/access-policies) at time of invite. The invite flow will do the following:
 
 1. Create a `User` if one does not already exist
 2. Create a FHIR resource (Patient, Practitioner or RelatedPerson)
 3. Create a ProjectMembership that links User, ProfileResource and access policy
 4. (Optional) send an email invite user
 
-:::caution Note
+:::danger Note
 
-Do not delete Patient, Practitioner or RelatedPerson resources that belong to ProjectMemberships. This will cause the login to be non-functional. Do not edit or change the ProjectMembership resources directly.
+Do not delete [`Patient`](/docs/api/fhir/resources/patient), [`Practitioner`](/docs/api/fhir/resources/practitioner) or [`RelatedPerson`](/docs/api/fhir/resources/relatedperson) resources that belong to [`ProjectMemberships`](/docs/api/fhir/medplum/projectmembership). This will cause the login to be non-functional. Do not edit or change the [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership) resources directly. If you do delete one of these resources, you will need to register a new project.
 
 :::
 
 ### Removing Memberships
 
-Tor remove users from the existing project navigate to your [Project settings](https://app.medplum.com/admin/project) and to the Users and Patient tabs respectively. Click on a specific users or patients and click **Remove User**.
+To remove users from the existing project navigate to your [Project settings](https://app.medplum.com/admin/project) and to the Users and Patient tabs respectively. Click on a specific users or patients and click **Remove User**.
 
 We highly recommend leaving the associated FHIR resource (Patient, Practitioner, etc.) in place for audibility, record keeping and in case the membership needs to be reconstructed for some reason.
 
@@ -289,7 +280,7 @@ Check the box under the `Admin` label, and then save the user. This user will no
 
 To _invite_ a user as an admin in the app, please see the [Invite a User docs](https://www.medplum.com/docs/app/invite).
 
-Promoting a user to admin can also be done programatically. To do so, you will need to update the user's `ProjectMembership`.
+Promoting a user to admin can also be done programmatically. To do so, you will need to update the user's `ProjectMembership`.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -313,7 +304,7 @@ It is important to spread the original `ProjectMembership` to ensure that you ar
 
 ## Invite via API
 
-Inviting users can be done programmatically using the `/invite` endpoint
+Inviting users can be done programmatically using the [`/invite` endpoint](/docs/api/project-admin/invite). Like inviting via the [Medplum App](https://app.medplum.com), this can only be done by [project admins](/docs/access/admin#project-admin).
 
 Prepare JSON payload:
 
@@ -321,7 +312,7 @@ Prepare JSON payload:
   {ExampleCode}
 </MedplumCodeBlock>
 
-Then POST to the `/invite` endpoint:
+Then POST to the [`/invite` endpoint](/docs/api/project-admin/invite):
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
@@ -341,7 +332,7 @@ Then POST to the `/invite` endpoint:
   </TabItem>
 </Tabs>
 
-The `/invite` endpoint creates a [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership). The `ProjectMembership` resource includes additional properties to customize the user experience. The `/invite` endpoint accepts a partial `ProjectMembership` in the `membership` property where you can provide membership details.
+The [`/invite` endpoint](/docs/api/project-admin/invite) creates a [`ProjectMembership`](/docs/api/fhir/medplum/projectmembership). The `ProjectMembership` resource includes additional properties to customize the user experience. The [`/invite` endpoint](/docs/api/project-admin/invite) accepts a partial `ProjectMembership` in the `membership` property where you can provide membership details.
 
 For example, use `admin: true` to make the new user a project administrator:
 
@@ -355,7 +346,9 @@ Or use the `access` property to specify a user's `AccessPolicy` with optional pa
   {ExampleCode}
 </MedplumCodeBlock>
 
-See [Access Control](/docs/auth/access-control) for more details.
+For more information, see the [`/invite` endpoint API docs](/docs/api/project-admin/invite)
+
+See [Access Control](/docs/access/access-policies) for more details.
 
 :::caution
 

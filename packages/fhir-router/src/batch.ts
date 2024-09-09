@@ -6,8 +6,9 @@ import {
   isOk,
   normalizeOperationOutcome,
   OperationOutcomeError,
-  parseSearchUrl,
+  parseSearchRequest,
   resolveId,
+  Event,
 } from '@medplum/core';
 import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { FhirRouter } from './fhirrouter';
@@ -18,9 +19,9 @@ import { HttpMethod } from './urlrouter';
  * Processes a FHIR batch request.
  *
  * See: https://www.hl7.org/fhir/http.html#transaction
- * @param router The FHIR router.
- * @param repo The FHIR repository.
- * @param bundle The input bundle.
+ * @param router - The FHIR router.
+ * @param repo - The FHIR repository.
+ * @param bundle - The input bundle.
  * @returns The bundle response.
  */
 export async function processBatch(router: FhirRouter, repo: FhirRepository, bundle: Bundle): Promise<Bundle> {
@@ -36,9 +37,9 @@ class BatchProcessor {
 
   /**
    * Creates a batch processor.
-   * @param router The FHIR router.
-   * @param repo The FHIR repository.
-   * @param bundle The input bundle.
+   * @param router - The FHIR router.
+   * @param repo - The FHIR repository.
+   * @param bundle - The input bundle.
    */
   constructor(
     private readonly router: FhirRouter,
@@ -67,10 +68,19 @@ class BatchProcessor {
       throw new OperationOutcomeError(badRequest('Missing bundle entry'));
     }
 
+    const preEvent: BatchEvent = {
+      type: 'batch',
+      bundleType,
+      count: entries.length,
+      size: JSON.stringify(this.bundle).length,
+    };
+    this.router.dispatchEvent(preEvent);
+
     const resultEntries: BundleEntry[] = [];
+    let errors = 0;
     for (const entry of entries) {
       const rewritten = this.rewriteIdsInObject(entry);
-      // If the resource 'id' element is specified, we want to replace teh `urn:uuid:*` string and
+      // If the resource 'id' element is specified, we want to replace the `urn:uuid:*` string and
       // remove the `resourceType` prefix
       if (entry.resource?.id) {
         rewritten.resource.id = this.rewriteIdsInString(entry.resource.id, true);
@@ -79,20 +89,28 @@ class BatchProcessor {
       try {
         resultEntries.push(await this.processBatchEntry(rewritten));
       } catch (err) {
+        errors++;
         resultEntries.push(buildBundleResponse(normalizeOperationOutcome(err)));
       }
     }
 
+    const postEvent: BatchEvent = {
+      type: 'batch',
+      bundleType,
+      errors,
+    };
+    this.router.dispatchEvent(postEvent);
+
     return {
       resourceType: 'Bundle',
-      type: (bundleType + '-response') as 'batch-response' | 'transaction-response',
+      type: `${bundleType}-response`,
       entry: resultEntries,
     };
   }
 
   /**
    * Processes a single entry from a FHIR batch request.
-   * @param entry The bundle entry.
+   * @param entry - The bundle entry.
    * @returns The bundle entry response.
    */
   private async processBatchEntry(entry: BundleEntry): Promise<BundleEntry> {
@@ -101,9 +119,9 @@ class BatchProcessor {
     const request = entry.request as BundleEntryRequest;
 
     if (entry.resource?.resourceType && request.ifNoneExist) {
-      const baseUrl = `https://example.com/${entry.resource.resourceType}`;
-      const searchUrl = new URL('?' + request.ifNoneExist, baseUrl);
-      const searchBundle = await this.repo.search(parseSearchUrl(searchUrl));
+      const searchBundle = await this.repo.search(
+        parseSearchRequest(`${entry.resource.resourceType}?${request.ifNoneExist}`)
+      );
       const entries = searchBundle.entry as BundleEntry[];
       if (entries.length > 1) {
         return buildBundleResponse(badRequest('Multiple matches'));
@@ -115,6 +133,11 @@ class BatchProcessor {
         }
         return buildBundleResponse(allOk, matchingResource);
       }
+
+      this.router.log('warn', 'Conditional mutation in batch', {
+        method: request.method,
+        url: request.url,
+      });
     }
 
     let body = entry.resource;
@@ -172,7 +195,16 @@ class BatchProcessor {
       throw new OperationOutcomeError(badRequest('Missing entry.resource.data'));
     }
 
-    return JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
+    const body = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
+    if (!body) {
+      throw new OperationOutcomeError(badRequest('Empty patch body'));
+    }
+
+    if (!Array.isArray(body)) {
+      throw new OperationOutcomeError(badRequest('Patch body must be an array'));
+    }
+
+    return this.rewriteIdsInArray(body);
   }
 
   private addReplacementId(fullUrl: string, resource: Resource): void {
@@ -188,7 +220,7 @@ class BatchProcessor {
     if (typeof input === 'string') {
       return this.rewriteIdsInString(input);
     }
-    if (typeof input === 'object') {
+    if (typeof input === 'object' && input !== null) {
       return this.rewriteIdsInObject(input);
     }
     return input;
@@ -205,6 +237,13 @@ class BatchProcessor {
   private rewriteIdsInString(input: string, removeResourceType = false): string {
     const matches = /urn:uuid:\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/.exec(input);
     if (matches) {
+      if (this.bundle.type !== 'transaction') {
+        const event: LogEvent = {
+          type: 'warn',
+          message: 'Invalid internal reference in batch',
+        };
+        this.router.dispatchEvent(event);
+      }
       const fullUrl = matches[0];
       const resource = this.ids[fullUrl];
       if (resource) {
@@ -228,4 +267,16 @@ function buildBundleResponse(outcome: OperationOutcome, resource?: Resource): Bu
     },
     resource,
   };
+}
+
+export interface BatchEvent extends Event {
+  bundleType: Bundle['type'];
+  count?: number;
+  errors?: number;
+  size?: number;
+}
+
+export interface LogEvent extends Event {
+  message: string;
+  data?: Record<string, any>;
 }

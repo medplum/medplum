@@ -1,27 +1,63 @@
-import { JsonInput } from '@mantine/core';
-import { stringify } from '@medplum/core';
-import { Extension } from '@medplum/fhirtypes';
-import React from 'react';
+import { isPopulated, isProfileLoaded } from '@medplum/core';
+import { ElementDefinitionType, Extension } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react-hooks';
+import { useEffect, useMemo, useState } from 'react';
+import { BackboneElementInput } from '../BackboneElementInput/BackboneElementInput';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface ExtensionInputProps {
-  name: string;
-  defaultValue?: Extension;
-  onChange?: (value: Extension) => void;
-}
+export type ExtensionInputProps = ComplexTypeInputProps<Extension> & {
+  readonly propertyType: ElementDefinitionType;
+};
 
-export function ExtensionInput(props: ExtensionInputProps): JSX.Element {
+export function ExtensionInput(props: ExtensionInputProps): JSX.Element | null {
+  const { propertyType } = props;
+
+  const medplum = useMedplum();
+  const profileUrl: string | undefined = useMemo(() => {
+    if (!isPopulated(propertyType.profile)) {
+      return undefined;
+    }
+
+    return propertyType.profile[0] satisfies string;
+  }, [propertyType]);
+  const [loadingProfile, setLoadingProfile] = useState(profileUrl !== undefined);
+
+  useEffect(() => {
+    if (profileUrl) {
+      setLoadingProfile(true);
+      medplum
+        .requestProfileSchema(profileUrl)
+        .then(() => setLoadingProfile(false))
+        .catch((reason) => {
+          setLoadingProfile(false);
+          console.warn(reason);
+        });
+    }
+  }, [medplum, profileUrl]);
+
+  if (profileUrl && (loadingProfile || !isProfileLoaded(profileUrl))) {
+    return <div>Loading...</div>;
+  }
+
+  /*
+    From the spec:
+    An extension SHALL have either a value (i.e. a value[x] element) or sub-extensions, but not both.
+    If present, the value[x] element SHALL have content (value attribute or other elements)
+  */
+
+  // const valueElement = typeSchema.elements['value[x]'];
+  // const extensionHasValue = valueElement.max !== 0;
+  // console.debug(typeSchema.name, { extensionHasValue });
+  // It seems like the behavior of ExtensionInput should differ based on extensionHasValue. It likely
+  // isn't strictly necessary to do so given the recursive use of BackboneElementInput
+
   return (
-    <JsonInput
-      id={props.name}
-      name={props.name}
-      data-testid="extension-input"
-      defaultValue={stringify(props.defaultValue)}
-      deserialize={JSON.parse}
-      onChange={(newValue) => {
-        if (props.onChange) {
-          props.onChange(JSON.parse(newValue));
-        }
-      }}
+    <BackboneElementInput
+      profileUrl={profileUrl}
+      path={props.path}
+      typeName="Extension"
+      defaultValue={props.defaultValue}
+      onChange={props.onChange}
     />
   );
 }

@@ -4,9 +4,11 @@ import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { bundleContains, withTestContext } from '../../test.setup';
-import { systemRepo } from '../repo';
+import { getSystemRepo } from '../repo';
 
 describe('Identifier Lookup Table', () => {
+  const systemRepo = getSystemRepo();
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initAppServices(config);
@@ -176,8 +178,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(false);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
     }));
 
   test('Explicit exact', () =>
@@ -207,8 +209,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(false);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
     }));
 
   test('Contains', () =>
@@ -238,8 +240,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(2);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(true);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeDefined();
     }));
 
   test('Not equals', () =>
@@ -275,8 +277,44 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBe(false);
-      expect(bundleContains(searchResult1, patient2)).toBe(true);
+      expect(bundleContains(searchResult1, patient1)).toBeUndefined();
+      expect(bundleContains(searchResult1, patient2)).toBeDefined();
+    }));
+
+  test('Missing', () =>
+    withTestContext(async () => {
+      const identifier = randomUUID();
+      const name = randomUUID();
+
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: name }],
+      });
+
+      const patient2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Bob'], family: name }],
+        telecom: [{ system: 'email', value: identifier + 'xyz' }],
+      });
+
+      const searchResult1 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          {
+            code: 'email',
+            operator: Operator.MISSING,
+            value: 'true',
+          },
+          {
+            code: 'name',
+            operator: Operator.EQUALS,
+            value: name,
+          },
+        ],
+      });
+      expect(searchResult1.entry?.length).toEqual(1);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
     }));
 
   test('Search comma separated identifier exact', () =>
@@ -307,8 +345,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(2);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(true);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeDefined();
     }));
 
   test('Search on system', () =>
@@ -340,8 +378,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBe(true);
-      expect(bundleContains(searchResult1, patient2)).toBe(false);
+      expect(bundleContains(searchResult1, patient1)).toBeDefined();
+      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
 
       const searchResult2 = await systemRepo.search({
         resourceType: 'Patient',
@@ -354,8 +392,8 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult2.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult2, patient1)).toBe(false);
-      expect(bundleContains(searchResult2, patient2)).toBe(true);
+      expect(bundleContains(searchResult2, patient1)).toBeUndefined();
+      expect(bundleContains(searchResult2, patient2)).toBeDefined();
     }));
 
   test('Non-array identifier', () =>
@@ -433,7 +471,90 @@ describe('Identifier Lookup Table', () => {
         ],
       });
       expect(searchResult1.entry?.length).toEqual(1);
-      expect(bundleContains(searchResult1, sr1)).toBe(true);
-      expect(bundleContains(searchResult1, sr2)).toBe(false);
+      expect(bundleContains(searchResult1, sr1)).toBeDefined();
+      expect(bundleContains(searchResult1, sr2)).toBeUndefined();
+    }));
+
+  test('Identifier value with pipe', () =>
+    withTestContext(async () => {
+      const system = randomUUID();
+      const base = randomUUID();
+      const id1 = base + '|1';
+      const id2 = base + '|2';
+
+      const p1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        identifier: [{ system, value: id1 }],
+      });
+
+      await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        identifier: [{ system, value: id2 }],
+      });
+
+      const r1 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [{ code: 'identifier', operator: Operator.EQUALS, value: `${system}|${id1}` }],
+      });
+      expect(r1.entry?.length).toEqual(1);
+      expect(r1.entry?.[0]?.resource?.id).toEqual(p1.id);
+    }));
+
+  test('Missing/present', () =>
+    withTestContext(async () => {
+      const family = randomUUID();
+
+      const p1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+      });
+
+      const p2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family }],
+        identifier: [{ system: 'https://www.example.com', value: randomUUID() }],
+      });
+
+      const r1 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          { code: 'name', operator: Operator.EQUALS, value: family },
+          { code: 'identifier', operator: Operator.MISSING, value: 'true' },
+        ],
+      });
+      expect(r1.entry?.length).toEqual(1);
+      expect(r1.entry?.[0]?.resource?.id).toEqual(p1.id);
+
+      const r2 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          { code: 'name', operator: Operator.EQUALS, value: family },
+          { code: 'identifier', operator: Operator.MISSING, value: 'false' },
+        ],
+      });
+      expect(r2.entry?.length).toEqual(1);
+      expect(r2.entry?.[0]?.resource?.id).toEqual(p2.id);
+
+      const r3 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          { code: 'name', operator: Operator.EQUALS, value: family },
+          { code: 'identifier', operator: Operator.PRESENT, value: 'true' },
+        ],
+      });
+      expect(r3.entry?.length).toEqual(1);
+      expect(r3.entry?.[0]?.resource?.id).toEqual(p2.id);
+
+      const r4 = await systemRepo.search({
+        resourceType: 'Patient',
+        filters: [
+          { code: 'name', operator: Operator.EQUALS, value: family },
+          { code: 'identifier', operator: Operator.PRESENT, value: 'false' },
+        ],
+      });
+      expect(r4.entry?.length).toEqual(1);
+      expect(r4.entry?.[0]?.resource?.id).toEqual(p1.id);
     }));
 });

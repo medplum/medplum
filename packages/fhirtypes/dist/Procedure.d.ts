@@ -154,7 +154,7 @@ export interface Procedure {
    * A code specifying the state of the procedure. Generally, this will be
    * the in-progress or completed state.
    */
-  status?: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
+  status: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
    * Captures the reason for the current state of the procedure.
@@ -176,7 +176,7 @@ export interface Procedure {
   /**
    * The person, animal or group on which the procedure was performed.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this Procedure was created or performed or
@@ -322,6 +322,14 @@ export interface Procedure {
 }
 
 /**
+ * Estimated or actual date, date-time, period, or age when the procedure
+ * was performed.  Allows a period to support complex procedures that
+ * span more than one date, and also allows for the length of the
+ * procedure to be captured.
+ */
+export type ProcedurePerformed = Age | Period | Range | string;
+
+/**
  * A device that is implanted, removed or otherwise manipulated
  * (calibration, battery replacement, fitting a prosthesis, attaching a
  * wound-vac, etc.) as a focal portion of the Procedure.
@@ -371,7 +379,7 @@ export interface ProcedureFocalDevice {
   /**
    * The device that was manipulated (changed) during the procedure.
    */
-  manipulated?: Reference<Device>;
+  manipulated: Reference<Device>;
 }
 
 /**
@@ -423,7 +431,7 @@ export interface ProcedurePerformer {
   /**
    * The practitioner who was involved in the procedure.
    */
-  actor?: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
+  actor: Reference<Practitioner | PractitionerRole | Organization | Patient | RelatedPerson | Device>;
 
   /**
    * The organization the device or practitioner was acting on behalf of.

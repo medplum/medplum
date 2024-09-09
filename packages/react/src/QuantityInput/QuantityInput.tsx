@@ -1,17 +1,22 @@
 import { Group, NativeSelect, TextInput } from '@mantine/core';
 import { Quantity } from '@medplum/fhirtypes';
-import React, { useState, WheelEvent } from 'react';
+import { useContext, useMemo, useState, WheelEvent } from 'react';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
+import { ElementsContext } from '../ElementsInput/ElementsInput.utils';
 
-export interface QuantityInputProps {
-  name: string;
-  defaultValue?: Quantity;
-  autoFocus?: boolean;
-  onChange?: (value: Quantity) => void;
-  disableWheel?: boolean;
+export interface QuantityInputProps extends ComplexTypeInputProps<Quantity> {
+  readonly autoFocus?: boolean;
+  readonly required?: boolean;
+  readonly disableWheel?: boolean;
 }
 
 export function QuantityInput(props: QuantityInputProps): JSX.Element {
   const [value, setValue] = useState(props.defaultValue);
+  const { getExtendedProps } = useContext(ElementsContext);
+  const [comparatorProps, valueProps, unitProps] = useMemo(
+    () => ['comparator', 'value', 'unit'].map((field) => getExtendedProps(props.path + '.' + field)),
+    [getExtendedProps, props.path]
+  );
 
   function setValueWrapper(newValue: Quantity): void {
     setValue(newValue);
@@ -21,8 +26,9 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
   }
 
   return (
-    <Group spacing="xs" grow noWrap>
+    <Group gap="xs" grow wrap="nowrap">
       <NativeSelect
+        disabled={props.disabled || comparatorProps?.readonly}
         style={{ width: 80 }}
         data-testid={props.name + '-comparator'}
         defaultValue={value?.comparator}
@@ -35,8 +41,10 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         }
       />
       <TextInput
+        disabled={props.disabled || valueProps?.readonly}
         id={props.name}
         name={props.name}
+        required={props.required}
         data-autofocus={props.autoFocus}
         data-testid={props.name + '-value'}
         type="number"
@@ -57,6 +65,7 @@ export function QuantityInput(props: QuantityInputProps): JSX.Element {
         }}
       />
       <TextInput
+        disabled={props.disabled || unitProps?.readonly}
         placeholder="Unit"
         data-testid={props.name + '-unit'}
         defaultValue={value?.unit}

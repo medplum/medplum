@@ -1,7 +1,7 @@
 import { Slot } from '@medplum/fhirtypes';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
-import { CalendarInput, getMonthString, getStartMonth } from './CalendarInput';
+import { act, fireEvent, render, screen } from '../test-utils/render';
+import { CalendarInput } from './CalendarInput';
+import { getMonthString, getStartMonth } from './CalendarInput.utils';
 
 describe('CalendarInput', () => {
   test('Renders', () => {
@@ -54,7 +54,7 @@ describe('CalendarInput', () => {
         resourceType: 'Slot',
         start: startTime.toISOString(),
       },
-    ];
+    ] as Slot[];
 
     const onClick = jest.fn();
     render(<CalendarInput slots={slots} onChangeMonth={jest.fn()} onClick={onClick} />);

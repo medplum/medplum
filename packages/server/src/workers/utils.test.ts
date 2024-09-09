@@ -6,6 +6,7 @@ describe('Job Success Checker', () => {
   test('Successful job with no custom codes', () => {
     const subscription: Subscription = {
       resourceType: 'Subscription',
+      status: 'active',
       reason: 'test',
       criteria: 'Patient',
       channel: {
@@ -19,6 +20,7 @@ describe('Job Success Checker', () => {
   test('Successful job with invalid custom codes', () => {
     const subscription: Subscription = {
       resourceType: 'Subscription',
+      status: 'active',
       reason: 'test',
       criteria: 'Patient',
       channel: {
@@ -38,6 +40,7 @@ describe('Job Success Checker', () => {
   test('Unsuccessful job with invalid custom codes', () => {
     const subscription: Subscription = {
       resourceType: 'Subscription',
+      status: 'active',
       reason: 'test',
       criteria: 'Patient',
       channel: {
@@ -57,6 +60,7 @@ describe('Job Success Checker', () => {
   test('Successful job with valid custom codes', () => {
     const subscription: Subscription = {
       resourceType: 'Subscription',
+      status: 'active',
       reason: 'test',
       criteria: 'Patient',
       channel: {
@@ -76,6 +80,7 @@ describe('Job Success Checker', () => {
   test('Unsuccessful job with valid custom codes', () => {
     const subscription: Subscription = {
       resourceType: 'Subscription',
+      status: 'active',
       reason: 'test',
       criteria: 'Patient',
       channel: {
@@ -95,6 +100,7 @@ describe('Job Success Checker', () => {
   test('Successful job with valid custom codes comma separated', () => {
     const subscription: Subscription = {
       resourceType: 'Subscription',
+      status: 'active',
       reason: 'test',
       criteria: 'Patient',
       channel: {

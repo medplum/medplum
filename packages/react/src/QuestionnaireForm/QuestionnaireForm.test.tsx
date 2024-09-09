@@ -1,16 +1,29 @@
 import { getQuestionnaireAnswers } from '@medplum/core';
-import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Extension, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { randomUUID } from 'crypto';
 import each from 'jest-each';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 import { QuestionnaireItemType } from '../utils/questionnaire';
 import { QuestionnaireForm, QuestionnaireFormProps } from './QuestionnaireForm';
 
 const medplum = new MockClient();
+
+const pageExtension: Extension[] = [
+  {
+    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+    valueCodeableConcept: {
+      coding: [
+        {
+          system: 'http://hl7.org/fhir/questionnaire-item-control',
+          code: 'page',
+        },
+      ],
+    },
+  },
+];
 
 async function setup(args: QuestionnaireFormProps): Promise<void> {
   await act(async () => {
@@ -25,10 +38,22 @@ async function setup(args: QuestionnaireFormProps): Promise<void> {
 }
 
 describe('QuestionnaireForm', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    await act(async () => {
+      jest.runOnlyPendingTimers();
+    });
+    jest.useRealTimers();
+  });
+
   test('Renders empty', async () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
       },
       onSubmit: jest.fn(),
     });
@@ -39,6 +64,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'display',
@@ -58,6 +84,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'group1',
@@ -128,10 +155,10 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     const response = onSubmit.mock.calls[0][0];
     expect(response.resourceType).toBe('QuestionnaireResponse');
@@ -157,6 +184,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -232,10 +260,10 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     const response = onSubmit.mock.calls[0][0];
     const answers = getQuestionnaireAnswers(response);
@@ -251,6 +279,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
       },
       onSubmit,
     });
@@ -258,10 +287,10 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByTestId('questionnaire-form')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
 
     const response = onSubmit.mock.calls[0][0];
     expect(response.resourceType).toBe('QuestionnaireResponse');
@@ -284,6 +313,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -313,6 +343,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -340,6 +371,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -368,7 +400,7 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
     const response1 = onSubmit.mock.calls[0][0];
@@ -380,7 +412,7 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
     const response2 = onSubmit.mock.calls[1][0];
@@ -394,6 +426,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -439,10 +472,63 @@ describe('QuestionnaireForm', () => {
     expect((radioButton2 as HTMLInputElement).checked).toBe(true);
   });
 
+  test('Choice valueCoding default value', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueString: 'a2',
+              },
+              {
+                valueCoding: {
+                  code: 'patient',
+                },
+              },
+              {
+                valueCoding: {
+                  code: 'organization',
+                },
+              },
+            ],
+            initial: [
+              {
+                valueCoding: {
+                  code: 'patient',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    const radioButton1 = screen.getByLabelText('a1');
+    expect(radioButton1).toBeInTheDocument();
+    expect((radioButton1 as HTMLInputElement).checked).toBe(false);
+
+    const radioButton2 = screen.getByLabelText('patient');
+    expect(radioButton2).toBeInTheDocument();
+    expect((radioButton2 as HTMLInputElement).checked).toBe(true);
+  });
+
   test('Open choice input', async () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -470,6 +556,7 @@ describe('QuestionnaireForm', () => {
   test('Attachment input', async () => {
     const questionnaire: Questionnaire = {
       resourceType: 'Questionnaire',
+      status: 'active',
       id: randomUUID(),
       item: [
         {
@@ -482,6 +569,7 @@ describe('QuestionnaireForm', () => {
 
     const expectedResponse: QuestionnaireResponse = {
       resourceType: 'QuestionnaireResponse',
+      status: 'completed',
       questionnaire: 'Questionnaire/' + questionnaire.id,
       source: {
         display: 'Alice Smith',
@@ -521,7 +609,7 @@ describe('QuestionnaireForm', () => {
     expect(screen.getByText('hello.txt')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
     const submittedData = onSubmit.mock.calls[0][0];
@@ -537,6 +625,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -548,14 +637,14 @@ describe('QuestionnaireForm', () => {
       onSubmit,
     });
 
-    const input = screen.getByTestId('reference-input-resource-type-input');
+    const input = screen.getByPlaceholderText('Resource Type');
     expect(input).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
-    expect(onSubmit).toBeCalled();
+    expect(onSubmit).toHaveBeenCalled();
   });
 
   test('Drop down choice input', async () => {
@@ -564,6 +653,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -610,7 +700,7 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
     const response1 = onSubmit.mock.calls[0][0];
@@ -622,20 +712,32 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('OK'));
+      fireEvent.click(screen.getByText('Submit'));
     });
 
     const response2 = onSubmit.mock.calls[1][0];
     const answers2 = getQuestionnaireAnswers(response2);
     expect(answers2['q1']).toMatchObject({ valueString: 'a2' });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: { value: '' } });
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    const response3 = onSubmit.mock.calls[2][0];
+    const answers3 = getQuestionnaireAnswers(response3);
+    expect(answers3['q1']).toMatchObject({});
   });
 
-  test('Reference Extensions', async () => {
+  test('referenceResource extension with valueCodeableConcept', async () => {
     const onSubmit = jest.fn();
 
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -650,13 +752,6 @@ describe('QuestionnaireForm', () => {
                       display: 'Patient',
                       code: 'Patient',
                     },
-                  ],
-                },
-              },
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
-                valueCodeableConcept: {
-                  coding: [
                     {
                       system: 'http://hl7.org/fhir/fhir-types',
                       display: 'Organization',
@@ -679,12 +774,39 @@ describe('QuestionnaireForm', () => {
     });
   });
 
+  test('referenceResource extension with valueCode', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.reference,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCode: 'Patient',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.queryByText('Patient')).not.toBeInTheDocument();
+  });
+
   test('Drop down choice input default value', async () => {
     const onSubmit = jest.fn();
 
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         item: [
           {
             linkId: 'q1',
@@ -732,6 +854,66 @@ describe('QuestionnaireForm', () => {
     expect((dropDown as HTMLSelectElement).value).toBe('a2');
   });
 
+  test('Drop down choice input default reference value', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+            text: 'q1',
+            answerOption: [
+              {
+                valueString: 'a1',
+              },
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                  display: 'Test Organization',
+                },
+              },
+            ],
+            initial: [
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                  display: 'Test Organization',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const dropDown = screen.getByLabelText('q1');
+    expect(dropDown).toBeInTheDocument();
+    expect(dropDown).toBeInstanceOf(HTMLSelectElement);
+    expect((dropDown as HTMLSelectElement).value).toBe('Test Organization');
+  });
+
   test('Page Sequence', async () => {
     const visibleQuestion = 'Visible Question';
     const hiddenQuestion = 'Hidden Question';
@@ -739,6 +921,7 @@ describe('QuestionnaireForm', () => {
       questionnaire: {
         id: 'groups-example',
         resourceType: 'Questionnaire',
+        status: 'active',
         title: 'Groups Example',
         item: [
           {
@@ -750,6 +933,7 @@ describe('QuestionnaireForm', () => {
                 linkId: 'question1',
                 text: visibleQuestion,
                 type: 'string',
+                required: true,
               },
               {
                 linkId: 'question2-string',
@@ -757,19 +941,7 @@ describe('QuestionnaireForm', () => {
                 type: 'string',
               },
             ],
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'page',
-                    },
-                  ],
-                },
-              },
-            ],
+            extension: pageExtension,
           },
           {
             linkId: 'q2',
@@ -782,26 +954,27 @@ describe('QuestionnaireForm', () => {
                 type: 'string',
               },
             ],
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'page',
-                    },
-                  ],
-                },
-              },
-            ],
+            extension: pageExtension,
           },
         ],
       },
       onSubmit: jest.fn(),
     });
 
-    const visibleQuestionInput = screen.getByLabelText(visibleQuestion);
+    const visibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *');
+    expect(visibleQuestionInput).toBeInTheDocument();
+
+    const nextButton = screen.getByText('Next');
+    expect(nextButton).toBeInTheDocument();
+
+    // Try to click "Next" without answering the question.
+    // This should fail, because the question is required.
+    await act(async () => {
+      fireEvent.click(nextButton);
+    });
+
+    expect(visibleQuestionInput).toBeInTheDocument();
+
     fireEvent.change(visibleQuestionInput, { target: { value: 'Test Value' } });
 
     expect((visibleQuestionInput as HTMLInputElement).value).toBe('Test Value');
@@ -812,7 +985,7 @@ describe('QuestionnaireForm', () => {
     expect((question2StringInput as HTMLInputElement).value).toBe('Test Value for Question2-String');
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Next'));
+      fireEvent.click(nextButton);
     });
 
     // Check that the texts for visibleQuestion and question2-string are no longer in the document.
@@ -827,7 +1000,7 @@ describe('QuestionnaireForm', () => {
     });
 
     // Check that the values in the visibleQuestion and question2-string inputs are still the same.
-    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion) as HTMLInputElement;
+    const updatedVisibleQuestionInput = screen.getByLabelText(visibleQuestion + ' *') as HTMLInputElement;
     expect(updatedVisibleQuestionInput.value).toBe('Test Value');
 
     const updatedQuestion2StringInput = screen.getByLabelText('visible question 2') as HTMLInputElement;
@@ -841,6 +1014,7 @@ describe('QuestionnaireForm', () => {
       questionnaire: {
         id: 'groups-example',
         resourceType: 'Questionnaire',
+        status: 'active',
         title: 'Groups Example',
         item: [
           {
@@ -854,19 +1028,7 @@ describe('QuestionnaireForm', () => {
                 type: 'string',
               },
             ],
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'page',
-                    },
-                  ],
-                },
-              },
-            ],
+            extension: pageExtension,
           },
           {
             linkId: 'q2',
@@ -892,19 +1054,7 @@ describe('QuestionnaireForm', () => {
                 type: 'string',
               },
             ],
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'page',
-                    },
-                  ],
-                },
-              },
-            ],
+            extension: pageExtension,
           },
         ],
       },
@@ -939,9 +1089,11 @@ describe('QuestionnaireForm', () => {
   });
 
   test('Value Set Choice', async () => {
+    const onSubmit = jest.fn();
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'value-set-example',
         title: 'Valueset',
         item: [
@@ -953,17 +1105,41 @@ describe('QuestionnaireForm', () => {
           },
         ],
       },
-      onSubmit: jest.fn(),
+      onSubmit,
     });
 
-    const dropDown = screen.getByText('Valueset');
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+    expect(input).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(dropDown);
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter', charCode: 13 });
     });
 
     await act(async () => {
-      fireEvent.change(dropDown, { target: 'Test Display' });
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+    const response = onSubmit.mock.calls[0][0];
+
+    const answer = getQuestionnaireAnswers(response);
+    expect(answer['q1']).toMatchObject({
+      valueCoding: { code: 'test-code', display: 'Test Display', system: 'x' },
     });
   });
 
@@ -971,6 +1147,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'default-values',
         title: 'Default Values Example',
         item: [
@@ -1028,6 +1205,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'enable-when',
         title: 'Enable When Example',
         item: [
@@ -1084,10 +1262,203 @@ describe('QuestionnaireForm', () => {
     expect(screen.queryByText('Hidden Text')).toBeInTheDocument();
   });
 
+  test('Multi Select', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'multi-select',
+        title: 'Multi Select Example',
+        item: [
+          {
+            linkId: 'group1',
+            type: 'group',
+            text: 'Group 1',
+            item: [
+              {
+                linkId: 'q1',
+                type: QuestionnaireItemType.choice,
+                repeats: true,
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                    valueCodeableConcept: {
+                      coding: [
+                        {
+                          system: 'http://hl7.org/fhir/questionnaire-item-control',
+                          code: 'drop-down',
+                          display: 'Drop down',
+                        },
+                      ],
+                      text: 'Drop down',
+                    },
+                  },
+                ],
+                text: 'q1',
+                answerOption: [
+                  {
+                    valueString: 'a1',
+                  },
+                  {
+                    valueString: 'a2',
+                  },
+                ],
+              },
+            ],
+            extension: pageExtension,
+          },
+          {
+            linkId: 'group2',
+            type: 'group',
+            text: 'Group 2',
+            extension: pageExtension,
+            item: [
+              {
+                linkId: 'string',
+                type: 'string',
+                text: 'string',
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText('Select items');
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toBeInstanceOf(HTMLInputElement);
+
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'a1' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Next'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Back'));
+    });
+
+    const searchInput1 = screen.getByPlaceholderText('Select items');
+    expect(searchInput1).toBeInTheDocument();
+  });
+
+  test('Multi Select shows with no data', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            repeats: true,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+            text: 'q1',
+            answerOption: [],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText('No Answers Defined');
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toBeInstanceOf(HTMLInputElement);
+  });
+
+  test('Nested repeat', async () => {
+    const onSubmit = jest.fn();
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'pages-example',
+        title: 'Pages Example',
+        item: [
+          {
+            linkId: 'group1',
+            type: 'group',
+            text: 'Outside Group',
+            repeats: true,
+            item: [
+              {
+                linkId: 'group2',
+                type: 'group',
+                text: 'Inside Group',
+                repeats: true,
+                item: [
+                  {
+                    linkId: 'question1',
+                    type: 'string',
+                    text: 'question1',
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('Outside Group')).toBeInTheDocument();
+
+    const outsideGroupButton = screen.getAllByText('Add Group: Outside Group');
+    const insideGroupButton = screen.getAllByText('Add Group: Inside Group');
+
+    expect(outsideGroupButton).toHaveLength(1);
+    expect(insideGroupButton).toHaveLength(1);
+
+    await act(async () => {
+      fireEvent.click(outsideGroupButton[0]);
+    });
+
+    expect(screen.getAllByText('Outside Group').length).toBe(2);
+    expect(screen.getAllByText('Inside Group').length).toBe(2);
+
+    const stringInputs = screen.getAllByText('question1');
+    expect(stringInputs).toHaveLength(2);
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('question1'), { target: { value: 'answer1' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    expect(response.item[0].item[0].item[0].answer[0].valueString).toEqual('answer1');
+  });
+
   test('repeatableQuestion', async () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        status: 'active',
         id: 'repeatable-when',
         title: 'repeatable Questionnaire',
         item: [
@@ -1099,7 +1470,7 @@ describe('QuestionnaireForm', () => {
           },
           {
             linkId: 'group1',
-            text: 'Group',
+            text: 'Question Group',
             type: 'group',
             repeats: true,
             item: [
@@ -1120,11 +1491,160 @@ describe('QuestionnaireForm', () => {
     });
 
     await act(async () => {
-      fireEvent.click(screen.getByText('Add Group'));
+      fireEvent.click(screen.getByText('Add Group: Question Group'));
     });
 
-    expect(screen.getAllByText('Group').length).toBe(2);
+    expect(screen.getAllByText('Question Group').length).toBe(2);
 
     expect(screen.getAllByText('Question 2').length).toBe(2);
+  });
+
+  test('No Answers Defined', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'no-answers',
+        title: 'No Answers Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
+  });
+
+  test('Empty Array of Answer Options', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'empty-answers',
+        title: 'Empty Answers Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            answerOption: [],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'drop-down',
+                      display: 'Drop down',
+                    },
+                  ],
+                  text: 'Drop down',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
+  });
+
+  test('Empty Answer Options for Radio', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'empty-radio',
+        title: 'Empty Radio Example',
+        item: [
+          {
+            linkId: 'choices',
+            text: 'Choices',
+            type: 'choice',
+            answerOption: [],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByPlaceholderText('No Answers Defined')).toBeInTheDocument();
+  });
+
+  test('Reference filter', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'reference-filter',
+        item: [
+          {
+            linkId: 'q1',
+            type: 'reference',
+            text: 'Question',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
+                valueCode: 'Observation',
+              },
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceFilter',
+                valueString: 'subject=$subj',
+              },
+            ],
+          },
+        ],
+      },
+      subject: { reference: 'Patient/123' },
+      onSubmit: jest.fn(),
+    });
+
+    // Add a spy on medplum.searchResources
+    const searchResources = jest.spyOn(medplum, 'searchResources');
+
+    // Get the search input
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    // Enter "Simpson"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    expect(screen.getByText('Test 1')).toBeDefined();
+    expect(searchResources).toHaveBeenCalledTimes(1);
+    expect(searchResources.mock.calls[0][0]).toBe('Observation');
+    expect(searchResources.mock.calls[0][1]).toBeInstanceOf(URLSearchParams);
+
+    const params = searchResources.mock.calls[0][1] as URLSearchParams;
+    expect(params.get('subject')).toBe('Patient/123');
+    expect(params.get('code')).toBe('Test');
   });
 });

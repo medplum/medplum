@@ -1,0 +1,6 @@
+.root {
+  @media (max-width: 800px) {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+}

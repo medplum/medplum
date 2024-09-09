@@ -1,6 +1,87 @@
-import { formatSearchQuery, Operator, parseSearchDefinition } from './search';
+import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
+import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { indexSearchParameterBundle } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
+import {
+  Operator,
+  SearchRequest,
+  formatSearchQuery,
+  parseSearchDefinition,
+  parseSearchRequest,
+  parseSearchUrl,
+  parseXFhirQuery,
+  splitSearchOnComma,
+} from './search';
 
 describe('Search Utils', () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
+  });
+
+  test('parseSearchRequest', () => {
+    expect(() => parseSearchRequest(null as unknown as string)).toThrow('Invalid search URL');
+    expect(() => parseSearchRequest(undefined as unknown as string)).toThrow('Invalid search URL');
+    expect(() => parseSearchRequest('')).toThrow('Invalid search URL');
+
+    expect(parseSearchRequest('Patient')).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchRequest('Patient?name=alice')).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest('Patient?_fields=id,name,birthDate')).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
+
+    expect(parseSearchRequest('Patient')).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchRequest('Patient', { name: 'alice' })).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest('Patient', { name: ['alice'] })).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest('Patient', { _fields: 'id,name,birthDate' })).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
+
+    expect(parseSearchRequest(new URL('https://example.com/Patient'))).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchRequest(new URL('https://example.com/Patient?name=alice'))).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchRequest(new URL('https://example.com/Patient?_fields=id,name,birthDate'))).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
+
+    // Ignores _ query parameter in query string
+    expect(parseSearchRequest(`Patient?name=Alice&_=${new Date().getTime()}`)).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Alice' }],
+    });
+  });
+
+  test('parseSearchUrl', () => {
+    expect(() => parseSearchUrl(null as unknown as URL)).toThrow('Invalid search URL');
+    expect(() => parseSearchUrl(undefined as unknown as URL)).toThrow('Invalid search URL');
+
+    expect(parseSearchUrl(new URL('https://example.com/Patient'))).toMatchObject({ resourceType: 'Patient' });
+    expect(parseSearchUrl(new URL('https://example.com/Patient?name=alice'))).toMatchObject({
+      resourceType: 'Patient',
+      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+    });
+    expect(parseSearchUrl(new URL('https://example.com/Patient?_fields=id,name,birthDate'))).toMatchObject({
+      resourceType: 'Patient',
+      fields: ['id', 'name', 'birthDate'],
+    });
+  });
+
   test('Parse Patient search', () => {
     const result = parseSearchDefinition('/x/y/z/Patient');
     expect(result.resourceType).toBe('Patient');
@@ -54,6 +135,14 @@ describe('Search Utils', () => {
     expect(result.resourceType).toBe('Patient');
     expect(result.offset).toBe(20);
     expect(result.count).toBe(10);
+  });
+
+  test('Parse Patient cursor', () => {
+    const result = parseSearchDefinition('Patient?_count=10&_cursor=foo');
+    expect(result.resourceType).toBe('Patient');
+    expect(result.count).toBe(10);
+    expect(result.cursor).toBe('foo');
+    expect(result.offset).toBeUndefined();
   });
 
   test('Parse modifier operator', () => {
@@ -114,6 +203,28 @@ describe('Search Utils', () => {
           code: '_lastUpdated',
           operator: Operator.LESS_THAN_OR_EQUALS,
           value: '2023-05-01T06:59:59.999Z',
+        },
+      ],
+    });
+  });
+
+  test('Parse chained search parameters', () => {
+    const searchReq = parseSearchDefinition(
+      'Patient?organization.name=Kaiser%20Permanente&_has:Observation:subject:performer:Practitioner.name=Alice'
+    );
+
+    expect(searchReq).toMatchObject<SearchRequest>({
+      resourceType: 'Patient',
+      filters: [
+        {
+          code: 'organization.name',
+          operator: Operator.EQUALS,
+          value: 'Kaiser Permanente',
+        },
+        {
+          code: '_has:Observation:subject:performer:Practitioner.name',
+          operator: Operator.EQUALS,
+          value: 'Alice',
         },
       ],
     });
@@ -260,6 +371,7 @@ describe('Search Utils', () => {
     ).toEqual('?code:not=x');
   });
 
+  const maritalStatus = 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus';
   test('Format _include', () => {
     expect(
       formatSearchQuery({
@@ -272,5 +384,82 @@ describe('Search Utils', () => {
         ],
       })
     ).toEqual('?_include=Patient:organization');
+  });
+
+  test('Format _include:iterate', () => {
+    expect(
+      formatSearchQuery({
+        resourceType: 'Patient',
+        include: [
+          {
+            resourceType: 'Patient',
+            searchParam: 'organization',
+            modifier: 'iterate',
+          },
+        ],
+      })
+    ).toEqual('?_include:iterate=Patient:organization');
+  });
+
+  test.each<[string, SearchRequest]>([
+    [
+      'Patient?name:contains=Just',
+      { resourceType: 'Patient', filters: [{ code: 'name', operator: Operator.CONTAINS, value: 'Just' }] },
+    ],
+    [
+      'Observation?subject={{ %patient }}',
+      {
+        resourceType: 'Observation',
+        filters: [{ code: 'subject', operator: Operator.EQUALS, value: 'Patient/12345' }],
+      },
+    ],
+    [
+      'Observation?patient={{ %patient.id }}',
+      { resourceType: 'Observation', filters: [{ code: 'patient', operator: Operator.EQUALS, value: '12345' }] },
+    ],
+    [
+      'Observation?date=gt{{ %patient.birthDate }}&performer={{ %patient.generalPractitioner[0].reference }}',
+      {
+        resourceType: 'Observation',
+        filters: [
+          { code: 'date', operator: Operator.GREATER_THAN, value: '1955-10-02' },
+          { code: 'performer', operator: Operator.EQUALS, value: 'Practitioner/98765' },
+        ],
+      },
+    ],
+  ])('parseXFhirQuery(%s)', (query, expected) => {
+    const patient: Patient = {
+      resourceType: 'Patient',
+      id: '12345',
+      gender: 'unknown',
+      birthDate: '1955-10-02',
+      multipleBirthBoolean: true,
+      maritalStatus: {
+        coding: [
+          { system: maritalStatus, code: 'unmarried' },
+          { system: maritalStatus, code: 'A' },
+        ],
+      },
+      contact: [{ telecom: [{ system: 'url', value: 'http://example.com' }] }],
+      address: [{ country: 'US', state: 'DE' }],
+      name: [{ given: ['Jan', 'Wyatt'], family: 'Smith' }, { text: 'Green Lantern' }],
+      generalPractitioner: [{ reference: 'Practitioner/98765' }],
+    };
+    const actual = parseXFhirQuery(query, { '%patient': { type: 'Patient', value: patient } });
+    expect(actual).toEqual(expected);
+  });
+
+  test('Split search value on comma', () => {
+    expect(splitSearchOnComma('')).toEqual(['']);
+    expect(splitSearchOnComma('x')).toEqual(['x']);
+    expect(splitSearchOnComma('x,y')).toEqual(['x', 'y']);
+    expect(splitSearchOnComma('x,y,z')).toEqual(['x', 'y', 'z']);
+    expect(splitSearchOnComma('x,')).toEqual(['x', '']);
+    expect(splitSearchOnComma(',y')).toEqual(['', 'y']);
+    expect(splitSearchOnComma('x,,y')).toEqual(['x', '', 'y']);
+    expect(splitSearchOnComma('x\\,y')).toEqual(['x,y']);
+    expect(splitSearchOnComma('x\\,')).toEqual(['x,']);
+    expect(splitSearchOnComma('\\,y')).toEqual([',y']);
+    expect(splitSearchOnComma('x\\,,y')).toEqual(['x,', 'y']);
   });
 });

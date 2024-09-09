@@ -1,26 +1,13 @@
 {
   "name": "medplum-react-native-example",
-  "version": "2.1.1",
+  "version": "3.2.8",
   "main": "src/main.ts",
   "scripts": {
-    "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
+    "lint": "eslint .",
+    "start": "expo start",
     "web": "expo start --web"
-  },
-  "dependencies": {
-    "@expo/webpack-config": "19.0.0",
-    "@medplum/core": "2.1.1",
-    "expo": "49.0.11",
-    "expo-status-bar": "1.7.1",
-    "react": "18.2.0",
-    "react-dom": "18.2.0",
-    "react-native": "0.72.4",
-    "react-native-web": "0.19.8"
-  },
-  "devDependencies": {
-    "@babel/core": "7.22.20",
-    "typescript": "5.2.2"
   },
   "prettier": {
     "printWidth": 120,
@@ -31,5 +18,22 @@
     "extends": [
       "@medplum/eslint-config"
     ]
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "3.2.3",
+    "@medplum/core": "3.2.8",
+    "@medplum/expo-polyfills": "3.2.8",
+    "@medplum/fhirtypes": "3.2.8",
+    "@medplum/react-hooks": "3.2.8",
+    "expo": "51.0.31",
+    "expo-status-bar": "1.12.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-native": "0.75.2",
+    "react-native-web": "0.19.12"
+  },
+  "devDependencies": {
+    "@babel/core": "7.25.2",
+    "typescript": "5.5.4"
   }
 }

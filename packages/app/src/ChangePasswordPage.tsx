@@ -2,7 +2,7 @@ import { Button, Center, Group, PasswordInput, Stack, Title } from '@mantine/cor
 import { normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, getErrorsForInput, Logo, useMedplum } from '@medplum/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 export function ChangePasswordPage(): JSX.Element {
   const medplum = useMedplum();
@@ -12,7 +12,6 @@ export function ChangePasswordPage(): JSX.Element {
   return (
     <Document width={450}>
       <Form
-        style={{ maxWidth: 400 }}
         onSubmit={(formData: Record<string, string>) => {
           setOutcome(undefined);
           medplum
@@ -21,12 +20,12 @@ export function ChangePasswordPage(): JSX.Element {
             .catch((err) => setOutcome(normalizeOperationOutcome(err)));
         }}
       >
-        <Center sx={{ flexDirection: 'column' }}>
+        <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
           <Title>Change password</Title>
         </Center>
         {!success && (
-          <Stack spacing="xl" mt="xl">
+          <Stack gap="xl" mt="xl">
             <PasswordInput
               name="oldPassword"
               label="Old password"
@@ -46,7 +45,7 @@ export function ChangePasswordPage(): JSX.Element {
               required={true}
               error={getErrorsForInput(outcome, 'confirmPassword')}
             />
-            <Group position="right" mt="xl" noWrap>
+            <Group justify="flex-end" mt="xl" wrap="nowrap">
               <Button type="submit">Change password</Button>
             </Group>
           </Stack>

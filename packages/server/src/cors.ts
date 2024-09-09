@@ -6,8 +6,8 @@ const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location']
 
 /**
  * CORS configuration.
- * @param req The express request.
- * @param callback The cors plugin callback.
+ * @param req - The express request.
+ * @param callback - The cors plugin callback.
  */
 export const corsOptions: cors.CorsOptionsDelegate<Request> = (req, callback) => {
   const origin = req.header('Origin');
@@ -37,7 +37,7 @@ function isOriginAllowed(origin: string | undefined): boolean {
   return false;
 }
 
-const prefixes = ['/.well-known/', '/admin/', '/auth/', '/email/', '/fhir/', '/oauth2/'];
+const prefixes = ['/.well-known/', '/admin/', '/auth/', '/email/', '/fhir/', '/fhircast/', '/oauth2/', '/keyvalue/'];
 
 function isPathAllowed(path: string): boolean {
   return prefixes.some((prefix) => path.startsWith(prefix));

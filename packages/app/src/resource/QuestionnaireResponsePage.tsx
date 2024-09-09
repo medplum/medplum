@@ -1,6 +1,6 @@
 import { Operator, SearchRequest } from '@medplum/core';
-import { Document, MemoizedSearchControl } from '@medplum/react';
-import React, { useState } from 'react';
+import { Document, SearchControl } from '@medplum/react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 export function QuestionnaireResponsePage(): JSX.Element | null {
@@ -14,7 +14,7 @@ export function QuestionnaireResponsePage(): JSX.Element | null {
 
   return (
     <Document>
-      <MemoizedSearchControl
+      <SearchControl
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onChange={(e) => setSearch(e.definition)}

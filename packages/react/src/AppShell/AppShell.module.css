@@ -1,0 +1,6 @@
+.main {
+  flex: 1;
+  background-color: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-6));
+  padding-bottom: var(--mantine-spacing-lg);
+  overflow-x: auto;
+}

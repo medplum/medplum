@@ -103,11 +103,6 @@ export class CloudTrailAlarms extends Construct {
     for (const [name, filterPattern] of alarmDefinitions) {
       this.createMetricAlarm(name, filterPattern);
     }
-
-    // Debug
-    console.log('LogGroup', this.logGroup?.node.id);
-    console.log('CloudTrail', this.cloudTrail?.node.id);
-    console.log('AlarmTopic', this.alarmTopic?.node.id);
   }
 
   createMetricAlarm(name: string, filterPattern: string): void {

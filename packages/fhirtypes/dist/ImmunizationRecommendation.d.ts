@@ -106,12 +106,12 @@ export interface ImmunizationRecommendation {
   /**
    * The patient the recommendation(s) are for.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The date the immunization recommendation(s) were created.
    */
-  date?: string;
+  date: string;
 
   /**
    * Indicates the authority who published the protocol (e.g. ACIP).
@@ -121,7 +121,7 @@ export interface ImmunizationRecommendation {
   /**
    * Vaccine administration recommendations.
    */
-  recommendation?: ImmunizationRecommendationRecommendation[];
+  recommendation: ImmunizationRecommendationRecommendation[];
 }
 
 /**
@@ -183,7 +183,7 @@ export interface ImmunizationRecommendationRecommendation {
    * Indicates the patient status with respect to the path to immunity for
    * the target disease.
    */
-  forecastStatus?: CodeableConcept;
+  forecastStatus: CodeableConcept;
 
   /**
    * The reason for the assigned forecast status.
@@ -245,6 +245,17 @@ export interface ImmunizationRecommendationRecommendation {
 }
 
 /**
+ * Nominal position of the recommended dose in a series (e.g. dose 2 is
+ * the next recommended dose).
+ */
+export type ImmunizationRecommendationRecommendationDoseNumber = number | string;
+
+/**
+ * The recommended number of doses to achieve immunity.
+ */
+export type ImmunizationRecommendationRecommendationSeriesDoses = number | string;
+
+/**
  * Vaccine date recommendations.  For example, earliest date to
  * administer, latest date to administer, etc.
  */
@@ -289,10 +300,10 @@ export interface ImmunizationRecommendationRecommendationDateCriterion {
    * Date classification of recommendation.  For example, earliest date to
    * give, latest date to give, etc.
    */
-  code?: CodeableConcept;
+  code: CodeableConcept;
 
   /**
    * The date whose meaning is specified by dateCriterion.code.
    */
-  value?: string;
+  value: string;
 }

@@ -166,7 +166,7 @@ export interface ResearchElementDefinition {
    * The status of this research element definition. Enables tracking the
    * life-cycle of the content.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this research element definition is
@@ -326,7 +326,7 @@ export interface ResearchElementDefinition {
    * The type of research element, a population, an exposure, or an
    * outcome.
    */
-  type?: 'population' | 'exposure' | 'outcome';
+  type: 'population' | 'exposure' | 'outcome';
 
   /**
    * The type of the outcome (e.g. Dichotomous, Continuous, or
@@ -338,8 +338,15 @@ export interface ResearchElementDefinition {
    * A characteristic that defines the members of the research element.
    * Multiple characteristics are applied with &quot;and&quot; semantics.
    */
-  characteristic?: ResearchElementDefinitionCharacteristic[];
+  characteristic: ResearchElementDefinitionCharacteristic[];
 }
+
+/**
+ * The intended subjects for the ResearchElementDefinition. If this
+ * element is not provided, a Patient subject is assumed, but the subject
+ * of the ResearchElementDefinition can be anything.
+ */
+export type ResearchElementDefinitionSubject = CodeableConcept | Reference<Group>;
 
 /**
  * A characteristic that defines the members of the research element.
@@ -503,3 +510,21 @@ export interface ResearchElementDefinitionCharacteristic {
    */
   participantEffectiveGroupMeasure?: 'mean' | 'median' | 'mean-of-mean' | 'mean-of-median' | 'median-of-mean' | 'median-of-median';
 }
+
+/**
+ * Define members of the research element using Codes (such as condition,
+ * medication, or observation), Expressions ( using an expression
+ * language such as FHIRPath or CQL) or DataRequirements (such as
+ * Diabetes diagnosis onset in the last year).
+ */
+export type ResearchElementDefinitionCharacteristicDefinition = CodeableConcept | DataRequirement | Expression | string;
+
+/**
+ * Indicates what effective period the study covers.
+ */
+export type ResearchElementDefinitionCharacteristicStudyEffective = Duration | Period | string | Timing;
+
+/**
+ * Indicates what effective period the study covers.
+ */
+export type ResearchElementDefinitionCharacteristicParticipantEffective = Duration | Period | string | Timing;

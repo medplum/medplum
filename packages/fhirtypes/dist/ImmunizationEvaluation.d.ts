@@ -106,12 +106,12 @@ export interface ImmunizationEvaluation {
    * Indicates the current status of the evaluation of the vaccination
    * administration event.
    */
-  status?: 'completed' | 'entered-in-error';
+  status: 'completed' | 'entered-in-error';
 
   /**
    * The individual for whom the evaluation is being done.
    */
-  patient?: Reference<Patient>;
+  patient: Reference<Patient>;
 
   /**
    * The date the evaluation of the vaccine administration event was
@@ -127,18 +127,18 @@ export interface ImmunizationEvaluation {
   /**
    * The vaccine preventable disease the dose is being evaluated against.
    */
-  targetDisease?: CodeableConcept;
+  targetDisease: CodeableConcept;
 
   /**
    * The vaccine administration event being evaluated.
    */
-  immunizationEvent?: Reference<Immunization>;
+  immunizationEvent: Reference<Immunization>;
 
   /**
    * Indicates if the dose is valid or not valid with respect to the
    * published recommendations.
    */
-  doseStatus?: CodeableConcept;
+  doseStatus: CodeableConcept;
 
   /**
    * Provides an explanation as to why the vaccine administration event is
@@ -177,3 +177,13 @@ export interface ImmunizationEvaluation {
    */
   seriesDosesString?: string;
 }
+
+/**
+ * Nominal position in a series.
+ */
+export type ImmunizationEvaluationDoseNumber = number | string;
+
+/**
+ * The recommended number of doses to achieve immunity.
+ */
+export type ImmunizationEvaluationSeriesDoses = number | string;

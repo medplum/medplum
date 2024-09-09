@@ -1,9 +1,8 @@
 import { createReference } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
-import { render, screen, waitFor } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router-dom';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { render, screen } from '../test-utils/render';
 import { ResourceName, ResourceNameProps } from './ResourceName';
 
 const medplum = new MockClient();
@@ -29,9 +28,7 @@ describe('ResourceName', () => {
       value: HomerSimpson,
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
-
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Renders resource directly as link', async () => {
@@ -40,9 +37,7 @@ describe('ResourceName', () => {
       link: true,
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
-
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Renders after loading the resource', async () => {
@@ -50,9 +45,7 @@ describe('ResourceName', () => {
       value: createReference(HomerSimpson),
     });
 
-    await waitFor(() => screen.getByText('Homer Simpson'));
-
-    expect(screen.getByText('Homer Simpson')).toBeDefined();
+    expect(await screen.findByText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Renders operation outcome', async () => {
@@ -60,8 +53,6 @@ describe('ResourceName', () => {
       value: { reference: 'Patient/not-found' },
     });
 
-    await waitFor(() => screen.getByText('[Not found]'));
-
-    expect(screen.getByText('[Not found]')).toBeDefined();
+    expect(await screen.findByText('[Not found]')).toBeInTheDocument();
   });
 });

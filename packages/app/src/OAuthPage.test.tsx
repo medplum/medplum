@@ -1,11 +1,10 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import crypto from 'crypto';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { TextEncoder } from 'util';
 import { AppRoutes } from './AppRoutes';
+import { act, fireEvent, render, screen, waitFor } from './test-utils/render';
 
 const medplum = new MockClient();
 
@@ -67,7 +66,7 @@ describe('OAuthPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
     });
 
-    await waitFor(() => expect(screen.getByText('Choose scope')).toBeInTheDocument());
+    expect(await screen.findByText('Choose scope')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Set scope' }));

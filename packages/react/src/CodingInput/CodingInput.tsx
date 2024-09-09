@@ -1,35 +1,32 @@
-import { Coding, ElementDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
-import React, { useState } from 'react';
-import { ValueSetAutocomplete } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import { Coding, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { useState } from 'react';
+import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
+import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
-export interface CodingInputProps {
-  property: ElementDefinition;
-  name: string;
-  placeholder?: string;
-  defaultValue?: Coding;
-  onChange?: (value: Coding | undefined) => void;
-}
+export interface CodingInputProps
+  extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange' | 'disabled' | 'name'>,
+    ComplexTypeInputProps<Coding> {}
 
 export function CodingInput(props: CodingInputProps): JSX.Element {
-  const [value, setValue] = useState<Coding | undefined>(props.defaultValue);
+  const { defaultValue, onChange, withHelpText, ...rest } = props;
+  const [value, setValue] = useState<Coding | undefined>(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     const newValue = newValues[0];
     const newConcept = newValue && valueSetElementToCoding(newValue);
     setValue(newConcept);
-    if (props.onChange) {
-      props.onChange(newConcept);
+    if (onChange) {
+      onChange(newConcept);
     }
   }
 
   return (
     <ValueSetAutocomplete
-      elementDefinition={props.property}
-      name={props.name}
-      placeholder={props.placeholder}
       defaultValue={value && codingToValueSetElement(value)}
-      maxSelectedValues={1}
+      maxValues={1}
       onChange={handleChange}
+      withHelpText={withHelpText ?? true}
+      {...rest}
     />
   );
 }

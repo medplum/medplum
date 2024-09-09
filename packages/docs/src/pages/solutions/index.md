@@ -2,6 +2,10 @@
 
 Medplum supports a wide array of use cases. Please look at this section for detailed examples of how to build sophisticated, compliant applications quickly. Though these are written as separate use cases, it is possible, indeed recommended, to have several implementations running off the same Medplum Project.
 
+## Medplum EHR
+
+A streamlined EHR that's easy to implement and supports core workflows. Chart efficiently, place orders and schedule with ease. [Learn More](/solutions/medplum-ehr)
+
 ## Custom EHR
 
 Build a custom EHR to streamline provider workflow. Implement bespoke clinical workflows with high levels of automation and quality assurance. [Learn More](/solutions/custom-ehr)
@@ -36,7 +40,7 @@ Run and maintain an EMPI including patient identification, data accuracy/risk sc
 
 ## Interoperability Service
 
-Highly customizable internal service that supports integrations that are common in healthcare such as FHIR and Smart-on-FHIR integrations, HL7 connections, SFTP, Lab data, home health integrations, logistics providers and more. Available hosted or self-hosted. [Learn More](/products/integration)
+Highly customizable internal service that supports integrations that are common in healthcare such as FHIR and Smart-on-FHIR integrations, HL7 connections, SFTP, Lab data, home health integrations, logistics providers and more. Can also be used as a system of record between multiple integrations. Available hosted or self-hosted. [Learn More](/products/integration)
 
 ## Remote Patient Monitoring
 

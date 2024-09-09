@@ -4,37 +4,20 @@ import { notifications } from '@mantine/notifications';
 import { convertToTransactionBundle, normalizeErrorString } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
-import { IconUpload, IconX, IconCheck } from '@tabler/icons-react';
-import React, { useCallback, useState } from 'react';
+import { IconCheck, IconUpload, IconX } from '@tabler/icons-react';
+import { useCallback, useState } from 'react';
 
-export const DEFAULT_VALUE = `{
-  "resourceType": "Bundle",
-  "type": "transaction",
-  "entry": [
-    {
-      "resource": {
-        "resourceType": "Patient",
-        "name": [{
-          "given": ["Alice"],
-          "family": "Smith"
-        }]
-      },
-      "request": {
-        "method": "POST",
-        "url": "Patient"
-      }
-    }
-  ]
-}`;
+const DEFAULT_VALUE = `{"resourceType": "Bundle"}`;
 
 interface ShowNotificationProps {
-  id: string;
-  title: string;
-  message: string;
-  color?: string;
-  icon?: JSX.Element | null;
-  withCloseButton?: boolean;
-  method?: 'show' | 'update';
+  readonly id: string;
+  readonly title: string;
+  readonly message: string;
+  readonly color?: string;
+  readonly icon?: JSX.Element | null;
+  readonly withCloseButton?: boolean;
+  readonly method?: 'show' | 'update';
+  readonly loading?: boolean;
 }
 
 function showNotification({
@@ -45,10 +28,11 @@ function showNotification({
   icon,
   withCloseButton = false,
   method = 'show',
+  loading,
 }: ShowNotificationProps): void {
   notifications[method]({
     id,
-    loading: true,
+    loading,
     title,
     message,
     color,
@@ -71,6 +55,7 @@ export function BatchPage(): JSX.Element {
         title: 'Batch Upload in Progress',
         message: 'Your batch data is being uploaded. This may take a moment...',
         method: 'show',
+        loading: true,
       });
 
       try {
@@ -144,7 +129,7 @@ export function BatchPage(): JSX.Element {
 
             <Tabs.Panel value="upload" pt="xs">
               <Dropzone onDrop={handleFiles} accept={['application/json']}>
-                <Group position="center" spacing="xl" style={{ minHeight: 220, pointerEvents: 'none' }}>
+                <Group justify="center" gap="xl" style={{ minHeight: 220, pointerEvents: 'none' }}>
                   <Dropzone.Accept>
                     <IconUpload size={50} stroke={1.5} color={theme.colors[theme.primaryColor][5]} />
                   </Dropzone.Accept>
@@ -172,11 +157,12 @@ export function BatchPage(): JSX.Element {
                 <JsonInput
                   data-testid="batch-input"
                   name="input"
+                  autosize
                   minRows={20}
                   defaultValue={DEFAULT_VALUE}
                   deserialize={JSON.parse}
                 />
-                <Group position="right" mt="xl" noWrap>
+                <Group justify="flex-end" mt="xl" wrap="nowrap">
                   <Button type="submit">Submit</Button>
                 </Group>
               </Form>
@@ -196,12 +182,12 @@ export function BatchPage(): JSX.Element {
               ))}
             </Tabs.List>
             {Object.keys(output).map((name) => (
-              <Tabs.Panel value={name}>
+              <Tabs.Panel key={name} value={name}>
                 <pre style={{ border: '1px solid #888' }}>{JSON.stringify(output[name], undefined, 2)}</pre>
               </Tabs.Panel>
             ))}
           </Tabs>
-          <Group position="right" mt="xl" noWrap>
+          <Group justify="flex-end" mt="xl" wrap="nowrap">
             <Button onClick={() => setOutput({})}>Start over</Button>
           </Group>
         </>

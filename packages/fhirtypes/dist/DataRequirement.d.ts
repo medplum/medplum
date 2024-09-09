@@ -38,7 +38,7 @@ export interface DataRequirement {
    * resource. For profiles, this value is set to the type of the base
    * resource of the profile.
    */
-  type?: string;
+  type: string;
 
   /**
    * The profile of the required data, specified as the uri of the profile
@@ -100,6 +100,12 @@ export interface DataRequirement {
    */
   sort?: DataRequirementSort[];
 }
+
+/**
+ * The intended subjects of the data requirement. If this element is not
+ * provided, a Patient subject is assumed.
+ */
+export type DataRequirementSubject = CodeableConcept | Reference<Group>;
 
 /**
  * Code filters specify additional constraints on the data, specifying
@@ -239,6 +245,16 @@ export interface DataRequirementDateFilter {
 }
 
 /**
+ * The value of the filter. If period is specified, the filter will
+ * return only those data items that fall within the bounds determined by
+ * the Period, inclusive of the period boundaries. If dateTime is
+ * specified, the filter will return only those data items that are equal
+ * to the specified dateTime. If a Duration is specified, the filter will
+ * return only those data items that fall within Duration before now.
+ */
+export type DataRequirementDateFilterValue = Duration | Period | string;
+
+/**
  * Specifies the order of the results to be returned.
  */
 export interface DataRequirementSort {
@@ -266,10 +282,10 @@ export interface DataRequirementSort {
    * traverse multiple-cardinality sub-elements. Note that the index must
    * be an integer constant.
    */
-  path?: string;
+  path: string;
 
   /**
    * The direction of the sort, ascending or descending.
    */
-  direction?: 'ascending' | 'descending';
+  direction: 'ascending' | 'descending';
 }

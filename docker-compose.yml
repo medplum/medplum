@@ -1,4 +1,4 @@
-# This is the docker-compose file to run Medplum's required background serivces
+# This is the docker-compose file to run Medplum's required background services
 # It can be used to quickly run 2 services:
 #   1) The Postgres database
 #   2) The Redis cache
@@ -18,7 +18,7 @@ services:
     ports:
       - '5432:5432'
   redis:
-    image: redis:6
+    image: redis:7
     restart: always
     command: redis-server --requirepass medplum
     ports:

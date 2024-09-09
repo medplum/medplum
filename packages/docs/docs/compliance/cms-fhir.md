@@ -9,7 +9,7 @@ In general, organizations can expect that new FHIR functionality, especially for
 Medplum can be used to implement the FHIR IGs in a quick and cost-effective manner. At a high level the workflow process is as follows:
 
 1. Configure your Medplum project to capture well-formed FHIR data
-2. Use existing tooling such as `Strict Mode`, [Bots](/docs/bots), [External Auth](/docs/auth/external-identity-providers) and more to ensure data correctness
+2. Use existing tooling such as `Strict Mode`, [Bots](/docs/bots), [External Auth](/docs/auth/methods/external-identity-providers) and more to ensure data correctness
 3. Test against the relevant Touchstone FHIR IG suite
 4. Certify and receive badges as needed
 

@@ -112,7 +112,7 @@ export interface AppointmentResponse {
   /**
    * Appointment that this response is replying to.
    */
-  appointment?: Reference<Appointment>;
+  appointment: Reference<Appointment>;
 
   /**
    * Date/Time that the appointment is to take place, or requested new
@@ -145,7 +145,7 @@ export interface AppointmentResponse {
    * When the status is accepted, the times can either be the time of the
    * appointment (as a confirmation of the time) or can be empty.
    */
-  participantStatus?: 'accepted' | 'declined' | 'tentative' | 'needs-action';
+  participantStatus: 'accepted' | 'declined' | 'tentative' | 'needs-action';
 
   /**
    * Additional comments about the appointment.

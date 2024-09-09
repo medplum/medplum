@@ -1,5 +1,5 @@
 import { Quantity } from '@medplum/fhirtypes';
-import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer';
+import { Atom, InfixParselet, Parser, ParserBuilder, PrefixParselet } from '../fhirlexer/parse';
 import { PropertyType, TypedValue } from '../types';
 import {
   AndAtom,
@@ -131,7 +131,11 @@ export function initFhirPathParserBuilder(): ParserBuilder {
       parse: (_, token) => new LiteralAtom({ type: PropertyType.Quantity, value: parseQuantity(token.value) }),
     })
     .registerPrefix('Number', {
-      parse: (_, token) => new LiteralAtom({ type: PropertyType.decimal, value: parseFloat(token.value) }),
+      parse: (_, token) =>
+        new LiteralAtom({
+          type: token.value.includes('.') ? PropertyType.decimal : PropertyType.integer,
+          value: parseFloat(token.value),
+        }),
     })
     .registerPrefix('true', { parse: () => new LiteralAtom({ type: PropertyType.boolean, value: true }) })
     .registerPrefix('false', { parse: () => new LiteralAtom({ type: PropertyType.boolean, value: false }) })
@@ -220,7 +224,7 @@ const fhirPathParserBuilder = initFhirPathParserBuilder();
  * The result can be used to evaluate the expression against a resource or other object.
  * This method is useful if you know that you will evaluate the same expression many times
  * against different resources.
- * @param input The FHIRPath expression to parse.
+ * @param input - The FHIRPath expression to parse.
  * @returns The AST representing the expression.
  */
 export function parseFhirPath(input: string): FhirPathAtom {
@@ -229,8 +233,8 @@ export function parseFhirPath(input: string): FhirPathAtom {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param expression The FHIRPath expression to parse.
- * @param input The resource or object to evaluate the expression against.
+ * @param expression - The FHIRPath expression to parse.
+ * @param input - The resource or object to evaluate the expression against.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPath(expression: string, input: unknown): unknown[] {
@@ -248,19 +252,18 @@ export function evalFhirPath(expression: string, input: unknown): unknown[] {
 
 /**
  * Evaluates a FHIRPath expression against a resource or other object.
- * @param expression The FHIRPath expression to parse.
- * @param input The resource or object to evaluate the expression against.
- * @param variables A map of variables for eval input.
+ * @param expression - The FHIRPath expression to parse.
+ * @param input - The resource or object to evaluate the expression against.
+ * @param variables - A map of variables for eval input.
  * @returns The result of the FHIRPath expression against the resource or object.
  */
 export function evalFhirPathTyped(
   expression: string,
   input: TypedValue[],
-  variables?: Record<string, TypedValue>
+  variables: Record<string, TypedValue> = {}
 ): TypedValue[] {
-  const variableInput = variables ?? {};
   const ast = parseFhirPath(expression);
-  return ast.eval({ variables: variableInput }, input).map((v) => ({
+  return ast.eval({ variables }, input).map((v) => ({
     type: v.type,
     value: v.value?.valueOf(),
   }));

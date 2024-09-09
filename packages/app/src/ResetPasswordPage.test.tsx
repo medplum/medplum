@@ -1,10 +1,9 @@
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { ResetPasswordPage } from './ResetPasswordPage';
 import { getConfig } from './config';
+import { act, fireEvent, render, screen } from './test-utils/render';
 
 const medplum = new MockClient();
 
@@ -78,7 +77,7 @@ describe('ResetPasswordPage', () => {
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: 'Reset password' }));
     });
-    expect(grecaptchaResolved).not.toBeCalled();
+    expect(grecaptchaResolved).not.toHaveBeenCalled();
     expect(screen.getByText('password reset email will be sent', { exact: false })).toBeInTheDocument();
   });
 });

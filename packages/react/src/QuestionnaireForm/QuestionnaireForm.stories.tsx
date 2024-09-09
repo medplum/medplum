@@ -1,7 +1,7 @@
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { QuestionnaireForm } from './QuestionnaireForm';
+import { QuestionnaireResponse } from '@medplum/fhirtypes';
 
 export default {
   title: 'Medplum/QuestionnaireForm',
@@ -86,6 +86,117 @@ export const Groups = (): JSX.Element => (
   </Document>
 );
 
+export const Choices = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'nested-example',
+        title: 'Nested Groups Example',
+        item: [
+          {
+            linkId: 'group1',
+            type: 'group',
+            text: 'Outside Group',
+            repeats: true,
+            item: [
+              {
+                linkId: 'group2',
+                type: 'group',
+                text: 'Inside Group',
+                repeats: true,
+                item: [
+                  {
+                    linkId: 'q1',
+                    type: 'choice',
+                    text: 'Question 1',
+                    answerOption: [
+                      {
+                        valueString: 'Yes',
+                      },
+                      {
+                        valueString: 'No',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
+export const Pages = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'pages-example',
+        title: 'Pages Example',
+        item: [
+          {
+            linkId: 'group1',
+            text: 'Group 1',
+            type: 'group',
+            item: [
+              {
+                linkId: 'question1',
+                text: 'Question 1',
+                type: 'string',
+                required: true,
+              },
+              {
+                linkId: 'question2',
+                text: 'Question 2',
+                type: 'string',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'page',
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'group2',
+            text: 'Group 2',
+            type: 'group',
+            item: [
+              {
+                linkId: 'question3',
+                text: 'Question 3',
+                type: 'reference',
+                required: true,
+              },
+              {
+                linkId: 'question4',
+                text: 'Question 4',
+                type: 'string',
+              },
+            ],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
 export const LabOrdering = (): JSX.Element => {
   function orderTypes(id: string, title: string, enableQuestion: string): any {
     return {
@@ -585,118 +696,132 @@ export const LabOrdering = (): JSX.Element => {
   );
 };
 
+const PagedQuestionnaire = {
+  resourceType: 'Questionnaire',
+  id: 'pages-example',
+  title: 'Pages Example',
+  item: [
+    {
+      linkId: 'group1',
+      text: 'Page Sequence 1',
+      type: 'group',
+      item: [
+        {
+          linkId: 'question1',
+          text: 'Question 1',
+          type: 'string',
+        },
+        {
+          linkId: 'question2',
+          text: 'Question 2',
+          type: 'string',
+        },
+        {
+          linkId: 'q1',
+          text: 'Question 1',
+          type: 'choice',
+          answerOption: [
+            {
+              valueString: 'Yes',
+            },
+            {
+              valueString: 'No',
+            },
+          ],
+        },
+        {
+          linkId: 'question1-4',
+          text: 'Multi Select Question',
+          type: 'choice',
+          repeats: true,
+          answerOption: [
+            {
+              valueString: 'value1',
+            },
+            {
+              valueString: 'value2',
+            },
+          ],
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+              valueCodeableConcept: {
+                coding: [
+                  {
+                    system: 'http://hl7.org/fhir/questionnaire-item-control',
+                    code: 'drop-down',
+                    display: 'Drop down',
+                  },
+                ],
+                text: 'Drop down',
+              },
+            },
+          ],
+        },
+      ],
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+          valueCodeableConcept: {
+            coding: [
+              {
+                system: 'http://hl7.org/fhir/questionnaire-item-control',
+                code: 'page',
+              },
+            ],
+          },
+        },
+      ],
+    },
+    {
+      linkId: 'group2',
+      text: 'Page Sequence 2',
+      type: 'group',
+      item: [
+        {
+          linkId: 'question3',
+          text: 'Question 3',
+          type: 'string',
+        },
+        {
+          linkId: 'question4',
+          text: 'Question 4',
+          type: 'string',
+        },
+      ],
+      extension: [
+        {
+          url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+          valueCodeableConcept: {
+            coding: [
+              {
+                system: 'http://hl7.org/fhir/questionnaire-item-control',
+                code: 'page',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+};
+
 export const PageSequence = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
-      questionnaire={{
-        resourceType: 'Questionnaire',
-        id: 'pages-example',
-        title: 'Pages Example',
-        item: [
-          {
-            linkId: 'group1',
-            text: 'Page Sequence 1',
-            type: 'group',
-            item: [
-              {
-                linkId: 'question1',
-                text: 'Question 1',
-                type: 'string',
-              },
-              {
-                linkId: 'question2',
-                text: 'Question 2',
-                type: 'string',
-              },
-              {
-                linkId: 'q1',
-                text: 'Question 1',
-                type: 'choice',
-                answerOption: [
-                  {
-                    valueString: 'Yes',
-                  },
-                  {
-                    valueString: 'No',
-                  },
-                ],
-              },
-              {
-                linkId: 'question1-4',
-                text: 'Multi Select Question',
-                type: 'choice',
-                repeats: true,
-                answerOption: [
-                  {
-                    valueString: 'value1',
-                  },
-                  {
-                    valueString: 'value2',
-                  },
-                ],
-                extension: [
-                  {
-                    url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                    valueCodeableConcept: {
-                      coding: [
-                        {
-                          system: 'http://hl7.org/fhir/questionnaire-item-control',
-                          code: 'drop-down',
-                          display: 'Drop down',
-                        },
-                      ],
-                      text: 'Drop down',
-                    },
-                  },
-                ],
-              },
-            ],
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'page',
-                    },
-                  ],
-                },
-              },
-            ],
-          },
-          {
-            linkId: 'group2',
-            text: 'Page Sequence 2',
-            type: 'group',
-            item: [
-              {
-                linkId: 'question3',
-                text: 'Question 3',
-                type: 'string',
-              },
-              {
-                linkId: 'question4',
-                text: 'Question 4',
-                type: 'string',
-              },
-            ],
-            extension: [
-              {
-                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://hl7.org/fhir/questionnaire-item-control',
-                      code: 'page',
-                    },
-                  ],
-                },
-              },
-            ],
-          },
-        ],
+      questionnaire={PagedQuestionnaire}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
       }}
+    />
+  </Document>
+);
+
+export const DisablePagination = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      disablePagination
+      questionnaire={PagedQuestionnaire}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -995,6 +1120,42 @@ export const EnableWhen = (): JSX.Element => (
   </Document>
 );
 
+export const ExcludeButtonsWithOnChange = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'basic-example',
+        title: 'Basic Example',
+        item: [
+          {
+            linkId: 'abc',
+            text: 'Question 1',
+            type: 'string',
+          },
+          {
+            linkId: 'choice',
+            type: 'choice',
+            text: 'Choice',
+            answerOption: [
+              {
+                valueString: 'First',
+              },
+              {
+                valueString: 'Second',
+              },
+            ],
+          },
+        ],
+      }}
+      excludeButtons
+      onChange={(qr: QuestionnaireResponse) => {
+        console.log('onChange', qr);
+      }}
+    />
+  </Document>
+);
+
 export const RepeatableItems = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
@@ -1005,7 +1166,7 @@ export const RepeatableItems = (): JSX.Element => (
         item: [
           {
             linkId: 'group1',
-            text: 'Group 1',
+            text: 'Question Group',
             type: 'group',
             item: [
               {
@@ -1160,6 +1321,12 @@ export const KitchenSink = (): JSX.Element => (
                 },
               },
             ],
+          },
+          {
+            linkId: 'value-set-choice',
+            type: 'choice',
+            text: 'Value Set Choice',
+            answerValueSet: 'http://loinc.org/vs/LL4436-3',
           },
           {
             linkId: 'open-choice',

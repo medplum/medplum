@@ -4,9 +4,15 @@
 import { execSync } from 'child_process';
 import esbuild from 'esbuild';
 import { writeFileSync } from 'fs';
-import packageJson from './package.json' assert { type: 'json' };
+import packageJson from './package.json' with { type: 'json' };
 
-const gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+let gitHash;
+try {
+  gitHash = execSync('git rev-parse --short HEAD').toString().trim();
+} catch (error) {
+  gitHash = 'unknown'; // Default value when not in a git repository
+}
+
 const medplumVersion = packageJson.version + '-' + gitHash;
 
 const options = {
@@ -20,8 +26,8 @@ const options = {
   minify: true,
   sourcemap: true,
   define: {
-    'process.env.NODE_ENV': '"production"',
-    'process.env.MEDPLUM_VERSION': `"${medplumVersion}"`,
+    'import.meta.env.NODE_ENV': '"production"',
+    'import.meta.env.MEDPLUM_VERSION': `"${medplumVersion}"`,
   },
 };
 

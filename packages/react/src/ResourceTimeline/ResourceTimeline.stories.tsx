@@ -2,7 +2,6 @@ import { createReference, MedplumClient, ProfileResource } from '@medplum/core';
 import { Attachment, Bundle, Encounter, ResourceType } from '@medplum/fhirtypes';
 import { HomerEncounter } from '@medplum/mock';
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { Document } from '../Document/Document';
 import { ResourceTimeline } from './ResourceTimeline';
 
@@ -55,6 +54,7 @@ export const WithComments = (): JSX.Element => (
       })}
       createMedia={(resource: Encounter, operator: ProfileResource, content: Attachment) => ({
         resourceType: 'Media',
+        status: 'completed',
         encounter: createReference(resource),
         subject: (resource as Encounter).subject,
         operator: createReference(operator),

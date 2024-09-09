@@ -1,36 +1,165 @@
-import { AsyncLocalStorage } from 'async_hooks';
+import { OperationOutcomeError, append, conflict } from '@medplum/core';
+import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
-import Cursor from 'pg-cursor';
+import { env } from 'process';
 
-const DEBUG = false;
+const DEBUG = env['SQL_DEBUG'];
 
 export enum ColumnType {
   UUID = 'uuid',
   TIMESTAMP = 'timestamp',
   TEXT = 'text',
+  TSTZRANGE = 'tstzrange',
 }
 
-export enum Operator {
-  EQUALS = '=',
-  NOT_EQUALS = '<>',
-  LIKE = ' LIKE ',
-  NOT_LIKE = ' NOT LIKE ',
-  LESS_THAN = '<',
-  LESS_THAN_OR_EQUALS = '<=',
-  GREATER_THAN = '>',
-  GREATER_THAN_OR_EQUALS = '>=',
-  IN = ' IN ',
-  ARRAY_CONTAINS = 'ARRAY_CONTAINS',
-  TSVECTOR_MATCH = '@@',
-  IN_SUBQUERY = 'IN_SUBQUERY',
+export type OperatorFunc = (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => void;
+
+export type TransactionIsolationLevel = 'READ COMMITTED' | 'REPEATABLE READ' | 'SERIALIZABLE';
+
+export const Operator = {
+  '=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    if (parameter === null) {
+      sql.append(' IS NULL');
+    } else {
+      sql.append(' = ');
+      sql.appendParameters(parameter, true);
+    }
+  },
+  '!=': (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    if (parameter === null) {
+      sql.append(' IS NOT NULL');
+    } else {
+      sql.append(' <> ');
+      sql.appendParameters(parameter, true);
+    }
+  },
+  LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('LOWER(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' LIKE ');
+    sql.param((parameter as string).toLowerCase());
+  },
+  NOT_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('LOWER(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' NOT LIKE ');
+    sql.param((parameter as string).toLowerCase());
+  },
+  '<': simpleBinaryOperator('<'),
+  '<=': simpleBinaryOperator('<='),
+  '>': simpleBinaryOperator('>'),
+  '>=': simpleBinaryOperator('>='),
+  IN: simpleBinaryOperator('IN'),
+  ARRAY_CONTAINS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.append('(');
+    sql.appendColumn(column);
+    sql.append(' IS NOT NULL AND ');
+    sql.appendColumn(column);
+    sql.append(' && ARRAY[');
+    sql.appendParameters(parameter, false);
+    sql.append(']');
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+    sql.append(')');
+  },
+  TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`to_tsvector('simple',`);
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(` @@ to_tsquery('simple',`);
+    sql.param(parameter);
+    sql.append(')');
+  },
+  TSVECTOR_ENGLISH: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`to_tsvector('english',`);
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(` @@ to_tsquery('english',`);
+    sql.param(parameter);
+    sql.append(')');
+  },
+  IN_SUBQUERY: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append('=ANY(');
+    if (paramType) {
+      sql.append('(');
+    }
+    (parameter as SelectQuery).buildSql(sql);
+    if (paramType) {
+      sql.append(')::' + paramType);
+    }
+    sql.append(')');
+  },
+  LINK: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append('::TEXT = SPLIT_PART(');
+    sql.appendColumn(parameter as Column);
+    sql.append(`,'/',2)`);
+  },
+  REVERSE_LINK: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(` = '${paramType}/'`);
+    sql.append('||');
+    sql.appendColumn(parameter as Column);
+  },
+  RANGE_OVERLAPS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' && ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  RANGE_STRICTLY_RIGHT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' >> ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+  RANGE_STRICTLY_LEFT_OF: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(' << ');
+    sql.param(parameter);
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+  },
+};
+
+function simpleBinaryOperator(operator: string): OperatorFunc {
+  return (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.appendColumn(column);
+    sql.append(` ${operator} `);
+    sql.appendParameters(parameter, true);
+  };
+}
+
+export function escapeLikeString(str: string): string {
+  return str.replaceAll(/[\\_%]/g, (c) => '\\' + c);
 }
 
 export class Column {
   constructor(
     readonly tableName: string | undefined,
     readonly columnName: string,
-    readonly raw?: boolean
+    readonly raw?: boolean,
+    readonly alias?: string
   ) {}
+}
+
+export class Literal implements Expression {
+  constructor(readonly value: string) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append(this.value);
+  }
 }
 
 export interface Expression {
@@ -51,94 +180,20 @@ export class Condition implements Expression {
   readonly column: Column;
   constructor(
     column: Column | string,
-    readonly operator: Operator,
+    readonly operator: keyof typeof Operator,
     readonly parameter: any,
     readonly parameterType?: string
   ) {
+    if (operator === 'ARRAY_CONTAINS' && !parameterType) {
+      throw new Error('ARRAY_CONTAINS requires paramType');
+    }
+
     this.column = getColumn(column);
   }
 
   buildSql(sql: SqlBuilder): void {
-    if (this.operator === Operator.ARRAY_CONTAINS) {
-      this.buildArrayCondition(sql);
-    } else if (this.operator === Operator.IN_SUBQUERY) {
-      this.buildInSubqueryCondition(sql);
-    } else {
-      this.buildSimpleCondition(sql);
-    }
-  }
-
-  protected buildArrayCondition(sql: SqlBuilder): void {
-    sql.append('(');
-    sql.appendColumn(this.column);
-    sql.append(' IS NOT NULL AND ');
-    sql.appendColumn(this.column);
-    sql.append('&&ARRAY[');
-    this.appendParameters(sql, false);
-    sql.append(']');
-    if (this.parameterType) {
-      sql.append('::' + this.parameterType);
-    }
-    sql.append(')');
-  }
-
-  protected buildInSubqueryCondition(sql: SqlBuilder): void {
-    sql.appendColumn(this.column);
-    sql.append('=ANY(');
-    if (this.parameterType) {
-      sql.append('(');
-    }
-    (this.parameter as SelectQuery).buildSql(sql);
-    if (this.parameterType) {
-      sql.append(')::' + this.parameterType);
-    }
-    sql.append(')');
-  }
-
-  protected buildSimpleCondition(sql: SqlBuilder): void {
-    if (this.operator === Operator.LIKE) {
-      sql.append('LOWER(');
-      sql.appendColumn(this.column);
-      sql.append(')');
-      sql.append(this.operator);
-      sql.param((this.parameter as string).toLowerCase());
-    } else if (this.operator === Operator.TSVECTOR_MATCH) {
-      sql.appendColumn(this.column);
-      sql.append(" @@ to_tsquery('english',");
-      sql.param(this.parameter);
-      sql.append(')');
-    } else if (this.operator === Operator.EQUALS && this.parameter === null) {
-      sql.appendColumn(this.column);
-      sql.append(' IS NULL');
-    } else if (this.operator === Operator.NOT_EQUALS && this.parameter === null) {
-      sql.appendColumn(this.column);
-      sql.append(' IS NOT NULL');
-    } else {
-      sql.appendColumn(this.column);
-      sql.append(this.operator);
-      this.appendParameters(sql, true);
-    }
-  }
-
-  private appendParameters(sql: SqlBuilder, addParens: boolean): void {
-    if (Array.isArray(this.parameter) || this.parameter instanceof Set) {
-      if (addParens) {
-        sql.append('(');
-      }
-      let first = true;
-      for (const value of this.parameter) {
-        if (!first) {
-          sql.append(',');
-        }
-        sql.param(value);
-        first = false;
-      }
-      if (addParens) {
-        sql.append(')');
-      }
-    } else {
-      sql.param(this.parameter);
-    }
+    const operator = Operator[this.operator];
+    operator(sql, this.column, this.parameter, this.parameterType);
   }
 }
 
@@ -153,8 +208,8 @@ export abstract class Connective implements Expression {
     return this;
   }
 
-  where(column: Column | string, operator?: Operator, value?: any, type?: string): this {
-    return this.whereExpr(new Condition(column, operator as Operator, value, type));
+  where(column: Column | string, operator?: keyof typeof Operator, value?: any, type?: string): this {
+    return this.whereExpr(new Condition(column, operator as keyof typeof Operator, value, type));
   }
 
   buildSql(builder: SqlBuilder): void {
@@ -187,10 +242,51 @@ export class Disjunction extends Connective {
   }
 }
 
+export class SqlFunction implements Expression {
+  constructor(
+    readonly name: string,
+    readonly args: (Expression | Column)[]
+  ) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.append(this.name + '(');
+    for (let i = 0; i < this.args.length; i++) {
+      const arg = this.args[i];
+      if (arg instanceof Column) {
+        sql.appendColumn(arg);
+      } else {
+        arg.buildSql(sql);
+      }
+      if (i + 1 < this.args.length) {
+        sql.append(', ');
+      }
+    }
+    sql.append(')');
+  }
+}
+
+export class Union implements Expression {
+  readonly queries: SelectQuery[];
+  constructor(...queries: SelectQuery[]) {
+    this.queries = queries;
+  }
+
+  buildSql(sql: SqlBuilder): void {
+    for (let i = 0; i < this.queries.length; i++) {
+      if (i > 0) {
+        sql.append(' UNION ');
+      }
+      sql.append('(');
+      this.queries[i].buildSql(sql);
+      sql.append(')');
+    }
+  }
+}
+
 export class Join {
   constructor(
-    readonly joinType: 'LEFT JOIN' | 'INNER JOIN',
-    readonly joinItem: string | SelectQuery,
+    readonly joinType: 'LEFT JOIN' | 'INNER JOIN' | 'INNER JOIN LATERAL',
+    readonly joinItem: SelectQuery | string,
     readonly joinAlias: string,
     readonly onExpression: Expression
   ) {}
@@ -202,18 +298,15 @@ export class GroupBy {
 
 export class OrderBy {
   constructor(
-    readonly column: Column,
+    readonly key: Column | Expression,
     readonly descending?: boolean
   ) {}
-}
-
-export interface Expression {
-  buildSql(sql: SqlBuilder): void;
 }
 
 export class SqlBuilder {
   private readonly sql: string[];
   private readonly values: any[];
+  debug = DEBUG;
 
   constructor() {
     this.sql = [];
@@ -240,6 +333,10 @@ export class SqlBuilder {
       }
       this.appendIdentifier(column.columnName);
     }
+    if (column.alias) {
+      this.append(' AS ');
+      this.appendIdentifier(column.alias);
+    }
     return this;
   }
 
@@ -253,6 +350,26 @@ export class SqlBuilder {
     return this;
   }
 
+  appendParameters(parameter: any, addParens: boolean): void {
+    if (Array.isArray(parameter) || parameter instanceof Set) {
+      if (addParens) {
+        this.append('(');
+      }
+      let i = 0;
+      for (const value of parameter) {
+        if (i++) {
+          this.append(',');
+        }
+        this.param(value);
+      }
+      if (addParens) {
+        this.append(')');
+      }
+    } else {
+      this.param(parameter);
+    }
+  }
+
   toString(): string {
     return this.sql.join('');
   }
@@ -261,21 +378,32 @@ export class SqlBuilder {
     return this.values;
   }
 
-  async execute(conn: Client | Pool | PoolClient): Promise<any[]> {
+  async execute(conn: Client | Pool | PoolClient): Promise<{ rowCount: number; rows: any[] }> {
     const sql = this.toString();
     let startTime = 0;
-    if (DEBUG) {
+    if (this.debug) {
       console.log('sql', sql);
       console.log('values', this.values);
       startTime = Date.now();
     }
-    const result = await conn.query(sql, this.values);
-    if (DEBUG) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-      console.log('duration', duration);
+    try {
+      const result = await conn.query(sql, this.values);
+      if (this.debug) {
+        const endTime = Date.now();
+        const duration = endTime - startTime;
+        console.log(`result: ${result.rowCount} rows (${duration} ms)`);
+      }
+
+      return { rowCount: result.rowCount ?? 0, rows: result.rows };
+    } catch (err: any) {
+      if (err && typeof err === 'object' && err.code === '23505') {
+        // Catch duplicate key errors and throw a 409 Conflict
+        // See https://github.com/brianc/node-postgres/issues/1602
+        // See https://www.postgresql.org/docs/10/errcodes-appendix.html
+        throw new OperationOutcomeError(conflict(err.detail));
+      }
+      throw err;
     }
-    return result.rows;
   }
 }
 
@@ -283,9 +411,12 @@ export abstract class BaseQuery {
   readonly tableName: string;
   readonly predicate: Conjunction;
   explain = false;
+  analyzeBuffers = false;
+  readonly alias?: string;
 
-  constructor(tableName: string) {
+  constructor(tableName: string, alias?: string) {
     this.tableName = tableName;
+    this.alias = alias;
     this.predicate = new Conjunction([]);
   }
 
@@ -294,7 +425,7 @@ export abstract class BaseQuery {
     return this;
   }
 
-  where(column: Column | string, operator?: Operator, value?: any, type?: string): this {
+  where(column: Column | string, operator?: keyof typeof Operator, value?: any, type?: string): this {
     this.predicate.where(getColumn(column, this.tableName), operator, value, type);
     return this;
   }
@@ -307,17 +438,27 @@ export abstract class BaseQuery {
   }
 }
 
-export class SelectQuery extends BaseQuery {
+interface CTE {
+  name: string;
+  expr: Expression;
+  recursive?: boolean;
+}
+
+export class SelectQuery extends BaseQuery implements Expression {
+  readonly innerQuery?: SelectQuery | Union | ValuesQuery;
   readonly distinctOns: Column[];
-  readonly columns: Column[];
+  readonly columns: (Column | Literal)[];
   readonly joins: Join[];
   readonly groupBys: GroupBy[];
   readonly orderBys: OrderBy[];
+  with?: CTE;
   limit_: number;
   offset_: number;
+  joinCount = 0;
 
-  constructor(tableName: string) {
-    super(tableName);
+  constructor(tableName: string, innerQuery?: SelectQuery | Union | ValuesQuery, alias?: string) {
+    super(tableName, alias);
+    this.innerQuery = innerQuery;
     this.distinctOns = [];
     this.columns = [];
     this.joins = [];
@@ -325,6 +466,11 @@ export class SelectQuery extends BaseQuery {
     this.orderBys = [];
     this.limit_ = 0;
     this.offset_ = 0;
+  }
+
+  withRecursive(name: string, expr: Expression): this {
+    this.with = { name, expr: expr, recursive: true };
+    return this;
   }
 
   distinctOn(column: Column | string): this {
@@ -337,17 +483,23 @@ export class SelectQuery extends BaseQuery {
     return this;
   }
 
-  column(column: Column | string): this {
-    this.columns.push(getColumn(column, this.tableName));
+  column(column: Column | string | Literal): this {
+    this.columns.push(column instanceof Literal ? column : getColumn(column, this.tableName));
     return this;
   }
 
   getNextJoinAlias(): string {
-    return `T${this.joins.length + 1}`;
+    this.joinCount++;
+    return `T${this.joinCount}`;
   }
 
-  innerJoin(joinItem: string | SelectQuery, joinAlias: string, onExpression: Expression): this {
-    this.joins.push(new Join('INNER JOIN', joinItem, joinAlias, onExpression));
+  join(
+    joinType: 'INNER JOIN' | 'INNER JOIN LATERAL' | 'LEFT JOIN',
+    joinItem: SelectQuery | string,
+    joinAlias: string,
+    onExpression: Expression
+  ): this {
+    this.joins.push(new Join(joinType, joinItem, joinAlias, onExpression));
     return this;
   }
 
@@ -358,6 +510,11 @@ export class SelectQuery extends BaseQuery {
 
   orderBy(column: Column | string, descending?: boolean): this {
     this.orderBys.push(new OrderBy(getColumn(column, this.tableName), descending));
+    return this;
+  }
+
+  orderByExpr(expr: Expression, descending?: boolean): this {
+    this.orderBys.push(new OrderBy(expr, descending));
     return this;
   }
 
@@ -374,6 +531,19 @@ export class SelectQuery extends BaseQuery {
   buildSql(sql: SqlBuilder): void {
     if (this.explain) {
       sql.append('EXPLAIN ');
+      if (this.analyzeBuffers) {
+        sql.append('(ANALYZE, BUFFERS) ');
+      }
+    }
+    if (this.with) {
+      sql.append('WITH ');
+      if (this.with.recursive) {
+        sql.append('RECURSIVE ');
+      }
+      sql.appendIdentifier(this.with.name);
+      sql.append(' AS (');
+      this.with.expr.buildSql(sql);
+      sql.append(') ');
     }
     sql.append('SELECT ');
     this.buildDistinctOn(sql);
@@ -397,34 +567,7 @@ export class SelectQuery extends BaseQuery {
   async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     this.buildSql(sql);
-    return sql.execute(conn);
-  }
-
-  async executeCursor(pool: Pool, callback: (row: any) => Promise<void>): Promise<void> {
-    callback = AsyncLocalStorage.bind(callback);
-    const BATCH_SIZE = 100;
-
-    const sql = new SqlBuilder();
-    this.buildSql(sql);
-
-    const client = await pool.connect();
-    try {
-      const cursor = client.query(new Cursor(sql.toString(), sql.getValues()));
-      try {
-        let hasMore = true;
-        while (hasMore) {
-          const rows = await cursor.read(BATCH_SIZE);
-          for (const row of rows) {
-            await callback(row);
-          }
-          hasMore = rows.length === BATCH_SIZE;
-        }
-      } finally {
-        await cursor.close();
-      }
-    } finally {
-      client.release();
-    }
+    return (await sql.execute(conn)).rows;
   }
 
   private buildDistinctOn(sql: SqlBuilder): void {
@@ -443,28 +586,47 @@ export class SelectQuery extends BaseQuery {
   }
 
   private buildColumns(sql: SqlBuilder): void {
+    if (this.columns.length === 0) {
+      throw new Error('No columns selected');
+    }
     let first = true;
     for (const column of this.columns) {
       if (!first) {
         sql.append(', ');
       }
-      sql.appendColumn(column);
+      if (column instanceof Literal) {
+        sql.appendParameters(column.value, false);
+      } else {
+        sql.appendColumn(column);
+      }
       first = false;
     }
   }
 
   private buildFrom(sql: SqlBuilder): void {
     sql.append(' FROM ');
+
+    if (this.innerQuery) {
+      sql.append('(');
+      this.innerQuery.buildSql(sql);
+      sql.append(') AS ');
+    }
+
     sql.appendIdentifier(this.tableName);
+    if (this.alias) {
+      sql.append(' ');
+      sql.appendIdentifier(this.alias);
+      sql.append(' ');
+    }
 
     for (const join of this.joins) {
-      sql.append(' LEFT JOIN ');
-      if (typeof join.joinItem === 'string') {
-        sql.appendIdentifier(join.joinItem);
-      } else {
-        sql.append(' ( ');
+      sql.append(` ${join.joinType} `);
+      if (join.joinItem instanceof SelectQuery) {
+        sql.append('(');
         join.joinItem.buildSql(sql);
-        sql.append(' ) ');
+        sql.append(')');
+      } else {
+        sql.appendIdentifier(join.joinItem);
       }
       sql.append(' AS ');
       sql.appendIdentifier(join.joinAlias);
@@ -493,12 +655,10 @@ export class SelectQuery extends BaseQuery {
 
     for (const orderBy of combined) {
       sql.append(first ? ' ORDER BY ' : ', ');
-      if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
-        sql.append('MIN(');
-      }
-      sql.appendColumn(orderBy.column);
-      if (orderBy.column.tableName && orderBy.column.tableName !== this.tableName) {
-        sql.append(')');
+      if (orderBy.key instanceof Column) {
+        sql.appendColumn(orderBy.key);
+      } else {
+        orderBy.key.buildSql(sql);
       }
       if (orderBy.descending) {
         sql.append(' DESC');
@@ -510,46 +670,71 @@ export class SelectQuery extends BaseQuery {
 
 export class ArraySubquery implements Expression {
   private filter: Expression;
-  private columnName: string;
+  private column: Column;
 
-  constructor(columnName: string, filter: Expression) {
+  constructor(column: Column, filter: Expression) {
     this.filter = filter;
-    this.columnName = columnName;
+    this.column = column;
   }
 
   buildSql(sql: SqlBuilder): void {
     sql.append('EXISTS(SELECT 1 FROM unnest(');
-    sql.appendIdentifier(this.columnName);
+    sql.appendColumn(this.column);
     sql.append(') AS ');
-    sql.appendIdentifier(this.columnName);
+    sql.appendIdentifier(this.column.columnName);
     sql.append(' WHERE ');
     this.filter.buildSql(sql);
+    sql.append(' LIMIT 1');
     sql.append(')');
   }
 }
 
 export class InsertQuery extends BaseQuery {
-  private readonly values: Record<string, any>[];
-  private merge?: boolean;
+  private readonly values?: Record<string, any>[];
+  private readonly query?: SelectQuery;
+  private returnColumns?: string[];
+  private conflictColumns?: string[];
+  private ignoreConflict?: boolean;
 
-  constructor(tableName: string, values: Record<string, any>[]) {
+  constructor(tableName: string, values: Record<string, any>[] | SelectQuery) {
     super(tableName);
-    this.values = values;
+    if (Array.isArray(values)) {
+      this.values = values;
+    } else {
+      this.query = values;
+    }
   }
 
-  mergeOnConflict(merge: boolean): this {
-    this.merge = merge;
+  mergeOnConflict(columns?: string[]): this {
+    this.conflictColumns = columns ?? ['id'];
     return this;
   }
 
-  async execute(conn: Pool | PoolClient): Promise<any[]> {
+  ignoreOnConflict(): this {
+    this.ignoreConflict = true;
+    return this;
+  }
+
+  returnColumn(column: Column | string): this {
+    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
+    return this;
+  }
+
+  async execute(conn: Pool | PoolClient): Promise<{ rowCount: number; rows: any[] }> {
     const sql = new SqlBuilder();
     sql.append('INSERT INTO ');
     sql.appendIdentifier(this.tableName);
-    const columnNames = Object.keys(this.values[0]);
-    this.appendColumns(sql, columnNames);
-    this.appendAllValues(sql, columnNames);
+    if (this.values) {
+      const columnNames = Object.keys(this.values[0]);
+      this.appendColumns(sql, columnNames);
+      this.appendAllValues(sql, columnNames);
+    } else {
+      this.appendSubquery(sql);
+    }
     this.appendMerge(sql);
+    if (this.returnColumns) {
+      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+    }
     return sql.execute(conn);
   }
 
@@ -567,6 +752,10 @@ export class InsertQuery extends BaseQuery {
   }
 
   private appendAllValues(sql: SqlBuilder, columnNames: string[]): void {
+    if (!this.values) {
+      return;
+    }
+
     for (let i = 0; i < this.values.length; i++) {
       if (i === 0) {
         sql.append(' VALUES ');
@@ -575,6 +764,14 @@ export class InsertQuery extends BaseQuery {
       }
       this.appendValues(sql, columnNames, this.values[i]);
     }
+  }
+
+  private appendSubquery(sql: SqlBuilder): void {
+    if (!this.query) {
+      return;
+    }
+    sql.append(' ');
+    this.query.buildSql(sql);
   }
 
   private appendValues(sql: SqlBuilder, columnNames: string[], values: Record<string, any>): void {
@@ -591,36 +788,91 @@ export class InsertQuery extends BaseQuery {
   }
 
   private appendMerge(sql: SqlBuilder): void {
-    if (!this.merge) {
+    if (this.ignoreConflict) {
+      sql.append(` ON CONFLICT DO NOTHING`);
+      return;
+    } else if (!this.conflictColumns?.length || !this.values) {
       return;
     }
 
-    sql.append(' ON CONFLICT ("id") DO UPDATE SET ');
+    sql.append(` ON CONFLICT (${this.conflictColumns.map((c) => '"' + c + '"').join(', ')}) DO UPDATE SET `);
 
-    const entries = Object.entries(this.values[0]);
+    const columns = Object.keys(this.values[0]);
     let first = true;
-    for (const [columnName, value] of entries) {
-      if (columnName === 'id') {
+    for (const columnName of columns) {
+      if (this.conflictColumns.includes(columnName)) {
         continue;
       }
       if (!first) {
         sql.append(', ');
       }
       sql.appendIdentifier(columnName);
-      sql.append('=');
-      sql.param(value);
+      sql.append('= EXCLUDED.');
+      sql.appendIdentifier(columnName);
       first = false;
     }
   }
 }
 
 export class DeleteQuery extends BaseQuery {
-  async execute(conn: Pool | PoolClient): Promise<any> {
+  returnColumns?: string[];
+
+  returnColumn(column: Column | string): this {
+    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
+    return this;
+  }
+  async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     sql.append('DELETE FROM ');
     sql.appendIdentifier(this.tableName);
     this.buildConditions(sql);
-    return sql.execute(conn);
+    if (this.returnColumns) {
+      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+    }
+    return (await sql.execute(conn)).rows;
+  }
+}
+
+export class ValuesQuery implements Expression {
+  readonly tableName: string;
+  readonly columnNames: string[];
+  readonly rows: any[][];
+  constructor(tableName: string, columnNames: string[], rows: any[][]) {
+    this.tableName = tableName;
+    this.columnNames = columnNames;
+    this.rows = rows;
+  }
+
+  buildSql(builder: SqlBuilder): void {
+    /*
+    Since a VALUES expression has a special alias format of "tableName"("columnName"),
+    wrap its sql with SELECT * FROM (VALUES ...) AS "tableName"("columnName") for compatibility
+    other query builders that may include a ValuesQuery:
+
+    SELECT * FROM (VALUES
+      ('val1'),
+		  ('val2'),
+		  ('val3'),
+    ) AS "values"("val")
+    */
+
+    builder.append('SELECT * FROM (VALUES');
+    for (let r = 0; r < this.rows.length; r++) {
+      builder.append(r === 0 ? '(' : ',(');
+      for (let v = 0; v < this.rows[r].length; v++) {
+        builder.append(v === 0 ? '' : ',');
+        builder.param(this.rows[r][v]);
+      }
+      builder.append(')');
+    }
+    builder.append(') AS ');
+    builder.appendIdentifier(this.tableName);
+    builder.append('(');
+    for (let c = 0; c < this.columnNames.length; c++) {
+      builder.append(c === 0 ? '' : ',');
+      builder.appendIdentifier(this.columnNames[c]);
+    }
+    builder.append(')');
   }
 }
 
@@ -630,4 +882,17 @@ function getColumn(column: Column | string, defaultTableName?: string): Column {
   } else {
     return column;
   }
+}
+
+export function periodToRangeString(period: Period): string | undefined {
+  if (period.start && period.end) {
+    return `[${period.start},${period.end}]`;
+  }
+  if (period.start) {
+    return `[${period.start},]`;
+  }
+  if (period.end) {
+    return `[,${period.end}]`;
+  }
+  return undefined;
 }

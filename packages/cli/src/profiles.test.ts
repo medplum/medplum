@@ -1,18 +1,18 @@
 import { ContentType, MedplumClient } from '@medplum/core';
-import { mkdtempSync, rmSync } from 'fs';
-import os from 'os';
-import { sep } from 'path';
+import { mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import { sep } from 'node:path';
 import { main } from '.';
 import { FileSystemStorage } from './storage';
 import { createMedplumClient } from './util/client';
 
-jest.mock('os');
+jest.mock('node:os');
 jest.mock('fast-glob', () => ({
   sync: jest.fn(() => []),
 }));
 jest.mock('./util/client');
-jest.mock('fs', () => ({
-  ...jest.requireActual('fs'),
+jest.mock('node:fs', () => ({
+  ...jest.requireActual('node:fs'),
   writeFile: jest.fn((path, data, callback) => {
     callback();
   }),
@@ -32,7 +32,13 @@ describe('Profiles', () => {
       if (url.includes('/$export?_since=200')) {
         return {
           status: 200,
-          headers: { get: () => ContentType.FHIR_JSON },
+          headers: {
+            get(name: string): string | undefined {
+              return {
+                'content-type': ContentType.FHIR_JSON,
+              }[name];
+            },
+          },
           json: jest.fn(async () => {
             return {
               resourceType: 'OperationOutcome',
@@ -85,7 +91,13 @@ describe('Profiles', () => {
           count++;
           return {
             status: 202,
-            headers: { get: () => ContentType.FHIR_JSON },
+            headers: {
+              get(name: string): string | undefined {
+                return {
+                  'content-type': ContentType.FHIR_JSON,
+                }[name];
+              },
+            },
             json: jest.fn(async () => {
               return {};
             }),
@@ -95,7 +107,13 @@ describe('Profiles', () => {
 
       return {
         status: 200,
-        headers: { get: () => ContentType.FHIR_JSON },
+        headers: {
+          get(name: string): string | undefined {
+            return {
+              'content-type': ContentType.FHIR_JSON,
+            }[name];
+          },
+        },
         json: jest.fn(async () => ({
           transactionTime: '2023-05-18T22:55:31.280Z',
           request: 'https://api.medplum.com/fhir/R4/$export?_type=Observation',
@@ -154,9 +172,7 @@ describe('Profiles', () => {
 
     // Describe profile
     await main(['node', 'index.js', 'profile', 'describe', profileName]);
-    expect(console.log).toBeCalledWith(obj);
-
-    expect(console.log).toBeCalledWith(expect.stringMatching('testProfile profile create'));
+    expect(console.log).toHaveBeenCalledWith(obj);
 
     // Replace the previous values
     const obj2 = {
@@ -207,7 +223,7 @@ describe('Profiles', () => {
 
     // List the 2 profiles
     await main(['node', 'index.js', 'profile', 'list']);
-    expect(console.log).toBeCalledWith([
+    expect(console.log).toHaveBeenCalledWith([
       { profileName, profile: { ...obj2, name: profileName } },
       { profileName: profileName2, profile: { ...obj, name: profileName2 } },
     ]);
@@ -217,7 +233,7 @@ describe('Profiles', () => {
 
     // ProfileName should be undefined, but profileName2 should still exist
     await main(['node', 'index.js', 'profile', 'list']);
-    expect(console.log).toBeCalledWith([{ profileName: profileName2, profile: { ...obj, name: profileName2 } }]);
+    expect(console.log).toHaveBeenCalledWith([{ profileName: profileName2, profile: { ...obj, name: profileName2 } }]);
   });
 
   test('Basic Auth profile bulk export', async () => {
@@ -245,8 +261,8 @@ describe('Profiles', () => {
 
     await main(['node', 'index.js', 'bulk', 'export', '-e', 'Patient', '-p', profileName]);
 
-    expect(medplumDownloadSpy).toBeCalled();
-    expect(console.log).toBeCalledWith(
+    expect(medplumDownloadSpy).toHaveBeenCalled();
+    expect(console.log).toHaveBeenCalledWith(
       expect.stringMatching(
         'ProjectMembership_storage_20fabdd3_e036_49fc_9260_8a30eaffefb1_498475fe_5eb0_46e5_b9f4_b46943c9719b.ndjson is created'
       )

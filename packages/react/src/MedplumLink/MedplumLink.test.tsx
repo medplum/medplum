@@ -1,9 +1,9 @@
 import { MedplumClient } from '@medplum/core';
-import { fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { ReactElement } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { fireEvent, render, screen } from '../test-utils/render';
 import { MedplumLink } from './MedplumLink';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
 
 function mockFetch(url: string, options: any): Promise<any> {
   const response: any = {
@@ -25,7 +25,7 @@ const medplum = new MedplumClient({
   fetch: mockFetch,
 });
 
-function setup(ui: React.ReactElement): void {
+function setup(ui: ReactElement): void {
   Object.defineProperty(window, 'location', {
     value: {
       assign: jest.fn(),

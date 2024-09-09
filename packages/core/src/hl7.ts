@@ -3,14 +3,9 @@ import { isStringArray } from './utils';
 /**
  * The Hl7Context class represents the parsing context for an HL7 message.
  *
- * MSH-1:
- * https://hl7-definition.caristix.com/v2/HL7v2.6/Fields/MSH.1
- *
- * MSH-2:
- * https://hl7-definition.caristix.com/v2/HL7v2.6/Fields/MSH.2
- *
- * See this tutorial on MSH, and why it's a bad idea to use anything other than the default values:
- * https://www.hl7soup.com/HL7TutorialMSH.html
+ * @see MSH-1: https://hl7-definition.caristix.com/v2/HL7v2.6/Fields/MSH.1
+ * @see MSH-2: https://hl7-definition.caristix.com/v2/HL7v2.6/Fields/MSH.2
+ * @see See this tutorial on MSH, and why it's a bad idea to use anything other than the default values: https://www.hl7soup.com/HL7TutorialMSH.html
  */
 export class Hl7Context {
   constructor(
@@ -49,8 +44,8 @@ export class Hl7Message {
 
   /**
    * Creates a new HL7 message.
-   * @param segments The HL7 segments.
-   * @param context Optional HL7 parsing context.
+   * @param segments - The HL7 segments.
+   * @param context - Optional HL7 parsing context.
    */
   constructor(segments: Hl7Segment[], context = new Hl7Context()) {
     this.context = context;
@@ -67,7 +62,7 @@ export class Hl7Message {
 
   /**
    * Returns an HL7 segment by index or by name.
-   * @param index The HL7 segment index or name.
+   * @param index - The HL7 segment index or name.
    * @returns The HL7 segment if found; otherwise, undefined.
    * @deprecated Use getSegment() instead. This method will be removed in a future release.
    */
@@ -77,7 +72,7 @@ export class Hl7Message {
 
   /**
    * Returns all HL7 segments of a given name.
-   * @param name The HL7 segment name.
+   * @param name - The HL7 segment name.
    * @returns An array of HL7 segments with the specified name.
    * @deprecated Use getAllSegments() instead. This method will be removed in a future release.
    */
@@ -92,7 +87,7 @@ export class Hl7Message {
    *
    * When using a string index, this method returns the first segment with the specified name.
    *
-   * @param index The HL7 segment index or name.
+   * @param index - The HL7 segment index or name.
    * @returns The HL7 segment if found; otherwise, undefined.
    */
   getSegment(index: number | string): Hl7Segment | undefined {
@@ -104,7 +99,7 @@ export class Hl7Message {
 
   /**
    * Returns all HL7 segments of a given name.
-   * @param name The HL7 segment name.
+   * @param name - The HL7 segment name.
    * @returns An array of HL7 segments with the specified name.
    */
   getAllSegments(name: string): Hl7Segment[] {
@@ -176,7 +171,7 @@ export class Hl7Message {
 
   /**
    * Parses an HL7 message string into an Hl7Message object.
-   * @param text The HL7 message text.
+   * @param text - The HL7 message text.
    * @returns The parsed HL7 message.
    */
   static parse(text: string): Hl7Message {
@@ -212,8 +207,8 @@ export class Hl7Segment {
 
   /**
    * Creates a new HL7 segment.
-   * @param fields The HL7 fields. The first field is the segment name.
-   * @param context Optional HL7 parsing context.
+   * @param fields - The HL7 fields. The first field is the segment name.
+   * @param context - Optional HL7 parsing context.
    */
   constructor(fields: Hl7Field[] | string[], context = new Hl7Context()) {
     this.context = context;
@@ -227,7 +222,7 @@ export class Hl7Segment {
 
   /**
    * Returns an HL7 field by index.
-   * @param index The HL7 field index.
+   * @param index - The HL7 field index.
    * @returns The HL7 field.
    * @deprecated Use getSegment() instead. This method includes the segment name in the index, which leads to confusing behavior. This method will be removed in a future release.
    */
@@ -246,7 +241,7 @@ export class Hl7Segment {
    *
    * Field zero is the segment name.
    *
-   * @param index The HL7 field index.
+   * @param index - The HL7 field index.
    * @returns The HL7 field.
    */
   getField(index: number): Hl7Field {
@@ -279,10 +274,10 @@ export class Hl7Segment {
    *
    * This aligns with HL7 component names such as MSH.9.2.
    *
-   * @param fieldIndex The HL7 field index.
-   * @param component The component index.
-   * @param subcomponent Optional subcomponent index.
-   * @param repetition Optional repetition index.
+   * @param fieldIndex - The HL7 field index.
+   * @param component - The component index.
+   * @param subcomponent - Optional subcomponent index.
+   * @param repetition - Optional repetition index.
    * @returns The string value of the specified component.
    */
   getComponent(fieldIndex: number, component: number, subcomponent?: number, repetition = 0): string {
@@ -299,8 +294,8 @@ export class Hl7Segment {
 
   /**
    * Parses an HL7 segment string into an Hl7Segment object.
-   * @param text The HL7 segment text.
-   * @param context Optional HL7 parsing context.
+   * @param text - The HL7 segment text.
+   * @param context - Optional HL7 parsing context.
    * @returns The parsed HL7 segment.
    */
   static parse(text: string, context = new Hl7Context()): Hl7Segment {
@@ -321,8 +316,8 @@ export class Hl7Field {
 
   /**
    * Creates a new HL7 field.
-   * @param components The HL7 components.
-   * @param context Optional HL7 parsing context.
+   * @param components - The HL7 components.
+   * @param context - Optional HL7 parsing context.
    */
   constructor(components: string[][], context = new Hl7Context()) {
     this.context = context;
@@ -331,9 +326,9 @@ export class Hl7Field {
 
   /**
    * Returns an HL7 component by index.
-   * @param component The component index.
-   * @param subcomponent Optional subcomponent index.
-   * @param repetition Optional repetition index.
+   * @param component - The component index.
+   * @param subcomponent - Optional subcomponent index.
+   * @param repetition - Optional repetition index.
    * @returns The string value of the specified component.
    * @deprecated Use getComponent() instead. This method will be removed in a future release.
    */
@@ -350,9 +345,9 @@ export class Hl7Field {
    *
    * This aligns with HL7 component names such as MSH.9.2.
    *
-   * @param component The component index.
-   * @param subcomponent Optional subcomponent index.
-   * @param repetition Optional repetition index.
+   * @param component - The component index.
+   * @param subcomponent - Optional subcomponent index.
+   * @param repetition - Optional repetition index.
    * @returns The string value of the specified component.
    */
   getComponent(component: number, subcomponent?: number, repetition = 0): string {
@@ -375,8 +370,8 @@ export class Hl7Field {
 
   /**
    * Parses an HL7 field string into an Hl7Field object.
-   * @param text The HL7 field text.
-   * @param context Optional HL7 parsing context.
+   * @param text - The HL7 field text.
+   * @param context - Optional HL7 parsing context.
    * @returns The parsed HL7 field.
    */
   static parse(text: string, context = new Hl7Context()): Hl7Field {
@@ -403,8 +398,8 @@ export interface Hl7DateParseOptions {
  *
  * Format: YYYY[MM[DD[HH[MM[SS[. S[S[S[S]]]]]]]]][+/-ZZZZ].
  *
- * @param hl7DateTime Date/time string.
- * @param options Optional parsing options.
+ * @param hl7DateTime - Date/time string.
+ * @param options - Optional parsing options.
  * @returns The date in ISO-8601 format.
  */
 export function parseHl7DateTime(hl7DateTime: string | undefined, options?: Hl7DateParseOptions): string | undefined {
@@ -436,8 +431,8 @@ export function parseHl7DateTime(hl7DateTime: string | undefined, options?: Hl7D
 
 /**
  * Parses an integer value from a string.
- * @param str The string to parse.
- * @param defaultValue The default value to return if the string is not a number.
+ * @param str - The string to parse.
+ * @param defaultValue - The default value to return if the string is not a number.
  * @returns The parsed integer value, or the default value if the string is not a number.
  */
 function parseIntOrDefault(str: string, defaultValue: number): number {
@@ -447,8 +442,8 @@ function parseIntOrDefault(str: string, defaultValue: number): number {
 
 /**
  * Returns the timezone offset in milliseconds.
- * @param hl7DateTime The HL7 date/time string.
- * @param defaultOffset Optional default timezone offset.
+ * @param hl7DateTime - The HL7 date/time string.
+ * @param defaultOffset - Optional default timezone offset.
  * @returns The timezone offset in milliseconds.
  */
 function parseTimeZoneOffset(hl7DateTime: string, defaultOffset?: string): number {
@@ -480,7 +475,7 @@ function parseTimeZoneOffset(hl7DateTime: string, defaultOffset?: string): numbe
 
 /**
  * Formats an ISO date/time string into an HL7 date/time string.
- * @param isoDate The ISO date/time string.
+ * @param isoDate - The ISO date/time string.
  * @returns The HL7 date/time string.
  */
 export function formatHl7DateTime(isoDate: Date | string): string {

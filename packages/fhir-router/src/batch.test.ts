@@ -5,13 +5,17 @@ import {
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   isOk,
+  LOINC,
   OperationOutcomeError,
   resolveId,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
+  AllergyIntolerance,
+  Binary,
   Bundle,
   BundleEntry,
+  BundleEntryRequest,
   Observation,
   OperationOutcome,
   Patient,
@@ -38,7 +42,7 @@ describe('Batch', () => {
 
   test('Process batch with missing bundle type', async () => {
     try {
-      await processBatch(router, repo, { resourceType: 'Bundle' });
+      await processBatch(router, repo, { resourceType: 'Bundle' } as Bundle);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -235,7 +239,7 @@ describe('Batch', () => {
           },
           resource: {
             resourceType: 'Observation',
-          },
+          } as Observation,
         },
       ],
     });
@@ -497,7 +501,7 @@ describe('Batch', () => {
             status: 'active',
             intent: 'order',
             subject: createReference(patient),
-            code: { coding: [{ system: 'http://loinc.org', code: '12345-6' }] },
+            code: { coding: [{ system: LOINC, code: '12345-6' }] },
             requester: { reference: urnUuid },
           },
         },
@@ -571,6 +575,7 @@ describe('Batch', () => {
       type: 'batch',
       entry: [
         {
+          // Entry 1: Simple patch (success)
           request: {
             method: 'PATCH',
             url: 'Patient/' + patient.id,
@@ -581,14 +586,42 @@ describe('Batch', () => {
             data: Buffer.from(JSON.stringify([{ op: 'add', path: '/active', value: true }]), 'utf8').toString('base64'),
           },
         },
+        {
+          // Entry 2: Empty body (error)
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+          },
+          resource: {
+            resourceType: 'Binary',
+            contentType: ContentType.JSON_PATCH,
+            data: Buffer.from('null', 'utf8').toString('base64'),
+          },
+        },
+        {
+          // Entry 3: Non-array body (error)
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+          },
+          resource: {
+            resourceType: 'Binary',
+            contentType: ContentType.JSON_PATCH,
+            data: Buffer.from(JSON.stringify({ foo: 'bar' }), 'utf8').toString('base64'),
+          },
+        },
       ],
     });
     expect(bundle).toBeDefined();
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
+    expect(results.length).toEqual(3);
     expect(results[0].response?.status).toEqual('200');
+    expect(results[1].response?.status).toEqual('400');
+    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Empty patch body');
+    expect(results[2].response?.status).toEqual('400');
+    expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch body must be an array');
   });
 
   test('JSONPath error messages', async () => {
@@ -752,7 +785,7 @@ describe('Batch', () => {
           },
           resource: {
             resourceType: 'Binary',
-          },
+          } as Binary,
         },
       ],
     });
@@ -842,7 +875,7 @@ describe('Batch', () => {
         {
           request: {
             url: 'Patient',
-          },
+          } as BundleEntryRequest,
           resource: {
             resourceType: 'Patient',
           },
@@ -892,7 +925,7 @@ describe('Batch', () => {
         {
           request: {
             method: 'POST',
-          },
+          } as BundleEntryRequest,
           resource: {
             resourceType: 'Patient',
           },
@@ -1075,5 +1108,113 @@ describe('Batch', () => {
       const checkPatient: Patient = await repo.readResource('Patient', resolveId(ref) as string);
       expect(checkPatient.name).toMatchObject([{ given: ['Jane'], family: 'Doe' }]);
     });
+
+    test('urn:uuid in PATCH', async () => {
+      const bundle = await processBatch(router, repo, {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:5519d7a1-2973-485a-a648-a502c5aa06b1',
+            request: {
+              method: 'POST',
+              url: 'Patient',
+              ifNoneExist: 'identifier=https://foomedical.org/patient|0',
+            },
+            resource: {
+              resourceType: 'Patient',
+              name: [
+                {
+                  given: ['Fn_000'],
+                  family: 'Ln_000',
+                },
+              ],
+              identifier: [
+                {
+                  system: 'https://foomedical.org/patient',
+                  value: '0',
+                },
+              ],
+            },
+          },
+          {
+            fullUrl: 'urn:uuid:6e72c801-ae8e-467a-890e-c05af0db25bf',
+            request: {
+              method: 'POST',
+              url: 'Organization',
+              ifNoneExist: 'identifier=https://foomedical.org/organization|org:bus:1',
+            },
+            resource: {
+              resourceType: 'Organization',
+              name: 'Texas',
+              identifier: [
+                {
+                  system: 'https://foomedical.org/organization',
+                  value: 'org:bus:1',
+                },
+              ],
+            },
+          },
+          {
+            request: {
+              method: 'PATCH',
+              url: 'urn:uuid:5519d7a1-2973-485a-a648-a502c5aa06b1',
+            },
+            resource: {
+              resourceType: 'Binary',
+              contentType: 'application/json-patch+json',
+              data: 'W3sib3AiOiJhZGQiLCJwYXRoIjoiL21hbmFnaW5nT3JnYW5pemF0aW9uIiwidmFsdWUiOnsicmVmZXJlbmNlIjoidXJuOnV1aWQ6NmU3MmM4MDEtYWU4ZS00NjdhLTg5MGUtYzA1YWYwZGIyNWJmIn19XQ==',
+            },
+          },
+        ],
+      });
+      expect(bundle).toBeDefined();
+      expect(bundle.type).toEqual('transaction-response');
+      expect(bundle.entry).toBeDefined();
+
+      const results = bundle.entry as BundleEntry[];
+      expect(results.length).toEqual(3);
+      expect(results.map((res) => res?.response?.status)).toMatchObject(['201', '201', '200']);
+
+      const checkPatient = await repo.readResource<Patient>('Patient', bundle.entry?.[0]?.resource?.id as string);
+      expect(checkPatient.managingOrganization).toBeDefined();
+      expect(checkPatient.managingOrganization?.reference).not.toMatch(/urn:uuid.*/);
+    });
+  });
+
+  test('Valid null', async () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:adf86b3c-c254-47df-9e2d-81c4a922f6e7',
+          request: {
+            method: 'POST',
+            url: 'AllergyIntolerance',
+          },
+          resource: {
+            resourceType: 'AllergyIntolerance',
+            category: [null],
+            patient: {
+              display: 'patient',
+            },
+            _category: [
+              {
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/StructureDefinition/data-absent-reason',
+                    valueCode: 'unsupported',
+                  },
+                ],
+              },
+            ],
+          } as unknown as AllergyIntolerance,
+        },
+      ],
+    };
+
+    const result = await processBatch(router, repo, bundle);
+    expect(result).toBeDefined();
   });
 });

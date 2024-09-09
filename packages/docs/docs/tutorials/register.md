@@ -18,9 +18,9 @@ Congrats, you now have a Medplum account!
 
 When you signed up for an account, you created a new [Medplum Project](/docs/api/fhir/medplum/project).
 
-A project is a collection of [FHIR resources](/docs/fhir-basics#resources) that is logically separated from other resources on the server.
+A project is a collection of [FHIR resources](/docs/fhir-basics#storing-data-resources) that is logically separated from other resources on the server.
 
-Each resource can only contain [references](/docs/fhir-basics#references-linking-resources) to resources inside the same project, and can only be accessed from [Bots](/docs/bots/bot-basics) inside the same project.
+Each resource can only contain [references](/docs/fhir-basics#linking-data-references) to resources inside the same project, and can only be accessed from [Bots](/docs/bots/bot-basics) inside the same project.
 
 Each project is administered separately, and can have its own set of users, permissions, client applications, and bots. A common usage pattern is to set up separate staging and production projects for an application. See the [Bots in Production](/docs/bots/bots-in-production#deploying-to-staging-vs-production) guide for more details.
 

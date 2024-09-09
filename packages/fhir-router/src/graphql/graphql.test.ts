@@ -12,8 +12,10 @@ import {
   Binary,
   Bundle,
   Encounter,
+  ExplanationOfBenefit,
   Extension,
   HumanName,
+  Observation,
   OperationOutcome,
   Patient,
   SearchParameter,
@@ -21,12 +23,13 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { FhirRequest, FhirRouter } from '../fhirrouter';
-import { getRootSchema, graphqlHandler } from './graphql';
 import { MemoryRepository } from '../repo';
+import { getRootSchema, graphqlHandler } from './graphql';
 
 const repo = new MemoryRepository();
 let binary: Binary;
 let patient: Patient;
+let patient2: Patient;
 let serviceRequest: ServiceRequest;
 let encounter1: Encounter;
 let encounter2: Encounter;
@@ -39,7 +42,7 @@ describe('GraphQL', () => {
     getRootSchema();
 
     // Create a profile picture
-    binary = await repo.createResource<Binary>({ resourceType: 'Binary' });
+    binary = await repo.createResource<Binary>({ resourceType: 'Binary' } as Binary);
 
     // Creat a simple patient
     patient = await repo.createResource<Patient>({
@@ -54,6 +57,16 @@ describe('GraphQL', () => {
         {
           contentType: 'image/jpeg',
           url: getReferenceString(binary),
+        },
+      ],
+    });
+
+    patient2 = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      name: [
+        {
+          given: ['Bill'],
+          family: 'Miller',
         },
       ],
     });
@@ -487,6 +500,30 @@ describe('GraphQL', () => {
   });
 
   test('Reverse lookup with _reference', async () => {
+    await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient),
+      code: {
+        text: 'Blood pressure',
+      },
+    });
+    await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient2),
+      code: {
+        text: 'Blood pressure',
+      },
+    });
+    await repo.createResource<Observation>({
+      resourceType: 'Observation',
+      status: 'final',
+      subject: createReference(patient2),
+      code: {
+        text: 'Heart rate',
+      },
+    });
     const request: FhirRequest = {
       method: 'POST',
       pathname: '/fhir/R4/$graphql',
@@ -495,9 +532,9 @@ describe('GraphQL', () => {
       body: {
         query: `
       {
-        PatientList(_count: 1) {
+        PatientList(_count: 2) {
           id
-          ObservationList(_reference: subject) {
+          ObservationList(_reference: subject, _sort: "_lastUpdated") {
             id
             status
             code {
@@ -685,6 +722,77 @@ describe('GraphQL', () => {
 
     const res3 = await graphqlHandler(request3, repo, fhirRouter);
     expect(res3[0]).toMatchObject(allOk);
+  });
+
+  test('Max depth override', async () => {
+    // Project level settings can override the default depth
+    const config = {
+      graphqlMaxDepth: 6,
+    };
+
+    // 4 levels of depth is ok
+    const request1: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      config,
+      body: {
+        query: `
+        {
+          ServiceRequestList {
+            id
+            basedOn {
+              resource {
+                ...on ServiceRequest {
+                  id
+                }
+              }
+            }
+          }
+        }
+    `,
+      },
+    };
+
+    const fhirRouter = new FhirRouter();
+    const res1 = await graphqlHandler(request1, repo, fhirRouter);
+    expect(res1[0]).toMatchObject(allOk);
+
+    // 8 levels of nesting is too much
+    const request2: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      config,
+      body: {
+        query: `
+        {
+          ServiceRequestList {
+            id
+            basedOn {
+              resource {
+                ...on ServiceRequest {
+                  id
+                  basedOn {
+                    resource {
+                      ...on ServiceRequest {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+    `,
+      },
+    };
+
+    const res2 = await graphqlHandler(request2, repo, fhirRouter);
+    expect(res2[0].issue?.[0]?.details?.text).toEqual('Field "id" exceeds max depth (depth=8, max=6)');
   });
 
   test('StructureDefinition query', async () => {
@@ -1061,6 +1169,33 @@ describe('GraphQL', () => {
     });
   });
 
+  test('Connection API without edges field', async () => {
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      {
+        PatientConnection(name: "Smith") {
+          count
+        }
+      }
+    `,
+      },
+    };
+
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+
+    const data = (res[1] as any).data;
+    expect(data.PatientConnection).toBeDefined();
+    expect(data.PatientConnection.count).toBe(1);
+    expect(data.PatientConnection.edges).toBeUndefined();
+  });
+
   test('Create Patient Record', async () => {
     const request: FhirRequest = {
       method: 'POST',
@@ -1102,6 +1237,49 @@ describe('GraphQL', () => {
 
     expect(retrievePatient.gender).toEqual('male');
     expect(retrievePatient.name?.[0].given).toEqual(['Bob']);
+  });
+
+  test('Create wrong resourceType error', async () => {
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      mutation {
+        PatientCreate(res: { resourceType: "ServiceRequest" }) { id }
+      }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res).toMatchObject([
+      {
+        resourceType: 'OperationOutcome',
+        id: 'ok',
+        issue: [
+          {
+            severity: 'information',
+            code: 'informational',
+            details: { text: 'All OK' },
+          },
+        ],
+      },
+      {
+        errors: [
+          {
+            message: 'Invalid resourceType',
+            locations: [{ line: 3, column: 9 }],
+            path: ['PatientCreate'],
+          },
+        ],
+        data: {
+          PatientCreate: null,
+        },
+      },
+    ]);
   });
 
   test('Updating Patient Record', async () => {
@@ -1187,6 +1365,110 @@ describe('GraphQL', () => {
     );
   });
 
+  test('Update wrong resourceType error', async () => {
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      mutation {
+        PatientUpdate(
+          id: "${patient.id}"
+          res: {
+            resourceType: "ServiceRequest"
+            id: "${patient.id}"
+          }
+        ) {
+          id
+        }
+      }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res).toMatchObject([
+      {
+        resourceType: 'OperationOutcome',
+        id: 'ok',
+        issue: [
+          {
+            severity: 'information',
+            code: 'informational',
+            details: { text: 'All OK' },
+          },
+        ],
+      },
+      {
+        errors: [
+          {
+            message: 'Invalid resourceType',
+            locations: [{ line: 3, column: 9 }],
+            path: ['PatientUpdate'],
+          },
+        ],
+        data: {
+          PatientUpdate: null,
+        },
+      },
+    ]);
+  });
+
+  test('Update wrong ID error', async () => {
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+      mutation {
+        PatientUpdate(
+          id: "${patient.id}"
+          res: {
+            resourceType: "Patient"
+            id: "${randomUUID()}"
+          }
+        ) {
+          id
+        }
+      }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res).toMatchObject([
+      {
+        resourceType: 'OperationOutcome',
+        id: 'ok',
+        issue: [
+          {
+            severity: 'information',
+            code: 'informational',
+            details: { text: 'All OK' },
+          },
+        ],
+      },
+      {
+        errors: [
+          {
+            message: 'Invalid ID',
+            locations: [{ line: 3, column: 9 }],
+            path: ['PatientUpdate'],
+          },
+        ],
+        data: {
+          PatientUpdate: null,
+        },
+      },
+    ]);
+  });
+
   test('Delete Patient Record', async () => {
     const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
@@ -1219,5 +1501,85 @@ describe('GraphQL', () => {
     } catch (err) {
       expect((err as Error).message).toBe('Not found');
     }
+  });
+
+  test('Reference missing reference property', async () => {
+    const eob = await repo.createResource<ExplanationOfBenefit>({
+      resourceType: 'ExplanationOfBenefit',
+      facility: {
+        display: 'test',
+      },
+    } as ExplanationOfBenefit);
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+        {
+          ExplanationOfBenefit(id: "${eob.id}") {
+            facility {
+              display
+              resource {
+                ... on Organization {
+                  resourceType
+                  name
+                }
+              }
+            }
+          }
+        }
+      `,
+      },
+    };
+    const fhirRouter = new FhirRouter();
+    const res = await graphqlHandler(request, repo, fhirRouter);
+    expect(res[0]).toMatchObject(allOk);
+    expect((res[1] as any).errors).toBeUndefined();
+  });
+
+  test('Fragment inclusion', async () => {
+    const request: FhirRequest = {
+      method: 'POST',
+      pathname: '/fhir/R4/$graphql',
+      query: {},
+      params: {},
+      body: {
+        query: `
+        query Visit {
+          Encounter(id: "${encounter1.id}") {
+            id
+            meta {
+              lastUpdated
+            }
+            subject {
+              reference
+              resource {
+                ...PatientInfo
+              }
+            }
+          }
+
+        }
+
+        fragment PatientInfo on Patient {
+          id name { given family }
+        }
+    `,
+      },
+    };
+
+    const fhirRouter = new FhirRouter();
+    const result = await graphqlHandler(request, repo, fhirRouter);
+    expect(result).toBeDefined();
+    expect(result.length).toBe(2);
+    expect(result[0]).toMatchObject(allOk);
+
+    const data = (result[1] as any).data;
+    expect(data.Encounter.id).toEqual(encounter1.id);
+    expect(data.Encounter.subject.resource).toBeDefined();
+    expect(data.Encounter.subject.resource.id).toEqual(patient.id);
+    expect(data.Encounter.subject.resource.name[0].given[0]).toEqual('Alice');
   });
 });

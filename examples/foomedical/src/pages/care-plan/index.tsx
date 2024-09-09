@@ -4,7 +4,7 @@ import { Outlet } from 'react-router-dom';
 import { Loading } from '../../components/Loading';
 import { SideMenu } from '../../components/SideMenu';
 
-export const sideMenu = {
+const sideMenu = {
   title: 'Care Plan',
   menu: [{ name: 'Action Items', href: '/care-plan/action-items' }],
 };

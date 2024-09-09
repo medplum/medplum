@@ -1,17 +1,11 @@
-import { ElementDefinition } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { ReactNode } from 'react';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { CodeInput } from './CodeInput';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
-
-const statusProperty: ElementDefinition = {
-  binding: {
-    valueSet: 'https://example.com/test',
-  },
-};
 
 const medplum = new MockClient();
+const binding = 'https://example.com/test';
 
 describe('CodeInput', () => {
   beforeEach(() => {
@@ -25,14 +19,16 @@ describe('CodeInput', () => {
     jest.useRealTimers();
   });
 
-  async function setup(child: React.ReactNode): Promise<void> {
+  const defaultProps = { maxValues: 1, binding, name: 'test', onChange: undefined };
+
+  async function setup(child: ReactNode): Promise<void> {
     await act(async () => {
       render(<MedplumProvider medplum={medplum}>{child}</MedplumProvider>);
     });
   }
 
   test('Renders', async () => {
-    await setup(<CodeInput property={statusProperty} name="test" />);
+    await setup(<CodeInput {...defaultProps} />);
 
     expect(screen.getByRole('searchbox')).toBeInTheDocument();
   });
@@ -41,7 +37,7 @@ describe('CodeInput', () => {
     await act(async () => {
       render(
         <MedplumProvider medplum={medplum}>
-          <CodeInput property={statusProperty} name="test" defaultValue="xyz" />
+          <CodeInput {...defaultProps} defaultValue="xyz" maxValues={undefined} />
         </MedplumProvider>
       );
     });
@@ -51,7 +47,7 @@ describe('CodeInput', () => {
   });
 
   test('Searches for results', async () => {
-    await setup(<CodeInput property={statusProperty} name="test" />);
+    await setup(<CodeInput {...defaultProps} />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
@@ -79,7 +75,7 @@ describe('CodeInput', () => {
   });
 
   test('Searches for results with creatable set to false', async () => {
-    await setup(<CodeInput property={statusProperty} name="test" creatable={false} clearable={false} />);
+    await setup(<CodeInput {...defaultProps} creatable={false} clearable={false} />);
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 

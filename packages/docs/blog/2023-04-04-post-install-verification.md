@@ -1,17 +1,15 @@
 ---
 slug: post-install-verification
 title: Post-Installation Steps to Verify Your Environment
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [self-host]
 ---
 
 # Medplum Post-Installation: Essential Steps to Verify Your Environment
 
 This guide is for customers who are [self-hosting](/docs/self-hosting) Medplum, and this post assumes that your installation was complete and successful. We will refer to your base installation as `$domainName`, and this refers to the domain on which the Medplum app is running, for example on hosted Medplum the domain is `app.medplum.com.`
+
+<!-- truncate -->
 
 Now that the initial installation is complete, it's essential to verify that your environment is functioning correctly. In this article, we'll walk you through the necessary steps to ensure your Medplum installation is working.
 
@@ -44,7 +42,7 @@ Now that you are logged into your new project. Inviting a new user to your proje
 - Click on the Admin -> Project item on your left navigation panel or visit `$domainName/admin/project`.
 - Go to the "Users" tab within the project.
 - Click the "Invite new user" link.
-- Enter the user's email address, name and (optional) [Access Policy](/docs/auth/access-control).
+- Enter the user's email address, name and (optional) [Access Policy](/docs/access/access-policies).
   e. Click "Invite."
 
 The new user should receive an email invitation to join the project. This process confirms that your system emails are functioning correctly.

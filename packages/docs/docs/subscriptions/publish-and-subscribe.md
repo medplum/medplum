@@ -38,6 +38,12 @@ To set up your [Subscription](https://app.medplum.com/Subscription) page in Medp
 - The `Criteria` section in the setup is what determines the triggering event for notifications. For example you put "ServiceRequest" in the `Criteria` section, all changes to ServiceRequests will generate a notification.
 - The `Endpoint` is the place where the subscribing web application URL should be placed. A full JSON representation of the object will be posted to the URL provided.
 
+:::warning Subscriptions on `AuditEvents`
+
+The `Criteria` of a subscription cannot be set to an [`AuditEvent`](/docs/api/fhir/resources/auditevent) resource. When a subscription is triggered it creates an [`AuditEvent`](/docs/api/fhir/resources/auditevent), so using it as criteria would create a notification spiral.
+
+:::
+
 You can find more instructions on setting up a subscription in the [Medplum Bots documentation](/docs/bots/bot-basics#executing-automatically-using-a-subscription).
 
 Before moving on to the rest of the tutorial, **we recommend testing your subscription** by attempting to trigger the webhook and inspect the data. If you have set up your webhook correctly you should see events when you [create a new](https://app.medplum.com/ServiceRequest/new) ServiceRequest or edit an existing [ServiceRequest](https://app.medplum.com/ServiceRequest). You will also see [AuditEvents](https://app.medplum.com/AuditEvent) created for the Subscription.

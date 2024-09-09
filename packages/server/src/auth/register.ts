@@ -1,9 +1,9 @@
 import { createReference, ProfileResource } from '@medplum/core';
-import { ClientApplication, Login, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { ClientApplication, Login, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { systemRepo } from '../fhir/repo';
-import { getAuthTokens, tryLogin } from '../oauth/utils';
-import { createProject } from './newproject';
+import { createProject } from '../fhir/operations/projectinit';
+import { getSystemRepo } from '../fhir/repo';
+import { getAuthTokens, getUserByEmailWithoutProject, tryLogin } from '../oauth/utils';
 import { bcryptHashPassword } from './utils';
 
 /*
@@ -20,6 +20,7 @@ export interface RegisterRequest {
   readonly password: string;
   readonly remoteAddress?: string;
   readonly userAgent?: string;
+  readonly scope?: string;
 }
 
 export interface RegisterResponse {
@@ -34,24 +35,29 @@ export interface RegisterResponse {
 
 /**
  * Registers a new user and/or new project.
- * @param request The register request.
+ * @param request - The register request.
  * @returns The registration response.
  */
 export async function registerNew(request: RegisterRequest): Promise<RegisterResponse> {
   const { password, projectName, firstName, lastName } = request;
   const email = request.email.toLowerCase();
   const passwordHash = await bcryptHashPassword(password);
-  const user = await systemRepo.createResource<User>({
-    resourceType: 'User',
-    firstName,
-    lastName,
-    email,
-    passwordHash,
-  });
+
+  let user = await getUserByEmailWithoutProject(email);
+  if (!user) {
+    const systemRepo = getSystemRepo();
+    user = await systemRepo.createResource<User>({
+      resourceType: 'User',
+      firstName,
+      lastName,
+      email,
+      passwordHash,
+    });
+  }
 
   const login = await tryLogin({
     authMethod: 'password',
-    scope: 'openid offline',
+    scope: request.scope ?? 'openid offline',
     nonce: randomUUID(),
     email: email,
     password: password,
@@ -60,18 +66,16 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     allowNoMembership: true,
   });
 
-  const { membership, client } = await createProject(login, projectName, firstName, lastName);
-
-  const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
-
-  const profile = await systemRepo.readReference<ProfileResource>(membership.profile as Reference<ProfileResource>);
+  const { membership, client, project, profile } = await createProject(projectName, user);
 
   const token = await getAuthTokens(
+    user,
     {
       ...login,
-      membership: createReference(membership),
+      membership: createReference(membership as ProjectMembership),
     },
-    createReference(profile)
+    createReference(profile as ProfileResource),
+    client.refreshTokenLifetime
   );
 
   return {
@@ -79,8 +83,8 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
     user,
     project,
     login,
-    membership,
-    profile,
+    membership: membership as ProjectMembership,
+    profile: profile as ProfileResource,
     client,
   };
 }

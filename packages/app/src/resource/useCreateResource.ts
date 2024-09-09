@@ -1,12 +1,13 @@
-import { normalizeOperationOutcome } from '@medplum/core';
+import { showNotification } from '@mantine/notifications';
+import { normalizeErrorString, normalizeOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { useNavigate } from 'react-router-dom';
 
 /**
  * React Hook providing helpers to create a FHIR resource.
- * @param resourceType The FHIR resource type.
- * @param setOutcome Optional callback to set the OperationOutcome.
+ * @param resourceType - The FHIR resource type.
+ * @param setOutcome - Optional callback to set the OperationOutcome.
  * @returns An object with `defaultValue` to seed a creation view and `handleSubmit`
  * to create the new resource on submission.
  */
@@ -32,6 +33,12 @@ export function useCreateResource<T extends Resource>(
         if (setOutcome) {
           setOutcome(normalizeOperationOutcome(err));
         }
+        showNotification({
+          color: 'red',
+          message: normalizeErrorString(err),
+          autoClose: false,
+          styles: { description: { whiteSpace: 'pre-line' } },
+        });
       });
   };
 

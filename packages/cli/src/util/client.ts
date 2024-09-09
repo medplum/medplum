@@ -3,7 +3,8 @@ import { FileSystemStorage } from '../storage';
 import { Profile } from '../utils';
 
 export async function createMedplumClient(
-  options: MedplumClientOptions & { profile?: string }
+  options: MedplumClientOptions & { profile?: string },
+  setupCredentials = true
 ): Promise<MedplumClient> {
   const profileName = options.profile ?? 'default';
 
@@ -29,16 +30,23 @@ export async function createMedplumClient(
     verbose: options.verbose,
   });
 
-  if (accessToken) {
-    medplumClient.setAccessToken(accessToken);
+  // In most commands, we want to automatically set up credentials.
+  // However, in some cases such as "login", we don't want to do that.
+  // Setup credentials if the user does not explicitly disable it.
+  if (setupCredentials) {
+    if (accessToken) {
+      // If the access token is provided, use it.
+      medplumClient.setAccessToken(accessToken);
+    } else if (clientId && clientSecret) {
+      // If the client ID and secret are provided, use them.
+      medplumClient.setBasicAuth(clientId as string, clientSecret as string);
+      if (profile?.authType !== 'basic') {
+        // Unless the user explicitly specified basic auth, start the client login.
+        await medplumClient.startClientLogin(clientId as string, clientSecret as string);
+      }
+    }
   }
 
-  if (profile?.authType === 'client_credentials') {
-    medplumClient.setBasicAuth(clientId as string, clientSecret as string);
-    await medplumClient.startClientLogin(clientId as string, clientSecret as string);
-  } else if (profile?.authType === 'basic') {
-    medplumClient.setBasicAuth(clientId as string, clientSecret as string);
-  }
   return medplumClient;
 }
 

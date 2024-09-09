@@ -1,9 +1,9 @@
-import { mkdtempSync, rmSync } from 'fs';
-import os from 'os';
-import { sep } from 'path';
+import { mkdtempSync, rmSync } from 'node:fs';
+import os from 'node:os';
+import { sep } from 'node:path';
 import { FileSystemStorage } from './storage';
 
-jest.mock('os');
+jest.mock('node:os');
 
 const testHomeDir = mkdtempSync(__dirname + sep + 'storage-');
 

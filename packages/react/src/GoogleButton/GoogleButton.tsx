@@ -1,10 +1,10 @@
 import { GoogleCredentialResponse } from '@medplum/core';
-import React, { useEffect, useRef, useState } from 'react';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
+import { useMedplum } from '@medplum/react-hooks';
+import { useEffect, useRef, useState } from 'react';
 import { createScriptTag } from '../utils/script';
 
 interface GoogleApi {
-  accounts: {
+  readonly accounts: {
     id: {
       initialize: (args: any) => void;
       renderButton: (parent: HTMLElement, args: any) => void;
@@ -52,20 +52,4 @@ export function GoogleButton(props: GoogleButtonProps): JSX.Element | null {
   }
 
   return <div ref={parentRef} />;
-}
-
-export function getGoogleClientId(clientId: string | undefined): string | undefined {
-  if (clientId) {
-    return clientId;
-  }
-
-  if (typeof window !== 'undefined') {
-    const origin = window.location.protocol + '//' + window.location.host;
-    const authorizedOrigins = process.env.GOOGLE_AUTH_ORIGINS?.split(',') ?? [];
-    if (authorizedOrigins.includes(origin)) {
-      return process.env.GOOGLE_CLIENT_ID;
-    }
-  }
-
-  return undefined;
 }

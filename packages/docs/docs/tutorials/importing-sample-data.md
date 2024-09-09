@@ -17,7 +17,7 @@ Read more about the Medplum App [here](/docs/app)
 
 ## Download JSON Files
 
-Below are resources belonging to two patients. This is FHIR data constructed in accordance with the [USCDI Data Element](/docs/fhir-datastore/understanding-uscdi-dataclasses) standards. That means that the FHIR Resources provided are tagged with the right [CodableConcepts](/docs/fhir-basics#codeable-concepts-standarding-data) and ontologies to match the interoperability requirements for an EHR in the US.
+Below are resources belonging to two patients. This is FHIR data constructed in accordance with the [USCDI Data Element](/docs/fhir-datastore/understanding-uscdi-dataclasses) standards. That means that the FHIR Resources provided are tagged with the right [CodableConcepts](/docs/fhir-basics#standardizing-data-codeable-concepts) and ontologies to match the interoperability requirements for an EHR in the US.
 
 Download one or both of the following files:
 
@@ -38,4 +38,4 @@ Log into Medplum and navigate to the [batch create](https://app.medplum.com/batc
 
 ![Batch create tool](/img/tutorials/batch-create.png)
 
-The batch upload tool is a lightweight wrapper around the [batch/transaction api](https://www.hl7.org/fhir/http.html#transaction) and here is the documentation on how to [upload a batch using the SDK](/docs/sdk/classes/MedplumClient#batch).
+The batch upload tool is a lightweight wrapper around the [batch/transaction api](https://www.hl7.org/fhir/http.html#transaction) and here is the documentation on how to [upload a batch using the SDK](/docs/sdk/core.medplumclient.executebatch).

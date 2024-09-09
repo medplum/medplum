@@ -135,7 +135,7 @@ export interface MedicationRequest {
    * A code specifying the current state of the order.  Generally, this
    * will be active or completed state.
    */
-  status?: 'active' | 'on-hold' | 'cancelled' | 'completed' | 'entered-in-error' | 'stopped' | 'draft' | 'unknown';
+  status: 'active' | 'on-hold' | 'cancelled' | 'completed' | 'entered-in-error' | 'stopped' | 'draft' | 'unknown';
 
   /**
    * Captures the reason for the current state of the MedicationRequest.
@@ -145,7 +145,7 @@ export interface MedicationRequest {
   /**
    * Whether the request is a proposal, plan, or an original order.
    */
-  intent?: 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+  intent: 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
    * Indicates the type of medication request (for example, where the
@@ -200,7 +200,7 @@ export interface MedicationRequest {
    * A link to a resource representing the person or set of individuals to
    * whom the medication will be given.
    */
-  subject?: Reference<Patient | Group>;
+  subject: Reference<Patient | Group>;
 
   /**
    * The Encounter during which this [x] was created or to which the
@@ -345,6 +345,21 @@ export interface MedicationRequest {
    */
   eventHistory?: Reference<Provenance>[];
 }
+
+/**
+ * Indicates if this record was captured as a secondary 'reported' record
+ * rather than as an original primary source-of-truth record.  It may
+ * also indicate the source of the report.
+ */
+export type MedicationRequestReported = boolean | Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Organization>;
+
+/**
+ * Identifies the medication being requested. This is a link to a
+ * resource that represents the medication which may be the details of
+ * the medication or simply an attribute carrying a code that identifies
+ * the medication from a known list of medications.
+ */
+export type MedicationRequestMedication = CodeableConcept | Reference<Medication>;
 
 /**
  * Indicates the specific details for the dispense or medication supply
@@ -552,3 +567,9 @@ export interface MedicationRequestSubstitution {
    */
   reason?: CodeableConcept;
 }
+
+/**
+ * True if the prescriber allows a different drug to be dispensed from
+ * what was prescribed.
+ */
+export type MedicationRequestSubstitutionAllowed = boolean | CodeableConcept;

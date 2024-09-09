@@ -1,16 +1,28 @@
 import {
   Bundle,
   BundleEntry,
+  CodeableConcept,
+  Coding,
   ElementDefinition,
   Reference,
   Resource,
   ResourceType,
   SearchParameter,
-  StructureDefinition,
 } from '@medplum/fhirtypes';
-import baseSchema from './base-schema.json';
+import { formatHumanName } from './format';
 import { SearchParameterDetails } from './search/details';
-import { capitalize } from './utils';
+import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
+import { capitalize, createReference } from './utils';
+
+export type TypeName<T> = T extends string
+  ? 'string'
+  : T extends number
+    ? 'number'
+    : T extends boolean
+      ? 'boolean'
+      : T extends undefined
+        ? 'undefined'
+        : 'object';
 
 export interface TypedValue {
   readonly type: string;
@@ -22,67 +34,67 @@ export interface TypedValue {
  * http://www.hl7.org/fhir/valueset-defined-types.html
  * The list here includes additions found from StructureDefinition resources.
  */
-export enum PropertyType {
-  Address = 'Address',
-  Age = 'Age',
-  Annotation = 'Annotation',
-  Attachment = 'Attachment',
-  BackboneElement = 'BackboneElement',
-  CodeableConcept = 'CodeableConcept',
-  Coding = 'Coding',
-  ContactDetail = 'ContactDetail',
-  ContactPoint = 'ContactPoint',
-  Contributor = 'Contributor',
-  Count = 'Count',
-  DataRequirement = 'DataRequirement',
-  Distance = 'Distance',
-  Dosage = 'Dosage',
-  Duration = 'Duration',
-  Expression = 'Expression',
-  Extension = 'Extension',
-  HumanName = 'HumanName',
-  Identifier = 'Identifier',
-  MarketingStatus = 'MarketingStatus',
-  Meta = 'Meta',
-  Money = 'Money',
-  Narrative = 'Narrative',
-  ParameterDefinition = 'ParameterDefinition',
-  Period = 'Period',
-  Population = 'Population',
-  ProdCharacteristic = 'ProdCharacteristic',
-  ProductShelfLife = 'ProductShelfLife',
-  Quantity = 'Quantity',
-  Range = 'Range',
-  Ratio = 'Ratio',
-  Reference = 'Reference',
-  RelatedArtifact = 'RelatedArtifact',
-  SampledData = 'SampledData',
-  Signature = 'Signature',
-  SubstanceAmount = 'SubstanceAmount',
-  SystemString = 'http://hl7.org/fhirpath/System.String',
-  Timing = 'Timing',
-  TriggerDefinition = 'TriggerDefinition',
-  UsageContext = 'UsageContext',
-  base64Binary = 'base64Binary',
-  boolean = 'boolean',
-  canonical = 'canonical',
-  code = 'code',
-  date = 'date',
-  dateTime = 'dateTime',
-  decimal = 'decimal',
-  id = 'id',
-  instant = 'instant',
-  integer = 'integer',
-  markdown = 'markdown',
-  oid = 'oid',
-  positiveInt = 'positiveInt',
-  string = 'string',
-  time = 'time',
-  unsignedInt = 'unsignedInt',
-  uri = 'uri',
-  url = 'url',
-  uuid = 'uuid',
-}
+export const PropertyType = {
+  Address: 'Address',
+  Age: 'Age',
+  Annotation: 'Annotation',
+  Attachment: 'Attachment',
+  BackboneElement: 'BackboneElement',
+  CodeableConcept: 'CodeableConcept',
+  Coding: 'Coding',
+  ContactDetail: 'ContactDetail',
+  ContactPoint: 'ContactPoint',
+  Contributor: 'Contributor',
+  Count: 'Count',
+  DataRequirement: 'DataRequirement',
+  Distance: 'Distance',
+  Dosage: 'Dosage',
+  Duration: 'Duration',
+  Expression: 'Expression',
+  Extension: 'Extension',
+  HumanName: 'HumanName',
+  Identifier: 'Identifier',
+  MarketingStatus: 'MarketingStatus',
+  Meta: 'Meta',
+  Money: 'Money',
+  Narrative: 'Narrative',
+  ParameterDefinition: 'ParameterDefinition',
+  Period: 'Period',
+  Population: 'Population',
+  ProdCharacteristic: 'ProdCharacteristic',
+  ProductShelfLife: 'ProductShelfLife',
+  Quantity: 'Quantity',
+  Range: 'Range',
+  Ratio: 'Ratio',
+  Reference: 'Reference',
+  RelatedArtifact: 'RelatedArtifact',
+  SampledData: 'SampledData',
+  Signature: 'Signature',
+  SubstanceAmount: 'SubstanceAmount',
+  SystemString: 'http://hl7.org/fhirpath/System.String',
+  Timing: 'Timing',
+  TriggerDefinition: 'TriggerDefinition',
+  UsageContext: 'UsageContext',
+  base64Binary: 'base64Binary',
+  boolean: 'boolean',
+  canonical: 'canonical',
+  code: 'code',
+  date: 'date',
+  dateTime: 'dateTime',
+  decimal: 'decimal',
+  id: 'id',
+  instant: 'instant',
+  integer: 'integer',
+  markdown: 'markdown',
+  oid: 'oid',
+  positiveInt: 'positiveInt',
+  string: 'string',
+  time: 'time',
+  unsignedInt: 'unsignedInt',
+  uri: 'uri',
+  url: 'url',
+  uuid: 'uuid',
+} as const;
 
 /**
  * An IndexedStructureDefinition is a lookup-optimized version of a StructureDefinition.
@@ -109,7 +121,7 @@ export enum PropertyType {
  *   PropertySchema - one per property/field
  */
 export interface IndexedStructureDefinition {
-  types: { [resourceType: string]: TypeSchema };
+  types: Record<string, TypeInfo>;
 }
 
 /**
@@ -121,123 +133,14 @@ export interface IndexedStructureDefinition {
  *   3) Patient_Communication
  *   4) Patient_Link
  */
-export interface TypeSchema {
-  structureDefinition: StructureDefinition;
-  elementDefinition: ElementDefinition;
-  display: string;
-  properties: { [name: string]: ElementDefinition };
-  searchParams?: { [code: string]: SearchParameter };
-  searchParamsDetails?: { [code: string]: SearchParameterDetails };
-  description?: string;
-  parentType?: string;
-}
-
-/**
- * Indexes a bundle of StructureDefinitions for faster lookup.
- * @param bundle A FHIR bundle StructureDefinition resources.
- * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
- */
-export function indexStructureDefinitionBundle(bundle: Bundle): void {
-  for (const entry of bundle.entry as BundleEntry[]) {
-    const resource = entry.resource as Resource;
-    if (resource.resourceType === 'StructureDefinition') {
-      indexStructureDefinition(resource);
-    }
-  }
-}
-
-/**
- * Indexes a StructureDefinition for fast lookup.
- * @param structureDefinition The original StructureDefinition.
- * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
- */
-export function indexStructureDefinition(structureDefinition: StructureDefinition): void {
-  const typeName = structureDefinition.name;
-  if (!typeName) {
-    return;
-  }
-
-  const elements = structureDefinition.snapshot?.element;
-  if (elements) {
-    // @TODO(ThatOneBro 29 Aug 2023): any reason why this can't be done in one loop?
-    // @TODO(ThatOneBro): Using numeric for loops would be better since they avoid overhead of iterators that you get with for...of
-    for (const element of elements) {
-      // First pass, build types
-      indexType(structureDefinition, element);
-    }
-
-    for (const element of elements) {
-      // Second pass, build properties
-      indexProperty(structureDefinition, element);
-    }
-  }
-}
-
-/**
- * Indexes TypeSchema from an ElementDefinition.
- * In the common case, there will be many ElementDefinition instances per TypeSchema.
- * Only the first occurrence is saved.
- * @param structureDefinition The parent type structure definition.
- * @param elementDefinition The element definition.
- * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
- */
-function indexType(structureDefinition: StructureDefinition, elementDefinition: ElementDefinition): void {
-  const path = elementDefinition.path as string;
-  const typeCode = elementDefinition.type?.[0]?.code;
-  if (typeCode !== undefined && typeCode !== 'Element' && typeCode !== 'BackboneElement') {
-    return;
-  }
-
-  const parts = path.split('.');
-
-  // Force the first part to be the type name
-  // This is necessary for "SimpleQuantity" and "MoneyQuantity"
-  parts[0] = structureDefinition.name as string;
-
-  const typeName = buildTypeName(parts);
-  let typeSchema = globalSchema.types[typeName];
-
-  if (!typeSchema) {
-    globalSchema.types[typeName] = typeSchema = {} as TypeSchema;
-  }
-
-  typeSchema.parentType = typeSchema.parentType ?? buildTypeName(parts.slice(0, parts.length - 1));
-  typeSchema.display = typeSchema.display ?? typeName;
-  typeSchema.structureDefinition = typeSchema.structureDefinition ?? structureDefinition;
-  typeSchema.elementDefinition = typeSchema.elementDefinition ?? elementDefinition;
-  typeSchema.description = typeSchema.description ?? elementDefinition.definition;
-  typeSchema.properties = typeSchema.properties ?? {};
-}
-
-/**
- * Indexes PropertySchema from an ElementDefinition.
- * @param structureDefinition The input StructureDefinition.
- * @param element The input ElementDefinition.
- * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
- */
-function indexProperty(structureDefinition: StructureDefinition, element: ElementDefinition): void {
-  const path = element.path as string;
-  const parts = path.split('.');
-  if (parts.length === 1) {
-    return;
-  }
-
-  // Force the first part to be the type name
-  // This is necessary for "SimpleQuantity" and "MoneyQuantity"
-  parts[0] = structureDefinition.name as string;
-
-  const typeName = buildTypeName(parts.slice(0, parts.length - 1));
-  const typeSchema = globalSchema.types[typeName];
-  if (!typeSchema) {
-    return;
-  }
-  const key = parts[parts.length - 1];
-  typeSchema.properties[key] = element;
+export interface TypeInfo {
+  searchParams?: Record<string, SearchParameter>;
+  searchParamsDetails?: Record<string, SearchParameterDetails>;
 }
 
 /**
  * Indexes a bundle of SearchParameter resources for faster lookup.
- * @param bundle A FHIR bundle SearchParameter resources.
+ * @param bundle - A FHIR bundle SearchParameter resources.
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): void {
@@ -252,14 +155,17 @@ export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): voi
 /**
  * Indexes a SearchParameter resource for fast lookup.
  * Indexes by SearchParameter.code, which is the query string parameter name.
- * @param searchParam The SearchParameter resource.
+ * @param searchParam - The SearchParameter resource.
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameter(searchParam: SearchParameter): void {
   for (const resourceType of searchParam.base ?? []) {
-    const typeSchema = globalSchema.types[resourceType];
+    let typeSchema = globalSchema.types[resourceType];
     if (!typeSchema) {
-      continue;
+      typeSchema = {
+        searchParamsDetails: {},
+      } as TypeInfo;
+      globalSchema.types[resourceType] = typeSchema;
     }
 
     if (!typeSchema.searchParams) {
@@ -315,7 +221,7 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
 
 /**
  * Returns the type name for an ElementDefinition.
- * @param elementDefinition The element definition.
+ * @param elementDefinition - The element definition.
  * @returns The Medplum type name.
  */
 export function getElementDefinitionTypeName(elementDefinition: ElementDefinition): string {
@@ -334,17 +240,11 @@ export function buildTypeName(components: string[]): string {
 
 /**
  * Returns true if the type schema is a non-abstract FHIR resource.
- * @param typeSchema The type schema to check.
+ * @param typeSchema - The type schema to check.
  * @returns True if the type schema is a non-abstract FHIR resource.
  */
-export function isResourceTypeSchema(typeSchema: TypeSchema): boolean {
-  const structureDefinition = typeSchema.structureDefinition;
-  return (
-    structureDefinition &&
-    structureDefinition.name === typeSchema.elementDefinition.path &&
-    structureDefinition.kind === 'resource' &&
-    !structureDefinition.abstract
-  );
+export function isResourceTypeSchema(typeSchema: InternalTypeSchema): boolean {
+  return typeSchema.kind === 'resource' && typeSchema.name !== 'Resource' && typeSchema.name !== 'DomainResource';
 }
 
 /**
@@ -353,62 +253,92 @@ export function isResourceTypeSchema(typeSchema: TypeSchema): boolean {
  * @returns An array of all resource types.
  */
 export function getResourceTypes(): ResourceType[] {
-  const result: ResourceType[] = [];
-  for (const [resourceType, typeSchema] of Object.entries(globalSchema.types)) {
-    if (isResourceTypeSchema(typeSchema)) {
-      result.push(resourceType as ResourceType);
-    }
-  }
-  return result;
-}
-
-/**
- * Returns the type schema for the resource type.
- * @param resourceType The resource type.
- * @returns The type schema for the resource type.
- */
-export function getResourceTypeSchema(resourceType: string): TypeSchema {
-  return globalSchema.types[resourceType];
+  return Object.values(getAllDataTypes())
+    .filter(isResourceTypeSchema)
+    .map((schema) => schema.name as ResourceType);
 }
 
 /**
  * Returns the search parameters for the resource type indexed by search code.
- * @param resourceType The resource type.
+ * @param resourceType - The resource type.
  * @returns The search parameters for the resource type indexed by search code.
  */
 export function getSearchParameters(resourceType: string): Record<string, SearchParameter> | undefined {
-  return globalSchema.types[resourceType].searchParams;
+  return globalSchema.types[resourceType]?.searchParams;
+}
+
+/**
+ * Returns a search parameter for a resource type by search code.
+ * @param resourceType - The FHIR resource type.
+ * @param code - The search parameter code.
+ * @returns The search parameter if found, otherwise undefined.
+ */
+export function getSearchParameter(resourceType: string, code: string): SearchParameter | undefined {
+  return globalSchema.types[resourceType]?.searchParams?.[code];
 }
 
 /**
  * Returns a human friendly display name for a FHIR element definition path.
- * @param path The FHIR element definition path.
+ * @param path - The FHIR element definition path.
  * @returns The best guess of the display name.
  */
-export function getPropertyDisplayName(path: string): string {
+export function getPathDisplayName(path: string): string {
   // Get the property name, which is the remainder after the last period
   // For example, for path "Patient.birthDate"
   // the property name is "birthDate"
   const propertyName = path.replaceAll('[x]', '').split('.').pop() as string;
 
-  // Split by capital letters
+  return getPropertyDisplayName(propertyName);
+}
+
+/**
+ * Returns a human friendly display name for a FHIR element property or slice name
+ * @param propertyName - The FHIR element property or slice name
+ * @returns The best guess of the display name.
+ */
+export function getPropertyDisplayName(propertyName: string): string {
+  let words: string[];
+  // CodeQL flags the regex below for potential ReDoS (Regex Denial of Service), so limit input size
+  // https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+  if (propertyName.length < 100) {
+    /*
+    Split into words looking for acronyms and camelCase
+
+    [A-Z]+(?![a-z])
+    This part of the regular expression matches a sequence of one or more uppercase letters ([A-Z]+)
+    but only if they are not followed by a lowercase letter. The (?![a-z]) is a negative lookahead assertion,
+    meaning it checks for the absence of a lowercase letter ([a-z]) following the uppercase letters but does
+    not include it in the match. This effectively captures acronyms or any series of consecutive uppercase letters.
+
+    [A-Z]?[a-z]+
+    This part matches a single, optional, uppercase letter followed by one or more lowercase letters ([a-z]+).
+    This pattern is suitable for matching words in camelCase format, where a word begins with a lowercase letter
+    but can optionally start with an uppercase letter (like in the middle of camelCase).
+
+    \d+
+    Matches a sequence of one or more digits into their own word
+    */
+    words = propertyName.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+/g) ?? [];
+  } else {
+    // fallback to splitting on capital letters
+    words = propertyName.split(/(?=[A-Z])/);
+  }
+
   // Capitalize the first letter of each word
   // Join together with spaces in between
   // Then normalize whitespace to single space character
   // For example, for property name "birthDate",
   // the display name is "Birth Date".
-  return propertyName
-    .split(/(?=[A-Z])/)
-    .map(capitalizeDisplayWord)
-    .join(' ')
-    .replace('_', ' ')
-    .replace(/\s+/g, ' ');
+  return words.map(capitalizeDisplayWord).join(' ').replace('_', ' ').replace(/\s+/g, ' ');
 }
 
-const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL']);
+const capitalizedWords = new Set(['ID', 'IP', 'PKCE', 'JWKS', 'URI', 'URL', 'OMB', 'UDI']);
 
 function capitalizeDisplayWord(word: string): string {
   const upper = word.toUpperCase();
+  if (word === upper) {
+    return word;
+  }
   if (capitalizedWords.has(upper)) {
     return upper;
   }
@@ -417,37 +347,60 @@ function capitalizeDisplayWord(word: string): string {
 
 /**
  * Returns an element definition by type and property name.
- * Handles content references.
- * @param typeName The type name.
- * @param propertyName The property name.
+ * @param typeName - The type name.
+ * @param propertyName - The property name.
+ * @param profileUrl - (optional) The URL of the current resource profile
  * @returns The element definition if found.
  */
-export function getElementDefinition(typeName: string, propertyName: string): ElementDefinition | undefined {
-  const typeSchema = globalSchema.types[typeName];
+export function getElementDefinition(
+  typeName: string,
+  propertyName: string,
+  profileUrl?: string
+): InternalSchemaElement | undefined {
+  const typeSchema = tryGetDataType(typeName, profileUrl);
   if (!typeSchema) {
     return undefined;
   }
+  return getElementDefinitionFromElements(typeSchema.elements, propertyName);
+}
 
-  const property = typeSchema.properties[propertyName] ?? typeSchema.properties[propertyName + '[x]'];
-  if (!property) {
-    return undefined;
+/**
+ * Returns an element definition from mapping of elements by property name.
+ * @param elements  - A mapping of property names to element definitions
+ * @param propertyName - The property name of interest
+ * @returns The element definition if found.
+ */
+export function getElementDefinitionFromElements(
+  elements: InternalTypeSchema['elements'],
+  propertyName: string
+): InternalSchemaElement | undefined {
+  // Always try to match the exact property name first
+  const simpleMatch = elements[propertyName] ?? elements[propertyName + '[x]'];
+  if (simpleMatch) {
+    return simpleMatch;
   }
 
-  if (property.contentReference) {
-    // Content references start with a "#"
-    // Remove the "#" character
-    const contentReference = property.contentReference.substring(1).split('.');
-    const referencePropertyName = contentReference.pop() as string;
-    const referenceTypeName = buildTypeName(contentReference);
-    return getElementDefinition(referenceTypeName, referencePropertyName);
+  // The propertyName can be a "choice of type" property, such as "value[x]", but in resolved form "valueString".
+  // So we need to iterate through all the elements and find the one that matches.
+  // Try to split on each capital letter, and see if that matches an element.
+  for (let i = 0; i < propertyName.length; i++) {
+    const c = propertyName[i];
+    if (c >= 'A' && c <= 'Z') {
+      const testProperty = propertyName.slice(0, i) + '[x]';
+      const element = elements[testProperty];
+      if (element) {
+        return element;
+      }
+    }
   }
 
-  return property;
+  // Otherwise, no matches.
+  return undefined;
 }
 
 /**
  * Typeguard to validate that an object is a FHIR resource
- * @param value The object to check
+ * @param value - The object to check
  * @returns True if the input is of type 'object' and contains property 'resourceType'
  */
 export function isResource(value: unknown): value is Resource {
@@ -456,14 +409,81 @@ export function isResource(value: unknown): value is Resource {
 
 /**
  * Typeguard to validate that an object is a FHIR resource
- * @param value The object to check
+ * @param value - The object to check
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
 export function isReference(value: unknown): value is Reference & { reference: string } {
-  return !!(value && typeof value === 'object' && 'reference' in value);
+  return !!(value && typeof value === 'object' && 'reference' in value && typeof value.reference === 'string');
 }
 
 /**
  * Global schema singleton.
  */
-export const globalSchema = baseSchema as unknown as IndexedStructureDefinition;
+export const globalSchema: IndexedStructureDefinition = { types: {} };
+
+/**
+ * Output the string representation of a value, suitable for use as part of a search query.
+ * @param v - The value to format as a string
+ * @returns The stringified value
+ */
+export function stringifyTypedValue(v: TypedValue): string {
+  switch (v.type) {
+    case PropertyType.uuid:
+    case PropertyType.uri:
+    case PropertyType.url:
+    case PropertyType.string:
+    case PropertyType.oid:
+    case PropertyType.markdown:
+    case PropertyType.id:
+    case PropertyType.code:
+    case PropertyType.canonical:
+    case PropertyType.base64Binary:
+    case PropertyType.SystemString:
+    case PropertyType.date:
+    case PropertyType.dateTime:
+    case PropertyType.instant:
+      // many types are represented as string primitives
+      return v.value as string;
+    case PropertyType.Identifier:
+      return `${v.value.system ?? ''}|${v.value.value}`;
+    case PropertyType.Coding:
+      return stringifyCoding(v.value);
+    case PropertyType.CodeableConcept:
+      return (v.value as CodeableConcept).coding?.map(stringifyCoding).join(',') ?? v.value.text;
+    case PropertyType.HumanName:
+      if (v.value.text) {
+        return v.value.text;
+      }
+      return formatHumanName(v.value);
+    case PropertyType.unsignedInt:
+    case PropertyType.positiveInt:
+    case PropertyType.integer:
+    case PropertyType.decimal:
+      return (v.value as number).toString();
+    case PropertyType.boolean:
+      return v.value ? 'true' : 'false';
+    case PropertyType.Extension:
+      return v.value.url;
+    case PropertyType.ContactPoint:
+      return v.value.value;
+    case PropertyType.Quantity:
+    case PropertyType.Age:
+    case PropertyType.Count:
+    case PropertyType.Duration:
+      return `${v.value.value}|${v.value.system ?? ''}|${v.value.code ?? v.value.unit ?? ''}`;
+    case PropertyType.Reference:
+      return v.value.reference;
+    default:
+      if (isResource(v.value)) {
+        return createReference(v.value).reference as string;
+      }
+      return JSON.stringify(v);
+  }
+}
+
+function stringifyCoding(coding: Coding | undefined): string {
+  if (!coding) {
+    return '';
+  }
+  return `${coding.system ?? ''}|${coding.code}`;
+}

@@ -1,7 +1,7 @@
 import { Alert, Title } from '@mantine/core';
 import { Document, Logo, RegisterForm, useMedplum } from '@medplum/react';
 import { IconAlertCircle } from '@tabler/icons-react';
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getConfig, isRegisterEnabled } from './config';
 
@@ -29,6 +29,7 @@ export function RegisterPage(): JSX.Element | null {
   return (
     <RegisterForm
       type="project"
+      projectId="new"
       onSuccess={() => navigate('/')}
       googleClientId={config.googleClientId}
       recaptchaSiteKey={config.recaptchaSiteKey}

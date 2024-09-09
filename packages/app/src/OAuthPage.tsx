@@ -1,7 +1,6 @@
 import { Title } from '@mantine/core';
 import { CodeChallengeMethod } from '@medplum/core';
 import { Logo, SignInForm } from '@medplum/react';
-import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getConfig } from './config';
 
@@ -34,6 +33,7 @@ export function OAuthPage(): JSX.Element | null {
       onRegister={() => navigate('/register')}
       googleClientId={getConfig().googleClientId}
       clientId={clientId || undefined}
+      redirectUri={params.get('redirect_uri') || undefined}
       scope={scope}
       nonce={params.get('nonce') || undefined}
       launch={params.get('launch') || undefined}

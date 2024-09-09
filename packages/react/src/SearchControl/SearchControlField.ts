@@ -1,11 +1,18 @@
-import { getSearchParameterDetails, globalSchema, SearchRequest } from '@medplum/core';
-import { ElementDefinition, ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import {
+  getElementDefinition,
+  getSearchParameter,
+  getSearchParameterDetails,
+  getSearchParameters,
+  InternalSchemaElement,
+  SearchRequest,
+} from '@medplum/core';
+import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 
 /**
  * The SearchControlField type describes a field in the search control.
  *
  * In a SearchRequest, a field is a simple string. Strings can be one of the following:
- * 1) Simple property names, which refer to ElementDefinition objects
+ * 1) Simple property names, which refer to InternalSchemaElement objects
  * 2) Search parameter names, which refer to SearchParameter resources
  *
  * Consider a few examples of how this becomes complicated.
@@ -30,13 +37,13 @@ import { ElementDefinition, ResourceType, SearchParameter } from '@medplum/fhirt
  */
 export interface SearchControlField {
   readonly name: string;
-  readonly elementDefinition?: ElementDefinition;
+  readonly elementDefinition?: InternalSchemaElement;
   readonly searchParams?: SearchParameter[];
 }
 
 /**
  * Returns the collection of field definitions for the search request.
- * @param search The search request definition.
+ * @param search - The search request definition.
  * @returns An array of field definitions.
  */
 export function getFieldDefinitions(search: SearchRequest): SearchControlField[] {
@@ -52,8 +59,8 @@ export function getFieldDefinitions(search: SearchRequest): SearchControlField[]
 /**
  * Return the field definition for a given field name.
  * Field names can be either property names or search parameter codes.
- * @param resourceType The resource type.
- * @param name The search field name (either property name or search parameter code).
+ * @param resourceType - The resource type.
+ * @param name - The search field name (either property name or search parameter code).
  * @returns The field definition.
  */
 function getFieldDefinition(resourceType: string, name: string): SearchControlField {
@@ -68,7 +75,7 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
           name: '_lastUpdated',
           type: 'date',
           expression: 'Resource.meta.lastUpdated',
-        },
+        } as SearchParameter,
       ],
     };
   }
@@ -84,14 +91,13 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
           name: '_versionId',
           type: 'token',
           expression: 'Resource.meta.versionId',
-        },
+        } as SearchParameter,
       ],
     };
   }
 
-  const typeSchema = globalSchema.types[resourceType];
-  const exactElementDefinition: ElementDefinition | undefined = typeSchema.properties[name];
-  const exactSearchParam: SearchParameter | undefined = typeSchema.searchParams?.[name.toLowerCase()];
+  const exactElementDefinition = getElementDefinition(resourceType, name);
+  const exactSearchParam = getSearchParameter(resourceType, name.toLowerCase());
 
   // Best case: Exact match of element definition or search parameter.
   // Examples: ServiceRequest.subject, Patient.name, Patient.birthDate
@@ -105,10 +111,15 @@ function getFieldDefinition(resourceType: string, name: string): SearchControlFi
   // In this case, there could be zero or more search parameters that are a function of the element definition.
   // So search for those search parameters.
   if (exactElementDefinition) {
+    const allSearchParams = getSearchParameters(resourceType);
     let searchParams: SearchParameter[] | undefined = undefined;
-    if (typeSchema.searchParams) {
-      const path = `${resourceType}.${name.replaceAll('[x]', '')}`;
-      searchParams = Object.values(typeSchema.searchParams).filter((p) => p.expression?.includes(path));
+    if (allSearchParams) {
+      // To avoid matching names that happen to be prefixes of other names, e.g. id and identifier,
+      // match ${resourceType}.${name} followed by a non-name character OR the end of the string
+      // Name characters include letters, numbers, underscores, and hyphens
+      const pathRegex = new RegExp(`${resourceType}\\.${name.replaceAll('[x]', '')}([^\\w-]|$)`);
+
+      searchParams = Object.values(allSearchParams).filter((p) => !!p.expression && pathRegex.test(p?.expression));
       if (searchParams.length === 0) {
         searchParams = undefined;
       }

@@ -1,0 +1,199 @@
+import ExampleCode from '!!raw-loader!@site/..//examples/src/medications/representing-prescriptions-and-medication-orders.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Representing Prescriptions and Medication Orders
+
+Prescriptions and medication orders are very common in healthcare settings and accuracy is vitally important. This guide will go over how to represent all aspects of a medication order, from the request to the administration instructions. Note that this is an _operational counterpart_ to the [Modeling A Formulary](/docs/medications/formulary) documentation.
+
+## The `MedicationRequest` Resource
+
+Medical orders should be represented in FHIR using the [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) resource. This resource has two main use cases:
+
+1. Representing a prescription
+2. Representing a medication fulfillment order (e.g. a ordering a pharmacy to to fulfill an outstanding prescription)
+
+In addition, it can contain contextual information such as instructions on administration of the medication.
+
+<table>
+  <tr>
+    <td>
+      <strong>Element</strong>
+    </td>
+    <td>
+      <strong>Description</strong>
+    </td>
+    <td>
+      <strong>Example</strong>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      <strong>
+        <em>Dispense and Ingestion Information</em>
+      </strong>
+    </td>
+  </tr>
+  <tr>
+    <td>medicationCodeableConcept</td>
+    <td>
+      The medication being requested, coded as a concept. The details of the drug will be in the MedicationKnowledge
+      resource with the same code.
+    </td>
+    <td>42844 - Percocet</td>
+  </tr>
+  <tr>
+    <td>dosageInstructions</td>
+    <td>Instructions on how the medication should be used by the patient.</td>
+    <td>
+      <a href="#representing-patient-instructions">See below</a>
+    </td>
+  </tr>
+  <tr>
+    <td>dispenseRequest</td>
+    <td>
+      Provides details about how the medication should be dispensed or supplied, including quantity, refills, and more.
+    </td>
+    <td>
+      <a href="#representing-dispense-instructions">See below</a>
+    </td>
+  </tr>
+  <tr>
+    <td>substitution</td>
+    <td>
+      A boolean value, indicating whether a substitution is allowed by the dispensing pharmacist. If it is blank, it
+      implies that a substitution is allowed.
+    </td>
+    <td>false</td>
+  </tr>
+  <tr>
+    <td>priority</td>
+    <td>How quickly the request should be addressed.</td>
+    <td>urgent</td>
+  </tr>
+  <tr>
+    <td colspan="3">
+      <strong>
+        <em>Tracking and Administration</em>
+      </strong>
+    </td>
+  </tr>
+  <tr>
+    <td>subject</td>
+    <td>The patient or group who the medication or prescription is for.</td>
+    <td>Patient/homer-simpson</td>
+  </tr>
+  <tr>
+    <td>requester</td>
+    <td>The practitioner who created the request or wrote the prescription.</td>
+    <td>Practitioner/dr-alice-smith</td>
+  </tr>
+  <tr>
+    <td>reasonReference</td>
+    <td>A reference to a Condition or Observation that indicates why the order was made.</td>
+    <td>Condition/chronic-pain</td>
+  </tr>
+  <tr>
+    <td>encounter</td>
+    <td>The medical appointment at which the request was created.</td>
+    <td>Encounter/homer-simpson-annual-physical</td>
+  </tr>
+  <tr>
+    <td>priorPrescription</td>
+    <td>A reference to a previous prescription or order that this one is replacing or updating.</td>
+    <td>MedicationRequest/homer-simpson-percocet-1</td>
+  </tr>
+  <tr>
+    <td>status</td>
+    <td>The current state of the order (i.e. completed, active, etc.)</td>
+    <td>completed</td>
+  </tr>
+</table>
+
+### Detailed Medication Information
+
+It is important to note that a [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) resource does not have detailed information on the drug that is being prescribed or ordered. Instead, this information will be in the related [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resource with the same code. This code should be stored in the `medicationCodeableConcept` field of the `MedicationRequest`, establishing a link between the request and the details of the drug.
+
+The [`MedicationKnowledge`](/docs/api/fhir/resources/medicationknowledge) resource represents a type of medication that can be ordered. It contains details such as:
+
+- Relationship to other medications
+- Physical characteristics of the drug (color, imprint, etc.)
+- Physical form of the drug (pill, powder, etc.)
+- Description of the medication package (bottle, blister pack, etc.)
+- Method of ingestion (oral, intravenous, etc.)
+
+For more details on the `MedicationKnowledge` resource and how to model medications, see the [Modeling a Formulary docs](/docs/medications/formulary).
+
+## Representing Dispense Instructions
+
+The instructions to the pharmacy on how the order should be dispensed should be included on the `MedicationRequest.dispenseRequest` field.
+
+| Element                  | Description                                                                                                                                                                                              |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `initialFill`            | The duration or quantity of the first dispense of the medication.                                                                                                                                        |
+| `quantity`               | The amount of the medication that is to be dispensed for one fill after the initial fill.                                                                                                                |
+| `dispenseInterval`       | The minimum amount of time between refills of the medication.                                                                                                                                            |
+| `validityPeriod`         | The period over which the prescription or order remains valid.                                                                                                                                           |
+| `numberOfRepeatsAllowed` | The number of times that the order may be refilled. Note that this does not include the initial dispense. If the value here is 3, the order can be refilled 3 times in addition to the initial dispense. |
+| `expectedSupplyDuration` | The time period over which the medication is supposed to be used or which the prescription should last.                                                                                                  |
+| `performer`              | The organization (i.e. Pharmacy) that should dispense the medication.                                                                                                                                    |
+
+<details>
+  <summary>Example: Dispense Instructions</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="dispenseInstructions">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+:::note Preferred Pharmacies
+There is currently no community consensus on how to store a patient's preferred pharmacy in FHIR, but Mepdlum's guidance is to add this information to a [`CareTeam`](/docs/api/fhir/resources/careteam) resource associated with the [`Patient`](/docs/api/fhir/resources/patient).
+:::
+
+## Representing Patient Instructions
+
+The instructions for how the patient should take the medication should be included on the `MedicationRequest.dosageInstruction` field. This element includes fields to explain how, how often, and when the medication should be taken and is represented with a [`Dosage`](/docs/api/fhir/datatypes/dosage) type.
+
+| Element                    | Description                                                                                            |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `doseAndRate`              | The amount and frequency of medication to be administered.                                             |
+| `timing`                   | When the medication should be administered, including how often it should be repeated.                 |
+| `asNeededBoolean`          | Whether the medication should be taken as needed by the patient.                                       |
+| `route`                    | The route that the body should enter the body (e.g. orally, intravenously, etc.).                      |
+| `method`                   | The technique that should be used to administer the medication (e.g. swallowed, injected, etc.).       |
+| `site`                     | The body site the medication should be administered to.                                                |
+| `patientInstruction`       | Readable instructions that the patient is able to understand.                                          |
+| `additionalInstruction`    | Any additional directions to the patient for taking the medicine (e.g. with a meal, or before eating). |
+| `maxDosePerAdministration` | The limit to the amount of medication that should be taken in a single administration.                 |
+| `maxDosePerPeriod`         | The limit to the amount of medication that should be administered over a given period.                 |
+| `maxDosePerLifetime`       | The limit to the amount of medication that should be taken by a patient in their lifetime.             |
+| `sequence`                 | The specific step in which this dosage should be taken. It should start at 1 and increment from there. |
+
+Note that this field is stored as an array, so there can be multiple dosage instructions for each order. For example, the same medication may be taken multiple times throughout the day, but in different dosages each time. This is where the `dosageInstruction.sequence` field should be used to indicate which order the instructions are in.
+
+<details>
+  <summary>Example: Dosage Instructions</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="dosageInstructions">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+## Distinguishing Between Prescriptions and Medication Orders
+
+A [`MedicationRequest`](/docs/api/fhir/resources/medicationrequest) can represent both a prescription and a medication fulfillment order. A **prescription** is an order for medication in an outpatient context, while a **medication fulfillment order** represents medication that will be administered in an inpatient context.
+
+These types of requests should be differentiated as outpatient vs. inpatient using the `MedicationRequest.category` field, which represents the type of medical request. The [FHIR MedicationRequest Admin Location value set](https://www.hl7.org/fhir/valueset-medicationrequest-admin-location.html) can be used for this. Note that the `category` field is an array, so it is possible to have multiple values if you wish to categorize your requests in other ways as well.
+
+<details>
+  <summary>Example: A MedicationRequest categorized for a prescription</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="prescriptionRequest">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>
+
+<details>
+  <summary>Example: A MedicationRequest categorized for a medication fulfillment order</summary>
+  <MedplumCodeBlock language="ts" selectBlocks="orderRequest">
+    {ExampleCode}
+  </MedplumCodeBlock>
+</details>

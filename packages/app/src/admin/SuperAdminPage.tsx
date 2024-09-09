@@ -1,20 +1,25 @@
-import { Button, Divider, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import { Button, Divider, Modal, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
-import { forbidden, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
+import { Parameters } from '@medplum/fhirtypes';
 import {
-  convertLocalToIso,
   DateTimeInput,
   Document,
   Form,
   FormSection,
   OperationOutcomeAlert,
+  convertLocalToIso,
   useMedplum,
 } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
-import React from 'react';
+import { ReactNode, useState } from 'react';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
+  const [opened, { open, close }] = useDisclosure(false);
+  const [modalTitle, setModalTitle] = useState('');
+  const [modalContent, setModalContent] = useState<ReactNode | undefined>();
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
     return <OperationOutcomeAlert outcome={forbidden} />;
@@ -36,29 +41,36 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
   }
 
-  function rebuildCompartments(formData: Record<string, string>): void {
-    startAsyncJob(medplum, 'Rebuilding Compartments', 'admin/super/compartments', formData);
-  }
-
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
       .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function purgeResources(formData: Record<string, string>): void {
     medplum
       .post('admin/super/purge', { ...formData, before: convertLocalToIso(formData.before) })
       .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function forceSetPassword(formData: Record<string, string>): void {
     medplum
       .post('admin/super/setpassword', formData)
       .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function getDatabaseStats(): void {
+    medplum
+      .post('fhir/R4/$db-stats', {})
+      .then((params: Parameters) => {
+        setModalTitle('Database Stats');
+        setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   return (
@@ -101,24 +113,13 @@ export function SuperAdminPage(): JSX.Element {
       </p>
       <Form onSubmit={reindexResourceType}>
         <Stack>
-          <FormSection title="Resource Type">
-            <TextInput name="resourceType" placeholder="Reindex Resource Type" />
+          <FormSection title="Resource Type" htmlFor="resourceType">
+            <TextInput id="resourceType" name="resourceType" placeholder="Reindex Resource Type" />
+          </FormSection>
+          <FormSection title="Search Filter" htmlFor="filter">
+            <TextInput id="filter" name="filter" placeholder="e.g. name=Sam&birthdate=lt2000-01-01" />
           </FormSection>
           <Button type="submit">Reindex</Button>
-        </Stack>
-      </Form>
-      <Divider my="lg" />
-      <Title order={2}>Rebuild Compartments</Title>
-      <p>
-        When Medplum changes how resource compartments are derived, the system may require a rebuild for old resources
-        to take effect.
-      </p>
-      <Form onSubmit={rebuildCompartments}>
-        <Stack>
-          <FormSection title="Resource Type">
-            <TextInput name="resourceType" placeholder="Compartments Resource Type" />
-          </FormSection>
-          <Button type="submit">Rebuild Compartments</Button>
         </Stack>
       </Form>
       <Divider my="lg" />
@@ -160,6 +161,15 @@ export function SuperAdminPage(): JSX.Element {
           <Button type="submit">Force Set Password</Button>
         </Stack>
       </Form>
+      <Divider my="lg" />
+      <Title order={2}>Database Stats</Title>
+      <p>Query current table statistics from the database.</p>
+      <Form onSubmit={getDatabaseStats}>
+        <Button type="submit">Get Database Stats</Button>
+      </Form>
+      <Modal opened={opened} onClose={close} title={modalTitle} centered>
+        {modalContent}
+      </Modal>
     </Document>
   );
 }
@@ -174,7 +184,7 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
     withCloseButton: false,
   });
 
-  const options: RequestInit = { method: 'POST' };
+  const options: MedplumRequestOptions = { method: 'POST', pollStatusOnAccepted: true };
   if (body) {
     options.body = JSON.stringify(body);
   }
@@ -188,6 +198,7 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
         title,
         message: 'Done',
         icon: <IconCheck size="1rem" />,
+        loading: false,
         autoClose: false,
         withCloseButton: true,
       });
@@ -199,6 +210,7 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
         title,
         message: normalizeErrorString(err),
         icon: <IconX size="1rem" />,
+        loading: false,
         autoClose: false,
         withCloseButton: true,
       });

@@ -1,16 +1,5 @@
-import {
-  CreateFunctionCommand,
-  GetFunctionCommand,
-  GetFunctionConfigurationCommand,
-  LambdaClient,
-  ListLayerVersionsCommand,
-  UpdateFunctionCodeCommand,
-  UpdateFunctionConfigurationCommand,
-} from '@aws-sdk/client-lambda';
 import { ContentType } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
-import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
-import 'aws-sdk-client-mock-jest';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -21,7 +10,6 @@ import { initTestAuth, withTestContext } from '../../test.setup';
 
 const app = express();
 let accessToken: string;
-let mockLambdaClient: AwsClientStub<LambdaClient>;
 
 describe('Deploy', () => {
   beforeAll(async () => {
@@ -34,68 +22,7 @@ describe('Deploy', () => {
     await shutdownApp();
   });
 
-  beforeEach(() => {
-    let created = false;
-
-    mockLambdaClient = mockClient(LambdaClient);
-
-    mockLambdaClient.on(CreateFunctionCommand).callsFake(({ FunctionName }) => {
-      created = true;
-
-      return {
-        Configuration: {
-          FunctionName,
-        },
-      };
-    });
-
-    mockLambdaClient.on(GetFunctionCommand).callsFake(({ FunctionName }) => {
-      if (created) {
-        return {
-          Configuration: {
-            FunctionName,
-          },
-        };
-      }
-
-      return {
-        Configuration: {},
-      };
-    });
-
-    mockLambdaClient.on(GetFunctionConfigurationCommand).callsFake(({ FunctionName }) => {
-      return {
-        FunctionName,
-        Runtime: 'node16.x',
-        Handler: 'index.handler',
-        Layers: [
-          {
-            Arn: 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1',
-          },
-        ],
-      };
-    });
-
-    mockLambdaClient.on(ListLayerVersionsCommand).resolves({
-      LayerVersions: [
-        {
-          LayerVersionArn: 'xyz',
-        },
-      ],
-    });
-
-    mockLambdaClient.on(UpdateFunctionCodeCommand).callsFake(({ FunctionName }) => ({
-      Configuration: {
-        FunctionName,
-      },
-    }));
-  });
-
-  afterEach(() => {
-    mockLambdaClient.restore();
-  });
-
-  test('Happy path', async () => {
+  test('Deploy bot with missing code', async () => {
     // Step 1: Create a bot
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
@@ -115,57 +42,15 @@ describe('Deploy', () => {
     expect(res1.status).toBe(201);
 
     const bot = res1.body as Bot;
-    const name = `medplum-bot-lambda-${bot.id}`;
 
-    // Step 2: Deploy the bot
+    // Step 2: Deploy the bot with missing code
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        code: `
-        export async function handler() {
-          console.log('input', input);
-          return input;
-        }
-        `,
-      });
-    expect(res2.status).toBe(200);
-
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(CreateFunctionCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
-      FunctionName: name,
-    });
-    expect(mockLambdaClient).toHaveReceivedCommandWith(CreateFunctionCommand, {
-      FunctionName: name,
-    });
-    mockLambdaClient.resetHistory();
-
-    // Step 3: Update the bot
-    const res3 = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send({
-        code: `
-        export async function handler() {
-          console.log('input', input);
-          return input;
-        }
-        `,
-      });
-    expect(res3.status).toBe(200);
-
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
-      FunctionName: name,
-    });
+      .send({ code: '' });
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0].details.text).toEqual('Missing code');
   });
 
   test('Bots not enabled', async () => {

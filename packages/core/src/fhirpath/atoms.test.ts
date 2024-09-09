@@ -1,7 +1,8 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Observation } from '@medplum/fhirtypes';
-import { AtomContext } from '../fhirlexer';
-import { indexStructureDefinitionBundle, PropertyType } from '../types';
+import { AtomContext } from '../fhirlexer/parse';
+import { PropertyType } from '../types';
+import { indexStructureDefinitionBundle } from '../typeschema/types';
 import { LiteralAtom, SymbolAtom } from './atoms';
 import { evalFhirPath, parseFhirPath } from './parse';
 
@@ -53,6 +54,34 @@ describe('Atoms', () => {
   });
 
   test.each([
+    ['true = true', [true]],
+    ['true = false', [false]],
+    ['true = {}', []],
+    ['false = true', [false]],
+    ['false = false', [true]],
+    ['false = {}', []],
+    ['{} = true', []],
+    ['{} = false', []],
+    ['{} = {}', []],
+  ])('EqualsAtom: %s to equal %s', (input: any, expected: any) => {
+    expect(evalFhirPath(input, [])).toEqual(expected);
+  });
+
+  test.each([
+    ['true != true', [false]],
+    ['true != false', [true]],
+    ['true != {}', []],
+    ['false != true', [true]],
+    ['false != false', [false]],
+    ['false != {}', []],
+    ['{} != true', []],
+    ['{} != false', []],
+    ['{} != {}', []],
+  ])('NotEqualsAtom: %s to equal %s', (input: any, expected: any) => {
+    expect(evalFhirPath(input, [])).toEqual(expected);
+  });
+
+  test.each([
     ['true or true', [true]],
     ['true or false', [true]],
     ['true or {}', [true]],
@@ -83,11 +112,15 @@ describe('Atoms', () => {
   test('AsAtom', () => {
     const obs1: Observation = {
       resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'abc' },
       valueQuantity: { value: 100, unit: 'mg' },
     };
 
     const obs2: Observation = {
       resourceType: 'Observation',
+      status: 'final',
+      code: { text: 'abc' },
       valueCodeableConcept: { coding: [{ code: 'xyz' }] },
     };
 

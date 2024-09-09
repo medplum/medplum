@@ -1,4 +1,4 @@
-import { createStyles, Group, List, Stack, Text, Title } from '@mantine/core';
+import { Group, List, Stack, Text, Title } from '@mantine/core';
 import { capitalize, formatCodeableConcept, formatDateTime, formatObservationValue, isReference } from '@medplum/core';
 import {
   Annotation,
@@ -9,48 +9,22 @@ import {
   Reference,
   Specimen,
 } from '@medplum/fhirtypes';
-import React, { useEffect, useState } from 'react';
+import { useMedplum, useResource } from '@medplum/react-hooks';
+import cx from 'clsx';
+import { useEffect, useState } from 'react';
 import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { MedplumLink } from '../MedplumLink/MedplumLink';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
 import { NoteDisplay } from '../NoteDisplay/NoteDisplay';
 import { RangeDisplay } from '../RangeDisplay/RangeDisplay';
 import { ReferenceDisplay } from '../ReferenceDisplay/ReferenceDisplay';
 import { ResourceBadge } from '../ResourceBadge/ResourceBadge';
 import { StatusBadge } from '../StatusBadge/StatusBadge';
-import { useResource } from '../useResource/useResource';
-
-const useStyles = createStyles((theme) => ({
-  table: {
-    border: `0.1px solid ${theme.colors.gray[5]}`,
-    borderCollapse: 'collapse',
-
-    '& td, & th': {
-      border: `0.1px solid ${theme.colors.gray[5]}`,
-      padding: 4,
-    },
-  },
-
-  criticalRow: {
-    background: theme.colorScheme === 'dark' ? theme.colors.red[7] : theme.colors.red[1],
-    border: `0.1px solid ${theme.colors.red[5]}`,
-    color: theme.colors.red[5],
-    fontWeight: 500,
-
-    '& td': {
-      border: `0.1px solid ${theme.colors.red[5]}`,
-    },
-  },
-
-  noteBody: { fontSize: theme.fontSizes.sm },
-  noteCite: { fontSize: theme.fontSizes.xs, marginBlockStart: 3 },
-  noteRoot: { padding: 5 },
-}));
+import classes from './DiagnosticReportDisplay.module.css';
 
 export interface DiagnosticReportDisplayProps {
-  value?: DiagnosticReport | Reference<DiagnosticReport>;
-  hideObservationNotes?: boolean;
-  hideSpecimenInfo?: boolean;
+  readonly value?: DiagnosticReport | Reference<DiagnosticReport>;
+  readonly hideObservationNotes?: boolean;
+  readonly hideSpecimenInfo?: boolean;
 }
 
 DiagnosticReportDisplay.defaultProps = {
@@ -93,7 +67,7 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
     <Stack>
       <Title>Diagnostic Report</Title>
       <DiagnosticReportHeader value={diagnosticReport} />
-      {!props.hideSpecimenInfo && SpecimenInfo(specimens)}
+      {specimens && !props.hideSpecimenInfo && SpecimenInfo(specimens)}
       {diagnosticReport.result && (
         <ObservationTable hideObservationNotes={props.hideObservationNotes} value={diagnosticReport.result} />
       )}
@@ -103,45 +77,39 @@ export function DiagnosticReportDisplay(props: DiagnosticReportDisplayProps): JS
 }
 
 interface DiagnosticReportHeaderProps {
-  value: DiagnosticReport;
+  readonly value: DiagnosticReport;
 }
 
 function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Element {
   return (
-    <Group mt="md" spacing={30}>
+    <Group mt="md" gap={30}>
       {value.subject && (
         <div>
-          <Text size="xs" transform="uppercase" color="dimmed">
+          <Text size="xs" tt="uppercase" c="dimmed">
             Subject
           </Text>
-          <Text>
-            <ResourceBadge value={value.subject} link={true} />
-          </Text>
+          <ResourceBadge value={value.subject} link={true} />
         </div>
       )}
       {value.resultsInterpreter?.map((interpreter) => (
         <div key={interpreter.reference}>
-          <Text size="xs" transform="uppercase" color="dimmed">
+          <Text size="xs" tt="uppercase" c="dimmed">
             Interpreter
           </Text>
-          <Text>
-            <ResourceBadge value={interpreter} link={true} />
-          </Text>
+          <ResourceBadge value={interpreter} link={true} />
         </div>
       ))}
       {value.performer?.map((performer) => (
         <div key={performer.reference}>
-          <Text size="xs" transform="uppercase" color="dimmed">
+          <Text size="xs" tt="uppercase" c="dimmed">
             Performer
           </Text>
-          <Text>
-            <ResourceBadge value={performer} link={true} />
-          </Text>
+          <ResourceBadge value={performer} link={true} />
         </div>
       ))}
       {value.issued && (
         <div>
-          <Text size="xs" transform="uppercase" color="dimmed">
+          <Text size="xs" tt="uppercase" c="dimmed">
             Issued
           </Text>
           <Text>{formatDateTime(value.issued)}</Text>
@@ -149,7 +117,7 @@ function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Ele
       )}
       {value.status && (
         <div>
-          <Text size="xs" transform="uppercase" color="dimmed">
+          <Text size="xs" tt="uppercase" c="dimmed">
             Status
           </Text>
           <Text>{capitalize(value.status)}</Text>
@@ -161,19 +129,19 @@ function DiagnosticReportHeader({ value }: DiagnosticReportHeaderProps): JSX.Ele
 
 function SpecimenInfo(specimens: Specimen[] | undefined): JSX.Element {
   return (
-    <Stack spacing={'xs'}>
+    <Stack gap="xs">
       <Title order={2} size="h6">
         Specimens
       </Title>
 
       <List type="ordered">
         {specimens?.map((specimen) => (
-          <List.Item ml={'sm'} key={`specimen-${specimen.id}`}>
-            <Group spacing={20}>
-              <Group spacing={5}>
+          <List.Item ml="sm" key={`specimen-${specimen.id}`}>
+            <Group gap={20}>
+              <Group gap={5}>
                 <Text fw={500}>Collected:</Text> {formatDateTime(specimen.collection?.collectedDateTime)}
               </Group>
-              <Group spacing={5}>
+              <Group gap={5}>
                 <Text fw={500}>Received:</Text> {formatDateTime(specimen.receivedTime)}
               </Group>
             </Group>
@@ -185,12 +153,12 @@ function SpecimenInfo(specimens: Specimen[] | undefined): JSX.Element {
 }
 
 export interface ObservationTableProps {
-  value?: Observation[] | Reference<Observation>[];
-  hideObservationNotes?: boolean;
+  readonly value?: Observation[] | Reference<Observation>[];
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
 }
 
 export function ObservationTable(props: ObservationTableProps): JSX.Element {
-  const { classes } = useStyles();
   return (
     <table className={classes.table}>
       <thead>
@@ -205,15 +173,20 @@ export function ObservationTable(props: ObservationTableProps): JSX.Element {
         </tr>
       </thead>
       <tbody>
-        <ObservationRowGroup value={props.value} hideObservationNotes={props.hideObservationNotes} />
+        <ObservationRowGroup
+          value={props.value}
+          ancestorIds={props.ancestorIds}
+          hideObservationNotes={props.hideObservationNotes}
+        />
       </tbody>
     </table>
   );
 }
 
 interface ObservationRowGroupProps {
-  value?: Observation[] | Reference<Observation>[];
-  hideObservationNotes?: boolean;
+  readonly value?: Observation[] | Reference<Observation>[];
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
 }
 
 function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
@@ -222,8 +195,9 @@ function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
       {props.value?.map((observation) => (
         <ObservationRow
           key={`obs-${isReference(observation) ? observation.reference : observation.id}`}
-          hideObservationNotes={props.hideObservationNotes}
           value={observation}
+          ancestorIds={props.ancestorIds}
+          hideObservationNotes={props.hideObservationNotes}
         />
       ))}
     </>
@@ -231,15 +205,15 @@ function ObservationRowGroup(props: ObservationRowGroupProps): JSX.Element {
 }
 
 interface ObservationRowProps {
-  value: Observation | Reference<Observation>;
-  hideObservationNotes?: boolean;
+  readonly value: Observation | Reference<Observation>;
+  readonly ancestorIds?: string[];
+  readonly hideObservationNotes?: boolean;
 }
 
 function ObservationRow(props: ObservationRowProps): JSX.Element | null {
-  const { classes, cx } = useStyles();
   const observation = useResource(props.value);
 
-  if (!observation) {
+  if (!observation || props.ancestorIds?.includes(observation.id as string)) {
     return null;
   }
 
@@ -285,6 +259,9 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
       {observation.hasMember && (
         <ObservationRowGroup
           value={observation.hasMember as Reference<Observation>[]}
+          ancestorIds={
+            props.ancestorIds ? [...props.ancestorIds, observation.id as string] : [observation.id as string]
+          }
           hideObservationNotes={props.hideObservationNotes}
         />
       )}
@@ -300,7 +277,7 @@ function ObservationRow(props: ObservationRowProps): JSX.Element | null {
 }
 
 interface ObservationValueDisplayProps {
-  value?: Observation | ObservationComponent;
+  readonly value?: Observation | ObservationComponent;
 }
 
 function ObservationValueDisplay(props: ObservationValueDisplayProps): JSX.Element | null {
@@ -309,7 +286,7 @@ function ObservationValueDisplay(props: ObservationValueDisplayProps): JSX.Eleme
 }
 
 interface ReferenceRangeProps {
-  value?: ObservationReferenceRange[];
+  readonly value?: ObservationReferenceRange[];
 }
 
 function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
@@ -326,7 +303,7 @@ function ReferenceRangeDisplay(props: ReferenceRangeProps): JSX.Element | null {
 /**
  * Returns true if the observation is critical.
  * See: https://www.hl7.org/fhir/valueset-observation-interpretation.html
- * @param observation The FHIR observation.
+ * @param observation - The FHIR observation.
  * @returns True if the FHIR observation is a critical value.
  */
 function isCritical(observation: Observation): boolean {

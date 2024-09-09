@@ -1,4 +1,4 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+import { BotEvent, MedplumClient, SNOMED } from '@medplum/core';
 import { Condition, Patient, QuestionnaireResponse, QuestionnaireResponseItem, Reference } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<QuestionnaireResponse>): Promise<any> {
@@ -51,7 +51,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
         code: {
           coding: [
             {
-              system: 'http://snomed.info/sct',
+              system: SNOMED,
               code: item.linkId,
               display: item.text,
             },

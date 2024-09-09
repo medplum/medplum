@@ -2,10 +2,9 @@ import { getReferenceString } from '@medplum/core';
 import { AuditEvent, Bot } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 
 const medplum = new MockClient();
 
@@ -34,7 +33,7 @@ describe('AuditEventPage', () => {
           },
         },
       ],
-    });
+    } as AuditEvent);
 
     // load bot page
     await act(async () => {
@@ -72,7 +71,7 @@ describe('AuditEventPage', () => {
           },
         },
       ],
-    });
+    } as AuditEvent);
 
     // directly load bot audit event page
     await act(async () => {
@@ -84,8 +83,9 @@ describe('AuditEventPage', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Last Updated' }));
     });
 
+    const sortButton = await screen.findByText('Sort Newest to Oldest');
     await act(async () => {
-      fireEvent.click(screen.getByRole('menuitem', { name: 'Sort Newest to Oldest' }));
+      fireEvent.click(sortButton);
     });
 
     expect(screen.getByText(`${auditEvent.id}`)).toBeInTheDocument();

@@ -1,7 +1,6 @@
 import { createReference, isResource } from '@medplum/core';
 import { Reference, UserConfiguration } from '@medplum/fhirtypes';
 import { ResourceInput } from '@medplum/react';
-import React from 'react';
 
 export interface UserConfigurationInputProps {
   readonly name: string;

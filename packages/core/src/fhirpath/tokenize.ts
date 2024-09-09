@@ -1,4 +1,4 @@
-import { Token, Tokenizer } from '../fhirlexer';
+import { Token, Tokenizer } from '../fhirlexer/tokenize';
 
 export const FHIRPATH_KEYWORDS = ['true', 'false'];
 export const FHIRPATH_OPERATORS = ['!=', '!~', '<=', '>=', '{}', '->'];

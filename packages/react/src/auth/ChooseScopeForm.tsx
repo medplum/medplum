@@ -1,21 +1,19 @@
 import { Button, Center, Checkbox, Group, Stack, Title } from '@mantine/core';
 import { LoginAuthenticationResponse } from '@medplum/core';
-import React from 'react';
+import { useMedplum } from '@medplum/react-hooks';
 import { Form } from '../Form/Form';
 import { Logo } from '../Logo/Logo';
-import { useMedplum } from '../MedplumProvider/MedplumProvider';
 
 export interface ChooseScopeFormProps {
-  login: string;
-  scope: string | undefined;
-  handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  readonly login: string;
+  readonly scope: string | undefined;
+  readonly handleAuthResponse: (response: LoginAuthenticationResponse) => void;
 }
 
 export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
   const medplum = useMedplum();
   return (
     <Form
-      style={{ maxWidth: 400 }}
       onSubmit={(formData: Record<string, string>) => {
         medplum
           .post('auth/scope', {
@@ -27,7 +25,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
       }}
     >
       <Stack>
-        <Center sx={{ flexDirection: 'column' }}>
+        <Center style={{ flexDirection: 'column' }}>
           <Logo size={32} />
           <Title>Choose scope</Title>
         </Center>
@@ -36,7 +34,7 @@ export function ChooseScopeForm(props: ChooseScopeFormProps): JSX.Element {
             <Checkbox key={scopeName} id={scopeName} name={scopeName} label={scopeName} defaultChecked />
           ))}
         </Stack>
-        <Group position="right" mt="xl">
+        <Group justify="flex-end" mt="xl">
           <Button type="submit">Set scope</Button>
         </Group>
       </Stack>

@@ -1,6 +1,6 @@
-import { ActionIcon, Center, createStyles, Group, Loader, Menu, ScrollArea, TextInput } from '@mantine/core';
+import { ActionIcon, Center, Group, Loader, ScrollArea, TextInput } from '@mantine/core';
 import { showNotification, updateNotification } from '@mantine/notifications';
-import { getReferenceString, MedplumClient, normalizeErrorString, ProfileResource } from '@medplum/core';
+import { MedplumClient, ProfileResource, createReference, normalizeErrorString } from '@medplum/core';
 import {
   Attachment,
   AuditEvent,
@@ -9,55 +9,46 @@ import {
   Communication,
   DiagnosticReport,
   Media,
+  OperationOutcome,
   Reference,
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import {
-  IconCheck,
-  IconCloudUpload,
-  IconEdit,
-  IconFileAlert,
-  IconListDetails,
-  IconMessage,
-  IconPin,
-  IconPinnedOff,
-  IconTrash,
-} from '@tabler/icons-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useMedplum, useResource } from '@medplum/react-hooks';
+import { IconCheck, IconCloudUpload, IconFileAlert, IconMessage } from '@tabler/icons-react';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { AttachmentButton } from '../AttachmentButton/AttachmentButton';
 import { AttachmentDisplay } from '../AttachmentDisplay/AttachmentDisplay';
 import { DiagnosticReportDisplay } from '../DiagnosticReportDisplay/DiagnosticReportDisplay';
 import { Form } from '../Form/Form';
-import { useMedplum, useMedplumNavigate } from '../MedplumProvider/MedplumProvider';
 import { Panel } from '../Panel/Panel';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { ResourceDiffTable } from '../ResourceDiffTable/ResourceDiffTable';
 import { ResourceTable } from '../ResourceTable/ResourceTable';
-import { Timeline, TimelineItem } from '../Timeline/Timeline';
-import { useResource } from '../useResource/useResource';
+import { Timeline, TimelineItem, TimelineItemProps } from '../Timeline/Timeline';
 import { sortByDateAndPriority } from '../utils/date';
+import classes from './ResourceTimeline.module.css';
 
-const useStyles = createStyles((theme) => ({
-  pinnedComment: {
-    backgroundColor: theme.colors.blue[0],
-  },
-}));
+export interface ResourceTimelineMenuItemContext {
+  readonly primaryResource: Resource;
+  readonly currentResource: Resource;
+  readonly reloadTimeline: () => void;
+}
 
 export interface ResourceTimelineProps<T extends Resource> {
-  value: T | Reference<T>;
-  loadTimelineResources: (
+  readonly value: T | Reference<T>;
+  readonly loadTimelineResources: (
     medplum: MedplumClient,
     resourceType: ResourceType,
     id: string
   ) => Promise<PromiseSettledResult<Bundle>[]>;
-  createCommunication?: (resource: T, sender: ProfileResource, text: string) => Communication;
-  createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
+  readonly createCommunication?: (resource: T, sender: ProfileResource, text: string) => Communication;
+  readonly createMedia?: (resource: T, operator: ProfileResource, attachment: Attachment) => Media;
+  readonly getMenu?: (context: ResourceTimelineMenuItemContext) => ReactNode;
 }
 
 export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProps<T>): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useMedplumNavigate();
   const sender = medplum.getProfile() as ProfileResource;
   const inputRef = useRef<HTMLInputElement>(null);
   const resource = useResource(props.value);
@@ -84,17 +75,17 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
    * See "sortByDateAndPriority()" for more details.
    */
   const sortAndSetItems = useCallback(
-    (newItmes: Resource[]): void => {
-      sortByDateAndPriority(newItmes, resource);
-      newItmes.reverse();
-      setItems(newItmes);
+    (newItems: Resource[]): void => {
+      sortByDateAndPriority(newItems, resource);
+      newItems.reverse();
+      setItems(newItems);
     },
     [resource]
   );
 
   /**
    * Handles a batch request response.
-   * @param batchResponse The batch response.
+   * @param batchResponse - The batch response.
    */
   const handleBatchResponse = useCallback(
     (batchResponse: PromiseSettledResult<Bundle>[]): void => {
@@ -125,7 +116,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
 
   /**
    * Adds an array of resources to the timeline.
-   * @param resource Resource to add.
+   * @param resource - Resource to add.
    */
   const addResource = useCallback(
     (resource: Resource): void => sortAndSetItems([...itemsRef.current, resource]),
@@ -144,14 +135,14 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     } else {
       [resourceType, id] = props.value.reference?.split('/') as [ResourceType, string];
     }
-    loadTimelineResources(medplum, resourceType, id).then(handleBatchResponse).catch(console.log);
+    loadTimelineResources(medplum, resourceType, id).then(handleBatchResponse).catch(console.error);
   }, [medplum, props.value, loadTimelineResources, handleBatchResponse]);
 
   useEffect(() => loadTimeline(), [loadTimeline]);
 
   /**
    * Adds a Communication resource to the timeline.
-   * @param contentString The comment content.
+   * @param contentString - The comment content.
    */
   function createComment(contentString: string): void {
     if (!resource || !props.createCommunication) {
@@ -161,12 +152,12 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
     medplum
       .createResource(props.createCommunication(resource, sender, contentString))
       .then((result) => addResource(result))
-      .catch(console.log);
+      .catch(console.error);
   }
 
   /**
    * Adds a Media resource to the timeline.
-   * @param attachment The media attachment.
+   * @param attachment - The media attachment.
    */
   function createMedia(attachment: Attachment): void {
     if (!resource || !props.createMedia) {
@@ -198,37 +189,6 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       );
   }
 
-  function setPriority(
-    communication: Communication,
-    priority: 'routine' | 'urgent' | 'asap' | 'stat'
-  ): Promise<Communication> {
-    return medplum.updateResource({ ...communication, priority });
-  }
-
-  function onPin(communication: Communication): void {
-    setPriority(communication, 'stat').then(loadTimeline).catch(console.log);
-  }
-
-  function onUnpin(communication: Communication): void {
-    setPriority(communication, 'routine').then(loadTimeline).catch(console.log);
-  }
-
-  function onDetails(timelineItem: Resource): void {
-    navigate(`/${timelineItem.resourceType}/${timelineItem.id}`);
-  }
-
-  function onEdit(timelineItem: Resource): void {
-    navigate(`/${timelineItem.resourceType}/${timelineItem.id}/edit`);
-  }
-
-  function onDelete(timelineItem: Resource): void {
-    navigate(`/${timelineItem.resourceType}/${timelineItem.id}/delete`);
-  }
-
-  function onVersionDetails(version: Resource): void {
-    navigate(`/${version.resourceType}/${version.id}/_history/${version.meta?.versionId}`);
-  }
-
   function onUploadStart(): void {
     showNotification({
       id: 'upload-notification',
@@ -248,6 +208,17 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
       message: getProgressMessage(e),
       autoClose: false,
       withCloseButton: false,
+    });
+  }
+
+  function onUploadError(outcome: OperationOutcome): void {
+    updateNotification({
+      id: 'upload-notification',
+      color: 'red',
+      title: 'Upload error',
+      message: normalizeErrorString(outcome),
+      icon: <IconFileAlert size={16} />,
+      autoClose: 2000,
     });
   }
 
@@ -275,7 +246,7 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
               }
             }}
           >
-            <Group spacing="xs" noWrap style={{ width: '100%' }}>
+            <Group gap="xs" wrap="nowrap" style={{ width: '100%' }}>
               <ResourceAvatar value={sender} />
               <TextInput
                 name="text"
@@ -287,9 +258,11 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
                 <IconMessage size={16} />
               </ActionIcon>
               <AttachmentButton
+                securityContext={createReference(resource)}
                 onUpload={createMedia}
                 onUploadStart={onUploadStart}
                 onUploadProgress={onUploadProgress}
+                onUploadError={onUploadError}
               >
                 {(props) => (
                   <ActionIcon {...props} radius="xl" color="blue" variant="filled">
@@ -307,40 +280,25 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
           return null;
         }
         const key = `${item.resourceType}/${item.id}/${item.meta?.versionId}`;
+        const menu = props.getMenu
+          ? props.getMenu({
+              primaryResource: resource,
+              currentResource: item,
+              reloadTimeline: loadTimeline,
+            })
+          : undefined;
         if (item.resourceType === resource.resourceType && item.id === resource.id) {
-          return (
-            <HistoryTimelineItem key={key} history={history as Bundle} resource={item} onDetails={onVersionDetails} />
-          );
+          return <HistoryTimelineItem key={key} history={history as Bundle} resource={item} popupMenuItems={menu} />;
         }
         switch (item.resourceType) {
           case 'AuditEvent':
-            return <AuditEventTimelineItem key={key} resource={item} onDetails={onDetails} />;
+            return <AuditEventTimelineItem key={key} resource={item} popupMenuItems={menu} />;
           case 'Communication':
-            return (
-              <CommunicationTimelineItem
-                key={key}
-                resource={item}
-                onPin={item.priority !== 'stat' ? onPin : undefined}
-                onUnpin={item.priority === 'stat' ? onUnpin : undefined}
-                onDetails={onDetails}
-                onEdit={onEdit}
-                onDelete={onDelete}
-              />
-            );
+            return <CommunicationTimelineItem key={key} resource={item} popupMenuItems={menu} />;
           case 'DiagnosticReport':
-            return (
-              <DiagnosticReportTimelineItem
-                key={key}
-                resource={item}
-                onDetails={onDetails}
-                onEdit={onEdit}
-                onDelete={onDelete}
-              />
-            );
+            return <DiagnosticReportTimelineItem key={key} resource={item} popupMenuItems={menu} />;
           case 'Media':
-            return (
-              <MediaTimelineItem key={key} resource={item} onDetails={onDetails} onEdit={onEdit} onDelete={onDelete} />
-            );
+            return <MediaTimelineItem key={key} resource={item} popupMenuItems={menu} />;
           default:
             return (
               <TimelineItem key={key} resource={item} padding={true}>
@@ -353,90 +311,24 @@ export function ResourceTimeline<T extends Resource>(props: ResourceTimelineProp
   );
 }
 
-interface BaseTimelineItemProps<T extends Resource> {
-  resource: T;
-  onPin?: (resource: T) => void;
-  onUnpin?: (resource: T) => void;
-  onDetails?: (resource: T) => void;
-  onEdit?: (resource: T) => void;
-  onDelete?: (resource: T) => void;
-}
-
-function TimelineItemPopupMenu<T extends Resource>(props: BaseTimelineItemProps<T>): JSX.Element {
-  return (
-    <Menu.Dropdown>
-      <Menu.Label>Resource</Menu.Label>
-      {props.onPin && (
-        <Menu.Item
-          icon={<IconPin size={14} />}
-          onClick={() => (props.onPin as (resource: T) => void)(props.resource)}
-          aria-label={`Pin ${getReferenceString(props.resource)}`}
-        >
-          Pin
-        </Menu.Item>
-      )}
-      {props.onUnpin && (
-        <Menu.Item
-          icon={<IconPinnedOff size={14} />}
-          onClick={() => (props.onUnpin as (resource: T) => void)(props.resource)}
-          aria-label={`Unpin ${getReferenceString(props.resource)}`}
-        >
-          Unpin
-        </Menu.Item>
-      )}
-      {props.onDetails && (
-        <Menu.Item
-          icon={<IconListDetails size={14} />}
-          onClick={() => (props.onDetails as (resource: T) => void)(props.resource)}
-          aria-label={`Details ${getReferenceString(props.resource)}`}
-        >
-          Details
-        </Menu.Item>
-      )}
-      {props.onEdit && (
-        <Menu.Item
-          icon={<IconEdit size={14} />}
-          onClick={() => (props.onEdit as (resource: T) => void)(props.resource)}
-          aria-label={`Edit ${getReferenceString(props.resource)}`}
-        >
-          Edit
-        </Menu.Item>
-      )}
-      {props.onDelete && (
-        <>
-          <Menu.Divider />
-          <Menu.Label>Danger zone</Menu.Label>
-          <Menu.Item
-            color="red"
-            icon={<IconTrash size={14} />}
-            onClick={() => (props.onDelete as (resource: T) => void)(props.resource)}
-            aria-label={`Delete ${getReferenceString(props.resource)}`}
-          >
-            Delete
-          </Menu.Item>
-        </>
-      )}
-    </Menu.Dropdown>
-  );
-}
-
-interface HistoryTimelineItemProps extends BaseTimelineItemProps<Resource> {
-  history: Bundle;
+interface HistoryTimelineItemProps extends TimelineItemProps {
+  readonly history: Bundle;
 }
 
 function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
-  const previous = getPrevious(props.history, props.resource);
+  const { history, resource, ...rest } = props;
+  const previous = getPrevious(history, resource);
   if (previous) {
     return (
-      <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
+      <TimelineItem resource={resource} padding={true} {...rest}>
         <ResourceDiffTable original={previous} revised={props.resource} />
       </TimelineItem>
     );
   } else {
     return (
-      <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
+      <TimelineItem resource={resource} padding={true} {...rest}>
         <h3>Created</h3>
-        <ResourceTable value={props.resource} ignoreMissingValues forceUseInput />
+        <ResourceTable value={resource} ignoreMissingValues forceUseInput />
       </TimelineItem>
     );
   }
@@ -451,8 +343,7 @@ function getPrevious(history: Bundle, version: Resource): Resource | undefined {
   return entries[index + 1].resource;
 }
 
-function CommunicationTimelineItem(props: BaseTimelineItemProps<Communication>): JSX.Element {
-  const { classes } = useStyles();
+function CommunicationTimelineItem(props: TimelineItemProps<Communication>): JSX.Element {
   const routine = !props.resource.priority || props.resource.priority === 'routine';
   const className = routine ? undefined : classes.pinnedComment;
   return (
@@ -462,14 +353,14 @@ function CommunicationTimelineItem(props: BaseTimelineItemProps<Communication>):
       dateTime={props.resource.sent}
       padding={true}
       className={className}
-      popupMenuItems={<TimelineItemPopupMenu {...props} />}
+      popupMenuItems={props.popupMenuItems}
     >
       <p>{props.resource.payload?.[0]?.contentString}</p>
     </TimelineItem>
   );
 }
 
-function MediaTimelineItem(props: BaseTimelineItemProps<Media>): JSX.Element {
+function MediaTimelineItem(props: TimelineItemProps<Media>): JSX.Element {
   const contentType = props.resource.content?.contentType;
   const padding =
     contentType &&
@@ -477,15 +368,15 @@ function MediaTimelineItem(props: BaseTimelineItemProps<Media>): JSX.Element {
     !contentType.startsWith('video/') &&
     contentType !== 'application/pdf';
   return (
-    <TimelineItem resource={props.resource} padding={!!padding} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
+    <TimelineItem resource={props.resource} padding={!!padding} popupMenuItems={props.popupMenuItems}>
       <AttachmentDisplay value={props.resource.content} />
     </TimelineItem>
   );
 }
 
-function AuditEventTimelineItem(props: BaseTimelineItemProps<AuditEvent>): JSX.Element {
+function AuditEventTimelineItem(props: TimelineItemProps<AuditEvent>): JSX.Element {
   return (
-    <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
+    <TimelineItem resource={props.resource} padding={true} popupMenuItems={props.popupMenuItems}>
       <ScrollArea>
         <pre>{props.resource.outcomeDesc}</pre>
       </ScrollArea>
@@ -493,9 +384,9 @@ function AuditEventTimelineItem(props: BaseTimelineItemProps<AuditEvent>): JSX.E
   );
 }
 
-function DiagnosticReportTimelineItem(props: BaseTimelineItemProps<DiagnosticReport>): JSX.Element {
+function DiagnosticReportTimelineItem(props: TimelineItemProps<DiagnosticReport>): JSX.Element {
   return (
-    <TimelineItem resource={props.resource} padding={true} popupMenuItems={<TimelineItemPopupMenu {...props} />}>
+    <TimelineItem resource={props.resource} padding={true} popupMenuItems={props.popupMenuItems}>
       <DiagnosticReportDisplay value={props.resource} />
     </TimelineItem>
   );

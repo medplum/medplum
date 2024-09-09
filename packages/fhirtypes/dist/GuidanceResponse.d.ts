@@ -151,7 +151,7 @@ export interface GuidanceResponse {
    * available, the status will be data-requested, and the response will
    * contain a description of the additional requested information.
    */
-  status?: 'success' | 'data-requested' | 'data-required' | 'in-progress' | 'failure' | 'entered-in-error';
+  status: 'success' | 'data-requested' | 'data-required' | 'in-progress' | 'failure' | 'entered-in-error';
 
   /**
    * The patient for which the request was processed.
@@ -226,3 +226,9 @@ export interface GuidanceResponse {
    */
   dataRequirement?: DataRequirement[];
 }
+
+/**
+ * An identifier, CodeableConcept or canonical reference to the guidance
+ * that was requested.
+ */
+export type GuidanceResponseModule = CodeableConcept | string;

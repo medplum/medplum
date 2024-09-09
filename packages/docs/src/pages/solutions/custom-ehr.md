@@ -6,7 +6,7 @@ Providers often want a custom experience to help smooth workflow, productivity a
 
 The Medplum custom EHR sample base application is called `medplum-hello-world`. You can view the [source code](https://github.com/medplum/medplum-hello-world).
 
-The `medplum-hello-world` applications is intended as a sample, and the experience is truly up to the developer to determine. The application provides out of the box authentication, navigation and includes our [react component library](/docs/ui-components).
+The `medplum-hello-world` applications is intended as a sample, and the experience is truly up to the developer to determine. The application provides out of the box authentication, navigation and includes our [react component library](/docs/react).
 
 ## Customizable Pages
 
@@ -24,7 +24,7 @@ Manage patient [medications](/docs/medications) and refills, and create a pharma
 
 ## API Access
 
-All applications built on Medplum will inherit FHIR API access, which can be given to partners as needed. Control what data partners can see with [access controls](/docs/auth/access-control).
+All applications built on Medplum will inherit FHIR API access, which can be given to partners as needed. Control what data partners can see with [access controls](/docs/access/access-policies).
 
 ## Certification and Scope
 
@@ -34,6 +34,7 @@ In general, HIPAA compliance is a must for EHRs, SOC2 Type 2 audit is recommende
 
 ## Case Studies
 
+- [Develo Pediatric EHR](/blog/develo-case-study)
 - [Text Pediatricians in 15 Minutes - Summer Health Case Study](/blog/summer-case-study)
 - [Value Based Care and Elderly Populations - Ensage Case Study](/blog/ensage-case-study)
 

@@ -1,0 +1,31 @@
+name: Prepare release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'New version (leave blank for automatic)'
+        type: string
+
+jobs:
+  prepare-release:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+      - name: Setup git
+        run: |
+          git config --global user.email "${{ secrets.MEDPLUM_BOT_EMAIL }}"
+          git config --global user.name "${{ secrets.MEDPLUM_BOT_NAME }}"
+      - name: Prepare release
+        run: ./scripts/prepare-release.sh ${{ inputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.MEDPLUM_BOT_GITHUB_ACCESS_TOKEN }}

@@ -1,5 +1,4 @@
 import { Meta } from '@storybook/react';
-import React from 'react';
 import { AttachmentInput } from './AttachmentInput';
 import { Document } from '../Document/Document';
 
@@ -10,12 +9,18 @@ export default {
 
 export const Basic = (): JSX.Element => (
   <Document>
-    <AttachmentInput name="attachment" />
+    <AttachmentInput path="" name="attachment" />
   </Document>
 );
 
 export const DefaultValue = (): JSX.Element => (
   <Document>
-    <AttachmentInput name="attachment" defaultValue={{}} />
+    <AttachmentInput path="" name="attachment" defaultValue={{}} />
+  </Document>
+);
+
+export const Disabled = (): JSX.Element => (
+  <Document>
+    <AttachmentInput path="" name="attachment" defaultValue={{}} disabled />
   </Document>
 );

@@ -67,6 +67,7 @@ test.skip('Success', async () => {
   const input: Coverage = {
     resourceType: 'Coverage',
     id: '52e9f3e8-0b9d-47ca-b1af-1f9750c0e7c6',
+    beneficiary: createReference(patient),
     subscriber: createReference(patient),
     payor: [createReference(org)],
     subscriberId: '123',
@@ -74,6 +75,7 @@ test.skip('Success', async () => {
   };
 
   const result = await handler(medplum, {
+    bot: { reference: 'Bot/123' },
     input,
     contentType,
     secrets: { OPKIT_API_KEY: { name: 'OPKIT_API_KEY', valueString: '1234567890' } },

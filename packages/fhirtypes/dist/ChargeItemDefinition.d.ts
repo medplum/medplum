@@ -113,7 +113,7 @@ export interface ChargeItemDefinition {
    * SHALL remain the same when the charge item definition is stored on
    * different servers.
    */
-  url?: string;
+  url: string;
 
   /**
    * A formal identifier that is used to identify this charge item
@@ -164,7 +164,7 @@ export interface ChargeItemDefinition {
   /**
    * The current state of the ChargeItemDefinition.
    */
-  status?: 'draft' | 'active' | 'retired' | 'unknown';
+  status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
    * A Boolean value to indicate that this charge item definition is
@@ -439,7 +439,7 @@ export interface ChargeItemDefinitionPropertyGroupPriceComponent {
   /**
    * This code identifies the type of the component.
    */
-  type?: 'base' | 'surcharge' | 'deduction' | 'discount' | 'tax' | 'informational';
+  type: 'base' | 'surcharge' | 'deduction' | 'discount' | 'tax' | 'informational';
 
   /**
    * A code that identifies the component. Codes may be used to

@@ -229,6 +229,11 @@ export interface BiologicallyDerivedProductCollection {
 }
 
 /**
+ * Time of product collection.
+ */
+export type BiologicallyDerivedProductCollectionCollected = Period | string;
+
+/**
  * Any manipulation of product post-collection that is intended to alter
  * the product.  For example a buffy-coat enrichment or CD8 reduction of
  * Peripheral Blood Stem Cells to make it more suitable for infusion.
@@ -285,6 +290,11 @@ export interface BiologicallyDerivedProductManipulation {
    */
   timePeriod?: Period;
 }
+
+/**
+ * Time of manipulation.
+ */
+export type BiologicallyDerivedProductManipulationTime = Period | string;
 
 /**
  * Any processing of the product during collection that does not change
@@ -353,6 +363,11 @@ export interface BiologicallyDerivedProductProcessing {
    */
   timePeriod?: Period;
 }
+
+/**
+ * Time of processing.
+ */
+export type BiologicallyDerivedProductProcessingTime = Period | string;
 
 /**
  * Product storage.

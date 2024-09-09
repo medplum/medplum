@@ -1,8 +1,6 @@
-import React from 'react';
-
 export interface LogoProps {
-  size: number;
-  fill?: string;
+  readonly size: number;
+  readonly fill?: string;
 }
 
 export function Logo(props: LogoProps): JSX.Element {

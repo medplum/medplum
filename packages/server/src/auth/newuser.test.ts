@@ -7,7 +7,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { getConfig, loadTestConfig } from '../config';
-import { systemRepo } from '../fhir/repo';
+import { getSystemRepo } from '../fhir/repo';
 import { setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -50,6 +50,7 @@ describe('New user', () => {
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
         recaptchaToken: 'xyz',
+        projectId: 'new',
       });
 
     expect(res.status).toBe(200);
@@ -67,6 +68,7 @@ describe('New user', () => {
         lastName: 'Hamilton',
         email: `alex${randomUUID()}@example.com`,
         password: 'password!@#',
+        recaptchaToken: 'xyz',
       });
 
     expect(res.status).toBe(400);
@@ -104,6 +106,51 @@ describe('New user', () => {
 
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toBe('Recaptcha failed');
+  });
+
+  test('Password too short', async () => {
+    const registerRequest = {
+      firstName: 'George',
+      lastName: 'Washington',
+      email: `george${randomUUID()}@example.com`,
+      password: 'xyz',
+      recaptchaToken: 'xyz',
+    };
+
+    const res = await request(app).post('/auth/newuser').type('json').send(registerRequest);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Password must be between 8 and 72 characters');
+  });
+
+  test('Password too long', async () => {
+    const registerRequest = {
+      firstName: 'George',
+      lastName: 'Washington',
+      email: `george${randomUUID()}@example.com`,
+      password: 'xyz'.repeat(100),
+      recaptchaToken: 'xyz',
+    };
+
+    const res = await request(app).post('/auth/newuser').type('json').send(registerRequest);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Password must be between 8 and 72 characters');
+  });
+
+  test('Multibyte password too long', async () => {
+    // Use password with 40 multibyte characters
+    // This is 80 bytes, which is too long
+    // The maximum password length for bcrypt is 72 bytes
+    const registerRequest = {
+      firstName: 'George',
+      lastName: 'Washington',
+      email: `george${randomUUID()}@example.com`,
+      password: '☺️'.repeat(40),
+      recaptchaToken: 'xyz',
+    };
+
+    const res = await request(app).post('/auth/newuser').type('json').send(registerRequest);
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Password must be between 8 and 72 characters');
   });
 
   test('Breached password', async () => {
@@ -159,6 +206,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
+      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -211,6 +259,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // and the default access policy
+      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -262,6 +311,7 @@ describe('New user', () => {
       });
       // As a super admin, set the recaptcha site key
       // but *not* the access policy
+      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         site: [
@@ -324,6 +374,7 @@ describe('New user', () => {
         password,
       });
       // As a super admin, set the recaptcha site key
+      const systemRepo = getSystemRepo();
       await systemRepo.updateResource({
         ...project,
         site: [

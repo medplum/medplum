@@ -149,7 +149,7 @@ export interface MessageHeader {
   /**
    * The source application from which this message originated.
    */
-  source?: MessageHeaderSource;
+  source: MessageHeaderSource;
 
   /**
    * The person or organization that accepts overall responsibility for the
@@ -181,6 +181,15 @@ export interface MessageHeader {
    */
   definition?: string;
 }
+
+/**
+ * Code that identifies the event this message represents and connects it
+ * with its definition. Events defined as part of the FHIR specification
+ * have the system value
+ * &quot;http://terminology.hl7.org/CodeSystem/message-events&quot;.  Alternatively
+ * uri to the EventDefinition.
+ */
+export type MessageHeaderEvent = Coding | string;
 
 /**
  * The destination application which the message is intended for.
@@ -236,7 +245,7 @@ export interface MessageHeaderDestination {
   /**
    * Indicates where the message should be routed to.
    */
-  endpoint?: string;
+  endpoint: string;
 
   /**
    * Allows data conveyed by a message to be addressed to a particular
@@ -291,13 +300,13 @@ export interface MessageHeaderResponse {
    * The MessageHeader.id of the message to which this message is a
    * response.
    */
-  identifier?: string;
+  identifier: string;
 
   /**
    * Code that identifies the type of response to the message - whether it
    * was successful or not, and whether it should be resent or not.
    */
-  code?: 'ok' | 'transient-error' | 'fatal-error';
+  code: 'ok' | 'transient-error' | 'fatal-error';
 
   /**
    * Full details of any issues found in the message.
@@ -370,5 +379,5 @@ export interface MessageHeaderSource {
   /**
    * Identifies the routing target to send acknowledgements to.
    */
-  endpoint?: string;
+  endpoint: string;
 }

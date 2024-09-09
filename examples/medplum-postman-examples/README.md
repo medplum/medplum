@@ -1,10 +1,10 @@
 ## Instructions for using the Postman Medplum API collection:
 
-1. Register a new Medplum account using an email address and password:  
+1. Register a new Medplum account using an email address and password:
    https://app.medplum.com/signin?project=new
 
-2. Follow the instructions here to create a new client application:  
-   https://www.medplum.com/docs/auth/oauth-auth-code
+2. Follow the instructions here to create a new client application:
+   https://www.medplum.com/docs/auth/methods/oauth-auth-code
 
 3. Import the `medplum.postman_environment.json` file into Postman
 

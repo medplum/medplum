@@ -1,7 +1,7 @@
-import { MockClient } from '@medplum/mock';
-import { act, fireEvent, render, screen } from '@testing-library/react';
-import React from 'react';
-import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
+import { loadDataType } from '@medplum/core';
+import { FishPatientResources, MockClient } from '@medplum/mock';
+import { MedplumProvider } from '@medplum/react-hooks';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { ReferenceInput, ReferenceInputProps } from './ReferenceInput';
 
 const medplum = new MockClient();
@@ -30,7 +30,7 @@ describe('ReferenceInput', () => {
     setup({
       name: 'foo',
     });
-    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Resource Type')).toBeInTheDocument();
   });
 
   test('Renders default value resource type', async () => {
@@ -42,8 +42,8 @@ describe('ReferenceInput', () => {
         },
       });
     });
-    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
-    expect((screen.getByTestId('reference-input-resource-type-input') as HTMLInputElement).value).toBe('Patient');
+    expect(screen.getByText('Patient')).toBeInTheDocument();
+    expect(screen.getByText('Homer Simpson')).toBeInTheDocument();
   });
 
   test('Change resource type without target types', async () => {
@@ -52,12 +52,12 @@ describe('ReferenceInput', () => {
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('reference-input-resource-type-input'), {
+      fireEvent.change(screen.getByPlaceholderText('Resource Type'), {
         target: { value: 'Practitioner' },
       });
     });
 
-    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Practitioner')).toBeInTheDocument();
   });
 
   test('Renders property with target types', () => {
@@ -166,7 +166,7 @@ describe('ReferenceInput', () => {
       name: 'foo',
       targetTypes: [],
     });
-    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Resource Type')).toBeInTheDocument();
     expect(screen.queryByTestId('reference-input-resource-type-select')).not.toBeInTheDocument();
   });
 
@@ -176,7 +176,63 @@ describe('ReferenceInput', () => {
       targetTypes: ['Resource'],
     });
     // "Resource" is a FHIR special case that means "any resource type"
-    expect(screen.getByTestId('reference-input-resource-type-input')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Resource Type')).toBeInTheDocument();
     expect(screen.queryByTestId('reference-input-resource-type-select')).not.toBeInTheDocument();
+  });
+
+  test('Handle profile target type', async () => {
+    const FishPatientProfileSD = FishPatientResources.getFishPatientProfileSD();
+    const blinky = FishPatientResources.getBlinkyTheFish();
+    await medplum.createResource(blinky);
+
+    loadDataType(FishPatientProfileSD);
+    setup({
+      name: 'foo',
+      targetTypes: [FishPatientProfileSD.url, 'Patient'],
+      placeholder: 'My placeholder',
+    });
+
+    // Before the profile is fetch, the URL is shown
+    expect(screen.getByDisplayValue(FishPatientProfileSD.url)).toBeInTheDocument();
+
+    // wait for the profile to be fetched
+    expect(await screen.findByText('Fish Patient')).toBeInTheDocument();
+
+    // After the profile is fetched, the URl is replaced by the title
+    expect(screen.queryByDisplayValue(FishPatientProfileSD.url)).toBeNull();
+    expect(screen.getByDisplayValue('Fish Patient')).toBeInTheDocument();
+
+    // Enter "B"
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('My placeholder'), { target: { value: 'B' } });
+    });
+
+    // Wait for the autocomplete timeout
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Blinky is a fish, Bart is not
+    expect(screen.queryByText('Blinky')).toBeInTheDocument();
+    expect(screen.queryByText('Bart Simpson')).toBeNull();
+
+    // Select "Patient" resource type
+    await act(async () => {
+      fireEvent.change(screen.getByTestId('reference-input-resource-type-select'), { target: { value: 'Patient' } });
+    });
+
+    // Refocus the input; "B" still as the last value
+    await act(async () => {
+      fireEvent.focus(screen.getByPlaceholderText('My placeholder'));
+    });
+
+    // Wait for the autocomplete timeout
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Now that Patient is selected, both fish and non-fish are shown
+    expect(screen.getByText('Bart Simpson')).toBeInTheDocument();
+    expect(screen.getByText('Blinky')).toBeInTheDocument();
   });
 });

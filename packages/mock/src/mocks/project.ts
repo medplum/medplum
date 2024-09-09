@@ -8,9 +8,10 @@ export const TestProject: Project = {
   name: 'Project 123',
 };
 
-export const TestProjectMembersihp: ProjectMembership = {
+export const TestProjectMembership: ProjectMembership = {
   resourceType: 'ProjectMembership',
   id: '456',
+  user: { reference: 'User/123' },
   project: createReference(TestProject),
   profile: createReference(DrAliceSmith),
 };
