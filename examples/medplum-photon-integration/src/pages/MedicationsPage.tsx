@@ -1,22 +1,28 @@
-import { Button } from '@mantine/core';
+import { Button, Flex, Modal, Title } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import { List, MedicationKnowledge, Reference } from '@medplum/fhirtypes';
-import { CodingInput, Document, SearchControl, useMedplum, useMedplumNavigate } from '@medplum/react';
+import { getReferenceString, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { Coding, List, MedicationKnowledge, Questionnaire, Resource } from '@medplum/fhirtypes';
+import { CodingInput, Document, ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
+import { FormularyDisplay } from '../components/FormularyDisplay';
 
 export function MedicationsPage(): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useMedplumNavigate();
   const [medications, setMedications] = useState<MedicationKnowledge[]>();
   const [formulary, setFormulary] = useState<List>();
+  const [opened, { open, close, toggle }] = useDisclosure(false);
+  const [knowledge, setKnowledge] = useState<MedicationKnowledge>({
+    resourceType: 'MedicationKnowledge',
+    status: 'active',
+  });
 
   useEffect(() => {
     medplum.searchResources('MedicationKnowledge').then(setMedications).catch(console.error);
     medplum
       .searchOne('List', {
-        identifier: `https://neutron.health|neutron-medication-catalog`,
+        code: 'formulary',
       })
       .then(setFormulary);
   }, [medplum, medications, formulary]);
@@ -56,19 +62,83 @@ export function MedicationsPage(): JSX.Element {
     }
   }
 
+  function handleSelectCoding(coding?: Coding) {
+    if (!coding) {
+      return;
+    }
+    const medicationKnowledge: MedicationKnowledge = {
+      ...knowledge,
+      code: { coding: [coding] },
+    };
+    setKnowledge(medicationKnowledge);
+    open();
+  }
+
+  async function handleAddToFormulary(knowledge: Resource) {
+    if (knowledge.resourceType !== 'MedicationKnowledge') {
+      throw new Error('Invalid resource type');
+    }
+
+    try {
+      const medication = await medplum.createResource(knowledge);
+      if (formulary) {
+        const formularyId = formulary.id as string;
+        const medications = formulary.entry ?? [];
+        medications.push({ item: { reference: getReferenceString(medication) } });
+        const ops: PatchOperation[] = [{ op: 'add', path: '/entry', value: medications }];
+
+        const updatedFormulary = await medplum.patchResource('List', formularyId, ops);
+        setFormulary(updatedFormulary);
+        close();
+        notifications.show({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Added to formulary',
+        });
+      }
+    } catch (err) {
+      notifications.show({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
+  }
+
   return (
     <Document>
-      <Button onClick={syncFormulary}>Sync Formulary with Photon Health</Button>
-      <CodingInput
-        name="formulary-codes"
-        binding="http://hl7.org/fhir/us/davinci-drug-formulary/ValueSet/SemanticDrugVS"
-        path=""
-      />
-      <SearchControl
-        search={{ resourceType: 'MedicationKnowledge', fields: ['ingredient', 'code'] }}
-        onClick={(e) => navigate(`/${getReferenceString(e.resource)}`)}
-        hideToolbar
-      />
+      <Flex justify="space-between" mb="md">
+        <Title>Formulary Management</Title>
+        <CodingInput
+          name="medication-code"
+          binding="http://hl7.org/fhir/us/davinci-drug-formulary/ValueSet/SemanticDrugVS"
+          path=""
+          onChange={handleSelectCoding}
+          description="Add a medication to your formulary"
+          width="fit-content"
+        />
+        <Button onClick={syncFormulary}>Sync Formulary</Button>
+      </Flex>
+      <FormularyDisplay formulary={formulary} />
+      <Modal opened={opened} onClose={toggle}>
+        <ResourceForm defaultValue={knowledge} onSubmit={handleAddToFormulary} />
+      </Modal>
     </Document>
   );
 }
+
+const medicationKnowledgeQuestionnaire: Questionnaire = {
+  resourceType: 'Questionnaire',
+  status: 'active',
+  title: 'Add Medication to Formulary',
+  name: 'add-to-formulary',
+  item: [
+    {
+      linkId: 'medication',
+      type: 'choice',
+      answerValueSet: 'http://hl7.org/fhir/us/davinci-drug-formulary/ValueSet/SemanticDrugVS',
+      text: 'Select a medication',
+    },
+  ],
+};

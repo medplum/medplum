@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconMedicineSyrup, IconRobot, IconUser } from '@tabler/icons-react';
+import { IconMedicineSyrup, IconReportMedical, IconRobot, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { PHOTON_CLIENT_ID, PHOTON_ORG_ID } from './config';
@@ -36,7 +36,10 @@ export function App(): JSX.Element | null {
           },
           {
             title: 'Upload Data',
-            links: [{ icon: <IconRobot />, label: 'Upload Bots', href: '/upload/bots' }],
+            links: [
+              { icon: <IconRobot />, label: 'Upload Bots', href: '/upload/bots' },
+              { icon: <IconReportMedical />, label: 'Upload Formulary', href: '/upload/formulary' },
+            ],
           },
         ]}
       >
