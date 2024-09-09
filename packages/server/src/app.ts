@@ -74,7 +74,7 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
 
   // Disable browser features
   res.set(
-    'Permission-Policy',
+    'Permissions-Policy',
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()'
   );
 
