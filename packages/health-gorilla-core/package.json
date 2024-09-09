@@ -1,6 +1,6 @@
 {
   "name": "@medplum/health-gorilla-core",
-  "version": "0.0.8",
+  "version": "3.2.8",
   "private": true,
   "description": "Medplum Health Gorilla SDK",
   "sideEffects": false,
