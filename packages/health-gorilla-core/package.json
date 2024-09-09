@@ -27,7 +27,8 @@
     "clean": "rimraf dist",
     "lint": "eslint src/",
     "pack": "npm run build && npm pack",
-    "test": "vitest"
+    "test": "vitest run",
+    "test:watch": "vitest watch"
   },
   "devDependencies": {
     "@medplum/core": "3.2.9",

@@ -1,4 +1,4 @@
-import { createReference, deepClone, isReference, MedplumClient, SNOMED } from '@medplum/core';
+import { createReference, deepClone, generateId, isReference, MedplumClient, SNOMED } from '@medplum/core';
 import {
   Bundle,
   Coverage,
@@ -55,7 +55,7 @@ export type LabOrderInputs = {
 };
 
 function tempId(): string {
-  return 'urn:uuid:' + crypto.randomUUID();
+  return 'urn:uuid:' + generateId();
 }
 
 /**
