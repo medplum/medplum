@@ -29,27 +29,17 @@
     "pack": "npm run build && npm pack",
     "test": "vitest"
   },
-  "eslintConfig": {
-    "parserOptions": {
-      "project": "./tsconfig.json"
-    },
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
   "devDependencies": {
     "@medplum/core": "3.2.8",
     "@medplum/definitions": "3.2.8",
-    "@medplum/eslint-config": "3.2.8",
     "@medplum/fhirtypes": "3.2.8",
     "@medplum/mock": "3.2.8",
-    "@microsoft/api-extractor": "7.47.7",
-    "@types/node": "20.14.12",
+    "@types/node": "22.5.2",
     "vitest": "2.0.5"
   },
   "peerDependencies": {
-    "@medplum/core": "^3.2.2",
-    "@medplum/fhirtypes": "^3.2.2"
+    "@medplum/core": "3.2.8",
+    "@medplum/fhirtypes": "3.2.8"
   },
   "engines": {
     "node": ">=18.0.0"
