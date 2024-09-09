@@ -159,7 +159,7 @@ This will execute the most recently deployed version of your Bot, with the `even
 You can also execute a bot programmatically by sending an HTTP `POST` request to the Bot's `$execute`. Below is an example request sent with [`cURL`](https://en.wikipedia.org/wiki/CURL):
 
 ```bash
-curl -x POST 'https://api.medplum.com/fhir/R4/Bot/<BOT_ID>/$execute' \
+curl -X POST 'https://api.medplum.com/fhir/R4/Bot/<BOT_ID>/$execute' \
   --header 'Content-Type: <CONTENT_TYPE>' \
   --header 'Authorization: Bearer <ACCESS_TOKEN>' \
   --data '<INPUT_DATA>'

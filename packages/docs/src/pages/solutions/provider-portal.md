@@ -7,7 +7,7 @@ Allowing physicians who belong to multiple practices to have access to patient d
 Provider portals can be a great tool for care coordination, partnerships and remote patient monitoring scenarios. Many diagnostics companies and specialists find the provider portal and API useful in care delivery. Some examples:
 
 - **Pediatrics:** allow pediatricians to care plans for patients referred to specialists
-- **Speciality lab:** send notification and secure access to diagnostic reports for referring physicians
+- **Specialty lab:** send notification and secure access to diagnostic reports for referring physicians
 
 ## Sample Application
 

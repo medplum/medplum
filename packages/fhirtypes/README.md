@@ -30,7 +30,7 @@ import { Patient } from '@medplum/fhirtypes';
 
 const myPatient: Patient = {
   resourceType: 'Patient',
-  name: 'George Wasington',
+  name: 'George Washington',
 };
 ```
 
