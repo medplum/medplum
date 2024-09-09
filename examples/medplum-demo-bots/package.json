@@ -35,7 +35,7 @@
     "@medplum/eslint-config": "3.2.8",
     "@medplum/fhirtypes": "3.2.8",
     "@medplum/mock": "3.2.8",
-    "@types/node": "22.5.2",
+    "@types/node": "22.5.4",
     "@types/node-fetch": "2.6.11",
     "@types/ssh2-sftp-client": "9.0.4",
     "@vitest/coverage-v8": "2.0.5",
@@ -47,7 +47,7 @@
     "pdfmake": "0.2.12",
     "rimraf": "5.0.9",
     "ssh2-sftp-client": "11.0.0",
-    "stripe": "16.9.0",
+    "stripe": "16.10.0",
     "typescript": "5.5.4",
     "vitest": "2.0.5"
   }
