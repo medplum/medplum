@@ -59,7 +59,7 @@ export class FrontEnd extends Construct {
         customHeadersBehavior: {
           customHeaders: [
             {
-              header: 'Permission-Policy',
+              header: 'Permissions-Policy',
               value:
                 'accelerometer=(), camera=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()',
               override: true,
