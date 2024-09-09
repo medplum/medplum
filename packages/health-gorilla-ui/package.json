@@ -59,7 +59,7 @@
   "devDependencies": {
     "@medplum/core": "3.2.8",
     "@medplum/fhirtypes": "3.2.8",
-    "@medplum/health-gorilla-common": ">=0.0.8",
+    "@medplum/health-gorilla-core": "file:../health-gorilla-core",
     "@medplum/mock": "3.2.8",
     "@medplum/react": "3.2.8",
     "@testing-library/jest-dom": "6.5.0",

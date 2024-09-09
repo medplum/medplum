@@ -20,7 +20,7 @@ import {
   createLabOrderBundle,
   isReferenceOfType,
   normalizeAoeQuestionnaire,
-} from '@medplum/health-gorilla-common';
+} from '@medplum/health-gorilla-core';
 import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { AOESearch, HGSearchFunction, LabSearch, TestSearch, prepareAutocompleteBot } from './autocomplete-endpoint';
