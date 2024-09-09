@@ -61,11 +61,11 @@ const theme = createTheme({
   },
 });
 
-function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
+async function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
     const config = getConfig().introspectionUrl;
     if (config) {
-      return fetch(config).then((res) => res.json());
+      return (await fetch(config)).json();
     }
   }
   return medplum.graphql(params.query, params.operationName, params.variables);
