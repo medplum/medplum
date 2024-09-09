@@ -1,4 +1,4 @@
-import { createReference, deepClone, getIdentifier, isResource } from '@medplum/core';
+import { createReference, deepClone, getExtensionValue, getIdentifier, isResource } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -20,6 +20,7 @@ import {
   createLabOrderBundle,
   isReferenceOfType,
   normalizeAoeQuestionnaire,
+  questionnaireItemIterator,
 } from '@medplum/health-gorilla-core';
 import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
@@ -97,9 +98,15 @@ const INITIAL_DIAGNOSES: DiagnosisCodeableConcept[] = [];
 const INITIAL_TEST_METADATA = {};
 const INITIAL_BILLING_INFORMATION: BillingInformation = { billTo: 'patient', patientCoverage: undefined };
 
-type TestsAndMetadata = {
+type TestsReducerState = {
+  // Don't use any optional fields here, e.g. `selectedTests?: TestCoding[]` since that would cause
+  // some loss of type safety in the reducer function by allowing the reducer to potentially return
+  // incomplete state if a field is forgotten about. Instead, always use explicity `| undefined` for
+  // fields that may legitimately be undefined in the state.
+
   selectedTests: TestCoding[];
   testMetadata: Record<string, TestMetadata | undefined>;
+  specimenCollectedDateTime: Date | undefined;
 };
 
 type TestsAction =
@@ -108,9 +115,10 @@ type TestsAction =
   | { type: 'set'; tests: TestCoding[] }
   | { type: 'updateMetadata'; test: TestCoding; partialMetadata: Partial<EditableLabOrderTestMetadata> }
   | { type: 'aoeLoaded'; testAoes: [TestCoding, Questionnaire | undefined][] }
+  | { type: 'specimenCollectionDateChange'; newDate: Date | undefined }
   | { type: 'aoeError'; tests: TestCoding[] };
 
-function testsReducer(prev: TestsAndMetadata, action: TestsAction): TestsAndMetadata {
+function testsReducer(prev: TestsReducerState, action: TestsAction): TestsReducerState {
   switch (action.type) {
     case 'add': {
       if (prev.selectedTests.some((test) => test.code === action.test.code)) {
@@ -118,6 +126,7 @@ function testsReducer(prev: TestsAndMetadata, action: TestsAction): TestsAndMeta
       }
 
       return {
+        ...prev,
         selectedTests: [...prev.selectedTests, action.test],
         testMetadata: {
           ...prev.testMetadata,
@@ -127,6 +136,7 @@ function testsReducer(prev: TestsAndMetadata, action: TestsAction): TestsAndMeta
     }
     case 'remove': {
       return {
+        ...prev,
         selectedTests: prev.selectedTests.filter((test) => test.code !== action.test.code),
         testMetadata: Object.fromEntries(
           Object.entries(prev.testMetadata).filter(([code]) => code !== action.test.code)
@@ -135,6 +145,7 @@ function testsReducer(prev: TestsAndMetadata, action: TestsAction): TestsAndMeta
     }
     case 'set': {
       return {
+        ...prev,
         selectedTests: action.tests,
         testMetadata: Object.fromEntries(
           action.tests.map((test) => {
@@ -167,7 +178,7 @@ function testsReducer(prev: TestsAndMetadata, action: TestsAction): TestsAndMeta
       }
 
       return {
-        selectedTests: prev.selectedTests,
+        ...prev,
         testMetadata: {
           ...prev.testMetadata,
           [test.code]: { ...prevTestMetadata, ...allowedUpdates },
@@ -175,7 +186,7 @@ function testsReducer(prev: TestsAndMetadata, action: TestsAction): TestsAndMeta
       };
     }
     case 'aoeLoaded': {
-      let newTestMetadata: TestsAndMetadata['testMetadata'] | undefined;
+      let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
       for (const [test, aoeQuestionnaire] of action.testAoes) {
         const prevMetadata = prev.testMetadata[test.code];
         if (!prevMetadata) {
@@ -186,7 +197,9 @@ function testsReducer(prev: TestsAndMetadata, action: TestsAction): TestsAndMeta
         newTestMetadata[test.code] = {
           ...prevMetadata,
           aoeStatus: aoeQuestionnaire ? 'loaded' : 'none',
-          aoeQuestionnaire,
+          aoeQuestionnaire:
+            aoeQuestionnaire &&
+            (updateAoeQuestionnaireRequiredItems(aoeQuestionnaire, prev.specimenCollectedDateTime) ?? aoeQuestionnaire),
         };
       }
 
@@ -195,13 +208,13 @@ function testsReducer(prev: TestsAndMetadata, action: TestsAction): TestsAndMeta
       }
 
       return {
-        selectedTests: prev.selectedTests,
+        ...prev,
         testMetadata: newTestMetadata,
       };
     }
 
     case 'aoeError': {
-      let newTestMetadata: TestsAndMetadata['testMetadata'] | undefined;
+      let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
       for (const test of action.tests) {
         const prevMetadata = prev.testMetadata[test.code];
         if (!prevMetadata || prevMetadata.aoeStatus !== 'loading') {
@@ -220,8 +233,33 @@ function testsReducer(prev: TestsAndMetadata, action: TestsAction): TestsAndMeta
       }
 
       return {
-        selectedTests: prev.selectedTests,
+        ...prev,
         testMetadata: newTestMetadata,
+      };
+    }
+    case 'specimenCollectionDateChange': {
+      // check if we can reuse the previous testMetadata object to avoid unnecessary downstream re-renders
+      let newTestMetadata: TestsReducerState['testMetadata'] | undefined;
+      for (const test of prev.selectedTests) {
+        const prevTestMetadata = prev.testMetadata[test.code];
+        if (!prevTestMetadata) {
+          continue;
+        }
+
+        if (prevTestMetadata.aoeQuestionnaire) {
+          const newAoeQ = updateAoeQuestionnaireRequiredItems(prevTestMetadata.aoeQuestionnaire, action.newDate);
+          if (newAoeQ) {
+            newTestMetadata ??= { ...prev.testMetadata };
+            newTestMetadata[test.code] = { ...prevTestMetadata, aoeQuestionnaire: newAoeQ };
+          }
+        }
+      }
+
+      return {
+        ...prev,
+        // If no changes to AOE questionnaire item.required, reuse the previous object
+        testMetadata: newTestMetadata ?? prev.testMetadata,
+        specimenCollectedDateTime: action.newDate,
       };
     }
     default:
@@ -235,13 +273,13 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
   const [performingLab, _setPerformingLab] = useState<LabOrganization | undefined>();
   const [performingLabAccountNumber, _setPerformingLabAccountNumber] = useState<string | undefined>();
   const [testsAndMetadata, dispatchTests] = useReducer(testsReducer, {
+    specimenCollectedDateTime: undefined,
     selectedTests: INITIAL_TESTS,
     testMetadata: INITIAL_TEST_METADATA,
   });
   const [diagnoses, _setDiagnoses] = useState<DiagnosisCodeableConcept[]>(INITIAL_DIAGNOSES);
   const [healthGorillaAutocomplete, setHealthGorillaAutocomplete] = useState<HGSearchFunction>();
   const [billingInformation, setBillingInformation] = useState<BillingInformation>(INITIAL_BILLING_INFORMATION);
-  const [specimenCollectedDateTime, _setSpecimenCollectedDateTime] = useState<Date | undefined>();
   const [orderNotes, _setOrderNotes] = useState<string | undefined>();
 
   const fetchAoeQuestionnaire = useCallback(
@@ -366,7 +404,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
       testMetadata: testsAndMetadata.testMetadata,
       diagnoses,
       billingInformation,
-      specimenCollectedDateTime,
+      specimenCollectedDateTime: testsAndMetadata.specimenCollectedDateTime,
       orderNotes,
     });
 
@@ -381,9 +419,9 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     performingLabAccountNumber,
     testsAndMetadata.selectedTests,
     testsAndMetadata.testMetadata,
+    testsAndMetadata.specimenCollectedDateTime,
     diagnoses,
     billingInformation,
-    specimenCollectedDateTime,
     orderNotes,
   ]);
 
@@ -488,7 +526,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
       updateBillingInformation,
 
       setSpecimenCollectedDateTime: (newDate: Date | undefined) => {
-        _setSpecimenCollectedDateTime(newDate);
+        dispatchTests({ type: 'specimenCollectionDateChange', newDate });
       },
 
       setOrderNotes: (newOrderNotes: string | undefined) => {
@@ -568,4 +606,50 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
 function toDiagnosisKey(diagnosis: DiagnosisCodeableConcept): string {
   // TODO feels slightly dangerous since users can alter a diagnosis along the way...
   return diagnosis.coding[0].code as string;
+}
+
+const REQUIRED_WHEN_SPECIMEN =
+  'https://www.healthgorilla.com/fhir/StructureDefinition/questionnaire-requiredwhenspecimen';
+
+/**
+ * Updates the required status of items in an AOE questionnaire based on whether a specimen is being collected.
+ * @param questionnaire - The Questionnaire to update
+ * @param specimenCollectedDateTime - The date and time the specimen was collected, if any
+ * @returns A new Questionnaire with the required status of items updated, or undefined if no changes are needed
+ */
+function updateAoeQuestionnaireRequiredItems(
+  questionnaire: Questionnaire,
+  specimenCollectedDateTime: Date | undefined
+): Questionnaire | undefined {
+  let newQuestionnaire: Questionnaire | undefined;
+  const requiredWhenSpecimen = Boolean(specimenCollectedDateTime);
+
+  // first, check if the questionnaire needs any changes
+  for (const item of questionnaireItemIterator(questionnaire.item)) {
+    if (getExtensionValue(item, REQUIRED_WHEN_SPECIMEN) === true) {
+      if (Boolean(item.required) !== requiredWhenSpecimen) {
+        if (!newQuestionnaire) {
+          // at least one item needs updating, so crete a clone to be updated rather than updating in place
+          newQuestionnaire = deepClone(questionnaire);
+          break;
+        }
+      }
+    }
+  }
+
+  // if no changes are needed, return the original Questionnaire
+  if (!newQuestionnaire) {
+    return undefined;
+  }
+
+  // otherwise, update the cloned Questionnaire
+  for (const item of questionnaireItemIterator(newQuestionnaire.item)) {
+    if (getExtensionValue(item, REQUIRED_WHEN_SPECIMEN) === true) {
+      if (Boolean(item.required) !== requiredWhenSpecimen) {
+        item.required = requiredWhenSpecimen;
+      }
+    }
+  }
+
+  return newQuestionnaire;
 }
