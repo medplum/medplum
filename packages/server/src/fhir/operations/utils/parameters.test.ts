@@ -219,7 +219,7 @@ describe('Operation Input Parameters parsing', () => {
         resourceType: 'Parameters',
         parameter: [{ name: 'requiredIn', valueBoolean: 'Hi!' }],
       } as unknown as Parameters,
-      'Invalid JSON type: expected boolean, but got string (Parameters.parameter.value[x])',
+      'Invalid JSON type: expected boolean, but got string (Parameters.parameter[0].value[x])',
     ],
     [
       { resourceType: 'Parameters', parameter: [{ valueQuantity: { value: 5 } }] } as unknown as Parameters,
@@ -352,7 +352,7 @@ describe('Send Operation output Parameters', () => {
       buildOutputParameters(opDef, { singleOut: { reference: 'Observation/foo' } });
       throw new Error('expected error');
     } catch (err: any) {
-      expect(err.message).toBe('Invalid additional property "reference" (Parameters.parameter.value[x].reference)');
+      expect(err.message).toBe('Invalid additional property "reference" (Parameters.parameter[0].value[x].reference)');
     }
   });
 });
