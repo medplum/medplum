@@ -204,6 +204,7 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
 }
 
 export async function shutdownApp(): Promise<void> {
+  cleanupHeartbeat();
   await closeWebSockets();
   if (server) {
     await new Promise((resolve) => {
@@ -212,7 +213,6 @@ export async function shutdownApp(): Promise<void> {
     server = undefined;
   }
 
-  cleanupHeartbeat();
   await closeWorkers();
   await closeDatabase();
   await closeRedis();
