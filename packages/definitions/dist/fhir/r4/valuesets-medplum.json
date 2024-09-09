@@ -165,11 +165,6 @@
             "definition": "GraphQL Introspection"
           },
           {
-            "code": "terminology",
-            "display": "Terminology Service",
-            "definition": "Updated implementation of Terminology Service functionality"
-          },
-          {
             "code": "websocket-subscriptions",
             "display": "WebSocket Subscriptions",
             "definition": "WebSocket Subscriptions"
