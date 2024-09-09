@@ -266,6 +266,7 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
       .get(new URL(contentLocation).pathname)
       .set('Authorization', 'Bearer ' + accessToken);
     if (res.status !== 202) {
+      await sleep(500); // Buffer time to ensure that any remaining async processing has fully completed
       return res.body as AsyncJob;
     }
     await sleep(1000);
