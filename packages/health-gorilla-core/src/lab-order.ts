@@ -20,11 +20,14 @@ import {
 } from './constants';
 import {
   BillingInformation,
+  BillToOptions,
   DiagnosisCodeableConcept,
   isBillTo,
+  isPriority,
   LabOrderServiceRequest,
   LabOrderTestMetadata,
   LabOrganization,
+  PRIORITY_VALUES,
   TestCoding,
 } from './types';
 
@@ -75,69 +78,108 @@ export type PartialLabOrderInputs = Partial<
   }
 >;
 
-export function validateLabOrderInputs(args: PartialLabOrderInputs): asserts args is LabOrderInputs {
-  const issues: string[] = [];
+type InputError = { message: string };
+
+export type LabOrderInputErrors = {
+  patient?: InputError;
+  requester?: InputError;
+  performingLab?: InputError;
+  selectedTests?: InputError;
+  testMetadata?: {
+    [testCode: string]: {
+      priority?: InputError;
+      notes?: InputError;
+      aoeResponses?: InputError;
+    };
+  };
+  billingInformation?: {
+    billTo?: InputError;
+    patientCoverage?: InputError;
+  };
+};
+
+export function assertLabOrderInputs(args: PartialLabOrderInputs): asserts args is LabOrderInputs {
+  const errors = validateLabOrderInputs(args);
+  if (errors) {
+    throw new LabOrderValidationError(errors);
+  }
+}
+
+export function isValidLabOrderInputs(args: PartialLabOrderInputs): args is LabOrderInputs {
+  return !validateLabOrderInputs(args);
+}
+
+export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInputErrors | undefined {
+  const errors: LabOrderInputErrors = {};
 
   if (!args.patient) {
-    issues.push('Patient is required');
+    errors.patient = { message: 'Patient is required' };
   }
 
   if (!args.requester) {
-    issues.push('Requester is required');
+    errors.requester = { message: 'Requesting Practitioner is required' };
   }
 
   if (!args.performingLab) {
-    issues.push('Performing lab is required');
+    errors.performingLab = { message: 'Performing Lab is required' };
   }
 
   if (!args.selectedTests || args.selectedTests.length === 0) {
-    issues.push('Tests are required');
-  }
-
-  if (!args.testMetadata) {
-    issues.push('Test metadata is required');
-  } else if (args.selectedTests) {
+    errors.selectedTests = { message: 'At least one test must be selected' };
+  } else {
     for (const test of args.selectedTests) {
-      const meta = args.testMetadata[test.code];
-      if (!meta) {
-        issues.push(`Missing metadata for ${formatTestCoding(test)}`);
-      } else {
-        const q = meta.aoeQuestionnaire;
-        if (q) {
-          const missing = getMissingRequiredQuestionnaireItems(
-            q,
-            meta.aoeResponses,
-            Boolean(args.specimenCollectedDateTime)
-          );
-          if (missing.length > 0) {
-            issues.push(`Missing required AOE responses for ${formatTestCoding(test)}: ${missing.join(', ')}`);
-          }
+      const meta = args.testMetadata?.[test.code];
+
+      // priority
+      if (meta?.priority && !isPriority(meta.priority)) {
+        errors.testMetadata ??= {};
+        errors.testMetadata[test.code] ??= {};
+        errors.testMetadata[test.code].priority = {
+          message: `Priority for ${formatTestCoding(test)} must be one of ${PRIORITY_VALUES.join(', ')}`,
+        };
+      }
+
+      // AOE responses
+      const q = meta?.aoeQuestionnaire;
+      if (q) {
+        const missing = getMissingRequiredQuestionnaireItems(
+          q,
+          meta.aoeResponses,
+          Boolean(args.specimenCollectedDateTime)
+        );
+        if (missing.length > 0) {
+          errors.testMetadata ??= {};
+          errors.testMetadata[test.code] ??= {};
+          errors.testMetadata[test.code].aoeResponses = {
+            message: `Missing required AOE responses for ${formatTestCoding(test)}: ${missing.join(', ')}`,
+          };
         }
       }
     }
   }
 
-  if (!args.billingInformation?.billTo) {
-    issues.push('BillingInformation.billTo is required');
-  } else if (!isBillTo(args.billingInformation.billTo)) {
-    issues.push('BillingInformation.billTo is invalid');
+  if (!isBillTo(args.billingInformation?.billTo)) {
+    errors.billingInformation ??= {};
+    errors.billingInformation.billTo = { message: `Bill to must be one of: ${BillToOptions.join(', ')}` };
   } else if (args.billingInformation.billTo === 'insurance') {
     const coverageCount = args.billingInformation.patientCoverage?.length ?? 0;
     if (coverageCount < 1 || coverageCount > 3) {
-      issues.push('BillingInformation.patientCoverage must contain 1-3 Coverage resources when billing to insurance');
+      errors.billingInformation ??= {};
+      errors.billingInformation.patientCoverage = {
+        message: 'BillingInformation.patientCoverage must contain 1-3 Coverage resources when billing to insurance',
+      };
     }
   }
 
-  if (issues.length === 0) {
-    return;
+  if (Object.keys(errors).length > 0) {
+    return errors;
   }
-
-  throw new LabOrderValidationError(issues);
+  return undefined;
 }
 
 export class LabOrderValidationError extends Error {
-  constructor(readonly issues: string[]) {
-    super('Lab order validation errors: ' + issues.join(', '));
+  constructor(readonly errors: LabOrderInputErrors) {
+    super(`Invalid lab order inputs: ${JSON.stringify(errors)}`);
   }
 }
 
@@ -156,7 +198,8 @@ type PopulatedBundleEntry = NonNullable<Bundle['entry']> &
  * a `ServiceRequest` representing the Health Gorilla lab order.
  */
 export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
-  validateLabOrderInputs(inputs);
+  assertLabOrderInputs(inputs);
+
   inputs satisfies LabOrderInputs;
 
   const {
@@ -211,7 +254,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
       performer: [performerReference],
       category: [{ coding: [{ system: SNOMED, code: '103693007', display: 'Diagnostic procedure' }] }],
       code: { coding: [test] },
-      priority: metadata.priority,
+      priority: metadata.priority || 'routine',
       note: metadata.notes
         ? [{ authorReference: requesterReference, time: new Date().toISOString(), text: metadata.notes }]
         : undefined,

@@ -22,10 +22,12 @@ export type LabOrderServiceRequest = ServiceRequest & {
 };
 
 export interface LabOrderTestMetadata {
-  /** (optional) This attribute allows to set priority for the given test within the order. */
+  /** (optional) This attribute allows to set priority for the given test within the order. Defaults to 'routine' */
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
   /** (optional) Any notes and comments related to the given test. */
   notes?: string;
+  /** The AOE `Questionnaire`, if any, containing Ask at Order Entry (AOE) questions for the test.  */
+  readonly aoeQuestionnaire?: Questionnaire;
   /**
    * The `QuestionnaireResponse` resource containing answers related to the given diagnostic procedure.
    * If AOE is required for the specified configuration (performer, test, specimen), but missed in the
@@ -34,7 +36,8 @@ export interface LabOrderTestMetadata {
   aoeResponses?: QuestionnaireResponse;
 }
 
-export type BillTo = 'patient' | 'insurance' | 'customer-account';
+export const BillToOptions = ['patient', 'insurance', 'customer-account'] as const;
+export type BillTo = (typeof BillToOptions)[number];
 
 export function isBillTo(value: unknown): value is BillTo {
   if (value === 'patient' || value === 'insurance' || value === 'customer-account') {
@@ -58,11 +61,10 @@ export type BillingInformation = {
   patientCoverage?: [] | [Coverage] | [Coverage, Coverage] | [Coverage, Coverage, Coverage];
 };
 
-export interface LabOrderTestMetadata {
-  priority?: 'routine' | 'urgent' | 'asap' | 'stat';
-  notes?: string;
-  aoeQuestionnaire?: Questionnaire;
-  aoeResponses?: QuestionnaireResponse;
+export const PRIORITY_VALUES = ['routine', 'urgent', 'asap', 'stat'] as const;
+
+export function isPriority(value: unknown): value is NonNullable<ServiceRequest['priority']> {
+  return PRIORITY_VALUES.includes(value as any);
 }
 
 export type HGAutocompleteBotInput =

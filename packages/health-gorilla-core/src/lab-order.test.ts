@@ -1,6 +1,13 @@
 import { Bundle, Patient, Practitioner, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { createLabOrderBundle } from './lab-order';
+import {
+  assertLabOrderInputs,
+  createLabOrderBundle,
+  isValidLabOrderInputs,
+  LabOrderValidationError,
+  PartialLabOrderInputs,
+  validateLabOrderInputs,
+} from './lab-order';
 import {
   getReferenceString,
   indexSearchParameterBundle,
@@ -104,7 +111,6 @@ describe('createLabOrderBundle', () => {
       performingLab,
       selectedTests,
       testMetadata,
-      diagnoses: [],
       billingInformation: {
         billTo: 'patient',
       },
@@ -162,6 +168,75 @@ describe('createLabOrderBundle', () => {
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN, valueString: '123456' },
     ]);
   });
+
+  describe('Input validation', () => {
+    test<TestContext>('Empty input', async () => {
+      const inputs: PartialLabOrderInputs = {};
+      expect(validateLabOrderInputs(inputs)).toBeDefined();
+      expect(isValidLabOrderInputs(inputs)).toBe(false);
+      expect(() => assertLabOrderInputs(inputs)).toThrow(LabOrderValidationError);
+    });
+
+    test<TestContext>('Missing tests, test metadata and billing information', async ({
+      patient,
+      requester,
+      performingLab,
+    }) => {
+      const inputs: PartialLabOrderInputs = {
+        patient,
+        requester,
+        performingLab,
+      };
+      expect(validateLabOrderInputs(inputs)).toBeDefined();
+      expect(isValidLabOrderInputs(inputs)).toBe(false);
+      expect(() => assertLabOrderInputs(inputs)).toThrow(LabOrderValidationError);
+    });
+
+    test<TestContext>('Complete input', async ({ patient, requester, performingLab }) => {
+      const selectedTests: TestCoding[] = [];
+      const testMetadata: Record<string, LabOrderTestMetadata> = {};
+      for (const code of TEST_CODES) {
+        selectedTests.push({ code } as TestCoding);
+        testMetadata[code] = { notes: 'test notes', priority: 'urgent' };
+      }
+
+      const inputs: PartialLabOrderInputs = {
+        patient,
+        requester,
+        performingLab,
+        selectedTests,
+        testMetadata,
+        billingInformation: { billTo: 'customer-account' },
+      };
+
+      expect(validateLabOrderInputs(inputs)).toBeUndefined();
+      expect(isValidLabOrderInputs(inputs)).toBe(true);
+      expect(() => assertLabOrderInputs(inputs)).not.toThrow();
+    });
+
+    test<TestContext>('Invalid test priority', async ({ patient, requester, performingLab }) => {
+      const selectedTests: TestCoding[] = [];
+      const testMetadata: Record<string, LabOrderTestMetadata> = {};
+      for (const code of TEST_CODES) {
+        selectedTests.push({ code } as TestCoding);
+        testMetadata[code] = { notes: 'test notes', priority: 'super duper urgent' as any };
+      }
+
+      const inputs: PartialLabOrderInputs = {
+        patient,
+        requester,
+        performingLab,
+        selectedTests,
+        testMetadata,
+        billingInformation: { billTo: 'customer-account' },
+      };
+
+      const errors = validateLabOrderInputs(inputs);
+      expectToBeDefined(errors?.testMetadata?.[TEST_CODES[0]]?.priority);
+      expect(isValidLabOrderInputs(inputs)).toBe(false);
+      expect(() => assertLabOrderInputs(inputs)).toThrow();
+    });
+  });
 });
 
 function expectBundleResultSuccessful(bundle: Bundle): boolean {
@@ -169,4 +244,8 @@ function expectBundleResultSuccessful(bundle: Bundle): boolean {
     throw new Error('Empty bundle');
   }
   return bundle.entry.every((e) => e.response?.status.startsWith('2'));
+}
+
+export function expectToBeDefined<T>(value: T | undefined): asserts value is T {
+  expect(value).toBeDefined();
 }
