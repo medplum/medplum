@@ -37,7 +37,7 @@ export function SecurityPage(): JSX.Element | null {
 
   useEffect(() => {
     medplum
-      .get('auth/me')
+      .get('auth/me', { cache: 'no-cache' })
       .then(setDetails)
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum]);

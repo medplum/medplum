@@ -320,6 +320,7 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
 export class MockFetchClient {
   initialized = false;
   initPromise?: Promise<void>;
+  readonly handlerOverrides = new Map<string, (method: HttpMethod, path: string, options: any) => Promise<any>>();
 
   constructor(
     readonly router: FhirRouter,
@@ -385,6 +386,11 @@ export class MockFetchClient {
   }
 
   private async mockHandler(method: HttpMethod, path: string, options: any): Promise<any> {
+    for (const [prefix, handler] of this.handlerOverrides) {
+      if (path.startsWith(prefix)) {
+        return handler(method, path, options);
+      }
+    }
     if (path.startsWith('admin/')) {
       return this.mockAdminHandler(method, path, options);
     } else if (path.startsWith('auth/')) {
@@ -631,7 +637,15 @@ export class MockFetchClient {
       const formBody = new URLSearchParams(options.body);
       const clientId = formBody.get('client_id') ?? 'my-client-id';
       return {
-        access_token: 'header.' + base64Encode(JSON.stringify({ client_id: clientId })) + '.signature',
+        access_token: createFakeJwt({
+          sub: '1234567890',
+          iat: Math.ceil(Date.now() / 1000),
+          exp: Math.ceil(Date.now() / 1000) + 60 * 60, // adding one hour in seconds
+          client_id: clientId,
+          login_id: '123',
+        }),
+        refresh_token: createFakeJwt({ client_id: 123 }),
+        profile: { reference: 'Practitioner/123' },
       };
     }
 
@@ -742,6 +756,18 @@ export class MockFetchClient {
       return result[1];
     }
   }
+}
+
+/**
+ * Creates a fake JWT token with the provided claims for testing.
+ *
+ * **NOTE: This function does not create a real signed JWT. Attempting to read the header or signature will fail.**
+ *
+ * @param claims - The claims to encode in the body of the fake JWT.
+ * @returns A stringified fake JWT token.
+ */
+export function createFakeJwt(claims: Record<string, string | number>): string {
+  return 'header.' + base64Encode(JSON.stringify(claims)) + '.signature';
 }
 
 function base64Encode(str: string): string {
