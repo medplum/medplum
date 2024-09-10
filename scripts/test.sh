@@ -46,7 +46,7 @@ PACKAGES=(
   "core"
   "expo-polyfills"
   "fhir-router"
-  "health-gorilla"
+  "health-gorilla-core"
   "hl7"
   "mock"
   "react"
