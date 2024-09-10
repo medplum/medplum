@@ -1,4 +1,4 @@
-import { Bundle, Patient, Practitioner, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Patient, Practitioner, Questionnaire, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
   assertLabOrderInputs,
@@ -36,6 +36,45 @@ const PATIENT_IDENTIFIER = 'd05b5e65f4f4ade2e5033b17';
 const REQUESTER_IDENTIFIER = '07a83165d5b41cb967291e44';
 const PERFORMING_LAB_IDENTIFIER = 'f-a855594f43fe879c6570b92e';
 const TEST_CODES: [string] = ['083935'];
+const TEST_CODE_WITH_REQUIRED_AOE = { code: 'AOE' } as TestCoding;
+const TEST_CODES_TO_AOES = {
+  AOE: {
+    resourceType: 'Questionnaire',
+    id: 'ed364266b937bb3bd73082b1',
+    name: 'AOE Testing AOE questions',
+    status: 'active',
+    subjectType: ['Patient'],
+    code: [
+      {
+        system: 'urn:uuid:f:388554647b89801ea5e8320b',
+        code: 'aoe_testing',
+      },
+    ],
+    item: [
+      {
+        linkId: 'fasting',
+        code: [{ code: 'fasting' }],
+        text: 'Is the patient fasting?',
+        type: 'choice',
+        required: true,
+        answerOption: [
+          {
+            valueCoding: {
+              code: 'Y',
+              display: 'Yes',
+            },
+          },
+          {
+            valueCoding: {
+              code: 'N',
+              display: 'No',
+            },
+          },
+        ],
+      },
+    ],
+  } as Questionnaire,
+};
 
 describe('createLabOrderBundle', () => {
   const testDataDir = path.resolve(__dirname, '__test__');
@@ -127,9 +166,56 @@ describe('createLabOrderBundle', () => {
       subject: getReferenceString(patient),
     });
 
-    expect(orderServiceRequest).toBeDefined();
+    expectToBeDefined(orderServiceRequest);
     expect(orderServiceRequest?.extension).toEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'patient' },
+    ]);
+  });
+
+  test<TestContext>('insurance and coverage', async (ctx) => {
+    const { medplum, patient, requester, performingLab } = ctx;
+
+    const selectedTests: TestCoding[] = [];
+    const testMetadata: Record<string, LabOrderTestMetadata> = {};
+    for (const code of TEST_CODES) {
+      selectedTests.push({ code } as TestCoding);
+    }
+
+    const bundle = createLabOrderBundle({
+      patient,
+      requester,
+      performingLab,
+      selectedTests,
+      testMetadata,
+      billingInformation: {
+        billTo: 'insurance',
+        patientCoverage: [
+          {
+            resourceType: 'Coverage',
+            id: 'coverage-1',
+            status: 'active',
+            beneficiary: { reference: 'Patient/123' },
+            payor: [],
+          },
+        ],
+      },
+    });
+
+    expect(bundle.type).toEqual('transaction');
+
+    const txnResponse = await medplum.executeBatch(bundle);
+    expect(txnResponse.type).toEqual('transaction-response');
+    expectBundleResultSuccessful(txnResponse);
+
+    const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
+      _profile: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
+      subject: getReferenceString(patient),
+    });
+
+    expectToBeDefined(orderServiceRequest);
+    expect(orderServiceRequest.insurance).toEqual([{ reference: 'Coverage/coverage-1' }]);
+    expect(orderServiceRequest.extension).toEqual([
+      { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'insurance' },
     ]);
   });
 
@@ -162,8 +248,62 @@ describe('createLabOrderBundle', () => {
       subject: getReferenceString(patient),
     });
 
-    expect(orderServiceRequest).toBeDefined();
-    expect(orderServiceRequest?.extension).toEqual([
+    expectToBeDefined(orderServiceRequest);
+    expect(orderServiceRequest.extension).toEqual([
+      { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'customer-account' },
+      { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN, valueString: '123456' },
+    ]);
+  });
+
+  test<TestContext>('With AOE response and specimenCollectedDateTime', async (ctx) => {
+    const { medplum, patient, requester, performingLab } = ctx;
+    const selectedTests: TestCoding[] = [TEST_CODE_WITH_REQUIRED_AOE];
+    const testMetadata: Record<string, LabOrderTestMetadata> = {
+      [TEST_CODE_WITH_REQUIRED_AOE.code]: {
+        aoeQuestionnaire: TEST_CODES_TO_AOES.AOE,
+        aoeResponses: {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'fasting',
+              answer: [
+                {
+                  valueCoding: {
+                    code: 'Y',
+                    display: 'Yes',
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    };
+
+    const bundle = createLabOrderBundle({
+      patient,
+      requester,
+      performingLab,
+      performingLabAccountNumber: '123456',
+      selectedTests,
+      testMetadata,
+      diagnoses: [],
+      billingInformation: {
+        billTo: 'customer-account',
+      },
+      specimenCollectedDateTime: new Date(),
+    });
+    const txnResponse = await medplum.executeBatch(bundle);
+    expectBundleResultSuccessful(txnResponse);
+
+    const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
+      _profile: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
+      subject: getReferenceString(patient),
+    });
+
+    expectToBeDefined(orderServiceRequest);
+    expect(orderServiceRequest.extension).toEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'customer-account' },
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN, valueString: '123456' },
     ]);
@@ -172,7 +312,7 @@ describe('createLabOrderBundle', () => {
   describe('Input validation', () => {
     test<TestContext>('Empty input', async () => {
       const inputs: PartialLabOrderInputs = {};
-      expect(validateLabOrderInputs(inputs)).toBeDefined();
+      expectToBeDefined(validateLabOrderInputs(inputs));
       expect(isValidLabOrderInputs(inputs)).toBe(false);
       expect(() => assertLabOrderInputs(inputs)).toThrow(LabOrderValidationError);
     });
@@ -187,7 +327,7 @@ describe('createLabOrderBundle', () => {
         requester,
         performingLab,
       };
-      expect(validateLabOrderInputs(inputs)).toBeDefined();
+      expectToBeDefined(validateLabOrderInputs(inputs));
       expect(isValidLabOrderInputs(inputs)).toBe(false);
       expect(() => assertLabOrderInputs(inputs)).toThrow(LabOrderValidationError);
     });
@@ -235,6 +375,91 @@ describe('createLabOrderBundle', () => {
       expectToBeDefined(errors?.testMetadata?.[TEST_CODES[0]]?.priority);
       expect(isValidLabOrderInputs(inputs)).toBe(false);
       expect(() => assertLabOrderInputs(inputs)).toThrow();
+    });
+
+    test<TestContext>('Missing Coverage for insurance', async ({ patient, requester, performingLab }) => {
+      const selectedTests: TestCoding[] = [];
+      const testMetadata: Record<string, LabOrderTestMetadata> = {};
+      for (const code of TEST_CODES) {
+        selectedTests.push({ code } as TestCoding);
+      }
+
+      const inputs: PartialLabOrderInputs = {
+        patient,
+        requester,
+        performingLab,
+        selectedTests,
+        testMetadata,
+        billingInformation: { billTo: 'insurance' },
+      };
+
+      const errors = validateLabOrderInputs(inputs);
+      expectToBeDefined(errors?.billingInformation?.patientCoverage);
+      expect(isValidLabOrderInputs(inputs)).toBe(false);
+      expect(() => assertLabOrderInputs(inputs)).toThrow();
+    });
+
+    test<TestContext>('Missing required AOE responses', async ({ patient, requester, performingLab }) => {
+      const selectedTests: TestCoding[] = [TEST_CODE_WITH_REQUIRED_AOE];
+      const testMetadata: Record<string, LabOrderTestMetadata> = {
+        [TEST_CODE_WITH_REQUIRED_AOE.code]: {
+          aoeQuestionnaire: TEST_CODES_TO_AOES.AOE,
+          aoeResponses: { resourceType: 'QuestionnaireResponse', status: 'completed', item: [] },
+        },
+      };
+
+      const inputs: PartialLabOrderInputs = {
+        patient,
+        requester,
+        performingLab,
+        selectedTests,
+        testMetadata,
+        billingInformation: { billTo: 'patient' },
+      };
+
+      const errors = validateLabOrderInputs(inputs);
+      expectToBeDefined(errors?.testMetadata?.[TEST_CODE_WITH_REQUIRED_AOE.code]?.aoeResponses);
+      expect(isValidLabOrderInputs(inputs)).toBe(false);
+      expect(() => assertLabOrderInputs(inputs)).toThrow();
+    });
+
+    test<TestContext>('With required AOE responses', async ({ patient, requester, performingLab }) => {
+      const selectedTests: TestCoding[] = [TEST_CODE_WITH_REQUIRED_AOE];
+      const testMetadata: Record<string, LabOrderTestMetadata> = {
+        [TEST_CODE_WITH_REQUIRED_AOE.code]: {
+          aoeQuestionnaire: TEST_CODES_TO_AOES.AOE,
+          aoeResponses: {
+            resourceType: 'QuestionnaireResponse',
+            status: 'completed',
+            item: [
+              {
+                linkId: 'fasting',
+                answer: [
+                  {
+                    valueCoding: {
+                      code: 'Y',
+                      display: 'Yes',
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      };
+
+      const inputs: PartialLabOrderInputs = {
+        patient,
+        requester,
+        performingLab,
+        selectedTests,
+        testMetadata,
+        billingInformation: { billTo: 'patient' },
+      };
+
+      expect(validateLabOrderInputs(inputs)).toBeUndefined();
+      expect(isValidLabOrderInputs(inputs)).toBe(true);
+      expect(() => assertLabOrderInputs(inputs)).not.toThrow();
     });
   });
 });

@@ -1,4 +1,4 @@
-import { createReference, deepClone, generateId, isReference, MedplumClient, SNOMED } from '@medplum/core';
+import { createReference, deepClone, generateId, isReference, SNOMED } from '@medplum/core';
 import {
   Bundle,
   Coverage,
@@ -46,7 +46,7 @@ export type LabOrderInputs = {
   /** The list of tests ordered within the given order. */
   selectedTests: TestCoding[];
   /** An object mapping the `Coding.code` of each selected test to an `LabOrderTestMetadata` object.  */
-  testMetadata: Record<string, LabOrderTestMetadata>;
+  testMetadata: Record<string, LabOrderTestMetadata | undefined>;
   /** An explanation or justification for why this diagnostic investigation is being requested in coded or textual form. */
   diagnoses: DiagnosisCodeableConcept[];
   /** (optional) The collection date of the lab order. */
@@ -233,7 +233,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
     const metadata = testMetadata[test.code];
 
     let qr: QuestionnaireResponse | undefined;
-    if (metadata.aoeResponses) {
+    if (metadata?.aoeResponses) {
       qr = deepClone(metadata.aoeResponses);
       qr.id = tempId();
       bundleEntry.push({
@@ -254,8 +254,8 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
       performer: [performerReference],
       category: [{ coding: [{ system: SNOMED, code: '103693007', display: 'Diagnostic procedure' }] }],
       code: { coding: [test] },
-      priority: metadata.priority || 'routine',
-      note: metadata.notes
+      priority: metadata?.priority || 'routine',
+      note: metadata?.notes
         ? [{ authorReference: requesterReference, time: new Date().toISOString(), text: metadata.notes }]
         : undefined,
       supportingInfo: qr ? [{ reference: qr.id }] : undefined,
@@ -343,18 +343,6 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
   bundle.entry = bundleEntry;
 
   return bundle;
-}
-
-export async function getCoverageFromLabOrder(
-  medplum: MedplumClient,
-  labOrder: LabOrderServiceRequest
-): Promise<Coverage[]> {
-  const coverageRefs = labOrder.insurance?.filter((ref) =>
-    ref.reference?.startsWith('Coverage/')
-  ) as Reference<Coverage>[];
-  const coverages = await Promise.all(coverageRefs?.map((ref) => medplum.readReference(ref)) ?? []);
-
-  return coverages;
 }
 
 function formatTestCoding(test: TestCoding): string {
