@@ -78,7 +78,7 @@ export type PartialLabOrderInputs = Partial<
   }
 >;
 
-type InputError = { message: string };
+export type InputError = { message: string };
 
 export type LabOrderInputErrors = {
   patient?: InputError;
