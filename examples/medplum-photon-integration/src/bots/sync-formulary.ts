@@ -1,17 +1,22 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
-import { List, MedicationKnowledge } from '@medplum/fhirtypes';
+import { BotEvent, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { List, ListEntry, MedicationKnowledge } from '@medplum/fhirtypes';
 import { handlePhotonAuth, photonGraphqlFetch } from './utils';
 
-export async function handler(medplum: MedplumClient, event: BotEvent<List>) {
+export async function handler(medplum: MedplumClient, event: BotEvent<List>): Promise<MedicationKnowledge[]> {
   const formulary = event.input;
   const PHOTON_CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
   const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
   const PHOTON_AUTH_TOKEN = await handlePhotonAuth(PHOTON_CLIENT_ID, PHOTON_CLIENT_SECRET);
 
-  const medications = formulary.entry;
+  const medications = formulary.entry?.filter((entry) => {
+    if (entry.flag) {
+      return !entry.flag?.coding?.some((coding) => coding.code === 'synced');
+    }
+    return true;
+  });
 
-  if (!medications || medications.length === 0) {
-    throw new Error('No valid medications to sync');
+  if (!medications) {
+    throw new Error('No medications to sync');
   }
 
   const catalogId = await getCatalogId(PHOTON_AUTH_TOKEN);
@@ -39,7 +44,52 @@ export async function handler(medplum: MedplumClient, event: BotEvent<List>) {
     await syncFormulary(catalogId, photonMedicationId, PHOTON_AUTH_TOKEN);
   }
 
+  await updateFormulary(medplum, formulary, unAddedMedications);
   return unAddedMedications;
+}
+
+async function updateFormulary(
+  medplum: MedplumClient,
+  formulary: List,
+  medsToSkip: MedicationKnowledge[]
+): Promise<void> {
+  const formularyId = formulary.id as string;
+  const medications = formulary.entry;
+  const updatedEntries: List['entry'] = [];
+  if (!medications) {
+    throw new Error('No medications in formulary.');
+  }
+  for (const medication of medications) {
+    if (
+      medication.flag?.coding?.includes({ system: 'https://neutron.health', code: 'synced' }) ||
+      (await checkIfSkipped(medsToSkip, medication, medplum))
+    ) {
+      updatedEntries.push(medication);
+    } else {
+      medication.flag = { coding: [{ system: 'https://neutron.health', code: 'synced' }] };
+      updatedEntries.push(medication);
+    }
+  }
+
+  try {
+    const ops: PatchOperation[] = [{ path: '/entry', op: 'add', value: updatedEntries }];
+    await medplum.patchResource('List', formularyId, ops);
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
+}
+
+async function checkIfSkipped(
+  medsToSkip: MedicationKnowledge[],
+  medicationEntry: ListEntry,
+  medplum: MedplumClient
+): Promise<boolean> {
+  const fullMedication = (await medplum.readReference(medicationEntry.item)) as MedicationKnowledge;
+  if (medsToSkip.includes(fullMedication)) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 async function syncFormulary(catalogId: string, treatmentId: string, authToken: string): Promise<void> {

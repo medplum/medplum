@@ -29,7 +29,7 @@ describe('Sync formulary', async () => {
     const actualModule = await vi.importActual('./utils.ts');
     return {
       ...actualModule,
-      handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+      // handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
     };
   });
 
@@ -40,12 +40,16 @@ describe('Sync formulary', async () => {
     status: 'current',
     mode: 'working',
   };
+  const secrets = {
+    PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
+    PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
+  };
 
   test.skip('No medications to sync', async () => {
     const medplum = new MockClient();
 
-    await expect(() => handler(medplum, { bot, contentType, input: baseList, secrets: {} })).rejects.toThrow(
-      'No valid medications to sync'
+    await expect(() => handler(medplum, { bot, contentType, input: baseList, secrets })).rejects.toThrow(
+      'No medications to sync'
     );
   });
 
@@ -63,10 +67,7 @@ describe('Sync formulary', async () => {
         bot,
         contentType,
         input: list,
-        secrets: {
-          PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
-          PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
-        },
+        secrets,
       })
     ).rejects.toThrow('No catalog found in Photon Health');
   }, 10000);
@@ -86,10 +87,7 @@ describe('Sync formulary', async () => {
         bot,
         contentType,
         input: list,
-        secrets: {
-          PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
-          PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
-        },
+        secrets,
       })
     ).rejects.toThrow('Invalid resource type in formulary');
   });
@@ -107,19 +105,16 @@ describe('Sync formulary', async () => {
       return { item: { reference: getReferenceString(knowledge) } };
     });
 
-    const list: List = {
+    const list: List = await medplum.createResource({
       ...baseList,
       entry: listEntry,
-    };
+    });
 
     const result = await handler(medplum, {
       bot,
       contentType,
       input: list,
-      secrets: {
-        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
-        PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
-      },
+      secrets,
     });
 
     expect(result.length).toBe(0);
@@ -140,23 +135,50 @@ describe('Sync formulary', async () => {
       },
     });
 
-    const list: List = {
+    const list: List = await medplum.createResource({
       ...baseList,
       entry: [{ item: { reference: getReferenceString(medicationKnowledge) } }],
-    };
+    });
 
     const result = await handler(medplum, {
       bot,
       contentType,
       input: list,
-      secrets: {
-        PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
-        PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
-      },
+      secrets,
     });
 
     expect(result.length).toBe(1);
   });
+
+  test.skip('Formulary is updated on successful sync', async () => {
+    const medplum = new MockClient();
+
+    const medKnowledge: MedicationKnowledge = await medplum.createResource({
+      resourceType: 'MedicationKnowledge',
+      code: {
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '1869699',
+            display: 'Linzess 72 MCG Oral Capsule',
+          },
+        ],
+      },
+    });
+
+    const formulary: List = await medplum.createResource({
+      ...baseList,
+      entry: [{ item: { reference: getReferenceString(medKnowledge) } }],
+    });
+
+    const result = await handler(medplum, { bot, contentType, secrets, input: formulary });
+    const updatedFormulary = await medplum.readResource('List', formulary.id as string);
+    const medicationsUpdated = updatedFormulary.entry?.map((entry) => entry.flag);
+
+    expect(medicationsUpdated?.length).toBe(1);
+    expect(medicationsUpdated?.[0]?.coding?.[0]).toEqual({ system: 'https://neutron.health', code: 'synced' });
+    expect(result.length).toBe(0);
+  }, 10000);
 });
 
 const medicationKnowledgeBundleEntries: BundleEntry[] = [
