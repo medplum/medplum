@@ -149,6 +149,7 @@ class BatchProcessor {
       {
         method: request.method as HttpMethod,
         pathname: request.url,
+        // Params and query string are parsed from the `pathname` by the router
         params: Object.create(null),
         query: Object.create(null),
         body,
