@@ -631,7 +631,15 @@ export class MockFetchClient {
       const formBody = new URLSearchParams(options.body);
       const clientId = formBody.get('client_id') ?? 'my-client-id';
       return {
-        access_token: 'header.' + base64Encode(JSON.stringify({ client_id: clientId })) + '.signature',
+        access_token: createFakeJwt({
+          sub: '1234567890',
+          iat: Math.ceil(Date.now() / 1000),
+          exp: Math.ceil(Date.now() / 1000) + 60 * 60, // adding one hour in seconds
+          client_id: clientId,
+          login_id: '123',
+        }),
+        refresh_token: createFakeJwt({ client_id: 123 }),
+        profile: { reference: 'Practitioner/123' },
       };
     }
 
@@ -742,6 +750,18 @@ export class MockFetchClient {
       return result[1];
     }
   }
+}
+
+/**
+ * Creates a fake JWT token with the provided claims for testing.
+ *
+ * **NOTE: This function does not create a real signed JWT. Attempting to read the header or signature will fail.**
+ *
+ * @param claims - The claims to encode in the body of the fake JWT.
+ * @returns A stringified fake JWT token.
+ */
+export function createFakeJwt(claims: Record<string, string | number>): string {
+  return 'header.' + base64Encode(JSON.stringify(claims)) + '.signature';
 }
 
 function base64Encode(str: string): string {
