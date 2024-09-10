@@ -320,7 +320,6 @@ round-trip min/avg/max/stddev = 10.977/14.975/23.159/4.790 ms
 export class MockFetchClient {
   initialized = false;
   initPromise?: Promise<void>;
-  readonly handlerOverrides = new Map<string, (method: HttpMethod, path: string, options: any) => Promise<any>>();
 
   constructor(
     readonly router: FhirRouter,
@@ -386,11 +385,6 @@ export class MockFetchClient {
   }
 
   private async mockHandler(method: HttpMethod, path: string, options: any): Promise<any> {
-    for (const [prefix, handler] of this.handlerOverrides) {
-      if (path.startsWith(prefix)) {
-        return handler(method, path, options);
-      }
-    }
     if (path.startsWith('admin/')) {
       return this.mockAdminHandler(method, path, options);
     } else if (path.startsWith('auth/')) {
