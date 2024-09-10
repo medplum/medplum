@@ -60332,6 +60332,10 @@
           },
           "type": "array"
         },
+        "system": {
+          "description": "Optional flag to indicate that the bot is a system bot and therefore has access to system secrets.",
+          "$ref": "#/definitions/boolean"
+        },
         "runAsUser": {
           "description": "Optional flag to indicate that the bot should be run as the user.",
           "$ref": "#/definitions/boolean"

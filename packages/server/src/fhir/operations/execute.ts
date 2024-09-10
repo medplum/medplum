@@ -202,7 +202,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     const context: BotExecutionContext = {
       ...request,
       accessToken: await getBotAccessToken(runAs),
-      secrets: await getBotSecrets(bot),
+      secrets: await getBotSecrets(bot, runAs),
     };
 
     if (bot.runtimeVersion === 'awslambda') {
@@ -487,11 +487,44 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
   return accessToken;
 }
 
-async function getBotSecrets(bot: Bot): Promise<Record<string, ProjectSetting>> {
+/**
+ * Returns a collection of secrets for the bot.
+ *
+ * Secrets can come from 1-4 different sources:
+ * 1. Bot project secrets
+ * 2. Bot project system secrets (if bot.system is true)
+ * 3. RunAs project secrets (if running in a different linked project)
+ * 4. RunAs project system secrets (if bot.system is true and running in a different linked project)
+ *
+ * @param bot - The bot to get secrets for.
+ * @param runAs - The project membership to get secrets for.
+ * @returns The collection of secrets.
+ */
+async function getBotSecrets(bot: Bot, runAs: ProjectMembership): Promise<Record<string, ProjectSetting>> {
   const systemRepo = getSystemRepo();
-  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-  const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
-  return secrets;
+
+  // Build a set of project IDs to read secrets from
+  const projectIds = new Set<string>();
+  projectIds.add(bot.meta?.project as string);
+  projectIds.add(resolveId(runAs.project) as string);
+
+  const entries: [string, ProjectSetting][] = [];
+
+  for (const projectId of projectIds) {
+    const project = await systemRepo.readResource<Project>('Project', projectId);
+    if (bot.system && project.systemSecret) {
+      for (const secret of project.systemSecret) {
+        entries.push([secret.name, secret]);
+      }
+    }
+    if (project.secret) {
+      for (const secret of project.secret) {
+        entries.push([secret.name, secret]);
+      }
+    }
+  }
+
+  return Object.fromEntries(entries);
 }
 
 function getResponseContentType(req: Request): string {
