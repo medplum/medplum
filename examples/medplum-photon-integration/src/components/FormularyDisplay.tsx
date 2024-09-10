@@ -1,8 +1,6 @@
-import { Table, TableThead } from '@mantine/core';
-import { getReferenceString } from '@medplum/core';
+import { Table } from '@mantine/core';
 import { List, MedicationKnowledge } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
-import { useNavigate } from 'react-router-dom';
 
 interface FormularyDisplayProps {
   readonly formulary?: List;
@@ -10,7 +8,6 @@ interface FormularyDisplayProps {
 
 export function FormularyDisplay(props: FormularyDisplayProps): JSX.Element {
   const medplum = useMedplum();
-  const navigate = useNavigate();
   if (!props.formulary) {
     return <Loading />;
   }
@@ -21,7 +18,9 @@ export function FormularyDisplay(props: FormularyDisplayProps): JSX.Element {
       return medplum.readReference(entry.item).read() as MedicationKnowledge;
     });
 
-  function handleRowClick(e: React.MouseEvent, resource: MedicationKnowledge) {}
+  function handleRowClick(_e: React.MouseEvent, resource: MedicationKnowledge): void {
+    console.log(resource);
+  }
 
   return (
     <Table>

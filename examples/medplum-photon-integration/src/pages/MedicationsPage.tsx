@@ -2,7 +2,7 @@ import { Button, Flex, Modal, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { Coding, List, MedicationKnowledge, Questionnaire, Resource } from '@medplum/fhirtypes';
+import { Coding, List, MedicationKnowledge, Resource } from '@medplum/fhirtypes';
 import { CodingInput, Document, ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
@@ -24,10 +24,11 @@ export function MedicationsPage(): JSX.Element {
       .searchOne('List', {
         code: 'formulary',
       })
-      .then(setFormulary);
+      .then(setFormulary)
+      .catch(console.error);
   }, [medplum, medications, formulary]);
 
-  async function syncFormulary() {
+  async function syncFormulary(): Promise<void> {
     try {
       const result = (await medplum.executeBot(
         {
@@ -45,11 +46,11 @@ export function MedicationsPage(): JSX.Element {
           message: 'Your formulary has been synced with Photon',
         });
       } else {
+        const unsyncedMeds = result.map((med) => med.code?.coding?.[0].display);
         notifications.show({
           icon: <IconCircle />,
           title: 'Partially Synced',
-          message:
-            'Some medications could not be synced. For a full list of unsynced medications, see the sync formulary bot audit events.',
+          message: `The following medications could not be synced: ${unsyncedMeds}`,
         });
       }
     } catch (err) {
@@ -62,7 +63,7 @@ export function MedicationsPage(): JSX.Element {
     }
   }
 
-  function handleSelectCoding(coding?: Coding) {
+  function handleSelectCoding(coding?: Coding): void {
     if (!coding) {
       return;
     }
@@ -74,7 +75,7 @@ export function MedicationsPage(): JSX.Element {
     open();
   }
 
-  async function handleAddToFormulary(knowledge: Resource) {
+  async function handleAddToFormulary(knowledge: Resource): Promise<void> {
     if (knowledge.resourceType !== 'MedicationKnowledge') {
       throw new Error('Invalid resource type');
     }
@@ -127,18 +128,3 @@ export function MedicationsPage(): JSX.Element {
     </Document>
   );
 }
-
-const medicationKnowledgeQuestionnaire: Questionnaire = {
-  resourceType: 'Questionnaire',
-  status: 'active',
-  title: 'Add Medication to Formulary',
-  name: 'add-to-formulary',
-  item: [
-    {
-      linkId: 'medication',
-      type: 'choice',
-      answerValueSet: 'http://hl7.org/fhir/us/davinci-drug-formulary/ValueSet/SemanticDrugVS',
-      text: 'Select a medication',
-    },
-  ],
-};
