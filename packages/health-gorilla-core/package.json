@@ -1,5 +1,5 @@
 {
-  "name": "@medplum/health-gorilla",
+  "name": "@medplum/health-gorilla-core",
   "version": "3.2.9",
   "description": "Medplum Health Gorilla SDK",
   "homepage": "https://www.medplum.com/",
@@ -36,15 +36,21 @@
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
-    "lint": "eslint .",
-    "test": "jest"
-  },
-  "dependencies": {
-    "@medplum/core": "3.2.9",
-    "@medplum/fhirtypes": "3.2.9"
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@medplum/mock": "3.2.9"
+    "@medplum/core": "3.2.9",
+    "@medplum/definitions": "3.2.9",
+    "@medplum/fhirtypes": "3.2.9",
+    "@medplum/mock": "3.2.9",
+    "@types/node": "22.5.4",
+    "vitest": "2.0.5"
+  },
+  "peerDependencies": {
+    "@medplum/core": "3.2.9",
+    "@medplum/fhirtypes": "3.2.9"
   },
   "engines": {
     "node": ">=18.0.0"
