@@ -145,16 +145,12 @@ class BatchProcessor {
       body = this.parsePatchBody(entry);
     }
 
-    // Pass in dummy host for parsing purposes.
-    // The host is ignored.
-    const url = new URL(request.url as string, 'https://example.com/');
-
     const result = await this.router.handleRequest(
       {
         method: request.method as HttpMethod,
-        pathname: url.pathname,
+        pathname: request.url,
         params: Object.create(null),
-        query: getQueryParams(url),
+        query: Object.create(null),
         body,
       },
       this.repo
@@ -279,16 +275,4 @@ export interface BatchEvent extends Event {
 export interface LogEvent extends Event {
   message: string;
   data?: Record<string, any>;
-}
-
-function getQueryParams(url: URL): Record<string, string | string[]> {
-  const queryParams = Object.create(null);
-
-  const raw = url.searchParams;
-  for (const param of raw.keys()) {
-    const values = raw.getAll(param);
-    queryParams[param] = values.length === 1 ? values[0] : values;
-  }
-
-  return queryParams;
 }

@@ -325,6 +325,26 @@ describe('FHIR Router', () => {
     expect(resource).toMatchObject(patient);
   });
 
+  test('Conditional update with unparsed query string', async () => {
+    const mrn = randomUUID();
+    const patient: Patient = {
+      resourceType: 'Patient',
+      identifier: [{ system: 'http://example.com/mrn', value: mrn }],
+    };
+    const [res, resource] = await router.handleRequest(
+      {
+        method: 'PUT',
+        pathname: '/Patient?identifier=http://example.com/mrn|' + mrn,
+        body: patient,
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res).toMatchObject(created);
+    expect(resource).toMatchObject(patient);
+  });
+
   test('Patch resource', async () => {
     const [res1, patient] = await router.handleRequest(
       {

@@ -44,10 +44,14 @@ export function parseInputParameters<T>(operation: OperationDefinition, req: Req
 }
 
 function parseQueryString(
-  query: Record<string, any>,
+  query: Record<string, any> | undefined,
   inputParams: OperationDefinitionParameter[]
 ): Record<string, any> {
   const parsed = Object.create(null);
+  if (!query) {
+    return parsed;
+  }
+
   for (const param of inputParams) {
     const value = query[param.name];
     if (!value) {
@@ -61,13 +65,13 @@ function parseQueryString(
     }
 
     parsed[param.name] = Array.isArray(value)
-      ? value.map((v) => parseStringifiedParameter(param, v))
-      : parseStringifiedParameter(param, value);
+      ? value.map((v) => parseStringifiedParameter(v, param))
+      : parseStringifiedParameter(value, param);
   }
   return parsed;
 }
 
-function parseStringifiedParameter(param: OperationDefinitionParameter, value: string): number | boolean | string {
+function parseStringifiedParameter(value: string, param: OperationDefinitionParameter): number | boolean | string {
   switch (param.type) {
     case 'integer':
     case 'positiveInt':

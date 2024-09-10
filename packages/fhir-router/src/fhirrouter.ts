@@ -185,6 +185,12 @@ export class FhirRouter extends EventTarget {
   }
 
   async handleRequest(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+    const queryIndex = req.pathname.indexOf('?');
+    if (queryIndex >= 0) {
+      req.query = parseQueryString(req.pathname);
+      req.pathname = req.pathname.substring(0, queryIndex);
+    }
+
     const result = this.router.find(req.method, req.pathname);
     if (!result) {
       return [notFound];
@@ -210,4 +216,19 @@ function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
   }
   const match = /"([^"]+)"/.exec(ifMatch);
   return match ? match[1] : undefined;
+}
+
+function parseQueryString(path: string): Record<string, string | string[]> {
+  // Pass in dummy host for parsing purposes.
+  // The host is ignored.
+  const url = new URL(path, 'https://example.com/');
+  const queryParams = Object.create(null);
+
+  const raw = url.searchParams;
+  for (const param of raw.keys()) {
+    const values = raw.getAll(param);
+    queryParams[param] = values.length === 1 ? values[0] : values;
+  }
+
+  return queryParams;
 }
