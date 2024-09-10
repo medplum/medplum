@@ -518,8 +518,14 @@ exports.handler = async function (medplum, event) {
     // Get the audit event
     const auditEvent = await systemRepo.searchOne<AuditEvent>({
       resourceType: 'AuditEvent',
-      filters: [{ code: 'entity', operator: Operator.EQUALS, value: getReferenceString(bot) }],
+      filters: [
+        { code: '_project', operator: Operator.EQUALS, value: project2.id as string },
+        { code: 'entity', operator: Operator.EQUALS, value: getReferenceString(bot) },
+      ],
     });
+    expect(auditEvent).toBeDefined();
+    expect(auditEvent?.meta?.project).toBe(project2.id);
+
     const output = JSON.parse(auditEvent?.outcomeDesc as string);
     expect(output.secrets).toMatchObject({
       secret1: { valueString: 'value1' },

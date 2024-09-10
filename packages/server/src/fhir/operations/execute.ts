@@ -550,7 +550,7 @@ async function createAuditEvent(
   outcome: AuditEventOutcome,
   outcomeDesc: string
 ): Promise<void> {
-  const { bot } = request;
+  const { bot, runAs } = request;
   const trigger = bot.auditEventTrigger ?? 'always';
   if (
     trigger === 'never' ||
@@ -563,7 +563,7 @@ async function createAuditEvent(
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
-      project: bot.meta?.project,
+      project: resolveId(runAs.project) as string,
       account: bot.meta?.account,
     },
     period: {
