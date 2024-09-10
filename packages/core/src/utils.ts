@@ -1014,6 +1014,14 @@ export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
   }
 }
 
+export function singularize<T>(value: T | T[] | undefined): T | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  } else {
+    return value;
+  }
+}
+
 /**
  * Sleeps for the specified number of milliseconds.
  * @param ms - Time delay in milliseconds

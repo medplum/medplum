@@ -53,7 +53,8 @@ const opDef: OperationDefinition = {
     { name: 'requiredIn', use: 'in', min: 1, max: '1', type: 'boolean' },
     { name: 'numeric', use: 'in', min: 0, max: '1', type: 'integer' },
     { name: 'fractional', use: 'in', min: 0, max: '1', type: 'decimal' },
-    { name: 'multiIn', use: 'in', min: 0, max: '*', type: 'Reference' },
+    { name: 'multiIn', use: 'in', min: 0, max: '*', type: 'string' },
+    { name: 'complexIn', use: 'in', min: 0, max: '*', type: 'Reference' },
     {
       name: 'partsIn',
       use: 'in',
@@ -75,30 +76,34 @@ describe('Operation Input Parameters parsing', () => {
   });
 
   test.each<[ParametersParameter[], Record<string, any>]>([
-    [[{ name: 'requiredIn', valueBoolean: true }], { requiredIn: true, singleIn: undefined, multiIn: [], partsIn: [] }],
+    [
+      [{ name: 'requiredIn', valueBoolean: true }],
+      { requiredIn: true, singleIn: undefined, multiIn: [], complexIn: [], partsIn: [] },
+    ],
     [
       [
         { name: 'requiredIn', valueBoolean: false },
         { name: 'singleIn', valueString: 'Hi!' },
       ],
-      { requiredIn: false, singleIn: 'Hi!', multiIn: [], partsIn: [] },
+      { requiredIn: false, singleIn: 'Hi!', multiIn: [], complexIn: [], partsIn: [] },
     ],
     [
       [
         { name: 'requiredIn', valueBoolean: true },
-        { name: 'multiIn', valueReference: { reference: 'Patient/test' } },
+        { name: 'complexIn', valueReference: { reference: 'Patient/test' } },
       ],
-      { requiredIn: true, multiIn: [{ reference: 'Patient/test' }], singleIn: undefined, partsIn: [] },
+      { requiredIn: true, complexIn: [{ reference: 'Patient/test' }], multiIn: [], singleIn: undefined, partsIn: [] },
     ],
     [
       [
         { name: 'requiredIn', valueBoolean: true },
-        { name: 'multiIn', valueReference: { reference: 'Patient/test' } },
-        { name: 'multiIn', valueReference: { reference: 'Patient/example' } },
+        { name: 'complexIn', valueReference: { reference: 'Patient/test' } },
+        { name: 'complexIn', valueReference: { reference: 'Patient/example' } },
       ],
       {
         requiredIn: true,
-        multiIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
+        complexIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
+        multiIn: [],
         singleIn: undefined,
         partsIn: [],
       },
@@ -106,14 +111,15 @@ describe('Operation Input Parameters parsing', () => {
     [
       [
         { name: 'requiredIn', valueBoolean: true },
-        { name: 'multiIn', valueReference: { reference: 'Patient/test' } },
+        { name: 'complexIn', valueReference: { reference: 'Patient/test' } },
         { name: 'singleIn', valueString: 'Hello!' },
-        { name: 'multiIn', valueReference: { reference: 'Patient/example' } },
+        { name: 'complexIn', valueReference: { reference: 'Patient/example' } },
       ],
       {
         requiredIn: true,
         singleIn: 'Hello!',
-        multiIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
+        complexIn: [{ reference: 'Patient/test' }, { reference: 'Patient/example' }],
+        multiIn: [],
         partsIn: [],
       },
     ],
@@ -133,6 +139,7 @@ describe('Operation Input Parameters parsing', () => {
         partsIn: [{ foo: 'baz', bar: false }],
         singleIn: undefined,
         multiIn: [],
+        complexIn: [],
       },
     ],
     [
@@ -148,6 +155,7 @@ describe('Operation Input Parameters parsing', () => {
         partsIn: [{ foo: 'baz' }],
         singleIn: undefined,
         multiIn: [],
+        complexIn: [],
       },
     ],
   ])('Read input Parameters', (params, expected) => {
@@ -165,14 +173,14 @@ describe('Operation Input Parameters parsing', () => {
       body: {
         requiredIn: false,
         singleIn: 'Yo',
-        multiIn: [{ reference: 'Observation/bp' }, { reference: 'Observation/bmi' }],
+        complexIn: [{ reference: 'Observation/bp' }, { reference: 'Observation/bmi' }],
         extraneous: 4,
       },
     } as unknown as Request;
     expect(parseInputParameters(opDef, req)).toEqual({
       requiredIn: false,
       singleIn: 'Yo',
-      multiIn: [{ reference: 'Observation/bp' }, { reference: 'Observation/bmi' }],
+      complexIn: [{ reference: 'Observation/bp' }, { reference: 'Observation/bmi' }],
     });
   });
 
@@ -238,10 +246,18 @@ describe('Operation Input Parameters parsing', () => {
     expect(parseInputParameters(opDef, req)).toEqual({ requiredIn: true, numeric: 100, fractional: 3.14159 });
   });
 
+  test('Allows passing multiple instances of same query parameter', () => {
+    const req: Request = {
+      method: 'GET',
+      query: parse('multiIn=foo&requiredIn=true&multiIn=bar'),
+    } as unknown as Request;
+    expect(parseInputParameters(opDef, req)).toEqual({ requiredIn: true, multiIn: ['foo', 'bar'] });
+  });
+
   test.each<[string, string]>([
     [
-      'requiredIn=true&multiIn={"reference":"Patient/foo"}',
-      'Complex parameter multiIn (Reference) cannot be passed via query string',
+      'requiredIn=true&complexIn={"reference":"Patient/foo"}',
+      'Complex parameter complexIn (Reference) cannot be passed via query string',
     ],
     ['requiredIn=false&numeric=wrong', `Invalid value 'wrong' provided for integer parameter`],
     ['requiredIn=false&fractional=wrong', `Invalid value 'wrong' provided for decimal parameter`],

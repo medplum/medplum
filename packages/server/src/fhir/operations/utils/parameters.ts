@@ -60,39 +60,45 @@ function parseQueryString(
       );
     }
 
-    switch (param.type) {
-      case 'integer':
-      case 'positiveInt':
-      case 'unsignedInt': {
-        const n = parseInt(value, 10);
-        if (isNaN(n)) {
-          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
-        }
-        parsed[param.name] = n;
-        break;
-      }
-      case 'decimal': {
-        const n = parseFloat(value);
-        if (isNaN(n)) {
-          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
-        }
-        parsed[param.name] = n;
-        break;
-      }
-      case 'boolean':
-        if (value === 'true') {
-          parsed[param.name] = true;
-        } else if (value === 'false') {
-          parsed[param.name] = false;
-        } else {
-          throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
-        }
-        break;
-      default:
-        parsed[param.name] = value;
-    }
+    parsed[param.name] = Array.isArray(value)
+      ? value.map((v) => parseStringifiedParameter(param, v))
+      : parseStringifiedParameter(param, value);
   }
   return parsed;
+}
+
+function parseStringifiedParameter(param: OperationDefinitionParameter, value: string): number | boolean | string {
+  switch (param.type) {
+    case 'integer':
+    case 'positiveInt':
+    case 'unsignedInt':
+      {
+        const n = parseInt(value, 10);
+        if (!isNaN(n)) {
+          return n;
+        }
+      }
+      break;
+    case 'decimal':
+      {
+        const n = parseFloat(value);
+        if (!isNaN(n)) {
+          return n;
+        }
+      }
+      break;
+    case 'boolean':
+      if (value === 'true') {
+        return true;
+      } else if (value === 'false') {
+        return false;
+      }
+      break;
+    default:
+      return value;
+  }
+
+  throw new OperationOutcomeError(badRequest(`Invalid value '${value}' provided for ${param.type} parameter`));
 }
 
 function validateInputParam(param: OperationDefinitionParameter, value: any): any {
