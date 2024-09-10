@@ -2753,7 +2753,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
 
     this.profilePromise = new Promise((resolve, reject) => {
-      // See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control#:~:text=Note%20that%20no%2Dcache%20does%20not%20mean%20%22don%27t%20cache%22.%20no%2Dcache%20allows%20caches%20to%20store%20a%20response%20but%20requires%20them%20to%20revalidate%20it%20before%20reuse.%20If%20the%20sense%20of%20%22don%27t%20cache%22%20that%20you%20want%20is%20actually%20%22don%27t%20store%22%2C%20then%20no%2Dstore%20is%20the%20directive%20to%20use.
       this.get('auth/me', { cache: 'no-cache' })
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
