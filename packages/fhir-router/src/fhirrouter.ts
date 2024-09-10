@@ -20,7 +20,7 @@ export type FhirRequest = {
   pathname: string;
   body: any;
   params: Record<string, string>;
-  query: Record<string, string>;
+  query: Record<string, string | string[]>;
   headers?: IncomingHttpHeaders;
   config?: FhirRequestConfig;
 };

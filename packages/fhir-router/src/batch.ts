@@ -154,7 +154,7 @@ class BatchProcessor {
         method: request.method as HttpMethod,
         pathname: url.pathname,
         params: Object.create(null),
-        query: Object.fromEntries(url.searchParams),
+        query: getQueryParams(url),
         body,
       },
       this.repo
@@ -279,4 +279,16 @@ export interface BatchEvent extends Event {
 export interface LogEvent extends Event {
   message: string;
   data?: Record<string, any>;
+}
+
+function getQueryParams(url: URL): Record<string, string | string[]> {
+  const queryParams = Object.create(null);
+
+  const raw = url.searchParams;
+  for (const param of raw.keys()) {
+    const values = raw.getAll(param);
+    queryParams[param] = values.length === 1 ? values[0] : values;
+  }
+
+  return queryParams;
 }
