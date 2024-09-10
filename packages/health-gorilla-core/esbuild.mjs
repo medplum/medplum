@@ -8,26 +8,17 @@ import { writeFileSync } from 'fs';
 const options = {
   entryPoints: ['./src/index.ts'],
   bundle: true,
-  platform: 'browser',
+  platform: 'node',
   loader: { '.ts': 'ts' },
   logLevel: 'info',
-  resolveExtensions: ['.js', '.ts'],
+  resolveExtensions: ['.ts'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
   minifyWhitespace: true,
   minifyIdentifiers: false,
   minifySyntax: true,
   sourcemap: true,
-  external: [
-    '@mantine/core',
-    '@mantine/hooks',
-    '@mantine/notifications',
-    '@mantine/react',
-    '@medplum/core',
-    '@medplum/mock',
-    '@medplum/react',
-    'react',
-  ],
+  external: ['@medplum/core', '@medplum/fhirtypes'],
 };
 
 esbuild
