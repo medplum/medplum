@@ -99,7 +99,7 @@ function setValue(config: Record<string, unknown>, key: string, value: string): 
 }
 
 function isIntegerConfig(key: string): boolean {
-  return key === 'port' || key === 'accurateCountThreshold' || key === 'slowQueryThresholdMilliseconds';
+  return key === 'port' || key === 'accurateCountThreshold';
 }
 
 function isBooleanConfig(key: string): boolean {
