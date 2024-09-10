@@ -1,6 +1,6 @@
 {
   "extends": "../../api-extractor.json",
-  "bundledPackages": ["@medplum/health-gorilla-common"],
+  "bundledPackages": [],
   "compiler": {
     "tsconfigFilePath": "<projectFolder>/tsconfig.build.json"
   }

@@ -1,7 +1,35 @@
 {
-  "name": "@medplum-ee/hg-client",
+  "name": "@medplum/health-gorilla-react",
   "version": "3.2.9",
-  "description": "Medplum Health Gorilla Client Tools",
+  "description": "Medplum Health Gorilla React SDK",
+  "keywords": [
+    "medplum",
+    "fhir",
+    "healthcare",
+    "interoperability",
+    "json",
+    "serialization",
+    "hl7",
+    "standards",
+    "clinical",
+    "dstu2",
+    "stu3",
+    "r4",
+    "normative",
+    "react",
+    "react-hooks"
+  ],
+  "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medplum/medplum.git",
+    "directory": "packages/core"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
   "exports": {
     "import": {
@@ -15,55 +43,43 @@
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
-  "types": "dist/cjs/index.d.ts",
+  "types": "dist/esm/index.d.ts",
   "files": [
     "dist/cjs",
     "dist/esm"
   ],
   "scripts": {
+    "api-documenter": "api-documenter markdown --input-folder ./dist/api/ --output-folder ./dist/docs/",
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
     "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
-    "dev": "vite",
     "lint": "eslint src/",
-    "pack": "npm run build && npm pack",
-    "test": "vitest"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
+    "test": "vitest run",
+    "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@mantine/core": "7.12.2",
-    "@mantine/notifications": "7.12.2",
-    "@medplum/core": "3.2.8",
-    "@medplum/eslint-config": "3.2.8",
-    "@medplum/fhirtypes": "3.2.8",
-    "@medplum/health-gorilla-common": ">=0.0.8",
-    "@medplum/mock": "3.2.8",
-    "@medplum/react": "3.2.8",
-    "@microsoft/api-extractor": "7.47.7",
-    "@tabler/icons-react": "^3.14.0",
+    "@medplum/core": "3.2.9",
+    "@medplum/fhirtypes": "3.2.9",
+    "@medplum/health-gorilla-core": "3.2.9",
+    "@medplum/mock": "3.2.9",
+    "@medplum/react": "3.2.9",
     "@testing-library/jest-dom": "6.5.0",
     "@testing-library/react": "16.0.1",
-    "@types/node": "20.14.12",
+    "@types/node": "22.5.4",
     "@types/react": "18.3.5",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
     "jsdom": "25.0.0",
-    "postcss": "8.4.44",
-    "postcss-preset-mantine": "1.17.0",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "react-router-dom": "6.26.1",
-    "vite": "5.4.3",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "6.26.2",
+    "rimraf": "5.0.9",
     "vitest": "2.0.5"
   },
   "peerDependencies": {
-    "@medplum/core": "^3.2.2",
-    "@medplum/fhirtypes": "^3.2.2",
-    "@medplum/react": "^3.2.2",
+    "@medplum/core": "3.2.9",
+    "@medplum/fhirtypes": "3.2.9",
+    "@medplum/react": "3.2.9",
     "react": "^18.0.0"
   },
   "engines": {

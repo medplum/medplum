@@ -11,14 +11,14 @@ const options = {
   platform: 'browser',
   loader: { '.ts': 'ts', '.tsx': 'tsx' },
   logLevel: 'info',
-  resolveExtensions: ['.js', '.ts', '.tsx'],
+  resolveExtensions: ['.ts', '.tsx'],
   target: 'es2021',
   tsconfig: 'tsconfig.build.json',
   minifyWhitespace: true,
   minifyIdentifiers: false,
   minifySyntax: true,
   sourcemap: true,
-  external: ['@medplum/core', '@medplum/mock', '@medplum/react', 'react'],
+  external: ['@medplum/core', '@medplum/health-gorilla-core', '@medplum/mock', '@medplum/react', 'react'],
 };
 
 esbuild

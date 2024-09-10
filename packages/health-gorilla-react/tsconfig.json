@@ -1,12 +1,7 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "lib": ["esnext", "dom", "dom.iterable"],
-    "paths": {
-      "@medplum/health-gorilla-common": ["../health-gorilla-common/src"],
-      "@medplum-ee/hg-client": ["./src"]
-    }
+    "lib": ["esnext", "dom", "dom.iterable"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["node_modules", "src/dev"]
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
 }
