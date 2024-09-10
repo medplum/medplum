@@ -13,6 +13,7 @@ import {
   BillingInformation,
   DiagnosisCodeableConcept,
   HEALTH_GORILLA_SYSTEM,
+  LabOrderInputErrors,
   LabOrderTestMetadata,
   LabOrganization,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
@@ -22,7 +23,7 @@ import {
   normalizeAoeQuestionnaire,
   questionnaireItemIterator,
   validateLabOrderInputs,
-} from '@medplum/health-gorilla-common';
+} from '@medplum/health-gorilla-core';
 import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { AOESearch, LabSearch, TestSearch, prepareAutocompleteBot } from './autocomplete-endpoint';
@@ -90,7 +91,7 @@ export type UseHealthGorillaLabOrderReturn = {
 
   setOrderNotes: (orderNotes: string | undefined) => void;
 
-  validateOrder: () => Error[] | undefined;
+  validateOrder: () => LabOrderInputErrors | undefined;
   createOrderBundle: () => Promise<{ transactionResponse: Bundle; serviceRequest: ServiceRequest }>;
 };
 

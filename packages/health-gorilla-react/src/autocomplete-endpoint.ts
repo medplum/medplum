@@ -1,6 +1,6 @@
 import { MedplumClient, isCoding, isResource } from '@medplum/core';
 import { Identifier, Questionnaire } from '@medplum/fhirtypes';
-import { HGAutocompleteBotResponse, LabOrganization, TestCoding } from '@medplum/health-gorilla-common';
+import { HGAutocompleteBotResponse, LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 
 export type LabSearchParams = { type: 'lab'; query: string };
 export type TestSearchParams = { type: 'test'; query: string; labId: string };

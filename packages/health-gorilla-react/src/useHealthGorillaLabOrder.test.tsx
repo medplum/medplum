@@ -1,11 +1,11 @@
-import { deepClone, isResource, isResourceType } from '@medplum/core';
+import { deepClone } from '@medplum/core';
 import { Patient, Practitioner } from '@medplum/fhirtypes';
 import {
   HEALTH_GORILLA_SYSTEM,
   HGAutocompleteBotInput,
   LabOrganization,
   TestCoding,
-} from '@medplum/health-gorilla-common';
+} from '@medplum/health-gorilla-core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, renderHook } from '@testing-library/react';
