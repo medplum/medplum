@@ -1,0 +1,72 @@
+{
+  "name": "@medplum-ee/hg-client",
+  "version": "3.2.9",
+  "description": "Medplum Health Gorilla Client Tools",
+  "sideEffects": false,
+  "exports": {
+    "import": {
+      "types": "./dist/esm/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.cjs"
+    }
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/cjs/index.d.ts",
+  "files": [
+    "dist/cjs",
+    "dist/esm"
+  ],
+  "scripts": {
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
+    "clean": "rimraf dist",
+    "dev": "vite",
+    "lint": "eslint src/",
+    "pack": "npm run build && npm pack",
+    "test": "vitest"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
+  },
+  "devDependencies": {
+    "@mantine/core": "7.12.2",
+    "@mantine/notifications": "7.12.2",
+    "@medplum/core": "3.2.8",
+    "@medplum/eslint-config": "3.2.8",
+    "@medplum/fhirtypes": "3.2.8",
+    "@medplum/health-gorilla-common": ">=0.0.8",
+    "@medplum/mock": "3.2.8",
+    "@medplum/react": "3.2.8",
+    "@microsoft/api-extractor": "7.47.7",
+    "@tabler/icons-react": "^3.14.0",
+    "@testing-library/jest-dom": "6.5.0",
+    "@testing-library/react": "16.0.1",
+    "@types/node": "20.14.12",
+    "@types/react": "18.3.5",
+    "@types/react-dom": "18.3.0",
+    "@vitejs/plugin-react": "4.3.1",
+    "jsdom": "25.0.0",
+    "postcss": "8.4.44",
+    "postcss-preset-mantine": "1.17.0",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.26.1",
+    "vite": "5.4.3",
+    "vitest": "2.0.5"
+  },
+  "peerDependencies": {
+    "@medplum/core": "^3.2.2",
+    "@medplum/fhirtypes": "^3.2.2",
+    "@medplum/react": "^3.2.2",
+    "react": "^18.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
