@@ -1,7 +1,6 @@
 {
   "name": "@medplum/health-gorilla-core",
   "version": "3.2.9",
-  "private": true,
   "description": "Medplum Health Gorilla SDK",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -38,7 +37,6 @@
     "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
     "lint": "eslint src/",
-    "pack": "npm run build && npm pack",
     "test": "vitest run",
     "test:watch": "vitest watch"
   },
