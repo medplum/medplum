@@ -1,6 +1,6 @@
 {
   "name": "@medplum/health-gorilla-react",
-  "version": "3.2.9",
+  "version": "3.2.10",
   "description": "Medplum Health Gorilla React SDK",
   "keywords": [
     "medplum",
