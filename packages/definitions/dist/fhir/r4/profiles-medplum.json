@@ -1876,6 +1876,21 @@
             }
           },
           {
+            "id" : "Bot.system",
+            "path" : "Bot.system",
+            "definition" : "Optional flag to indicate that the bot is a system bot and therefore has access to system secrets.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base" : {
+              "path" : "Bot.system",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Bot.runAsUser",
             "path" : "Bot.runAsUser",
             "definition" : "Optional flag to indicate that the bot should be run as the user.",
