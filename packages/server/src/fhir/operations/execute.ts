@@ -1,17 +1,17 @@
 import {
-  ContentType,
-  Hl7Message,
-  MedplumClient,
-  OperationOutcomeError,
-  Operator,
   allOk,
   badRequest,
+  ContentType,
   createReference,
   getStatus,
+  Hl7Message,
   isOk,
   isOperationOutcome,
   isResource,
+  MedplumClient,
   normalizeErrorString,
+  OperationOutcomeError,
+  Operator,
   resolveId,
   serverError,
 } from '@medplum/core';
@@ -46,7 +46,7 @@ import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
 import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
-import { getSystemRepo } from '../repo';
+import { getSystemRepo, Repository } from '../repo';
 import { sendResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
@@ -490,11 +490,17 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
 /**
  * Returns a collection of secrets for the bot.
  *
- * Secrets can come from 1-4 different sources:
- * 1. Bot project secrets
- * 2. Bot project system secrets (if bot.system is true)
- * 3. RunAs project secrets (if running in a different linked project)
- * 4. RunAs project system secrets (if bot.system is true and running in a different linked project)
+ * Secrets can come from 1-4 different sources. Order is important. The operating principles are:
+ *
+ *   1. Most specific beats more general - the runAs project secrets override the bot project secrets
+ *   2. Defer to local control" - project admin secrets override system secrets
+ *
+ * In order of precedence:
+ *
+ *   1. Bot project secrets
+ *   2. Bot project system secrets (if bot.system is true)
+ *   3. RunAs project secrets (if running in a different linked project)
+ *   4. RunAs project system secrets (if bot.system is true and running in a different linked project)
  *
  * @param bot - The bot to get secrets for.
  * @param runAs - The project membership to get secrets for.
@@ -502,29 +508,30 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
  */
 async function getBotSecrets(bot: Bot, runAs: ProjectMembership): Promise<Record<string, ProjectSetting>> {
   const systemRepo = getSystemRepo();
-
-  // Build a set of project IDs to read secrets from
-  const projectIds = new Set<string>();
-  projectIds.add(bot.meta?.project as string);
-  projectIds.add(resolveId(runAs.project) as string);
-
-  const entries: [string, ProjectSetting][] = [];
-
-  for (const projectId of projectIds) {
-    const project = await systemRepo.readResource<Project>('Project', projectId);
-    if (bot.system && project.systemSecret) {
-      for (const secret of project.systemSecret) {
-        entries.push([secret.name, secret]);
-      }
-    }
-    if (project.secret) {
-      for (const secret of project.secret) {
-        entries.push([secret.name, secret]);
-      }
-    }
+  const botProjectId = bot.meta?.project as string;
+  const runAsProjectId = resolveId(runAs.project) as string;
+  const system = !!bot.system;
+  const secrets: ProjectSetting[] = [];
+  if (botProjectId !== runAsProjectId) {
+    await addBotSecrets(systemRepo, botProjectId, system, secrets);
   }
+  await addBotSecrets(systemRepo, runAsProjectId, system, secrets);
+  return Object.fromEntries(secrets.map((s) => [s.name, s]));
+}
 
-  return Object.fromEntries(entries);
+async function addBotSecrets(
+  systemRepo: Repository,
+  projectId: string,
+  system: boolean,
+  out: ProjectSetting[]
+): Promise<void> {
+  const project = await systemRepo.readResource<Project>('Project', projectId);
+  if (system && project.systemSecret) {
+    out.push(...project.systemSecret);
+  }
+  if (project.secret) {
+    out.push(...project.secret);
+  }
 }
 
 function getResponseContentType(req: Request): string {
