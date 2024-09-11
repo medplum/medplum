@@ -1005,12 +1005,20 @@ export function findResourceByCode(
 }
 
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
-  if (!value) {
+  if (value === undefined) {
     return undefined;
   } else if (Array.isArray(value)) {
     return value;
   } else {
     return [value];
+  }
+}
+
+export function singularize<T>(value: T | T[] | undefined): T | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  } else {
+    return value;
   }
 }
 
