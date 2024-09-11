@@ -8,6 +8,7 @@ import {
   TestCoding,
 } from '@medplum/health-gorilla-core';
 import { MockClient } from '@medplum/mock';
+import { vi } from 'vitest';
 import { getAutocompleteSearchFunction } from './autocomplete-endpoint';
 
 export const QUEST_LAB: LabOrganization = {
