@@ -1,19 +1,11 @@
-import { createReference, deepClone, getExtensionValue, getIdentifier, isResource } from '@medplum/core';
-import {
-  Bundle,
-  BundleEntry,
-  Coverage,
-  Patient,
-  Practitioner,
-  Questionnaire,
-  Reference,
-  ServiceRequest,
-} from '@medplum/fhirtypes';
+import { ResourceArray, createReference, deepClone, getExtensionValue, getIdentifier, isResource } from '@medplum/core';
+import { Bundle, Coverage, Patient, Practitioner, Questionnaire, Reference, ServiceRequest } from '@medplum/fhirtypes';
 import {
   BillingInformation,
   DiagnosisCodeableConcept,
   HEALTH_GORILLA_SYSTEM,
   LabOrderInputErrors,
+  LabOrderServiceRequest,
   LabOrderTestMetadata,
   LabOrganization,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
@@ -26,7 +18,7 @@ import {
 } from '@medplum/health-gorilla-core';
 import { useMedplum } from '@medplum/react';
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { AOESearch, LabSearch, TestSearch, prepareAutocompleteBot } from './autocomplete-endpoint';
+import { AOESearch, LabSearch, TestSearch, getAutocompleteSearchFunction } from './autocomplete-endpoint';
 
 export type UseHealthGorillaLabOrderOptions = {
   /** Patient the tests are ordered for. */
@@ -284,7 +276,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
   const [orderNotes, _setOrderNotes] = useState<string | undefined>();
 
   const healthGorillaAutocomplete = useMemo(() => {
-    return prepareAutocompleteBot(medplum, {
+    return getAutocompleteSearchFunction(medplum, {
       system: 'https://www.medplum.com/integrations/bot-identifier',
       value: 'health-gorilla-labs/autocomplete',
     });
@@ -292,10 +284,6 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
 
   const fetchAoeQuestionnaire = useCallback(
     async (testCode: TestCoding): Promise<Questionnaire | undefined> => {
-      if (!healthGorillaAutocomplete) {
-        return undefined;
-      }
-
       const response = await healthGorillaAutocomplete<AOESearch>({ type: 'aoe', testCode });
       const questionnaire = response.result;
       if (questionnaire) {
@@ -319,12 +307,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
       const promises: Promise<[TestCoding, Questionnaire | undefined]>[] = [];
       for (const test of testsAndMetadata.selectedTests) {
         const metadata = testsAndMetadata.testMetadata[test.code];
-        if (!metadata) {
-          console.warn(`Test metadata not found for test ${test.code}`, JSON.stringify(testsAndMetadata, null, 2));
-          continue;
-        }
-
-        if (metadata.aoeStatus !== 'loading') {
+        if (metadata?.aoeStatus !== 'loading') {
           continue;
         }
 
@@ -361,11 +344,10 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
       return opts.patient;
     } else if (isResource(opts.patient)) {
       return createReference(opts.patient) as Reference<Patient> & { reference: string };
-    } else if (opts.patient === undefined) {
+    } else {
+      opts.patient satisfies undefined;
       return undefined;
     }
-    opts.patient satisfies never;
-    throw new Error('Invalid patient', { cause: opts.patient });
   }, [opts.patient]);
 
   const requesterRef = useMemo<(Reference<Practitioner> & { reference: string }) | undefined>(() => {
@@ -373,11 +355,10 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
       return opts.requester;
     } else if (isResource(opts.requester)) {
       return createReference(opts.requester) as Reference<Practitioner> & { reference: string };
-    } else if (opts.requester === undefined) {
+    } else {
+      opts.requester satisfies undefined;
       return undefined;
     }
-    opts.requester satisfies never;
-    throw new Error('Invalid requester', { cause: opts.requester });
   }, [opts.requester]);
 
   const state: HealthGorillaLabOrderState = useMemo(() => {
@@ -409,10 +390,12 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     orderNotes,
   ]);
 
-  const getActivePatientCoverages = useCallback(async (): Promise<Coverage[]> => {
+  const getActivePatientCoverages = useCallback(async (): Promise<ResourceArray<Coverage>> => {
     if (!patientRef) {
-      return [];
-      // throw new Error('Patient must be provided to get available coverages');
+      const emptyResult: Coverage[] = [];
+      return Object.assign(emptyResult, {
+        bundle: { resourceType: 'Bundle', type: 'searchset', entry: [], total: 0 } as Bundle<Coverage>,
+      });
     }
 
     const coverageSearch = new URLSearchParams({
@@ -436,20 +419,15 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     return {
       state,
       searchAvailableLabs: async (query: string) => {
-        if (!healthGorillaAutocomplete) {
-          return [];
-        }
         const response = await healthGorillaAutocomplete<LabSearch>({ type: 'lab', query });
         // consider filtering to labs that have the https://www.healthgorilla.com/fhir/StructureDefinition/provider-compendium extension?
         return response.result;
       },
       searchAvailableTests: async (query: string): Promise<TestCoding[]> => {
-        if (!healthGorillaAutocomplete) {
-          return [];
-        }
         if (!performingLab) {
           return [];
         }
+
         const hgLabId = getIdentifier(performingLab, HEALTH_GORILLA_SYSTEM);
         if (!hgLabId) {
           throw new Error('No Health Gorilla identifier found for performing lab');
@@ -545,43 +523,28 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
           orderNotes: state.orderNotes,
         });
 
-        const labOrderIdx = txn.entry?.findIndex((entry) => {
-          return (
-            entry.resource?.resourceType === 'ServiceRequest' &&
-            entry.resource.meta?.profile?.includes(MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE)
-          );
-        });
-
-        if (labOrderIdx === -1) {
-          throw new Error('Error creating lab order: Lab Order Service Request not found in Bundle', { cause: txn });
-        }
-
         const transactionResponse = await medplum.executeBatch(txn);
 
-        if (transactionResponse.entry?.length === undefined) {
-          throw new Error('Error creating lab order: No entries in response', { cause: transactionResponse });
-        }
+        let labOrderServiceRequest: LabOrderServiceRequest | undefined;
 
-        let labOrderEntry: BundleEntry | undefined;
-
-        for (const entry of transactionResponse.entry) {
+        for (const entry of transactionResponse?.entry ?? []) {
           if (!entry.response?.status.startsWith('2')) {
-            throw new Error('Error creating lab order: Non-2XX status code in response entry', { cause: entry });
+            throw new Error('Error creating lab order: Non-2XX status code in response entry', {
+              cause: transactionResponse,
+            });
           }
           if (entry.resource?.meta?.profile?.includes(MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE)) {
-            labOrderEntry = entry;
+            labOrderServiceRequest = entry.resource as LabOrderServiceRequest;
           }
         }
 
-        if (!labOrderEntry) {
+        if (!labOrderServiceRequest) {
           throw new Error('Error creating lab order: Lab Order Service Request not found in response entries', {
             cause: transactionResponse,
           });
         }
 
-        const serviceRequest = labOrderEntry.resource as ServiceRequest;
-
-        return { transactionResponse, serviceRequest };
+        return { transactionResponse, serviceRequest: labOrderServiceRequest };
       },
     };
   }, [

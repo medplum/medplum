@@ -345,7 +345,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
   return bundle;
 }
 
-function formatTestCoding(test: TestCoding): string {
+export function formatTestCoding(test: TestCoding): string {
   if (test.display) {
     return `${test.display}${test.code ? ' (' + test.code + ')' : ''}`;
   }

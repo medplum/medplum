@@ -59,6 +59,7 @@
   },
   "devDependencies": {
     "@medplum/core": "3.2.9",
+    "@medplum/definitions": "3.2.9",
     "@medplum/fhirtypes": "3.2.9",
     "@medplum/health-gorilla-core": "3.2.9",
     "@medplum/mock": "3.2.9",
