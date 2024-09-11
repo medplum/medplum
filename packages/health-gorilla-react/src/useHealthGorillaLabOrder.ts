@@ -264,16 +264,16 @@ function testsReducer(prev: TestsReducerState, action: TestsAction): TestsReduce
 
 export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions): UseHealthGorillaLabOrderReturn {
   const medplum = useMedplum();
-  const [performingLab, _setPerformingLab] = useState<LabOrganization | undefined>();
-  const [performingLabAccountNumber, _setPerformingLabAccountNumber] = useState<string | undefined>();
+  const [performingLab, privateSetPerformingLab] = useState<LabOrganization | undefined>();
+  const [performingLabAccountNumber, privateSetPerformingLabAccountNumber] = useState<string | undefined>();
   const [testsAndMetadata, dispatchTests] = useReducer(testsReducer, {
     specimenCollectedDateTime: undefined,
     selectedTests: INITIAL_TESTS,
     testMetadata: INITIAL_TEST_METADATA,
   });
-  const [diagnoses, _setDiagnoses] = useState<DiagnosisCodeableConcept[]>(INITIAL_DIAGNOSES);
+  const [diagnoses, privateSetDiagnoses] = useState<DiagnosisCodeableConcept[]>(INITIAL_DIAGNOSES);
   const [billingInformation, setBillingInformation] = useState<BillingInformation>(INITIAL_BILLING_INFORMATION);
-  const [orderNotes, _setOrderNotes] = useState<string | undefined>();
+  const [orderNotes, privateSetOrderNotes] = useState<string | undefined>();
 
   const healthGorillaAutocomplete = useMemo(() => {
     return getAutocompleteSearchFunction(medplum, {
@@ -442,10 +442,10 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
         return tests;
       },
       setPerformingLab: (newLab: LabOrganization | undefined) => {
-        _setPerformingLab(newLab);
+        privateSetPerformingLab(newLab);
       },
       setPerformingLabAccountNumber: (newAccountNumber: string | undefined) => {
-        _setPerformingLabAccountNumber(newAccountNumber);
+        privateSetPerformingLabAccountNumber(newAccountNumber);
       },
       addTest: (test: TestCoding) => {
         dispatchTests({ type: 'add', test });
@@ -462,7 +462,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
       },
 
       addDiagnosis(diagnosis: DiagnosisCodeableConcept) {
-        _setDiagnoses((prev) => {
+        privateSetDiagnoses((prev) => {
           if (prev.some((item) => toDiagnosisKey(item) === toDiagnosisKey(diagnosis))) {
             return prev;
           }
@@ -470,7 +470,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
         });
       },
       removeDiagnosis(diagnosis: DiagnosisCodeableConcept) {
-        _setDiagnoses((prev) => {
+        privateSetDiagnoses((prev) => {
           const idx = prev.findIndex((item) => toDiagnosisKey(item) === toDiagnosisKey(diagnosis));
           if (idx === -1) {
             return prev;
@@ -481,7 +481,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
         });
       },
       setDiagnoses: (newDiagnoses: DiagnosisCodeableConcept[]) => {
-        _setDiagnoses(newDiagnoses);
+        privateSetDiagnoses(newDiagnoses);
       },
 
       getActivePatientCoverages,
@@ -492,7 +492,8 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
       },
 
       setOrderNotes: (newOrderNotes: string | undefined) => {
-        _setOrderNotes(newOrderNotes || undefined);
+        // || instead of ?? so that empty string becomes undefined
+        privateSetOrderNotes(newOrderNotes || undefined);
       },
 
       validateOrder: () => {
@@ -562,7 +563,6 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
 }
 
 function toDiagnosisKey(diagnosis: DiagnosisCodeableConcept): string {
-  // TODO feels slightly dangerous since users can alter a diagnosis along the way...
   return diagnosis.coding[0].code as string;
 }
 
@@ -584,14 +584,10 @@ function updateAoeQuestionnaireRequiredItems(
 
   // first, check if the questionnaire needs any changes
   for (const item of questionnaireItemIterator(questionnaire.item)) {
-    if (getExtensionValue(item, REQUIRED_WHEN_SPECIMEN) === true) {
-      if (Boolean(item.required) !== requiredWhenSpecimen) {
-        if (!newQuestionnaire) {
-          // at least one item needs updating, so crete a clone to be updated rather than updating in place
-          newQuestionnaire = deepClone(questionnaire);
-          break;
-        }
-      }
+    if (getExtensionValue(item, REQUIRED_WHEN_SPECIMEN) === true && Boolean(item.required) !== requiredWhenSpecimen) {
+      // at least one item needs updating, so crete a clone to be updated rather than updating in place
+      newQuestionnaire = deepClone(questionnaire);
+      break;
     }
   }
 
