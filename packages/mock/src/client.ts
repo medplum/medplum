@@ -152,7 +152,7 @@ export class MockClient extends MedplumClient {
       createPdf: (
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
-        fonts?: TFontDictionary | undefined
+        fonts?: TFontDictionary
       ) => client.mockCreatePdf(docDefinition, tableLayouts, fonts),
       fetch: (url: string, options: any) => {
         return client.mockFetch(url, options);
@@ -252,9 +252,9 @@ export class MockClient extends MedplumClient {
     agent: Agent | Reference<Agent>,
     destination: Device | Reference<Device> | string,
     body: any,
-    contentType?: string | undefined,
-    _waitForResponse?: boolean | undefined,
-    _options?: MedplumRequestOptions | undefined
+    contentType?: string,
+    _waitForResponse?: boolean,
+    _options?: MedplumRequestOptions
   ): Promise<any> {
     if (contentType === ContentType.PING) {
       if (!this.agentAvailable) {
@@ -373,7 +373,7 @@ export class MockFetchClient {
   mockCreatePdf(
     docDefinition: TDocumentDefinitions,
     tableLayouts?: { [name: string]: CustomTableLayout },
-    fonts?: TFontDictionary | undefined
+    fonts?: TFontDictionary
   ): Promise<any> {
     if (this.debug) {
       console.log(`Mock Client: createPdf(`);

@@ -143,7 +143,7 @@ export function isValidDate(date: Date): boolean {
 export function formatDate(
   date: string | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!date) {
     return '';
@@ -167,7 +167,7 @@ export function formatDate(
 export function formatTime(
   time: string | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!time) {
     return '';
@@ -190,7 +190,7 @@ export function formatTime(
 export function formatDateTime(
   dateTime: string | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!dateTime) {
     return '';
@@ -212,7 +212,7 @@ export function formatDateTime(
 export function formatPeriod(
   period: Period | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!period || (!period.start && !period.end)) {
     return '';
