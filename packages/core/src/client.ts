@@ -351,8 +351,8 @@ export type ResourceArray<T extends Resource = Resource> = T[] & { bundle: Bundl
 export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
-    tableLayouts?: Record<string, CustomTableLayout> | undefined,
-    fonts?: TFontDictionary | undefined
+    tableLayouts?: Record<string, CustomTableLayout>,
+    fonts?: TFontDictionary
   ): Promise<any>;
 }
 
@@ -2751,9 +2751,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!this.medplumServer) {
       return Promise.resolve(undefined);
     }
+
     this.profilePromise = new Promise((resolve, reject) => {
-      this.dispatchEvent({ type: 'profileRefreshing' });
-      this.get('auth/me')
+      this.get('auth/me', { cache: 'no-cache' })
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
           const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
@@ -2761,22 +2761,23 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           if (profileChanged) {
             this.dispatchEvent({ type: 'change' });
           }
-          this.dispatchEvent({ type: 'profileRefreshed' });
           resolve(result.profile);
+          this.dispatchEvent({ type: 'profileRefreshed' });
         })
         .catch(reject);
     });
 
+    this.dispatchEvent({ type: 'profileRefreshing' });
     return this.profilePromise;
   }
 
   /**
-   * Returns true if the client is waiting for authentication.
-   * @returns True if the client is waiting for authentication.
+   * Returns true if the client is waiting for initial authentication.
+   * @returns True if the client is waiting for initial authentication.
    * @category Authentication
    */
   isLoading(): boolean {
-    return !this.isInitialized || !!this.profilePromise;
+    return !this.isInitialized || (Boolean(this.profilePromise) && !this.sessionDetails?.profile);
   }
 
   /**
@@ -3694,7 +3695,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     topic: string,
     event: EventName,
     context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
-    versionId?: string | undefined
+    versionId?: string
   ): Promise<Record<string, any>> {
     if (isContextVersionRequired(event)) {
       return this.post(

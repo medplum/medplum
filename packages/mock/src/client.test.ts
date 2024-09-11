@@ -189,7 +189,7 @@ describe('MockClient', () => {
 
   test('Who am i', async () => {
     const client = new MockClient();
-    expect(await client.get('auth/me')).toMatchObject({ profile: DrAliceSmith });
+    expect(await client.get('auth/me', { cache: 'no-cache' })).toMatchObject({ profile: DrAliceSmith });
   });
 
   test('MFA status', async () => {

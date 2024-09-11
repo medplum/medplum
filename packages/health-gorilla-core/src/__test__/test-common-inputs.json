@@ -1,0 +1,346 @@
+
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:7ad7686f-2991-47b3-a75a-fd7c81c25a7b",
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "name": [
+          {
+            "given": [
+              "Five"
+            ],
+            "family": "Testpatient"
+          }
+        ],
+        "telecom": [
+          {
+            "system": "phone",
+            "use": "home",
+            "value": "9729163001"
+          },
+          {
+            "system": "email",
+            "use": "home",
+            "value": "fivetestpatient+labcorp@example.com"
+          }
+        ],
+        "gender": "female",
+        "birthDate": "1951-01-17",
+        "address": [
+          {
+            "use": "home",
+            "type": "physical",
+            "line": [
+              "4775 Crown Blvd"
+            ],
+            "city": "Dallas",
+            "state": "TX",
+            "postalCode": "75063",
+            "country": "US"
+          }
+        ],
+        "identifier": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "MR",
+                  "display": "Medical record number"
+                }
+              ],
+              "text": "Medical record number"
+            },
+            "value": "PID-Testpatient-five"
+          },
+          {
+            "system": "https://www.healthgorilla.com",
+            "value": "d05b5e65f4f4ade2e5033b17"
+          }
+        ],
+        "meta": {}
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:39199914-2905-45fe-8f61-97598c925afd",
+      "request": {
+        "method": "POST",
+        "url": "Practitioner"
+      },
+      "resource": {
+        "resourceType": "Practitioner",
+        "active": true,
+        "name": [
+          {
+            "use": "official",
+            "text": "Amisha S Bhakta, PA",
+            "family": "Bhakta",
+            "given": [
+              "Amisha",
+              "S"
+            ],
+            "suffix": [
+              "PA"
+            ]
+          }
+        ],
+        "identifier": [
+          {
+            "value": "07a83165d5b41cb967291e44",
+            "system": "https://www.healthgorilla.com"
+          },
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1790970747",
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/v2-0203",
+                  "code": "NPI",
+                  "display": "National provider identifier"
+                }
+              ],
+              "text": "National provider identifier"
+            }
+          }
+        ],
+        "address": [
+          {
+            "use": "work",
+            "text": "444 8th St, San Francisco, CA 94103",
+            "line": [
+              "444 8th St"
+            ],
+            "city": "San Francisco",
+            "state": "CA",
+            "postalCode": "94103",
+            "country": "USA"
+          }
+        ],
+        "meta": {
+          "profile": [
+           "http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitioner",
+           "https://healthgorilla.com/fhir/StructureDefinition/hg-practitioner"
+          ]
+        }
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:16741ce5-89b4-4faa-a2cc-adf81a76ea3c",
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      },
+      "resource": {
+        "resourceType": "Organization",
+        "text": {
+          "status": "generated",
+          "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\">Labcorp</div>"
+        },
+        "extension": [
+          {
+            "url": "https://www.healthgorilla.com/fhir/StructureDefinition/provider-compendium",
+            "valueReference": {
+              "reference": "ValueSet/f-a855594f43fe879c6570b92e"
+            }
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              }
+            ],
+            "text": "Diagnostic Laboratories"
+          },
+          {
+            "coding": [
+              {
+                "system": "https://www.healthgorilla.com/fhir/organization-type",
+                "code": "F",
+                "display": "Facility"
+              }
+            ],
+            "text": "Facility"
+          },
+          {
+            "coding": [
+              {
+                "system": "https://www.healthgorilla.com/facility-type",
+                "code": "DiagnosticLaboratories",
+                "display": "Diagnostic Laboratories"
+              }
+            ]
+          }
+        ],
+        "name": "Labcorp",
+        "meta": {
+          "source": "https://www.healthgorilla.com"
+        },
+        "identifier": [
+          {
+            "system": "https://www.healthgorilla.com",
+            "value": "f-a855594f43fe879c6570b92e"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:4a7511f4-fcb3-4fb0-8063-46e73ce1c98f",
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      },
+      "resource": {
+        "resourceType": "Organization",
+        "identifier": [
+          {
+            "system": "https://www.healthgorilla.com",
+            "value": "ip-3464"
+          }
+        ],
+        "name": "Aetna Senior Supplemental Ins",
+        "meta": {}
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b9af30a1-2313-47fb-a095-2c3d30a7b13f",
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      },
+      "resource": {
+        "resourceType": "Organization",
+        "identifier": [
+          {
+            "system": "https://www.healthgorilla.com",
+            "value": "ip-3514"
+          }
+        ],
+        "name": "Medicare Aetna",
+        "meta": {}
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:9cad39e6-4a51-496d-b2b3-e2029dcefb01",
+      "request": {
+        "method": "POST",
+        "url": "Coverage"
+      },
+      "resource": {
+        "resourceType": "Coverage",
+        "identifier": [
+          {
+            "value": "11111119"
+          }
+        ],
+        "status": "active",
+        "subscriber": {
+          "reference": "urn:uuid:7ad7686f-2991-47b3-a75a-fd7c81c25a7b",
+          "display": "Five Testpatient"
+        },
+        "beneficiary": {
+          "reference": "urn:uuid:7ad7686f-2991-47b3-a75a-fd7c81c25a7b",
+          "display": "Five Testpatient"
+        },
+        "relationship": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+              "code": "self",
+              "display": "Self"
+            }
+          ],
+          "text": "Self"
+        },
+        "payor": [
+          {
+            "reference": "urn:uuid:b9af30a1-2313-47fb-a095-2c3d30a7b13f"
+          }
+        ],
+        "class": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/coverage-class",
+                  "code": "group",
+                  "display": "Group"
+                }
+              ],
+              "text": "Group"
+            },
+            "value": "12345670"
+          }
+        ],
+        "meta": {}
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:19dbc96f-b80a-4c3a-ae11-a304fb379160",
+      "request": {
+        "method": "POST",
+        "url": "Coverage"
+      },
+      "resource": {
+        "resourceType": "Coverage",
+        "identifier": [
+          {
+            "value": "111111188"
+          }
+        ],
+        "status": "active",
+        "subscriber": {
+          "reference": "urn:uuid:7ad7686f-2991-47b3-a75a-fd7c81c25a7b",
+          "display": "Five Testpatient"
+        },
+        "beneficiary": {
+          "reference": "urn:uuid:7ad7686f-2991-47b3-a75a-fd7c81c25a7b",
+          "display": "Five Testpatient"
+        },
+        "relationship": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+              "code": "self",
+              "display": "Self"
+            }
+          ],
+          "text": "Self"
+        },
+        "payor": [
+          {
+            "reference": "urn:uuid:4a7511f4-fcb3-4fb0-8063-46e73ce1c98f"
+          }
+        ],
+        "class": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/coverage-class",
+                  "code": "group",
+                  "display": "Group"
+                }
+              ],
+              "text": "Group"
+            },
+            "value": "12345679"
+          }
+        ],
+        "meta": {}
+      }
+    }
+  ]
+}

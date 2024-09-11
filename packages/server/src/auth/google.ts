@@ -4,7 +4,6 @@ import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
 import { createRemoteJWKSet, jwtVerify, JWTVerifyOptions } from 'jose';
-import { URL } from 'url';
 import { getConfig } from '../config';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';

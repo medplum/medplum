@@ -43,7 +43,6 @@ import {
 } from '@medplum/fhirtypes';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { getLogger } from '../context';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
@@ -62,7 +61,6 @@ import {
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
-  SqlBuilder,
   Union,
   ValuesQuery,
 } from './sql';
@@ -283,9 +281,7 @@ async function getSearchEntries<T extends Resource>(
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
-  const startTime = Date.now();
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  const endTime = Date.now();
   const rowCount = rows.length;
   const resources = rows.slice(0, searchRequest.count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
@@ -306,21 +302,6 @@ async function getSearchEntries<T extends Resource>(
       continue;
     }
     removeResourceFields(entry.resource, repo, searchRequest);
-  }
-
-  const duration = endTime - startTime;
-  const config = getConfig();
-  const threshold = config.slowQueryThresholdMilliseconds;
-  const sampleRate = config.slowQuerySampleRate ?? 1;
-  if (threshold !== undefined && duration > threshold && Math.random() < sampleRate) {
-    builder.explain = true;
-    builder.analyzeBuffers = true;
-    const sqlBuilder = new SqlBuilder();
-    builder.buildSql(sqlBuilder);
-    const sql = sqlBuilder.toString();
-    const explainRows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-    const explain = explainRows.map((row) => row['QUERY PLAN']).join('\n');
-    getLogger().warn('Slow search query', { duration, searchRequest, sql, explain });
   }
 
   return {
