@@ -58,12 +58,12 @@
     "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@medplum/core": "3.2.9",
-    "@medplum/definitions": "3.2.9",
-    "@medplum/fhirtypes": "3.2.9",
-    "@medplum/health-gorilla-core": "3.2.9",
-    "@medplum/mock": "3.2.9",
-    "@medplum/react": "3.2.9",
+    "@medplum/core": "3.2.10",
+    "@medplum/definitions": "3.2.10",
+    "@medplum/fhirtypes": "3.2.10",
+    "@medplum/health-gorilla-core": "3.2.10",
+    "@medplum/mock": "3.2.10",
+    "@medplum/react": "3.2.10",
     "@testing-library/jest-dom": "6.5.0",
     "@testing-library/react": "16.0.1",
     "@types/node": "22.5.4",
@@ -78,9 +78,9 @@
     "vitest": "2.0.5"
   },
   "peerDependencies": {
-    "@medplum/core": "3.2.9",
-    "@medplum/fhirtypes": "3.2.9",
-    "@medplum/react": "3.2.9",
+    "@medplum/core": "3.2.10",
+    "@medplum/fhirtypes": "3.2.10",
+    "@medplum/react": "3.2.10",
     "react": "^18.0.0"
   },
   "engines": {
