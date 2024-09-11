@@ -6,8 +6,32 @@
   </a>
 </p>
 
-> [!WARNING]
-> Under development
+This example app demonstrates the following:
+
+- How to build a scheduling app on Medplum for providers that manages the lifecycle of appointments, integrates with patient and practitioner data.
+- Creating [`Slots`](/docs/api/fhir/resources/slot) to manage the provider availability.
+- Managing the [`Appointment`](/docs/api/fhir/resources/appointment) lifecycle: Creating, rescheduling, and canceling appointments.
+- Creating an [`Encounter`](/docs/api/fhir/resources/encounter) after an appointment is completed.
+- Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to build a scheduling app.
+
+### Code Organization
+
+This repo is organized into two main directories: `src` and `data`.
+
+The `src` directory contains the entire app, including `pages` and `components` directories. In addition, it contains a `bots` directory which has [Medplum Bots](/packages/docs/docs/bots/index.md) for use. The bots in the `example` directory are intended to be modified or extended by users, while those in `core` can be used to handle core workflows without modification.
+
+The `data` directory contains data that can be uploaded for use in the demo. The `example` directory contains data that is meant to be used for testing and learning, while the `core` directory contains resources, terminologies, and more that are necessary to use the demo.
+
+### UI and components
+
+- Patients page listing all the patients in the system.
+- Patients chart page with 3 panels:
+  - Clinical Chart
+  - Details (including Appointments and Encounters)
+  - Actions (with a button to create a new appointment)
+- Schedule page to manage the provider availability and create new appointments.
+- Appointment page listing all appointments for the provider.
+- Appointment details page to view and manage the appointment lifecycle.
 
 ### Getting Started
 
@@ -42,6 +66,7 @@ This app should run on `http://localhost:3000/`
 
 Click `Upload Core ValueSets` in the app navigation menu and then click the upload button.
 Click `Upload Example Bots` in the app navigation menu and then click the upload button.
+[Optional] Click `Upload Example Data` in the app navigation menu and then click the upload button.
 
 ### About Medplum
 

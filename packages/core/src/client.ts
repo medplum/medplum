@@ -351,8 +351,8 @@ export type ResourceArray<T extends Resource = Resource> = T[] & { bundle: Bundl
 export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
-    tableLayouts?: Record<string, CustomTableLayout> | undefined,
-    fonts?: TFontDictionary | undefined
+    tableLayouts?: Record<string, CustomTableLayout>,
+    fonts?: TFontDictionary
   ): Promise<any>;
 }
 
@@ -560,7 +560,7 @@ export type MailDestination = string | MailAddress | string[] | MailAddress[];
  * Compatible with nodemailer Mail.Options.
  */
 export interface MailAttachment {
-  /** String, Buffer or a Stream contents for the attachmentent */
+  /** String, Buffer or a Stream contents for the attachment */
   readonly content?: string;
   /** path to a file or an URL (data uris are allowed as well) if you want to stream the file instead of including it (better for larger attachments) */
   readonly path?: string;
@@ -2285,7 +2285,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   /**
    * Creates a FHIR `Communication` resource with the provided data content.
    *
-   * This is a convenience method to handle commmon cases where a `Communication` resource is created with a `payload`.
+   * This is a convenience method to handle common cases where a `Communication` resource is created with a `payload`.
    * @category Create
    * @param resource - The FHIR resource to comment on.
    * @param text - The text of the comment.
@@ -2751,9 +2751,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!this.medplumServer) {
       return Promise.resolve(undefined);
     }
+
     this.profilePromise = new Promise((resolve, reject) => {
-      this.dispatchEvent({ type: 'profileRefreshing' });
-      this.get('auth/me')
+      this.get('auth/me', { cache: 'no-cache' })
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
           const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
@@ -2761,22 +2761,23 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           if (profileChanged) {
             this.dispatchEvent({ type: 'change' });
           }
-          this.dispatchEvent({ type: 'profileRefreshed' });
           resolve(result.profile);
+          this.dispatchEvent({ type: 'profileRefreshed' });
         })
         .catch(reject);
     });
 
+    this.dispatchEvent({ type: 'profileRefreshing' });
     return this.profilePromise;
   }
 
   /**
-   * Returns true if the client is waiting for authentication.
-   * @returns True if the client is waiting for authentication.
+   * Returns true if the client is waiting for initial authentication.
+   * @returns True if the client is waiting for initial authentication.
    * @category Authentication
    */
   isLoading(): boolean {
-    return !this.isInitialized || !!this.profilePromise;
+    return !this.isInitialized || (Boolean(this.profilePromise) && !this.sessionDetails?.profile);
   }
 
   /**
@@ -3694,7 +3695,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     topic: string,
     event: EventName,
     context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
-    versionId?: string | undefined
+    versionId?: string
   ): Promise<Record<string, any>> {
     if (isContextVersionRequired(event)) {
       return this.post(

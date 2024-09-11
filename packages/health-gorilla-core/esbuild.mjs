@@ -1,4 +1,5 @@
 /* global console */
+/* global process */
 /* eslint no-console: "off" */
 
 import esbuild from 'esbuild';
@@ -9,11 +10,15 @@ const options = {
   bundle: true,
   platform: 'node',
   loader: { '.ts': 'ts' },
+  logLevel: 'info',
   resolveExtensions: ['.ts'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
-  minify: true,
+  minifyWhitespace: true,
+  minifyIdentifiers: false,
+  minifySyntax: true,
   sourcemap: true,
+  external: ['@medplum/core', '@medplum/fhirtypes'],
 };
 
 esbuild
@@ -23,7 +28,10 @@ esbuild
     outfile: './dist/cjs/index.cjs',
   })
   .then(() => writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}'))
-  .catch(console.error);
+  .catch((error) => {
+    console.error('Build failed:', JSON.stringify(error, null, 2));
+    process.exit(1);
+  });
 
 esbuild
   .build({
@@ -32,4 +40,7 @@ esbuild
     outfile: './dist/esm/index.mjs',
   })
   .then(() => writeFileSync('./dist/esm/package.json', '{"type": "module"}'))
-  .catch(console.error);
+  .catch((error) => {
+    console.error('Build failed:', JSON.stringify(error, null, 2));
+    process.exit(1);
+  });

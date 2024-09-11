@@ -81,7 +81,7 @@ export class Storage extends Construct {
         customHeadersBehavior: {
           customHeaders: [
             {
-              header: 'Permission-Policy',
+              header: 'Permissions-Policy',
               value:
                 'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()',
               override: true,

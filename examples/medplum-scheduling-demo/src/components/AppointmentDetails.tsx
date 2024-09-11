@@ -99,6 +99,8 @@ export function AppointmentDetails(props: AppointmentDetailsProps): JSX.Element 
           <SearchControl
             search={encountersSearch}
             onChange={(e) => setEncountersSearch(e.definition)}
+            onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
+            onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
             hideFilters
             hideToolbar
           />

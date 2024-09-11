@@ -64,6 +64,6 @@ export class LRUCache<T> {
 
   private first(): string {
     // This works because the Map class maintains ordered keys.
-    return this.cache.keys().next().value;
+    return this.cache.keys().next().value as string;
   }
 }

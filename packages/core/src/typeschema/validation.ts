@@ -137,7 +137,7 @@ class ResourceValidator implements CrawlerVisitor {
 
   validate(): OperationOutcomeIssue[] {
     // Check root constraints
-    this.constraintsCheck(this.root, this.schema, this.schema.path);
+    this.constraintsCheck({ ...this.root, path: this.schema.path }, this.schema);
 
     checkObjectForNull(this.root.value as unknown as Record<string, unknown>, this.schema.path, this.issues);
 
@@ -162,10 +162,10 @@ class ResourceValidator implements CrawlerVisitor {
     return issues;
   }
 
-  onExitObject(path: string, obj: TypedValueWithPath, schema: InternalTypeSchema): void {
+  onExitObject(_path: string, obj: TypedValueWithPath, schema: InternalTypeSchema): void {
     //@TODO(mattwiller 2023-06-05): Detect extraneous properties in a single pass by keeping track of all keys that
     // were correctly matched to resource properties as elements are validated above
-    this.checkAdditionalProperties(obj, schema.elements, path);
+    this.checkAdditionalProperties(obj, schema.elements, obj.path);
   }
 
   onEnterResource(_path: string, obj: TypedValueWithPath): void {
@@ -227,9 +227,10 @@ class ResourceValidator implements CrawlerVisitor {
         ? Object.fromEntries(element.slicing.slices.map((s) => [s.name, 0]))
         : undefined;
       for (const value of values) {
-        this.constraintsCheck(value, element, path);
-        this.referenceTypeCheck(value, element, path);
-        this.checkPropertyValue(value, path);
+        this.constraintsCheck(value, element);
+        this.referenceTypeCheck(value, element);
+        this.checkPropertyValue(value);
+
         const sliceName = checkSliceElement(value, element.slicing);
         if (sliceName && sliceCounts) {
           sliceCounts[sliceName] += 1;
@@ -260,9 +261,9 @@ class ResourceValidator implements CrawlerVisitor {
     return true;
   }
 
-  private checkPropertyValue(value: TypedValue, path: string): void {
+  private checkPropertyValue(value: TypedValueWithPath): void {
     if (isPrimitiveType(value.type)) {
-      this.validatePrimitiveType(value, path);
+      this.validatePrimitiveType(value);
     }
   }
 
@@ -290,7 +291,7 @@ class ResourceValidator implements CrawlerVisitor {
   }
 
   private checkAdditionalProperties(
-    parent: TypedValue,
+    parent: TypedValueWithPath,
     properties: Record<string, InternalSchemaElement>,
     path: string
   ): void {
@@ -352,23 +353,23 @@ class ResourceValidator implements CrawlerVisitor {
     }
   }
 
-  private constraintsCheck(value: TypedValue, field: InternalTypeSchema | InternalSchemaElement, path: string): void {
+  private constraintsCheck(value: TypedValueWithPath, field: InternalTypeSchema | InternalSchemaElement): void {
     const constraints = field.constraints;
     if (!constraints) {
       return;
     }
     for (const constraint of constraints) {
       if (constraint.severity === 'error' && !(constraint.key in skippedConstraintKeys)) {
-        const expression = this.isExpressionTrue(constraint, value, path);
+        const expression = this.isExpressionTrue(constraint, value);
         if (!expression) {
-          this.issues.push(createConstraintIssue(path, constraint));
+          this.issues.push(createConstraintIssue(value.path, constraint));
           return;
         }
       }
     }
   }
 
-  private referenceTypeCheck(value: TypedValue, field: InternalSchemaElement, path: string): void {
+  private referenceTypeCheck(value: TypedValueWithPath, field: InternalSchemaElement): void {
     if (value.type !== 'Reference') {
       return;
     }
@@ -425,13 +426,13 @@ class ResourceValidator implements CrawlerVisitor {
       createOperationOutcomeIssue(
         'warning',
         'structure',
-        `Invalid reference for "${path}", got "${referenceResourceType}", expected "${targetProfiles.join('", "')}"`,
-        path
+        `Invalid reference: got "${referenceResourceType}", expected "${targetProfiles.join('", "')}"`,
+        value.path
       )
     );
   }
 
-  private isExpressionTrue(constraint: Constraint, value: TypedValue, path: string): boolean {
+  private isExpressionTrue(constraint: Constraint, value: TypedValueWithPath): boolean {
     const variables: Record<string, TypedValue> = {
       '%context': value,
       '%ucum': toTypedValue(UCUM),
@@ -451,14 +452,18 @@ class ResourceValidator implements CrawlerVisitor {
       return evalValues.length === 1 && evalValues[0].value === true;
     } catch (e: any) {
       this.issues.push(
-        createProcessingIssue(path, 'Error evaluating invariant expression', e, { fhirpath: constraint.expression })
+        createProcessingIssue(value.path, 'Error evaluating invariant expression', e, {
+          fhirpath: constraint.expression,
+        })
       );
       return false;
     }
   }
 
-  private validatePrimitiveType(typedValue: TypedValue, path: string): void {
+  private validatePrimitiveType(typedValue: TypedValueWithPath): void {
     const [primitiveValue, extensionElement] = unpackPrimitiveElement(typedValue);
+    const path = typedValue.path;
+
     if (primitiveValue) {
       const { type, value } = primitiveValue;
       // First, make sure the value is the correct JS type

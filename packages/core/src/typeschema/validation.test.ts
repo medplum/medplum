@@ -1499,7 +1499,7 @@ describe('FHIR resource validation', () => {
     const issues = validateResource(docRef);
     expect(issues).toHaveLength(1);
     expect(issues[0].severity).toBe('warning');
-    expect(issues[0].details?.text).toContain('Invalid reference for');
+    expect(issues[0].details?.text).toContain('Invalid reference');
   });
 
   test('Nested recursive properties', () => {
@@ -1613,7 +1613,7 @@ describe('FHIR resource validation', () => {
       value: { realmCode: [{ foo: 'bar' }] },
     };
     expect(() => validateTypedValue(typedValue2)).toThrow(
-      'Invalid additional property "foo" (ClinicalDocument.realmCode.foo)'
+      'Invalid additional property "foo" (ClinicalDocument.realmCode[0].foo)'
     );
   });
 
@@ -1661,7 +1661,7 @@ describe('FHIR resource validation', () => {
       value: { effectiveTime: ['foo'] },
     };
     expect(() => validateTypedValue(typedValue2)).toThrow(
-      'Invalid dateTime format (SubstanceAdministration.effectiveTime)'
+      'Invalid dateTime format (SubstanceAdministration.effectiveTime[0])'
     );
   });
 });
