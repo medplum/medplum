@@ -290,40 +290,43 @@ class BatchProcessor {
       searchReq.sortRules = undefined;
 
       const [resolved, duplicate] = await this.repo.searchResources(searchReq);
-      if (resolved && !duplicate) {
-        const reference = getReferenceString(resolved);
-        entry.request.url = reference;
-        if (entry.resource) {
-          entry.resource.id = resolved.id;
-        }
-        return { placeholder: entry.fullUrl, reference };
-      }
-
       if (!resolved) {
-        if (method === 'DELETE') {
-          return undefined;
-        } else if (method === 'PUT') {
-          if (entry.resource) {
-            if (entry.resource.id) {
-              throw new OperationOutcomeError(badRequest('Cannot provide ID for create by update'));
-            }
+        switch (method) {
+          case 'DELETE':
+            // DELETE is idempotent; it succeeds if the resource already doesn't exist
+            return undefined;
+          case 'PUT':
+            // Upsert (Update as Create): https://www.hl7.org/fhir/http.html#upsert
+            if (entry.resource) {
+              if (entry.resource.id) {
+                throw new OperationOutcomeError(badRequest('Cannot provide ID for create by update'));
+              }
 
-            entry.resource.id = this.repo.generateId();
-            return {
-              placeholder: entry.fullUrl,
-              reference: getReferenceString(entry.resource),
-            };
-          }
-          return undefined;
+              entry.resource.id = this.repo.generateId();
+              return {
+                placeholder: entry.fullUrl,
+                reference: getReferenceString(entry.resource),
+              };
+            }
+            return undefined;
+          default:
+            throw new OperationOutcomeError(
+              badRequest(`Conditional ${entry.request.method} did not match any resources`, path + '.request.url')
+            );
         }
       }
+      if (duplicate) {
+        throw new OperationOutcomeError(
+          badRequest(`Conditional ${entry.request.method} matched multiple resources`, path + '.request.url')
+        );
+      }
 
-      throw new OperationOutcomeError(
-        badRequest(
-          `Conditional ${entry.request.method} matched ${duplicate ? 'multiple' : 'zero'} resources`,
-          path + '.request.url'
-        )
-      );
+      const reference = getReferenceString(resolved);
+      entry.request.url = reference;
+      if (entry.resource) {
+        entry.resource.id = resolved.id;
+      }
+      return { placeholder: entry.fullUrl, reference };
     }
 
     if (entry.request?.url.includes('/')) {
