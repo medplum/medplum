@@ -59503,7 +59503,8 @@
               "graphql-introspection",
               "terminology",
               "websocket-subscriptions",
-              "reference-lookups"
+              "reference-lookups",
+              "transaction-bundles"
             ]
           },
           "type": "array"
@@ -60331,6 +60332,10 @@
             "$ref": "#/definitions/CodeableConcept"
           },
           "type": "array"
+        },
+        "system": {
+          "description": "Optional flag to indicate that the bot is a system bot and therefore has access to system secrets.",
+          "$ref": "#/definitions/boolean"
         },
         "runAsUser": {
           "description": "Optional flag to indicate that the bot should be run as the user.",

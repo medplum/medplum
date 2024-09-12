@@ -284,6 +284,10 @@ export function isNotFound(outcome: OperationOutcome): boolean {
   return outcome.id === NOT_FOUND_ID;
 }
 
+export function isConflict(outcome: OperationOutcome): boolean {
+  return outcome.id === CONFLICT_ID;
+}
+
 export function isGone(outcome: OperationOutcome): boolean {
   return outcome.id === GONE_ID;
 }

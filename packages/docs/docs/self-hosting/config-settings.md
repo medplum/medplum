@@ -229,7 +229,7 @@ Example `DatabaseSecrets` value:
   "port": 5432,
   "host": "my-cluster.us-east-1.rds.amazonaws.com",
   "username": "clusteradmin",
-  "queryTimeout": "60000"
+  "queryTimeout": 60000
 }
 ```
 

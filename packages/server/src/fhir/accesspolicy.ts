@@ -214,9 +214,18 @@ function applyProjectAdminAccessPolicy(
     accessPolicy.resource.push({
       resourceType: 'Project',
       criteria: `Project?_id=${resolveId(membership.project)}`,
-      readonlyFields: ['superAdmin', 'features', 'link', 'systemSetting'],
-      hiddenFields: ['systemSecret', 'strictMode'],
+      readonlyFields: ['features', 'link', 'systemSetting'],
+      hiddenFields: ['superAdmin', 'systemSecret', 'strictMode'],
     });
+
+    if (project.link) {
+      accessPolicy.resource.push({
+        resourceType: 'Project',
+        criteria: `Project?_id=${project.link.map((link) => resolveId(link.project)).join(',')}`,
+        readonly: true,
+        hiddenFields: ['superAdmin', 'setting', 'systemSetting', 'secret', 'systemSecret', 'strictMode'],
+      });
+    }
 
     accessPolicy.resource.push({
       resourceType: 'ProjectMembership',
