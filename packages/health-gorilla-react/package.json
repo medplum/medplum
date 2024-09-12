@@ -80,6 +80,7 @@
   "peerDependencies": {
     "@medplum/core": "3.2.10",
     "@medplum/fhirtypes": "3.2.10",
+    "@medplum/health-gorilla-core": "3.2.10",
     "@medplum/react": "3.2.10",
     "react": "^18.0.0"
   },
