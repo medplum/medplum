@@ -26,7 +26,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
-    "directory": "packages/core"
+    "directory": "packages/health-gorilla-react"
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
