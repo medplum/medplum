@@ -959,6 +959,7 @@ describe('Batch', () => {
       type: 'batch',
       entry: [
         {
+          fullUrl: 'urn:uuid:' + randomUUID(),
           request: {
             method: 'PUT',
             url: `Patient?identifier=${patientIdentifier}`,
@@ -966,6 +967,7 @@ describe('Batch', () => {
           resource: patient,
         },
         {
+          fullUrl: 'urn:uuid:' + randomUUID(),
           request: {
             method: 'PUT',
             url: 'Patient?identifier=' + newIdentifier,
@@ -973,6 +975,7 @@ describe('Batch', () => {
           resource: { resourceType: 'Patient', identifier: [{ value: newIdentifier }] },
         },
         {
+          fullUrl: 'urn:uuid:' + randomUUID(),
           request: {
             method: 'DELETE',
             url: 'Patient?identifier=' + randomUUID(),
