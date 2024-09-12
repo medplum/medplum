@@ -240,6 +240,33 @@
             ]
           },
           {
+            "linkId": "preferred-pharmacy",
+            "text": "Preferred Pharmacy",
+            "type": "group",
+            "item": [
+              {
+                "linkId": "preferred-pharmacy-reference",
+                "text": "Pharmacy",
+                "type": "reference",
+                "extension": [
+                  {
+                    "id": "reference-pharmacy",
+                    "url": "http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource",
+                    "valueCodeableConcept": {
+                      "coding": [
+                        {
+                          "system": "http://hl7.org/fhir/fhir-types",
+                          "display": "Organizations",
+                          "code": "Organization"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "linkId": "coverage-information",
             "text": "Coverage Information",
             "type": "group",

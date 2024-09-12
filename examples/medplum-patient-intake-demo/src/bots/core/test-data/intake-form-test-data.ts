@@ -14,6 +14,12 @@ export const payorOrganization2: Organization = {
   name: 'Second Insurance Provider',
 };
 
+export const pharmacyOrganization: Organization = {
+  resourceType: 'Organization',
+  id: 'org-id-3',
+  name: 'Pharmacy',
+};
+
 export const intakeQuestionnaire: Questionnaire = coreBundle.entry[0].resource as Questionnaire;
 intakeQuestionnaire.id = 'intake-questionnaire-id';
 
@@ -867,6 +873,23 @@ export const intakeResponse: QuestionnaireResponse = {
             code: 'en',
             display: 'English',
           },
+        },
+      ],
+    },
+    {
+      linkId: 'preferred-pharmacy',
+      text: 'Preferred Pharmacy',
+      item: [
+        {
+          linkId: 'preferred-pharmacy-reference',
+          text: 'Pharmacy',
+          answer: [
+            {
+              valueReference: {
+                reference: getReferenceString(pharmacyOrganization),
+              },
+            },
+          ],
         },
       ],
     },
