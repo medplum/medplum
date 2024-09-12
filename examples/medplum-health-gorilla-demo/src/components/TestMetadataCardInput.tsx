@@ -1,11 +1,15 @@
 import { Card, Radio, Stack, Text, TextInput } from '@mantine/core';
-import { TestCoding } from '@medplum/health-gorilla-core';
+import { LabOrderInputErrors, TestCoding } from '@medplum/health-gorilla-core';
 import { TestMetadata, useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
 import { QuestionnaireForm } from '@medplum/react';
 
-export type TestMetadataCardInputProps = { test: TestCoding; metadata: TestMetadata | undefined };
+export type TestMetadataCardInputProps = {
+  test: TestCoding;
+  metadata: TestMetadata | undefined;
+  error?: NonNullable<LabOrderInputErrors['testMetadata']>[keyof NonNullable<LabOrderInputErrors['testMetadata']>];
+};
 
-export function TestMetadataCardInput({ test, metadata }: TestMetadataCardInputProps): JSX.Element {
+export function TestMetadataCardInput({ test, metadata, error }: TestMetadataCardInputProps): JSX.Element {
   const { updateTestMetadata } = useHealthGorillaLabOrderContext();
 
   if (!metadata) {
@@ -27,6 +31,7 @@ export function TestMetadataCardInput({ test, metadata }: TestMetadataCardInputP
           <>
             <Radio.Group
               value={metadata.priority}
+              error={error?.priority?.message}
               onChange={(newValue) => {
                 if (!newValue) {
                   console.warn('New value for priority unexpectedly falsey', newValue);
@@ -58,14 +63,17 @@ export function TestMetadataCardInput({ test, metadata }: TestMetadataCardInputP
             {metadata.aoeStatus === 'loading' && <Text>Loading AoE...</Text>}
             {metadata.aoeStatus === 'error' && <Text>Error fetching AoE</Text>}
             {metadata.aoeStatus === 'loaded' && metadata.aoeQuestionnaire && (
-              <QuestionnaireForm
-                questionnaire={metadata.aoeQuestionnaire}
-                disablePagination
-                excludeButtons
-                onChange={(qr) => {
-                  updateTestMetadata(test, { aoeResponses: qr });
-                }}
-              />
+              <>
+                {error?.aoeResponses?.message && <Text c="red">{error.aoeResponses.message}</Text>}
+                <QuestionnaireForm
+                  questionnaire={metadata.aoeQuestionnaire}
+                  disablePagination
+                  excludeButtons
+                  onChange={(qr) => {
+                    updateTestMetadata(test, { aoeResponses: qr });
+                  }}
+                />
+              </>
             )}
           </>
         )}

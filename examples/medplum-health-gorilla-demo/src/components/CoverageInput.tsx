@@ -1,6 +1,6 @@
 import { ActionIcon, Divider, Group, Input, List, ListItem, rem, Text } from '@mantine/core';
 import { Coverage, Patient } from '@medplum/fhirtypes';
-import { BillingInformation } from '@medplum/health-gorilla-core';
+import { BillingInformation, LabOrderInputErrors } from '@medplum/health-gorilla-core';
 import { useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
@@ -12,8 +12,9 @@ export type PatientCoverages = { coverage: Coverage; selected: boolean }[];
 
 export type CoverageInputProps = {
   patient: Patient;
+  error?: NonNullable<LabOrderInputErrors['billingInformation']>['patientCoverage'];
 };
-export function CoverageInput({ patient }: CoverageInputProps): JSX.Element {
+export function CoverageInput({ patient, error }: CoverageInputProps): JSX.Element {
   const { getActivePatientCoverages, updateBillingInformation, state } = useHealthGorillaLabOrderContext();
   const [coverages, setCoverages] = useState<PatientCoverages>(INITIAL_COVERAGES);
   const disabled = state.billingInformation.billTo !== 'insurance';
@@ -35,7 +36,7 @@ export function CoverageInput({ patient }: CoverageInputProps): JSX.Element {
   }, [coverages, updateBillingInformation]);
 
   return (
-    <Input.Wrapper c={disabled ? 'dimmed' : undefined} label="Patient coverages (max 3)">
+    <Input.Wrapper c={disabled ? 'dimmed' : undefined} label="Patient coverages (max 3)" error={error?.message}>
       {coverages?.length ? (
         <List type="ordered" listStyleType="none" spacing={4}>
           {coverages.map(({ coverage }, i) => {

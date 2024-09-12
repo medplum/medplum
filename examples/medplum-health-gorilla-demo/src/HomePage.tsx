@@ -4,6 +4,7 @@ import { Bundle, Patient, Practitioner, ServiceRequest } from '@medplum/fhirtype
 import {
   BillingInformation,
   DiagnosisCodeableConcept,
+  LabOrderInputErrors,
   LabOrderValidationError,
   NPI_SYSTEM,
   TestCoding,
@@ -56,36 +57,31 @@ export function HomePage(): JSX.Element {
 
   const [transactionResponse, setTransactionResponse] = useState<Bundle>();
   const [labOrder, setLabOrder] = useState<ServiceRequest>();
-  const [createBundleError, setCreateBundleError] = useState<any>();
+  const [createError, setCreateError] = useState<{ generic?: unknown; validation?: LabOrderInputErrors } | undefined>();
 
   const handleCreateOrderBundle = async (): Promise<void> => {
     try {
       const { transactionResponse, serviceRequest } = await createOrderBundle();
-      setCreateBundleError(undefined);
+      setCreateError(undefined);
       setLabOrder(serviceRequest);
       setTransactionResponse(transactionResponse);
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
       setLabOrder(undefined);
       setTransactionResponse(undefined);
-      setCreateBundleError(e);
+      if (err instanceof LabOrderValidationError && err.errors) {
+        setCreateError({ validation: err.errors });
+      } else {
+        setCreateError({ generic: err });
+      }
     }
   };
 
-  function displayError(error: any): React.ReactNode {
-    if (error instanceof LabOrderValidationError) {
-      return (
-        <ul>
-          {Object.entries(error.errors).map(([name, value]) => (
-            <li key={name}>
-              {name} - {JSON.stringify(value)}
-            </li>
-          ))}
-        </ul>
-      );
-    } else {
+  function displayGenericError(error: unknown): React.ReactNode {
+    if (error instanceof Error) {
       return error.toString();
     }
+    return String(error);
   }
 
   return (
@@ -93,7 +89,7 @@ export function HomePage(): JSX.Element {
       <Container size="md">
         <Panel>
           <Stack gap="md">
-            <Input.Wrapper label="Requester" required>
+            <Input.Wrapper label="Requester" required error={createError?.validation?.requester?.message}>
               <ResourceInput<Practitioner>
                 resourceType="Practitioner"
                 name="Requester"
@@ -101,13 +97,14 @@ export function HomePage(): JSX.Element {
                 searchCriteria={{ identifier: `${NPI_SYSTEM}|` }}
               />
             </Input.Wrapper>
-            <Input.Wrapper label="Patient" required>
+            <Input.Wrapper label="Patient" required error={createError?.validation?.patient?.message}>
               <ResourceInput<Patient> resourceType="Patient" name="patient" onChange={setPatient} />
             </Input.Wrapper>
-            <PerformingLabInput patient={patient} />
+            <PerformingLabInput patient={patient} error={createError?.validation?.performingLab} />
             <div>
               <AsyncAutocomplete<TestCoding>
                 required
+                error={createError?.validation?.selectedTests?.message}
                 label="Selected tests"
                 disabled={!state.performingLab}
                 maxValues={10}
@@ -118,7 +115,12 @@ export function HomePage(): JSX.Element {
               {state.selectedTests.length > 0 && (
                 <Group mt="md" gap="md" align="flex-start" wrap="wrap">
                   {state.selectedTests.map((test) => (
-                    <TestMetadataCardInput key={test.code} test={test} metadata={state.testMetadata[test.code]} />
+                    <TestMetadataCardInput
+                      key={test.code}
+                      test={test}
+                      metadata={state.testMetadata[test.code]}
+                      error={createError?.validation?.testMetadata?.[test.code]}
+                    />
                   ))}
                 </Group>
               )}
@@ -139,6 +141,7 @@ export function HomePage(): JSX.Element {
               <div>
                 <Radio.Group
                   value={state.billingInformation.billTo}
+                  error={createError?.validation?.billingInformation?.billTo?.message}
                   onChange={(newBillTo) => {
                     updateBillingInformation({ billTo: newBillTo as BillingInformation['billTo'] });
                   }}
@@ -152,7 +155,9 @@ export function HomePage(): JSX.Element {
                   </Stack>
                 </Radio.Group>
               </div>
-              {patient && <CoverageInput patient={patient} />}
+              {patient && (
+                <CoverageInput patient={patient} error={createError?.validation?.billingInformation?.patientCoverage} />
+              )}
             </Group>
             <TextInput label="Order notes" onChange={(e) => setOrderNotes(e.currentTarget.value)} />
             <DateTimeInput
@@ -200,11 +205,10 @@ export function HomePage(): JSX.Element {
                   <Code block>{JSON.stringify(transactionResponse, null, 2)}</Code>
                 </>
               )}
-              {createBundleError && (
+              {Boolean(createError?.generic) && (
                 <>
                   <Text>Create bundle error:</Text>
-                  {displayError(createBundleError)}
-                  {/* <Code block>{createBundleError.toString()}</Code> */}
+                  {displayGenericError(createError?.generic)}
                 </>
               )}
             </div>
