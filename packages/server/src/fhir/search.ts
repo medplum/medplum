@@ -564,6 +564,12 @@ function getSearchLinks(
 
   if (searchRequest.count > 0 && entries?.length) {
     if (canUseCursorLinks(searchRequest)) {
+      console.assert(
+        entries[entries.length - 1].resource?.meta?.lastUpdated !== nextResource?.meta?.lastUpdated,
+        `Cursor fails to make progress\n%o\n%o`,
+        entries[entries.length - 1],
+        nextResource
+      );
       buildSearchLinksWithCursor(searchRequest, nextResource, result);
     } else {
       buildSearchLinksWithOffset(searchRequest, nextResource, result);
