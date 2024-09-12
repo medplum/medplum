@@ -946,6 +946,46 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
   });
 
+  test('Conditional interactions', async () => {
+    const patientIdentifier = randomUUID();
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      identifier: [{ value: patientIdentifier }],
+    });
+
+    const newIdentifier = randomUUID();
+    const bundle = await processBatch(req, repo, router, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:' + randomUUID(),
+          request: {
+            method: 'PUT',
+            url: `Patient?identifier=${patientIdentifier}`,
+          },
+          resource: patient,
+        },
+        {
+          fullUrl: 'urn:uuid:' + randomUUID(),
+          request: {
+            method: 'PUT',
+            url: 'Patient?identifier=' + newIdentifier,
+          },
+          resource: { resourceType: 'Patient', identifier: [{ value: newIdentifier }] },
+        },
+        {
+          fullUrl: 'urn:uuid:' + randomUUID(),
+          request: {
+            method: 'DELETE',
+            url: 'Patient?identifier=' + randomUUID(),
+          },
+        },
+      ],
+    });
+    expect(bundle.entry?.map((e) => e.response?.status)).toEqual(['200', '201', '200']);
+  });
+
   describe('Process Transactions', () => {
     test('Embedded urn:uuid', async () => {
       const bundle = await processBatch(req, repo, router, {
