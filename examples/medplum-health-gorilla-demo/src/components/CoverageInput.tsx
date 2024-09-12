@@ -1,6 +1,7 @@
 import { ActionIcon, Divider, Group, Input, List, ListItem, rem, Text } from '@mantine/core';
-import { BillingInformation, useHealthGorillaLabOrderContext } from '@medplum-ee/hg-client';
 import { Coverage, Patient } from '@medplum/fhirtypes';
+import { BillingInformation } from '@medplum/health-gorilla-core';
+import { useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
 import { IconArrowDown, IconArrowUp } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 

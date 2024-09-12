@@ -1,5 +1,6 @@
 import { Card, Radio, Stack, Text, TextInput } from '@mantine/core';
-import { TestCoding, TestMetadata, useHealthGorillaLabOrderContext } from '@medplum-ee/hg-client';
+import { TestCoding } from '@medplum/health-gorilla-core';
+import { TestMetadata, useHealthGorillaLabOrderContext } from '@medplum/health-gorilla-react';
 import { QuestionnaireForm } from '@medplum/react';
 
 export type TestMetadataCardInputProps = { test: TestCoding; metadata: TestMetadata | undefined };
