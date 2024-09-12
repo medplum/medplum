@@ -241,7 +241,7 @@ class BatchProcessor {
 
     switch (interaction) {
       case 'create':
-        // Ensure that resources to be created have a
+        // Ensure that resources to be created have an ID assigned
         return this.resolveCreateIdentity(entry);
       case 'delete':
       case 'update':
@@ -284,13 +284,25 @@ class BatchProcessor {
       const method = entry.request.method;
 
       // Resolve conditional update via search
-      const resolved = await this.repo.searchResources(parseSearchRequest(entry.request.url));
-      if (resolved.length !== 1) {
-        if (resolved.length === 0 && method === 'DELETE') {
-          return undefined;
-        }
+      const searchReq = parseSearchRequest(entry.request.url);
+      searchReq.count = 2;
+      searchReq.offset = 0;
+      searchReq.sortRules = undefined;
 
-        if (resolved.length === 0 && method === 'PUT') {
+      const [resolved, duplicate] = await this.repo.searchResources(searchReq);
+      if (resolved && !duplicate) {
+        const reference = getReferenceString(resolved);
+        entry.request.url = reference;
+        if (entry.resource) {
+          entry.resource.id = resolved.id;
+        }
+        return { placeholder: entry.fullUrl, reference };
+      }
+
+      if (!resolved) {
+        if (method === 'DELETE') {
+          return undefined;
+        } else if (method === 'PUT') {
           if (entry.resource) {
             if (entry.resource.id) {
               throw new OperationOutcomeError(badRequest('Cannot provide ID for create by update'));
@@ -304,15 +316,14 @@ class BatchProcessor {
           }
           return undefined;
         }
-
-        throw new OperationOutcomeError(
-          badRequest(`Conditional ${entry.request.method} matched ${resolved.length} resources`, path + '.request.url')
-        );
       }
 
-      const reference = getReferenceString(resolved[0]);
-      entry.request.url = reference;
-      return { placeholder: entry.fullUrl, reference };
+      throw new OperationOutcomeError(
+        badRequest(
+          `Conditional ${entry.request.method} matched ${duplicate ? 'multiple' : 'zero'} resources`,
+          path + '.request.url'
+        )
+      );
     }
 
     if (entry.request?.url.includes('/')) {
@@ -479,13 +490,6 @@ class BatchProcessor {
   private rewriteIdsInString(input: string): string {
     const match = localBundleReference.exec(input);
     if (match) {
-      if (!this.isTransaction()) {
-        const event: LogEvent = {
-          type: 'warn',
-          message: 'Invalid internal reference in batch',
-        };
-        this.router.dispatchEvent(event);
-      }
       const fullUrl = match[0];
       const referenceString = this.resolvedIdentities[fullUrl];
       return referenceString ? input.replaceAll(fullUrl, referenceString) : input;
