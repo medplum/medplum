@@ -1,16 +1,18 @@
 import { Bundle, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
-import { getMissingRequiredQuestionnaireItems } from './aoe';
+import { getMissingRequiredQuestionnaireItems, questionnaireItemIterator } from './aoe';
 import { indexStructureDefinitionBundle } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 
-type AoeTestingLinkId =
-  | 'date'
-  | 'fasting'
-  | 'specimen-source'
-  | 'additional-testing'
-  | 'medications'
-  | 'family-history'
-  | 'translator';
+const AoeTestingLinkIds = [
+  'date',
+  'fasting',
+  'specimen-source',
+  'additional-testing',
+  'medications',
+  'family-history',
+  'translator',
+] as const;
+type AoeTestingLinkId = (typeof AoeTestingLinkIds)[number];
 function generateAoeTestingQuestionnaire(): Questionnaire {
   // Questionnaire from HGDX LabCorp (f-388554647b89801ea5e8320b), AOE Testing (aoe_testing) test
   return {
@@ -267,6 +269,42 @@ function generateAoeTestingQuestionnaire(): Questionnaire {
 
 type QuestionnaireResponseWithLinkIds<LinkId extends string> = QuestionnaireResponse & { item: { linkId: LinkId }[] };
 
+describe('questionnaireItemIterator', () => {
+  test('empty Questionaire.item', () => {
+    expect(questionnaireItemIterator(undefined).next().done).toBe(true);
+  });
+
+  test('flat Questionaire.item', () => {
+    const q = generateAoeTestingQuestionnaire();
+    expect(Array.from(questionnaireItemIterator(q.item))).toHaveLength(AoeTestingLinkIds.length);
+  });
+
+  test('flat Questionaire.item', () => {
+    const q: Questionnaire = {
+      resourceType: 'Questionnaire',
+      status: 'active',
+      item: [
+        {
+          linkId: 'a',
+          type: 'group',
+          item: [
+            {
+              linkId: 'b',
+              type: 'group',
+              item: [
+                {
+                  linkId: 'c',
+                  type: 'string',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(Array.from(questionnaireItemIterator(q.item)).map((i) => i.linkId)).toEqual(['a', 'b', 'c']);
+  });
+});
 describe('getMissingRequiredQuestionnaireItems', () => {
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);

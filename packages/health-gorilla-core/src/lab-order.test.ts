@@ -23,7 +23,7 @@ import {
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
 } from './constants';
-import { LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
+import { BillTo, LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
 import { expectToBeDefined } from './test-utils';
 
 interface TestContext {
@@ -151,6 +151,7 @@ describe('createLabOrderBundle', () => {
       performingLab,
       selectedTests,
       testMetadata,
+      orderNotes: 'order notes',
       billingInformation: {
         billTo: 'patient',
       },
@@ -180,6 +181,7 @@ describe('createLabOrderBundle', () => {
     const testMetadata: Record<string, LabOrderTestMetadata> = {};
     for (const code of TEST_CODES) {
       selectedTests.push({ code } as TestCoding);
+      testMetadata[code] = { notes: 'test notes' };
     }
 
     const bundle = createLabOrderBundle({
@@ -347,6 +349,7 @@ describe('createLabOrderBundle', () => {
         performingLab,
         selectedTests,
         testMetadata,
+        orderNotes: 'order notes',
         billingInformation: { billTo: 'customer-account' },
       };
 
@@ -374,6 +377,20 @@ describe('createLabOrderBundle', () => {
 
       const errors = validateLabOrderInputs(inputs);
       expectToBeDefined(errors?.testMetadata?.[TEST_CODES[0]]?.priority);
+      expect(isValidLabOrderInputs(inputs)).toBe(false);
+      expect(() => assertLabOrderInputs(inputs)).toThrow();
+    });
+
+    test<TestContext>('Invalid billTo', async ({ patient, requester, performingLab }) => {
+      const inputs: PartialLabOrderInputs = {
+        patient,
+        requester,
+        performingLab,
+        billingInformation: { billTo: 'xxx' as unknown as BillTo },
+      };
+
+      const errors = validateLabOrderInputs(inputs);
+      expectToBeDefined(errors?.billingInformation?.billTo);
       expect(isValidLabOrderInputs(inputs)).toBe(false);
       expect(() => assertLabOrderInputs(inputs)).toThrow();
     });
