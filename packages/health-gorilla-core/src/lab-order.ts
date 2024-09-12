@@ -160,7 +160,11 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
 
   if (!isBillTo(args.billingInformation?.billTo)) {
     errors.billingInformation ??= {};
-    errors.billingInformation.billTo = { message: `Bill to must be one of: ${BillToOptions.join(', ')}` };
+    if (!args.billingInformation?.billTo) {
+      errors.billingInformation.billTo = { message: 'Bill to is required' };
+    } else {
+      errors.billingInformation.billTo = { message: `Bill to must be one of: ${BillToOptions.join(', ')}` };
+    }
   } else if (args.billingInformation.billTo === 'insurance') {
     const coverageCount = args.billingInformation.patientCoverage?.length ?? 0;
     if (coverageCount < 1 || coverageCount > 3) {
