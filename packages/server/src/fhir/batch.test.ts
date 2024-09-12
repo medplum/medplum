@@ -543,6 +543,43 @@ describe('Batch and Transaction processing', () => {
   });
 
   test('Conditional update in transaction', async () => {
+    const patientIdentifier = randomUUID();
+
+    const createdPatient = await request(app)
+      .post('/fhir/R4/Patient')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({ resourceType: 'Patient', identifier: [{ value: patientIdentifier }] });
+    expect(createdPatient.status).toEqual(201);
+    const patient = createdPatient.body;
+
+    const tx: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:' + patientIdentifier,
+          request: {
+            method: 'PUT',
+            url: 'Patient?identifier=' + patientIdentifier,
+          },
+          resource: patient,
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(tx);
+
+    expect(res.status).toEqual(200);
+    const updateResult = res.body.entry[0].response as BundleEntryResponse;
+    expect(updateResult.status).toEqual('200');
+  });
+
+  test('Conditional update (create-as-update) in transaction', async () => {
     const careTeamIdentifier = randomUUID();
     const encounterIdentifier = randomUUID();
     const conditionIdentifier = randomUUID();
