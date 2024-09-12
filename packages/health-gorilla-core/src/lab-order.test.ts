@@ -24,6 +24,7 @@ import {
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
 } from './constants';
 import { LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
+import { expectToBeDefined } from './test-utils';
 
 interface TestContext {
   medplum: MedplumClient;
@@ -469,8 +470,4 @@ function expectBundleResultSuccessful(bundle: Bundle): boolean {
     throw new Error('Empty bundle');
   }
   return bundle.entry.every((e) => e.response?.status.startsWith('2'));
-}
-
-export function expectToBeDefined<T>(value: T | undefined): asserts value is T {
-  expect(value).toBeDefined();
 }

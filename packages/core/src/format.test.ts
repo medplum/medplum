@@ -386,8 +386,16 @@ test('Format Coding', () => {
   expect(formatCoding(undefined)).toBe('');
   expect(formatCoding({})).toBe('');
   expect(formatCoding({ display: 'foo' })).toBe('foo');
-  expect(formatCoding({ code: 'foo' })).toBe('foo');
+  expect(formatCoding({ code: 'CODE' })).toBe('CODE');
   expect(formatCoding({ code: { foo: 'bar' } as unknown as string })).toBe('');
+
+  // includeCode true
+  expect(formatCoding(undefined, true)).toBe('');
+  expect(formatCoding({}, true)).toBe('');
+  expect(formatCoding({ display: 'foo', code: 'CODE' }, true)).toBe('foo (CODE)');
+  expect(formatCoding({ display: 'foo' }, true)).toBe('foo');
+  expect(formatCoding({ code: 'CODE' }, true)).toBe('CODE');
+  expect(formatCoding({ code: { foo: 'bar' } as unknown as string }, true)).toBe('');
 });
 
 test('Format Observation value', () => {

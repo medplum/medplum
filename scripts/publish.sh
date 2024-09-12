@@ -13,6 +13,7 @@ PACKAGES=(
   "fhir-router"
   "fhirtypes"
   "health-gorilla-core"
+  "health-gorilla-react"
   "hl7"
   "mock"
   "react"
