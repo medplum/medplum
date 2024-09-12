@@ -30,7 +30,7 @@
     "@medplum/definitions": "3.2.11",
     "@medplum/fhirtypes": "3.2.11",
     "@types/json-schema": "7.0.15",
-    "@types/pg": "8.11.8",
+    "@types/pg": "8.11.9",
     "@types/unzipper": "0.10.10",
     "fast-xml-parser": "4.5.0",
     "fhirpath": "3.15.2",
