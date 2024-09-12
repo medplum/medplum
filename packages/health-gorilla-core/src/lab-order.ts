@@ -1,4 +1,4 @@
-import { createReference, deepClone, generateId, isReference, SNOMED } from '@medplum/core';
+import { createReference, deepClone, formatCoding, generateId, isReference, SNOMED } from '@medplum/core';
 import {
   Bundle,
   Coverage,
@@ -78,7 +78,7 @@ export type PartialLabOrderInputs = Partial<
   }
 >;
 
-type InputError = { message: string };
+export type InputError = { message: string };
 
 export type LabOrderInputErrors = {
   patient?: InputError;
@@ -135,7 +135,7 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
         errors.testMetadata ??= {};
         errors.testMetadata[test.code] ??= {};
         errors.testMetadata[test.code].priority = {
-          message: `Priority for ${formatTestCoding(test)} must be one of ${PRIORITY_VALUES.join(', ')}`,
+          message: `Priority for ${formatCoding(test, true)} must be one of ${PRIORITY_VALUES.join(', ')}`,
         };
       }
 
@@ -151,7 +151,7 @@ export function validateLabOrderInputs(args: PartialLabOrderInputs): LabOrderInp
           errors.testMetadata ??= {};
           errors.testMetadata[test.code] ??= {};
           errors.testMetadata[test.code].aoeResponses = {
-            message: `Missing required AOE responses for ${formatTestCoding(test)}: ${missing.join(', ')}`,
+            message: `Missing required AOE responses for ${formatCoding(test, true)}: ${missing.join(', ')}`,
           };
         }
       }
@@ -343,12 +343,4 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
   bundle.entry = bundleEntry;
 
   return bundle;
-}
-
-function formatTestCoding(test: TestCoding): string {
-  if (test.display) {
-    return `${test.display}${test.code ? ' (' + test.code + ')' : ''}`;
-  }
-
-  return test.code ?? '';
 }

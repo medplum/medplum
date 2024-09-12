@@ -31,6 +31,11 @@ export interface AsyncAutocompleteProps<T>
   readonly toOption: (item: T) => AsyncAutocompleteOption<T>;
   readonly loadOptions: (input: string, signal: AbortSignal) => Promise<T[]>;
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
+  readonly pillComponent?: (props: {
+    item: AsyncAutocompleteOption<T>;
+    disabled?: boolean;
+    onRemove: () => void;
+  }) => JSX.Element;
   readonly emptyComponent?: (props: { search: string }) => JSX.Element | ReactNode;
   readonly onChange: (item: T[]) => void;
   readonly onCreate?: (input: string) => T;
@@ -59,6 +64,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     toOption,
     loadOptions,
     itemComponent,
+    pillComponent,
     emptyComponent,
     onChange,
     onCreate,
@@ -81,6 +87,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const [selected, setSelected] = useState<AsyncAutocompleteOption<T>[]>(defaultItems.map(toOption));
   const [options, setOptions] = useState<AsyncAutocompleteOption<T>[]>([]);
   const ItemComponent = itemComponent ?? DefaultItemComponent;
+  const PillComponent = pillComponent ?? DefaultPillComponent;
   const EmptyComponent = emptyComponent ?? DefaultEmptyComponent;
 
   const searchRef = useRef<string>();
@@ -294,11 +301,13 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         >
           <Pill.Group data-testid={AsyncAutocompleteTestIds.selectedItems}>
             {selected.map((item) => (
-              <Pill key={item.value} withRemoveButton={!disabled} onRemove={() => handleValueRemove(item)}>
-                {item.label}
-              </Pill>
+              <PillComponent
+                key={item.value}
+                item={item}
+                disabled={disabled}
+                onRemove={() => handleValueRemove(item)}
+              />
             ))}
-
             {!disabled && (maxValues === undefined || maxValues === 0 || selected.length < maxValues) && (
               <Combobox.EventsTarget>
                 <PillsInput.Field
@@ -360,6 +369,22 @@ function DefaultItemComponent<T>(props: AsyncAutocompleteOption<T>): JSX.Element
       {props.active && <IconCheck size={12} />}
       <span>{props.label}</span>
     </Group>
+  );
+}
+
+function DefaultPillComponent<T>({
+  item,
+  disabled,
+  onRemove,
+}: {
+  item: AsyncAutocompleteOption<T>;
+  disabled?: boolean;
+  onRemove: () => void;
+}): JSX.Element {
+  return (
+    <Pill withRemoveButton={!disabled} onRemove={onRemove}>
+      {item.label}
+    </Pill>
   );
 }
 

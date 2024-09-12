@@ -423,10 +423,17 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
 /**
  * Formats a Coding element as a string.
  * @param coding - A FHIR Coding element
+ * @param includeCode - If true, includes both the code and display if available
  * @returns The coding as a string.
  */
-export function formatCoding(coding: Coding | undefined): string {
-  return ensureString(coding?.display) ?? ensureString(coding?.code) ?? '';
+export function formatCoding(coding: Coding | undefined, includeCode?: boolean): string {
+  const display = ensureString(coding?.display);
+  if (display) {
+    const code = includeCode ? ensureString(coding?.code) : undefined;
+    return `${display}${code ? ' (' + code + ')' : ''}`;
+  }
+
+  return ensureString(coding?.code) ?? '';
 }
 
 /**
