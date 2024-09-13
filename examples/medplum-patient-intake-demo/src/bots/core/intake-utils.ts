@@ -6,6 +6,7 @@ import {
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
   MedplumClient,
+  SNOMED,
 } from '@medplum/core';
 import {
   Address,
@@ -500,6 +501,38 @@ export async function addImmunization(
       'vaccine-code': `${code.system}|${code.code}`,
       patient: getReferenceString(patient),
       date: occurrenceDateTime,
+    }
+  );
+}
+
+/**
+ * Adds a CareTeam resource associating the patient with a pharmacy
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the care team
+ * @param pharmacy - The pharmacy to be added to the care team
+ */
+export async function addPharmacy(
+  medplum: MedplumClient,
+  patient: Patient,
+  pharmacy: Reference<Organization>
+): Promise<void> {
+  await medplum.upsertResource(
+    {
+      resourceType: 'CareTeam',
+      status: 'proposed',
+      name: 'Patient Preferred Pharmacy',
+      subject: createReference(patient),
+      participant: [
+        {
+          member: pharmacy,
+          role: [{ coding: [{ system: SNOMED, code: '76166008', display: 'Practical aid (pharmacy) (occupation)' }] }],
+        },
+      ],
+    },
+    {
+      name: 'Patient Preferred Pharmacy',
+      subject: getReferenceString(patient),
     }
   );
 }

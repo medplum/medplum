@@ -1,5 +1,5 @@
 import { BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Organization, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addAllergy,
   addCondition,
@@ -9,6 +9,7 @@ import {
   addImmunization,
   addLanguage,
   addMedication,
+  addPharmacy,
   consentCategoryMapping,
   consentPolicyRuleMapping,
   consentScopeMapping,
@@ -211,6 +212,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
+  }
+
+  // Handle preferred pharmacy
+
+  const preferredPharmacyReference = answers['preferred-pharmacy-reference']?.valueReference;
+  if (preferredPharmacyReference) {
+    await addPharmacy(medplum, patient, preferredPharmacyReference as Reference<Organization>);
   }
 
   // Handle consents
