@@ -221,7 +221,7 @@ export interface PhotonWebhook {
 type BasePhotonEvent = {
   id: string;
   type: OrderEventType | PrescriptionEventType;
-  specversion: number;
+  specversion: string;
   datacontenttype: string;
   time: string;
   subject: string;
@@ -328,12 +328,13 @@ interface PrescriptionCreatedData extends PrescriptionData {
   dispenseUnit: string;
   dispenseAsWritten: boolean;
   refillsAllowed: number;
+  fillsAllowed?: number;
   daysSupply: number;
   instructions: string;
   effectiveDate: string;
   expirationDate: string;
   prescriberId: string;
-  medicationId: string;
+  treatmentId: string;
   patient: {
     id: string;
     externalId: string;

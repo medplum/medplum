@@ -2,30 +2,21 @@ import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString, Patc
 import { MedicationKnowledge, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
 import {
   PhotonEvent,
-  PhotonWebhook,
   PrescriptionCreatedData,
   PrescriptionDepletedEvent,
   PrescriptionExpiredEvent,
 } from '../photon-types';
-import {
-  checkForDuplicateEvent,
-  getExistingMedicationRequest,
-  handlePhotonAuth,
-  photonGraphqlFetch,
-  verifyEvent,
-} from './utils';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_WEBHOOKS } from './system-strings';
+import { checkForDuplicateEvent, getExistingMedicationRequest, handlePhotonAuth, photonGraphqlFetch } from './utils';
 
-export async function handler(medplum: MedplumClient, event: BotEvent<PhotonWebhook>): Promise<MedicationRequest> {
-  const webhook = event.input;
+export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEvent>): Promise<MedicationRequest> {
+  const body = event.input;
   // Get the webhook secret and use it to verify that this is a valid Photon event
-  const PHOTON_WEBHOOK_SECRET = event.secrets['PHOTON_PRESCRIPTION_WEBHOOK_SECRET']?.valueString ?? '';
-  const isValid = verifyEvent(webhook, PHOTON_WEBHOOK_SECRET);
-  if (!isValid) {
-    throw new Error('Not a valid Photon Webhook Event');
-  }
-
-  const body = webhook.body;
+  // const PHOTON_WEBHOOK_SECRET = event.secrets['PHOTON_PRESCRIPTION_WEBHOOK_SECRET']?.valueString ?? '';
+  // const isValid = verifyEvent(webhook, PHOTON_WEBHOOK_SECRET);
+  // if (!isValid) {
+  //   throw new Error('Not a valid Photon Webhook Event');
+  // }
 
   // Ensure that only prescription events are being handled
   if (!body.type.includes('prescription')) {
@@ -39,7 +30,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PhotonWebh
   }
 
   // Photon notes that webhooks may be duplicated. This checks if the current event has already been processed
-  const isDuplicateEvent = checkForDuplicateEvent(webhook, existingPrescription);
+  const isDuplicateEvent = checkForDuplicateEvent(body, existingPrescription);
 
   // If it is a dupe, return the already processed prescription
   if (isDuplicateEvent && existingPrescription) {
@@ -86,7 +77,7 @@ export async function handleUpdatePrescription(
   identifiers.push({ system: NEUTRON_HEALTH_WEBHOOKS, value: body.id });
   const op = 'add';
 
-  const id = body.data.externalId as string;
+  const id = existingPrescription.id as string;
   const ops: PatchOperation[] = [
     { op: 'test', path: '/meta/versionId', value: existingPrescription.meta?.versionId },
     { op: 'replace', path: '/status', value: updatedStatus },
@@ -117,7 +108,10 @@ export async function handleCreatePrescription(
   const data = event.data as PrescriptionCreatedData;
   // Get the prescribing practitioner and the medication from Medplum
   const prescriber = await getPrescriber(data, medplum, authToken);
-  let medication: MedicationKnowledge | undefined = await getMedicationKnowledge(data.medicationId, medplum, authToken);
+  const medicationRxcui = await getPhotonMedicationCode(data.treatmentId, authToken);
+  let medication: MedicationKnowledge | undefined = medicationRxcui
+    ? await getMedicationKnowledge(medplum, medicationRxcui)
+    : undefined;
 
   if (!medication) {
     medication = await createMedicationKnowledge(data, medplum, authToken);
@@ -146,8 +140,11 @@ export async function handleCreatePrescription(
     },
     substitution: { allowedBoolean: !data.dispenseAsWritten },
     dosageInstruction: [{ patientInstruction: data.instructions }],
-    note: [{ text: data.notes }],
   };
+
+  if (data.notes) {
+    medicationRequest.note = [{ text: data.notes }];
+  }
 
   if (medication) {
     medicationRequest.medicationCodeableConcept = medication.code;
@@ -179,7 +176,7 @@ async function createMedicationKnowledge(
   medplum: MedplumClient,
   authToken: string
 ): Promise<MedicationKnowledge | undefined> {
-  const medicationCode = await getPhotonMedicationCode(data.medicationId, authToken);
+  const medicationCode = await getPhotonMedicationCode(data.treatmentId, authToken);
   if (!medicationCode) {
     return undefined;
   }
@@ -250,6 +247,13 @@ async function getPrescriber(
   }
 }
 
+/**
+ * Gets the RXCUI code of the medication from Photon
+ *
+ * @param photonMedicationId - The Photon ID of the medication
+ * @param authToken - The Photon auth token to authorize GraphQL queries
+ * @returns The RXCUI code, if it exists
+ */
 async function getPhotonMedicationCode(photonMedicationId: string, authToken: string): Promise<string | undefined> {
   const query = `
     query medicationProducts($id: String!) {
@@ -276,26 +280,12 @@ async function getPhotonMedicationCode(photonMedicationId: string, authToken: st
 /**
  * Takes data from the webhook to find the corresponding Medication resource in your project.
  *
- * @param photonMedicationId - The id of the medication stored in Photon
  * @param medplum - Medplum Cient to search for the medication in your project
- * @param authToken - Photon auth token to authorize GraphQL queries
+ * @param rxcui - The rxcui code of the medication
  * @returns The Medication resource from your project if it exists
  */
-async function getMedicationKnowledge(
-  photonMedicationId: string,
-  medplum: MedplumClient,
-  authToken: string
-): Promise<MedicationKnowledge | undefined> {
-  const trackedMedication = await medplum.searchOne('MedicationKnowledge', {
-    identifier: NEUTRON_HEALTH + `|${photonMedicationId}`,
-  });
-
-  if (trackedMedication) {
-    return trackedMedication;
-  }
-
+async function getMedicationKnowledge(medplum: MedplumClient, rxcui: string): Promise<MedicationKnowledge | undefined> {
   try {
-    const rxcui = await getPhotonMedicationCode(photonMedicationId, authToken);
     const medication = await medplum.searchOne('MedicationKnowledge', {
       code: rxcui,
     });

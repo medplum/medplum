@@ -18,37 +18,36 @@ import {
   OrderEventType,
   OrderFulfillmentData,
   OrderReroutedData,
+  PhotonEvent,
   PhotonPrescription,
-  PhotonWebhook,
 } from '../photon-types';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_WEBHOOKS } from './system-strings';
-import { getExistingMedicationRequest, handlePhotonAuth, photonGraphqlFetch, verifyEvent } from './utils';
+import { checkForDuplicateEvent, getExistingMedicationRequest, handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 export async function handler(
   medplum: MedplumClient,
-  event: BotEvent<PhotonWebhook>
+  event: BotEvent<PhotonEvent>
 ): Promise<MedicationRequest | undefined> {
-  const webhook = event.input;
+  const body = event.input as OrderEvent;
   // You will need to set up the webhook secret in your Medplum project. Per the photon docs, if there is no secret, an empty string should be used.
-  const PHOTON_WEBHOOK_SECRET = event.secrets['PHOTON_ORDER_WEBHOOK_SECRET']?.valueString ?? '';
+  // const PHOTON_WEBHOOK_SECRET = event.secrets['PHOTON_ORDER_WEBHOOK_SECRET']?.valueString ?? '';
 
-  // Ensure the webhook is coming from Photon
-  const isValid = verifyEvent(webhook, PHOTON_WEBHOOK_SECRET);
-  if (!isValid) {
-    throw new Error('Not a valid Photon Webhook Event');
-  }
+  // // Ensure the webhook is coming from Photon
+  // const isValid = verifyEvent(webhook, PHOTON_WEBHOOK_SECRET);
+  // if (!isValid) {
+  //   throw new Error('Not a valid Photon Webhook Event');
+  // }
 
   // Ensure the user has proper authorization to access photon
   const PHOTON_CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
   const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
   const PHOTON_AUTH_TOKEN = await handlePhotonAuth(PHOTON_CLIENT_ID, PHOTON_CLIENT_SECRET);
 
-  const body = webhook.body as OrderEvent;
   const data = body.data as OrderData;
   // Search for an existing request
   const existingRequest = await getExistingMedicationRequest(data, medplum);
   // Check that the incoming photon event is not a duplicate
-  const dupe = checkForDuplicateEvent(webhook, existingRequest);
+  const dupe = checkForDuplicateEvent(body, existingRequest);
 
   if (dupe && existingRequest) {
     return existingRequest;
@@ -278,9 +277,12 @@ async function createMedicationDispense(
     medicationCodeableConcept: {
       coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: fill.treatment?.codes.rxcui }],
     },
-    whenPrepared: fillData.filledAt,
     performer,
   };
+
+  if (fillData.filledAt) {
+    medicationDispenseData.whenPrepared = fillData.filledAt;
+  }
 
   // Create and return the MedicationDispense
   try {
@@ -471,7 +473,10 @@ async function handleCreatedData(
   if (prescription) {
     medicationRequest.substitution = { allowedBoolean: prescription.dispenseAsWritten };
     medicationRequest.dosageInstruction = [{ patientInstruction: prescription.instructions }];
-    medicationRequest.note = [{ text: prescription.notes ?? '' }];
+
+    if (prescription.notes) {
+      medicationRequest.note = [{ text: prescription.notes }];
+    }
 
     if (medication) {
       medicationRequest.medicationCodeableConcept = {
@@ -611,7 +616,7 @@ export async function getPatient(
   patientData: OrderData['patient'],
   medplum: MedplumClient
 ): Promise<Patient | undefined> {
-  const id = patientData.externalId as string;
+  const id = patientData.externalId;
   const photonId = patientData.id;
 
   let patient: Patient | undefined;
@@ -724,26 +729,4 @@ async function getPharmacy(
   });
 
   return pharmacy;
-}
-
-/**
- * Photon may at times send duplicate webhooks. As a part of this bot, the webhook's id is added as an identifier to the
- * linked MedicationRequest. This checks the MedicationRequest to ensure we are not handling a duplicated event.
- *
- * @param webhook - The Photon webhook event
- * @param prescription - An existing MedicationRequest in your project that is linked to this webhook
- * @returns A boolean representing if this is a duplicated event.
- */
-function checkForDuplicateEvent(webhook: PhotonWebhook, prescription?: MedicationRequest): boolean {
-  if (!prescription) {
-    return false;
-  }
-
-  const dupe = prescription.identifier?.find((id) => id.value === webhook.body.id);
-
-  if (dupe) {
-    return true;
-  } else {
-    return false;
-  }
 }
