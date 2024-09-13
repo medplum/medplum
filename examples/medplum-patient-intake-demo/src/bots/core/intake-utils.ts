@@ -528,10 +528,6 @@ export async function addPharmacy(
           member: pharmacy,
           role: [{ coding: [{ system: SNOMED, code: '76166008', display: 'Practical aid (pharmacy) (occupation)' }] }],
         },
-        {
-          member: createReference(patient),
-          role: [{ coding: [{ system: SNOMED, code: '116154003', display: 'Patient (person)' }] }],
-        },
       ],
     },
     {

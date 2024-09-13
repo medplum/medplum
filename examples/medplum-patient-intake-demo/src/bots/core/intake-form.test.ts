@@ -413,8 +413,8 @@ describe('Intake form', async () => {
       expect(careTeam.length).toEqual(1);
       expect(careTeam[0].status).toEqual('proposed');
       expect(careTeam[0].name).toEqual('Patient Preferred Pharmacy');
+      expect(careTeam[0].participant?.length).toEqual(1);
       expect(careTeam[0].participant?.[0].member?.reference).toEqual(getReferenceString(pharmacy));
-      expect(careTeam[0].participant?.[1].member?.reference).toEqual(getReferenceString(patient));
     });
   });
 
