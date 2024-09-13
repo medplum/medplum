@@ -1,5 +1,18 @@
-import { Bundle, Patient, Practitioner, Questionnaire, Resource, SearchParameter } from '@medplum/fhirtypes';
+import {
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+  MedplumClient,
+} from '@medplum/core';
+import { readJson as readDefinitionsJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import { Bundle, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
+import {
+  HEALTH_GORILLA_SYSTEM,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
+  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
+} from './constants';
 import {
   assertLabOrderInputs,
   createLabOrderBundle,
@@ -8,23 +21,10 @@ import {
   PartialLabOrderInputs,
   validateLabOrderInputs,
 } from './lab-order';
-import {
-  getReferenceString,
-  indexSearchParameterBundle,
-  indexStructureDefinitionBundle,
-  MedplumClient,
-} from '@medplum/core';
-import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import path from 'path';
-import { readFileSync } from 'fs';
-import {
-  HEALTH_GORILLA_SYSTEM,
-  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
-  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
-  MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
-} from './constants';
-import { BillTo, LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
 import { expectToBeDefined } from './test-utils';
+import { BillTo, LabOrderTestMetadata, LabOrganization, TestCoding } from './types';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 interface TestContext {
   medplum: MedplumClient;
@@ -78,25 +78,23 @@ const TEST_CODES_TO_AOES = {
 };
 
 describe('createLabOrderBundle', () => {
-  const testDataDir = path.resolve(__dirname, '__test__');
-
-  function readTestJson<T extends Resource>(testDataFilename: string): T {
-    return JSON.parse(readFileSync(path.resolve(testDataDir, testDataFilename), 'utf8')) as T;
-  }
-
   beforeAll(() => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    indexStructureDefinitionBundle(readDefinitionsJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readDefinitionsJson('fhir/r4/profiles-resources.json') as Bundle);
     for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
-      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+      indexSearchParameterBundle(readDefinitionsJson(filename) as Bundle<SearchParameter>);
     }
   });
+
+  function readJson(filename: string): any {
+    return JSON.parse(readFileSync(resolve(__dirname, filename), 'utf8'));
+  }
 
   beforeEach<TestContext>(async (ctx) => {
     const medplum = new MockClient();
     ctx.medplum = medplum;
 
-    const commonInputBundle = readTestJson('test-common-inputs.json') as Bundle;
+    const commonInputBundle = readJson('../dist/json/test-common-inputs.json') as Bundle;
     const result = await medplum.executeBatch(commonInputBundle);
 
     if (result.entry?.some((e) => !e.response?.status.startsWith('2'))) {
