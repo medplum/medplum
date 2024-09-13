@@ -57,7 +57,7 @@ export type DiagnosisCodeableConcept = Branded<
 >;
 
 export type BillingInformation = {
-  billTo: BillTo;
+  billTo?: BillTo;
   patientCoverage?: [] | [Coverage] | [Coverage, Coverage] | [Coverage, Coverage, Coverage];
 };
 

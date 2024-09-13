@@ -164,6 +164,19 @@ describe('useHealthGorilla', () => {
       testMetadata: { [test.code]: { aoeStatus: 'none' } },
     });
 
+    // set bill to
+    await act(async () => {
+      result.current.updateBillingInformation({ billTo: 'patient' });
+    });
+
+    expect(result.current.state).toEqual({
+      ...getDefaultState(),
+      performingLab,
+      selectedTests: [test],
+      testMetadata: { [test.code]: { aoeStatus: 'none' } },
+      billingInformation: { billTo: 'patient' },
+    });
+
     // Is valid order now
     expect(result.current.validateOrder()).toBeUndefined();
 
@@ -257,7 +270,7 @@ function getDefaultState(): HealthGorillaLabOrderState {
   return deepClone({
     performingLab: undefined,
     performingLabAccountNumber: undefined,
-    billingInformation: { billTo: 'patient' },
+    billingInformation: {},
     selectedTests: [],
     testMetadata: {},
     diagnoses: [],
