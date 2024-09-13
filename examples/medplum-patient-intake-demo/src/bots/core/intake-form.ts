@@ -6,6 +6,7 @@ import {
   addConsent,
   addCoverage,
   addFamilyMemberHistory,
+  addImmunization,
   addLanguage,
   addMedication,
   consentCategoryMapping,
@@ -180,6 +181,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
 
   // Handle medications
+
   const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
   for (const medication of medications) {
     await addMedication(medplum, patient, medication);
@@ -195,6 +197,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   const familyMemberHistory = getGroupRepeatedAnswers(questionnaire, response, 'family-member-history');
   for (const history of familyMemberHistory) {
     await addFamilyMemberHistory(medplum, patient, history);
+  }
+
+  // Handle vaccination history (immunizations)
+
+  const vaccinationHistory = getGroupRepeatedAnswers(questionnaire, response, 'vaccination-history');
+  for (const vaccine of vaccinationHistory) {
+    await addImmunization(medplum, patient, vaccine);
   }
 
   // Handle coverage

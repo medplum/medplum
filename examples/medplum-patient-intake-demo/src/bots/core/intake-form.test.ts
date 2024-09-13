@@ -252,6 +252,32 @@ describe('Intake form', async () => {
     });
   });
 
+  describe('Immunization', async () => {
+    test('add immunizations', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const immunizations = await medplum.searchResources('Immunization', {
+        patient: getReferenceString(patient),
+      });
+
+      expect(immunizations.length).toEqual(2);
+
+      expect(immunizations[0].vaccineCode?.coding?.[0].system).toEqual('http://hl7.org/fhir/sid/cvx');
+      expect(immunizations[0].vaccineCode?.coding?.[0].code).toEqual('197');
+      expect(immunizations[0].status).toEqual('completed');
+      expect(immunizations[0].occurrenceDateTime).toEqual('2024-02-01T14:00:00-07:00');
+
+      expect(immunizations[1].vaccineCode?.coding?.[0].system).toEqual('http://hl7.org/fhir/sid/cvx');
+      expect(immunizations[1].vaccineCode?.coding?.[0].code).toEqual('115');
+      expect(immunizations[1].status).toEqual('completed');
+      expect(immunizations[1].occurrenceDateTime).toEqual('2015-08-01T15:00:00-07:00');
+    });
+  });
+
   describe('Language information', async () => {
     test('add languages', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
