@@ -3387,7 +3387,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const pkceState = getRandomString();
     sessionStorage.setItem('pkceState', pkceState);
 
-    const codeVerifier = getRandomString();
+    const codeVerifier = getRandomString().slice(0, 128);
     sessionStorage.setItem('codeVerifier', codeVerifier);
 
     const arrayHash = await encryptSHA256(codeVerifier);

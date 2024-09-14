@@ -569,6 +569,9 @@ describe('Client', () => {
       );
       expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
 
+      const codeVerifier = sessionStorage.getItem('codeVerifier');
+      expect(codeVerifier).toHaveLength(128);
+
       const { searchParams } = new URL(result);
       expect(searchParams.get('response_type')).toBe('code');
       expect(searchParams.get('code_challenge')).not.toBeNull();
