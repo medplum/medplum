@@ -11,12 +11,8 @@ import { checkForDuplicateEvent, getExistingMedicationRequest, handlePhotonAuth,
 
 export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEvent>): Promise<MedicationRequest> {
   const body = event.input;
-  // Get the webhook secret and use it to verify that this is a valid Photon event
-  // const PHOTON_WEBHOOK_SECRET = event.secrets['PHOTON_PRESCRIPTION_WEBHOOK_SECRET']?.valueString ?? '';
-  // const isValid = verifyEvent(webhook, PHOTON_WEBHOOK_SECRET);
-  // if (!isValid) {
-  //   throw new Error('Not a valid Photon Webhook Event');
-  // }
+
+  // Photon sends a signature that you can use to verify that the webhook is valid. However, Medplum does not currently pass the  necessary information to verify the event to the bot. Once this is implemented, this will be updated to include an event verification step.
 
   // Ensure that only prescription events are being handled
   if (!body.type.includes('prescription')) {

@@ -29,14 +29,8 @@ export async function handler(
   event: BotEvent<PhotonEvent>
 ): Promise<MedicationRequest | undefined> {
   const body = event.input as OrderEvent;
-  // You will need to set up the webhook secret in your Medplum project. Per the photon docs, if there is no secret, an empty string should be used.
-  // const PHOTON_WEBHOOK_SECRET = event.secrets['PHOTON_ORDER_WEBHOOK_SECRET']?.valueString ?? '';
 
-  // // Ensure the webhook is coming from Photon
-  // const isValid = verifyEvent(webhook, PHOTON_WEBHOOK_SECRET);
-  // if (!isValid) {
-  //   throw new Error('Not a valid Photon Webhook Event');
-  // }
+  // Photon sends a signature that you can use to verify that the webhook is valid. However, Medplum does not currently pass the  necessary information to verify the event to the bot. Once this is implemented, this will be updated to include an event verification step.
 
   // Ensure the user has proper authorization to access photon
   const PHOTON_CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
@@ -462,17 +456,24 @@ async function handleCreatedData(
   // Get the photon prescription
   const prescription = await getPrescription(createdData.fills, authToken);
   const linkedPrescription = await getLinkedPrescription(medplum, prescription);
+
   // Get the FHIR Organization resource for the pharmacy the order is going to
   const pharmacy = await getPharmacy(medplum, authToken, createdData.pharmacyId);
   const medication = prescription?.treatment.codes.rxcui;
 
   // Update the medication request
   medicationRequest.authoredOn = createdData.createdAt;
-  medicationRequest.basedOn = [{ reference: getReferenceString(linkedPrescription) }];
+  if (linkedPrescription) {
+    medicationRequest.basedOn = [{ reference: getReferenceString(linkedPrescription) }];
+  }
 
   if (prescription) {
     medicationRequest.substitution = { allowedBoolean: prescription.dispenseAsWritten };
     medicationRequest.dosageInstruction = [{ patientInstruction: prescription.instructions }];
+
+    if (prescription.externalId) {
+      medicationRequest.basedOn = [{ reference: `MedicationRequest/${prescription.externalId}` }];
+    }
 
     if (prescription.notes) {
       medicationRequest.note = [{ text: prescription.notes }];
@@ -508,18 +509,14 @@ async function handleCreatedData(
 export async function getLinkedPrescription(
   medplum: MedplumClient,
   prescription?: PhotonPrescription
-): Promise<MedicationRequest> {
+): Promise<MedicationRequest | undefined> {
   if (!prescription) {
-    throw new Error('Order does not have a linked prescription');
+    return undefined;
   }
 
   const medicationRequest: MedicationRequest | undefined = await medplum.searchOne('MedicationRequest', {
     identifier: NEUTRON_HEALTH + `|${prescription.id}`,
   });
-
-  if (!medicationRequest) {
-    throw new Error('Linked prescription does not exist in Medplum');
-  }
 
   return medicationRequest;
 }
