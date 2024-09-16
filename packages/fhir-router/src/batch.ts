@@ -258,20 +258,22 @@ class BatchProcessor {
   }
 
   private async resolveCreateIdentity(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
+    if (!entry.fullUrl?.startsWith(uuidUriPrefix)) {
+      return undefined;
+    }
+
+    const placeholder = entry.fullUrl;
     if (entry.request?.ifNoneExist) {
       const existing = await this.repo.searchResources(
         parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
       );
-      if (existing.length === 1 && entry.fullUrl?.startsWith(uuidUriPrefix)) {
-        return { placeholder: entry.fullUrl, reference: getReferenceString(existing[0]) };
+      if (existing.length === 1) {
+        return { placeholder, reference: getReferenceString(existing[0]) };
       }
     }
-    if (entry.resource && entry.fullUrl?.startsWith(uuidUriPrefix)) {
+    if (entry.resource) {
       entry.resource.id = this.repo.generateId();
-      return {
-        placeholder: entry.fullUrl,
-        reference: getReferenceString(entry.resource),
-      };
+      return { placeholder, reference: getReferenceString(entry.resource) };
     }
     return undefined;
   }
@@ -328,11 +330,11 @@ class BatchProcessor {
       if (entry.resource) {
         entry.resource.id = resolved.id;
       }
-      return { placeholder: entry.fullUrl, reference };
+      return { placeholder, reference };
     }
 
     if (entry.request?.url.includes('/')) {
-      return { placeholder: entry.fullUrl, reference: entry.request.url };
+      return { placeholder, reference: entry.request.url };
     }
 
     return undefined;
