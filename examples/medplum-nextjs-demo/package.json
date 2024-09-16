@@ -24,7 +24,7 @@
   "devDependencies": {
     "@medplum/fhirtypes": "3.2.11",
     "@types/node": "22.5.5",
-    "@types/react": "18.3.5",
+    "@types/react": "18.3.6",
     "@types/react-dom": "18.3.0",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.11",
