@@ -5,6 +5,7 @@ import {
   intakeResponse,
   payorOrganization1,
   payorOrganization2,
+  pharmacyOrganization,
 } from './test-data/intake-form-test-data';
 import {
   Bundle,
@@ -35,7 +36,8 @@ describe('Intake form', async () => {
     response: QuestionnaireResponse,
     patient: Patient | undefined,
     payor1: Organization,
-    payor2: Organization;
+    payor2: Organization,
+    pharmacy: Organization;
   const bot = { reference: 'Bot/123' };
   const contentType = 'application/fhir+json';
   const ssn = '518225060';
@@ -53,6 +55,7 @@ describe('Intake form', async () => {
     medplum = new MockClient();
     payor1 = await medplum.createResource(payorOrganization1);
     payor2 = await medplum.createResource(payorOrganization2);
+    pharmacy = await medplum.createResource(pharmacyOrganization);
     await medplum.createResource(intakeQuestionnaire);
     response = await medplum.createResource(intakeResponse);
   });
@@ -252,6 +255,32 @@ describe('Intake form', async () => {
     });
   });
 
+  describe('Immunization', async () => {
+    test('add immunizations', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const immunizations = await medplum.searchResources('Immunization', {
+        patient: getReferenceString(patient),
+      });
+
+      expect(immunizations.length).toEqual(2);
+
+      expect(immunizations[0].vaccineCode?.coding?.[0].system).toEqual('http://hl7.org/fhir/sid/cvx');
+      expect(immunizations[0].vaccineCode?.coding?.[0].code).toEqual('197');
+      expect(immunizations[0].status).toEqual('completed');
+      expect(immunizations[0].occurrenceDateTime).toEqual('2024-02-01T14:00:00-07:00');
+
+      expect(immunizations[1].vaccineCode?.coding?.[0].system).toEqual('http://hl7.org/fhir/sid/cvx');
+      expect(immunizations[1].vaccineCode?.coding?.[0].code).toEqual('115');
+      expect(immunizations[1].status).toEqual('completed');
+      expect(immunizations[1].occurrenceDateTime).toEqual('2015-08-01T15:00:00-07:00');
+    });
+  });
+
   describe('Language information', async () => {
     test('add languages', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
@@ -369,6 +398,26 @@ describe('Intake form', async () => {
     });
   });
 
+  describe('CareTeam', async () => {
+    test('Preferred Pharmacy', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const careTeam = await medplum.searchResources('CareTeam', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(careTeam.length).toEqual(1);
+      expect(careTeam[0].status).toEqual('proposed');
+      expect(careTeam[0].name).toEqual('Patient Preferred Pharmacy');
+      expect(careTeam[0].participant?.length).toEqual(1);
+      expect(careTeam[0].participant?.[0].member?.reference).toEqual(getReferenceString(pharmacy));
+    });
+  });
+
   describe('Coverage', async () => {
     test('adds coverage resources', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
@@ -382,12 +431,12 @@ describe('Intake form', async () => {
       expect(coverages[0].beneficiary).toEqual(createReference(patient));
       expect(coverages[0].subscriberId).toEqual('first-provider-id');
       expect(coverages[0].relationship?.coding?.[0]?.code).toEqual('self');
-      expect(coverages[0].payor?.[0].reference).toEqual(createReference(payor1).reference);
+      expect(coverages[0].payor?.[0].reference).toEqual(getReferenceString(payor1));
 
       expect(coverages[1].beneficiary).toEqual(createReference(patient));
       expect(coverages[1].subscriberId).toEqual('second-provider-id');
       expect(coverages[1].relationship?.coding?.[0]?.code).toEqual('child');
-      expect(coverages[1].payor?.[0].reference).toEqual(createReference(payor2).reference);
+      expect(coverages[1].payor?.[0].reference).toEqual(getReferenceString(payor2));
     });
 
     test('upsert coverage resources to ensure there is only one coverage resource per payor', async () => {

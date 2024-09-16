@@ -90,7 +90,7 @@ export type UseHealthGorillaLabOrderReturn = {
 const INITIAL_TESTS: TestCoding[] = [];
 const INITIAL_DIAGNOSES: DiagnosisCodeableConcept[] = [];
 const INITIAL_TEST_METADATA = {};
-const INITIAL_BILLING_INFORMATION: BillingInformation = { billTo: 'patient', patientCoverage: undefined };
+const INITIAL_BILLING_INFORMATION: BillingInformation = {};
 
 type TestsReducerState = {
   // Don't use any optional fields here, e.g. `selectedTests?: TestCoding[]` since that would cause

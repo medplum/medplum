@@ -241,7 +241,7 @@ class BatchProcessor {
 
     switch (interaction) {
       case 'create':
-        // Ensure that resources to be created have a
+        // Ensure that resources to be created have an ID assigned
         return this.resolveCreateIdentity(entry);
       case 'delete':
       case 'update':
@@ -258,20 +258,22 @@ class BatchProcessor {
   }
 
   private async resolveCreateIdentity(entry: BundleEntry): Promise<BundleEntryIdentity | undefined> {
+    if (!entry.fullUrl?.startsWith(uuidUriPrefix)) {
+      return undefined;
+    }
+
+    const placeholder = entry.fullUrl;
     if (entry.request?.ifNoneExist) {
       const existing = await this.repo.searchResources(
         parseSearchRequest(entry.request.url + '?' + entry.request.ifNoneExist)
       );
-      if (existing.length === 1 && entry.fullUrl?.startsWith(uuidUriPrefix)) {
-        return { placeholder: entry.fullUrl, reference: getReferenceString(existing[0]) };
+      if (existing.length === 1) {
+        return { placeholder, reference: getReferenceString(existing[0]) };
       }
     }
-    if (entry.resource && entry.fullUrl?.startsWith(uuidUriPrefix)) {
+    if (entry.resource) {
       entry.resource.id = this.repo.generateId();
-      return {
-        placeholder: entry.fullUrl,
-        reference: getReferenceString(entry.resource),
-      };
+      return { placeholder, reference: getReferenceString(entry.resource) };
     }
     return undefined;
   }
@@ -280,44 +282,61 @@ class BatchProcessor {
     entry: BundleEntry,
     path: string
   ): Promise<BundleEntryIdentity | undefined> {
-    if (entry.request?.url?.includes('?') && entry.fullUrl?.startsWith(uuidUriPrefix)) {
+    if (!entry.fullUrl?.startsWith(uuidUriPrefix)) {
+      return undefined;
+    }
+
+    const placeholder = entry.fullUrl;
+    if (entry.request?.url?.includes('?')) {
       const method = entry.request.method;
 
       // Resolve conditional update via search
-      const resolved = await this.repo.searchResources(parseSearchRequest(entry.request.url));
-      if (resolved.length !== 1) {
-        if (resolved.length === 0 && method === 'DELETE') {
-          return undefined;
-        }
+      const searchReq = parseSearchRequest(entry.request.url);
+      searchReq.count = 2;
+      searchReq.offset = 0;
+      searchReq.sortRules = undefined;
 
-        if (resolved.length === 0 && method === 'PUT') {
-          if (entry.resource) {
-            if (entry.resource.id) {
-              throw new OperationOutcomeError(badRequest('Cannot provide ID for create by update'));
+      const [resolved, duplicate] = await this.repo.searchResources(searchReq);
+      if (!resolved) {
+        switch (method) {
+          case 'DELETE':
+            // DELETE is idempotent; it succeeds if the resource already doesn't exist
+            return undefined;
+          case 'PUT':
+            // Upsert (Update as Create): https://www.hl7.org/fhir/http.html#upsert
+            if (entry.resource) {
+              if (entry.resource.id) {
+                throw new OperationOutcomeError(badRequest('Cannot provide ID for create by update'));
+              }
+
+              entry.resource.id = this.repo.generateId();
+              return { placeholder, reference: getReferenceString(entry.resource) };
             }
-
-            entry.resource.id = this.repo.generateId();
-            return {
-              placeholder: entry.fullUrl,
-              reference: getReferenceString(entry.resource),
-            };
-          }
-          return undefined;
+            return undefined;
+          default:
+            throw new OperationOutcomeError(
+              badRequest(`Conditional ${entry.request.method} did not match any resources`, path + '.request.url')
+            );
         }
-
+      }
+      if (duplicate) {
         throw new OperationOutcomeError(
-          badRequest(`Conditional ${entry.request.method} matched ${resolved.length} resources`, path + '.request.url')
+          badRequest(`Conditional ${entry.request.method} matched multiple resources`, path + '.request.url')
         );
       }
 
-      const reference = getReferenceString(resolved[0]);
+      const reference = getReferenceString(resolved);
       entry.request.url = reference;
-      return { placeholder: entry.fullUrl, reference };
+      if (entry.resource) {
+        entry.resource.id = resolved.id;
+      }
+      return { placeholder, reference };
     }
 
     if (entry.request?.url.includes('/')) {
-      return { placeholder: entry.request.url, reference: entry.request.url };
+      return { placeholder, reference: entry.request.url };
     }
+
     return undefined;
   }
 
@@ -477,20 +496,13 @@ class BatchProcessor {
   }
 
   private rewriteIdsInString(input: string): string {
-    const match = localBundleReference.exec(input);
-    if (match) {
-      if (!this.isTransaction()) {
-        const event: LogEvent = {
-          type: 'warn',
-          message: 'Invalid internal reference in batch',
-        };
-        this.router.dispatchEvent(event);
-      }
-      const fullUrl = match[0];
-      const referenceString = this.resolvedIdentities[fullUrl];
-      return referenceString ? input.replaceAll(fullUrl, referenceString) : input;
+    const rewritable = localBundleReference.exec(input)?.[0];
+    if (!rewritable) {
+      return input;
     }
-    return input;
+
+    const referenceString = this.resolvedIdentities[rewritable];
+    return referenceString ? input.replaceAll(rewritable, referenceString) : input;
   }
 
   private isTransaction(): boolean {
