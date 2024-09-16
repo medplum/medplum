@@ -149,7 +149,7 @@ export async function initKeys(config: MedplumServerConfig): Promise<void> {
   // Use the first key as the signing key
   signingKeyId = jsonWebKeys[0].id;
   signingKey = (await importJWK({
-    ...jsonWebKeys[0],
+    ...(jsonWebKeys[0] as JWK),
     alg: ALG,
     use: 'sig',
   })) as KeyLike;
