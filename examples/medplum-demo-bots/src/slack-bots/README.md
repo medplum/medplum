@@ -72,6 +72,6 @@ You can modify the `slackMessage` in the `handler` function to customize the con
 
 ## Support
 
-For issues related to Medplum, please refer to the [Medplum documentation](https://www.medplum.com/docs) or contact Medplum support.
+For issues related to Medplum, please refer to the [Medplum documentation](https://www.medplum.com/docs) or contact Medplum support in [Discord](https://discord.gg/medplum)
 
 For Slack-related issues, consult the [Slack API documentation](https://api.slack.com/docs).
