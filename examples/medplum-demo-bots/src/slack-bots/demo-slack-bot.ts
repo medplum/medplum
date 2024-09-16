@@ -1,20 +1,19 @@
 /**
  * Medplum Slack Bot
- * 
+ *
  * This module integrates Medplum with Slack, allowing for automatic notifications
  * in a Slack channel when certain events occur in Medplum. It uses a Medplum Bot
  * to listen for events and sends corresponding messages to a specified Slack channel.
- * 
+ *
  * The bot requires a Slack Bot Token to be configured in the Medplum Bot secrets.
  */
 
 import { BotEvent, MedplumClient } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
 
-
 /**
  * Sends a message to a specified Slack channel.
- * 
+ *
  * @param text - The message text to send to Slack.
  * @param slackBotToken - The Slack Bot Token for authentication.
  * @param slackChannel - The name or ID of the Slack channel to send the message to.
@@ -38,7 +37,7 @@ const sendSlackMessage = async (text: string, slackBotToken: string, slackChanne
 /**
  * Medplum Bot handler function. This function is triggered by Medplum events
  * and sends a notification to Slack for each event.
- * 
+ *
  * @param medplum - The Medplum client instance.
  * @param event - The bot event object containing input data and bot configuration.
  * @returns A promise that resolves to an object with a status code and message.
