@@ -280,7 +280,12 @@ class BatchProcessor {
     entry: BundleEntry,
     path: string
   ): Promise<BundleEntryIdentity | undefined> {
-    if (entry.request?.url?.includes('?') && entry.fullUrl?.startsWith(uuidUriPrefix)) {
+    if (!entry.fullUrl?.startsWith(uuidUriPrefix)) {
+      return undefined;
+    }
+
+    const placeholder = entry.fullUrl;
+    if (entry.request?.url?.includes('?')) {
       const method = entry.request.method;
 
       // Resolve conditional update via search
@@ -303,10 +308,7 @@ class BatchProcessor {
               }
 
               entry.resource.id = this.repo.generateId();
-              return {
-                placeholder: entry.fullUrl,
-                reference: getReferenceString(entry.resource),
-              };
+              return { placeholder, reference: getReferenceString(entry.resource) };
             }
             return undefined;
           default:
@@ -330,8 +332,9 @@ class BatchProcessor {
     }
 
     if (entry.request?.url.includes('/')) {
-      return { placeholder: entry.request.url, reference: entry.request.url };
+      return { placeholder: entry.fullUrl, reference: entry.request.url };
     }
+
     return undefined;
   }
 
@@ -491,13 +494,13 @@ class BatchProcessor {
   }
 
   private rewriteIdsInString(input: string): string {
-    const match = localBundleReference.exec(input);
-    if (match) {
-      const fullUrl = match[0];
-      const referenceString = this.resolvedIdentities[fullUrl];
-      return referenceString ? input.replaceAll(fullUrl, referenceString) : input;
+    const rewritable = localBundleReference.exec(input)?.[0];
+    if (!rewritable) {
+      return input;
     }
-    return input;
+
+    const referenceString = this.resolvedIdentities[rewritable];
+    return referenceString ? input.replaceAll(rewritable, referenceString) : input;
   }
 
   private isTransaction(): boolean {
