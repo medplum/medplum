@@ -288,6 +288,7 @@ export class FhirRouter extends EventTarget {
       return [notFound];
     }
     const { handler, params, query } = result;
+    // Populate request object with parsed URL components from router
     req.params = params;
     if (query) {
       req.pathname = req.pathname.slice(0, req.pathname.indexOf('?'));

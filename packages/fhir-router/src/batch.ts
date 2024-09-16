@@ -443,7 +443,7 @@ class BatchProcessor {
 
     return {
       method: request.method as HttpMethod,
-      pathname: request.url,
+      pathname: route?.query ? request.url.slice(0, request.url.indexOf('?')) : request.url,
       params: route?.params ?? Object.create(null),
       query: route?.query ?? Object.create(null),
       body,
