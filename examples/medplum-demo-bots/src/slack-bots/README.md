@@ -31,13 +31,13 @@ This project integrates Medplum with Slack, allowing automatic notifications in 
 
 For further reference on creating a bot see [Medplum Demo Bots](https://github.com/medplum/medplum/tree/main/examples/medplum-demo-bots)
 
-### 3. Configure Bot Secrets
+### 3. Configure Project Secrets
 
-1. In the Medplum bot configuration page, find the "Secrets" section.
+1. In the [Medplum Project Admin](https://app.medplum.com/admin/project), find the "Secrets" section.
 2. Add a new secret with the following details:
    - Key: `SLACK_BOT_TOKEN`
    - Value: The Bot User OAuth Token you saved from the Slack app setup
-3. Save the bot configuration.
+3. Save the secret configuration.
 
 For further reference on Bot Secrets see [Bot Secrets](https://www.medplum.com/docs/bots/bot-secrets)
 
