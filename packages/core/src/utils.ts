@@ -1005,7 +1005,7 @@ export function findResourceByCode(
 }
 
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
-  if (!value) {
+  if (value === undefined) {
     return undefined;
   } else if (Array.isArray(value)) {
     return value;
@@ -1234,8 +1234,12 @@ export function removeProfileFromResource<T extends Resource = Resource>(resourc
   return resource;
 }
 
-export function flatMapFilter<T, U>(arr: T[], fn: (value: T, idx: number) => U | undefined): U[] {
-  const result = [];
+export function flatMapFilter<T, U>(arr: T[] | undefined, fn: (value: T, idx: number) => U | undefined): U[] {
+  const result: U[] = [];
+  if (!arr) {
+    return result;
+  }
+
   for (let i = 0; i < arr.length; i++) {
     const resultValue = fn(arr[i], i);
     if (Array.isArray(resultValue)) {

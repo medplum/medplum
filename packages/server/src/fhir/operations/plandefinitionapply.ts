@@ -118,7 +118,7 @@ async function createTask(
   requester: Reference<ProfileResource>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
-  input?: TaskInput[] | undefined
+  input?: TaskInput[]
 ): Promise<RequestGroupAction> {
   const task = await repo.createResource<Task>({
     resourceType: 'Task',

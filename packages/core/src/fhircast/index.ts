@@ -459,7 +459,7 @@ export function createFhircastMessagePayload<
   topic: string,
   event: EventName,
   context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[],
-  versionId?: string | undefined
+  versionId?: string
 ): FhircastMessagePayload<EventName> {
   if (!(topic && typeof topic === 'string')) {
     throw new OperationOutcomeError(validationError('Must provide a topic.'));

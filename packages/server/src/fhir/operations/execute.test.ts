@@ -1,16 +1,26 @@
-import { ContentType, allOk, badRequest } from '@medplum/core';
-import { AsyncJob, Bot, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import { ContentType, Operator, allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
+import {
+  AsyncJob,
+  AuditEvent,
+  Bot,
+  Parameters,
+  ParametersParameter,
+  Project,
+  ProjectMembership,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
-import { initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
+import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 
 describe('Execute', () => {
   let app: express.Express;
+  let project: Project;
   let accessToken: string;
   const bots = [] as Bot[];
 
@@ -18,13 +28,13 @@ describe('Execute', () => {
     [
       `
 export async function handler(medplum, event) {
-  console.log('input', event.input);
+  console.log(JSON.stringify(event));
   return event.input;
 }
   `,
       `
 exports.handler = async function (medplum, event) {
-  console.log('input', event.input);
+  console.log(JSON.stringify(event));
   return event.input;
 };
 `,
@@ -82,7 +92,16 @@ exports.handler = async function (medplum, event) {
     const config = await loadTestConfig();
     config.vmContextBotsEnabled = true;
     await initApp(app, config);
-    accessToken = await initTestAuth();
+
+    const testSetup = await createTestProject({
+      project: {
+        secret: [{ name: 'secret1', valueString: 'value1' }],
+        systemSecret: [{ name: 'secret2', valueString: 'value2' }],
+      },
+      withAccessToken: true,
+    });
+    project = testSetup.project;
+    accessToken = testSetup.accessToken;
 
     for (let i = 0; i < botCodes.length; i++) {
       const [esmCode, cjsCode] = botCodes[i];
@@ -97,6 +116,7 @@ exports.handler = async function (medplum, event) {
           name: `Test Bot #${i + 1}`,
           runtimeVersion: 'vmcontext',
           code: esmCode,
+          system: i === 0,
         });
 
       expect(res1.status).toBe(201);
@@ -430,6 +450,89 @@ exports.handler = async function (medplum, event) {
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toEqual('Hello, world!');
+  });
+
+  test('Bot secrets from linked project', async () => {
+    // Use the first test bot for everything
+    const bot = bots[0];
+
+    // Create a new project that links to the first project
+    const testSetup2 = await createTestProject({
+      withAccessToken: true,
+      project: {
+        name: 'Project 2',
+        secret: [{ name: 'secret3', valueString: 'value3' }],
+        systemSecret: [{ name: 'secret4', valueString: 'value4' }],
+        link: [{ project: createReference(project) }],
+      },
+      membership: {
+        admin: true,
+      },
+    });
+    const project2 = testSetup2.project;
+    const accessToken2 = testSetup2.accessToken;
+
+    // Create a project membership for the existing bot in the new project
+    const systemRepo = getSystemRepo();
+    await systemRepo.createResource<ProjectMembership>({
+      resourceType: 'ProjectMembership',
+      project: createReference(project2),
+      user: createReference(bot),
+      profile: createReference(bot),
+    });
+
+    // Confirm that we can read our own project
+    const res1 = await request(app)
+      .get(`/fhir/R4/Project/${project2.id}`)
+      .set('Authorization', 'Bearer ' + accessToken2);
+    expect(res1.status).toBe(200);
+    expect(res1.body.resourceType).toBe('Project');
+    expect(res1.body.id).toBe(project2.id);
+
+    // Confirm that we can read the linked project
+    const res2 = await request(app)
+      .get(`/fhir/R4/Project/${project.id}`)
+      .set('Authorization', 'Bearer ' + accessToken2);
+    expect(res2.status).toBe(200);
+    expect(res2.body.resourceType).toBe('Project');
+    expect(res2.body.id).toBe(project.id);
+
+    // Confirm that we can read the bot in the new project
+    const res3 = await request(app)
+      .get(`/fhir/R4/Bot/${bot.id}`)
+      .set('Authorization', 'Bearer ' + accessToken2);
+    expect(res3.status).toBe(200);
+    expect(res3.body.resourceType).toBe('Bot');
+    expect(res3.body.id).toBe(bot.id);
+
+    // Now execute the bot in the new project
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.TEXT)
+      .set('Authorization', 'Bearer ' + accessToken2)
+      .send('input');
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
+    expect(res.text).toEqual('input');
+
+    // Get the audit event
+    const auditEvent = await systemRepo.searchOne<AuditEvent>({
+      resourceType: 'AuditEvent',
+      filters: [
+        { code: '_project', operator: Operator.EQUALS, value: project2.id as string },
+        { code: 'entity', operator: Operator.EQUALS, value: getReferenceString(bot) },
+      ],
+    });
+    expect(auditEvent).toBeDefined();
+    expect(auditEvent?.meta?.project).toBe(project2.id);
+
+    const output = JSON.parse(auditEvent?.outcomeDesc as string);
+    expect(output.secrets).toMatchObject({
+      secret1: { valueString: 'value1' },
+      secret2: { valueString: 'value2' },
+      secret3: { valueString: 'value3' },
+      secret4: { valueString: 'value4' },
+    });
   });
 
   describe('Prefer: respond-async', () => {

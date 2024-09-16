@@ -225,6 +225,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       contentType: result.success ? command.contentType : ContentType.JSON,
       statusCode: result.success ? 200 : 400,
       body,
+      callback: command.callback,
     });
   }
 
