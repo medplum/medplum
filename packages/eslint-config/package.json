@@ -27,10 +27,10 @@
     "eslint-plugin-react-refresh": "0.4.12"
   },
   "peerDependencies": {
-    "@typescript-eslint/eslint-plugin": "^7",
-    "@typescript-eslint/parser": "^7",
+    "@typescript-eslint/eslint-plugin": "^8",
+    "@typescript-eslint/parser": "^8",
     "eslint": "^8",
-    "eslint-plugin-jsdoc": "^48",
+    "eslint-plugin-jsdoc": "^50",
     "eslint-plugin-react-hooks": "^4",
     "eslint-plugin-react-refresh": "^0"
   },
