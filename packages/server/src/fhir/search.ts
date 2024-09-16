@@ -276,7 +276,7 @@ async function getSearchEntries<T extends Resource>(
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; nextResource?: T }> {
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const rowCount = rows.length;
-  const resources = rows.slice(0, searchRequest.count + 1).map((row) => JSON.parse(row.content as string)) as T[];
+  const resources = rows.map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
     (resource) =>
       ({
