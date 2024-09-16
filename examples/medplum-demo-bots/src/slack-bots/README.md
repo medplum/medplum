@@ -39,6 +39,8 @@ For further reference on creating a bot see [Medplum Demo Bots](https://github.c
    - Value: The Bot User OAuth Token you saved from the Slack app setup
 3. Save the bot configuration.
 
+For further reference on Bot Secrets see [Bot Secrets](https://www.medplum.com/docs/bots/bot-secrets)
+
 ### 4. Customize the Slack Channel
 
 In the `handler` function of your bot code, update the `slackChannel` variable to match the name or ID of the Slack channel where you want to receive notifications:
