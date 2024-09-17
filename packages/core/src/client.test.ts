@@ -2424,6 +2424,7 @@ describe('Client', () => {
     } as StorageEvent);
     expect(mockReload).toHaveBeenCalled();
 
+    // Should refresh when storage is cleared
     mockReload.mockReset();
     callback({ key: null });
     expect(mockReload).toHaveBeenCalled();
