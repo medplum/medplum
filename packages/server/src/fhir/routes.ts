@@ -302,7 +302,8 @@ protectedRoutes.use(
 
     const request: FhirRequest = {
       method: req.method as HttpMethod,
-      pathname: req.originalUrl.replace('/fhir/R4', ''),
+      url: req.originalUrl.replace('/fhir/R4', ''),
+      pathname: '',
       params: req.params,
       query: Object.create(null), // Defer query param parsing to router for consistency
       body: req.body,

@@ -32,7 +32,8 @@ const router: FhirRouter = new FhirRouter();
 const repo: FhirRepository = new MemoryRepository();
 const req: FhirRequest = {
   method: 'POST',
-  pathname: '/',
+  url: '/',
+  pathname: '',
   params: {},
   query: {},
   body: '',
