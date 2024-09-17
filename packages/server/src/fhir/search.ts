@@ -25,6 +25,7 @@ import {
   SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
+  serverError,
   SortRule,
   splitN,
   splitSearchOnComma,
@@ -556,12 +557,9 @@ function getSearchLinks(
 
   if (searchRequest.count > 0 && entries?.length) {
     if (canUseCursorLinks(searchRequest)) {
-      console.assert(
-        entries[entries.length - 1].resource?.meta?.lastUpdated !== nextResource?.meta?.lastUpdated,
-        `Cursor fails to make progress\n%o\n%o`,
-        entries[entries.length - 1],
-        nextResource
-      );
+      if (entries[entries.length - 1].resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated) {
+        throw new OperationOutcomeError(serverError(new Error('Cursor fails to make progress')));
+      }
       buildSearchLinksWithCursor(searchRequest, nextResource, result);
     } else {
       buildSearchLinksWithOffset(searchRequest, nextResource, result);
@@ -577,12 +575,14 @@ function getSearchLinks(
  * A search request can use cursor links if:
  *   1. Not using offset pagination
  *   2. Exactly one sort rule using _lastUpdated ascending
+ *   3. It uses a page size that can accommodate resources with the same lastUpdated
  * @param searchRequest - The candidate search request.
  * @returns True if the search request can use cursor links.
  */
 function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): boolean {
   return (
     searchRequest.offset === 0 &&
+    searchRequest.count >= 20 &&
     searchRequest.sortRules?.length === 1 &&
     searchRequest.sortRules[0].code === '_lastUpdated' &&
     !searchRequest.sortRules[0].descending
