@@ -3826,14 +3826,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         if (e.key === null) {
           window.location.reload();
         } else if (e.key === 'activeLogin') {
-          try {
-            const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
-            const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
-            if (oldState?.profile.id !== newState?.profile.id) {
-              window.location.reload();
-            }
-          } catch (err: unknown) {
-            console.error(err);
+          const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
+          const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
+          if (oldState?.profile.id !== newState?.profile.id) {
+            window.location.reload();
           }
         }
       });

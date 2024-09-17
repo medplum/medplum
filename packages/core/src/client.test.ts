@@ -2424,19 +2424,6 @@ describe('Client', () => {
     } as StorageEvent);
     expect(mockReload).toHaveBeenCalled();
 
-    // Garbled values should result in a logged error and not throw
-    const originalConsoleError = console.error;
-    console.error = jest.fn();
-    mockReload.mockReset();
-    callback({
-      key: 'activeLogin',
-      oldValue: "{ profile: 'bla' ", // Invalid JSON
-      newValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: null } }),
-    } as StorageEvent);
-    expect(mockReload).not.toHaveBeenCalled();
-    expect(console.error).toHaveBeenCalled();
-    console.error = originalConsoleError;
-
     mockReload.mockReset();
     callback({ key: null });
     expect(mockReload).toHaveBeenCalled();
