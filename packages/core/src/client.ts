@@ -3821,10 +3821,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     try {
       window.addEventListener('storage', (e: StorageEvent) => {
         if (e.key === null || e.key === 'activeLogin') {
-          // Storage events fire when different tabs make changes.
-          // On storage clear (key === null) or activeLogin change (key === 'activeLogin')
-          // Refresh the page to ensure the active login is up to date.
-          window.location.reload();
+          try {
+            const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
+            const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
+            if ((oldState?.profile.id as string) !== newState?.profile.id) {
+              // Storage events fire when different tabs make changes.
+              // On storage clear (key === null) or activeLogin change (key === 'activeLogin')
+              // Refresh the page to ensure the active login is up to date.
+              window.location.reload();
+            }
+          } catch (err: unknown) {
+            console.error(err);
+          }
         }
       });
     } catch (_err) {

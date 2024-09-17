@@ -2385,13 +2385,61 @@ describe('Client', () => {
     callback({ key: 'randomKey' });
     expect(mockReload).not.toHaveBeenCalled();
 
+    const practitioner1 = randomUUID();
+    const practitioner2 = randomUUID();
+
+    // Should NOT refresh when we have the same profile
     mockReload.mockReset();
-    callback({ key: 'activeLogin' });
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner1 } }),
+      newValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner1 } }),
+    } as StorageEvent);
+    expect(mockReload).not.toHaveBeenCalled();
+
+    // Should refresh when we change to a new profile
+    mockReload.mockReset();
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner1 } }),
+      newValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner2 } }),
+    } as StorageEvent);
     expect(mockReload).toHaveBeenCalled();
+
+    // Should refresh when going to a new profile from no profile
+    mockReload.mockReset();
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: null } }),
+      newValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner1 } }),
+    } as StorageEvent);
+    expect(mockReload).toHaveBeenCalled();
+
+    // Should refresh when going from a profile to no profile (logged out)
+    mockReload.mockReset();
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner1 } }),
+      newValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: null } }),
+    } as StorageEvent);
+    expect(mockReload).toHaveBeenCalled();
+
+    // Garbled values should result in a logged error and not throw
+    const originalConsoleError = console.error;
+    console.error = jest.fn();
+    mockReload.mockReset();
+    callback({
+      key: 'activeLogin',
+      oldValue: "{ profile: 'bla' ", // Invalid JSON
+      newValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: null } }),
+    } as StorageEvent);
+    expect(mockReload).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalled();
+    console.error = originalConsoleError;
 
     mockReload.mockReset();
     callback({ key: null });
-    expect(mockReload).toHaveBeenCalled();
+    expect(mockReload).not.toHaveBeenCalled();
   });
 
   test('setAccessToken', async () => {
