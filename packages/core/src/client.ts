@@ -3824,7 +3824,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           try {
             const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
             const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
-            if ((oldState?.profile.id as string) !== newState?.profile.id) {
+            if (oldState?.profile.id !== newState?.profile.id) {
               // Storage events fire when different tabs make changes.
               // On storage clear (key === null) or activeLogin change (key === 'activeLogin')
               // Refresh the page to ensure the active login is up to date.
