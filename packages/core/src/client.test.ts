@@ -2439,7 +2439,7 @@ describe('Client', () => {
 
     mockReload.mockReset();
     callback({ key: null });
-    expect(mockReload).not.toHaveBeenCalled();
+    expect(mockReload).toHaveBeenCalled();
   });
 
   test('setAccessToken', async () => {
