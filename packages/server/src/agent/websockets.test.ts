@@ -1,5 +1,6 @@
 import { allOk, ContentType, getReferenceString, Hl7Message, MEDPLUM_VERSION, sleep } from '@medplum/core';
 import { Agent, Bot, Device } from '@medplum/fhirtypes';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import { Server } from 'http';
 import request from 'superwstest';
@@ -92,6 +93,8 @@ describe('Agent WebSockets', () => {
   });
 
   test('Success', async () => {
+    const callback = randomUUID();
+
     await request(server)
       .ws('/ws/agent')
       .sendText(
@@ -115,6 +118,7 @@ describe('Agent WebSockets', () => {
             'PID|||PATID1234^5^M11||JONES^WILLIAM^A^III||19610615|M-\r' +
             'NK1|1|JONES^BARBARA^K|SPO|||||20011105\r' +
             'PV1|1|I|2000^2012^01||||004777^LEBAUER^SIDNEY^J.|||SUR||-||1|A0-',
+          callback,
         })
       )
       .expectJson((actual) => {
@@ -125,6 +129,7 @@ describe('Agent WebSockets', () => {
           contentType: ContentType.HL7_V2,
           statusCode: 200,
           body: expect.stringMatching(/^MSH[^"]+ACK[^"]+/),
+          callback,
         });
       })
       .close()

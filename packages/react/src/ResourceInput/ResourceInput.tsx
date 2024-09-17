@@ -3,7 +3,11 @@ import { getDisplayString, getReferenceString, isPopulated } from '@medplum/core
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { forwardRef, ReactNode, useCallback, useState } from 'react';
-import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
+import {
+  AsyncAutocomplete,
+  AsyncAutocompleteOption,
+  AsyncAutocompleteProps,
+} from '../AsyncAutocomplete/AsyncAutocomplete';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 
 /**
@@ -84,6 +88,8 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
   readonly onChange?: (value: T | undefined) => void;
   readonly disabled?: boolean;
+  readonly label?: AsyncAutocompleteProps<T>['label'];
+  readonly error?: AsyncAutocompleteProps<T>['error'];
 }
 
 function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
@@ -137,6 +143,8 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     <AsyncAutocomplete<T>
       disabled={props.disabled}
       name={props.name}
+      label={props.label}
+      error={props.error}
       required={props.required}
       itemComponent={ItemComponent}
       defaultValue={defaultValue}

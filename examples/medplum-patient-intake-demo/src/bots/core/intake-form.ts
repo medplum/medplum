@@ -1,13 +1,15 @@
 import { BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import { Patient, Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
+import { Organization, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addAllergy,
   addCondition,
   addConsent,
   addCoverage,
   addFamilyMemberHistory,
+  addImmunization,
   addLanguage,
   addMedication,
+  addPharmacy,
   consentCategoryMapping,
   consentPolicyRuleMapping,
   consentScopeMapping,
@@ -180,6 +182,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
 
   // Handle medications
+
   const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
   for (const medication of medications) {
     await addMedication(medplum, patient, medication);
@@ -197,11 +200,25 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     await addFamilyMemberHistory(medplum, patient, history);
   }
 
+  // Handle vaccination history (immunizations)
+
+  const vaccinationHistory = getGroupRepeatedAnswers(questionnaire, response, 'vaccination-history');
+  for (const vaccine of vaccinationHistory) {
+    await addImmunization(medplum, patient, vaccine);
+  }
+
   // Handle coverage
 
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
+  }
+
+  // Handle preferred pharmacy
+
+  const preferredPharmacyReference = answers['preferred-pharmacy-reference']?.valueReference;
+  if (preferredPharmacyReference) {
+    await addPharmacy(medplum, patient, preferredPharmacyReference as Reference<Organization>);
   }
 
   // Handle consents

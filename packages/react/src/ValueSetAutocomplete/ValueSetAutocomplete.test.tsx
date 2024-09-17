@@ -17,7 +17,7 @@ describe('AsyncAutocomplete', () => {
     jest.useRealTimers();
   });
 
-  async function selectOption(input: HTMLInputElement, text: string, downCount: number): Promise<void> {
+  async function enterSearchString(input: HTMLInputElement, text: string): Promise<void> {
     await act(async () => {
       fireEvent.change(input, { target: { value: text } });
     });
@@ -26,6 +26,10 @@ describe('AsyncAutocomplete', () => {
     await act(async () => {
       jest.advanceTimersByTime(1000);
     });
+  }
+
+  async function selectOption(input: HTMLInputElement, text: string, downCount: number): Promise<void> {
+    await enterSearchString(input, text);
 
     // Press the down arrow
     await act(async () => {
@@ -115,5 +119,21 @@ describe('AsyncAutocomplete', () => {
 
     expect(onChange).toHaveBeenCalledTimes(4);
     expect(onChange.mock.lastCall[0].map((c: ValueSetExpansionContains) => c.code)).toEqual([]);
+  });
+
+  test('empty search', async () => {
+    const onChange = jest.fn();
+    render(
+      <MedplumProvider medplum={new MockClient()}>
+        <ValueSetAutocomplete binding="x" onChange={onChange} placeholder="Test" maxValues={1} />
+      </MedplumProvider>
+    );
+
+    const input = screen.getByPlaceholderText('Test') as HTMLInputElement;
+
+    await enterSearchString(input, '');
+    const options = screen.getByTestId(AsyncAutocompleteTestIds.options);
+    expect(options).not.toHaveAttribute('hidden');
+    expect(onChange).toHaveBeenCalledTimes(0);
   });
 });

@@ -19,6 +19,7 @@ import {
   Login,
   Observation,
   OperationOutcome,
+  Organization,
   Patient,
   Practitioner,
   Project,
@@ -485,8 +486,7 @@ describe('FHIR Repo', () => {
 
       (patient as Patient).name = [{ family: 'TestUpdated' }];
 
-      const versionId = patient.meta?.versionId;
-      await systemRepo.updateResource<Patient>(patient, versionId);
+      await systemRepo.updateResource<Patient>(patient, { ifMatch: patient.meta?.versionId });
       expect(patient.name?.at(0)?.family).toEqual('TestUpdated');
     }));
 
@@ -498,7 +498,7 @@ describe('FHIR Repo', () => {
       });
 
       try {
-        await systemRepo.updateResource<Patient>(patient1, 'bad-id');
+        await systemRepo.updateResource<Patient>(patient1, { ifMatch: 'bad-id' });
         fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(preconditionFailed);
@@ -1115,21 +1115,25 @@ describe('FHIR Repo', () => {
       });
     }));
 
-  test('Allows adding compartments', async () =>
+  test('Allows adding compartments for specific types', async () =>
     withTestContext(async () => {
       const { repo, project } = await createTestProject({ withRepo: true });
+      const org = await repo.createResource<Organization>({ resourceType: 'Organization' });
       const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+
+      const orgReference = createReference(org);
       const practitionerReference = createReference(practitioner);
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
-        meta: { compartment: [practitionerReference] },
+        meta: { compartment: [orgReference, practitionerReference] },
       });
-      expect(patient.meta?.compartment).toContainEqual(practitionerReference);
+      expect(patient.meta?.compartment).toContainEqual(orgReference);
+      expect(patient.meta?.compartment).not.toContainEqual(practitionerReference);
       expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
       expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
 
       const results = await repo.searchResources(
-        parseSearchRequest('Patient?_compartment=' + getReferenceString(practitioner))
+        parseSearchRequest('Patient?_compartment=' + getReferenceString(orgReference))
       );
       expect(results).toHaveLength(1);
     }));

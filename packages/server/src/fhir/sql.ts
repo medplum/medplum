@@ -1,4 +1,4 @@
-import { OperationOutcomeError, append, conflict } from '@medplum/core';
+import { OperationOutcomeError, append, conflict, normalizeOperationOutcome } from '@medplum/core';
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
@@ -396,15 +396,23 @@ export class SqlBuilder {
 
       return { rowCount: result.rowCount ?? 0, rows: result.rows };
     } catch (err: any) {
-      if (err && typeof err === 'object' && err.code === '23505') {
-        // Catch duplicate key errors and throw a 409 Conflict
-        // See https://github.com/brianc/node-postgres/issues/1602
-        // See https://www.postgresql.org/docs/10/errcodes-appendix.html
-        throw new OperationOutcomeError(conflict(err.detail));
-      }
-      throw err;
+      throw normalizeDatabaseError(err);
     }
   }
+}
+
+export function normalizeDatabaseError(err: any): OperationOutcomeError {
+  if (err?.code === '23505') {
+    // Catch duplicate key errors and throw a 409 Conflict
+    // See https://github.com/brianc/node-postgres/issues/1602
+    // See https://www.postgresql.org/docs/10/errcodes-appendix.html
+    return new OperationOutcomeError(conflict(err.detail));
+  }
+  if (err?.code === '40001') {
+    // Catch transaction serialization errors and throw a 409 Conflict
+    return new OperationOutcomeError(conflict(err.message));
+  }
+  return new OperationOutcomeError(normalizeOperationOutcome(err));
 }
 
 export abstract class BaseQuery {

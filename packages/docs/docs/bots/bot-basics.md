@@ -154,6 +154,9 @@ This will execute the most recently deployed version of your Bot, with the `even
 
 ![Execute from Editor](/img/app/bots/execute_from_editor.png)
 
+In the output panel at the bottom right you will see the string "true", indicating that the execution was a success. To see the results of the execution, navigate to the **Event** tab.
+(You may need to reload the page.) The **Outcome Desc** column will show the result of the console.log.
+
 ### _Using the `$execute` endpoint_
 
 You can also execute a bot programmatically by sending an HTTP `POST` request to the Bot's `$execute`. Below is an example request sent with [`cURL`](https://en.wikipedia.org/wiki/CURL):
