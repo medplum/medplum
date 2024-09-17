@@ -112,14 +112,18 @@ export class BackEnd extends Construct {
             )
           : rds.AuroraPostgresEngineVersion.VER_12_9,
       });
-      let dbParams: ParameterGroup | undefined;
-      if (config.rdsClusterParameters) {
-        const paramHash = hashObject(config.rdsClusterParameters, { encoding: 'base64' }).slice(0, 8);
-        dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams' + paramHash, {
-          engine,
-          parameters: config.rdsClusterParameters,
-        });
-      }
+
+      const defaultPostgresParams = {
+        statement_timeout: '60000',
+        default_transaction_isolation: 'REPEATABLE READ',
+      };
+
+      const postgresSettings = { ...defaultPostgresParams, ...config.rdsClusterParameters };
+      const paramHash = hashObject(postgresSettings, { encoding: 'base64' }).slice(0, 8);
+      const dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams' + paramHash, {
+        engine,
+        parameters: postgresSettings,
+      });
 
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
       const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
