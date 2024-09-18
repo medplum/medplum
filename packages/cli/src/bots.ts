@@ -1,15 +1,15 @@
 import { MedplumClient } from '@medplum/core';
 import { createMedplumClient } from './util/client';
-import { MedplumCommand, createBot, deployBot, readBotConfigs, saveBot } from './utils';
+import { MedplumCommand, addSubcommand, createBot, deployBot, readBotConfigs, saveBot } from './utils';
 
 const botSaveCommand = new MedplumCommand('save');
 const botDeployCommand = new MedplumCommand('deploy');
 const botCreateCommand = new MedplumCommand('create');
 
-export const bot = new MedplumCommand('bot')
-  .addCommand(botSaveCommand)
-  .addCommand(botDeployCommand)
-  .addCommand(botCreateCommand);
+export const bot = new MedplumCommand('bot');
+addSubcommand(bot, botSaveCommand);
+addSubcommand(bot, botDeployCommand);
+addSubcommand(bot, botCreateCommand);
 
 // Commands to deprecate
 export const saveBotDeprecate = new MedplumCommand('save-bot');

@@ -4,12 +4,14 @@ import { createReadStream, writeFile } from 'node:fs';
 import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 import { createMedplumClient } from './util/client';
-import { MedplumCommand, getUnsupportedExtension, prettyPrint } from './utils';
+import { MedplumCommand, addSubcommand, getUnsupportedExtension, prettyPrint } from './utils';
 
 const bulkExportCommand = new MedplumCommand('export');
 const bulkImportCommand = new MedplumCommand('import');
 
-export const bulk = new MedplumCommand('bulk').addCommand(bulkExportCommand).addCommand(bulkImportCommand);
+export const bulk = new MedplumCommand('bulk');
+addSubcommand(bulk, bulkExportCommand);
+addSubcommand(bulk, bulkImportCommand);
 
 bulkExportCommand
   .option(
