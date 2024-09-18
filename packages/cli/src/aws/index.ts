@@ -1,5 +1,5 @@
 import { color, processDescription } from '../util/color';
-import { MedplumCommand } from '../utils';
+import { addSubcommand, MedplumCommand } from '../utils';
 import { describeStacksCommand } from './describe';
 import { initStackCommand } from './init';
 import { listStacksCommand } from './list';
@@ -45,7 +45,8 @@ export function buildAwsCommand(): MedplumCommand {
     .option('--yes', 'Automatically confirm the update')
     .action(updateConfigCommand);
 
-  aws.addCommand(
+  addSubcommand(
+    aws,
     new MedplumCommand('update-server')
       .alias('deploy-server')
       .description('Update the server image')
