@@ -2362,7 +2362,7 @@ describe('Client', () => {
     );
   });
 
-  test.only('Storage events', async () => {
+  test('Storage events', async () => {
     // Make window.location writeable
     Object.defineProperty(window, 'location', {
       value: { assign: {} },
