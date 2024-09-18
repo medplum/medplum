@@ -2425,7 +2425,7 @@ describe('Client', () => {
         profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
       }),
     } as StorageEvent);
-    expect(mockReload).not.toHaveBeenCalled();
+    expect(mockReload).toHaveBeenCalled();
 
     // Should refresh when going from a profile to no profile (logged out)
     mockReload.mockReset();
