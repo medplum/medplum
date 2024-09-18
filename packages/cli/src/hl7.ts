@@ -1,7 +1,7 @@
 import { formatHl7DateTime, Hl7Message } from '@medplum/core';
 import { Hl7Client, Hl7Server } from '@medplum/hl7';
 import { readFileSync } from 'node:fs';
-import { MedplumCommand } from './utils';
+import { addSubcommand, MedplumCommand } from './utils';
 
 const send = new MedplumCommand('send')
   .description('Send an HL7 v2 message via MLLP')
@@ -52,7 +52,9 @@ const listen = new MedplumCommand('listen')
     console.log('Listening on port ' + port);
   });
 
-export const hl7 = new MedplumCommand('hl7').addCommand(send).addCommand(listen);
+export const hl7 = new MedplumCommand('hl7');
+addSubcommand(hl7, send);
+addSubcommand(hl7, listen);
 
 export function generateSampleHl7Message(): string {
   const now = formatHl7DateTime(new Date());
