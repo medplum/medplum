@@ -18,7 +18,7 @@ import { IncomingHttpHeaders } from 'node:http';
 const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
 
-const localBundleReference = /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 const uuidUriPrefix = 'urn:uuid';
 
 type BundleEntryIdentity = { placeholder: string; reference: string };
@@ -501,7 +501,8 @@ class BatchProcessor {
       return input;
     }
 
-    const referenceString = this.resolvedIdentities[rewritable];
+    const urn = rewritable.replaceAll('%3A', ':'); // Handle specific URL encoding for the URN format
+    const referenceString = this.resolvedIdentities[urn];
     return referenceString ? input.replaceAll(rewritable, referenceString) : input;
   }
 
