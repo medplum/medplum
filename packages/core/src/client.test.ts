@@ -4,6 +4,8 @@ import {
   Identifier,
   OperationOutcome,
   Patient,
+  Practitioner,
+  Reference,
   SearchParameter,
   StructureDefinition,
 } from '@medplum/fhirtypes';
@@ -2392,8 +2394,12 @@ describe('Client', () => {
     mockReload.mockReset();
     callback({
       key: 'activeLogin',
-      oldValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner1 } }),
-      newValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner1 } }),
+      oldValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
+      }),
+      newValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
+      }),
     } as StorageEvent);
     expect(mockReload).not.toHaveBeenCalled();
 
@@ -2401,17 +2407,23 @@ describe('Client', () => {
     mockReload.mockReset();
     callback({
       key: 'activeLogin',
-      oldValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner1 } }),
-      newValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner2 } }),
+      oldValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
+      }),
+      newValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner2}` } satisfies Reference<Practitioner>,
+      }),
     } as StorageEvent);
     expect(mockReload).toHaveBeenCalled();
 
-    // Should refresh when going to a new profile from no profile
+    // Should refresh when going from no profile to a new profile
     mockReload.mockReset();
     callback({
       key: 'activeLogin',
-      oldValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: null } }),
-      newValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner1 } }),
+      oldValue: null,
+      newValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
+      }),
     } as StorageEvent);
     expect(mockReload).toHaveBeenCalled();
 
@@ -2419,8 +2431,10 @@ describe('Client', () => {
     mockReload.mockReset();
     callback({
       key: 'activeLogin',
-      oldValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: practitioner1 } }),
-      newValue: JSON.stringify({ profile: { resourceType: 'Practitioner', id: null } }),
+      oldValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
+      }),
+      newValue: null,
     } as StorageEvent);
     expect(mockReload).toHaveBeenCalled();
 

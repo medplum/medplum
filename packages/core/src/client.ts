@@ -3828,7 +3828,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         } else if (e.key === 'activeLogin') {
           const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
           const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
-          if (oldState?.profile.id !== newState?.profile.id) {
+          if (oldState?.profile.reference !== newState?.profile.reference) {
             window.location.reload();
           }
         }
