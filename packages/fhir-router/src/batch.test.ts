@@ -15,6 +15,7 @@ import {
   Bundle,
   BundleEntry,
   BundleEntryRequest,
+  DiagnosticReport,
   Observation,
   OperationOutcome,
   Patient,
@@ -1207,5 +1208,43 @@ describe('Batch', () => {
     };
 
     await expect(processBatch(req, repo, router, tx)).resolves.toBeDefined();
+  });
+
+  test('Local reference resolution for update', async () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:f1228716-b33c-420d-89ab-46fac9ebcc8b',
+          request: {
+            method: 'PUT',
+            url: 'ServiceRequest/12345',
+          },
+          resource: {
+            id: '12345',
+            resourceType: 'ServiceRequest',
+            intent: 'order',
+            status: 'active',
+            subject: { display: 'Test Patient' },
+          },
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'DiagnosticReport',
+          },
+          resource: {
+            resourceType: 'DiagnosticReport',
+            code: {},
+            status: 'amended',
+            basedOn: [{ reference: 'urn:uuid:f1228716-b33c-420d-89ab-46fac9ebcc8b' }],
+          },
+        },
+      ],
+    };
+    const result = await processBatch(req, repo, router, bundle);
+    const report = result.entry?.[1]?.resource as DiagnosticReport;
+    expect(report.basedOn?.[0].reference).toEqual('ServiceRequest/12345');
   });
 });

@@ -36,7 +36,7 @@ export type UseSubscriptionOptions = {
  * - `onError` - Called whenever an error occurs during the lifecycle of the managed subscription.
  */
 export function useSubscription(
-  criteria: string,
+  criteria: string | undefined,
   callback: (bundle: Bundle) => void,
   options?: UseSubscriptionOptions
 ): void {
@@ -48,7 +48,7 @@ export function useSubscription(
   const listeningRef = useRef(false);
   const unsubTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const prevCriteriaRef = useRef<string>();
+  const prevCriteriaRef = useRef<string | undefined>();
   const prevMemoizedSubPropsRef = useRef<UseSubscriptionOptions['subscriptionProps']>();
 
   const callbackRef = useRef<typeof callback>();
@@ -96,14 +96,18 @@ export function useSubscription(
     prevMemoizedSubPropsRef.current = memoizedSubProps;
 
     // We do this after as to not immediately trigger re-render
-    if (shouldSubscribe) {
+    if (shouldSubscribe && criteria) {
       setEmitter(medplum.subscribeToCriteria(criteria, memoizedSubProps));
+    } else if (!criteria) {
+      setEmitter(undefined);
     }
 
     return () => {
       unsubTimerRef.current = setTimeout(() => {
         setEmitter(undefined);
-        medplum.unsubscribeFromCriteria(criteria, memoizedSubProps);
+        if (criteria) {
+          medplum.unsubscribeFromCriteria(criteria, memoizedSubProps);
+        }
       }, SUBSCRIPTION_DEBOUNCE_MS);
     };
   }, [medplum, criteria, memoizedSubProps]);
