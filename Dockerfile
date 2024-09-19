@@ -17,4 +17,5 @@ WORKDIR /usr/src/medplum
 ADD ./medplum-server.tar.gz ./
 RUN npm ci --maxsockets 1
 EXPOSE 5000 8103
+USER medplum
 ENTRYPOINT [ "node", "--require", "./packages/server/dist/otel/instrumentation.js", "packages/server/dist/index.js" ]
