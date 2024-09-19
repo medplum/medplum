@@ -30,6 +30,7 @@ import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from '.
 import { DEFAULT_PING_TIMEOUT, MAX_MISSED_HEARTBEATS, RETRY_WAIT_DURATION_MS } from './constants';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { AgentSerialChannel } from './serial';
 import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
@@ -418,6 +419,9 @@ export class App {
         break;
       case ChannelType.HL7_V2:
         channel = new AgentHl7Channel(this, definition, endpoint);
+        break;
+      case ChannelType.SERIAL:
+        channel = new AgentSerialChannel(this, definition, endpoint);
         break;
       default:
         throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
