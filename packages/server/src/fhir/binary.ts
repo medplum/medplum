@@ -148,3 +148,24 @@ async function readStreamToString(stream: internal.Readable): Promise<string> {
   }
   return data;
 }
+
+export async function uploadBinaryData(resource: Binary) {
+  const ctx = getAuthenticatedContext();
+  if (create) {
+    resource = await ctx.repo.createResource<Binary>(resource);
+    outcome = created;
+  } else {
+    resource = await ctx.repo.updateResource<Binary>(resource);
+    outcome = allOk;
+  }
+
+  if (!binaryContentSpecialCase) {
+    const filename = req.query['_filename'] as string | undefined;
+    await getBinaryStorage().writeBinary(binary, filename, contentType, binarySource);
+  }
+
+  await sendResponse(req, res, outcome, {
+    ...binary,
+    url: getBinaryStorage().getPresignedUrl(binary),
+  });
+}

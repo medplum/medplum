@@ -121,6 +121,9 @@ export async function queueBatchProcessing(batch: Bundle, asyncJob: AsyncJob): P
 export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   const { bundle, login, project, membership } = job.data;
 
+  // Process batch with the user's repo
+  const repo = await getRepoForLogin({ login, project, membership });
+  const router = new FhirRouter();
   const req: FhirRequest = {
     method: 'POST',
     pathname: '/',
@@ -128,11 +131,9 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
     query: Object.create(null),
     body: bundle,
   };
-
-  const router = new FhirRouter();
-  const repo = await getRepoForLogin({ login, project, membership });
   const [outcome, result] = await router.handleRequest(req, repo);
 
+  // Update the async job with system repo
   const systemRepo = getSystemRepo();
   const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
   if (isOk(outcome)) {
