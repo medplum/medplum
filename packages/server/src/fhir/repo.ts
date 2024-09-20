@@ -41,7 +41,7 @@ import {
   validateResource,
   validateResourceType,
 } from '@medplum/core';
-import { FhirRepository, RepositoryMode, UpdateResourceOptions, CreateResourceOptions } from '@medplum/fhir-router';
+import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from '@medplum/fhir-router';
 import {
   AccessPolicy,
   Binary,
@@ -1620,6 +1620,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (updated.resourceType === 'ProjectMembership') {
       return resolveId(updated.project);
+    }
+
+    if (updated.resourceType === 'User' && this.isSuperAdmin()) {
+      // Super admins can add, remove, and the project compartment of users.
+      return updated?.meta?.project;
     }
 
     if (protectedResourceTypes.includes(updated.resourceType)) {
