@@ -155,6 +155,10 @@ export function writeConfig(configFileName: string, config: Record<string, any>)
 
 export function readConfig(tagName?: string, options?: { file?: string }): MedplumConfig | undefined {
   const fileName = getConfigFileName(tagName, options);
+  return readConfigFromFile(fileName);
+}
+
+export function readConfigFromFile(fileName: string): MedplumConfig | undefined {
   const content = readFileContents(fileName);
   if (!content) {
     return undefined;
@@ -170,7 +174,7 @@ export function readServerConfig(tagName?: string): Record<string, string | numb
   return JSON.parse(content);
 }
 
-function readFileContents(fileName: string): string {
+export function readFileContents(fileName: string): string {
   const path = resolve(fileName);
   if (!existsSync(path)) {
     return '';
