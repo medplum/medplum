@@ -27,6 +27,7 @@ import {
   Questionnaire,
   ResourceType,
   StructureDefinition,
+  User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
@@ -1173,4 +1174,34 @@ describe('FHIR Repo', () => {
     setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
     expect(patient.photo?.[1].contentType).toEqual('image/jpeg');
   });
+
+  test('Super admin can edit User.meta.project', async () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+
+      // Create a user in the project
+      const user1 = await repo.createResource<User>({
+        resourceType: 'User',
+        email: randomUUID() + '@example.com',
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+      });
+      expect(user1.meta?.project).toEqual(project.id);
+
+      // Try to change the project as the normal user
+      // Should silently fail, and preserve the meta.project
+      const user2 = await repo.updateResource<User>({
+        ...user1,
+        meta: { project: undefined },
+      });
+      expect(user2.meta?.project).toEqual(project.id);
+
+      // Now try to change the project as the super admin
+      // Should succeed
+      const user3 = await systemRepo.updateResource<User>({
+        ...user2,
+        meta: { project: undefined },
+      });
+      expect(user3.meta?.project).toBeUndefined();
+    }));
 });
