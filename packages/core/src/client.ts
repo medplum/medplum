@@ -3820,11 +3820,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private setupStorageListener(): void {
     try {
       window.addEventListener('storage', (e: StorageEvent) => {
-        if (e.key === null || e.key === 'activeLogin') {
-          // Storage events fire when different tabs make changes.
-          // On storage clear (key === null) or activeLogin change (key === 'activeLogin')
-          // Refresh the page to ensure the active login is up to date.
+        // Storage events fire when different tabs make changes.
+        // On storage clear (key === null) or profile change (key === 'activeLogin', and profile in 'activeLogin' is different)
+        // Refresh the page to ensure the active login is up to date.
+        if (e.key === null) {
           window.location.reload();
+        } else if (e.key === 'activeLogin') {
+          const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
+          const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
+          if (oldState?.profile.reference !== newState?.profile.reference) {
+            window.location.reload();
+          }
         }
       });
     } catch (_err) {
