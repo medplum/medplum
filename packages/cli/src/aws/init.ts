@@ -10,7 +10,7 @@ import { GetCallerIdentityCommand, STSClient } from '@aws-sdk/client-sts';
 import { MedplumInfraConfig, normalizeErrorString } from '@medplum/core';
 import { generateKeyPairSync, randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
-import { getConfigFileName, writeConfig } from '../utils';
+import { getConfigFileName, readFileContents, readServerConfig, writeConfig } from '../utils';
 import { ask, checkOk, choose, chooseInt, closeTerminal, header, initTerminal, print, yesOrNo } from './terminal';
 import { getServerVersions, writeParameters } from './utils';
 
@@ -22,7 +22,7 @@ const getDomainSetting = (domain: MedplumDomainType): MedplumDomainSetting => `$
 const getDomainCertSetting = (domain: MedplumDomainType): MedplumDomainCertSetting => `${domain}SslCertArn`;
 
 export async function initStackCommand(): Promise<void> {
-  const config = { apiPort: 8103, region: 'us-east-1' } as MedplumInfraConfig;
+  let config = { apiPort: 8103, region: 'us-east-1' } as MedplumInfraConfig;
   initTerminal();
   header('MEDPLUM');
   print('This tool prepares the necessary prerequisites for deploying Medplum in your AWS account.');
@@ -65,16 +65,31 @@ export async function initStackCommand(): Promise<void> {
   header('CONFIG FILE');
   print('Medplum Infrastructure will create a config file in the current directory.');
   const configFileName = await ask('What is the config file name?', `medplum.${config.name}.config.json`);
+  let reuseOrIgnore: 'reuse' | 'ignore' = 'ignore';
   if (existsSync(configFileName)) {
     print('Config file already exists.');
-    await checkOk('Do you want to overwrite the config file?');
+    reuseOrIgnore = (await choose(
+      `Continue using existing values from the config file as defaults or ignore and delete existing values?`,
+      ['reuse', 'ignore'],
+      'reuse'
+    )) as 'reuse' | 'ignore';
   }
-  print('Using config file "' + configFileName + '"...');
-  writeConfig(configFileName, config);
+
+  if (reuseOrIgnore === 'reuse') {
+    const configFromFile = JSON.parse(readFileContents(configFileName) || 'null') as MedplumInfraConfig | null;
+    if (!configFromFile) {
+      throw new Error('Medplum config not found in file: ' + configFileName);
+    }
+    print('Loading config from "' + configFileName + '"...');
+    config = configFromFile;
+  } else {
+    print('Using config file "' + configFileName + '"...');
+    writeConfig(configFileName, config);
+  }
 
   header('AWS REGION');
   print('Most Medplum resources will be created in a single AWS region.');
-  config.region = await ask('Enter your AWS region:', 'us-east-1');
+  config.region = await ask('Enter your AWS region:', config.region ?? 'us-east-1');
   writeConfig(configFileName, config);
 
   header('AWS ACCOUNT NUMBER');
@@ -82,14 +97,14 @@ export async function initStackCommand(): Promise<void> {
   if (currentAccountId) {
     print('Using the AWS CLI, your current account ID is: ' + currentAccountId);
   }
-  config.accountNumber = await ask('What is your AWS account number?', currentAccountId);
+  config.accountNumber = await ask('What is your AWS account number?', config.accountNumber ?? currentAccountId);
   writeConfig(configFileName, config);
 
   header('STACK NAME');
   print('Medplum will create a CloudFormation stack to manage AWS resources.');
   print('AWS CloudFormation stack names ');
   const defaultStackName = 'Medplum' + config.name.charAt(0).toUpperCase() + config.name.slice(1);
-  config.stackName = await ask('Enter your CloudFormation stack name?', defaultStackName);
+  config.stackName = await ask('Enter your CloudFormation stack name?', config.stackName ?? defaultStackName);
   writeConfig(configFileName, config);
 
   header('BASE DOMAIN NAME');
@@ -106,38 +121,43 @@ export async function initStackCommand(): Promise<void> {
   print('The base domain should include the TLD (i.e., ".com", ".org", ".net").');
   print('');
   print('Note that you must own the base domain, and it must use Route53 DNS.');
-  while (!config.domainName) {
-    config.domainName = await ask('Enter your base domain name:');
-  }
+  do {
+    config.domainName = await ask('Enter your base domain name:', config.domainName);
+  } while (!config.domainName);
   writeConfig(configFileName, config);
-
-  header('SUPPORT EMAIL');
-  print('Medplum sends transactional emails to users.');
-  print('For example, emails to new users or for password reset.');
-  print('Medplum will use the support email address to send these emails.');
-  print('Note that you must verify the support email address in SES.');
-  const supportEmail = await ask('Enter your support email address:');
 
   header('API DOMAIN NAME');
   print('Medplum deploys a REST API for the backend services.');
-  config.apiDomainName = await ask('Enter your REST API domain name:', 'api.' + config.domainName);
+  config.apiDomainName = await ask(
+    'Enter your REST API domain name:',
+    config.apiDomainName ?? 'api.' + config.domainName
+  );
   config.baseUrl = `https://${config.apiDomainName}/`;
   writeConfig(configFileName, config);
 
   header('APP DOMAIN NAME');
   print('Medplum deploys a web application for the user interface.');
-  config.appDomainName = await ask('Enter your web application domain name:', 'app.' + config.domainName);
+  config.appDomainName = await ask(
+    'Enter your web application domain name:',
+    config.appDomainName ?? 'app.' + config.domainName
+  );
   writeConfig(configFileName, config);
 
   header('STORAGE DOMAIN NAME');
   print('Medplum deploys a storage service for file uploads.');
-  config.storageDomainName = await ask('Enter your storage domain name:', 'storage.' + config.domainName);
+  config.storageDomainName = await ask(
+    'Enter your storage domain name:',
+    config.storageDomainName ?? 'storage.' + config.domainName
+  );
   writeConfig(configFileName, config);
 
   header('STORAGE BUCKET');
   print('Medplum uses an S3 bucket to store binary content such as file uploads.');
   print('Medplum will create a the S3 bucket as part of the CloudFormation stack.');
-  config.storageBucketName = await ask('Enter your storage bucket name:', config.storageDomainName);
+  config.storageBucketName = await ask(
+    'Enter your storage bucket name:',
+    config.storageBucketName ?? config.storageDomainName
+  );
   writeConfig(configFileName, config);
 
   header('MAX AVAILABILITY ZONES');
@@ -147,7 +167,7 @@ export async function initStackCommand(): Promise<void> {
   print('If you want to use all availability zones, choose a large number such as 99.');
   print('If you want to restrict the number, for example to manage EIP limits,');
   print('then choose a small number such as 2 or 3.');
-  config.maxAzs = await chooseInt('Enter the maximum number of availability zones:', [2, 3, 99], 2);
+  config.maxAzs = await chooseInt('Enter the maximum number of availability zones:', [2, 3, 99], config.maxAzs ?? 2);
 
   header('DATABASE INSTANCES');
   print('Medplum uses a relational database to store data.');
@@ -158,7 +178,7 @@ export async function initStackCommand(): Promise<void> {
     print('');
     print('If you need high availability, you can choose multiple instances.');
     print('Use 1 for a single instance, or 2 for a primary and a standby.');
-    config.rdsInstances = await chooseInt('Enter the number of database instances:', [1, 2], 1);
+    config.rdsInstances = await chooseInt('Enter the number of database instances:', [1, 2], config.rdsInstances ?? 1);
   } else {
     print('Medplum will not create a new RDS database.');
     print('Please create a new RDS database and enter the database name, username, and password.');
@@ -172,7 +192,11 @@ export async function initStackCommand(): Promise<void> {
   print('Medplum will create a new Fargate cluster as part of the CloudFormation stack.');
   print('Fargate will automatically scale the number of servers up and down.');
   print('If you need high availability, you can choose multiple instances.');
-  config.desiredServerCount = await chooseInt('Enter the number of server instances:', [1, 2, 3, 4, 6, 8], 1);
+  config.desiredServerCount = await chooseInt(
+    'Enter the number of server instances:',
+    [1, 2, 3, 4, 6, 8],
+    config.desiredServerCount ?? 1
+  );
   writeConfig(configFileName, config);
 
   header('SERVER MEMORY');
@@ -180,7 +204,11 @@ export async function initStackCommand(): Promise<void> {
   print('The default is 512 MB, which is sufficient for getting started.');
   print('Note that only certain CPU units are compatible with memory units.');
   print('Consult AWS Fargate "Task Definition Parameters" for more information.');
-  config.serverMemory = await chooseInt('Enter the server memory (MB):', [512, 1024, 2048, 4096, 8192, 16384], 512);
+  config.serverMemory = await chooseInt(
+    'Enter the server memory (MB):',
+    [512, 1024, 2048, 4096, 8192, 16384],
+    config.serverMemory ?? 512
+  );
   writeConfig(configFileName, config);
 
   header('SERVER CPU');
@@ -189,7 +217,11 @@ export async function initStackCommand(): Promise<void> {
   print('The default is 256, which is sufficient for getting started.');
   print('Note that only certain CPU units are compatible with memory units.');
   print('Consult AWS Fargate "Task Definition Parameters" for more information.');
-  config.serverCpu = await chooseInt('Enter the server CPU:', [256, 512, 1024, 2048, 4096, 8192, 16384], 256);
+  config.serverCpu = await chooseInt(
+    'Enter the server CPU:',
+    [256, 512, 1024, 2048, 4096, 8192, 16384],
+    config.serverCpu ?? 256
+  );
   writeConfig(configFileName, config);
 
   header('SERVER IMAGE');
@@ -198,13 +230,17 @@ export async function initStackCommand(): Promise<void> {
   print('Docker images can be loaded from either Docker Hub or AWS ECR.');
   print('The default is the latest Medplum release.');
   const latestVersion = (await getServerVersions())[0] ?? 'latest';
-  config.serverImage = await ask('Enter the server image:', `medplum/medplum-server:${latestVersion}`);
+  config.serverImage = await ask(
+    'Enter the server image:',
+    config.serverImage ?? `medplum/medplum-server:${latestVersion}`
+  );
   writeConfig(configFileName, config);
 
   header('SIGNING KEY');
   print('Medplum uses AWS CloudFront Presigned URLs for binary content such as file uploads.');
   const signingKey = await generateSigningKey(config.region, config.stackName + 'SigningKey');
   if (signingKey) {
+    print(`Generated signing key with keyId ${signingKey.keyId}`);
     config.signingKeyId = signingKey.keyId;
     config.storagePublicKey = signingKey.publicKey;
     writeConfig(configFileName, config);
@@ -232,6 +268,19 @@ export async function initStackCommand(): Promise<void> {
     config[getDomainCertSetting(certName)] = arn;
     writeConfig(configFileName, config);
   }
+
+  const existingServerConfig = readServerConfig(config.name);
+
+  header('SUPPORT EMAIL');
+  print('Medplum sends transactional emails to users.');
+  print('For example, emails to new users or for password reset.');
+  print('Medplum will use the support email address to send these emails.');
+  print('Note that you must verify the support email address in SES.');
+  const supportEmail = await ask('Enter your support email address:', existingServerConfig?.supportEmail);
+
+  // reread after prompting since the user may have updated the config
+  const serverConfig = readServerConfig(config.name) ?? { supportEmail };
+  writeConfig(getConfigFileName(config.name, { server: true }), serverConfig);
 
   header('AWS PARAMETER STORE');
   print('Medplum uses AWS Parameter Store to store sensitive configuration values.');
