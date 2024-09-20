@@ -176,6 +176,29 @@
       "inherited": false
     },
     {
+      "name": "basedOn",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "AccessPolicy",
+          "documentLocation": "medplum"
+        }
+      ],
+      "path": "AccessPolicy.basedOn",
+      "min": 0,
+      "max": "*",
+      "short": "",
+      "definition": "Other access policies used to derive this access policy.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "compartment",
       "depth": 1,
       "types": [
