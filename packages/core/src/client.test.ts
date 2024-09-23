@@ -2472,7 +2472,7 @@ describe('Client', () => {
     } as StorageEvent);
     expect(mockReload).toHaveBeenCalled();
 
-    // Should NOT refresh if sessionDetails.profile.id is not the same as the ID of the profile in the newEvent
+    // Should NOT refresh if sessionDetails.profile.id IS the same as the ID of the profile in the newEvent
     mockReload.mockReset();
     // @ts-expect-error This is a no-no, overriding private field
     client.sessionDetails = { profile: { id: practitioner1 } as Practitioner };
