@@ -557,7 +557,7 @@ function getSearchLinks(
 
   if (searchRequest.count > 0 && entries?.length) {
     if (canUseCursorLinks(searchRequest)) {
-      if (entries[entries.length - 1].resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated) {
+      if (entries[0].resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated) {
         throw new OperationOutcomeError(serverError(new Error('Cursor fails to make progress')));
       }
       buildSearchLinksWithCursor(searchRequest, nextResource, result);
