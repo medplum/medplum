@@ -63,7 +63,8 @@
   "devDependencies": {
     "@medplum/fhirtypes": "3.2.14",
     "@medplum/mock": "3.2.14",
-    "@types/node-fetch": "2.6.11"
+    "@types/node-fetch": "2.6.11",
+    "@types/semver": "7.5.8"
   },
   "engines": {
     "node": ">=18.0.0"
