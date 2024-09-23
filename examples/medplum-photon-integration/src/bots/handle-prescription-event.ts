@@ -1,4 +1,11 @@
-import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
+import {
+  BotEvent,
+  formatHumanName,
+  getReferenceString,
+  MedplumClient,
+  normalizeErrorString,
+  PatchOperation,
+} from '@medplum/core';
 import { MedicationKnowledge, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
 import {
   PhotonEvent,
@@ -7,7 +14,14 @@ import {
   PrescriptionExpiredEvent,
 } from '../photon-types';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_WEBHOOKS } from './system-strings';
-import { checkForDuplicateEvent, getExistingMedicationRequest, handlePhotonAuth, photonGraphqlFetch } from './utils';
+import {
+  checkForDuplicateEvent,
+  getExistingMedicationRequest,
+  handlePhotonAuth,
+  photonGraphqlFetch,
+  getPatient,
+  getMedicationKnowledge,
+} from './utils';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEvent>): Promise<MedicationRequest> {
   const body = event.input;
@@ -105,6 +119,14 @@ export async function handleCreatePrescription(
   // Get the prescribing practitioner and the medication from Medplum
   const prescriber = await getPrescriber(data, medplum, authToken);
   const medicationRxcui = await getPhotonMedicationCode(data.treatmentId, authToken);
+  const patient = await getPatient(data.patient, medplum);
+  if (!patient) {
+    throw new Error('No patient to link prescription to.');
+  }
+  const patientName = patient?.name?.[0];
+  const subject = patientName
+    ? { reference: getReferenceString(patient), display: formatHumanName(patientName) }
+    : { reference: getReferenceString(patient) };
   let medication: MedicationKnowledge | undefined = medicationRxcui
     ? await getMedicationKnowledge(medplum, medicationRxcui)
     : undefined;
@@ -117,7 +139,7 @@ export async function handleCreatePrescription(
     resourceType: 'MedicationRequest',
     status: 'active',
     intent: 'order',
-    subject: { reference: `Patient/${data.patient.externalId}` },
+    subject,
     identifier: [
       { system: NEUTRON_HEALTH_WEBHOOKS, value: event.id },
       { system: NEUTRON_HEALTH, value: data.id },
@@ -268,25 +290,6 @@ async function getPhotonMedicationCode(photonMedicationId: string, authToken: st
     const result = await photonGraphqlFetch(body, authToken);
     const rxcui = result.data.medicationProducts?.[0].codes?.rxcui;
     return rxcui;
-  } catch (err) {
-    throw new Error(normalizeErrorString(err));
-  }
-}
-
-/**
- * Takes data from the webhook to find the corresponding Medication resource in your project.
- *
- * @param medplum - Medplum Cient to search for the medication in your project
- * @param rxcui - The rxcui code of the medication
- * @returns The Medication resource from your project if it exists
- */
-async function getMedicationKnowledge(medplum: MedplumClient, rxcui: string): Promise<MedicationKnowledge | undefined> {
-  try {
-    const medication = await medplum.searchOne('MedicationKnowledge', {
-      code: rxcui,
-    });
-
-    return medication;
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }

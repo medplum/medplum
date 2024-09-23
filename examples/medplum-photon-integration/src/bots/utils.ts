@@ -1,7 +1,7 @@
 import { MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Address, ContactPoint, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { Address, ContactPoint, MedicationKnowledge, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
-import { PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
+import { OrderData, PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
 import { NEUTRON_HEALTH } from './system-strings';
 
 export async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {
@@ -160,4 +160,60 @@ export async function getExistingMedicationRequest(
   existingPrescription = await medplum.readResource('MedicationRequest', id);
 
   return existingPrescription;
+}
+
+/**
+ * Takes the patient data from a Photon event and searches for that patient in your project, returning it if it exists.
+ *
+ * @param patientData - The partial patient data from a Photon order event
+ * @param medplum - MedplumClient to search your project for a patient
+ * @returns Your project's patient from the Photon event if it exists
+ */
+export async function getPatient(
+  patientData: OrderData['patient'],
+  medplum: MedplumClient
+): Promise<Patient | undefined> {
+  const id = patientData.externalId;
+  const photonId = patientData.id;
+
+  let patient: Patient | undefined;
+  // Search for the patient based on the photon ID
+  patient = await medplum.searchOne('Patient', {
+    identifier: NEUTRON_HEALTH + `|${photonId}`,
+  });
+
+  if (patient) {
+    return patient;
+  }
+
+  if (!id) {
+    return undefined;
+  }
+
+  // Search for the patient based on the medplum id
+  patient = await medplum.readResource('Patient', id);
+
+  return patient;
+}
+
+/**
+ * Takes data from the webhook to find the corresponding Medication resource in your project.
+ *
+ * @param medplum - Medplum Cient to search for the medication in your project
+ * @param rxcui - The rxcui code of the medication
+ * @returns The Medication resource from your project if it exists
+ */
+export async function getMedicationKnowledge(
+  medplum: MedplumClient,
+  rxcui: string
+): Promise<MedicationKnowledge | undefined> {
+  try {
+    const medication = await medplum.searchOne('MedicationKnowledge', {
+      code: rxcui,
+    });
+
+    return medication;
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
 }
