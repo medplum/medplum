@@ -50,9 +50,9 @@
   "devDependencies": {
     "@medplum/core": "3.2.14",
     "@types/base-64": "1.0.2",
-    "@types/react": "18.3.6",
+    "@types/react": "18.3.8",
     "@types/text-encoding": "0.0.39",
-    "esbuild": "0.23.1",
+    "esbuild": "0.24.0",
     "esbuild-node-externals": "1.14.0",
     "expo-crypto": "13.0.2",
     "expo-secure-store": "13.0.2",

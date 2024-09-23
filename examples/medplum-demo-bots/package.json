@@ -40,14 +40,14 @@
     "@types/ssh2-sftp-client": "9.0.4",
     "@vitest/coverage-v8": "2.1.1",
     "@vitest/ui": "2.1.1",
-    "esbuild": "0.23.1",
+    "esbuild": "0.24.0",
     "fast-glob": "3.3.2",
     "form-data": "4.0.0",
     "node-fetch": "2.7.0",
-    "pdfmake": "0.2.12",
+    "pdfmake": "0.2.13",
     "rimraf": "5.0.9",
     "ssh2-sftp-client": "11.0.0",
-    "stripe": "16.11.0",
+    "stripe": "16.12.0",
     "typescript": "5.6.2",
     "vitest": "2.1.1"
   }
