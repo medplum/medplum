@@ -6,6 +6,7 @@ export type Route<Handler, Metadata> = { method: HttpMethod; path: PathSegment[]
 
 export type RouteResult<Handler, Metadata> = {
   handler: Handler;
+  path: string;
   params: Record<string, string>;
   query?: Record<string, string | string[]>;
   data?: Metadata;
@@ -24,10 +25,11 @@ export class Router<Handler, Metadata> {
 
   find(method: HttpMethod, pathStr: string): RouteResult<Handler, Metadata> | undefined {
     const queryStart = pathStr.indexOf('?');
+    const hasQuery = queryStart > -1;
     const path = pathStr
-      .substring(0, queryStart > -1 ? queryStart : pathStr.length)
+      .substring(0, hasQuery ? queryStart : pathStr.length)
       .split('/')
-      .filter((e) => !!e);
+      .filter(Boolean);
     let bestRoute: Route<Handler, Metadata> | undefined = undefined;
     let bestScore = -1;
     for (const route of this.routes) {
@@ -40,7 +42,13 @@ export class Router<Handler, Metadata> {
     if (!bestRoute) {
       return undefined;
     }
-    return { handler: bestRoute.handler, params: buildParams(bestRoute, path), data: bestRoute.data };
+    return {
+      handler: bestRoute.handler,
+      path: path.join('/'),
+      params: buildParams(bestRoute, path),
+      query: hasQuery ? parseQueryString(pathStr) : undefined,
+      data: bestRoute.data,
+    };
   }
 }
 
@@ -68,4 +76,19 @@ function buildParams<T, U>(route: Route<T, U>, path: string[]): Record<string, s
     }
   }
   return params;
+}
+
+function parseQueryString(path: string): Record<string, string | string[]> {
+  // Pass in dummy host for parsing purposes.
+  // The host is ignored.
+  const url = new URL(path, 'https://example.com/');
+  const queryParams = Object.create(null);
+
+  const raw = url.searchParams;
+  for (const param of raw.keys()) {
+    const values = raw.getAll(param);
+    queryParams[param] = values.length === 1 ? values[0] : values;
+  }
+
+  return queryParams;
 }

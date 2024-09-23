@@ -264,20 +264,7 @@ export class FhirRouter extends EventTarget {
   }
 
   find(method: HttpMethod, url: string): RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined {
-    let path = url;
-    let query: Record<string, string | string[]> | undefined;
-
-    const queryIndex = url.indexOf('?');
-    if (queryIndex >= 0) {
-      query = parseQueryString(url);
-      path = url.substring(0, queryIndex);
-    }
-
-    const result = this.router.find(method, path);
-    if (result && query) {
-      result.query = query;
-    }
-    return result;
+    return this.router.find(method, url);
   }
 
   async handleRequest(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
@@ -290,15 +277,13 @@ export class FhirRouter extends EventTarget {
     if (!result) {
       return [notFound];
     }
-    const { handler, params, query } = result;
+    const { handler, path, params, query } = result;
 
     // Populate request object with parsed URL components from router
     req.params = params;
+    req.pathname = path;
     if (query) {
-      req.pathname = url.slice(0, url.indexOf('?'));
       req.query = query;
-    } else {
-      req.pathname = url;
     }
     try {
       return await handler(req, repo, this);
@@ -319,21 +304,6 @@ function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
   }
   const match = /"([^"]+)"/.exec(ifMatch);
   return match ? match[1] : undefined;
-}
-
-function parseQueryString(path: string): Record<string, string | string[]> {
-  // Pass in dummy host for parsing purposes.
-  // The host is ignored.
-  const url = new URL(path, 'https://example.com/');
-  const queryParams = Object.create(null);
-
-  const raw = url.searchParams;
-  for (const param of raw.keys()) {
-    const values = raw.getAll(param);
-    queryParams[param] = values.length === 1 ? values[0] : values;
-  }
-
-  return queryParams;
 }
 
 export function makeSimpleRequest(method: HttpMethod, path: string, body?: any): FhirRequest {
