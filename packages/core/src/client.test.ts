@@ -18,6 +18,7 @@ import {
   DEFAULT_ACCEPT,
   FetchLike,
   InviteRequest,
+  LoginState,
   MedplumClient,
   MedplumClientEventMap,
   NewPatientRequest,
@@ -2395,13 +2396,20 @@ describe('Client', () => {
     callback({
       key: 'activeLogin',
       oldValue: JSON.stringify({
-        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
-      }),
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '12345',
+        refreshToken: 'abcde',
+      } satisfies LoginState),
       newValue: JSON.stringify({
-        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
-      }),
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '6789',
+        refreshToken: 'fghi',
+      } satisfies LoginState),
     } as StorageEvent);
     expect(mockReload).not.toHaveBeenCalled();
+    expect(client.getAccessToken()).toBe('6789');
 
     // Should refresh when we change to a new profile
     mockReload.mockReset();
@@ -2442,6 +2450,48 @@ describe('Client', () => {
     mockReload.mockReset();
     callback({ key: null });
     expect(mockReload).toHaveBeenCalled();
+
+    // Should refresh if sessionDetails.profile.id is not the same as the ID of the profile in the newEvent
+    mockReload.mockReset();
+    // @ts-expect-error This is a no-no, overriding private field
+    client.sessionDetails = { profile: { id: randomUUID() } as Practitioner };
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '12345',
+        refreshToken: 'abcde',
+      } satisfies LoginState),
+      newValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '6789',
+        refreshToken: 'fghi',
+      } satisfies LoginState),
+    } as StorageEvent);
+    expect(mockReload).toHaveBeenCalled();
+
+    // Should NOT refresh if sessionDetails.profile.id IS the same as the ID of the profile in the newEvent
+    mockReload.mockReset();
+    // @ts-expect-error This is a no-no, overriding private field
+    client.sessionDetails = { profile: { id: practitioner1 } as Practitioner };
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '12345',
+        refreshToken: 'abcde',
+      } satisfies LoginState),
+      newValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '6789',
+        refreshToken: 'fghi',
+      } satisfies LoginState),
+    } as StorageEvent);
+    expect(mockReload).not.toHaveBeenCalled();
   });
 
   test('setAccessToken', async () => {
