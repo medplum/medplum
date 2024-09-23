@@ -4069,7 +4069,7 @@ describe('FHIR Search', () => {
       test('Cursor pagination', () =>
         withTestContext(async () => {
           const tasks: Task[] = [];
-          for (let i = 0; i < 50; i++) {
+          for (let i = 0; i < 10; i++) {
             const task = await repo.createResource<Task>({
               resourceType: 'Task',
               status: 'accepted',
@@ -4079,21 +4079,21 @@ describe('FHIR Search', () => {
             tasks.push(task);
           }
 
-          let url = 'Task?code=cursor_test&_sort=_lastUpdated';
-          let count = 0;
-          while (url) {
+          let url = 'Task?code=cursor_test&_sort=_lastUpdated&_count=1';
+          for (let i = 0; i < 10; i++) {
             const bundle = await repo.search(parseSearchRequest(url));
-            count += bundle.entry?.length ?? 0;
+            expect(bundle.entry?.length).toBe(1);
+            expect(bundle.entry?.[0]?.resource?.id).toEqual(tasks[i].id);
 
             const link = bundle.link?.find((l) => l.relation === 'next')?.url;
-            if (link) {
-              expect(link.includes('_cursor')).toBe(true);
-              url = link;
+            if (i < 9) {
+              expect(link).toBeDefined();
+              expect(link?.includes('_cursor')).toBe(true);
+              url = link as string;
             } else {
-              url = '';
+              expect(link).toBeUndefined();
             }
           }
-          expect(count).toBe(50);
         }));
     });
   });

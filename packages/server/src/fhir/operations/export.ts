@@ -115,6 +115,7 @@ export async function exportResourceType<T extends Resource>(
       break;
     }
     searchRequest = parseSearchRequest<T>(linkNext);
+    console.assert(searchRequest.cursor, 'Expected cursor in next link');
   }
 }
 

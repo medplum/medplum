@@ -25,7 +25,6 @@ import {
   SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
-  serverError,
   SortRule,
   splitN,
   splitSearchOnComma,
@@ -81,8 +80,8 @@ type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequ
 
 interface Cursor {
   version: string;
-  nextInstant: string;
-  nextId: string;
+  lastInstant: string;
+  lastId: string;
 }
 
 interface ChainedSearchLink {
@@ -106,10 +105,10 @@ export async function searchImpl<T extends Resource>(
 
   let entry = undefined;
   let rowCount = undefined;
-  let nextResource: T | undefined;
+  let hasMore = false;
   if (searchRequest.count > 0) {
     const builder = getSelectQueryForSearch(repo, searchRequest);
-    ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder));
+    ({ entry, rowCount, hasMore } = await getSearchEntries<T>(repo, searchRequest, builder));
   }
 
   let total = undefined;
@@ -122,7 +121,7 @@ export async function searchImpl<T extends Resource>(
     type: 'searchset',
     entry,
     total,
-    link: getSearchLinks(searchRequest, entry, nextResource),
+    link: getSearchLinks(searchRequest, entry, hasMore),
   };
 }
 
@@ -257,7 +256,17 @@ function getSelectQueryForSearch<T extends Resource>(
     const cursor = parseCursor(searchRequest.cursor);
     if (cursor) {
       builder.orderBy(new Column(searchRequest.resourceType, 'lastUpdated', false));
-      builder.whereExpr(new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '>=', cursor.nextInstant));
+      builder.orderBy(new Column(searchRequest.resourceType, 'id', false));
+      // (lastUpdated=x and id>y) or lastUpdated>x
+      builder.whereExpr(
+        new Disjunction([
+          new Conjunction([
+            new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '=', cursor.lastInstant),
+            new Condition(new Column(searchRequest.resourceType, 'id'), '>', cursor.lastId),
+          ]),
+          new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '>', cursor.lastInstant),
+        ])
+      );
     }
   }
   return builder;
@@ -274,10 +283,10 @@ async function getSearchEntries<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
-): Promise<{ entry: BundleEntry<T>[]; rowCount: number; nextResource?: T }> {
+): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const rowCount = rows.length;
-  const resources = rows.map((row) => JSON.parse(row.content as string)) as T[];
+  const resources = rows.slice(0, searchRequest.count).map((row) => JSON.parse(row.content as string)) as T[];
   const entries = resources.map(
     (resource) =>
       ({
@@ -286,10 +295,6 @@ async function getSearchEntries<T extends Resource>(
         resource,
       }) as BundleEntry
   );
-  let nextResource: T | undefined;
-  if (entries.length > searchRequest.count) {
-    nextResource = entries.pop()?.resource as T;
-  }
 
   if (searchRequest.include || searchRequest.revInclude) {
     await getExtraEntries(repo, searchRequest, resources, entries);
@@ -305,7 +310,7 @@ async function getSearchEntries<T extends Resource>(
   return {
     entry: entries as BundleEntry<T>[],
     rowCount,
-    nextResource,
+    hasMore: rows.length > searchRequest.count,
   };
 }
 
@@ -540,13 +545,13 @@ async function getSearchRevIncludeEntries(
  * If "count" does not equal zero, then 'first', 'next', and 'previous' links will be included.
  * @param searchRequest - The search request.
  * @param entries - The search bundle entries.
- * @param nextResource - The next resource in the search results, which fell outside of the current page.
+ * @param hasMore - True if there are more entries after the current page.
  * @returns The search bundle links.
  */
 function getSearchLinks(
   searchRequest: SearchRequestWithCountAndOffset,
   entries: BundleEntry[] | undefined,
-  nextResource?: Resource
+  hasMore: boolean | undefined
 ): BundleLink[] {
   const result: BundleLink[] = [
     {
@@ -555,14 +560,11 @@ function getSearchLinks(
     },
   ];
 
-  if (searchRequest.count > 0 && entries?.length) {
+  if (searchRequest.count > 0 && entries && entries.length > 0) {
     if (canUseCursorLinks(searchRequest)) {
-      if (entries[entries.length - 1].resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated) {
-        throw new OperationOutcomeError(serverError(new Error('Cursor fails to make progress')));
-      }
-      buildSearchLinksWithCursor(searchRequest, nextResource, result);
+      buildSearchLinksWithCursor(searchRequest, entries, hasMore, result);
     } else {
-      buildSearchLinksWithOffset(searchRequest, nextResource, result);
+      buildSearchLinksWithOffset(searchRequest, hasMore, result);
     }
   }
 
@@ -575,14 +577,12 @@ function getSearchLinks(
  * A search request can use cursor links if:
  *   1. Not using offset pagination
  *   2. Exactly one sort rule using _lastUpdated ascending
- *   3. It uses a page size that can accommodate resources with the same lastUpdated
  * @param searchRequest - The candidate search request.
  * @returns True if the search request can use cursor links.
  */
 function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): boolean {
   return (
     searchRequest.offset === 0 &&
-    searchRequest.count >= 20 &&
     searchRequest.sortRules?.length === 1 &&
     searchRequest.sortRules[0].code === '_lastUpdated' &&
     !searchRequest.sortRules[0].descending
@@ -592,12 +592,14 @@ function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): bool
 /**
  * Builds the "first", "next", and "previous" links for a search request using cursor pagination.
  * @param searchRequest - The search request.
- * @param nextResource - The next resource in the search results, which fell outside of the current page.
+ * @param entries - The search bundle entries.
+ * @param hasMore - True if there are more entries after the current page.
  * @param result - The search bundle links.
  */
 function buildSearchLinksWithCursor(
   searchRequest: SearchRequestWithCountAndOffset,
-  nextResource: Resource | undefined,
+  entries: BundleEntry[],
+  hasMore: boolean | undefined,
   result: BundleLink[]
 ): void {
   result.push({
@@ -605,15 +607,16 @@ function buildSearchLinksWithCursor(
     url: getSearchUrl({ ...searchRequest, cursor: undefined, offset: undefined }),
   });
 
-  if (nextResource) {
+  if (hasMore) {
+    const lastResource = entries[entries.length - 1].resource;
     result.push({
       relation: 'next',
       url: getSearchUrl({
         ...searchRequest,
         cursor: formatCursor({
           version: '1',
-          nextInstant: nextResource?.meta?.lastUpdated as string,
-          nextId: nextResource?.id as string,
+          lastInstant: lastResource?.meta?.lastUpdated as string,
+          lastId: lastResource?.id as string,
         }),
         offset: undefined,
       }),
@@ -632,7 +635,7 @@ function parseCursor(cursor: string): Cursor | undefined {
     return undefined;
   }
   const date = new Date(parseInt(parts[1], 10));
-  return { version: parts[0], nextInstant: date.toISOString(), nextId: parts[2] };
+  return { version: parts[0], lastInstant: date.toISOString(), lastId: parts[2] };
 }
 
 /**
@@ -641,20 +644,20 @@ function parseCursor(cursor: string): Cursor | undefined {
  * @returns The cursor string.
  */
 function formatCursor(cursor: Cursor): string {
-  const date = new Date(cursor.nextInstant);
-  return `${cursor.version}-${date.getTime()}-${cursor.nextId}`;
+  const date = new Date(cursor.lastInstant);
+  return `${cursor.version}-${date.getTime()}-${cursor.lastId}`;
 }
 
 /**
  * Adds the "first", "next", and "previous" links to the result array using offset pagination.
  * Offset pagination is slow, and should be avoided if possible.
  * @param searchRequest - The search request.
- * @param nextResource - The next resource in the search results, which fell outside of the current page.
+ * @param hasMore - True if there are more entries after the current page.
  * @param result - The search bundle links.
  */
 function buildSearchLinksWithOffset(
   searchRequest: SearchRequestWithCountAndOffset,
-  nextResource: Resource | undefined,
+  hasMore: boolean | undefined,
   result: BundleLink[]
 ): void {
   const count = searchRequest.count;
@@ -665,7 +668,7 @@ function buildSearchLinksWithOffset(
     url: getSearchUrl({ ...searchRequest, offset: 0 }),
   });
 
-  if (nextResource) {
+  if (hasMore) {
     result.push({
       relation: 'next',
       url: getSearchUrl({ ...searchRequest, offset: offset + count }),
