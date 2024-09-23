@@ -1,9 +1,9 @@
-import { Button, Flex, Modal, Title } from '@mantine/core';
+import { Button, Flex, Grid, Modal, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Coding, List, MedicationKnowledge, Resource } from '@medplum/fhirtypes';
-import { CodingInput, Document, ResourceForm, useMedplum } from '@medplum/react';
+import { CodingInput, Container, Document, ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { FormularyDisplay } from '../components/FormularyDisplay';
@@ -110,17 +110,18 @@ export function MedicationsPage(): JSX.Element {
   return (
     <Document>
       <Flex justify="space-between" mb="md">
-        <Title>Formulary Management</Title>
+        <Title order={3}>Formulary Management</Title>
+        <Button onClick={syncFormulary}>Sync Formulary</Button>
+      </Flex>
+      <Container m="md">
         <CodingInput
           name="medication-code"
           binding="http://hl7.org/fhir/us/davinci-drug-formulary/ValueSet/SemanticDrugVS"
           path=""
           onChange={handleSelectCoding}
           description="Add a medication to your formulary"
-          width="fit-content"
         />
-        <Button onClick={syncFormulary}>Sync Formulary</Button>
-      </Flex>
+      </Container>
       <FormularyDisplay formulary={formulary} />
       <Modal opened={opened} onClose={toggle}>
         <ResourceForm defaultValue={knowledge} onSubmit={handleAddToFormulary} />

@@ -1,12 +1,14 @@
 import { Table } from '@mantine/core';
 import { List, MedicationKnowledge } from '@medplum/fhirtypes';
 import { Loading, useMedplum } from '@medplum/react';
+import { useNavigate } from 'react-router-dom';
 
 interface FormularyDisplayProps {
   readonly formulary?: List;
 }
 
 export function FormularyDisplay(props: FormularyDisplayProps): JSX.Element {
+  const navigate = useNavigate();
   const medplum = useMedplum();
   if (!props.formulary) {
     return <Loading />;
@@ -19,11 +21,11 @@ export function FormularyDisplay(props: FormularyDisplayProps): JSX.Element {
     });
 
   function handleRowClick(_e: React.MouseEvent, resource: MedicationKnowledge): void {
-    console.log(resource);
+    navigate(`/MedicationKnowledge/${resource.id}`);
   }
 
   return (
-    <Table>
+    <Table highlightOnHover>
       <Table.Thead>
         <Table.Tr>
           <Table.Th>Medication</Table.Th>
