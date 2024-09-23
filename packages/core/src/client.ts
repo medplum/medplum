@@ -3830,6 +3830,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
           if (oldState?.profile.reference !== newState?.profile.reference) {
             window.location.reload();
+          } else if (newState) {
+            this.setAccessToken(newState.accessToken, newState.refreshToken);
+          } else {
+            this.clear();
           }
         }
       });
