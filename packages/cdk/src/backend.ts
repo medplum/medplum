@@ -58,6 +58,10 @@ export class BackEnd extends Construct {
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
 
+  pg16ClusterParameterGroup: rds.ParameterGroup;
+  pg16WriterParameterGroup: rds.ParameterGroup;
+  pg16ReaderParameterGroup: rds.ParameterGroup;
+
   constructor(scope: Construct, config: MedplumInfraConfig) {
     super(scope, 'BackEnd');
 
@@ -94,6 +98,29 @@ export class BackEnd extends Construct {
     });
 
     // RDS
+    const defaultPostgresParams = {
+      statement_timeout: '60000',
+      default_transaction_isolation: 'REPEATABLE READ',
+    };
+
+    const postgresSettings = { ...defaultPostgresParams, ...config.rdsClusterParameters };
+    const pg16Engine = rds.DatabaseClusterEngine.auroraPostgres({
+      version: rds.AuroraPostgresEngineVersion.VER_16_3,
+    });
+    this.pg16ClusterParameterGroup = new ParameterGroup(this, 'MedlumPostgres16ClusterParams', {
+      engine: pg16Engine,
+      parameters: postgresSettings,
+    });
+    this.pg16ClusterParameterGroup.bindToCluster({});
+    this.pg16WriterParameterGroup = new ParameterGroup(this, 'MedlumPostgres16WriterParams', {
+      engine: pg16Engine,
+    });
+    this.pg16WriterParameterGroup.bindToInstance({});
+    this.pg16ReaderParameterGroup = new ParameterGroup(this, 'MedlumPostgres16ReaderParams', {
+      engine: pg16Engine,
+    });
+    this.pg16ReaderParameterGroup.bindToInstance({});
+
     this.rdsSecretsArn = config.rdsSecretsArn;
     if (!this.rdsSecretsArn) {
       // See: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds-readme.html#migrating-from-instanceprops
@@ -113,12 +140,6 @@ export class BackEnd extends Construct {
           : rds.AuroraPostgresEngineVersion.VER_12_9,
       });
 
-      const defaultPostgresParams = {
-        statement_timeout: '60000',
-        default_transaction_isolation: 'REPEATABLE READ',
-      };
-
-      const postgresSettings = { ...defaultPostgresParams, ...config.rdsClusterParameters };
       const paramHash = hashObject(postgresSettings, { encoding: 'base64' }).slice(0, 8);
       const dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams' + paramHash, {
         engine,
