@@ -18,6 +18,7 @@ import {
   DEFAULT_ACCEPT,
   FetchLike,
   InviteRequest,
+  LoginState,
   MedplumClient,
   MedplumClientEventMap,
   NewPatientRequest,
@@ -2395,13 +2396,20 @@ describe('Client', () => {
     callback({
       key: 'activeLogin',
       oldValue: JSON.stringify({
-        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
-      }),
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '12345',
+        refreshToken: 'abcde',
+      } satisfies LoginState),
       newValue: JSON.stringify({
-        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
-      }),
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '6789',
+        refreshToken: 'fghi',
+      } satisfies LoginState),
     } as StorageEvent);
     expect(mockReload).not.toHaveBeenCalled();
+    expect(client.getAccessToken()).toBe('6789');
 
     // Should refresh when we change to a new profile
     mockReload.mockReset();
