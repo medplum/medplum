@@ -1,5 +1,5 @@
 import { formatAddress } from '@medplum/core';
-import { Address, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 
@@ -8,6 +8,16 @@ import { LookupTable } from './lookuptable';
  * Each Address is represented as a separate row in the "Address" table.
  */
 export class AddressTable extends LookupTable {
+  private static readonly resourceTypes = new Set<ResourceType>([
+    'Patient',
+    'Person',
+    'Practitioner',
+    'RelatedPerson',
+    'InsurancePlan',
+    'Location',
+    'Organization',
+  ]);
+
   private static readonly knownParams: Set<string> = new Set<string>([
     'individual-address',
     'individual-address-city',
@@ -85,7 +95,7 @@ export class AddressTable extends LookupTable {
    * @returns Promise on completion.
    */
   async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!create) {
+    if (!create && AddressTable.resourceTypes.has(resource.resourceType)) {
       await this.deleteValuesForResource(client, resource);
     }
 
