@@ -125,6 +125,7 @@ export interface MedplumInfraConfig {
   rdsInstanceVersion?: string;
   rdsClusterParameters?: StringMap;
   rdsSecretsArn?: string;
+  deleteDatabase?: boolean;
   rdsReaderInstanceType?: string;
   rdsProxyEnabled?: boolean;
   cacheNodeType?: string;
