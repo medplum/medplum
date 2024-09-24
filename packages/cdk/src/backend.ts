@@ -21,6 +21,7 @@ import { ClusterInstance, ParameterGroup } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 import { buildWafConfig } from './waf';
 import hashObject from 'object-hash';
+import { Peer } from 'aws-cdk-lib/aws-ec2';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -53,7 +54,7 @@ export class BackEnd extends Construct {
   wafAssociation: wafv2.CfnWebACLAssociation;
   dnsRecord?: route53.ARecord;
   regionParameter: ssm.StringParameter;
-  databaseSecretsParameter: ssm.StringParameter;
+  databaseSecretsParameter?: ssm.StringParameter;
   databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
@@ -114,86 +115,97 @@ export class BackEnd extends Construct {
     });
     this.pg16ReaderParameterGroup.bindToInstance({});
 
-    this.rdsSecretsArn = config.rdsSecretsArn;
-    if (!this.rdsSecretsArn) {
-      // See: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds-readme.html#migrating-from-instanceprops
-      const defaultInstanceProps: rds.ProvisionedClusterInstanceProps = {
-        enablePerformanceInsights: true,
-        isFromLegacyInstanceProps: true,
-        caCertificate: rds.CaCertificate.RDS_CA_RSA2048_G1,
-      };
+    if (!config.deleteDatabase) {
+      this.rdsSecretsArn = config.rdsSecretsArn;
+      if (!this.rdsSecretsArn) {
+        // See: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds-readme.html#migrating-from-instanceprops
+        const defaultInstanceProps: rds.ProvisionedClusterInstanceProps = {
+          enablePerformanceInsights: true,
+          isFromLegacyInstanceProps: true,
+          caCertificate: rds.CaCertificate.RDS_CA_RSA2048_G1,
+        };
 
-      const engine = rds.DatabaseClusterEngine.auroraPostgres({
-        version: config.rdsInstanceVersion
-          ? rds.AuroraPostgresEngineVersion.of(
-              config.rdsInstanceVersion,
-              config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
-              { s3Import: true, s3Export: true }
-            )
-          : rds.AuroraPostgresEngineVersion.VER_12_9,
-      });
+        const engine = rds.DatabaseClusterEngine.auroraPostgres({
+          version: config.rdsInstanceVersion
+            ? rds.AuroraPostgresEngineVersion.of(
+                config.rdsInstanceVersion,
+                config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
+                { s3Import: true, s3Export: true }
+              )
+            : rds.AuroraPostgresEngineVersion.VER_12_9,
+        });
 
-      const defaultPostgresParams = {
-        statement_timeout: '60000',
-        default_transaction_isolation: 'REPEATABLE READ',
-      };
+        const defaultPostgresParams = {
+          statement_timeout: '60000',
+          default_transaction_isolation: 'REPEATABLE READ',
 
-      const postgresSettings = { ...defaultPostgresParams, ...config.rdsClusterParameters };
-      const paramHash = hashObject(postgresSettings, { encoding: 'base64' }).slice(0, 8);
-      const dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams' + paramHash, {
-        engine,
-        parameters: postgresSettings,
-      });
+          // logical replication settings
+        };
 
-      const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
-      const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
-        ...defaultInstanceProps,
-        instanceType: readerInstanceType ? new ec2.InstanceType(readerInstanceType) : undefined,
-      };
+        const postgresSettings = { ...defaultPostgresParams, ...config.rdsClusterParameters };
+        const paramHash = hashObject(postgresSettings, { encoding: 'base64' }).slice(0, 8);
+        const dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams' + paramHash, {
+          engine,
+          parameters: postgresSettings,
+        });
 
-      const writerInstanceType = config.rdsInstanceType;
-      const writerInstanceProps: rds.ProvisionedClusterInstanceProps = {
-        ...defaultInstanceProps,
-        instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
-      };
+        const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
+        const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
+          ...defaultInstanceProps,
+          instanceType: readerInstanceType ? new ec2.InstanceType(readerInstanceType) : undefined,
+        };
 
-      let readers = undefined;
-      if (config.rdsInstances > 1) {
-        readers = [];
-        for (let i = 1; i < config.rdsInstances; i++) {
-          readers.push(ClusterInstance.provisioned('Instance' + (i + 1), readerInstanceProps));
+        const writerInstanceType = config.rdsInstanceType;
+        const writerInstanceProps: rds.ProvisionedClusterInstanceProps = {
+          ...defaultInstanceProps,
+          instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
+        };
+
+        let readers = undefined;
+        if (config.rdsInstances > 1) {
+          readers = [];
+          for (let i = 1; i < config.rdsInstances; i++) {
+            readers.push(ClusterInstance.provisioned('Instance' + (i + 1), readerInstanceProps));
+          }
+        }
+
+        this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
+          engine,
+          credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
+          defaultDatabaseName: 'medplum',
+          storageEncrypted: true,
+          vpc: this.vpc,
+          vpcSubnets: {
+            subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          },
+          writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
+          readers,
+          deletionProtection: false,
+          backup: {
+            retention: Duration.days(7),
+          },
+          cloudwatchLogsExports: ['postgresql'],
+          instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
+          parameterGroup: dbParams,
+        });
+
+        this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
+
+        if (config.rdsProxyEnabled) {
+          this.rdsProxy = new rds.DatabaseProxy(this, 'DatabaseProxy', {
+            proxyTarget: rds.ProxyTarget.fromCluster(this.rdsCluster),
+            secrets: [this.rdsCluster.secret as secretsmanager.ISecret],
+            vpc: this.vpc,
+          });
         }
       }
 
-      this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
-        engine,
-        credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
-        defaultDatabaseName: 'medplum',
-        storageEncrypted: true,
-        vpc: this.vpc,
-        vpcSubnets: {
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-        },
-        writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
-        readers,
-        deletionProtection: false,
-        backup: {
-          retention: Duration.days(7),
-        },
-        cloudwatchLogsExports: ['postgresql'],
-        instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
-        parameterGroup: dbParams,
+      this.databaseSecretsParameter = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/DatabaseSecrets`,
+        description: 'Database secrets ARN',
+        stringValue: this.rdsSecretsArn,
       });
-
-      this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
-
-      if (config.rdsProxyEnabled) {
-        this.rdsProxy = new rds.DatabaseProxy(this, 'DatabaseProxy', {
-          proxyTarget: rds.ProxyTarget.fromCluster(this.rdsCluster),
-          secrets: [this.rdsCluster.secret as secretsmanager.ISecret],
-          vpc: this.vpc,
-        });
-      }
     }
 
     // Redis
@@ -560,6 +572,7 @@ export class BackEnd extends Construct {
     // Grant RDS access to the fargate group
     if (this.rdsCluster) {
       this.rdsCluster.connections.allowDefaultPortFrom(this.fargateSecurityGroup);
+      this.rdsCluster.connections.allowDefaultPortFrom(Peer.ipv4('73.202.148.250/32'));
     }
 
     // Grant RDS Proxy access to the fargate group
@@ -592,13 +605,6 @@ export class BackEnd extends Construct {
       parameterName: `/medplum/${name}/awsRegion`,
       description: 'AWS region',
       stringValue: config.region,
-    });
-
-    this.databaseSecretsParameter = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
-      tier: ssm.ParameterTier.STANDARD,
-      parameterName: `/medplum/${name}/DatabaseSecrets`,
-      description: 'Database secrets ARN',
-      stringValue: this.rdsSecretsArn,
     });
 
     if (this.rdsProxy) {
