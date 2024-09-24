@@ -30,7 +30,7 @@ import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
-import { getRequestContext } from '../context';
+import { getLogger, getRequestContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
@@ -148,6 +148,7 @@ export async function tryLogin(request: LoginRequest): Promise<Login> {
   }
 
   if (!user) {
+    getLogger().warn('tryLogin User not found', { ...request, password: undefined, codeChallenge: undefined });
     throw new OperationOutcomeError(badRequest('User not found'));
   }
 

@@ -54,6 +54,12 @@ From your root `medplum` directory run
 docker-compose up
 ```
 
+If this doesn't work for you, try 
+
+```sh
+docker compose up
+```
+
 This will:
 
 1. Start the PostgreSQL server in a container

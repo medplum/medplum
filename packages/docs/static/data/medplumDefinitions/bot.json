@@ -279,6 +279,22 @@
       "inherited": false
     },
     {
+      "name": "system",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "Bot.system",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional flag to indicate that the bot is a system bot and therefore has access to system secrets.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "runAsUser",
       "depth": 1,
       "types": [

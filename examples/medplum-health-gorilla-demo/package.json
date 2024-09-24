@@ -1,6 +1,6 @@
 {
   "name": "medplum-health-gorilla-demo",
-  "version": "3.2.14",
+  "version": "3.2.15",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -21,16 +21,16 @@
   "devDependencies": {
     "@mantine/core": "7.12.2",
     "@mantine/notifications": "7.12.2",
-    "@medplum/core": "3.2.14",
-    "@medplum/eslint-config": "3.2.14",
-    "@medplum/health-gorilla-core": "3.2.14",
-    "@medplum/health-gorilla-react": "3.2.14",
-    "@medplum/react": "3.2.14",
+    "@medplum/core": "3.2.15",
+    "@medplum/eslint-config": "3.2.15",
+    "@medplum/health-gorilla-core": "3.2.15",
+    "@medplum/health-gorilla-react": "3.2.15",
+    "@medplum/react": "3.2.15",
     "@tabler/icons-react": "3.17.0",
-    "@types/react": "18.3.6",
+    "@types/react": "18.3.8",
     "@types/react-dom": "18.3.0",
-    "@typescript-eslint/eslint-plugin": "8.5.0",
-    "@typescript-eslint/parser": "8.5.0",
+    "@typescript-eslint/eslint-plugin": "8.6.0",
+    "@typescript-eslint/parser": "8.6.0",
     "@vitejs/plugin-react": "4.3.1",
     "eslint": "8.57.0",
     "eslint-plugin-react-hooks": "4.6.2",
@@ -41,6 +41,6 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.26.2",
     "typescript": "5.6.2",
-    "vite": "5.4.5"
+    "vite": "5.4.7"
   }
 }

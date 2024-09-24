@@ -1,6 +1,6 @@
 {
   "name": "medplum-photon-integration",
-  "version": "3.2.14",
+  "version": "3.2.15",
   "private": true,
   "type": "module",
   "scripts": {
@@ -27,23 +27,23 @@
     "@mantine/core": "7.12.2",
     "@mantine/hooks": "7.12.2",
     "@mantine/notifications": "7.12.2",
-    "@medplum/core": "3.2.14",
-    "@medplum/eslint-config": "3.2.14",
-    "@medplum/fhirtypes": "3.2.14",
-    "@medplum/react": "3.2.14",
+    "@medplum/core": "3.2.15",
+    "@medplum/eslint-config": "3.2.15",
+    "@medplum/fhirtypes": "3.2.15",
+    "@medplum/react": "3.2.15",
     "@photonhealth/elements": "0.12.1",
     "@tabler/icons-react": "3.17.0",
     "@types/node": "22.5.5",
-    "@types/react": "18.3.6",
+    "@types/react": "18.3.8",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.1",
     "postcss": "8.4.47",
-    "esbuild": "0.23.1",
+    "esbuild": "0.24.0",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.26.2",
     "typescript": "5.6.2",
-    "vite": "5.4.5"
+    "vite": "5.4.7"
   }
 }
