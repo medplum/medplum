@@ -99,11 +99,18 @@ export class BackEnd extends Construct {
     });
 
     // RDS
+    const defaultPostgresParams = {
+      statement_timeout: '60000',
+      default_transaction_isolation: 'REPEATABLE READ',
+    };
+
+    const postgresSettings = { ...defaultPostgresParams, ...config.rdsClusterParameters };
     const pg16Engine = rds.DatabaseClusterEngine.auroraPostgres({
       version: rds.AuroraPostgresEngineVersion.VER_16_3,
     });
     this.pg16ClusterParameterGroup = new ParameterGroup(this, 'MedlumPostgres16ClusterParams', {
       engine: pg16Engine,
+      parameters: postgresSettings,
     });
     this.pg16ClusterParameterGroup.bindToCluster({});
     this.pg16WriterParameterGroup = new ParameterGroup(this, 'MedlumPostgres16WriterParams', {
@@ -135,14 +142,6 @@ export class BackEnd extends Construct {
             : rds.AuroraPostgresEngineVersion.VER_12_9,
         });
 
-        const defaultPostgresParams = {
-          statement_timeout: '60000',
-          default_transaction_isolation: 'REPEATABLE READ',
-
-          // logical replication settings
-        };
-
-        const postgresSettings = { ...defaultPostgresParams, ...config.rdsClusterParameters };
         const paramHash = hashObject(postgresSettings, { encoding: 'base64' }).slice(0, 8);
         const dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams' + paramHash, {
           engine,
