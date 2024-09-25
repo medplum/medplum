@@ -44,7 +44,7 @@ export function initBatchWorker(config: MedplumServerConfig): void {
   queue = new Queue<BatchJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
-      attempts: 3,
+      attempts: 1,
       backoff: {
         type: 'exponential',
         delay: 1000,

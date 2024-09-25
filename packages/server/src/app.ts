@@ -160,7 +160,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
         return;
       }
 
-      await runMiddleware(req, res, json({ limit: config.maxBatchSize }));
+      await runMiddleware(req, res, json({ type: JSON_TYPE, limit: config.maxBatchSize }));
       if (req.body.resourceType !== 'Bundle') {
         throw new OperationOutcomeError(badRequest('Expected request body to be a Bundle'));
       }
