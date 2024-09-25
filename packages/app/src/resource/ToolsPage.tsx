@@ -1,11 +1,72 @@
-import { ActionIcon, Button, Divider, Group, NumberInput, Table, TextInput, Title } from '@mantine/core';
+import { ActionIcon, Button, Divider, Group, Modal, NumberInput, Table, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { ContentType, formatDateTime, normalizeErrorString } from '@medplum/core';
+import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
 import { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
-import { Document, Form, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
+import { Document, Form, Loading, ResourceName, StatusBadge, useMedplum } from '@medplum/react';
 import { IconCheck, IconRouter } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
+
+type UpgradeConfirmContentProps = {
+  opened: boolean;
+  setOpened: (opened: boolean) => void;
+  version: string | undefined;
+  loadingStatus: boolean;
+  handleStatus: () => void;
+  handleUpgrade: () => void;
+};
+
+function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
+  const { opened, setOpened, version, loadingStatus, handleStatus, handleUpgrade } = props;
+
+  const [latestVersionString, setLatestVersionString] = useState<string>();
+
+  useEffect(() => {
+    if (opened) {
+      if (!latestVersionString) {
+        fetchLatestVersionString().then(setLatestVersionString).catch(console.error);
+      }
+      handleStatus();
+    }
+  }, [opened, latestVersionString, handleStatus]);
+
+  console.log({ latestVersionString });
+  console.log({ version });
+  console.log({ loadingStatus });
+
+  // If we don't have the latest version string
+  // The current agent version
+  // Or if we are still loading something
+  // Show loading
+  if (!(latestVersionString && version && !loadingStatus)) {
+    return <Loading />;
+  }
+
+  if (version === 'unknown') {
+    return <p>Unable to determine the current version of the agent. Check the network connectivity of the agent.</p>;
+  }
+
+  if (version.startsWith(latestVersionString)) {
+    return <p>This agent is already on the latest version ({latestVersionString}).</p>;
+  }
+
+  return (
+    <>
+      <p>
+        Are you sure you want to upgrade this agent from version {version} to version {latestVersionString}?
+      </p>
+      <Button
+        onClick={() => {
+          handleUpgrade();
+          setOpened(false);
+        }}
+        aria-label="Confirm upgrade"
+      >
+        Confirm Upgrade
+      </Button>
+    </>
+  );
+}
 
 export function ToolsPage(): JSX.Element | null {
   const medplum = useMedplum();
@@ -20,6 +81,7 @@ export function ToolsPage(): JSX.Element | null {
   const [lastPing, setLastPing] = useState<string | undefined>();
   const [pinging, setPinging] = useState(false);
   const [working, setWorking] = useState(false);
+  const [modalOpened, setModalOpened] = useState(false);
 
   useEffect(() => {
     if (loadingStatus || reloadingConfig || upgrading || pinging) {
@@ -101,6 +163,16 @@ export function ToolsPage(): JSX.Element | null {
 
   return (
     <Document>
+      <Modal opened={modalOpened} onClose={() => setModalOpened(false)} title="Upgrade Agent" centered>
+        <UpgradeConfirmContent
+          opened={modalOpened}
+          setOpened={setModalOpened}
+          version={version}
+          loadingStatus={loadingStatus}
+          handleStatus={handleStatus}
+          handleUpgrade={handleUpgrade}
+        />
+      </Modal>
       <Title order={1}>Agent Tools</Title>
       <div style={{ marginBottom: 10 }}>
         Agent: <ResourceName value={reference} link />
@@ -151,7 +223,12 @@ export function ToolsPage(): JSX.Element | null {
       <Divider my="lg" />
       <Title order={2}>Upgrade Agent</Title>
       <p>Upgrade the version of this agent, to either the latest (default) or a specified version.</p>
-      <Button onClick={handleUpgrade} loading={upgrading} disabled={working && !upgrading} aria-label="Upgrade agent">
+      <Button
+        onClick={() => setModalOpened(true)}
+        loading={upgrading}
+        disabled={working && !upgrading}
+        aria-label="Upgrade agent"
+      >
         Upgrade
       </Button>
       <Divider my="lg" />

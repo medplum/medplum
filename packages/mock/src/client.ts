@@ -2,6 +2,7 @@ import {
   BinarySource,
   ContentType,
   CreateBinaryOptions,
+  FetchLike,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
@@ -97,6 +98,7 @@ export interface MockClientOptions
    * Override the `MockFetchClient` used by this `MockClient`.
    */
   readonly mockFetchOverride?: MockFetchOverrideOptions;
+  readonly fetch?: FetchLike;
 }
 
 /**
@@ -154,9 +156,11 @@ export class MockClient extends MedplumClient {
         tableLayouts?: { [name: string]: CustomTableLayout },
         fonts?: TFontDictionary
       ) => client.mockCreatePdf(docDefinition, tableLayouts, fonts),
-      fetch: (url: string, options: any) => {
-        return client.mockFetch(url, options);
-      },
+      fetch: clientOptions?.fetch
+        ? clientOptions.fetch
+        : (url: string, options: any) => {
+            return client.mockFetch(url, options);
+          },
     });
 
     this.router = router;

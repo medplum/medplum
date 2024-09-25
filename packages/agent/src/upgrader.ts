@@ -1,9 +1,9 @@
-import { Logger, normalizeErrorString } from '@medplum/core';
+import { fetchLatestVersionString, isValidSemver, Logger, normalizeErrorString } from '@medplum/core';
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { platform } from 'node:os';
 import process from 'node:process';
-import { downloadRelease, fetchLatestVersionString, getReleaseBinPath, isValidSemver } from './upgrader-utils';
+import { downloadRelease, getReleaseBinPath } from './upgrader-utils';
 
 export async function upgraderMain(argv: string[]): Promise<void> {
   // TODO: Add support for Linux
