@@ -2527,6 +2527,79 @@ describe('FHIR Search', () => {
         });
       }));
 
+    test('_include on page boundary', () =>
+      withTestContext(async () => {
+        const mrn = randomUUID();
+        const gp1 = await repo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+        });
+        const patient1 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: mrn }],
+          generalPractitioner: [createReference(gp1)],
+        });
+        const gp2 = await repo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+        });
+        const patient2 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: mrn }],
+          generalPractitioner: [createReference(gp2)],
+        });
+
+        const searchRequest: SearchRequest = {
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'identifier',
+              operator: Operator.EQUALS,
+              value: mrn,
+            },
+          ],
+          sortRules: [{ code: '_lastUpdated' }],
+          include: [{ resourceType: 'Patient', searchParam: 'general-practitioner' }],
+          count: 1,
+        };
+        await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          entry: [
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(patient1)),
+              search: { mode: 'match' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(gp1)),
+              search: { mode: 'include' },
+            }),
+          ],
+        });
+
+        searchRequest.count = 2;
+        await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          entry: [
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(patient1)),
+              search: { mode: 'match' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(patient2)),
+              search: { mode: 'match' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(gp1)),
+              search: { mode: 'include' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(gp2)),
+              search: { mode: 'include' },
+            }),
+          ],
+        });
+      }));
+
     test('DiagnosticReport category with system', () =>
       withTestContext(async () => {
         const code = randomUUID();
