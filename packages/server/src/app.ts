@@ -1,4 +1,4 @@
-import { accepted, badRequest, ContentType } from '@medplum/core';
+import { accepted, badRequest, ContentType, OperationOutcomeError } from '@medplum/core';
 import { Bundle, OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
@@ -160,9 +160,13 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
         return;
       }
 
-      const { repo } = getAuthenticatedContext();
-
+      await runMiddleware(req, res, json({ limit: config.maxBatchSize }));
+      if (req.body.resourceType !== 'Bundle') {
+        throw new OperationOutcomeError(badRequest('Expected request body to be a Bundle'));
+      }
       const bundle = req.body as Bundle;
+
+      const { repo } = getAuthenticatedContext();
       const exec = new AsyncJobExecutor(repo);
       await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
       await exec.run(async (asyncJob) => {
@@ -284,3 +288,13 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
 
   next();
 };
+
+async function runMiddleware(
+  req: Request,
+  res: Response,
+  handler: (req: Request, res: Response, next: (err?: any) => void) => void
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    handler(req, res, (err) => (err ? reject(err) : resolve()));
+  });
+}

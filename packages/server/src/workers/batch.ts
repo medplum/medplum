@@ -5,9 +5,10 @@ import { getAuthenticatedContext, tryRunInRequestContext } from '../context';
 import { globalLogger } from '../logger';
 import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
 import { getRepoForLogin } from '../fhir/accesspolicy';
-import { isOk, OperationOutcomeError } from '@medplum/core';
+import { ContentType, createReference, isOk, OperationOutcomeError } from '@medplum/core';
 import { getSystemRepo } from '../fhir/repo';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import { uploadBinaryData } from '../fhir/binary';
 
 /*
  * The batch worker runs a batch asynchronously,
@@ -133,13 +134,16 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   };
   const [outcome, result] = await router.handleRequest(req, repo);
 
+  // Upload resulting Bundle JSON as Binary for async retrieval
+  const binary = await uploadBinaryData(repo, JSON.stringify(result), { contentType: ContentType.FHIR_JSON });
+
   // Update the async job with system repo
   const systemRepo = getSystemRepo();
   const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
   if (isOk(outcome)) {
     await exec.completeJob(systemRepo, {
       resourceType: 'Parameters',
-      parameter: [{ name: 'resultJSON', valueString: JSON.stringify(result) }],
+      parameter: [{ name: 'results', valueReference: createReference(binary) }],
     });
   } else {
     await exec.failJob(systemRepo, new OperationOutcomeError(outcome));

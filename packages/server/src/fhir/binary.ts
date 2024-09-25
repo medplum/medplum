@@ -9,6 +9,7 @@ import { authenticateRequest } from '../oauth/middleware';
 import { sendOutcome } from './outcomes';
 import { sendResponse } from './response';
 import { BinarySource, getBinaryStorage } from './storage';
+import { Repository } from './repo';
 
 const DEFAULT_CONTENT_TYPE = 'application/octet-stream';
 
@@ -43,9 +44,7 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
     return;
   }
 
-  let binary: Binary | undefined = undefined;
   let binarySource: BinarySource = stream;
-
   if (contentType === ContentType.FHIR_JSON) {
     const str = await readStreamToString(stream);
     binarySource = str;
@@ -54,7 +53,7 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
       // The binary handler does *not* use Express body-parser in order to support raw binary data.
       // Therefore, we need to manually parse the body stream as JSON.
       const body = JSON.parse(str);
-      if (isResource(body) && body.resourceType === 'Binary' && body.id === id) {
+      if (isResource(body) && body.resourceType === 'Binary' && (!id || body.id === id)) {
         // Special case where the content is actually a Binary resource.
         // From the spec: https://hl7.org/fhir/R4/binary.html#rest
         //
@@ -64,13 +63,10 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
         //   including when the content type is "application/fhir+xml" or "application/fhir+json",
         //   except for the special case where the content is actually a Binary resource.
         // """
-        binary = body as Binary;
-        binary = await (create ? repo.createResource<Binary>(binary) : repo.updateResource<Binary>(binary));
+        const resource = body as Binary;
+        const binary = await (create ? repo.createResource<Binary>(resource) : repo.updateResource<Binary>(resource));
         await sendResponse(req, res, create ? created : allOk, binary);
         return;
-      } else {
-        // We have already consumed the stream, so it cannot be used again.
-        // Instead, use the fully-read body string as the source.
       }
     } catch (err) {
       // If the JSON is invalid, then it is not eligible for the special case.
@@ -78,20 +74,11 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
     }
   }
 
-  if (!binary) {
-    const securityContext = req.get('X-Security-Context');
-    binary = {
-      resourceType: 'Binary',
-      id,
-      contentType,
-      securityContext: securityContext ? { reference: securityContext } : undefined,
-    };
-  }
-
-  binary = await uploadBinaryData(binary, binarySource, {
-    create,
+  const binary = await uploadBinaryData(repo, binarySource, {
+    id,
     contentType,
     filename: req.query['_filename'] as string | undefined,
+    securityContext: req.get('X-Security-Context'),
   });
 
   await sendResponse(req, res, create ? created : allOk, binary);
@@ -141,25 +128,31 @@ async function readStreamToString(stream: Readable): Promise<string> {
 
 /**
  * Uploads the given data as a Binary resource.
- * @param resource - The Binary resource for the file.
+ * @param repo - The repository to use.
  * @param source - The binary source data.
  * @param options - Optional parameters.
- * @param options.create - Whether the resource should be created new instead of updated in place.
+ * @param options.id - If present, Binary resource will be updated in place.
  * @param options.contentType - The MIME type of the binary data.
  * @param options.filename - The filename to use for the uploaded data.
+ * @param options.securityContext - The security context associated with the data.
  * @returns The updated Binary resource.
  */
 export async function uploadBinaryData(
-  resource: Binary,
+  repo: Repository,
   source: BinarySource,
-  options?: { create?: boolean; contentType?: string; filename?: string }
+  options?: { id?: string; contentType?: string; filename?: string; securityContext?: string }
 ): Promise<Binary> {
-  const { repo } = getAuthenticatedContext();
-  resource = await (options?.create ? repo.createResource<Binary>(resource) : repo.updateResource<Binary>(resource));
+  const resource: Binary = {
+    resourceType: 'Binary',
+    id: options?.id,
+    contentType: options?.contentType ?? DEFAULT_CONTENT_TYPE,
+    securityContext: options?.securityContext ? { reference: options.securityContext } : undefined,
+  };
+  const binary = await (options?.id ? repo.updateResource<Binary>(resource) : repo.createResource<Binary>(resource));
 
   const contentType = options?.contentType ?? DEFAULT_CONTENT_TYPE;
-  await getBinaryStorage().writeBinary(resource, options?.filename, contentType, source);
+  await getBinaryStorage().writeBinary(binary, options?.filename, contentType, source);
 
-  resource.url = getBinaryStorage().getPresignedUrl(resource);
-  return resource;
+  binary.url = getBinaryStorage().getPresignedUrl(binary);
+  return binary;
 }
