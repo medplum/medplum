@@ -14,8 +14,8 @@ module "gke" {
   name                       = "medplum-gke"
   region                     = var.region
   zones                      = ["us-west1-a", "us-west1-b"]
-  network                    = module.vpc.vpc.name
-  subnetwork                 = module.subnets.subnets["us-west1/medplum-us-west1-sn-gke-01"].name
+  network                    = module.vpc.network_name
+  subnetwork                 = module.vpc.subnets["us-west1/medplum-us-west1-sn-gke-01"].name
   ip_range_pods              = "medplum-gke-pods"
   ip_range_services          = "medplum-gke-services"
   http_load_balancing        = true
@@ -31,8 +31,8 @@ module "gke" {
   master_authorized_networks = [
     {
       cidr_block   = "186.139.91.157/32"
-      display_name = "Pablo's Network"
+      display_name = "Local Network"
     },
   ]
-  depends_on = [module.subnets]
+  depends_on = [module.vpc]
 }
