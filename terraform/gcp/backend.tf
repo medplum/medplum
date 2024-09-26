@@ -1,6 +1,6 @@
 # terraform {
 #   backend "gcs" {
-#     bucket = "medplum-terraform-state"
+#     bucket = "example-terraform-state"
 #     prefix = "terraform/medplum/gke"
 #   }
 # }
