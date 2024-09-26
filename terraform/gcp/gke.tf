@@ -33,14 +33,6 @@ module "gke" {
       cidr_block   = "186.139.91.157/32"
       display_name = "Pablo's Network"
     },
-    {
-      cidr_block   = "200.68.72.177/32"
-      display_name = "Pablo's co-worker Network"
-    },
-    {
-      cidr_block   = "157.92.6.59/32"
-      display_name = "Pablo's co-worker Network 2"
-    },
   ]
   depends_on = [module.subnets]
 }
