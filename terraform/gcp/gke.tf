@@ -21,7 +21,7 @@ module "gke" {
   http_load_balancing        = true
   horizontal_pod_autoscaling = true
   create_service_account     = false
-  enable_private_endpoint    = true
+  enable_private_endpoint    = false
   enable_private_nodes       = true
   master_ipv4_cidr_block     = "10.3.1.0/28"
   add_cluster_firewall_rules = true
