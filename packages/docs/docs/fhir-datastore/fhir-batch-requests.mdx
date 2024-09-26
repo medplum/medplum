@@ -125,6 +125,28 @@ Previously, performing an "upsert" (i.e. either creating or updating a resource 
 required using a batch operation. This functionality is now implemented directly as a [conditional update](/docs/fhir-datastore/create-fhir-data#upsert)
 to provide strong transactional guarantees around the operation in a single, simple `PUT` request.
 
+## PATCH actions in a Batch
+
+Because the request body of a PATCH request is an array of JSON patch operations, not a resource, some extra conversion
+is required to represent these actions in a batch request. The [FHIR recommended pattern](http://hl7.org/fhir/R5/http.html#jsonpatch-transaction)
+for this use case is to [base64 encode](https://datatracker.ietf.org/doc/html/rfc4648#section-4) the JSON patch array
+and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
+
+```js
+{
+  "request": {
+    "method": "PATCH",
+    "url": "Patient/6ffaaab4-ff7e-4416-80c7-8fce95c3e31c"
+  },
+  "resource": "resource": {
+    "resourceType": "Binary",
+    "contentType": "application/json-patch+json",
+    // Encoded: [{"op":"test","path":"/active","value":false}]
+    "data": "W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9hY3RpdmUiLCJ2YWx1ZSI6ZmFsc2V9XQo="
+  },
+}
+```
+
 ## Medplum Autobatching
 
 The Medplum Client provides the option to automatically batch FHIR `read` and `search` requests using the `autoBatchTime` parameter. This field allows you to set a time window during which to batch up any `GET` requests. After this window expires, the `MedplumClient` will add them to a `Bundle` behind the scenes and then execute them as a batch request.
