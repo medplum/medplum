@@ -10,7 +10,7 @@ const options = {
   bundle: true,
   platform: 'node',
   loader: { '.ts': 'ts' },
-  resolveExtensions: ['.ts'],
+  resolveExtensions: ['.ts', '.js'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
   minify: true,
