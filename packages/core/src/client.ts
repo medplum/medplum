@@ -1558,7 +1558,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Creates an
    * [async generator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncGenerator)
    * over a series of FHIR search requests for paginated search results. Each iteration of the generator yields
-   * the array of resources on each page.
+   * the array of resources on each page. Searches using _offset based pagination are limited to 10,000 records.
+   * For larger result sets, _cursor based pagination should be used instead.
+   * See: https://www.medplum.com/docs/search/paginated-search#cursor-based-pagination
    *
    * @example
    *
@@ -3813,6 +3815,16 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     });
   }
 
+  private checkSessionDetailsMatchLogin(login?: LoginState): boolean {
+    // We only need to validate if we already have session details
+    if (!(this.sessionDetails && login)) {
+      return true;
+    }
+    // Make sure sessionDetails.profile.id matches the ID in the profile reference we are checking against
+    // Otherwise return false if no profile reference in login
+    return login.profile?.reference?.endsWith(this.sessionDetails.profile.id as string) ?? false;
+  }
+
   /**
    * Sets up a listener for window storage events.
    * This synchronizes state across browser windows and browser tabs.
@@ -3828,8 +3840,16 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
         } else if (e.key === 'activeLogin') {
           const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
           const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
-          if (oldState?.profile.reference !== newState?.profile.reference) {
+          if (
+            oldState?.profile.reference !== newState?.profile.reference ||
+            !this.checkSessionDetailsMatchLogin(newState)
+          ) {
             window.location.reload();
+          } else if (newState) {
+            this.setAccessToken(newState.accessToken, newState.refreshToken);
+          } else {
+            // Theoretically this should never be called, but we might want to keep it here just in case
+            this.clear();
           }
         }
       });

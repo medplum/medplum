@@ -14,6 +14,7 @@ import {
   badRequest,
   canReadResourceType,
   canWriteResourceType,
+  createReference,
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
@@ -42,7 +43,7 @@ import {
   validateResource,
   validateResourceType,
 } from '@medplum/core';
-import { FhirRepository, RepositoryMode, UpdateResourceOptions, CreateResourceOptions } from '@medplum/fhir-router';
+import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from '@medplum/fhir-router';
 import {
   AccessPolicy,
   Binary,
@@ -676,20 +677,31 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     resource.data = undefined;
   }
 
-  private async handleStorage(result: Resource, create: boolean): Promise<void> {
-    if (!this.isCacheOnly(result)) {
-      await this.writeToDatabase(result, create);
-    } else if (result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
+  /**
+   * Handles persisting data to at-rest storage: cache and/or database.
+   * This method handles all the special cases for storage, including cache invalidation.
+   * @param resource - The resource to store.
+   * @param create - Whether the resource is being create, or updated in place.
+   */
+  private async handleStorage(resource: Resource, create: boolean): Promise<void> {
+    if (!this.isCacheOnly(resource)) {
+      await this.writeToDatabase(resource, create);
+    }
+    await this.setCacheEntry(resource);
+
+    // Handle special cases for resource caching
+    if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
       const redis = getRedis();
-      const project = result?.meta?.project;
+      const project = resource?.meta?.project;
       if (!project) {
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
       }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${result.id}`);
+      await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${resource.id}`);
     }
-    // Add this resource to cache
-    await this.setCacheEntry(result);
+    if (resource.resourceType === 'StructureDefinition') {
+      await removeCachedProfile(resource);
+    }
   }
 
   /**
@@ -781,12 +793,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           code: 'version',
           descending: true,
         },
+        {
+          code: 'date',
+          descending: true,
+        },
       ],
     });
 
     if (projectIds?.length && profile) {
       // Store loaded profile in cache
-      await setProfileCacheEntry(projectIds[0], profile);
+      await cacheProfile(profile);
     }
     return profile;
   }
@@ -1631,6 +1647,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return resolveId(updated.project);
     }
 
+    if (updated.resourceType === 'User' && this.isSuperAdmin()) {
+      // Super admins can add, remove, and the project compartment of users.
+      return updated?.meta?.project;
+    }
+
     if (protectedResourceTypes.includes(updated.resourceType)) {
       return undefined;
     }
@@ -2214,9 +2235,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       'EX',
       REDIS_CACHE_EX_SECONDS
     );
-    if (projectId && resource.resourceType === 'StructureDefinition') {
-      await setProfileCacheEntry(projectId, resource);
-    }
   }
 
   /**
@@ -2304,6 +2322,7 @@ export function getLookupTable(resourceType: string, searchParam: SearchParamete
 }
 
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
+const PROFILE_CACHE_EX_SECONDS = 5 * 60; // 5 minutes in seconds
 
 /**
  * Returns the redis cache key for the given resource type and resource ID.
@@ -2317,25 +2336,36 @@ function getCacheKey(resourceType: string, id: string): string {
 
 /**
  * Writes a FHIR profile cache entry to Redis.
- * @param projectId - The project ID.
- * @param structureDefinition - The profile structure definition.
+ * @param profile - The profile structure definition.
  */
-async function setProfileCacheEntry(projectId: string, structureDefinition: StructureDefinition): Promise<void> {
-  if (!structureDefinition.url) {
+async function cacheProfile(profile: StructureDefinition): Promise<void> {
+  if (!profile.url || !profile.meta?.project) {
     return;
   }
+  profile = await getSystemRepo().readReference(createReference(profile));
   await getRedis().set(
-    getProfileCacheKey(projectId, structureDefinition.url),
-    JSON.stringify({ resource: structureDefinition, projectId }),
+    getProfileCacheKey(profile.meta?.project as string, profile.url),
+    JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
     'EX',
-    REDIS_CACHE_EX_SECONDS
+    PROFILE_CACHE_EX_SECONDS
   );
 }
 
 /**
- * Returns the redis cache key for the given project and FHIR profile URL.
- * @param projectId - The project ID.
- * @param url - The profile URL.
+ * Writes a FHIR profile cache entry to Redis.
+ * @param profile - The profile structure definition.
+ */
+async function removeCachedProfile(profile: StructureDefinition): Promise<void> {
+  if (!profile.url || !profile.meta?.project) {
+    return;
+  }
+  await getRedis().del(getProfileCacheKey(profile.meta.project, profile.url));
+}
+
+/**
+ * Returns the redis cache key for the given profile resource.
+ * @param projectId - The ID of the Project to which the profile belongs.
+ * @param url - The canonical URL of the profile.
  * @returns The Redis cache key.
  */
 function getProfileCacheKey(projectId: string, url: string): string {

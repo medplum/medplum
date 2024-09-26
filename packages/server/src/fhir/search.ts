@@ -278,6 +278,10 @@ async function getSearchEntries<T extends Resource>(
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const rowCount = rows.length;
   const resources = rows.map((row) => JSON.parse(row.content as string)) as T[];
+  let nextResource: T | undefined;
+  if (resources.length > searchRequest.count) {
+    nextResource = resources.pop();
+  }
   const entries = resources.map(
     (resource) =>
       ({
@@ -286,10 +290,6 @@ async function getSearchEntries<T extends Resource>(
         resource,
       }) as BundleEntry
   );
-  let nextResource: T | undefined;
-  if (entries.length > searchRequest.count) {
-    nextResource = entries.pop()?.resource as T;
-  }
 
   if (searchRequest.include || searchRequest.revInclude) {
     await getExtraEntries(repo, searchRequest, resources, entries);
@@ -557,7 +557,9 @@ function getSearchLinks(
 
   if (searchRequest.count > 0 && entries?.length) {
     if (canUseCursorLinks(searchRequest)) {
-      if (entries[entries.length - 1].resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated) {
+      // In order to make progress, the lastUpdated timestamp must change from the first entry of the current page
+      // to the first entry of the next page; otherwise we'd make the exact same request in a loop
+      if (entries[0].resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated) {
         throw new OperationOutcomeError(serverError(new Error('Cursor fails to make progress')));
       }
       buildSearchLinksWithCursor(searchRequest, nextResource, result);

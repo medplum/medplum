@@ -26,6 +26,7 @@ import {
   Questionnaire,
   ResourceType,
   StructureDefinition,
+  User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
@@ -1105,4 +1106,80 @@ describe('FHIR Repo', () => {
     setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
     expect(patient.photo?.[1].contentType).toEqual('image/jpeg');
   });
+
+  test('Super admin can edit User.meta.project', async () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+
+      // Create a user in the project
+      const user1 = await repo.createResource<User>({
+        resourceType: 'User',
+        email: randomUUID() + '@example.com',
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+      });
+      expect(user1.meta?.project).toEqual(project.id);
+
+      // Try to change the project as the normal user
+      // Should silently fail, and preserve the meta.project
+      const user2 = await repo.updateResource<User>({
+        ...user1,
+        meta: { project: undefined },
+      });
+      expect(user2.meta?.project).toEqual(project.id);
+
+      // Now try to change the project as the super admin
+      // Should succeed
+      const user3 = await systemRepo.updateResource<User>({
+        ...user2,
+        meta: { project: undefined },
+      });
+      expect(user3.meta?.project).toBeUndefined();
+    }));
+
+  test('Handles caching of profile from linked project', async () =>
+    withTestContext(async () => {
+      const { membership, project } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+
+      const { membership: membership2, project: project2 } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+      project.link = [{ project: createReference(project2) }];
+
+      const repo2 = await getRepoForLogin({ login: {} as Login, membership: membership2, project: project2 });
+      const profileJson = JSON.parse(
+        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+      ) as StructureDefinition;
+      const profile = await repo2.createResource(profileJson);
+
+      const patientJson: Patient = {
+        resourceType: 'Patient',
+        meta: {
+          profile: [profile.url],
+        },
+      };
+
+      // Resource upload should fail with profile linked
+      let repo = await getRepoForLogin({ login: {} as Login, membership, project });
+      await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
+
+      // Unlink Project and verify that profile is not cached; resource upload should succeed without access to profile
+      project.link = undefined;
+      repo = await getRepoForLogin({
+        login: {} as Login,
+        membership,
+        project,
+      });
+      await expect(repo.createResource(patientJson)).resolves.toBeDefined();
+    }));
 });

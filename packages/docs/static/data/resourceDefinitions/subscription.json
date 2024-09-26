@@ -426,6 +426,12 @@
       "type": "uri",
       "description": "The uri that will receive the notifications",
       "expression": "Subscription.channel.endpoint"
+    },
+    {
+      "name": "author",
+      "type": "reference",
+      "description": "The author of the Subscription resource",
+      "expression": "Subscription.meta.author"
     }
   ]
 }
