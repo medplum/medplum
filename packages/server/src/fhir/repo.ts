@@ -13,7 +13,7 @@ import {
   badRequest,
   canReadResourceType,
   canWriteResourceType,
-  created,
+  createReference,
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
@@ -27,7 +27,6 @@ import {
   isNotFound,
   isObject,
   isOk,
-  multipleMatches,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
@@ -43,7 +42,7 @@ import {
   validateResource,
   validateResourceType,
 } from '@medplum/core';
-import { BaseRepository, FhirRepository, RepositoryMode } from '@medplum/fhir-router';
+import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from '@medplum/fhir-router';
 import {
   AccessPolicy,
   Binary,
@@ -95,6 +94,7 @@ import { getPatients } from './patient';
 import { replaceConditionalReferences, validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
+import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
 import {
   Condition,
   DeleteQuery,
@@ -103,10 +103,10 @@ import {
   InsertQuery,
   SelectQuery,
   TransactionIsolationLevel,
+  normalizeDatabaseError,
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
-import { buildSearchExpression, searchImpl } from './search';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -184,7 +184,7 @@ export interface RepositoryContext {
    * Medplum tracks additional metadata for each resource, such as:
    * 1) "author" - Reference to the last user who modified the resource.
    * 2) "project" - Reference to the project that owns the resource.
-   * 3) "account" - Optional reference to a subaccount that owns the resource.
+   * 3) "compartment" - References to all compartments the resource is in.
    */
   extendedMode?: boolean;
 }
@@ -224,12 +224,15 @@ const lookupTables: LookupTable[] = [
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository extends BaseRepository implements FhirRepository<PoolClient>, Disposable {
+export class Repository extends FhirRepository<PoolClient> implements Disposable {
   private readonly context: RepositoryContext;
   private conn?: PoolClient;
   private transactionDepth = 0;
   private closed = false;
   mode: RepositoryMode;
+
+  private preCommitCallbacks: (() => Promise<void>)[] = [];
+  private postCommitCallbacks: (() => Promise<void>)[] = [];
 
   constructor(context: RepositoryContext) {
     super();
@@ -257,19 +260,25 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     return this.context.currentProject;
   }
 
-  async createResource<T extends Resource>(resource: T): Promise<T> {
+  async createResource<T extends Resource>(resource: T, options?: CreateResourceOptions): Promise<T> {
     const resourceWithId = {
       ...resource,
-      id: randomUUID(),
+      id: options?.assignedId && resource.id ? resource.id : this.generateId(),
     };
     try {
       const result = await this.updateResourceImpl(resourceWithId, true);
-      this.logEvent(CreateInteraction, AuditEventOutcome.Success, undefined, result);
+      await this.postCommit(async () => {
+        this.logEvent(CreateInteraction, AuditEventOutcome.Success, undefined, result);
+      });
       return result;
     } catch (err) {
       this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, resourceWithId);
       throw err;
     }
+  }
+
+  generateId(): string {
+    return randomUUID();
   }
 
   async readResource<T extends Resource>(
@@ -302,7 +311,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
-    const cacheRecord = await getCacheEntry<T>(resourceType, id);
+    const cacheRecord = await this.getCacheEntry<T>(resourceType, id);
     if (cacheRecord) {
       // This is an optimization to avoid a database query.
       // However, it depends on all values in the cache having "meta.compartment"
@@ -338,7 +347,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
 
     const resource = JSON.parse(rows[0].content as string) as T;
-    await setCacheEntry(resource);
+    await this.setCacheEntry(resource);
     return resource;
   }
 
@@ -356,7 +365,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
   }
 
   async readReferences(references: Reference[]): Promise<(Resource | Error)[]> {
-    const cacheEntries = await getCacheEntries(references);
+    const cacheEntries = await this.getCacheEntries(references);
     const result: (Resource | Error)[] = new Array(references.length);
 
     for (let i = 0; i < result.length; i++) {
@@ -406,7 +415,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     let parts: [T['resourceType'], string];
     try {
       parts = parseReference(reference);
-    } catch (err) {
+    } catch (_err) {
       throw new OperationOutcomeError(badRequest('Invalid reference'));
     }
     return this.readResource(parts[0], parts[1]);
@@ -522,50 +531,17 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  async updateResource<T extends Resource>(resource: T, versionId?: string): Promise<T> {
+  async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
     try {
-      const result = await this.updateResourceImpl(resource, false, versionId);
-      this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, result);
+      const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
+      await this.postCommit(async () => {
+        this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, result);
+      });
       return result;
     } catch (err) {
       this.logEvent(UpdateInteraction, AuditEventOutcome.MinorFailure, err, resource);
       throw err;
     }
-  }
-
-  async conditionalUpdate<T extends Resource>(
-    resource: T,
-    search: SearchRequest
-  ): Promise<{ resource: T; outcome: OperationOutcome }> {
-    if (search.resourceType !== resource.resourceType) {
-      throw new OperationOutcomeError(badRequest('Search type must match resource type for conditional update'));
-    }
-
-    return this.withTransaction(async () => {
-      const matches = await this.searchResources(search);
-      if (matches.length === 0) {
-        if (resource.id) {
-          throw new OperationOutcomeError(
-            badRequest('Cannot perform create as update with client-assigned ID', resource.resourceType + '.id')
-          );
-        }
-        resource = await this.createResource(resource);
-        return { resource, outcome: created };
-      } else if (matches.length > 1) {
-        throw new OperationOutcomeError(multipleMatches);
-      }
-
-      const existing = matches[0];
-      if (resource.id && resource.id !== existing.id) {
-        throw new OperationOutcomeError(
-          badRequest('Resource ID did not match resolved ID', resource.resourceType + '.id')
-        );
-      }
-
-      resource.id = existing.id;
-      resource = await this.updateResource(resource);
-      return { resource, outcome: allOk };
-    });
   }
 
   private async updateResourceImpl<T extends Resource>(resource: T, create: boolean, versionId?: string): Promise<T> {
@@ -576,13 +552,22 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
+
+    // Add default profiles before validating resource
+    if (!resource.meta?.profile && this.currentProject()?.defaultProfile) {
+      const defaultProfiles = this.currentProject()?.defaultProfile?.find(
+        (o) => o.resourceType === resourceType
+      )?.profile;
+      resource.meta = { ...resource.meta, profile: defaultProfiles };
+    }
+
     await this.validateResource(resource);
 
     if (!this.canWriteResourceType(resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
 
-    const existing = await this.checkExistingResource<T>(resourceType, id, create);
+    const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
       (existing.meta as Meta).compartment = this.getCompartments(existing);
       if (!this.canWriteToResource(existing)) {
@@ -623,7 +608,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     resultMeta.compartment = this.getCompartments(result);
 
     if (this.context.checkReferencesOnWrite) {
-      await validateReferences(this, result);
+      await this.preCommit(async () => {
+        await validateReferences(this, result);
+      });
     }
 
     if (this.isNotModified(existing, result)) {
@@ -636,9 +623,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new OperationOutcomeError(forbidden);
     }
 
-    await this.handleBinaryUpdate(existing, result);
     await this.handleStorage(result, create);
-    await addBackgroundJobs(result, existing, { interaction: create ? 'create' : 'update' });
+    await this.postCommit(async () => {
+      await this.handleBinaryUpdate(existing, result);
+      await addBackgroundJobs(result, existing, { interaction: create ? 'create' : 'update' });
+    });
     this.removeHiddenFields(result);
     return result;
   }
@@ -686,20 +675,31 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     resource.data = undefined;
   }
 
-  private async handleStorage(result: Resource, create: boolean): Promise<void> {
-    if (!this.isCacheOnly(result)) {
-      await this.writeToDatabase(result, create);
-    } else if (result.resourceType === 'Subscription' && result.channel?.type === 'websocket') {
+  /**
+   * Handles persisting data to at-rest storage: cache and/or database.
+   * This method handles all the special cases for storage, including cache invalidation.
+   * @param resource - The resource to store.
+   * @param create - Whether the resource is being create, or updated in place.
+   */
+  private async handleStorage(resource: Resource, create: boolean): Promise<void> {
+    if (!this.isCacheOnly(resource)) {
+      await this.writeToDatabase(resource, create);
+    }
+    await this.setCacheEntry(resource);
+
+    // Handle special cases for resource caching
+    if (resource.resourceType === 'Subscription' && resource.channel?.type === 'websocket') {
       const redis = getRedis();
-      const project = result?.meta?.project;
+      const project = resource?.meta?.project;
       if (!project) {
         throw new OperationOutcomeError(serverError(new Error('No project connected to the specified Subscription.')));
       }
       // WebSocket Subscriptions are also cache-only, but also need to be added to a special cache key
-      await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${result.id}`);
+      await redis.sadd(`medplum:subscriptions:r4:project:${project}:active`, `Subscription/${resource.id}`);
     }
-    // Add this resource to cache
-    await setCacheEntry(result);
+    if (resource.resourceType === 'StructureDefinition') {
+      await removeCachedProfile(resource);
+    }
   }
 
   /**
@@ -791,12 +791,16 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
           code: 'version',
           descending: true,
         },
+        {
+          code: 'date',
+          descending: true,
+        },
       ],
     });
 
     if (projectIds?.length && profile) {
       // Store loaded profile in cache
-      await setProfileCacheEntry(projectIds[0], profile);
+      await cacheProfile(profile);
     }
     return profile;
   }
@@ -808,7 +812,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @param create - If true, then the resource is being created.
    */
   private async writeToDatabase<T extends Resource>(resource: T, create: boolean): Promise<void> {
-    await this.withTransaction(async (client) => {
+    await this.ensureInTransaction(async (client) => {
       await this.writeResource(client, resource);
       await this.writeResourceVersion(client, resource);
       await this.writeLookupTables(client, resource, create);
@@ -824,13 +828,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    *  - Previous version does not exist, and user does have permission to create by ID
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
-   * @param create - Flag for "creating" vs "updating".
    * @returns The existing resource, if found.
    */
   private async checkExistingResource<T extends Resource>(
     resourceType: T['resourceType'],
-    id: string,
-    create: boolean
+    id: string
   ): Promise<T | undefined> {
     try {
       return await this.readResourceImpl<T>(resourceType, id);
@@ -840,7 +842,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         throw new OperationOutcomeError(outcome, err);
       }
 
-      if (!create && isNotFound(outcome) && !this.canSetId()) {
+      if (isNotFound(outcome) && !this.canSetId()) {
         throw new OperationOutcomeError(outcome, err);
       }
 
@@ -884,7 +886,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     await this.withTransaction(async (conn) => {
       const resource = await this.readResourceImpl<T>(resourceType, id);
-      return this.reindexResources(conn, resource);
+      return this.reindexResources(conn, [resource]);
     });
   }
 
@@ -894,19 +896,24 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * When doing a bulk reindex, this will be more efficient because it avoids unnecessary reads.
    * @param conn - Database client to use for reindex operations.
    * @param resources - The resource(s) to reindex.
-   * @returns The reindexed resource.
    */
-  async reindexResources<T extends Resource>(conn: PoolClient, ...resources: T[]): Promise<void> {
+  async reindexResources<T extends Resource>(conn: PoolClient, resources: T[]): Promise<void> {
     let resource: Resource;
     // Since the page size could be relatively large (1k+), preferring a simple for loop with re-used variables
     // eslint-disable-next-line @typescript-eslint/prefer-for-of
     for (let i = 0; i < resources.length; i++) {
       resource = resources[i];
-      (resource.meta as Meta).compartment = this.getCompartments(resource);
+      const meta = resource.meta as Meta;
+      meta.compartment = this.getCompartments(resource);
 
-      await this.writeResource(conn, resource);
+      if (!meta.project) {
+        const projectRef = meta.compartment.find((r) => r.reference?.startsWith('Project/'));
+        meta.project = resolveId(projectRef);
+      }
+
       await this.writeLookupTables(conn, resource, false);
     }
+    await this.batchWriteResources(conn, resources);
   }
 
   /**
@@ -959,9 +966,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         throw new OperationOutcomeError(forbidden);
       }
 
-      await deleteCacheEntry(resourceType, id);
+      await this.deleteCacheEntry(resourceType, id);
 
-      await this.withTransaction(async (conn) => {
+      await this.ensureInTransaction(async (conn) => {
         const lastUpdated = new Date();
         const content = '';
         const columns: Record<string, any> = {
@@ -993,7 +1000,9 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
         await this.deleteFromLookupTables(conn, resource);
 
-        this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
+        await this.postCommit(async () => {
+          this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
+        });
       });
 
       await addSubscriptionJobs(resource, resource, { interaction: 'delete' });
@@ -1009,7 +1018,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     patch: Operation[]
   ): Promise<T> {
     try {
-      const result = await this.withTransaction(async () => {
+      return await this.withTransaction(async () => {
         const resource = await this.readResourceFromDatabase<T>(resourceType, id);
 
         if (resource.resourceType !== resourceType) {
@@ -1020,10 +1029,13 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
         }
 
         patchObject(resource, patch);
-        return this.updateResourceImpl(resource, false);
+
+        const result = await this.updateResourceImpl(resource, false);
+        await this.postCommit(async () => {
+          this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
+        });
+        return result;
       });
-      this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
-      return result;
     } catch (err) {
       this.logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err);
       throw err;
@@ -1054,11 +1066,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       for (const id of ids) {
         await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
       }
-      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(this.getDatabaseClient(DatabaseMode.WRITER));
-      await new DeleteQuery(resourceType + '_History')
-        .where('id', 'IN', ids)
-        .execute(this.getDatabaseClient(DatabaseMode.WRITER));
-      await deleteCacheEntries(resourceType, ids);
+
+      const db = this.getDatabaseClient(DatabaseMode.WRITER);
+      await new DeleteQuery(resourceType).where('id', 'IN', ids).execute(db);
+      await new DeleteQuery(resourceType + '_History').where('id', 'IN', ids).execute(db);
+      await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
     });
   }
 
@@ -1088,6 +1100,21 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     try {
       // Resource type validation is performed in the searchImpl function
       const result = await searchImpl(this, searchRequest);
+      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, undefined, searchRequest);
+      return result;
+    } catch (err) {
+      this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, undefined, searchRequest);
+      throw err;
+    }
+  }
+
+  async searchByReference<T extends Resource>(
+    searchRequest: SearchRequest<T>,
+    referenceField: string,
+    references: string[]
+  ): Promise<Record<string, T[]>> {
+    try {
+      const result = await searchByReferenceImpl<T>(this, searchRequest, referenceField, references);
       this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, undefined, searchRequest);
       return result;
     } catch (err) {
@@ -1172,20 +1199,13 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  /**
-   * Writes the resource to the resource table.
-   * This builds all search parameter columns.
-   * This does *not* write the version to the history table.
-   * @param client - The database client inside the transaction.
-   * @param resource - The resource.
-   */
-  private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
+  private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
     const compartments = meta.compartment?.map((ref) => resolveId(ref));
     const content = stringify(resource);
 
-    const columns: Record<string, any> = {
+    const row: Record<string, any> = {
       id: resource.id,
       lastUpdated: meta.lastUpdated,
       deleted: false,
@@ -1197,11 +1217,34 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
       for (const searchParam of Object.values(searchParams)) {
-        this.buildColumn(resource, columns, searchParam);
+        this.buildColumn(resource, row, searchParam);
       }
     }
+    return row;
+  }
 
-    await new InsertQuery(resourceType, [columns]).mergeOnConflict().execute(client);
+  /**
+   * Writes the resource to the resource table.
+   * This builds all search parameter columns.
+   * This does *not* write the version to the history table.
+   * @param client - The database client inside the transaction.
+   * @param resource - The resource.
+   */
+  private async writeResource(client: PoolClient, resource: Resource): Promise<void> {
+    await new InsertQuery(resource.resourceType, [this.buildResourceRow(resource)]).mergeOnConflict().execute(client);
+  }
+
+  private async batchWriteResources(client: PoolClient, resources: Resource[]): Promise<void> {
+    if (!resources.length) {
+      return;
+    }
+
+    await new InsertQuery(
+      resources[0].resourceType,
+      resources.map((r) => this.buildResourceRow(r))
+    )
+      .mergeOnConflict()
+      .execute(client);
   }
 
   /**
@@ -1233,30 +1276,56 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
    * @returns The list of compartments for the resource.
    */
   private getCompartments(resource: Resource): Reference[] {
-    const result: Reference[] = [];
+    const compartments = new Set<string>();
 
-    if (resource.meta?.project) {
+    if (resource.meta?.project && validator.isUUID(resource.meta.project)) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
-      result.push({ reference: 'Project/' + resource.meta.project });
+      compartments.add('Project/' + resource.meta.project);
     }
 
-    if (resource.resourceType === 'User' && resource.project?.reference) {
+    if (
+      resource.resourceType === 'User' &&
+      resource.project?.reference &&
+      validator.isUUID(resolveId(resource.project) ?? '')
+    ) {
       // Deprecated - to be removed after migrating all tables to use "projectId" column
-      result.push(resource.project);
+      compartments.add(resource.project.reference);
     }
 
-    if (resource.meta?.account) {
-      result.push(resource.meta.account);
+    if (resource.meta?.account && !resource.meta.account.reference?.startsWith('Project/')) {
+      const id = resolveId(resource.meta.account);
+      if (id && validator.isUUID(id)) {
+        compartments.add(resource.meta.account.reference as string);
+      }
     }
 
     for (const patient of getPatients(resource)) {
       const patientId = resolveId(patient);
       if (patientId && validator.isUUID(patientId)) {
-        result.push(patient);
+        compartments.add(patient.reference);
       }
     }
 
-    return result;
+    // Carry forward anything added to the resource compartments array
+    if (resource.meta?.compartment?.length) {
+      for (const compartment of resource.meta.compartment) {
+        const id = resolveId(compartment);
+        if (
+          id &&
+          validator.isUUID(id) &&
+          (compartment.reference?.startsWith('Organization/') || compartment.reference?.startsWith('Location/'))
+        ) {
+          compartments.add(compartment.reference as string);
+        }
+      }
+    }
+
+    const results: Reference[] = [];
+    for (const reference of compartments.values()) {
+      results.push({ reference });
+    }
+
+    return results;
   }
 
   /**
@@ -1352,7 +1421,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       try {
         const date = new Date(value);
         return date.toISOString().substring(0, 10);
-      } catch (ex) {
+      } catch (_err) {
         // Silent ignore
       }
     }
@@ -1371,7 +1440,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       try {
         const date = new Date(value);
         return date.toISOString();
-      } catch (ex) {
+      } catch (_err) {
         // Silent ignore
       }
     } else if (typeof value === 'object') {
@@ -1567,6 +1636,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
     if (updated.resourceType === 'ProjectMembership') {
       return resolveId(updated.project);
+    }
+
+    if (updated.resourceType === 'User' && this.isSuperAdmin()) {
+      // Super admins can add, remove, and the project compartment of users.
+      return updated?.meta?.project;
     }
 
     if (protectedResourceTypes.includes(updated.resourceType)) {
@@ -1881,11 +1955,11 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     }
   }
 
-  private isSuperAdmin(): boolean {
+  isSuperAdmin(): boolean {
     return !!this.context.superAdmin;
   }
 
-  private isProjectAdmin(): boolean {
+  isProjectAdmin(): boolean {
     return !!this.context.projectAdmin;
   }
 
@@ -1928,7 +2002,7 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
     );
 
     if (getConfig().saveAuditEvents && resource?.resourceType !== 'AuditEvent') {
-      auditEvent.id = randomUUID();
+      auditEvent.id = this.generateId();
       this.updateResourceImpl(auditEvent, true).catch(console.error);
     }
   }
@@ -1985,20 +2059,209 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
 
   async withTransaction<TResult>(
     callback: (client: PoolClient) => Promise<TResult>,
-    options?: { isolation?: TransactionIsolationLevel }
+    options?: { serializable: boolean }
   ): Promise<TResult> {
     try {
-      const client = await this.beginTransaction(options?.isolation);
+      const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
       const result = await callback(client);
       await this.commitTransaction();
       return result;
-    } catch (err: any) {
-      const operationOutcomeError = new OperationOutcomeError(normalizeOperationOutcome(err), err);
+    } catch (err) {
+      const operationOutcomeError = normalizeDatabaseError(err);
       await this.rollbackTransaction(operationOutcomeError);
       throw operationOutcomeError;
     } finally {
       this.endTransaction();
     }
+  }
+
+  private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
+    this.assertNotClosed();
+    this.transactionDepth++;
+    const conn = await this.getConnection(DatabaseMode.WRITER);
+    if (this.transactionDepth === 1) {
+      await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
+    } else {
+      await conn.query('SAVEPOINT sp' + this.transactionDepth);
+    }
+    return conn;
+  }
+
+  private async commitTransaction(): Promise<void> {
+    this.assertInTransaction();
+    const conn = await this.getConnection(DatabaseMode.WRITER);
+    if (this.transactionDepth === 1) {
+      await this.processPreCommit();
+      await conn.query('COMMIT');
+      this.transactionDepth--;
+      this.releaseConnection();
+      await this.processPostCommit();
+    } else {
+      await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
+      this.transactionDepth--;
+    }
+  }
+
+  private async rollbackTransaction(error: Error): Promise<void> {
+    this.assertInTransaction();
+    const conn = await this.getConnection(DatabaseMode.WRITER);
+    if (this.transactionDepth === 1) {
+      await conn.query('ROLLBACK');
+      this.transactionDepth--;
+      this.releaseConnection(error);
+    } else {
+      await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
+      this.transactionDepth--;
+    }
+  }
+
+  private endTransaction(): void {
+    if (this.transactionDepth === 0) {
+      this.releaseConnection();
+    }
+  }
+
+  private assertInTransaction(): void {
+    if (this.transactionDepth <= 0) {
+      throw new Error('Not in transaction');
+    }
+  }
+
+  async preCommit(fn: () => Promise<void>): Promise<void> {
+    if (this.transactionDepth) {
+      this.preCommitCallbacks.push(fn);
+    } else {
+      await fn();
+    }
+  }
+
+  private async processPreCommit(): Promise<void> {
+    const callbacks = this.preCommitCallbacks;
+    this.preCommitCallbacks = [];
+    for (const cb of callbacks) {
+      await cb();
+    }
+  }
+
+  async postCommit(fn: () => Promise<void>): Promise<void> {
+    if (this.transactionDepth) {
+      this.postCommitCallbacks.push(fn);
+    } else {
+      await fn();
+    }
+  }
+
+  private async processPostCommit(): Promise<void> {
+    const callbacks = this.postCommitCallbacks;
+    this.postCommitCallbacks = [];
+    for (const cb of callbacks) {
+      await cb();
+    }
+  }
+
+  /**
+   * Tries to read a cache entry from Redis by resource type and ID.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
+   * @returns The cache entry if found; otherwise, undefined.
+   */
+  private async getCacheEntry<T extends Resource>(
+    resourceType: string,
+    id: string
+  ): Promise<CacheEntry<T> | undefined> {
+    // No cache access allowed mid-transaction
+    if (this.transactionDepth) {
+      return undefined;
+    }
+    const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
+    return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
+  }
+
+  /**
+   * Performs a bulk read of cache entries from Redis.
+   * @param references - Array of FHIR references.
+   * @returns Array of cache entries or undefined.
+   */
+  private async getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
+    // No cache access allowed mid-transaction
+    if (this.transactionDepth) {
+      return new Array(references.length);
+    }
+    const referenceKeys = references.map((r) => r.reference as string);
+    if (referenceKeys.length === 0) {
+      // Return early to avoid calling mget() with no args, which is an error
+      return [];
+    }
+    return (await getRedis().mget(...referenceKeys)).map((cachedValue) =>
+      cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
+    );
+  }
+
+  /**
+   * Writes a cache entry to Redis.
+   * @param resource - The resource to cache.
+   */
+  private async setCacheEntry(resource: Resource): Promise<void> {
+    // No cache access allowed mid-transaction
+    if (this.transactionDepth) {
+      await this.postCommit(() => this.setCacheEntry(resource));
+      return;
+    }
+
+    const projectId = resource.meta?.project;
+    await getRedis().set(
+      getCacheKey(resource.resourceType, resource.id as string),
+      JSON.stringify({ resource, projectId }),
+      'EX',
+      REDIS_CACHE_EX_SECONDS
+    );
+  }
+
+  /**
+   * Deletes a cache entry from Redis.
+   * @param resourceType - The resource type.
+   * @param id - The resource ID.
+   */
+  private async deleteCacheEntry(resourceType: string, id: string): Promise<void> {
+    // No cache access allowed mid-transaction
+    if (this.transactionDepth) {
+      await this.postCommit(() => this.deleteCacheEntry(resourceType, id));
+      return;
+    }
+
+    await getRedis().del(getCacheKey(resourceType, id));
+  }
+
+  /**
+   * Deletes cache entries from Redis.
+   * @param resourceType - The resource type.
+   * @param ids - The resource IDs.
+   */
+  private async deleteCacheEntries(resourceType: string, ids: string[]): Promise<void> {
+    // No cache access allowed mid-transaction
+    if (this.transactionDepth) {
+      await this.postCommit(() => this.deleteCacheEntries(resourceType, ids));
+      return;
+    }
+
+    const cacheKeys = ids.map((id) => {
+      return getCacheKey(resourceType, id);
+    });
+
+    await getRedis().del(cacheKeys);
+  }
+
+  async ensureInTransaction<TResult>(callback: (client: PoolClient) => Promise<TResult>): Promise<TResult> {
+    if (this.transactionDepth) {
+      const client = await this.getConnection(DatabaseMode.WRITER);
+      return callback(client);
+    } else {
+      return this.withTransaction(callback);
+    }
+  }
+
+  getConfig(): RepositoryContext {
+    return this.context;
   }
 
   close(): void {
@@ -2023,54 +2286,6 @@ export class Repository extends BaseRepository implements FhirRepository<PoolCli
       throw new Error('Already closed');
     }
   }
-
-  private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
-    this.assertNotClosed();
-    this.transactionDepth++;
-    const conn = await this.getConnection(DatabaseMode.WRITER);
-    if (this.transactionDepth === 1) {
-      await conn.query('BEGIN ISOLATION LEVEL ' + isolationLevel);
-    } else {
-      await conn.query('SAVEPOINT sp' + this.transactionDepth);
-    }
-    return conn;
-  }
-
-  private async commitTransaction(): Promise<void> {
-    this.assertInTransaction();
-    const conn = await this.getConnection(DatabaseMode.WRITER);
-    if (this.transactionDepth === 1) {
-      await conn.query('COMMIT');
-      this.releaseConnection();
-    } else {
-      await conn.query('RELEASE SAVEPOINT sp' + this.transactionDepth);
-    }
-  }
-
-  private async rollbackTransaction(error: Error): Promise<void> {
-    this.assertInTransaction();
-    const conn = await this.getConnection(DatabaseMode.WRITER);
-    if (this.transactionDepth === 1) {
-      await conn.query('ROLLBACK');
-      this.releaseConnection(error);
-    } else {
-      await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
-    }
-  }
-
-  private endTransaction(): void {
-    this.assertInTransaction();
-    this.transactionDepth--;
-    if (this.transactionDepth === 0) {
-      this.releaseConnection();
-    }
-  }
-
-  private assertInTransaction(): void {
-    if (this.transactionDepth <= 0) {
-      throw new Error('Not in transaction');
-    }
-  }
 }
 
 export function isIndexTable(resourceType: string, searchParam: SearchParameter): boolean {
@@ -2087,75 +2302,7 @@ export function getLookupTable(resourceType: string, searchParam: SearchParamete
 }
 
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
-
-/**
- * Tries to read a cache entry from Redis by resource type and ID.
- * @param resourceType - The resource type.
- * @param id - The resource ID.
- * @returns The cache entry if found; otherwise, undefined.
- */
-async function getCacheEntry<T extends Resource>(
-  resourceType: T['resourceType'],
-  id: string
-): Promise<CacheEntry<T> | undefined> {
-  const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
-  return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
-}
-
-/**
- * Performs a bulk read of cache entries from Redis.
- * @param references - Array of FHIR references.
- * @returns Array of cache entries or undefined.
- */
-async function getCacheEntries(references: Reference[]): Promise<(CacheEntry | undefined)[]> {
-  const referenceKeys = references.map((r) => r.reference as string);
-  if (referenceKeys.length === 0) {
-    // Return early to avoid calling mget() with no args, which is an error
-    return [];
-  }
-  return (await getRedis().mget(...referenceKeys)).map((cachedValue) =>
-    cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
-  );
-}
-
-/**
- * Writes a cache entry to Redis.
- * @param resource - The resource to cache.
- */
-async function setCacheEntry(resource: Resource): Promise<void> {
-  const projectId = resource.meta?.project;
-  await getRedis().set(
-    getCacheKey(resource.resourceType, resource.id as string),
-    JSON.stringify({ resource, projectId }),
-    'EX',
-    REDIS_CACHE_EX_SECONDS
-  );
-  if (projectId && resource.resourceType === 'StructureDefinition') {
-    await setProfileCacheEntry(projectId, resource);
-  }
-}
-
-/**
- * Deletes a cache entry from Redis.
- * @param resourceType - The resource type.
- * @param id - The resource ID.
- */
-async function deleteCacheEntry(resourceType: string, id: string): Promise<void> {
-  await getRedis().del(getCacheKey(resourceType, id));
-}
-
-/**
- * Deletes cache entries from Redis.
- * @param resourceType - The resource type.
- * @param ids - The resource IDs.
- */
-async function deleteCacheEntries(resourceType: string, ids: string[]): Promise<void> {
-  const cacheKeys = ids.map((id) => {
-    return getCacheKey(resourceType, id);
-  });
-
-  await getRedis().del(cacheKeys);
-}
+const PROFILE_CACHE_EX_SECONDS = 5 * 60; // 5 minutes in seconds
 
 /**
  * Returns the redis cache key for the given resource type and resource ID.
@@ -2169,25 +2316,36 @@ function getCacheKey(resourceType: string, id: string): string {
 
 /**
  * Writes a FHIR profile cache entry to Redis.
- * @param projectId - The project ID.
- * @param structureDefinition - The profile structure definition.
+ * @param profile - The profile structure definition.
  */
-async function setProfileCacheEntry(projectId: string, structureDefinition: StructureDefinition): Promise<void> {
-  if (!structureDefinition.url) {
+async function cacheProfile(profile: StructureDefinition): Promise<void> {
+  if (!profile.url || !profile.meta?.project) {
     return;
   }
+  profile = await getSystemRepo().readReference(createReference(profile));
   await getRedis().set(
-    getProfileCacheKey(projectId, structureDefinition.url),
-    JSON.stringify({ resource: structureDefinition, projectId }),
+    getProfileCacheKey(profile.meta?.project as string, profile.url),
+    JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
     'EX',
-    REDIS_CACHE_EX_SECONDS
+    PROFILE_CACHE_EX_SECONDS
   );
 }
 
 /**
- * Returns the redis cache key for the given project and FHIR profile URL.
- * @param projectId - The project ID.
- * @param url - The profile URL.
+ * Writes a FHIR profile cache entry to Redis.
+ * @param profile - The profile structure definition.
+ */
+async function removeCachedProfile(profile: StructureDefinition): Promise<void> {
+  if (!profile.url || !profile.meta?.project) {
+    return;
+  }
+  await getRedis().del(getProfileCacheKey(profile.meta.project, profile.url));
+}
+
+/**
+ * Returns the redis cache key for the given profile resource.
+ * @param projectId - The ID of the Project to which the profile belongs.
+ * @param url - The canonical URL of the profile.
  * @returns The Redis cache key.
  */
 function getProfileCacheKey(projectId: string, url: string): string {

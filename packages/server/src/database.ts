@@ -47,7 +47,7 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
     user: config.username,
     password: config.password,
     ssl: config.ssl,
-    max: 100,
+    max: config.maxConnections ?? 100,
   };
 
   if (proxyEndpoint) {
@@ -91,11 +91,20 @@ async function runMigrations(pool: Pool): Promise<void> {
   try {
     client = await pool.connect();
     await client.query('SELECT pg_advisory_lock($1)', [locks.migration]);
+    await client.query(`SET statement_timeout TO 0`); // Disable timeout for migrations AFTER getting lock
     await migrate(client);
+  } catch (err: any) {
+    globalLogger.error('Database schema migration error', err);
+    if (client) {
+      await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
+      client.release(err);
+      client = undefined;
+    }
   } finally {
     if (client) {
       await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
-      client.release();
+      client.release(true); // Ensure migration connection is torn down and not re-used
+      client = undefined;
     }
   }
 }

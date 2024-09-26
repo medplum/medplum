@@ -48,7 +48,7 @@ function getTabs(resourceType: string): string[] {
   return result;
 }
 
-const BETA_TABS = ['Profiles'];
+const BETA_TABS: string[] = [];
 
 export function ResourcePage(): JSX.Element | null {
   const medplum = useMedplum();

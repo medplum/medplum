@@ -27,6 +27,10 @@ tar \
   packages/server/package.json \
   packages/server/dist
 
+# Supply chain attestations
+# See: https://docs.docker.com/scout/policy/#supply-chain-attestations
+ATTESTATIONS="--provenance=true --sbom=true"
+
 # Target platforms
 PLATFORMS="--platform linux/amd64,linux/arm64,linux/arm/v7"
 
@@ -44,4 +48,4 @@ for arg in "$@"; do
 done
 
 # Build and push Docker images
-docker buildx build $PLATFORMS $TAGS --push .
+docker buildx build $ATTESTATIONS $PLATFORMS $TAGS --push .

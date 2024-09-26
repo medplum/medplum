@@ -1,11 +1,7 @@
 ---
 slug: titan-case-study
 title: AI Driven Patient Intake and EMPI - Titan Case Study
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [ai, interop, scheduling, case-study]
 ---
 
@@ -13,7 +9,11 @@ tags: [ai, interop, scheduling, case-study]
 
 Those who have experienced the wait and shuffle of a specialist referral will appreciate the thoughtful and futuristic approach of the team at [Titan Intake](https://www.titanintake.com/).
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/sy3YKRFyPII?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<!-- truncate -->
+
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/sy3YKRFyPII?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _(5 minute demo)_
 

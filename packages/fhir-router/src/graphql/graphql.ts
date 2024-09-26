@@ -99,7 +99,7 @@ export async function graphqlHandler(
   let document: DocumentNode;
   try {
     document = parse(query);
-  } catch (err) {
+  } catch (_err) {
     return [badRequest('GraphQL syntax error.')];
   }
 
@@ -128,6 +128,7 @@ export async function graphqlHandler(
       config: req.config,
       dataLoader,
       searchCount: 0,
+      searchDataLoaders: Object.create(null),
     };
 
     result = await execute({

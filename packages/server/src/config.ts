@@ -54,6 +54,7 @@ export interface MedplumServerConfig {
   heartbeatMilliseconds?: number;
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
+  maxSearchOffset?: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?:
     | (
@@ -109,6 +110,7 @@ export interface MedplumDatabaseConfig {
   ssl?: MedplumDatabaseSslConfig;
   queryTimeout?: number;
   runMigrations?: boolean;
+  maxConnections?: number;
 }
 
 export interface MedplumRedisConfig {
@@ -234,6 +236,8 @@ function loadEnvConfig(): MedplumServerConfig {
 
     if (isIntegerConfig(key)) {
       currConfig[key] = parseInt(value ?? '', 10);
+    } else if (isFloatConfig(key)) {
+      currConfig[key] = parseFloat(value ?? '');
     } else if (isBooleanConfig(key)) {
       currConfig[key] = value === 'true';
     } else if (isObjectConfig(key)) {
@@ -282,21 +286,27 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   return config;
 }
 
+const integerKeys = ['port', 'accurateCountThreshold'];
 function isIntegerConfig(key: string): boolean {
-  return key === 'port' || key === 'accurateCountThreshold';
+  return integerKeys.includes(key);
 }
 
+function isFloatConfig(_key: string): boolean {
+  return false;
+}
+
+const booleanKeys = [
+  'botCustomFunctionsEnabled',
+  'database.ssl.rejectUnauthorized',
+  'database.ssl.require',
+  'logRequests',
+  'logAuditEvents',
+  'registerEnabled',
+  'require',
+  'rejectUnauthorized',
+];
 function isBooleanConfig(key: string): boolean {
-  return (
-    key === 'botCustomFunctionsEnabled' ||
-    key === 'database.ssl.rejectUnauthorized' ||
-    key === 'database.ssl.require' ||
-    key === 'logRequests' ||
-    key === 'logAuditEvents' ||
-    key === 'registerEnabled' ||
-    key === 'require' ||
-    key === 'rejectUnauthorized'
-  );
+  return booleanKeys.includes(key);
 }
 
 function isObjectConfig(key: string): boolean {

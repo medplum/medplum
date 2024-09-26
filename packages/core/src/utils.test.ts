@@ -61,6 +61,7 @@ import {
   resolveId,
   setCodeBySystem,
   setIdentifier,
+  singularize,
   sortStringArray,
   splitN,
   stringify,
@@ -727,6 +728,11 @@ describe('Core Utils', () => {
     expect(
       deepEquals({ resourceType: 'Patient', meta: { author: '1' } }, { resourceType: 'Patient', meta: { author: '2' } })
     ).toEqual(true);
+
+    // Functions
+    const onConnect = (): void => undefined;
+    expect(deepEquals({ onConnect }, { onConnect })).toEqual(true);
+    expect(deepEquals({ onConnect: () => undefined }, { onConnect: () => undefined })).toEqual(false);
   });
 
   test('deepIncludes', () => {
@@ -1531,5 +1537,19 @@ describe('flatMapFilter', () => {
   test('flattens nested arrays', () => {
     const input = [1, 2, 3];
     expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, [x, x]] : undefined))).toEqual([2, 2, 2]);
+  });
+});
+
+describe('singularize', () => {
+  test('Passes through single value', () => {
+    expect(singularize('foo')).toEqual('foo');
+    expect(singularize(false)).toEqual(false);
+    expect(singularize(undefined)).toBeUndefined();
+  });
+
+  test('Takes first element of array input', () => {
+    expect(singularize(['foo'])).toEqual('foo');
+    expect(singularize([false])).toEqual(false);
+    expect(singularize([])).toBeUndefined();
   });
 });

@@ -1,22 +1,22 @@
+import { readJson } from '@medplum/definitions';
+import { Bundle, Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import { HTTP_HL7_ORG } from './constants';
+import {
+  applyDefaultValuesToElement,
+  applyDefaultValuesToElementWithVisitor,
+  applyDefaultValuesToResource,
+  applyFixedOrPatternValue,
+  getDefaultValuesForNewSliceEntry,
+} from './default-values';
 import {
   InternalSchemaElement,
   InternalTypeSchema,
   SliceDefinition,
   SlicingRules,
-  loadDataType,
+  indexStructureDefinitionBundle,
   tryGetProfile,
 } from './typeschema/types';
 import { isPopulated } from './utils';
-import { Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
-import {
-  applyDefaultValuesToElement,
-  applyDefaultValuesToResource,
-  applyDefaultValuesToElementWithVisitor,
-  getDefaultValuesForNewSliceEntry,
-  applyFixedOrPatternValue,
-} from './default-values';
-import { HTTP_HL7_ORG } from './constants';
-import { readJson } from '@medplum/definitions';
 
 function isStructureDefinition(sd: any): sd is StructureDefinition {
   if (!isPopulated<StructureDefinition>(sd)) {
@@ -52,6 +52,9 @@ function getSlice(schema: InternalTypeSchema, slicedElementKey: string, sliceNam
 describe('apply default values', () => {
   let USCoreStructureDefinitions: StructureDefinition[];
   beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+
     USCoreStructureDefinitions = readJson('fhir/r4/testing/uscore-v5.0.1-structuredefinitions.json');
   });
 
@@ -64,9 +67,7 @@ describe('apply default values', () => {
 
     expect(sds.length).toEqual(profileUrls.length);
 
-    for (const sd of sds) {
-      loadDataType(sd, sd?.url);
-    }
+    indexStructureDefinitionBundle(sds);
   }
 
   describe('US Blood Pressure', () => {

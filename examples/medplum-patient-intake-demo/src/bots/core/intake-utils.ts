@@ -6,11 +6,14 @@ import {
   HTTP_TERMINOLOGY_HL7_ORG,
   LOINC,
   MedplumClient,
+  SNOMED,
 } from '@medplum/core';
 import {
+  Address,
   CodeableConcept,
   Coding,
   Consent,
+  HumanName,
   Observation,
   Organization,
   Patient,
@@ -31,6 +34,7 @@ export const extensionURLMapping: Record<string, string> = {
 export const observationCodeMapping: Record<string, CodeableConcept> = {
   housingStatus: { coding: [{ code: '71802-3', system: LOINC, display: 'Housing status' }] },
   educationLevel: { coding: [{ code: '82589-3', system: LOINC, display: 'Highest Level of Education' }] },
+  smokingStatus: { coding: [{ code: '72166-2', system: LOINC, display: 'Tobacco smoking status' }] },
   sexualOrientation: { coding: [{ code: '76690-7', system: LOINC, display: 'Sexual orientation' }] },
   pregnancyStatus: { coding: [{ code: '82810-3', system: LOINC, display: 'Pregnancy status' }] },
   estimatedDeliveryDate: { coding: [{ code: '11778-8', system: LOINC, display: 'Estimated date of delivery' }] },
@@ -296,6 +300,244 @@ export function addLanguage(patient: Patient, valueCoding: Coding | undefined, p
 }
 
 /**
+ * Adds an AllergyIntolerance resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the allergy
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up an
+ */
+export async function addAllergy(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const code = answers['allergy-substance']?.valueCoding;
+
+  if (!code) {
+    return;
+  }
+
+  const reaction = answers['allergy-reaction']?.valueString;
+  const onsetDateTime = answers['allergy-onset']?.valueDateTime;
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'AllergyIntolerance',
+      clinicalStatus: {
+        text: 'Active',
+        coding: [
+          {
+            system: 'http://hl7.org/fhir/ValueSet/allergyintolerance-clinical',
+            code: 'active',
+            display: 'Active',
+          },
+        ],
+      },
+      verificationStatus: {
+        text: 'Unconfirmed',
+        coding: [
+          {
+            system: 'http://hl7.org/fhir/ValueSet/allergyintolerance-verification',
+            code: 'unconfirmed',
+            display: 'Unconfirmed',
+          },
+        ],
+      },
+      patient: createReference(patient),
+      code: { coding: [code] },
+      reaction: reaction ? [{ manifestation: [{ text: reaction }] }] : undefined,
+      onsetDateTime: onsetDateTime,
+    },
+    {
+      patient: getReferenceString(patient),
+      code: `${code.system}|${code.code}`,
+    }
+  );
+}
+
+/**
+ * Adds a MedicationRequest resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the medication
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
+ *                 medication (see getGroupRepeatedAnswers)
+ */
+export async function addMedication(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const code = answers['medication-code']?.valueCoding;
+
+  if (!code) {
+    return;
+  }
+
+  const note = answers['medication-note']?.valueString;
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'MedicationRequest',
+      subject: createReference(patient),
+      status: 'active',
+      intent: 'order',
+      requester: createReference(patient),
+      medicationCodeableConcept: { coding: [code] },
+      note: note ? [{ text: note }] : undefined,
+    },
+    {
+      subject: getReferenceString(patient),
+      code: `${code.system}|${code.code}`,
+    }
+  );
+}
+
+/**
+ * Adds a Condition resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the condition
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
+ *                 condition (see getGroupRepeatedAnswers)
+ */
+export async function addCondition(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const code = answers['medical-history-problem']?.valueCoding;
+
+  if (!code) {
+    return;
+  }
+
+  const clinicalStatus = answers['medical-history-clinical-status']?.valueCoding;
+  const onsetDateTime = answers['medical-history-onset']?.valueDateTime;
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'Condition',
+      subject: createReference(patient),
+      code: { coding: [code] },
+      clinicalStatus: clinicalStatus ? { coding: [clinicalStatus] } : undefined,
+      onsetDateTime: onsetDateTime,
+    },
+    {
+      subject: getReferenceString(patient),
+      code: `${code?.system}|${code?.code}`,
+    }
+  );
+}
+
+/**
+ * Adds a FamilyMemberHistory resource
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the family member history
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up a
+ *                 family member history (see getGroupRepeatedAnswers)
+ */
+export async function addFamilyMemberHistory(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const condition = answers['family-member-history-problem']?.valueCoding;
+  const relationship = answers['family-member-history-relationship']?.valueCoding;
+
+  if (!condition || !relationship) {
+    return;
+  }
+
+  const deceased = answers['family-member-history-deceased']?.valueBoolean;
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'FamilyMemberHistory',
+      patient: createReference(patient),
+      status: 'completed',
+      relationship: { coding: [relationship] },
+      condition: [{ code: { coding: [condition] } }],
+      deceasedBoolean: deceased,
+    },
+    {
+      patient: getReferenceString(patient),
+      condition: `${condition.system}|${condition.code}`,
+      relationship: `${relationship.system}|${relationship.code}`,
+    }
+  );
+}
+
+/**
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the immunization
+ * @param answers - A list of objects where the keys are the linkIds of the fields used to set up an
+ *                  immunization (see getGroupRepeatedAnswers)
+ */
+export async function addImmunization(
+  medplum: MedplumClient,
+  patient: Patient,
+  answers: Record<string, QuestionnaireResponseItemAnswer>
+): Promise<void> {
+  const code = answers['immunization-vaccine']?.valueCoding;
+  const occurrenceDateTime = answers['immunization-date']?.valueDateTime;
+
+  if (!code || !occurrenceDateTime) {
+    return;
+  }
+
+  await medplum.upsertResource(
+    {
+      resourceType: 'Immunization',
+      status: 'completed',
+      vaccineCode: { coding: [code] },
+      patient: createReference(patient),
+      occurrenceDateTime: occurrenceDateTime,
+    },
+    {
+      status: 'completed',
+      'vaccine-code': `${code.system}|${code.code}`,
+      patient: getReferenceString(patient),
+      date: occurrenceDateTime,
+    }
+  );
+}
+
+/**
+ * Adds a CareTeam resource associating the patient with a pharmacy
+ *
+ * @param medplum - The Medplum client
+ * @param patient - The patient beneficiary of the care team
+ * @param pharmacy - The pharmacy to be added to the care team
+ */
+export async function addPharmacy(
+  medplum: MedplumClient,
+  patient: Patient,
+  pharmacy: Reference<Organization>
+): Promise<void> {
+  await medplum.upsertResource(
+    {
+      resourceType: 'CareTeam',
+      status: 'proposed',
+      name: 'Patient Preferred Pharmacy',
+      subject: createReference(patient),
+      participant: [
+        {
+          member: pharmacy,
+          role: [{ coding: [{ system: SNOMED, code: '76166008', display: 'Practical aid (pharmacy) (occupation)' }] }],
+        },
+      ],
+    },
+    {
+      name: 'Patient Preferred Pharmacy',
+      subject: getReferenceString(patient),
+    }
+  );
+}
+
+/**
  * Adds a Coverage resource
  *
  * @param medplum - The Medplum client
@@ -310,6 +552,28 @@ export async function addCoverage(
 ): Promise<void> {
   const payor = answers['insurance-provider'].valueReference as Reference<Organization>;
   const subscriberId = answers['subscriber-id'].valueString;
+  const relationshipToSubscriber = answers['relationship-to-subscriber'].valueCoding as Coding;
+
+  // Create RelatedPerson resource depending on the relationship to the subscriber
+  const relatedPersonAnswers = answers['related-person'] as Record<string, QuestionnaireResponseItemAnswer>;
+  if (
+    relationshipToSubscriber.code &&
+    !['other', 'self', 'injured'].includes(relationshipToSubscriber.code) &&
+    relatedPersonAnswers
+  ) {
+    const name = getHumanName(relatedPersonAnswers, 'related-person-');
+    const relatedPersonRelationship = getRelatedPersonRelationshipFromCoverage(relationshipToSubscriber);
+
+    await medplum.createResource({
+      resourceType: 'RelatedPerson',
+      patient: createReference(patient),
+      relationship: relatedPersonRelationship ? [{ coding: [relatedPersonRelationship] }] : undefined,
+      name: name ? [name] : undefined,
+      birthDate: relatedPersonAnswers['related-person-dob']?.valueDate,
+      gender:
+        (relatedPersonAnswers['related-person-gender-identity'].valueCoding?.code as Patient['gender']) ?? undefined,
+    });
+  }
 
   await medplum.upsertResource(
     {
@@ -317,7 +581,7 @@ export async function addCoverage(
       status: 'active',
       beneficiary: createReference(patient),
       subscriberId: subscriberId,
-      relationship: { coding: [answers['relationship-to-subscriber'].valueCoding as Coding] },
+      relationship: { coding: [relationshipToSubscriber] },
       payor: [payor],
     },
     {
@@ -392,52 +656,53 @@ export function getGroupRepeatedAnswers(
   response: QuestionnaireResponse,
   groupLinkId: string
 ): Record<string, QuestionnaireResponseItemAnswer>[] {
+  // Find the questionnaire item based on groupLinkId
   const questionnaireItem = findQuestionnaireItem(questionnaire.item, groupLinkId) as QuestionnaireItem;
-  const responseItem = findQuestionnaireItem(response.item, groupLinkId) as QuestionnaireResponseItem;
 
   if (questionnaireItem.type !== 'group' || !questionnaireItem?.item) {
     return [];
   }
 
-  const responses = responseItem.item ?? [];
-  let responseCursor = 0;
+  // Get all response items corresponding to the groupLinkId
+  const responseGroups = response.item?.filter((item) => item.linkId === groupLinkId);
 
-  const linkIds = questionnaireItem.item.map((item) => item.linkId);
-  let linkCursor = 0;
-
-  const groupAnswers = [];
-  let answerGroup = {};
-
-  // It expects that responses will be organized in the same order the form is filled. Eg.:
-  // [
-  //   {answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3},
-  //   {answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}
-  // ]
-  // The linkCursor and responseCursor logic allows this function to work even when some fields are
-  // not filled. Eg.:
-  // [
-  //   {answer-with-linkId-1}, {answer-with-linkId-3},
-  //   {answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}
-  // ]
-  while (responseCursor < responses.length) {
-    const item = responses[responseCursor];
-
-    if (item.linkId === linkIds[linkCursor]) {
-      Object.assign(answerGroup, { [item.linkId]: item.answer?.[0] });
-      responseCursor += 1;
-    }
-
-    linkCursor += 1;
-    if (linkCursor >= linkIds?.length) {
-      linkCursor = 0;
-      groupAnswers.push(answerGroup);
-      answerGroup = {};
-    }
+  if (!responseGroups || responseGroups?.length === 0) {
+    return [];
   }
 
-  if (Object.keys(answerGroup).length > 0) {
-    groupAnswers.push(answerGroup);
-  }
+  // It expects that responses will be organized in separate groups with the same groupLinkId. Eg.:
+  // [
+  //   {group-linkId-1: [{answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}]},
+  //   {group-linkId-1: [{answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}]}
+  // ]
+  // This function handles scenarios where each group can have some fields filled and some not, while keeping the order intact. Eg.:
+  // [
+  //   {group-linkId-1: [{answer-with-linkId-1}, {answer-with-linkId-3}]},
+  //   {group-linkId-1: [{answer-with-linkId-1}, {answer-with-linkId-2}, {answer-with-linkId-3}]}
+  // ]
+
+  const groupAnswers = responseGroups.map((responseItem) => {
+    const answers: Record<string, any> = {};
+
+    const extractAnswers = (items: QuestionnaireResponseItem[]): void => {
+      items.forEach(({ linkId, answer, item }) => {
+        if (item) {
+          const subGroupAnswers: Record<string, any> = {};
+          item.forEach((subItem) => {
+            if (subItem.answer) {
+              subGroupAnswers[subItem.linkId] = subItem.answer?.[0] ?? {};
+            }
+          });
+          answers[linkId] = subGroupAnswers;
+        } else {
+          answers[linkId] = answer?.[0] ?? {};
+        }
+      });
+    };
+
+    extractAnswers(responseItem.item || []);
+    return answers;
+  });
 
   return groupAnswers;
 }
@@ -447,4 +712,73 @@ export function convertDateToDateTime(date: string | undefined): string | undefi
     return undefined;
   }
   return new Date(date).toISOString();
+}
+
+export function getHumanName(
+  answers: Record<string, QuestionnaireResponseItemAnswer>,
+  prefix: string = ''
+): HumanName | undefined {
+  const patientName: HumanName = {};
+
+  const givenName = [];
+  if (answers[`${prefix}first-name`]?.valueString) {
+    givenName.push(answers[`${prefix}first-name`].valueString as string);
+  }
+  if (answers[`${prefix}middle-name`]?.valueString) {
+    givenName.push(answers[`${prefix}middle-name`].valueString as string);
+  }
+
+  if (givenName.length > 0) {
+    patientName.given = givenName;
+  }
+
+  if (answers[`${prefix}last-name`]?.valueString) {
+    patientName.family = answers[`${prefix}last-name`].valueString;
+  }
+
+  return Object.keys(patientName).length > 0 ? patientName : undefined;
+}
+
+export function getPatientAddress(answers: Record<string, QuestionnaireResponseItemAnswer>): Address | undefined {
+  const patientAddress: Address = {};
+
+  if (answers['street']?.valueString) {
+    patientAddress.line = [answers['street'].valueString];
+  }
+
+  if (answers['city']?.valueString) {
+    patientAddress.city = answers['city'].valueString;
+  }
+
+  if (answers['state']?.valueCoding?.code) {
+    patientAddress.state = answers['state'].valueCoding.code;
+  }
+
+  if (answers['zip']?.valueString) {
+    patientAddress.postalCode = answers['zip'].valueString;
+  }
+
+  // To simplify the demo, we're assuming the address is always a home address
+  return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
+}
+
+function getRelatedPersonRelationshipFromCoverage(coverageRelationship: Coding): Coding | undefined {
+  // Basic relationship mapping between Coverage and RelatedPerson
+  // Coverage.relationship: http://hl7.org/fhir/ValueSet/subscriber-relationship
+  // RelatedPerson.relationship: http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype
+  switch (coverageRelationship.code) {
+    case 'child':
+      return {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+        code: 'PRN',
+        display: 'parent',
+      };
+    case 'parent':
+      return { system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'CHILD', display: 'child' };
+    case 'spouse':
+    case 'common':
+      return { system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode', code: 'SPS', display: 'spouse' };
+    default:
+      return undefined;
+  }
 }

@@ -17,9 +17,10 @@ import {
   aws_wafv2 as wafv2,
 } from 'aws-cdk-lib';
 import { Repository } from 'aws-cdk-lib/aws-ecr';
-import { ClusterInstance } from 'aws-cdk-lib/aws-rds';
+import { ClusterInstance, ParameterGroup } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 import { buildWafConfig } from './waf';
+import hashObject from 'object-hash';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -99,7 +100,30 @@ export class BackEnd extends Construct {
       const defaultInstanceProps: rds.ProvisionedClusterInstanceProps = {
         enablePerformanceInsights: true,
         isFromLegacyInstanceProps: true,
+        caCertificate: rds.CaCertificate.RDS_CA_RSA2048_G1,
       };
+
+      const engine = rds.DatabaseClusterEngine.auroraPostgres({
+        version: config.rdsInstanceVersion
+          ? rds.AuroraPostgresEngineVersion.of(
+              config.rdsInstanceVersion,
+              config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
+              { s3Import: true, s3Export: true }
+            )
+          : rds.AuroraPostgresEngineVersion.VER_12_9,
+      });
+
+      const defaultPostgresParams = {
+        statement_timeout: '60000',
+        default_transaction_isolation: 'REPEATABLE READ',
+      };
+
+      const postgresSettings = { ...defaultPostgresParams, ...config.rdsClusterParameters };
+      const paramHash = hashObject(postgresSettings, { encoding: 'base64' }).slice(0, 8);
+      const dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams' + paramHash, {
+        engine,
+        parameters: postgresSettings,
+      });
 
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
       const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
@@ -122,15 +146,7 @@ export class BackEnd extends Construct {
       }
 
       this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
-        engine: rds.DatabaseClusterEngine.auroraPostgres({
-          version: config.rdsInstanceVersion
-            ? rds.AuroraPostgresEngineVersion.of(
-                config.rdsInstanceVersion,
-                config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
-                { s3Import: true, s3Export: true }
-              )
-            : rds.AuroraPostgresEngineVersion.VER_12_9,
-        }),
+        engine,
         credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
         defaultDatabaseName: 'medplum',
         storageEncrypted: true,
@@ -145,6 +161,7 @@ export class BackEnd extends Construct {
         },
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
+        parameterGroup: dbParams,
       });
 
       this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
@@ -502,7 +519,7 @@ export class BackEnd extends Construct {
           certificateArn: config.apiSslCertArn,
         },
       ],
-      sslPolicy: elbv2.SslPolicy.FORWARD_SECRECY_TLS12_RES_GCM,
+      sslPolicy: elbv2.SslPolicy.RECOMMENDED_TLS,
       defaultAction: elbv2.ListenerAction.forward([this.targetGroup]),
     });
 

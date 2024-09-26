@@ -10,7 +10,17 @@ import {
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext, getRequestContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
-import { Column, Condition, Conjunction, Disjunction, Exists, Expression, SelectQuery } from '../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  escapeLikeString,
+  Expression,
+  Literal,
+  SelectQuery,
+  SqlFunction,
+} from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, clamp, parseInputParameters } from './utils/parameters';
@@ -374,6 +384,10 @@ export function expansionQuery(
         case 'is-a':
         case 'descendent-of':
           if (params?.filter) {
+            if (params.filter.length < 3) {
+              return undefined; // Must specify minimum filter length to make this expensive query workable
+            }
+
             const base = new SelectQuery('Coding', undefined, 'origin')
               .column('id')
               .column('code')
@@ -381,7 +395,7 @@ export function expansionQuery(
               .where(new Column('origin', 'system'), '=', codeSystem.id)
               .where(new Column('origin', 'code'), '=', new Column('Coding', 'code'));
             const ancestorQuery = findAncestor(base, codeSystem, condition.value);
-            query.whereExpr(new Exists(ancestorQuery));
+            query.whereExpr(new SqlFunction('EXISTS', [ancestorQuery]));
           } else {
             query = addDescendants(query, codeSystem, condition.value);
           }
@@ -390,7 +404,10 @@ export function expansionQuery(
           }
           break;
         case '=':
-          query = addPropertyFilter(query, condition.property, condition.value, true);
+          query = addPropertyFilter(query, condition.property, '=', condition.value);
+          break;
+        case 'in':
+          query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','));
           break;
         default:
           ctx.logger.warn('Unknown filter type in ValueSet', { filter: condition });
@@ -407,7 +424,19 @@ export function expansionQuery(
 
 function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameters): SelectQuery {
   if (params.filter) {
-    query.where('display', '!=', null).where('display', 'TSVECTOR_ENGLISH', filterToTsvectorQuery(params.filter));
+    query
+      .whereExpr(
+        new Conjunction(
+          params.filter.split(/\s+/g).map((filter) => new Condition('display', 'LIKE', `%${escapeLikeString(filter)}%`))
+        )
+      )
+      .orderByExpr(
+        new SqlFunction('strict_word_similarity', [
+          new Column(undefined, 'display'),
+          new Literal(`'${params.filter}'`),
+        ]),
+        true
+      );
   }
   if (params.excludeNotForUI) {
     query = addAbstractFilter(query);
@@ -419,7 +448,8 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
 
 function addAbstractFilter(query: SelectQuery): SelectQuery {
   const propertyTable = query.getNextJoinAlias();
-  query.leftJoin(
+  query.join(
+    'LEFT JOIN',
     'Coding_Property',
     propertyTable,
     new Conjunction([
@@ -430,7 +460,8 @@ function addAbstractFilter(query: SelectQuery): SelectQuery {
   query.where(new Column(propertyTable, 'value'), '=', null);
 
   const codeSystemProperty = query.getNextJoinAlias();
-  query.leftJoin(
+  query.join(
+    'LEFT JOIN',
     'CodeSystem_Property',
     codeSystemProperty,
     new Conjunction([

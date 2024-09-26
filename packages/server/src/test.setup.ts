@@ -3,6 +3,7 @@ import {
   AccessPolicy,
   AsyncJob,
   Bundle,
+  BundleEntry,
   ClientApplication,
   Login,
   Project,
@@ -233,10 +234,10 @@ export function setupRecaptchaMock(fetch: jest.Mock, success: boolean): void {
  * Returns true if the resource is in an entry in the bundle.
  * @param bundle - A bundle of resources.
  * @param resource - The resource to search for.
- * @returns True if the resource is in the bundle.
+ * @returns The matching bundle entry, or undefined if not found
  */
-export function bundleContains(bundle: Bundle, resource: Resource): boolean {
-  return !!bundle.entry?.some((entry) => entry.resource?.id === resource.id);
+export function bundleContains(bundle: Bundle, resource: Resource): BundleEntry | undefined {
+  return bundle.entry?.find((entry) => entry.resource?.id === resource.id);
 }
 
 /**
@@ -265,6 +266,7 @@ export async function waitForAsyncJob(contentLocation: string, app: Express, acc
       .get(new URL(contentLocation).pathname)
       .set('Authorization', 'Bearer ' + accessToken);
     if (res.status !== 202) {
+      await sleep(500); // Buffer time to ensure that any remaining async processing has fully completed
       return res.body as AsyncJob;
     }
     await sleep(1000);

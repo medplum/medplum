@@ -95,7 +95,7 @@ function getIcon(to: string): JSX.Element | undefined {
       const Icon = resourceTypeToIcon[resourceType];
       return <Icon />;
     }
-  } catch (e) {
+  } catch (_err) {
     // Ignore
   }
   return <Space w={30} />;

@@ -1,8 +1,8 @@
-import { globalSchema, indexStructureDefinitionBundle, InternalSchemaElement, TypeInfo } from '@medplum/core';
+import { globalSchema, InternalSchemaElement, loadDataType, TypeInfo } from '@medplum/core';
 import { FishPatientResources, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, render, screen, within } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
+import { act, render, screen, within } from '../test-utils/render';
 import { BackboneElementInput, BackboneElementInputProps } from './BackboneElementInput';
 
 const valueSetComposeProperty: InternalSchemaElement = {
@@ -95,11 +95,11 @@ describe('BackboneElementInput', () => {
     const fishPatient = FishPatientResources.getSampleFishPatient();
 
     for (const profile of [fishPatientProfile, fishSpeciesProfile]) {
-      indexStructureDefinitionBundle([profile], profile.url);
+      loadDataType(profile);
     }
     await setup({
       path: fishPatientProfile.type,
-      typeName: fishPatientProfile.name,
+      typeName: fishPatientProfile.type,
       profileUrl: fishPatientProfile.url,
       defaultValue: fishPatient,
       onChange: () => {},

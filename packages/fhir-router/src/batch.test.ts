@@ -7,7 +7,6 @@ import {
   isOk,
   LOINC,
   OperationOutcomeError,
-  resolveId,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import {
@@ -16,22 +15,30 @@ import {
   Bundle,
   BundleEntry,
   BundleEntryRequest,
+  DiagnosticReport,
   Observation,
   OperationOutcome,
   Patient,
   Practitioner,
-  Reference,
   SearchParameter,
   ServiceRequest,
   Subscription,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { processBatch } from './batch';
-import { FhirRouter } from './fhirrouter';
+import { FhirRequest, FhirRouter } from './fhirrouter';
 import { FhirRepository, MemoryRepository } from './repo';
 
 const router: FhirRouter = new FhirRouter();
 const repo: FhirRepository = new MemoryRepository();
+const req: FhirRequest = {
+  method: 'POST',
+  pathname: '/',
+  params: {},
+  query: {},
+  body: '',
+  config: { transactions: true },
+};
 
 describe('Batch', () => {
   beforeAll(() => {
@@ -42,18 +49,18 @@ describe('Batch', () => {
 
   test('Process batch with missing bundle type', async () => {
     try {
-      await processBatch(router, repo, { resourceType: 'Bundle' } as Bundle);
+      await processBatch(req, repo, router, { resourceType: 'Bundle' } as Bundle);
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
-      expect(outcome.issue?.[0].details?.text).toContain('Missing bundle type');
+      expect(outcome.issue?.[0].details?.text).toEqual('Unrecognized bundle type: undefined');
     }
   });
 
   test('Process batch with invalid bundle type', async () => {
     try {
-      await processBatch(router, repo, { resourceType: 'Bundle', type: 'xyz' as unknown as 'batch' });
+      await processBatch(req, repo, router, { resourceType: 'Bundle', type: 'xyz' as unknown as 'batch' });
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
@@ -64,12 +71,12 @@ describe('Batch', () => {
 
   test('Process batch with missing entries', async () => {
     try {
-      await processBatch(router, repo, { resourceType: 'Bundle', type: 'batch' });
+      await processBatch(req, repo, router, { resourceType: 'Bundle', type: 'batch' });
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
-      expect(outcome.issue?.[0].details?.text).toContain('Missing bundle entry');
+      expect(outcome.issue?.[0].details?.text).toContain('Missing bundle entries');
     }
   });
 
@@ -77,7 +84,7 @@ describe('Batch', () => {
     const patientId = randomUUID();
     const observationId = randomUUID();
 
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -161,7 +168,7 @@ describe('Batch', () => {
   });
 
   test('Process batch create success', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -185,7 +192,7 @@ describe('Batch', () => {
   });
 
   test('Process batch create missing resource', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -206,7 +213,7 @@ describe('Batch', () => {
   });
 
   test('Process batch create missing resourceType', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -219,40 +226,12 @@ describe('Batch', () => {
         },
       ],
     });
-    expect(bundle).toBeDefined();
-    expect(bundle.entry).toBeDefined();
-
-    const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
-  });
-
-  test.skip('Process batch create missing required properties', async () => {
-    const bundle = await processBatch(router, repo, {
-      resourceType: 'Bundle',
-      type: 'batch',
-      entry: [
-        {
-          request: {
-            method: 'POST',
-            url: 'Observation',
-          },
-          resource: {
-            resourceType: 'Observation',
-          } as Observation,
-        },
-      ],
-    });
-    expect(bundle).toBeDefined();
-    expect(bundle.entry).toBeDefined();
-
-    const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
+    expect(bundle.entry).toHaveLength(1);
+    expect(bundle.entry?.[0]?.response?.status).toEqual('400');
   });
 
   test('Process batch create ignore http fullUrl', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -279,7 +258,7 @@ describe('Batch', () => {
   test('Process batch create does not rewrite identifier', async () => {
     const id = randomUUID();
 
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -319,7 +298,7 @@ describe('Batch', () => {
   test('Process batch create ifNoneExist success', async () => {
     const identifier = randomUUID();
 
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -367,33 +346,6 @@ describe('Batch', () => {
     expect(results[1].response?.location).toEqual(results[0].response?.location);
   });
 
-  test.skip('Process batch create ifNoneExist invalid resource type', async () => {
-    const identifier = randomUUID();
-
-    const bundle = await processBatch(router, repo, {
-      resourceType: 'Bundle',
-      type: 'batch',
-      entry: [
-        {
-          request: {
-            method: 'POST',
-            url: 'XXX',
-            ifNoneExist: 'identifier=' + identifier,
-          },
-          resource: {
-            resourceType: 'XXX',
-          } as any,
-        },
-      ],
-    });
-    expect(bundle).toBeDefined();
-    expect(bundle.entry).toBeDefined();
-
-    const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
-  });
-
   test('Process batch create ifNoneExist multiple matches', async () => {
     const identifier = randomUUID();
 
@@ -401,7 +353,7 @@ describe('Batch', () => {
     // First, intentionally create 2 patients with duplicate identifiers
     // Then, the 3rd entry use ifNoneExists
     // The search will return 2 patients, which causes the entry to fail
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -460,7 +412,7 @@ describe('Batch', () => {
     expect(results.length).toEqual(3);
     expect(results[0].response?.status).toEqual('201');
     expect(results[1].response?.status).toEqual('201');
-    expect(results[2].response?.status).toEqual('400');
+    expect(results[2].response?.status).toEqual('412');
   });
 
   test('Use ifNoneExist result in other reference', async () => {
@@ -468,17 +420,18 @@ describe('Batch', () => {
 
     // Create a Practitioner
     const identifier = randomUUID();
-    const practitioner = await repo.createResource<Practitioner>({
+    const practitionerData: Practitioner = {
       resourceType: 'Practitioner',
       name: [{ given: ['Batch'], family: 'Test' }],
       identifier: [{ system: 'https://example.com', value: identifier }],
-    });
+    };
+    const practitioner = await repo.createResource(practitionerData);
     expect(practitioner.id).toBeDefined();
 
     // Execute a batch that looks for the practitioner and references the result
     // Use ifNoneExist, which should return the existing practitioner
     const urnUuid = 'urn:uuid:' + randomUUID();
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -489,10 +442,7 @@ describe('Batch', () => {
             url: 'Practitioner',
             ifNoneExist: 'identifier=https://example.com|' + identifier,
           },
-          resource: {
-            resourceType: 'Practitioner',
-            identifier: [{ system: 'https://example.com', value: identifier }],
-          },
+          resource: practitionerData,
         },
         {
           request: { method: 'POST', url: 'ServiceRequest' },
@@ -520,7 +470,7 @@ describe('Batch', () => {
       resourceType: 'Patient',
     });
 
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -545,7 +495,7 @@ describe('Batch', () => {
   });
 
   test('Process batch update missing resource', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -570,7 +520,7 @@ describe('Batch', () => {
       resourceType: 'Patient',
     });
 
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -619,7 +569,7 @@ describe('Batch', () => {
     expect(results.length).toEqual(3);
     expect(results[0].response?.status).toEqual('200');
     expect(results[1].response?.status).toEqual('400');
-    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Empty patch body');
+    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch body must be an array');
     expect(results[2].response?.status).toEqual('400');
     expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch body must be an array');
   });
@@ -632,7 +582,7 @@ describe('Batch', () => {
       subject: { reference: 'Patient/' + randomUUID() },
     });
 
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -670,7 +620,7 @@ describe('Batch', () => {
       subject: { reference: 'Patient/' + randomUUID() },
     });
 
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -700,8 +650,8 @@ describe('Batch', () => {
     );
   });
 
-  test.skip('Process batch patch invalid url', async () => {
-    const bundle = await processBatch(router, repo, {
+  test('Process batch patch invalid url', async () => {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -723,7 +673,7 @@ describe('Batch', () => {
   });
 
   test('Process batch patch missing resource', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -742,12 +692,12 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Missing entry.resource'
+      'Patch entry must include a Binary resource'
     );
   });
 
-  test('Process batch patch wrong pach type', async () => {
-    const bundle = await processBatch(router, repo, {
+  test('Process batch patch wrong patch type', async () => {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -769,12 +719,12 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Patch resource must be a Binary'
+      'Patch entry must include a Binary resource'
     );
   });
 
-  test('Process batch patch wrong pach type', async () => {
-    const bundle = await processBatch(router, repo, {
+  test('Process batch patch wrong patch type', async () => {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -805,7 +755,7 @@ describe('Batch', () => {
       resourceType: 'Patient',
     });
 
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -826,14 +776,14 @@ describe('Batch', () => {
   });
 
   test('Process batch delete invalid URL', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
         {
           request: {
             method: 'DELETE',
-            url: 'Patient',
+            url: 'Patientx/12',
           },
         },
       ],
@@ -847,7 +797,7 @@ describe('Batch', () => {
   });
 
   test('Process batch missing request', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -863,12 +813,12 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Missing entry.request'
+      'Missing Bundle entry request method'
     );
   });
 
   test('Process batch missing request.method', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -889,18 +839,18 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Missing entry.request.method'
+      'Missing Bundle entry request method'
     );
   });
 
   test('Process batch unsupported request.method', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
         {
           request: {
-            method: 'XXX' as unknown as 'GET',
+            method: 'XXX' as any,
             url: 'Patient',
           },
           resource: {
@@ -909,16 +859,13 @@ describe('Batch', () => {
         },
       ],
     });
-    expect(bundle).toBeDefined();
-    expect(bundle.entry).toBeDefined();
 
-    const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('404');
+    expect(bundle.entry).toHaveLength(1);
+    expect(bundle.entry?.[0]?.response?.status).toEqual('404');
   });
 
   test('Process batch missing request.url', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -939,12 +886,12 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Missing entry.request.url'
+      'Missing Bundle entry request URL'
     );
   });
 
   test('Process batch not found', async () => {
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -984,7 +931,7 @@ describe('Batch', () => {
       name: [{ family: 'Foo', given: ['Bar'] }],
     });
 
-    const bundle = await processBatch(router, repo, {
+    const bundle = await processBatch(req, repo, router, {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -1000,9 +947,49 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
   });
 
+  test('Conditional interactions', async () => {
+    const patientIdentifier = randomUUID();
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      identifier: [{ value: patientIdentifier }],
+    });
+
+    const newIdentifier = randomUUID();
+    const bundle = await processBatch(req, repo, router, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:' + randomUUID(),
+          request: {
+            method: 'PUT',
+            url: `Patient?identifier=${patientIdentifier}`,
+          },
+          resource: patient,
+        },
+        {
+          fullUrl: 'urn:uuid:' + randomUUID(),
+          request: {
+            method: 'PUT',
+            url: 'Patient?identifier=' + newIdentifier,
+          },
+          resource: { resourceType: 'Patient', identifier: [{ value: newIdentifier }] },
+        },
+        {
+          fullUrl: 'urn:uuid:' + randomUUID(),
+          request: {
+            method: 'DELETE',
+            url: 'Patient?identifier=' + randomUUID(),
+          },
+        },
+      ],
+    });
+    expect(bundle.entry?.map((e) => e.response?.status)).toEqual(['200', '201', '200']);
+  });
+
   describe('Process Transactions', () => {
     test('Embedded urn:uuid', async () => {
-      const bundle = await processBatch(router, repo, {
+      const bundle = await processBatch(req, repo, router, {
         resourceType: 'Bundle',
         type: 'transaction',
         entry: [
@@ -1064,121 +1051,38 @@ describe('Batch', () => {
     });
 
     test('Transaction update after create', async () => {
-      const bundle = await processBatch(router, repo, {
-        resourceType: 'Bundle',
-        type: 'transaction',
-        entry: [
-          {
-            fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
-            request: {
-              method: 'POST',
-              url: 'Patient',
+      await expect(
+        processBatch(req, repo, router, {
+          resourceType: 'Bundle',
+          type: 'transaction',
+          entry: [
+            {
+              fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+              request: {
+                method: 'POST',
+                url: 'Patient',
+              },
+              resource: {
+                resourceType: 'Patient',
+                status: 'active',
+              } as Patient,
             },
-            resource: {
-              resourceType: 'Patient',
-              status: 'active',
-            } as Patient,
-          },
-          {
-            fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
-            request: {
-              method: 'PUT',
-              url: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+            {
+              fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+              request: {
+                method: 'PUT',
+                url: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+              },
+              resource: {
+                id: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+                resourceType: 'Patient',
+                status: 'active',
+                name: [{ given: ['Jane'], family: 'Doe' }],
+              } as Patient,
             },
-            resource: {
-              id: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
-              resourceType: 'Patient',
-              status: 'active',
-              name: [{ given: ['Jane'], family: 'Doe' }],
-            } as Patient,
-          },
-        ],
-      });
-      expect(bundle).toBeDefined();
-      expect(bundle.type).toEqual('transaction-response');
-      expect(bundle.entry).toBeDefined();
-
-      const results = bundle.entry as BundleEntry[];
-      expect(results.length).toEqual(2);
-      expect(results[0].response?.status).toEqual('201');
-      expect(results[1].response?.status).toEqual('200');
-      expect(results[0].response?.location).toBeDefined();
-
-      const ref = { reference: results[0]?.response?.location } as Reference<Patient>;
-      const checkPatient: Patient = await repo.readResource('Patient', resolveId(ref) as string);
-      expect(checkPatient.name).toMatchObject([{ given: ['Jane'], family: 'Doe' }]);
-    });
-
-    test('urn:uuid in PATCH', async () => {
-      const bundle = await processBatch(router, repo, {
-        resourceType: 'Bundle',
-        type: 'transaction',
-        entry: [
-          {
-            fullUrl: 'urn:uuid:5519d7a1-2973-485a-a648-a502c5aa06b1',
-            request: {
-              method: 'POST',
-              url: 'Patient',
-              ifNoneExist: 'identifier=https://foomedical.org/patient|0',
-            },
-            resource: {
-              resourceType: 'Patient',
-              name: [
-                {
-                  given: ['Fn_000'],
-                  family: 'Ln_000',
-                },
-              ],
-              identifier: [
-                {
-                  system: 'https://foomedical.org/patient',
-                  value: '0',
-                },
-              ],
-            },
-          },
-          {
-            fullUrl: 'urn:uuid:6e72c801-ae8e-467a-890e-c05af0db25bf',
-            request: {
-              method: 'POST',
-              url: 'Organization',
-              ifNoneExist: 'identifier=https://foomedical.org/organization|org:bus:1',
-            },
-            resource: {
-              resourceType: 'Organization',
-              name: 'Texas',
-              identifier: [
-                {
-                  system: 'https://foomedical.org/organization',
-                  value: 'org:bus:1',
-                },
-              ],
-            },
-          },
-          {
-            request: {
-              method: 'PATCH',
-              url: 'urn:uuid:5519d7a1-2973-485a-a648-a502c5aa06b1',
-            },
-            resource: {
-              resourceType: 'Binary',
-              contentType: 'application/json-patch+json',
-              data: 'W3sib3AiOiJhZGQiLCJwYXRoIjoiL21hbmFnaW5nT3JnYW5pemF0aW9uIiwidmFsdWUiOnsicmVmZXJlbmNlIjoidXJuOnV1aWQ6NmU3MmM4MDEtYWU4ZS00NjdhLTg5MGUtYzA1YWYwZGIyNWJmIn19XQ==',
-            },
-          },
-        ],
-      });
-      expect(bundle).toBeDefined();
-      expect(bundle.type).toEqual('transaction-response');
-      expect(bundle.entry).toBeDefined();
-
-      const results = bundle.entry as BundleEntry[];
-      expect(results.length).toEqual(3);
-      expect(results.map((res) => res?.response?.status)).toMatchObject(['201', '201', '200']);
-
-      const checkPatient = await repo.readResource<Patient>('Patient', bundle.entry?.[0]?.resource?.id as string);
-      expect(checkPatient.managingOrganization).toBeDefined();
-      expect(checkPatient.managingOrganization?.reference).not.toMatch(/urn:uuid.*/);
+          ],
+        })
+      ).rejects.toThrow();
     });
   });
 
@@ -1214,7 +1118,132 @@ describe('Batch', () => {
       ],
     };
 
-    const result = await processBatch(router, repo, bundle);
+    const result = await processBatch(req, repo, router, bundle);
     expect(result).toBeDefined();
+  });
+
+  test('Concurrent conditional create in transactions', async () => {
+    const patientIdentifier = randomUUID();
+    const encounterIdentifier = randomUUID();
+    const conditionIdentifier = randomUUID();
+
+    const tx: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:' + patientIdentifier,
+          request: {
+            method: 'POST',
+            url: 'Patient',
+            ifNoneExist: 'identifier=http://example.com|' + patientIdentifier,
+          },
+          resource: {
+            resourceType: 'Patient',
+            name: [{ given: ['Bobby' + patientIdentifier], family: 'Tables' }],
+            gender: 'unknown',
+            identifier: [{ system: 'http://example.com', value: patientIdentifier }],
+          },
+        },
+        {
+          request: {
+            method: 'PUT',
+            url:
+              'CareTeam?subject=urn:uuid:' + patientIdentifier + '&status=active&category=http://loinc.org|LA28865-6',
+          },
+          resource: {
+            resourceType: 'CareTeam',
+            status: 'active',
+            category: [
+              {
+                coding: [{ system: 'http://loinc.org', code: 'LA28865-6' }],
+                text: 'Holistic Wellness Squad',
+              },
+            ],
+            subject: { reference: 'urn:uuid:' + patientIdentifier },
+            participant: [
+              { member: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' } },
+            ],
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:' + encounterIdentifier,
+          request: {
+            method: 'POST',
+            url: 'Encounter',
+          },
+          resource: {
+            resourceType: 'Encounter',
+            status: 'finished',
+            class: {
+              system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+              code: 'AMB',
+            },
+            subject: { reference: 'urn:uuid:' + patientIdentifier },
+            diagnosis: [{ condition: { reference: 'urn:uuid:' + conditionIdentifier } }],
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:' + conditionIdentifier,
+          request: {
+            method: 'POST',
+            url: 'Condition',
+          },
+          resource: {
+            resourceType: 'Condition',
+            verificationStatus: {
+              coding: [{ system: 'http://terminology.hl7.org/CodeSystem/condition-ver-status', code: 'confirmed' }],
+            },
+            subject: { reference: 'urn:uuid:' + patientIdentifier },
+            encounter: { reference: 'urn:uuid:' + encounterIdentifier },
+            asserter: { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|9941339108' },
+            code: {
+              coding: [{ system: 'http://snomed.info/sct', code: '83157008' }],
+              text: 'FFI',
+            },
+          },
+        },
+      ],
+    };
+
+    await expect(processBatch(req, repo, router, tx)).resolves.toBeDefined();
+  });
+
+  test('Local reference resolution for update', async () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:f1228716-b33c-420d-89ab-46fac9ebcc8b',
+          request: {
+            method: 'PUT',
+            url: 'ServiceRequest/12345',
+          },
+          resource: {
+            id: '12345',
+            resourceType: 'ServiceRequest',
+            intent: 'order',
+            status: 'active',
+            subject: { display: 'Test Patient' },
+          },
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'DiagnosticReport',
+          },
+          resource: {
+            resourceType: 'DiagnosticReport',
+            code: {},
+            status: 'amended',
+            basedOn: [{ reference: 'urn:uuid:f1228716-b33c-420d-89ab-46fac9ebcc8b' }],
+          },
+        },
+      ],
+    };
+    const result = await processBatch(req, repo, router, bundle);
+    const report = result.entry?.[1]?.resource as DiagnosticReport;
+    expect(report.basedOn?.[0].reference).toEqual('ServiceRequest/12345');
   });
 });

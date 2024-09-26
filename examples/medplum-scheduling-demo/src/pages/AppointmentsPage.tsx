@@ -1,12 +1,22 @@
 import { Paper, Tabs } from '@mantine/core';
-import { Filter, Operator, SearchRequest } from '@medplum/core';
-import { MemoizedSearchControl } from '@medplum/react';
+import { Filter, getReferenceString, Operator, SearchRequest } from '@medplum/core';
+import { Practitioner } from '@medplum/fhirtypes';
+import { SearchControl, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { CreateAppointment } from '../components/CreateAppointment';
-import { useDisclosure } from '@mantine/hooks';
 
 export function AppointmentsPage(): JSX.Element {
+  const profile = useMedplumProfile() as Practitioner;
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const tab = location.pathname.split('/').pop() ?? '';
+
+  const tabs = [
+    ['upcoming', 'Upcoming'],
+    ['past', 'Past'],
+  ];
+
   const upcomingFilter: Filter = {
     code: 'date',
     operator: Operator.STARTS_AFTER,
@@ -18,22 +28,14 @@ export function AppointmentsPage(): JSX.Element {
     value: new Date().toISOString(),
   };
 
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [createAppointmentOpened, createAppointmentHandlers] = useDisclosure(false);
-
-  const tab = location.pathname.split('/').pop() ?? '';
-
-  const tabs = [
-    ['upcoming', 'Upcoming'],
-    ['past', 'Past'],
-  ];
-
   // Start the SearchRequest with the appropriate filter depending on the active tab
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Appointment',
-    fields: ['patient', 'start', 'end', 'serviceType', '_lastUpdated'],
-    filters: [tab === 'upcoming' ? upcomingFilter : pastFilter],
+    fields: ['patient', 'start', 'end', 'status', 'appointmentType', 'serviceType'],
+    filters: [
+      { code: 'actor', operator: Operator.EQUALS, value: getReferenceString(profile as Practitioner) },
+      tab === 'upcoming' ? upcomingFilter : pastFilter,
+    ],
     sortRules: [
       {
         code: 'date',
@@ -70,7 +72,6 @@ export function AppointmentsPage(): JSX.Element {
 
   return (
     <Paper shadow="xs" m="md" p="xs">
-      <CreateAppointment opened={createAppointmentOpened} handlers={createAppointmentHandlers} />
       <Tabs value={tab.toLowerCase()} onChange={changeTab}>
         <Tabs.List mb="xs">
           {tabs.map((tab) => (
@@ -80,14 +81,14 @@ export function AppointmentsPage(): JSX.Element {
           ))}
         </Tabs.List>
       </Tabs>
-      <MemoizedSearchControl
+      <SearchControl
         search={search}
         onClick={(e) => navigate(`/${e.resource.resourceType}/${e.resource.id}`)}
         onAuxClick={(e) => window.open(`/${e.resource.resourceType}/${e.resource.id}`, '_blank')}
         onChange={(e) => {
           setSearch(e.definition);
         }}
-        onNew={() => createAppointmentHandlers.open()}
+        onNew={() => navigate('/Schedule')} // Redirect to the Schedule page where the user can create a new appointment
         checkboxesEnabled={false}
         hideFilters
       />

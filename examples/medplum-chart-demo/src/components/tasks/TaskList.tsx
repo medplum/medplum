@@ -1,5 +1,5 @@
 import { Box, Card, Divider, Flex, Group, Text, Title } from '@mantine/core';
-import { formatDate } from '@medplum/core';
+import { formatDate, normalizeErrorString } from '@medplum/core';
 import { CodeableConcept, Questionnaire, Reference, Resource, Task } from '@medplum/fhirtypes';
 import {
   CodeableConceptDisplay,
@@ -162,7 +162,7 @@ function TaskTitle(props: TaskCellProps): JSX.Element {
           const questionnaire = await medplum.readResource('Questionnaire', questionnaireId as string);
           setTitle(<>{questionnaire?.title} Response</>);
         } catch (err) {
-          setTitle(<>Response</>);
+          setTitle(<>{normalizeErrorString(err)}</>);
         }
       }
     }

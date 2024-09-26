@@ -8,8 +8,9 @@ import {
   sleep,
 } from '@medplum/core';
 import { FhirRouter, MemoryRepository } from '@medplum/fhir-router';
-import { MockClient, MockFetchClient } from '@medplum/mock';
+import { MockClient, MockFetchClient, createFakeJwt } from '@medplum/mock';
 import { act, render, screen } from '@testing-library/react';
+import { useEffect, useRef, useState } from 'react';
 import { MedplumProvider } from './MedplumProvider';
 import { useMedplum, useMedplumContext, useMedplumNavigate, useMedplumProfile } from './MedplumProvider.context';
 
@@ -155,7 +156,7 @@ describe('MedplumProvider', () => {
 
       expect(await screen.findByText('Loaded!')).toBeInTheDocument();
       expect(medplum.isLoading()).toEqual(false);
-      expect(getSpy).toHaveBeenCalledWith('auth/me');
+      expect(getSpy).toHaveBeenCalledWith('auth/me', expect.any(Object));
 
       getSpy.mockRestore();
     });
@@ -238,7 +239,7 @@ describe('MedplumProvider', () => {
       mockFetchSpy.mockRestore();
     });
 
-    test('Refreshing profile re-triggers loading', async () => {
+    test('Refreshing profile re-triggers loading when no profile present', async () => {
       const baseUrl = 'https://example.com/';
       const storage = new ClientStorage(new MemoryStorage());
       storage.setObject('activeLogin', {
@@ -326,7 +327,121 @@ describe('MedplumProvider', () => {
       expect(mockFetchSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
     });
 
+    test('Refreshing profile when profile present does not unmount children guarded by `.isLoading()`', async () => {
+      function RenderCounter({ parentRenderCount }: { parentRenderCount: number }): JSX.Element {
+        const [childCount, setChildCount] = useState(0);
+
+        useEffect(() => {
+          setChildCount((prevCount) => prevCount + 1);
+        }, [parentRenderCount]);
+
+        return (
+          <div>
+            <div>Parent count: {parentRenderCount}</div>
+            <div>Child count: {childCount}</div>
+          </div>
+        );
+      }
+
+      function MyComponent(): JSX.Element {
+        const renderCountRef = useRef(0);
+        renderCountRef.current += 1;
+
+        const { loading } = useMedplumContext();
+        if (loading) {
+          return <div>Loading...</div>;
+        }
+
+        return <RenderCounter parentRenderCount={renderCountRef.current} />;
+      }
+
+      const baseUrl = 'https://example.com/';
+      const storage = new ClientStorage(new MemoryStorage());
+      storage.setObject('activeLogin', {
+        accessToken: createFakeJwt({
+          sub: '1234567890',
+          iat: Math.ceil(Date.now() / 1000),
+          exp: Math.ceil(Date.now() / 1000) + 60 * 60,
+          client_id: '123',
+          login_id: '123',
+        }),
+        refreshToken: createFakeJwt({ client_id: '123' }),
+        profile: {
+          reference: 'Practitioner/123',
+        },
+        project: {
+          reference: 'Project/123',
+        },
+      });
+
+      let medplum!: MockClient;
+      const router = new FhirRouter();
+      const repo = new MemoryRepository();
+      const client = new MockFetchClient(router, repo, baseUrl);
+      const mockFetchSpy = jest.spyOn(client, 'mockFetch');
+      let dispatchEventSpy!: jest.SpyInstance;
+
+      act(() => {
+        medplum = new MockClient({
+          storage,
+          mockFetchOverride: { router, repo, client },
+        });
+        dispatchEventSpy = jest.spyOn(medplum, 'dispatchEvent');
+      });
+
+      expect(medplum.isLoading()).toEqual(true);
+
+      act(() => {
+        render(
+          <MedplumProvider medplum={medplum}>
+            <MyComponent />
+          </MedplumProvider>
+        );
+      });
+
+      expect(screen.getByText('Loading...')).toBeInTheDocument();
+      expect(medplum.isLoading()).toEqual(true);
+
+      await expect(screen.findByText('Parent count: 2')).resolves.toBeInTheDocument();
+      expect(screen.getByText('Child count: 1')).toBeInTheDocument();
+      expect(medplum.isLoading()).toEqual(false);
+      expect(mockFetchSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
+      expect(dispatchEventSpy).toHaveBeenCalledWith({ type: 'profileRefreshed' });
+
+      mockFetchSpy.mockClear();
+      dispatchEventSpy.mockClear();
+
+      const refreshingPromise = new Promise((resolve) => {
+        medplum.addEventListener('profileRefreshing', resolve);
+      });
+
+      act(() => {
+        medplum.refreshIfExpired(1000 * 60 * 60 * 2 /* 2 hours in ms */).catch(console.error);
+      });
+
+      const refreshedPromise = new Promise((resolve) => {
+        medplum.addEventListener('profileRefreshing', resolve);
+      });
+
+      await act(async () => {
+        await refreshingPromise;
+        expect(medplum.isLoading()).toEqual(false);
+        await refreshedPromise;
+      });
+
+      expect(dispatchEventSpy).toHaveBeenCalledWith({ type: 'profileRefreshing' });
+      expect(dispatchEventSpy).toHaveBeenCalledWith({ type: 'profileRefreshed' });
+      expect(medplum.isLoading()).toEqual(false);
+      expect(screen.getByText('Parent count: 4')).toBeInTheDocument();
+      expect(screen.getByText('Child count: 3')).toBeInTheDocument();
+
+      expect(mockFetchSpy).toHaveBeenLastCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
+    });
+
     test('Async ClientStorage.getInitPromise throws', async () => {
+      const originalConsoleError = console.error;
+      console.error = jest.fn();
+
       class TestAsyncStorage extends MockAsyncClientStorage {
         private promise: Promise<void>;
         private reject!: (err: Error) => void;
@@ -383,6 +498,9 @@ describe('MedplumProvider', () => {
       expect(dispatchEventSpy).not.toHaveBeenCalledWith<[MedplumClientEventMap['storageInitialized']]>({
         type: 'storageInitialized',
       });
+
+      expect(console.error).toHaveBeenCalledWith(new Error('Failed to init storage!'));
+      console.error = originalConsoleError;
     });
   });
 });

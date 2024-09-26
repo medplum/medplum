@@ -206,13 +206,21 @@ export class App {
             break;
           // @ts-expect-error - Deprecated message type
           case 'transmit':
-          case 'agent:transmit:response':
+          case 'agent:transmit:response': {
+            if (!command.callback) {
+              throw new Error('Transmit response missing callback');
+            }
             if (this.config?.status !== 'active') {
               this.sendAgentDisabledError(command);
-            } else {
+              // We check the existence of a statusCode for backwards compat
+            } else if (!(command.statusCode && command.statusCode >= 400)) {
               this.addToHl7Queue(command);
+            } else {
+              // Log error
+              this.log.error(`Error during handling transmit request: ${command.body}`);
             }
             break;
+          }
           // @ts-expect-error - Deprecated message type
           case 'push':
           case 'agent:transmit:request':

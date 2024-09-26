@@ -9,6 +9,7 @@ import {
   notFound,
   OperationOutcomeError,
   Operator,
+  parseSearchRequest,
   preconditionFailed,
   toTypedValue,
 } from '@medplum/core';
@@ -18,6 +19,7 @@ import {
   Login,
   Observation,
   OperationOutcome,
+  Organization,
   Patient,
   Practitioner,
   Project,
@@ -25,6 +27,7 @@ import {
   Questionnaire,
   ResourceType,
   StructureDefinition,
+  User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
@@ -388,6 +391,33 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.account?.reference).toEqual(account);
     }));
 
+  test('Create resource with malformed account', () =>
+    withTestContext(async () => {
+      const author = 'Practitioner/' + randomUUID();
+
+      // This user does not have an access policy
+      // So they can optionally set an account
+      const repo = new Repository({
+        extendedMode: true,
+        author: {
+          reference: author,
+        },
+      });
+
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        meta: {
+          account: {
+            reference: 'example.com/account/1',
+          },
+        },
+      });
+
+      expect(patient.meta?.author?.reference).toEqual(author);
+      expect(patient.meta?.account?.reference).toEqual('example.com/account/1');
+    }));
+
   test('Create resource with lastUpdated', () =>
     withTestContext(async () => {
       const lastUpdated = '2020-01-01T12:00:00Z';
@@ -457,8 +487,7 @@ describe('FHIR Repo', () => {
 
       (patient as Patient).name = [{ family: 'TestUpdated' }];
 
-      const versionId = patient.meta?.versionId;
-      await systemRepo.updateResource<Patient>(patient, versionId);
+      await systemRepo.updateResource<Patient>(patient, { ifMatch: patient.meta?.versionId });
       expect(patient.name?.at(0)?.family).toEqual('TestUpdated');
     }));
 
@@ -470,7 +499,7 @@ describe('FHIR Repo', () => {
       });
 
       try {
-        await systemRepo.updateResource<Patient>(patient1, 'bad-id');
+        await systemRepo.updateResource<Patient>(patient1, { ifMatch: 'bad-id' });
         fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(preconditionFailed);
@@ -1007,14 +1036,17 @@ describe('FHIR Repo', () => {
         resourceType: 'Practitioner',
         identifier: [{ system: 'http://hl7.org.fhir/sid/us-npi', value: practitionerIdentifier }],
       });
+      const conditionalReference = {
+        reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier,
+      };
 
       const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
-        generalPractitioner: [
-          { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
-        ],
+        meta: { account: conditionalReference },
+        generalPractitioner: [conditionalReference],
       });
       expect(patient.generalPractitioner?.[0]?.reference).toEqual(getReferenceString(practitioner));
+      expect(patient.meta?.account?.reference).toEqual(getReferenceString(practitioner));
     }));
 
   test('Conditional reference resolution failure', async () =>
@@ -1050,6 +1082,80 @@ describe('FHIR Repo', () => {
       await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
     }));
 
+  test('Project default profiles', async () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({
+        withClient: true,
+        withRepo: true,
+        project: {
+          defaultProfile: [
+            { resourceType: 'Observation', profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'] },
+          ],
+        },
+      });
+
+      const observation: Observation = {
+        resourceType: 'Observation',
+        status: 'final',
+        category: [
+          { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'vital-signs' }] },
+        ],
+        code: { text: 'Strep test' },
+        effectiveDateTime: '2024-02-13T14:34:56Z',
+        valueBoolean: true,
+      };
+
+      await expect(systemRepo.createResource(observation)).resolves.toBeDefined();
+      await expect(repo.createResource(observation)).rejects.toThrow('Missing required property (Observation.subject)');
+
+      observation.subject = { identifier: { value: randomUUID() } };
+      await expect(repo.createResource(observation)).resolves.toMatchObject<Partial<Observation>>({
+        meta: expect.objectContaining({
+          profile: ['http://hl7.org/fhir/StructureDefinition/vitalsigns'],
+        }),
+      });
+    }));
+
+  test('Allows adding compartments for specific types', async () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({ withRepo: true });
+      const org = await repo.createResource<Organization>({ resourceType: 'Organization' });
+      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+
+      const orgReference = createReference(org);
+      const practitionerReference = createReference(practitioner);
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { compartment: [orgReference, practitionerReference] },
+      });
+      expect(patient.meta?.compartment).toContainEqual(orgReference);
+      expect(patient.meta?.compartment).not.toContainEqual(practitionerReference);
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+
+      const results = await repo.searchResources(
+        parseSearchRequest('Patient?_compartment=' + getReferenceString(orgReference))
+      );
+      expect(results).toHaveLength(1);
+    }));
+
+  test('Prevents setting Project compartments', async () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({ withRepo: true });
+      const { project: otherProject, repo: otherRepo } = await createTestProject({ withRepo: true });
+      const projectReference = createReference(otherProject);
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { compartment: [projectReference], account: projectReference },
+      });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
+      expect(patient.meta?.compartment).not.toContainEqual({ reference: getReferenceString(otherProject) });
+
+      const results = await otherRepo.searchResources(parseSearchRequest('Patient'));
+      expect(results).toHaveLength(0);
+    }));
+
   test('setTypedValue', () => {
     const patient: Patient = {
       resourceType: 'Patient',
@@ -1068,4 +1174,80 @@ describe('FHIR Repo', () => {
     setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
     expect(patient.photo?.[1].contentType).toEqual('image/jpeg');
   });
+
+  test('Super admin can edit User.meta.project', async () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+
+      // Create a user in the project
+      const user1 = await repo.createResource<User>({
+        resourceType: 'User',
+        email: randomUUID() + '@example.com',
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+      });
+      expect(user1.meta?.project).toEqual(project.id);
+
+      // Try to change the project as the normal user
+      // Should silently fail, and preserve the meta.project
+      const user2 = await repo.updateResource<User>({
+        ...user1,
+        meta: { project: undefined },
+      });
+      expect(user2.meta?.project).toEqual(project.id);
+
+      // Now try to change the project as the super admin
+      // Should succeed
+      const user3 = await systemRepo.updateResource<User>({
+        ...user2,
+        meta: { project: undefined },
+      });
+      expect(user3.meta?.project).toBeUndefined();
+    }));
+
+  test('Handles caching of profile from linked project', async () =>
+    withTestContext(async () => {
+      const { membership, project } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+
+      const { membership: membership2, project: project2 } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+      project.link = [{ project: createReference(project2) }];
+
+      const repo2 = await getRepoForLogin({ login: {} as Login, membership: membership2, project: project2 });
+      const profileJson = JSON.parse(
+        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+      ) as StructureDefinition;
+      const profile = await repo2.createResource(profileJson);
+
+      const patientJson: Patient = {
+        resourceType: 'Patient',
+        meta: {
+          profile: [profile.url],
+        },
+      };
+
+      // Resource upload should fail with profile linked
+      let repo = await getRepoForLogin({ login: {} as Login, membership, project });
+      await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
+
+      // Unlink Project and verify that profile is not cached; resource upload should succeed without access to profile
+      project.link = undefined;
+      repo = await getRepoForLogin({
+        login: {} as Login,
+        membership,
+        project,
+      });
+      await expect(repo.createResource(patientJson)).resolves.toBeDefined();
+    }));
 });

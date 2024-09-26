@@ -73,14 +73,14 @@ export function initCronWorker(config: MedplumServerConfig): void {
  * Closes the BullMQ worker.
  */
 export async function closeCronWorker(): Promise<void> {
-  if (queue) {
-    await queue.close();
-    queue = undefined;
-  }
-
   if (worker) {
     await worker.close();
     worker = undefined;
+  }
+
+  if (queue) {
+    await queue.close();
+    queue = undefined;
   }
 }
 

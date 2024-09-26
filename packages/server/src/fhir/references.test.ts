@@ -161,4 +161,28 @@ describe('Reference checks', () => {
       project = await repo.updateResource(project);
       expect(project.name).toEqual('new name');
     }));
+
+  test('ProjectMembership reference validation', () =>
+    withTestContext(async () => {
+      let { membership, project } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+
+      const systemRepo = getSystemRepo();
+      project = await systemRepo.updateResource({ ...project, checkReferencesOnWrite: true });
+
+      const repo = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project });
+
+      // Checking the externalId change is ancillary; mostly confirming that the update
+      // doesn't throw due to reference validation failure
+      const id = randomUUID();
+      expect(membership.externalId).toBeUndefined();
+      membership.externalId = id;
+      membership = await repo.updateResource(membership);
+      expect(membership.externalId).toEqual(id);
+    }));
 });

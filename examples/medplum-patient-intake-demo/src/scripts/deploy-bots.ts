@@ -61,6 +61,12 @@ async function main(): Promise<void> {
             reason: botName,
             channel: { endpoint: botUrlPlaceholder, type: 'rest-hook' },
             criteria: botDescription.criteria,
+            extension: [
+              {
+                url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+                valueCode: 'create',
+              },
+            ],
           },
         });
       }

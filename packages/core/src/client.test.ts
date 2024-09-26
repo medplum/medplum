@@ -4,6 +4,8 @@ import {
   Identifier,
   OperationOutcome,
   Patient,
+  Practitioner,
+  Reference,
   SearchParameter,
   StructureDefinition,
 } from '@medplum/fhirtypes';
@@ -16,6 +18,7 @@ import {
   DEFAULT_ACCEPT,
   FetchLike,
   InviteRequest,
+  LoginState,
   MedplumClient,
   MedplumClientEventMap,
   NewPatientRequest,
@@ -33,6 +36,8 @@ import {
   notFound,
   serverError,
   unauthorized,
+  unauthorizedTokenAudience,
+  unauthorizedTokenExpired,
 } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
@@ -40,7 +45,7 @@ import { ProfileResource, createReference, sleep } from './utils';
 
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
-  url: 'http://example.com/patient',
+  url: 'http://hl7.org/fhir/StructureDefinition/Patient',
   status: 'active',
   kind: 'resource',
   abstract: false,
@@ -89,6 +94,7 @@ const patientProfileExtensionUrl = 'http://example.com/patient-profile-extension
 const profileSD = {
   resourceType: 'StructureDefinition',
   name: 'PatientProfile',
+  type: 'Patient',
   url: patientProfileUrl,
   snapshot: {
     element: [
@@ -566,6 +572,9 @@ describe('Client', () => {
       );
       expect(result).toMatch(/https:\/\/auth\.example\.com\/authorize\?.+scope=/);
 
+      const codeVerifier = sessionStorage.getItem('codeVerifier');
+      expect(codeVerifier).toHaveLength(128);
+
       const { searchParams } = new URL(result);
       expect(searchParams.get('response_type')).toBe('code');
       expect(searchParams.get('code_challenge')).not.toBeNull();
@@ -995,13 +1004,9 @@ describe('Client', () => {
     });
 
     const client = new MedplumClient({ fetch });
-    try {
-      client.setBasicAuth(clientId, clientSecret);
-      await client.startClientLogin(clientId, clientSecret);
-      throw new Error('test');
-    } catch (err) {
-      expect((err as Error).message).toBe('Token was not issued for this audience');
-    }
+    client.setBasicAuth(clientId, clientSecret);
+    const result = client.startClientLogin(clientId, clientSecret);
+    await expect(result).rejects.toThrow(new OperationOutcomeError(unauthorizedTokenAudience));
   });
 
   test('Basic auth and startClientLogin with fetched token contains mismatched cid', async () => {
@@ -1017,13 +1022,9 @@ describe('Client', () => {
     });
 
     const client = new MedplumClient({ fetch });
-    try {
-      client.setBasicAuth(clientId, clientSecret);
-      await client.startClientLogin(clientId, clientSecret);
-      throw new Error('test');
-    } catch (err) {
-      expect((err as Error).message).toBe('Token was not issued for this audience');
-    }
+    client.setBasicAuth(clientId, clientSecret);
+    const result = client.startClientLogin(clientId, clientSecret);
+    await expect(result).rejects.toThrow(new OperationOutcomeError(unauthorizedTokenAudience));
   });
 
   test('Basic auth and startClientLogin Failed to fetch tokens', async () => {
@@ -1054,13 +1055,9 @@ describe('Client', () => {
     });
 
     const client = new MedplumClient({ fetch });
-    try {
-      client.setBasicAuth(clientId, clientSecret);
-      await client.startClientLogin(clientId, clientSecret);
-      throw new Error('test');
-    } catch (err) {
-      expect((err as Error).message).toBe('Token expired');
-    }
+    client.setBasicAuth(clientId, clientSecret);
+    const result = client.startClientLogin(clientId, clientSecret);
+    await expect(result).rejects.toThrow(new OperationOutcomeError(unauthorizedTokenExpired));
   });
 
   test('Invite user', async () => {
@@ -1145,7 +1142,7 @@ describe('Client', () => {
     const onUnauthenticated = jest.fn();
     const client = new MedplumClient({ fetch, onUnauthenticated });
     const result = client.get('expired');
-    await expect(result).rejects.toThrow('Unauthenticated');
+    await expect(result).rejects.toThrow(new OperationOutcomeError(unauthorized));
     expect(onUnauthenticated).toHaveBeenCalled();
   });
 
@@ -1168,6 +1165,25 @@ describe('Client', () => {
     );
     expect(result.resourceType).toBe('Patient');
     expect(result.id).toBe('123');
+  });
+
+  test('Read resource with invalid id', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+
+    try {
+      await client.readResource('Patient', '');
+      throw new Error('Test failed: Expected an error when calling readResource with an empty string id.');
+    } catch (err) {
+      expect((err as Error).message).toBe('The "id" parameter cannot be null, undefined, or an empty string.');
+    }
+
+    try {
+      await client.readResource('Patient', undefined as unknown as string);
+      throw new Error('Test failed: Expected an error when calling readResource with an undefined id.');
+    } catch (err) {
+      expect((err as Error).message).toBe('The "id" parameter cannot be null, undefined, or an empty string.');
+    }
   });
 
   test('Read reference', async () => {
@@ -1853,7 +1869,7 @@ describe('Client', () => {
 
     await request1;
     expect(isProfileLoaded(patientProfileUrl)).toBe(true);
-    expect(getDataType(profileSD.name, patientProfileUrl)).toBeDefined();
+    expect(getDataType(profileSD.type, patientProfileUrl)).toBeDefined();
   });
 
   test('requestProfileSchema expandProfile', async () => {
@@ -1873,8 +1889,8 @@ describe('Client', () => {
     await request2;
     expect(isProfileLoaded(patientProfileUrl)).toBe(true);
     expect(isProfileLoaded(patientProfileExtensionUrl)).toBe(true);
-    expect(getDataType(profileSD.name, patientProfileUrl)).toBeDefined();
-    expect(getDataType(profileExtensionSD.name, patientProfileExtensionUrl)).toBeDefined();
+    expect(getDataType(profileSD.type, patientProfileUrl)).toBeDefined();
+    expect(getDataType(profileExtensionSD.type, patientProfileExtensionUrl)).toBeDefined();
   });
 
   test('Search', async () => {
@@ -2051,7 +2067,9 @@ describe('Client', () => {
           await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('The request is not good');
           break;
         case 401:
-          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Unauthenticated');
+          await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow(
+            new OperationOutcomeError(unauthorized)
+          );
           break;
         case 404:
           await expect(client.get(client.fhirUrl('Patient', '123'))).rejects.toThrow('Not found');
@@ -2370,13 +2388,110 @@ describe('Client', () => {
     callback({ key: 'randomKey' });
     expect(mockReload).not.toHaveBeenCalled();
 
+    const practitioner1 = randomUUID();
+    const practitioner2 = randomUUID();
+
+    // Should NOT refresh when we have the same profile
     mockReload.mockReset();
-    callback({ key: 'activeLogin' });
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '12345',
+        refreshToken: 'abcde',
+      } satisfies LoginState),
+      newValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '6789',
+        refreshToken: 'fghi',
+      } satisfies LoginState),
+    } as StorageEvent);
+    expect(mockReload).not.toHaveBeenCalled();
+    expect(client.getAccessToken()).toBe('6789');
+
+    // Should refresh when we change to a new profile
+    mockReload.mockReset();
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
+      }),
+      newValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner2}` } satisfies Reference<Practitioner>,
+      }),
+    } as StorageEvent);
     expect(mockReload).toHaveBeenCalled();
 
+    // Should refresh when going from no profile to a new profile
+    mockReload.mockReset();
+    callback({
+      key: 'activeLogin',
+      oldValue: null,
+      newValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
+      }),
+    } as StorageEvent);
+    expect(mockReload).toHaveBeenCalled();
+
+    // Should refresh when going from a profile to no profile (logged out)
+    mockReload.mockReset();
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` } satisfies Reference<Practitioner>,
+      }),
+      newValue: null,
+    } as StorageEvent);
+    expect(mockReload).toHaveBeenCalled();
+
+    // Should refresh when storage is cleared
     mockReload.mockReset();
     callback({ key: null });
     expect(mockReload).toHaveBeenCalled();
+
+    // Should refresh if sessionDetails.profile.id is not the same as the ID of the profile in the newEvent
+    mockReload.mockReset();
+    // @ts-expect-error This is a no-no, overriding private field
+    client.sessionDetails = { profile: { id: randomUUID() } as Practitioner };
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '12345',
+        refreshToken: 'abcde',
+      } satisfies LoginState),
+      newValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '6789',
+        refreshToken: 'fghi',
+      } satisfies LoginState),
+    } as StorageEvent);
+    expect(mockReload).toHaveBeenCalled();
+
+    // Should NOT refresh if sessionDetails.profile.id IS the same as the ID of the profile in the newEvent
+    mockReload.mockReset();
+    // @ts-expect-error This is a no-no, overriding private field
+    client.sessionDetails = { profile: { id: practitioner1 } as Practitioner };
+    callback({
+      key: 'activeLogin',
+      oldValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '12345',
+        refreshToken: 'abcde',
+      } satisfies LoginState),
+      newValue: JSON.stringify({
+        profile: { reference: `Practitioner/${practitioner1}` },
+        project: { reference: 'Project/123' },
+        accessToken: '6789',
+        refreshToken: 'fghi',
+      } satisfies LoginState),
+    } as StorageEvent);
+    expect(mockReload).not.toHaveBeenCalled();
   });
 
   test('setAccessToken', async () => {
@@ -2975,6 +3090,66 @@ describe('Client', () => {
       });
       expect(fetch).toHaveBeenCalledTimes(4);
       expect((response as any).resourceType).toEqual('Patient');
+    });
+  });
+
+  describe('Token refresh', () => {
+    test('should not clear sessionDetails when profile is refreshing', async () => {
+      const fetch = mockFetch(200, (url) => {
+        if (url.includes('Patient/123')) {
+          return { resourceType: 'Patient', id: '123' };
+        }
+        if (url.includes('oauth2/token')) {
+          return {
+            access_token: createFakeJwt({ client_id: '123', login_id: '123', exp: Math.floor(Date.now() / 1000) + 1 }),
+            refresh_token: createFakeJwt({ client_id: '123' }),
+            profile: { reference: 'Patient/123' },
+          };
+        }
+        if (url.includes('auth/me')) {
+          return {
+            profile: { resourceType: 'Patient', id: '123' },
+          };
+        }
+        return {};
+      });
+
+      const client = new MedplumClient({ fetch, refreshGracePeriod: 0 });
+
+      const loginResponse = await client.startLogin({ email: 'admin@example.com', password: 'admin' });
+      expect(fetch).toHaveBeenCalledTimes(1);
+      fetch.mockClear();
+
+      await client.processCode(loginResponse.code as string);
+      expect(fetch).toHaveBeenCalledTimes(2);
+      fetch.mockClear();
+
+      expect(client.getProfile()).toBeDefined();
+
+      const refreshingPromise = new Promise<void>((resolve) => {
+        client.addEventListener('profileRefreshing', () => {
+          resolve();
+        });
+      });
+
+      const now = Date.now();
+      jest.useFakeTimers().setSystemTime(now + 2000);
+
+      // Call refreshIfExpired
+      const refreshedPromise = client.refreshIfExpired();
+
+      // Wait to receive event
+      await refreshingPromise;
+
+      // Check that profile is still defined
+      // This is where the test failed before this PR
+      expect(client.getProfile()).toBeDefined();
+
+      await refreshedPromise;
+
+      expect(client.getProfile()).toBeDefined();
+
+      jest.useRealTimers();
     });
   });
 

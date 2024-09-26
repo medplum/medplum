@@ -1,7 +1,7 @@
 import { OperationOutcomeError, Operator, badRequest, createReference, resolveId } from '@medplum/core';
 import { getAuthenticatedContext } from '../../../context';
 import { CodeSystem, CodeSystemProperty, ConceptMap, Reference, ValueSet } from '@medplum/fhirtypes';
-import { SelectQuery, Conjunction, Condition, Column, Union } from '../../sql';
+import { SelectQuery, Conjunction, Condition, Column, Union, Operator as SqlOperator, SqlFunction } from '../../sql';
 import { getSystemRepo } from '../../repo';
 
 export const parentProperty = 'http://hl7.org/fhir/concept-properties#parent';
@@ -13,12 +13,15 @@ export type TerminologyResource = CodeSystem | ValueSet | ConceptMap;
 export async function findTerminologyResource<T extends TerminologyResource>(
   resourceType: T['resourceType'],
   url: string,
-  version?: string
+  options?: {
+    version?: string;
+    ownProjectOnly?: boolean;
+  }
 ): Promise<T> {
   const { repo, project } = getAuthenticatedContext();
   const filters = [{ code: 'url', operator: Operator.EQUALS, value: url }];
-  if (version) {
-    filters.push({ code: 'version', operator: Operator.EQUALS, value: version });
+  if (options?.version) {
+    filters.push({ code: 'version', operator: Operator.EQUALS, value: options.version });
   }
   const results = await repo.searchResources<T>({
     resourceType,
@@ -34,7 +37,14 @@ export async function findTerminologyResource<T extends TerminologyResource>(
   if (!results.length) {
     throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
   } else if (results.length === 1 || !sameTerminologyResourceVersion(results[0], results[1])) {
-    return results[0];
+    if (options?.ownProjectOnly) {
+      const fullResource = await getSystemRepo().readReference(createReference(results[0]));
+      if (fullResource.meta?.project === repo.currentProject()?.id) {
+        return results[0];
+      }
+    } else {
+      return results[0];
+    }
   } else {
     const resourceReferences: Reference<T>[] = [];
     for (const resource of results) {
@@ -47,7 +57,7 @@ export async function findTerminologyResource<T extends TerminologyResource>(
     } else if (projectResource) {
       return projectResource;
     }
-    if (project.link) {
+    if (!options?.ownProjectOnly && project.link) {
       for (const linkedProject of project.link) {
         const linkedResource = resources.find(
           (r) => !(r instanceof Error) && r.meta?.project === resolveId(linkedProject.project)
@@ -57,8 +67,8 @@ export async function findTerminologyResource<T extends TerminologyResource>(
         }
       }
     }
-    throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
   }
+  throw new OperationOutcomeError(badRequest(`${resourceType} ${url} not found`));
 }
 
 function sameTerminologyResourceVersion(a: TerminologyResource, b: TerminologyResource): boolean {
@@ -70,31 +80,33 @@ function sameTerminologyResourceVersion(a: TerminologyResource, b: TerminologyRe
   return true;
 }
 
-export function addPropertyFilter(query: SelectQuery, property: string, value: string, isEqual?: boolean): SelectQuery {
-  const propertyTable = query.getNextJoinAlias();
-  query.leftJoin(
-    'Coding_Property',
-    propertyTable,
-    new Conjunction([
-      new Condition(new Column(query.tableName, 'id'), '=', new Column(propertyTable, 'coding')),
-      new Condition(new Column(propertyTable, 'value'), '=', value),
-    ])
-  );
+export function addPropertyFilter(
+  query: SelectQuery,
+  property: string,
+  operator: keyof typeof SqlOperator,
+  value: string | string[]
+): SelectQuery {
+  const propertyQuery = new SelectQuery('Coding_Property')
+    .column('coding')
+    .whereExpr(
+      new Conjunction([
+        new Condition(new Column(query.tableName, 'id'), '=', new Column('Coding_Property', 'coding')),
+        new Condition('value', operator, value),
+      ])
+    );
 
-  const csPropertyTable = query.getNextJoinAlias();
-  query.leftJoin(
+  const csPropertyTable = propertyQuery.getNextJoinAlias();
+  propertyQuery.join(
+    'INNER JOIN',
     'CodeSystem_Property',
     csPropertyTable,
     new Conjunction([
-      new Condition(new Column('Coding', 'system'), '=', new Column(csPropertyTable, 'system')),
-      new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyTable, 'property')),
+      new Condition(new Column(csPropertyTable, 'id'), '=', new Column(propertyQuery.tableName, 'property')),
       new Condition(new Column(csPropertyTable, 'code'), '=', property),
     ])
   );
 
-  query
-    .where(new Column(propertyTable, 'value'), isEqual ? '!=' : '=', null)
-    .where(new Column(csPropertyTable, 'system'), isEqual ? '!=' : '=', null);
+  query.whereExpr(new SqlFunction('EXISTS', [propertyQuery]));
   return query;
 }
 
@@ -107,14 +119,16 @@ export function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestor
     .column('display')
     .where('system', '=', codeSystem.id);
   const propertyTable = query.getNextJoinAlias();
-  query.innerJoin(
+  query.join(
+    'INNER JOIN',
     'Coding_Property',
     propertyTable,
     new Condition(new Column('Coding', 'id'), '=', new Column(propertyTable, 'target'))
   );
 
   const csPropertyTable = query.getNextJoinAlias();
-  query.innerJoin(
+  query.join(
+    'INNER JOIN',
     'CodeSystem_Property',
     csPropertyTable,
     new Conjunction([
@@ -125,7 +139,8 @@ export function findAncestor(base: SelectQuery, codeSystem: CodeSystem, ancestor
 
   const recursiveCTE = 'cte_ancestors';
   const recursiveTable = query.getNextJoinAlias();
-  query.innerJoin(
+  query.join(
+    'INNER JOIN',
     recursiveCTE,
     recursiveTable,
     new Condition(new Column(propertyTable, 'coding'), '=', new Column(recursiveTable, 'id'))
@@ -177,11 +192,12 @@ export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, paren
   if (property.id) {
     propertyJoinCondition.where(new Column(propertyTable, 'property'), '=', property.id);
   }
-  query.innerJoin('Coding_Property', propertyTable, propertyJoinCondition);
+  query.join('INNER JOIN', 'Coding_Property', propertyTable, propertyJoinCondition);
 
   if (!property.id) {
     const csPropertyTable = query.getNextJoinAlias();
-    query.innerJoin(
+    query.join(
+      'INNER JOIN',
       'CodeSystem_Property',
       csPropertyTable,
       new Conjunction([
@@ -193,7 +209,8 @@ export function addDescendants(query: SelectQuery, codeSystem: CodeSystem, paren
 
   const recursiveCTE = 'cte_descendants';
   const recursiveTable = query.getNextJoinAlias();
-  query.innerJoin(
+  query.join(
+    'INNER JOIN',
     recursiveCTE,
     recursiveTable,
     new Condition(new Column(propertyTable, 'target'), '=', new Column(recursiveTable, 'id'))

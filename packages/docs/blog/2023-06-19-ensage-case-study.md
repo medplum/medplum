@@ -1,19 +1,19 @@
 ---
 slug: ensage-case-study
 title: Value Based Care and Elderly Populations - Ensage Case Study
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [interop, fhir-datastore, compliance, case-study, geriatrics]
 ---
 
 # Ensage Case Study: Risk Management for Elderly Populations in Value-Based Care Settings
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/GIlmd7OMZ5g?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/GIlmd7OMZ5g?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _(2 minute demo)_
+
+<!-- truncate -->
 
 ## Introduction
 

@@ -74,7 +74,7 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
 
   // Disable browser features
   res.set(
-    'Permission-Policy',
+    'Permissions-Policy',
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()'
   );
 
@@ -129,6 +129,8 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
+export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
+
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
   await initAppServices(config);
   server = http.createServer(app);
@@ -153,12 +155,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.TEXT, ContentType.HL7_V2],
     })
   );
-  app.use(
-    json({
-      type: [ContentType.JSON, ContentType.FHIR_JSON, ContentType.JSON_PATCH, ContentType.SCIM_JSON],
-      limit: config.maxJsonSize,
-    })
-  );
+  app.use(json({ type: JSON_TYPE, limit: config.maxJsonSize }));
   app.use(
     hl7BodyParser({
       type: [ContentType.HL7_V2],
@@ -209,17 +206,17 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
 export async function shutdownApp(): Promise<void> {
   cleanupHeartbeat();
   await closeWebSockets();
-  await closeWorkers();
-  await closeDatabase();
-  await closeRedis();
-  closeRateLimiter();
-
   if (server) {
     await new Promise((resolve) => {
       (server as http.Server).close(resolve);
     });
     server = undefined;
   }
+
+  await closeWorkers();
+  await closeDatabase();
+  await closeRedis();
+  closeRateLimiter();
 
   // If binary storage is a temporary directory, delete it
   const binaryStorage = getConfig().binaryStorage;
@@ -243,7 +240,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
     }
 
     ctx.logger.info('Request served', {
-      duration: `${duration} ms`,
+      durationMs: duration,
       ip: req.ip,
       method: req.method,
       path: req.originalUrl,

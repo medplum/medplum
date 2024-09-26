@@ -9,5 +9,5 @@
       "@medplum/react": ["../react/src"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "./jest.setup.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "jest.setup.ts", "vite.config.ts"]
 }

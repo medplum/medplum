@@ -87,7 +87,7 @@ export interface MockClientOptions {
 
 export class MockMedplumClient extends MedplumClient {
   router: MockFhirRouter;
-  profile: Practitioner;
+  profile: Practitioner | undefined;
   nextResourceId: string;
 
   constructor(options?: MockClientOptions) {
@@ -106,8 +106,13 @@ export class MockMedplumClient extends MedplumClient {
     this.nextResourceId = id;
   }
 
-  createResource<T extends Resource = Resource>(resource: T, _options?: RequestInit | undefined): Promise<T> {
+  createResource<T extends Resource = Resource>(resource: T, _options?: RequestInit): Promise<T> {
     return Promise.resolve<T>({ ...resource, id: this.nextResourceId });
+  }
+
+  setProfile(profile: Practitioner | undefined): void {
+    this.profile = profile;
+    this.dispatchEvent({ type: 'change' });
   }
 
   getProfile(): ProfileResource | undefined {

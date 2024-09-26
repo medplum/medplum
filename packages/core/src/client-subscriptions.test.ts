@@ -3,6 +3,8 @@ import WS from 'jest-websocket-mock';
 import { FetchLike, MedplumClient } from './client';
 import { createFakeJwt, mockFetchWithStatus } from './client-test-utils';
 import { SubscriptionEmitter, SubscriptionEventMap, SubscriptionManager } from './subscriptions';
+import { sendHandshakeBundle } from './subscriptions/test-utils';
+import { sleep } from './utils';
 
 const ONE_HOUR = 60 * 60 * 1000;
 const MOCK_SUBSCRIPTION_ID = '7b081dd8-a2d2-40dd-9596-58a7305a73b0';
@@ -59,31 +61,27 @@ function createMockFetchWithStatus(baseUrl = 'https://api.medplum.com/'): FetchL
 
 describe('MedplumClient -- Subscriptions', () => {
   let medplum: MedplumClient;
-  let warnMockFn: jest.Mock;
   let originalWarn: typeof console.warn;
-
-  beforeAll(async () => {
-    originalWarn = console.warn;
-    console.warn = warnMockFn = jest.fn();
-    jest.useFakeTimers();
-
-    // @ts-expect-error Need this to be here even if we are not using it so that WS reqs don't fail
-    const _wsServer = new WS('wss://api.medplum.com/ws/subscriptions-r4', { jsonProtocol: true });
-  });
-
-  afterAll(async () => {
-    console.warn = originalWarn;
-    jest.useRealTimers();
-    WS.clean();
-  });
+  let wsServer: WS;
 
   beforeEach(async () => {
-    warnMockFn.mockClear();
+    originalWarn = console.warn;
+    console.warn = jest.fn();
+
+    wsServer = new WS('wss://api.medplum.com/ws/subscriptions-r4', { jsonProtocol: true });
+
     medplum = new MedplumClient({
       fetch: createMockFetchWithStatus(),
       accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
     });
     await medplum.getProfileAsync();
+  });
+
+  afterEach(async () => {
+    console.warn = originalWarn;
+    wsServer.close();
+    await wsServer.closed;
+    WS.clean();
   });
 
   // This should be a no-op
@@ -103,15 +101,24 @@ describe('MedplumClient -- Subscriptions', () => {
     const emitter1 = medplum.subscribeToCriteria('Communication');
     expect(emitter1).toBeInstanceOf(SubscriptionEmitter);
 
-    const emitter2 = medplum.subscribeToCriteria('Communication');
-    expect(emitter2).toBeInstanceOf(SubscriptionEmitter);
-    expect(emitter1).toBe(emitter2);
-
-    const connectEvent = await new Promise<SubscriptionEventMap['connect']>((resolve) => {
+    const connectEventPromise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
       emitter1.addEventListener('connect', (event) => {
         resolve(event);
       });
     });
+
+    const emitter2 = medplum.subscribeToCriteria('Communication');
+    expect(emitter2).toBeInstanceOf(SubscriptionEmitter);
+    expect(emitter1).toBe(emitter2);
+
+    await expect(wsServer).toReceiveMessage({
+      type: 'bind-with-token',
+      payload: { token: 'token-123' },
+    });
+    await sleep(50);
+    sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+    const connectEvent = await connectEventPromise;
     expect(connectEvent?.type).toEqual('connect');
     expect(connectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
   });
@@ -119,11 +126,21 @@ describe('MedplumClient -- Subscriptions', () => {
   test('unsubscribeFromCriteria() -- SubscriptionManager exists', async () => {
     const emitter = medplum.subscribeToCriteria('Communication');
 
-    const connectEvent = await new Promise<SubscriptionEventMap['connect']>((resolve) => {
+    const connectEventPromise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
       emitter.addEventListener('connect', (event) => {
         resolve(event);
       });
     });
+
+    await expect(wsServer).toReceiveMessage({
+      type: 'bind-with-token',
+      payload: { token: 'token-123' },
+    });
+    await sleep(50);
+    sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+    const connectEvent = await connectEventPromise;
+
     expect(connectEvent?.type).toEqual('connect');
     expect(connectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
 
@@ -142,29 +159,41 @@ describe('MedplumClient -- Subscriptions', () => {
 });
 
 describe('MedplumClient -- More Subscription Tests', () => {
-  beforeAll(async () => {
-    jest.useFakeTimers();
+  let wsServer: WS;
+
+  beforeEach(() => {
+    wsServer = new WS('wss://example.com/foo/bar/ws/subscriptions-r4', { jsonProtocol: true });
   });
 
-  afterAll(async () => {
-    jest.useRealTimers();
+  afterEach(async () => {
+    wsServer.close();
+    await wsServer.closed;
   });
 
   test('should be able to use `baseUrl` w/ a slash path', async () => {
-    // @ts-expect-error This is needed to receive server side WS requests
-    const _wsServer = new WS('https://example.com/foo/bar/ws/subscriptions-r4', { jsonProtocol: true });
     const medplum = new MedplumClient({
       baseUrl: 'https://example.com/foo/bar/',
       fetch: createMockFetchWithStatus('https://example.com/foo/bar/'),
       accessToken: createFakeJwt({ client_id: '123', login_id: '123' }),
     });
     await medplum.getProfileAsync();
+
     const emitter = medplum.subscribeToCriteria('Communication');
-    const connectEvent = await new Promise<SubscriptionEventMap['connect']>((resolve) => {
+
+    const connectEventPromise = new Promise<SubscriptionEventMap['connect']>((resolve) => {
       emitter.addEventListener('connect', (event) => {
         resolve(event);
       });
     });
+
+    await expect(wsServer).toReceiveMessage({
+      type: 'bind-with-token',
+      payload: { token: 'token-123' },
+    });
+    await sleep(50);
+    sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
+
+    const connectEvent = await connectEventPromise;
 
     expect(connectEvent?.type).toEqual('connect');
     expect(connectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);

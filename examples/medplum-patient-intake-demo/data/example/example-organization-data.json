@@ -1,0 +1,122 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:38bcbdea-1b0c-4e9d-9548-4711a999acf4",
+      "request": {
+        "method": "PUT",
+        "url": "Organization?identifier=blue-cross"
+      },
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Independence Blue Cross Blue Shield",
+        "active": true,
+        "identifier": [
+          {
+            "system": "http://example.com/insurance-orgs",
+            "value": "blue-cross"
+          }
+        ],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b884050a-bc99-472c-ad66-4f903fe84aa8",
+      "request": {
+        "method": "PUT",
+        "url": "Organization?identifier=medplum-insurance"
+      },
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Medplum Insurance",
+        "active": true,
+        "identifier": [
+          {
+            "system": "http://example.com/insurance-orgs",
+            "value": "medplum-insurance"
+          }
+        ],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "ins",
+                "display": "Insurance Company"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:56867ac2-9c23-415f-a9e8-0bc95a87e986",
+      "request": {
+        "method": "PUT",
+        "url": "Organization?identifier=cvs-pharmacy"
+      },
+      "resource": {
+        "resourceType": "Organization",
+        "name": "CVS Pharmacy",
+        "active": true,
+        "identifier": [
+          {
+            "system": "http://example.com/pharmacy-orgs",
+            "value": "cvs-pharmacy"
+          }
+        ],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d8cc4839-3abf-4a58-8895-190b06551b66",
+      "request": {
+        "method": "PUT",
+        "url": "Organization?identifier=medplum-pharmacy"
+      },
+      "resource": {
+        "resourceType": "Organization",
+        "name": "Medplum Pharmacy",
+        "active": true,
+        "identifier": [
+          {
+            "system": "http://example.com/pharmacy-orgs",
+            "value": "medplum-pharmacy"
+          }
+        ],
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/organization-type",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

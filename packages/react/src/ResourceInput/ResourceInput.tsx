@@ -2,8 +2,12 @@ import { Group, Text } from '@mantine/core';
 import { getDisplayString, getReferenceString, isPopulated } from '@medplum/core';
 import { OperationOutcome, Patient, Reference, Resource } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { forwardRef, useCallback, useState } from 'react';
-import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
+import { forwardRef, ReactNode, useCallback, useState } from 'react';
+import {
+  AsyncAutocomplete,
+  AsyncAutocompleteOption,
+  AsyncAutocompleteProps,
+} from '../AsyncAutocomplete/AsyncAutocomplete';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 
 /**
@@ -81,8 +85,11 @@ export interface ResourceInputProps<T extends Resource = Resource> {
   readonly placeholder?: string;
   readonly loadOnFocus?: boolean;
   readonly required?: boolean;
+  readonly itemComponent?: (props: AsyncAutocompleteOption<T>) => JSX.Element | ReactNode;
   readonly onChange?: (value: T | undefined) => void;
   readonly disabled?: boolean;
+  readonly label?: AsyncAutocompleteProps<T>['label'];
+  readonly error?: AsyncAutocompleteProps<T>['error'];
 }
 
 function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
@@ -98,6 +105,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   const { resourceType, searchCriteria } = props;
   const [outcome, setOutcome] = useState<OperationOutcome>();
   const defaultValue = useResource(props.defaultValue, setOutcome);
+  const ItemComponent = props.itemComponent ?? DefaultItemComponent;
   const onChange = props.onChange;
 
   const loadValues = useCallback(
@@ -135,6 +143,8 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
     <AsyncAutocomplete<T>
       disabled={props.disabled}
       name={props.name}
+      label={props.label}
+      error={props.error}
       required={props.required}
       itemComponent={ItemComponent}
       defaultValue={defaultValue}
@@ -148,7 +158,7 @@ export function ResourceInput<T extends Resource = Resource>(props: ResourceInpu
   );
 }
 
-const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resource>>(
+const DefaultItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<Resource>>(
   ({ label, resource, active: _active, ...others }: AsyncAutocompleteOption<Resource>, ref) => {
     return (
       <div ref={ref} {...others}>

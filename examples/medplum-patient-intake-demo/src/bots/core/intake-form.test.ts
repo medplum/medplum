@@ -1,15 +1,14 @@
 import { MockClient } from '@medplum/mock';
 import { handler } from './intake-form';
 import {
-  intakePatient,
   intakeQuestionnaire,
   intakeResponse,
   payorOrganization1,
   payorOrganization2,
+  pharmacyOrganization,
 } from './test-data/intake-form-test-data';
 import {
   Bundle,
-  HumanName,
   Organization,
   Patient,
   QuestionnaireResponse,
@@ -35,11 +34,13 @@ import {
 describe('Intake form', async () => {
   let medplum: MockClient,
     response: QuestionnaireResponse,
-    patient: Patient,
+    patient: Patient | undefined,
     payor1: Organization,
-    payor2: Organization;
+    payor2: Organization,
+    pharmacy: Organization;
   const bot = { reference: 'Bot/123' };
   const contentType = 'application/fhir+json';
+  const ssn = '518225060';
 
   beforeAll(() => {
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
@@ -52,66 +53,89 @@ describe('Intake form', async () => {
 
   beforeEach(async () => {
     medplum = new MockClient();
-    patient = await medplum.createResource(intakePatient);
     payor1 = await medplum.createResource(payorOrganization1);
     payor2 = await medplum.createResource(payorOrganization2);
+    pharmacy = await medplum.createResource(pharmacyOrganization);
     await medplum.createResource(intakeQuestionnaire);
     response = await medplum.createResource(intakeResponse);
   });
 
-  describe('Update Patient demographic information', async () => {
+  test('Create the patient resource', async () => {
+    await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+    patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+    expect(patient).toBeDefined();
+    expect(patient.identifier?.[0].value).toEqual(ssn);
+    expect(response.subject).toEqual(createReference(patient));
+  });
+
+  describe('Patient demographic information', async () => {
     test('Patient attributes', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
 
+      expect(patient).toBeDefined();
       expect(patient.name?.[0].given).toEqual(['FirstName', 'MiddleName']);
       expect(patient.name?.[0].family).toEqual('LastName');
       expect(patient.gender).toEqual('33791000087105');
       expect(patient.birthDate).toEqual('2000-01-01');
+      expect(patient.address?.[0]).toEqual({
+        use: 'home',
+        type: 'physical',
+        line: ['123 Happy St'],
+        city: 'Sunnyvale',
+        state: 'CA',
+        postalCode: '95008',
+      });
+      expect(patient.telecom?.[0]).toEqual({
+        system: 'phone',
+        value: '555-555-5555',
+      });
+      expect(patient.identifier?.[0]).toEqual({
+        type: {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+              code: 'SS',
+            },
+          ],
+        },
+        system: 'http://hl7.org/fhir/sid/us-ssn',
+        value: '518225060',
+      });
+      expect(patient.contact?.[0]).toEqual({
+        relationship: [
+          {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
+                code: 'EP',
+                display: 'Emergency contact person',
+              },
+            ],
+          },
+        ],
+        name: {
+          family: 'Simpson',
+          given: ['Marge'],
+        },
+        telecom: [
+          {
+            system: 'phone',
+            value: '111-222-5555',
+          },
+        ],
+      });
     });
 
-    test("Doesn't change patient name if not provided", async () => {
-      const firstName = findQuestionnaireItem(response.item, 'first-name');
-      (firstName as QuestionnaireResponseItem).answer = undefined;
-      const middleName = findQuestionnaireItem(response.item, 'middle-name');
-      (middleName as QuestionnaireResponseItem).answer = undefined;
-      const lastName = findQuestionnaireItem(response.item, 'last-name');
-      (lastName as QuestionnaireResponseItem).answer = undefined;
-
-      await medplum.updateResource(response);
-
+    test('Race and ethnicity', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
 
-      expect(patient.name?.[0].given).toEqual(['John', 'Doe']);
-      expect(patient.name?.[0].family).toEqual('Carvalho');
-    });
-
-    test("Doesn't add undefined values to patient name", async () => {
-      const middleName = findQuestionnaireItem(response.item, 'middle-name');
-      (middleName as QuestionnaireResponseItem).answer = undefined;
-      const lastName = findQuestionnaireItem(response.item, 'last-name');
-      (lastName as QuestionnaireResponseItem).answer = undefined;
-
-      await medplum.updateResource(response);
-
-      await handler(medplum, { bot, input: response, contentType, secrets: {} });
-
-      patient = await medplum.readResource('Patient', patient.id as string);
-
-      const patientName = (patient.name as any[])[0] as HumanName;
-
-      expect(patientName.given).toEqual(['FirstName']);
-      expect(Object.keys(patientName)).not.toContain('family');
-    });
-
-    test('Race and etinicity', async () => {
-      await handler(medplum, { bot, input: response, contentType, secrets: {} });
-
-      patient = await medplum.readResource('Patient', patient.id as string);
-
+      expect(patient).toBeDefined();
       expect(getExtensionValue(patient, extensionURLMapping.race)).toEqual({
         code: '2131-1',
         display: 'Other Race',
@@ -125,66 +149,149 @@ describe('Intake form', async () => {
     });
   });
 
+  describe('Allergies', async () => {
+    test('add allergies', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const allergies = await medplum.searchResources('AllergyIntolerance', { patient: getReferenceString(patient) });
+
+      expect(allergies.length).toEqual(2);
+
+      expect(allergies[0].code?.coding?.[0].code).toEqual('111088007');
+      expect(allergies[0].clinicalStatus?.coding?.[0].code).toEqual('active');
+      expect(allergies[0].reaction?.[0].manifestation?.[0].text).toEqual('Skin rash');
+      expect(allergies[0].onsetDateTime).toEqual('2000-07-01T00:00:00Z');
+
+      expect(allergies[1].code?.coding?.[0].code).toEqual('763875007');
+      expect(allergies[1].clinicalStatus?.coding?.[0].code).toEqual('active');
+      expect(allergies[1].reaction?.[0].manifestation?.[0].text).toEqual('Skin rash');
+      expect(allergies[1].onsetDateTime).toEqual('2020-01-01T00:00:00Z');
+    });
+  });
+
+  describe('Current medications', async () => {
+    test('add medications', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const medications = await medplum.searchResources('MedicationRequest', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(medications.length).toEqual(2);
+
+      expect(medications[0].medicationCodeableConcept?.coding?.[0].code).toEqual('1156277');
+      expect(medications[0].status).toEqual('active');
+      expect(medications[0].note?.[0].text).toEqual('I take it to manage my chronic back pain.');
+
+      expect(medications[1].medicationCodeableConcept?.coding?.[0].code).toEqual('1161610');
+      expect(medications[1].status).toEqual('active');
+      expect(medications[1].note?.[0].text).toEqual('I take it to manage my diabetes.');
+    });
+  });
+
+  describe('Condition', async () => {
+    test('add conditions', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const conditions = await medplum.searchResources('Condition', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(conditions.length).toEqual(2);
+
+      expect(conditions[0].code?.coding?.[0].code).toEqual('59621000');
+      expect(conditions[0].code?.coding?.[0].display).toEqual('Essential hypertension (disorder)');
+      expect(conditions[0].clinicalStatus?.coding?.[0].code).toEqual('active');
+      expect(conditions[0].onsetDateTime).toEqual('2008-05-01T00:00:00.000Z');
+
+      expect(conditions[1].code?.coding?.[0].code).toEqual('44054006');
+      expect(conditions[1].code?.coding?.[0].display).toEqual('Diabetes mellitus type 2 (disorder)');
+      expect(conditions[1].clinicalStatus?.coding?.[0].code).toEqual('active');
+      expect(conditions[1].onsetDateTime).toEqual('2010-03-01T00:00:00.000Z');
+    });
+  });
+
+  describe('Family Member History', async () => {
+    test('add family member history', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const familyMemberHistories = await medplum.searchResources('FamilyMemberHistory', {
+        patient: getReferenceString(patient),
+      });
+
+      expect(familyMemberHistories.length).toEqual(2);
+
+      expect(familyMemberHistories[0].condition?.[0].code?.coding?.[0].code).toEqual('254843006');
+      expect(familyMemberHistories[0].condition?.[0].code?.coding?.[0].display).toEqual(
+        'Familial cancer of breast (disorder)'
+      );
+      expect(familyMemberHistories[0].relationship?.coding?.[0].code).toEqual('MTH');
+      expect(familyMemberHistories[0].relationship?.coding?.[0].display).toEqual('mother');
+      expect(familyMemberHistories[0].deceasedBoolean).toEqual(false);
+
+      expect(familyMemberHistories[1].condition?.[0].code?.coding?.[0].code).toEqual('53741008');
+      expect(familyMemberHistories[1].condition?.[0].code?.coding?.[0].display).toEqual(
+        'Coronary arteriosclerosis (disorder)'
+      );
+      expect(familyMemberHistories[1].relationship?.coding?.[0].code).toEqual('FTH');
+      expect(familyMemberHistories[1].relationship?.coding?.[0].display).toEqual('father');
+      expect(familyMemberHistories[1].deceasedBoolean).toEqual(true);
+    });
+  });
+
+  describe('Immunization', async () => {
+    test('add immunizations', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const immunizations = await medplum.searchResources('Immunization', {
+        patient: getReferenceString(patient),
+      });
+
+      expect(immunizations.length).toEqual(2);
+
+      expect(immunizations[0].vaccineCode?.coding?.[0].system).toEqual('http://hl7.org/fhir/sid/cvx');
+      expect(immunizations[0].vaccineCode?.coding?.[0].code).toEqual('197');
+      expect(immunizations[0].status).toEqual('completed');
+      expect(immunizations[0].occurrenceDateTime).toEqual('2024-02-01T14:00:00-07:00');
+
+      expect(immunizations[1].vaccineCode?.coding?.[0].system).toEqual('http://hl7.org/fhir/sid/cvx');
+      expect(immunizations[1].vaccineCode?.coding?.[0].code).toEqual('115');
+      expect(immunizations[1].status).toEqual('completed');
+      expect(immunizations[1].occurrenceDateTime).toEqual('2015-08-01T15:00:00-07:00');
+    });
+  });
+
   describe('Language information', async () => {
     test('add languages', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
 
+      expect(patient).toBeDefined();
       expect(patient.communication?.length).toEqual(2);
       expect(patient.communication?.[0].language.coding?.[0].code).toEqual('pt');
       expect(patient.communication?.[1].language.coding?.[0].code).toEqual('en');
       expect(patient.communication?.[1].preferred).toBeTruthy();
-    });
-
-    test('does not duplicate existing language', async () => {
-      await medplum.updateResource({
-        ...patient,
-        communication: [
-          {
-            language: {
-              coding: [
-                {
-                  system: 'urn:ietf:bcp:47',
-                  code: 'en',
-                  display: 'English',
-                },
-              ],
-            },
-          },
-        ],
-      });
-
-      await handler(medplum, { bot, input: response, contentType, secrets: {} });
-
-      patient = await medplum.readResource('Patient', patient.id as string);
-
-      expect(patient.communication?.length).toEqual(2);
-    });
-
-    test('sets existing language as preferred', async () => {
-      await medplum.updateResource({
-        ...patient,
-        communication: [
-          {
-            language: {
-              coding: [
-                {
-                  system: 'urn:ietf:bcp:47',
-                  code: 'en',
-                  display: 'English',
-                },
-              ],
-            },
-          },
-        ],
-      });
-
-      await handler(medplum, { bot, input: response, contentType, secrets: {} });
-
-      patient = await medplum.readResource('Patient', patient.id as string);
-
-      expect(patient.communication?.[0].preferred).toBeTruthy();
     });
   });
 
@@ -192,26 +299,9 @@ describe('Intake form', async () => {
     test('sets as veteran', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
 
-      expect(getExtensionValue(patient, extensionURLMapping.veteran)).toEqual(true);
-    });
-
-    test('overrides existing', async () => {
-      await medplum.updateResource({
-        ...patient,
-        extension: [
-          {
-            url: extensionURLMapping.veteran,
-            valueBoolean: false,
-          },
-        ],
-      });
-
-      await handler(medplum, { bot, input: response, contentType, secrets: {} });
-
-      patient = await medplum.readResource('Patient', patient.id as string);
-
+      expect(patient).toBeDefined();
       expect(getExtensionValue(patient, extensionURLMapping.veteran)).toEqual(true);
     });
   });
@@ -220,7 +310,9 @@ describe('Intake form', async () => {
     test('Sexual orientation', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
 
       const observation = await medplum.searchOne('Observation', {
         code: '76690-7',
@@ -233,7 +325,9 @@ describe('Intake form', async () => {
     test('Housing status', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
 
       const observation = await medplum.searchOne('Observation', {
         code: '71802-3',
@@ -243,10 +337,27 @@ describe('Intake form', async () => {
       expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('M');
     });
 
+    test('Smoking status', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const observation = await medplum.searchOne('Observation', {
+        code: '72166-2',
+        subject: getReferenceString(patient),
+      });
+
+      expect(observation?.valueCodeableConcept?.coding?.[0].code).toEqual('428041000124106');
+    });
+
     test('Education Level', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
 
       const observation = await medplum.searchOne('Observation', {
         code: '82589-3',
@@ -259,7 +370,9 @@ describe('Intake form', async () => {
     test('Pregnancy Status', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
 
       const observation = await medplum.searchOne('Observation', {
         code: '82810-3',
@@ -272,7 +385,9 @@ describe('Intake form', async () => {
     test('Estimated Delivery Date', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
 
       const observation = await medplum.searchOne('Observation', {
         code: '11778-8',
@@ -283,29 +398,53 @@ describe('Intake form', async () => {
     });
   });
 
+  describe('CareTeam', async () => {
+    test('Preferred Pharmacy', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const careTeam = await medplum.searchResources('CareTeam', {
+        subject: getReferenceString(patient),
+      });
+
+      expect(careTeam.length).toEqual(1);
+      expect(careTeam[0].status).toEqual('proposed');
+      expect(careTeam[0].name).toEqual('Patient Preferred Pharmacy');
+      expect(careTeam[0].participant?.length).toEqual(1);
+      expect(careTeam[0].participant?.[0].member?.reference).toEqual(getReferenceString(pharmacy));
+    });
+  });
+
   describe('Coverage', async () => {
     test('adds coverage resources', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
 
       const coverages = await medplum.searchResources('Coverage', { beneficiary: getReferenceString(patient) });
 
       expect(coverages[0].beneficiary).toEqual(createReference(patient));
       expect(coverages[0].subscriberId).toEqual('first-provider-id');
-      expect(coverages[0].relationship?.coding?.[0]?.code).toEqual('BP');
-      expect(coverages[0].payor?.[0].reference).toEqual(createReference(payor1).reference);
+      expect(coverages[0].relationship?.coding?.[0]?.code).toEqual('self');
+      expect(coverages[0].payor?.[0].reference).toEqual(getReferenceString(payor1));
 
       expect(coverages[1].beneficiary).toEqual(createReference(patient));
       expect(coverages[1].subscriberId).toEqual('second-provider-id');
-      expect(coverages[1].relationship?.coding?.[0]?.code).toEqual('BP');
-      expect(coverages[1].payor?.[0].reference).toEqual(createReference(payor2).reference);
+      expect(coverages[1].relationship?.coding?.[0]?.code).toEqual('child');
+      expect(coverages[1].payor?.[0].reference).toEqual(getReferenceString(payor2));
     });
 
     test('upsert coverage resources to ensure there is only one coverage resource per payor', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
 
       const coverages = await medplum.searchResources('Coverage', { beneficiary: getReferenceString(patient) });
 
@@ -317,13 +456,46 @@ describe('Intake form', async () => {
 
       expect(updatedCoverages.length).toEqual(2);
     });
+
+    test('create RelatedPerson resource for subscriber', async () => {
+      await handler(medplum, { bot, input: response, contentType, secrets: {} });
+
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
+
+      const relatedPerson = await medplum.searchResources('RelatedPerson', {
+        patient: getReferenceString(patient),
+      });
+
+      expect(relatedPerson.length).toEqual(1);
+      expect(relatedPerson[0].relationship?.[0]).toEqual({
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+            code: 'PRN',
+            display: 'parent',
+          },
+        ],
+      });
+      expect(relatedPerson[0].name).toEqual([
+        {
+          family: 'Simpson',
+          given: ['Marge'],
+        },
+      ]);
+      expect(relatedPerson[0].birthDate).toEqual('1958-03-19');
+      expect(relatedPerson[0].gender).toEqual('446141000124107');
+    });
   });
 
   describe('Consents', async () => {
     test('adds all consent resources', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
 
       const consents = await medplum.searchResources('Consent', { patient: getReferenceString(patient) });
 
@@ -356,7 +528,9 @@ describe('Intake form', async () => {
 
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
-      patient = await medplum.readResource('Patient', patient.id as string);
+      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
+
+      expect(patient).toBeDefined();
 
       const consents = await medplum.searchResources('Consent', { patient: getReferenceString(patient) });
 

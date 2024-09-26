@@ -83,6 +83,12 @@
       "id": "",
       "source": "./src/bots-with-shared-library/goodbye-patient.ts",
       "dist": "./dist/bots-with-shared-library/welcome-patient.js"
+    },
+    {
+      "name": "demo-slack-bot",
+      "id": "",
+      "source": "./src/slack-bots/demo-slack-bot.ts",
+      "dist": "./dist/slack-bots/demo-slack-bot.js"
     }
   ]
 }

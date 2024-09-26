@@ -33,9 +33,11 @@ export async function codeSystemValidateCodeHandler(req: FhirRequest): Promise<F
   if (req.params.id) {
     codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.url) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.url, params.version);
+    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.url, { version: params.version });
   } else if (params.coding?.system) {
-    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.coding.system, params.version);
+    codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.coding.system, {
+      version: params.version,
+    });
   } else {
     return [badRequest('No code system specified')];
   }
@@ -94,6 +96,6 @@ export async function validateCodings(codeSystem: CodeSystem, codings: Coding[])
 
   return codings.map((c, idx) => {
     const row = eligible[idx] && result?.find((r: any) => r.code === c.code);
-    return row ? { id: row.id, system: codeSystem.url, code: c.code, display: row.display } : undefined;
+    return row ? { id: row.id, system: codeSystem.url, code: c.code, display: c.display ?? row.display } : undefined;
   });
 }

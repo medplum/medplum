@@ -13,7 +13,7 @@ if (!existsSync('.env')) {
 let gitHash;
 try {
   gitHash = execSync('git rev-parse --short HEAD').toString().trim();
-} catch (error) {
+} catch (_err) {
   gitHash = 'unknown'; // Default value when not in a git repository
 }
 

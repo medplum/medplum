@@ -4,6 +4,7 @@ import {
   created,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  multipleMatches,
   notFound,
   preconditionFailed,
 } from '@medplum/core';
@@ -170,17 +171,93 @@ describe('FHIR Router', () => {
       },
       repo
     );
-    expect(res).toMatchObject(badRequest('Incorrect ID'));
+    expect(res).toMatchObject(badRequest('Incorrect resource ID'));
   });
 
   test('Update incorrect precondition', async () => {
+    const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
     const [res] = await router.handleRequest(
       {
         method: 'PUT',
-        pathname: '/Patient/123',
+        pathname: '/Patient/' + patient.id,
+        body: patient,
+        params: {},
+        query: {},
+        headers: { 'if-match': 'W/"incorrect"' },
+      },
+      repo
+    );
+    expect(res).toMatchObject(preconditionFailed);
+  });
+
+  test('Update with correct precondition', async () => {
+    const [res1, patient] = await router.handleRequest(
+      {
+        method: 'POST',
+        pathname: '/Patient',
         body: {
           resourceType: 'Patient',
-          id: '123',
+          name: [{ given: ['John'], family: 'Doe' }],
+          active: false,
+        },
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res1).toMatchObject(created);
+    if (!patient) {
+      fail('Expected patient to be defined');
+    }
+    const expectedVersion = patient.meta?.versionId;
+    if (!expectedVersion) {
+      fail('Expected version to be defined');
+    }
+
+    const [res2, updatedPatient] = await router.handleRequest(
+      {
+        method: 'PUT',
+        pathname: `/Patient/${patient?.id}`,
+        body: {
+          ...patient,
+          active: true,
+        },
+        params: {},
+        query: {},
+        headers: { 'if-match': `W/"${expectedVersion}"` },
+      },
+      repo
+    );
+    expect(res2).toMatchObject(allOk);
+    expect((updatedPatient as Patient)?.active).toEqual(true);
+  });
+
+  test('Update incorrect precondition', async () => {
+    const [res1, patient] = await router.handleRequest(
+      {
+        method: 'POST',
+        pathname: '/Patient',
+        body: {
+          resourceType: 'Patient',
+          name: [{ given: ['John'], family: 'Doe' }],
+        },
+        params: {},
+        query: {},
+      },
+      repo
+    );
+    expect(res1).toMatchObject(created);
+    if (!patient) {
+      fail('Expected patient to be defined');
+    }
+
+    const [res2] = await router.handleRequest(
+      {
+        method: 'PUT',
+        pathname: `/Patient/${patient?.id}`,
+        body: {
+          ...patient,
+          status: 'active',
         },
         params: {},
         query: {},
@@ -188,7 +265,7 @@ describe('FHIR Router', () => {
       },
       repo
     );
-    expect(res).toMatchObject(preconditionFailed);
+    expect(res2).toMatchObject(preconditionFailed);
   });
 
   test('Search by post', async () => {
@@ -303,5 +380,65 @@ describe('FHIR Router', () => {
     );
     expect(res4).toMatchObject(badRequest('Patch body must be an array'));
     expect(patient4).toBeUndefined();
+  });
+
+  test('Conditional delete', async () => {
+    const mrn = randomUUID();
+    const patient: Patient = {
+      resourceType: 'Patient',
+      gender: 'unknown',
+      identifier: [{ system: 'http://example.com/mrn', value: mrn }],
+    };
+
+    await repo.createResource(patient);
+    await repo.createResource({ ...patient, identifier: undefined });
+
+    // Multiple matching resources, expected error response
+    const [res3, resource3] = await router.handleRequest(
+      {
+        method: 'DELETE',
+        pathname: '/Patient',
+        body: patient,
+        params: {},
+        query: {
+          gender: 'unknown',
+        },
+      },
+      repo
+    );
+    expect(res3).toMatchObject(multipleMatches);
+    expect(resource3).toBeUndefined();
+
+    // Matching resource to be deleted
+    const [res, resource] = await router.handleRequest(
+      {
+        method: 'DELETE',
+        pathname: '/Patient',
+        body: patient,
+        params: {},
+        query: {
+          identifier: 'http://example.com/mrn|' + mrn,
+        },
+      },
+      repo
+    );
+    expect(res).toMatchObject(allOk);
+    expect(resource).toBeUndefined();
+
+    // No matching resource, ignored
+    const [res2, resource2] = await router.handleRequest(
+      {
+        method: 'DELETE',
+        pathname: '/Patient',
+        body: patient,
+        params: {},
+        query: {
+          identifier: 'http://example.com/mrn|' + randomUUID(),
+        },
+      },
+      repo
+    );
+    expect(res2).toMatchObject(allOk);
+    expect(resource2).toBeUndefined();
   });
 });

@@ -26,3 +26,20 @@ export const Disabled = (): JSX.Element => (
     <ResourceInput disabled name="foo" resourceType="Patient" defaultValue={createReference(HomerSimpson)} />
   </Document>
 );
+
+export const Error = (): JSX.Element => (
+  <Document>
+    <ResourceInput
+      name="foo"
+      resourceType="Patient"
+      defaultValue={createReference(HomerSimpson)}
+      error="Something went wrong"
+    />
+  </Document>
+);
+
+export const Label = (): JSX.Element => (
+  <Document>
+    <ResourceInput name="foo" resourceType="Patient" defaultValue={createReference(HomerSimpson)} label="Patient" />
+  </Document>
+);

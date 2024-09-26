@@ -30,6 +30,7 @@ export interface GraphQLContext {
   config?: FhirRequestConfig;
   dataLoader: DataLoader<Reference, Resource>;
   searchCount: number;
+  searchDataLoaders: Record<string, DataLoader<Filter, Resource[]>>;
 }
 
 export const typeCache: Record<string, GraphQLScalarType | undefined> = {
@@ -63,7 +64,11 @@ export const typeCache: Record<string, GraphQLScalarType | undefined> = {
   'http://hl7.org/fhirpath/System.Time': GraphQLString,
 };
 
-export function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<string, string>): SearchRequest {
+function parseSearchArgsWithReference(
+  resourceType: ResourceType,
+  source: any,
+  args: Record<string, string>
+): { searchRequest: SearchRequest; referenceFilter: Filter | undefined } {
   let referenceFilter: Filter | undefined = undefined;
   if (source) {
     // _reference is a required field for reverse lookup searches
@@ -82,12 +87,19 @@ export function parseSearchArgs(resourceType: ResourceType, source: any, args: R
 
   // Parse the search request
   const searchRequest = parseSearchRequest(resourceType, args);
+  return { searchRequest, referenceFilter };
+}
 
-  // If a reverse lookup filter was specified,
-  // add it to the search request.
+function addFilter(searchRequest: SearchRequest, filter: Filter): void {
+  const existingFilters = searchRequest.filters || [];
+  searchRequest.filters = [filter, ...existingFilters];
+}
+
+export function parseSearchArgs(resourceType: ResourceType, source: any, args: Record<string, string>): SearchRequest {
+  const { searchRequest, referenceFilter } = parseSearchArgsWithReference(resourceType, source, args);
+
   if (referenceFilter) {
-    const existingFilters = searchRequest.filters || [];
-    searchRequest.filters = [referenceFilter, ...existingFilters];
+    addFilter(searchRequest, referenceFilter);
   }
 
   return searchRequest;
@@ -105,6 +117,22 @@ export function fhirParamToGraphQLField(code: string): string {
   return code.replaceAll('-', '_');
 }
 
+function sortedStringify(obj: any): string {
+  const customReplacer = (key: any, value: any): any => {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      return Object.keys(value)
+        .sort((a, b) => a.localeCompare(b))
+        .reduce((sorted: any, key: string) => {
+          sorted[key] = value[key];
+          return sorted;
+        }, {});
+    }
+    return value;
+  };
+
+  return JSON.stringify(obj, customReplacer);
+}
+
 /**
  * GraphQL data loader for search requests.
  * The field name should always end with "List" (i.e., "Patient" search uses "PatientList").
@@ -113,7 +141,7 @@ export function fhirParamToGraphQLField(code: string): string {
  * @param args - The GraphQL search arguments.
  * @param ctx - The GraphQL context.
  * @param info - The GraphQL resolve info.  This includes the schema, and additional field details.
- * @returns Promise to read the resoures for the query.
+ * @returns Promise to read the resources for the query.
  */
 export async function resolveBySearch(
   source: any,
@@ -128,10 +156,40 @@ export async function resolveBySearch(
 
   const fieldName = info.fieldName;
   const resourceType = fieldName.substring(0, fieldName.length - 'List'.length) as ResourceType;
-  const searchRequest = parseSearchArgs(resourceType, source, args);
+
+  const { searchRequest, referenceFilter } = parseSearchArgsWithReference(resourceType, source, args);
   applyMaxCount(searchRequest, ctx.config?.graphqlMaxSearches);
-  const bundle = await ctx.repo.search(searchRequest);
-  return bundle.entry?.map((e) => e.resource as Resource);
+
+  const maxBatchSize = ctx.config?.graphqlBatchedSearchSize ?? 0;
+  if (maxBatchSize === 0 || !referenceFilter) {
+    if (referenceFilter) {
+      addFilter(searchRequest, referenceFilter);
+    }
+    const bundle = await ctx.repo.search(searchRequest);
+    return bundle.entry?.map((e) => e.resource as Resource);
+  }
+
+  const hash = sortedStringify(searchRequest);
+  const dl = (ctx.searchDataLoaders[hash] ??= buildResolveBySearchDataLoader(ctx.repo, searchRequest, maxBatchSize));
+  return dl.load(referenceFilter);
+}
+
+function buildResolveBySearchDataLoader(
+  repo: FhirRepository,
+  searchRequest: SearchRequest,
+  maxBatchSize: number
+): DataLoader<Filter, Resource[]> {
+  return new DataLoader<Filter, Resource[]>(
+    async (filters) => {
+      const results = await repo.searchByReference(
+        searchRequest,
+        filters[0].code,
+        filters.map((f) => f.value)
+      );
+      return filters.map((filter) => results[filter.value]);
+    },
+    { maxBatchSize }
+  );
 }
 
 export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumentMap {

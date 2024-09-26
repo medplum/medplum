@@ -1,12 +1,12 @@
+import { Group, Text } from '@mantine/core';
 import { formatHumanName, getDisplayString, getReferenceString, isUUID } from '@medplum/core';
 import { Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumNavigate } from '@medplum/react-hooks';
 import { IconSearch } from '@tabler/icons-react';
 import { forwardRef, useCallback } from 'react';
 import { AsyncAutocomplete, AsyncAutocompleteOption } from '../AsyncAutocomplete/AsyncAutocomplete';
-import classes from './HeaderSearchInput.module.css';
-import { Group, Text } from '@mantine/core';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
+import classes from './HeaderSearchInput.module.css';
 
 export type HeaderSearchTypes = Patient | ServiceRequest;
 
@@ -72,7 +72,7 @@ export function HeaderSearchInput(props: HeaderSearchInputProps): JSX.Element {
   );
 }
 
-const ItemComponent = forwardRef<HTMLDivElement, any>(
+const ItemComponent = forwardRef<HTMLDivElement, AsyncAutocompleteOption<HeaderSearchTypes>>(
   ({ resource, active: _active, ...others }: AsyncAutocompleteOption<HeaderSearchTypes>, ref) => {
     let helpText: string | undefined = undefined;
 

@@ -1,23 +1,21 @@
 ---
 slug: summer-case-study
 title: 24/7 Pediatrician Access - Summer Health Case Study
-authors:
-  name: Reshma Khilnani
-  title: Medplum Core Team
-  url: https://github.com/reshmakh
-  image_url: https://github.com/reshmakh.png
+authors: reshma
 tags: [pediatrics, auth, case-study, ai]
 ---
 
 # Summer Health: 24/7 Pediatrician Access
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/H2fJVYG8LvQ?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+[Summer Health](https://www.summerhealth.com/) is an innovator in direct-to-patient pediatrics, with a focus on messaging and mobile access for parents via SMS. Their fast growing practice is available nationwide and is known for excellent patient engagement.
+
+<!-- truncate -->
+
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/H2fJVYG8LvQ?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _(2 minute demo)_
-
-## Introduction
-
-[Summer Health](https://www.summerhealth.com/) is an innovator in direct-to-patient pediatrics, with a focus on messaging and mobile access for parents via SMS. Their fast growing practice is available nationwide and is known for excellent patient engagement.
 
 ## Medplum Solutions Used
 

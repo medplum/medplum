@@ -61,11 +61,11 @@ const theme = createTheme({
   },
 });
 
-function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
+async function fetcher(params: FetcherParams): Promise<SyncExecutionResult> {
   if (params.operationName === 'IntrospectionQuery') {
     const config = getConfig().introspectionUrl;
     if (config) {
-      return fetch(config).then((res) => res.json());
+      return (await fetch(config)).json();
     }
   }
   return medplum.graphql(params.query, params.operationName, params.variables);
@@ -125,7 +125,7 @@ function tryEncodeBase64(value: string | null | undefined): string {
   }
   try {
     return encodeBase64(value);
-  } catch (err) {
+  } catch (_err) {
     return '';
   }
 }
@@ -136,7 +136,7 @@ function tryDecodeBase64(value: string | null): string {
   }
   try {
     return decodeBase64(value);
-  } catch (err) {
+  } catch (_err) {
     return '';
   }
 }

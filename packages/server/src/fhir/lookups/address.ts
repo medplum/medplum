@@ -1,5 +1,5 @@
 import { formatAddress } from '@medplum/core';
-import { Address, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
 
@@ -8,6 +8,22 @@ import { LookupTable } from './lookuptable';
  * Each Address is represented as a separate row in the "Address" table.
  */
 export class AddressTable extends LookupTable {
+  private static readonly resourceTypes = [
+    'Patient',
+    'Person',
+    'Practitioner',
+    'RelatedPerson',
+    'InsurancePlan',
+    'Location',
+    'Organization',
+  ] as const;
+
+  private static readonly resourceTypeSet = new Set(this.resourceTypes);
+
+  private static hasAddress(resourceType: ResourceType): resourceType is (typeof AddressTable.resourceTypes)[number] {
+    return AddressTable.resourceTypeSet.has(resourceType as any);
+  }
+
   private static readonly knownParams: Set<string> = new Set<string>([
     'individual-address',
     'individual-address-city',
@@ -85,7 +101,7 @@ export class AddressTable extends LookupTable {
    * @returns Promise on completion.
    */
   async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!create) {
+    if (!create && AddressTable.hasAddress(resource.resourceType)) {
       await this.deleteValuesForResource(client, resource);
     }
 
@@ -110,30 +126,24 @@ export class AddressTable extends LookupTable {
   }
 
   private getIncomingAddresses(resource: Resource): Address[] | undefined {
-    if (
-      resource.resourceType === 'Patient' ||
-      resource.resourceType === 'Person' ||
-      resource.resourceType === 'Practitioner' ||
-      resource.resourceType === 'RelatedPerson'
-    ) {
-      return resource.address;
+    if (!AddressTable.hasAddress(resource.resourceType)) {
+      return undefined;
     }
 
-    if (resource.resourceType === 'InsurancePlan') {
-      return resource.contact?.map((contact) => contact.address).filter((address) => !!address) as
-        | Address[]
-        | undefined;
+    switch (resource.resourceType) {
+      case 'Patient':
+      case 'Person':
+      case 'Practitioner':
+      case 'RelatedPerson':
+      case 'Organization':
+        return resource.address;
+      case 'InsurancePlan':
+        return resource.contact?.map((contact) => contact.address).filter((address) => !!address);
+      case 'Location':
+        return resource.address ? [resource.address] : undefined;
+      default:
+        resource.resourceType satisfies never;
+        return undefined;
     }
-
-    if (resource.resourceType === 'Location') {
-      return resource.address ? [resource.address] : undefined;
-    }
-
-    if (resource.resourceType === 'Organization') {
-      return resource.address;
-    }
-
-    // This resource does not have any address properties
-    return undefined;
   }
 }

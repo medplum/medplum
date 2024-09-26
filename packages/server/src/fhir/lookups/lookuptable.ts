@@ -7,11 +7,12 @@ import {
   Conjunction,
   DeleteQuery,
   Disjunction,
-  Exists,
   Expression,
+  SqlFunction,
   InsertQuery,
   Negation,
   SelectQuery,
+  escapeLikeString,
 } from '../sql';
 
 /**
@@ -69,7 +70,9 @@ export abstract class LookupTable {
       if (filter.operator === FhirOperator.EXACT) {
         disjunction.expressions.push(new Condition(new Column(lookupTableName, columnName), '=', option.trim()));
       } else if (filter.operator === FhirOperator.CONTAINS) {
-        disjunction.expressions.push(new Condition(new Column(lookupTableName, columnName), 'LIKE', `%${option}%`));
+        disjunction.expressions.push(
+          new Condition(new Column(lookupTableName, columnName), 'LIKE', `%${escapeLikeString(option)}%`)
+        );
       } else {
         disjunction.expressions.push(
           new Condition(
@@ -86,7 +89,7 @@ export abstract class LookupTable {
       }
     }
 
-    const exists = new Exists(
+    const exists = new SqlFunction('EXISTS', [
       new SelectQuery(lookupTableName)
         .column('resourceId')
         .whereExpr(
@@ -94,8 +97,8 @@ export abstract class LookupTable {
             new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
             disjunction,
           ])
-        )
-    );
+        ),
+    ]);
 
     if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
       return new Negation(exists);
@@ -115,7 +118,8 @@ export abstract class LookupTable {
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
     const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
-    selectQuery.innerJoin(
+    selectQuery.join(
+      'INNER JOIN',
       new SelectQuery(lookupTableName).distinctOn('resourceId').column('resourceId').column(columnName),
       joinName,
       joinOnExpression
