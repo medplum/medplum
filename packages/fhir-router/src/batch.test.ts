@@ -569,9 +569,60 @@ describe('Batch', () => {
     expect(results.length).toEqual(3);
     expect(results[0].response?.status).toEqual('200');
     expect(results[1].response?.status).toEqual('400');
-    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch body must be an array');
+    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
     expect(results[2].response?.status).toEqual('400');
-    expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch body must be an array');
+    expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
+  });
+
+  test('Process batch patch Parameters', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+    });
+
+    const bundle = await processBatch(req, repo, router, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          // Entry 1: Simple patch (success)
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'op', valueCode: 'add' },
+                  { name: 'path', valueString: '/active' },
+                  { name: 'value', valueString: 'true' },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          // Entry 2: Empty body (error)
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+          },
+          resource: {
+            resourceType: 'Parameters',
+          },
+        },
+      ],
+    });
+    expect(bundle).toBeDefined();
+    expect(bundle.entry).toBeDefined();
+
+    const results = bundle.entry as BundleEntry[];
+    expect(results.length).toEqual(2);
+    expect(results[0].response?.status).toEqual('200');
+    expect(results[1].response?.status).toEqual('400');
+    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
   });
 
   test('JSONPath error messages', async () => {
@@ -692,7 +743,7 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Patch entry must include a Binary resource'
+      'Patch entry must include a Binary or Parameters resource'
     );
   });
 
@@ -719,7 +770,7 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Patch entry must include a Binary resource'
+      'Patch entry must include a Binary or Parameters resource'
     );
   });
 

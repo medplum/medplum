@@ -9,7 +9,14 @@ import {
   normalizeOperationOutcome,
   notFound,
 } from '@medplum/core';
-import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  BundleEntryRequest,
+  OperationOutcome,
+  ParametersParameter,
+  Resource,
+} from '@medplum/fhirtypes';
 import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
 import { FhirRepository } from './repo';
 import { HttpMethod, RouteResult } from './urlrouter';
@@ -459,19 +466,72 @@ class BatchProcessor {
 
   private parsePatchBody(entry: BundleEntry): any {
     const patchResource = entry.resource;
-    if (patchResource?.resourceType !== 'Binary') {
-      throw new OperationOutcomeError(badRequest('Patch entry must include a Binary resource'));
-    }
-    if (!patchResource.data) {
-      throw new OperationOutcomeError(badRequest('Missing entry.resource.data'));
+    let body: any[] | undefined;
+    if (patchResource?.resourceType === 'Binary') {
+      if (!patchResource.data) {
+        throw new OperationOutcomeError(badRequest('Missing entry.resource.data'));
+      }
+
+      body = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
+    } else if (patchResource?.resourceType === 'Parameters') {
+      if (patchResource.parameter) {
+        body = [];
+        for (const param of patchResource.parameter) {
+          if (param.name === 'operation') {
+            const op = this.parsePatchParameter(param);
+            body.push(op);
+          }
+        }
+      }
+    } else {
+      throw new OperationOutcomeError(badRequest('Patch entry must include a Binary or Parameters resource'));
     }
 
-    const body = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
     if (!Array.isArray(body)) {
-      throw new OperationOutcomeError(badRequest('Patch body must be an array'));
+      throw new OperationOutcomeError(badRequest('Decoded PATCH body must be an array'));
     }
 
     return this.rewriteIdsInArray(body);
+  }
+
+  private parsePatchParameter(param: ParametersParameter): Record<string, any> {
+    const operation = param.part?.find((p) => p.name === 'op')?.valueCode;
+    if (!operation) {
+      // FHIRPatch will also use Parameters; however, it uses `name = 'type'`
+      // We can use this to disambiguate the two in the future
+      throw new OperationOutcomeError(badRequest('PATCH Parameters missing op'));
+    }
+
+    const op: Record<string, any> = { op: operation };
+    switch (operation) {
+      case 'add':
+      case 'replace':
+      case 'test':
+        // part is guaranteed to be defined, since that's where operation was found
+        for (const part of param.part as ParametersParameter[]) {
+          if (part.name === 'path') {
+            op.path = part.valueString;
+          } else if (part.name === 'value') {
+            op.value = JSON.parse(part.valueString ?? '');
+          }
+        }
+        break;
+      case 'copy':
+      case 'move':
+        for (const part of param.part as ParametersParameter[]) {
+          if (part.name === 'path') {
+            op.path = part.valueString;
+          } else if (part.name === 'from') {
+            op.from = part.valueString;
+          }
+        }
+        break;
+      case 'remove':
+        op.path = param.part?.find((p) => p.name === 'path')?.valueString;
+        break;
+    }
+
+    return op;
   }
 
   private rewriteIds(input: any): any {
