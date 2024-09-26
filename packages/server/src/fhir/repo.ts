@@ -2301,7 +2301,8 @@ export function getLookupTable(resourceType: string, searchParam: SearchParamete
   return undefined;
 }
 
-const REDIS_CACHE_EX_SECONDS = 5 * 60; // 5 minutes in seconds
+const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
+const PROFILE_CACHE_EX_SECONDS = 5 * 60; // 5 minutes in seconds
 
 /**
  * Returns the redis cache key for the given resource type and resource ID.
@@ -2326,7 +2327,7 @@ async function cacheProfile(profile: StructureDefinition): Promise<void> {
     getProfileCacheKey(profile.meta?.project as string, profile.url),
     JSON.stringify({ resource: profile, projectId: profile.meta?.project }),
     'EX',
-    REDIS_CACHE_EX_SECONDS
+    PROFILE_CACHE_EX_SECONDS
   );
 }
 
