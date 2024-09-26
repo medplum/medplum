@@ -132,7 +132,7 @@ is required to represent these actions in a batch request. The [FHIR recommended
 for this use case is to [base64 encode](https://datatracker.ietf.org/doc/html/rfc4648#section-4) the JSON patch array
 and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
 
-```json
+```js
 {
   "request": {
     "method": "PATCH",
@@ -141,6 +141,7 @@ and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
   "resource": "resource": {
     "resourceType": "Binary",
     "contentType": "application/json-patch+json",
+    // Encoded: [{"op":"test","path":"/active","value":false}]
     "data": "W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9hY3RpdmUiLCJ2YWx1ZSI6ZmFsc2V9XQo="
   },
 }
