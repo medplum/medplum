@@ -600,6 +600,14 @@ describe('Batch', () => {
                   { name: 'value', valueString: 'true' },
                 ],
               },
+              {
+                name: 'operation',
+                part: [
+                  { name: 'op', valueCode: 'add' },
+                  { name: 'path', valueString: '/name' },
+                  { name: 'value', valueString: '[{"given":["Dave"],"family":"Smith"}]' },
+                ],
+              },
             ],
           },
         },
@@ -621,6 +629,8 @@ describe('Batch', () => {
     const results = bundle.entry as BundleEntry[];
     expect(results.length).toEqual(2);
     expect(results[0].response?.status).toEqual('200');
+    const updatedPatient = results[0].resource as Patient;
+    expect(updatedPatient.name?.[0]?.given?.[0]).toEqual('Dave');
     expect(results[1].response?.status).toEqual('400');
     expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
   });
