@@ -577,6 +577,7 @@ describe('Batch', () => {
   test('Process batch patch Parameters', async () => {
     const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
+      gender: 'unknown',
     });
 
     const bundle = await processBatch(req, repo, router, {
@@ -596,16 +597,23 @@ describe('Batch', () => {
                 name: 'operation',
                 part: [
                   { name: 'op', valueCode: 'add' },
-                  { name: 'path', valueString: '/active' },
-                  { name: 'value', valueString: 'true' },
+                  { name: 'path', valueString: '/name' },
+                  { name: 'value', valueString: '[{"given":["Dave"],"family":"Smith"}]' },
                 ],
               },
               {
                 name: 'operation',
                 part: [
-                  { name: 'op', valueCode: 'add' },
-                  { name: 'path', valueString: '/name' },
-                  { name: 'value', valueString: '[{"given":["Dave"],"family":"Smith"}]' },
+                  { name: 'op', valueCode: 'copy' },
+                  { name: 'from', valueString: '/name/0/family' },
+                  { name: 'path', valueString: '/name/0/given/-' },
+                ],
+              },
+              {
+                name: 'operation',
+                part: [
+                  { name: 'op', valueCode: 'remove' },
+                  { name: 'path', valueString: '/gender' },
                 ],
               },
             ],
@@ -630,7 +638,8 @@ describe('Batch', () => {
     expect(results.length).toEqual(2);
     expect(results[0].response?.status).toEqual('200');
     const updatedPatient = results[0].resource as Patient;
-    expect(updatedPatient.name?.[0]?.given?.[0]).toEqual('Dave');
+    expect(updatedPatient.name?.[0]?.given).toEqual(['Dave', 'Smith']);
+    expect(updatedPatient.gender).toBeUndefined();
     expect(results[1].response?.status).toEqual('400');
     expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
   });
