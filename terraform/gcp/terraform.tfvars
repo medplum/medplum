@@ -7,9 +7,9 @@ zone       = "us-west1-a"
 services_api = [
   "compute.googleapis.com",
   "container.googleapis.com",
+  "servicenetworking.googleapis.com",
   # "sql-component.googleapis.com",
   # "sqladmin.googleapis.com",
-  # "servicenetworking.googleapis.com",
   # "logging.googleapis.com",
   # "monitoring.googleapis.com",
 ]
@@ -27,3 +27,5 @@ vpc_name = "medplum-gke-vpc"
 ## Postgres
 pg_ha_name = "medplum-pg-ha"
 
+# Private Service
+psa_range = "192.168.30.0/24"

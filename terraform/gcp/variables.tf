@@ -35,3 +35,16 @@ variable "pg_ha_name" {
   description = "The name for the HA Postgres instance"
   type        = string
 }
+
+# Private Service
+variable "psa_range_name" {
+  description = "name of the private allocated range"
+  type        = string
+  default     = "priv-ip-alloc"
+}
+
+variable "psa_range" {
+  description = "First IP address of the IP range to allocate to CLoud SQL instances and other Private Service Access services. If not set, GCP will pick a valid one for you."
+  type        = string
+  default     = ""
+}

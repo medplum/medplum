@@ -24,7 +24,7 @@ module "sql-db" {
     ipv4_enabled                                  = false
     ssl_mode                                      = "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
     private_network                               = module.vpc.network_self_link
-    allocated_ip_range                            = module.vpc.subnets["us-west1/medplum-us-west1-sn-sql-01"].ip_cidr_range
+    allocated_ip_range                            = var.psa_range_name
     authorized_networks                           = []
     enable_private_path_for_google_cloud_services = true
   }
@@ -43,4 +43,6 @@ module "sql-db" {
   db_name      = var.pg_ha_name
   db_charset   = "UTF8"
   db_collation = "en_US.UTF8"
+
+  depends_on = [google_service_networking_connection.private_service_access]
 }
