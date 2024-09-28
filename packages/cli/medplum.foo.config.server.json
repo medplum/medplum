@@ -1,0 +1,8 @@
+{
+  "port": 8103,
+  "baseUrl": "https://api.test.example.com/",
+  "appBaseUrl": "https://app.test.example.com/",
+  "storageBaseUrl": "https://storage.test.example.com/binary/",
+  "binaryStorage": "s3:storage.test.example.com",
+  "supportEmail": "support@example.com"
+}

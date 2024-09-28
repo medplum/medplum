@@ -318,7 +318,7 @@ export async function resolveAgentReference(
   options: Record<string, string>
 ): Promise<Reference<Agent>> {
   if (!(agentId || options.criteria)) {
-    throw new Error('The `ping` command requires either an [agentId] or a --criteria <criteria> flag');
+    throw new Error('This command requires either an [agentId] or a --criteria <criteria> flag');
   }
   if (agentId && options.criteria) {
     throw new Error(
