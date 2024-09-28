@@ -65,8 +65,7 @@ describe('Agent CLI', () => {
   describe('Agent `status` command', () => {
     test('No command args', async () => {
       await expect(main(['node', 'index.js', 'agent', 'status'])).rejects.toThrow('Process exited with exit code 1');
-      expect(processError).toHaveBeenNthCalledWith(
-        1,
+      expect(processError).toHaveBeenCalledWith(
         expect.stringContaining('Error: Either an [agentId...] arg or a --criteria <criteria> flag is required')
       );
     });
@@ -89,8 +88,7 @@ describe('Agent CLI', () => {
         });
 
         await expect(main(['node', 'index.js', 'agent', 'status', agentId])).resolves.toBeUndefined();
-        expect(medplumGetSpy).toHaveBeenNthCalledWith(
-          2,
+        expect(medplumGetSpy).toHaveBeenCalledWith(
           medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`),
           expect.objectContaining({ cache: 'reload' })
         );
@@ -131,8 +129,7 @@ describe('Agent CLI', () => {
         await expect(
           main(['node', 'index.js', 'agent', 'status', agentId, '--output', 'json'])
         ).resolves.toBeUndefined();
-        expect(medplumGetSpy).toHaveBeenNthCalledWith(
-          1,
+        expect(medplumGetSpy).toHaveBeenCalledWith(
           medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`),
           expect.objectContaining({ cache: 'reload' })
         );
@@ -173,8 +170,7 @@ describe('Agent CLI', () => {
         });
 
         await expect(main(['node', 'index.js', 'agent', 'status', agentId])).resolves.toBeUndefined();
-        expect(medplumGetSpy).toHaveBeenNthCalledWith(
-          2,
+        expect(medplumGetSpy).toHaveBeenCalledWith(
           medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`),
           expect.objectContaining({ cache: 'reload' })
         );
@@ -237,9 +233,8 @@ describe('Agent CLI', () => {
         });
 
         await expect(main(['node', 'index.js', 'agent', 'status', ...agentIds])).resolves.toBeUndefined();
-        expect(medplumGetSpy).toHaveBeenNthCalledWith(
-          1,
-          medplum.fhirUrl(`Agent/$bulk-status?_id=${agentIds.join(',')}`),
+        expect(medplumGetSpy).toHaveBeenCalledWith(
+          medplum.fhirUrl('Agent', `$bulk-status?_id=${encodeURIComponent(agentIds.join(','))}`),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -303,8 +298,7 @@ describe('Agent CLI', () => {
         await expect(
           main(['node', 'index.js', 'agent', 'status', '--criteria', 'Agent?name=Test Agent'])
         ).resolves.toBeUndefined();
-        expect(medplumGetSpy).toHaveBeenNthCalledWith(
-          1,
+        expect(medplumGetSpy).toHaveBeenCalledWith(
           medplum.fhirUrl('Agent/$bulk-status?name=Test+Agent'),
           expect.objectContaining({ cache: 'reload' })
         );
@@ -328,8 +322,7 @@ describe('Agent CLI', () => {
   describe('Agent `ping` command', () => {
     test('No command args', async () => {
       await expect(main(['node', 'index.js', 'agent', 'ping'])).rejects.toThrow('Process exited with exit code 1');
-      expect(processError).toHaveBeenNthCalledWith(
-        1,
+      expect(processError).toHaveBeenCalledWith(
         expect.stringContaining("error: missing required argument 'ipOrDomain'")
       );
     });
@@ -338,8 +331,7 @@ describe('Agent CLI', () => {
       await expect(main(['node', 'index.js', 'agent', 'ping', '8.8.8.8'])).rejects.toThrow(
         'Process exited with exit code 1'
       );
-      expect(processError).toHaveBeenNthCalledWith(
-        1,
+      expect(processError).toHaveBeenCalledWith(
         expect.stringContaining('requires either an [agentId] or a --criteria <criteria> flag')
       );
     });
@@ -533,10 +525,7 @@ describe('Agent CLI', () => {
   describe('Agent `push` command', () => {
     test('No command args', async () => {
       await expect(main(['node', 'index.js', 'agent', 'push'])).rejects.toThrow('Process exited with exit code 1');
-      expect(processError).toHaveBeenNthCalledWith(
-        1,
-        expect.stringContaining("error: missing required argument 'deviceId'")
-      );
+      expect(processError).toHaveBeenCalledWith(expect.stringContaining("error: missing required argument 'deviceId'"));
     });
 
     test('No message or agent', async () => {
@@ -544,10 +533,7 @@ describe('Agent CLI', () => {
       await expect(main(['node', 'index.js', 'agent', 'push', device.id as string])).rejects.toThrow(
         'Process exited with exit code 1'
       );
-      expect(processError).toHaveBeenNthCalledWith(
-        1,
-        expect.stringContaining("error: missing required argument 'message'")
-      );
+      expect(processError).toHaveBeenCalledWith(expect.stringContaining("error: missing required argument 'message'"));
     });
 
     test('No agent selected', async () => {
@@ -555,11 +541,8 @@ describe('Agent CLI', () => {
       await expect(main(['node', 'index.js', 'agent', 'push', device.id as string, EXAMPLE_HL7_MSG])).rejects.toThrow(
         'Process exited with exit code 1'
       );
-      expect(processError).toHaveBeenNthCalledWith(
-        1,
-        expect.stringContaining(
-          'Error: The `ping` command requires either an [agentId] or a --criteria <criteria> flag'
-        )
+      expect(processError).toHaveBeenCalledWith(
+        expect.stringContaining('Error: This command requires either an [agentId] or a --criteria <criteria> flag')
       );
     });
 
@@ -922,7 +905,7 @@ describe('Agent CLI', () => {
 
         await expect(main(['node', 'index.js', 'agent', 'reload-config', ...agentIds])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$reload-config?_id=${agentIds.join(',')}`),
+          medplum.fhirUrl('Agent', `$reload-config?_id=${encodeURIComponent(agentIds.join(','))}`),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
