@@ -149,7 +149,7 @@ agentPushCommand
         { reference: `Device/${deviceId}` },
         message,
         options.contentType,
-        !options.noWait,
+        options.wait !== false,
         { maxRetries: 0 }
       )) as string;
     } catch (err) {
@@ -243,7 +243,7 @@ export async function callAgentBulkOperation<
   }
 
   if (options.output === 'json') {
-    console.log(JSON.stringify(result, null, 2));
+    console.info(JSON.stringify(result, null, 2));
     return;
   }
 
@@ -299,15 +299,15 @@ export async function callAgentBulkOperation<
     failedRows.push(row);
   }
 
-  console.log();
-  console.log(`${successfulRows.length} successful response(s):`);
-  console.log();
+  console.info();
+  console.info(`${successfulRows.length} successful response(s):`);
+  console.info();
   console.table(successfulRows.length ? successfulRows : 'No successful responses received');
-  console.log();
+  console.info();
 
   if (failedRows.length) {
-    console.log(`${failedRows.length} failed response(s):`);
-    console.log();
+    console.info(`${failedRows.length} failed response(s):`);
+    console.info();
     console.table(failedRows);
   }
 }

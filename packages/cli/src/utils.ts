@@ -315,15 +315,41 @@ export function addSubcommand(command: Command, subcommand: Command): void {
 
 export class MedplumCommand extends Command {
   action(fn: (...args: any[]) => void | Promise<void>): this {
+    // This is the only way to get both global and local options propagated to all subcommands automatically
+    // Otherwise you have to call `command.optsWithGlobals()` within every function to get merged global and local options
     const wrappedFn = withMergedOptions(this, fn);
     // @ts-expect-error Access to hidden member
+    // This is the function that gets called when a command is executed
+    // We overwrite it with the wrapped version
     super._actionHandler = wrappedFn;
     return this;
+  }
+
+  /**
+   * We use this method to reset the option state
+   * Which is not cleared between executions of the main function during tests
+   *
+   * This is because all of our subcommands are declared in global state
+   *
+   * Rather than re-architect the entire CLI package, I added this to make sure all options are reset between executions of main
+   */
+  resetOptionDefaults(): void {
+    // @ts-expect-error Overriding private field
+    this._optionValues = {};
+    for (const option of this.options) {
+      // So we also set options that default to false
+      // We explicitly check strict equality to undefined
+      if (option.defaultValue) {
+        // We use the attributeName since that's the camelCase'd name that is used to access options
+        // @ts-expect-error Overriding private field
+        this._optionValues[option.attributeName()] = option.defaultValue;
+      }
+    }
   }
 }
 
 export function withMergedOptions(
-  command: Command,
+  command: MedplumCommand,
   fn: ((...args: any[]) => Promise<void>) | ((...args: any[]) => void)
 ): (args: any[]) => Promise<void> {
   // The .action callback takes an extra parameter which is the command or options.
@@ -334,9 +360,15 @@ export function withMergedOptions(
     return new Promise((resolve, reject) => {
       const result = fn(...actionArgs);
       if (isPromise(result)) {
-        result.then(resolve).catch(reject);
+        result
+          .then(resolve)
+          .then(() => {
+            command.resetOptionDefaults();
+          })
+          .catch(reject);
       } else {
         resolve();
+        command.resetOptionDefaults();
       }
     });
   };
