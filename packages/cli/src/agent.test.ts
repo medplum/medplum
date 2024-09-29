@@ -1,4 +1,10 @@
-import { allOk, ContentType, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import {
+  allOk,
+  badRequest,
+  ContentType,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+} from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Agent, Bundle, Parameters, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -28,6 +34,7 @@ describe('Agent CLI', () => {
   let processError: jest.SpyInstance;
   let consoleTableSpy: jest.SpyInstance;
   let consoleInfoSpy: jest.SpyInstance;
+  let consoleErrorSpy: jest.SpyInstance;
   let medplum: MockClient;
   let medplumGetSpy: jest.SpyInstance;
 
@@ -37,8 +44,8 @@ describe('Agent CLI', () => {
     }) as unknown as typeof process.exit;
     processError = jest.spyOn(process.stderr, 'write').mockImplementation(jest.fn());
     consoleTableSpy = jest.spyOn(console, 'table').mockImplementation(jest.fn());
-    console.info = jest.fn();
-    consoleInfoSpy = jest.spyOn(console, 'info');
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(jest.fn());
+    consoleInfoSpy = jest.spyOn(console, 'info').mockImplementation(jest.fn());
 
     indexSearchParameterBundle(readJson('fhir/r4/profiles-types.json') as Bundle<SearchParameter>);
     indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
@@ -188,6 +195,56 @@ describe('Agent CLI', () => {
           }),
         ]);
       });
+
+      test('Status failed for one of the agents', async () => {
+        const agentId = randomUUID();
+        const agent = await medplum.createResource({
+          id: agentId,
+          resourceType: 'Agent',
+          name: 'Test Agent 1',
+          status: 'active',
+        });
+        medplum.router.router.add('GET', 'Agent/$bulk-status', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: [
+                {
+                  resource: {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      { name: 'agent', resource: agent },
+                      {
+                        name: 'result',
+                        resource: badRequest('Something bad happened'),
+                      },
+                    ],
+                  },
+                },
+              ],
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(main(['node', 'index.js', 'agent', 'status', agentId])).resolves.toBeUndefined();
+        expect(medplumGetSpy).toHaveBeenCalledWith(
+          medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`),
+          expect.objectContaining({ cache: 'reload' })
+        );
+        expect(processError).not.toHaveBeenCalled();
+        expect(consoleInfoSpy).toHaveBeenCalledWith('1 failed response(s):');
+        expect(consoleTableSpy).toHaveBeenCalledWith([
+          expect.objectContaining({
+            id: agentId,
+            name: 'Test Agent 1',
+            severity: 'error',
+            code: 'invalid',
+            details: 'Something bad happened',
+          }),
+        ]);
+      });
     });
 
     describe('List of agent IDs', () => {
@@ -315,6 +372,69 @@ describe('Agent CLI', () => {
             statusLastUpdated: 'N/A',
           }))
         );
+      });
+
+      test('Invalid criteria', async () => {
+        const agentIds = [randomUUID(), randomUUID(), randomUUID()];
+        const agents: Agent[] = await Promise.all(
+          agentIds.map(async (id, i) =>
+            medplum.createResource({
+              id,
+              resourceType: 'Agent',
+              name: `Test Agent ${i + 1}`,
+              status: 'active',
+            })
+          )
+        );
+
+        medplum.router.router.add('GET', 'Agent/$bulk-status', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: agents.map((agent) => ({
+                resource: {
+                  resourceType: 'Parameters',
+                  parameter: [
+                    { name: 'agent', resource: agent },
+                    {
+                      name: 'result',
+                      resource: {
+                        resourceType: 'Parameters',
+                        parameter: [
+                          { name: 'status', valueString: 'unknown' },
+                          { name: 'version', valueString: 'unknown' },
+                        ],
+                      } satisfies Parameters,
+                    },
+                  ],
+                },
+              })),
+            } satisfies Bundle,
+          ];
+        });
+
+        const INVALID_CRITERIA = [
+          'name=Test Agent',
+          'DiagnosticReport?name=Test Agent',
+          'Agent?',
+          'Agent',
+          'Agent?broken',
+          Symbol('AGENT'), // Not really possible in user land but using this to get coverage on the constructor throwing for `URLSearchParams`
+        ];
+        for (const criteria of INVALID_CRITERIA) {
+          // @ts-expect-error Broken because of the symbol value at the end of the array
+          await expect(main(['node', 'index.js', 'agent', 'status', '--criteria', criteria])).rejects.toThrow(
+            'Process exited with exit code 1'
+          );
+          expect(medplumGetSpy).not.toHaveBeenCalled();
+          expect(processError).toHaveBeenCalledWith(
+            expect.stringContaining(
+              "Error: Criteria must be formatted as a string containing the resource type (Agent) followed by a '?' and valid URL search query params, eg. `Agent?name=Test Agent`"
+            )
+          );
+        }
       });
     });
   });
@@ -494,7 +614,7 @@ describe('Agent CLI', () => {
       });
     });
 
-    test('Invalid response from agent', async () => {
+    test('Invalid response from agent -- verbose mode enabled', async () => {
       const agentId = randomUUID();
       await medplum.createResource({
         id: agentId,
@@ -506,19 +626,19 @@ describe('Agent CLI', () => {
         throw new Error('Invalid response!');
       });
       await expect(
-        main(['node', 'index.js', 'agent', 'ping', '8.8.8.8', '--criteria', 'Agent?name=Test Agent', '--count', '4'])
+        main(['node', 'index.js', 'agent', 'ping', '8.8.8.8', '--criteria', 'Agent?name=Test Agent', '--verbose'])
       ).rejects.toThrow('Process exited with exit code 1');
       expect(medplumPushSpy).toHaveBeenCalledWith(
         { reference: `Agent/${agentId}` } satisfies Reference<Agent>,
         '8.8.8.8',
-        'PING 4',
+        'PING 1',
         ContentType.PING,
         true,
         expect.objectContaining({ maxRetries: 0 })
       );
-      expect(processError).toHaveBeenCalledWith(
-        expect.stringContaining('Unexpected response from agent while pinging')
-      );
+      expect(processError).not.toHaveBeenCalled();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(new Error('Unexpected response from agent while pinging'));
+      expect(consoleErrorSpy).toHaveBeenCalledWith(new Error('Invalid response!'));
     });
   });
 
@@ -906,6 +1026,272 @@ describe('Agent CLI', () => {
         await expect(main(['node', 'index.js', 'agent', 'reload-config', ...agentIds])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
           medplum.fhirUrl('Agent', `$reload-config?_id=${encodeURIComponent(agentIds.join(','))}`),
+          expect.objectContaining({ cache: 'reload' })
+        );
+        expect(processError).not.toHaveBeenCalled();
+      });
+
+      test('Both IDs and criteria present', async () => {
+        const agentIds = [randomUUID(), randomUUID(), randomUUID()];
+        const agents: Agent[] = await Promise.all(
+          agentIds.map((id, i) =>
+            medplum.createResource({
+              id,
+              resourceType: 'Agent',
+              name: `Test Agent ${i + 1}`,
+              status: 'active',
+            })
+          )
+        );
+
+        medplum.router.router.add('GET', 'Agent/$reload-config', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: agents.map((agent) => ({
+                resource: {
+                  resourceType: 'Parameters',
+                  parameter: [
+                    { name: 'agent', resource: agent },
+                    {
+                      name: 'result',
+                      resource: allOk,
+                    },
+                  ],
+                },
+              })),
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(
+          main(['node', 'index.js', 'agent', 'reload-config', ...agentIds, '--criteria', 'Agent?name=Test Agent'])
+        ).rejects.toThrow('Process exited with exit code 1');
+        expect(medplumGetSpy).not.toHaveBeenCalled();
+        expect(processError).toHaveBeenCalledWith(
+          expect.stringContaining(
+            'Error: Ambiguous arguments and options combination; [agentIds...] arg and --criteria <criteria> flag are mutually exclusive'
+          )
+        );
+      });
+
+      test('Invalid ID in agent list', async () => {
+        const agentIds = [randomUUID(), 'asdad', randomUUID()];
+        const agents: Agent[] = await Promise.all(
+          agentIds.map((id, i) =>
+            medplum.createResource({
+              id,
+              resourceType: 'Agent',
+              name: `Test Agent ${i + 1}`,
+              status: 'active',
+            })
+          )
+        );
+
+        medplum.router.router.add('GET', 'Agent/$reload-config', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: agents.map((agent) => ({
+                resource: {
+                  resourceType: 'Parameters',
+                  parameter: [
+                    { name: 'agent', resource: agent },
+                    {
+                      name: 'result',
+                      resource: allOk,
+                    },
+                  ],
+                },
+              })),
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(main(['node', 'index.js', 'agent', 'reload-config', ...agentIds])).rejects.toThrow(
+          'Process exited with exit code 1'
+        );
+        expect(medplumGetSpy).not.toHaveBeenCalled();
+        expect(processError).toHaveBeenCalledWith(expect.stringContaining("Input 'asdad' is not a valid agentId"));
+      });
+    });
+
+    describe('By criteria', () => {
+      test('Basic case', async () => {
+        const agentId = randomUUID();
+        const agent = await medplum.createResource({
+          id: agentId,
+          resourceType: 'Agent',
+          name: 'Test Agent 1',
+          status: 'active',
+        } satisfies Agent);
+
+        medplum.router.router.add('GET', 'Agent/$reload-config', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: [
+                {
+                  resource: {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      { name: 'agent', resource: agent },
+                      {
+                        name: 'result',
+                        resource: allOk,
+                      },
+                    ],
+                  },
+                },
+              ],
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(
+          main(['node', 'index.js', 'agent', 'reload-config', '--criteria', 'Agent?name=Test Agent'])
+        ).resolves.toBeUndefined();
+        expect(medplumGetSpy).toHaveBeenCalledWith(
+          medplum.fhirUrl('Agent', `$reload-config?_id=${agentId}`),
+          expect.objectContaining({ cache: 'reload' })
+        );
+        expect(processError).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe('Agent `upgrade` command', () => {
+    describe('By ID', () => {
+      test('One agent upgraded by ID', async () => {
+        const agentId = randomUUID();
+        const agent = await medplum.createResource({
+          id: agentId,
+          resourceType: 'Agent',
+          name: 'Test Agent 1',
+          status: 'active',
+        } satisfies Agent);
+
+        medplum.router.router.add('GET', 'Agent/$upgrade', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: [
+                {
+                  resource: {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      { name: 'agent', resource: agent },
+                      {
+                        name: 'result',
+                        resource: allOk,
+                      },
+                    ],
+                  },
+                },
+              ],
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(main(['node', 'index.js', 'agent', 'upgrade', agentId])).resolves.toBeUndefined();
+        expect(medplumGetSpy).toHaveBeenCalledWith(
+          medplum.fhirUrl('Agent', `$upgrade?_id=${agentId}`),
+          expect.objectContaining({ cache: 'reload' })
+        );
+        expect(processError).not.toHaveBeenCalled();
+      });
+
+      test('Multiple agents upgraded by ID', async () => {
+        const agentIds = [randomUUID(), randomUUID(), randomUUID()];
+        const agents: Agent[] = await Promise.all(
+          agentIds.map((id, i) =>
+            medplum.createResource({
+              id,
+              resourceType: 'Agent',
+              name: `Test Agent ${i + 1}`,
+              status: 'active',
+            })
+          )
+        );
+
+        medplum.router.router.add('GET', 'Agent/$upgrade', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: agents.map((agent) => ({
+                resource: {
+                  resourceType: 'Parameters',
+                  parameter: [
+                    { name: 'agent', resource: agent },
+                    {
+                      name: 'result',
+                      resource: allOk,
+                    },
+                  ],
+                },
+              })),
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(main(['node', 'index.js', 'agent', 'upgrade', ...agentIds])).resolves.toBeUndefined();
+        expect(medplumGetSpy).toHaveBeenCalledWith(
+          medplum.fhirUrl('Agent', `$upgrade?_id=${encodeURIComponent(agentIds.join(','))}`),
+          expect.objectContaining({ cache: 'reload' })
+        );
+        expect(processError).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('By criteria', () => {
+      test('Basic case', async () => {
+        const agentId = randomUUID();
+        const agent = await medplum.createResource({
+          id: agentId,
+          resourceType: 'Agent',
+          name: 'Test Agent 1',
+          status: 'active',
+        } satisfies Agent);
+
+        medplum.router.router.add('GET', 'Agent/$upgrade', async () => {
+          return [
+            allOk,
+            {
+              resourceType: 'Bundle',
+              type: 'collection',
+              entry: [
+                {
+                  resource: {
+                    resourceType: 'Parameters',
+                    parameter: [
+                      { name: 'agent', resource: agent },
+                      {
+                        name: 'result',
+                        resource: allOk,
+                      },
+                    ],
+                  },
+                },
+              ],
+            } satisfies Bundle,
+          ];
+        });
+
+        await expect(
+          main(['node', 'index.js', 'agent', 'upgrade', '--criteria', 'Agent?name=Test Agent'])
+        ).resolves.toBeUndefined();
+        expect(medplumGetSpy).toHaveBeenCalledWith(
+          medplum.fhirUrl('Agent', `$upgrade?_id=${agentId}`),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();

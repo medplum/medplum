@@ -472,7 +472,7 @@ function assertValidAgentCriteria(criteria: string): void {
     throw new Error(invalidCriteriaMsg);
   }
   const [resourceType, queryStr] = criteria.split('?');
-  if (resourceType !== 'Agent') {
+  if (resourceType !== 'Agent' || !queryStr) {
     throw new Error(invalidCriteriaMsg);
   }
   try {
@@ -480,5 +480,8 @@ function assertValidAgentCriteria(criteria: string): void {
     new URLSearchParams(queryStr);
   } catch (err) {
     throw new Error(invalidCriteriaMsg, { cause: err });
+  }
+  if (!queryStr.includes('=')) {
+    throw new Error(invalidCriteriaMsg, { cause: new Error('Query string lacks at least one `=`') });
   }
 }
