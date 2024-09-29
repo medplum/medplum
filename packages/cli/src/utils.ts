@@ -329,7 +329,7 @@ export class MedplumCommand extends Command {
    * We use this method to reset the option state
    * Which is not cleared between executions of the main function during tests
    *
-   * This is because all of our subcommands are declared in global state
+   * This is because all of our subcommands are declared in the global scope
    *
    * Rather than re-architect the entire CLI package, I added this to make sure all options are reset between executions of main
    */

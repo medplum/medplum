@@ -96,6 +96,13 @@ describe('Agent CLI', () => {
 
         await expect(main(['node', 'index.js', 'agent', 'status', agentId])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
+          // NOTE(ThatOneBro 28 Sept 2024):
+          // We have to use this pattern due to a bug in the Jest matcher, specifically on MacOS
+          // For the case of URL objects passed into `.toHaveBeenCalledWith` as an arg,
+          // Any URL object that the function was called with will match any URL object passed into the matcher
+          // This caused many tests to pass when they shouldn't have, luckily CI runs Linux and caught the broken tests
+          // This issue should be fixed in Jest 30, which is currently in alpha
+          // See: https://github.com/jestjs/jest/issues/15032
           expect.objectContaining({
             href: medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`).href,
           }),
