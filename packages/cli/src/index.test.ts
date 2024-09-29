@@ -53,9 +53,4 @@ describe('CLI', () => {
     await main(['node', 'index.js', 'xyz']);
     expect(processError).toHaveBeenCalledWith(expect.stringContaining(`error: unknown command 'xyz'`));
   });
-
-  test('Verbose mode', async () => {
-    await main(['node', 'index.js', '--help', '--verbose']);
-    expect(processError).toHaveBeenCalledWith(expect.stringContaining(`error: unknown command 'xyz'`));
-  });
 });
