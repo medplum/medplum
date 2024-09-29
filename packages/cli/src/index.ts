@@ -102,9 +102,13 @@ export function handleError(err: Error | CommanderError): void {
   if (exitCode !== 0) {
     writeErrorToStderr(err, !!process.env.VERBOSE);
     const cause = err.cause;
-    if (process.env.VERBOSE && Array.isArray(cause)) {
-      for (const err of cause as Error[]) {
-        writeErrorToStderr(err, true);
+    if (process.env.VERBOSE) {
+      if (Array.isArray(cause)) {
+        for (const err of cause as Error[]) {
+          writeErrorToStderr(err, true);
+        }
+      } else if (cause instanceof Error) {
+        writeErrorToStderr(cause, true);
       }
     }
   }
