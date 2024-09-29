@@ -58,11 +58,11 @@ describe('Agent CLI', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
-    process.env = { ...env };
     medplum = new MockClient();
-    medplumGetSpy = jest.spyOn(medplum, 'get');
-
     (createMedplumClient as unknown as jest.Mock).mockImplementation(async () => medplum);
+
+    process.env = { ...env };
+    medplumGetSpy = jest.spyOn(medplum, 'get');
   });
 
   afterEach(() => {
@@ -96,7 +96,9 @@ describe('Agent CLI', () => {
 
         await expect(main(['node', 'index.js', 'agent', 'status', agentId])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`),
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`).href,
+          }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -178,7 +180,9 @@ describe('Agent CLI', () => {
 
         await expect(main(['node', 'index.js', 'agent', 'status', agentId])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`),
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`).href,
+          }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -230,7 +234,9 @@ describe('Agent CLI', () => {
 
         await expect(main(['node', 'index.js', 'agent', 'status', agentId])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`),
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', `$bulk-status?_id=${agentId}`).href,
+          }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -291,7 +297,9 @@ describe('Agent CLI', () => {
 
         await expect(main(['node', 'index.js', 'agent', 'status', ...agentIds])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$bulk-status?_id=${encodeURIComponent(agentIds.join(','))}`),
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', `$bulk-status?_id=${encodeURIComponent(agentIds.join(','))}`).href,
+          }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -356,7 +364,9 @@ describe('Agent CLI', () => {
           main(['node', 'index.js', 'agent', 'status', '--criteria', 'Agent?name=Test Agent'])
         ).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent/$bulk-status?name=Test+Agent'),
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', '$bulk-status?name=Test+Agent').href,
+          }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -982,7 +992,9 @@ describe('Agent CLI', () => {
 
         await expect(main(['node', 'index.js', 'agent', 'reload-config', agentId])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$reload-config?_id=${agentId}`),
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', `$reload-config?_id=${agentId}`).href,
+          }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -1025,7 +1037,9 @@ describe('Agent CLI', () => {
 
         await expect(main(['node', 'index.js', 'agent', 'reload-config', ...agentIds])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$reload-config?_id=${encodeURIComponent(agentIds.join(','))}`),
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', `$reload-config?_id=${encodeURIComponent(agentIds.join(','))}`).href,
+          }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -1158,7 +1172,7 @@ describe('Agent CLI', () => {
           main(['node', 'index.js', 'agent', 'reload-config', '--criteria', 'Agent?name=Test Agent'])
         ).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$reload-config?_id=${agentId}`),
+          expect.objectContaining({ href: medplum.fhirUrl('Agent', '$reload-config?name=Test+Agent').href }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -1203,7 +1217,7 @@ describe('Agent CLI', () => {
 
         await expect(main(['node', 'index.js', 'agent', 'upgrade', agentId])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$upgrade?_id=${agentId}`),
+          expect.objectContaining({ href: medplum.fhirUrl('Agent', `$upgrade?_id=${agentId}`).href }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -1246,7 +1260,9 @@ describe('Agent CLI', () => {
 
         await expect(main(['node', 'index.js', 'agent', 'upgrade', ...agentIds])).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$upgrade?_id=${encodeURIComponent(agentIds.join(','))}`),
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', `$upgrade?_id=${encodeURIComponent(agentIds.join(','))}`).href,
+          }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
@@ -1291,7 +1307,9 @@ describe('Agent CLI', () => {
           main(['node', 'index.js', 'agent', 'upgrade', '--criteria', 'Agent?name=Test Agent'])
         ).resolves.toBeUndefined();
         expect(medplumGetSpy).toHaveBeenCalledWith(
-          medplum.fhirUrl('Agent', `$upgrade?_id=${agentId}`),
+          expect.objectContaining({
+            href: medplum.fhirUrl('Agent', '$upgrade?name=Test+Agent').href,
+          }),
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
