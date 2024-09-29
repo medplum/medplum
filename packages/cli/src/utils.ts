@@ -358,17 +358,28 @@ export function withMergedOptions(
     const actionArgs = args.slice(0, expectedArgsCount);
     actionArgs[expectedArgsCount] = command.optsWithGlobals();
     return new Promise((resolve, reject) => {
-      const result = fn(...actionArgs);
-      if (isPromise(result)) {
-        result
-          .then(resolve)
-          .then(() => {
-            command.resetOptionDefaults();
-          })
-          .catch(reject);
-      } else {
+      let result: Promise<void> | void = undefined;
+      try {
+        result = fn(...actionArgs);
+        if (isPromise(result)) {
+          result
+            .then(resolve)
+            .catch(reject)
+            .finally(() => {
+              // We always want to reset default options after the promise is settled
+              command.resetOptionDefaults();
+            });
+          return;
+        }
+        // If `fn` doesn't return a promise, then immediately resolve
         resolve();
-        command.resetOptionDefaults();
+      } finally {
+        // We want to always make sure to reset the options to default at the end of each execution,
+        // We do it in a finally block in case the command errors
+        // We only do it here in the case when `fn` doesn't return a promise
+        if (!isPromise(result)) {
+          command.resetOptionDefaults();
+        }
       }
     });
   };
