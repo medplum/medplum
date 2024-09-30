@@ -308,6 +308,15 @@ export async function jwtAssertionLogin(medplum: MedplumClient, profile: Profile
   await medplum.startJwtAssertionLogin(jwt);
 }
 
+/**
+ * Attaches the provided subcommand to the provided parent command.
+ *
+ * We use this rather than directly calling the `addCommand` method on the parent command because we need
+ * to modify some additional settings on each command before adding them to the parent.
+ *
+ * @param command - The parent command.
+ * @param subcommand - The command to attach to the provided parent command.
+ */
 export function addSubcommand(command: Command, subcommand: Command): void {
   subcommand.configureHelp({ showGlobalOptions: true });
   command.addCommand(subcommand);
