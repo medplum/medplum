@@ -9,12 +9,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 type UpgradeConfirmContentProps = {
-  opened: boolean;
-  close: () => void;
-  version: string | undefined;
-  loadingStatus: boolean;
-  handleStatus: () => void;
-  handleUpgrade: () => void;
+  readonly opened: boolean;
+  readonly close: () => void;
+  readonly version: string | undefined;
+  readonly loadingStatus: boolean;
+  readonly handleStatus: () => void;
+  readonly handleUpgrade: () => void;
 };
 
 function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
