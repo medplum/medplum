@@ -127,9 +127,9 @@ to provide strong transactional guarantees around the operation in a single, sim
 
 ## PATCH actions in a Batch
 
-Because the request body of a PATCH request is an array of JSON patch operations, not a resource, some extra conversion
-is required to represent these actions in a batch request. The [FHIR recommended pattern](http://hl7.org/fhir/R5/http.html#jsonpatch-transaction)
-for this use case is to [base64 encode](https://datatracker.ietf.org/doc/html/rfc4648#section-4) the JSON patch array
+Because the request body of a PATCH request is an array of [JSON Patch](https://jsonpatch.com/) operations, not a resource,
+some extra conversion is required to represent these actions in a batch request. The [FHIR recommended pattern](http://hl7.org/fhir/R5/http.html#jsonpatch-transaction)
+for this use case is to [base64 encode](https://datatracker.ietf.org/doc/html/rfc4648#section-4) the JSON Patch array
 and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
 
 ```js
@@ -144,6 +144,40 @@ and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
     // Encoded: [{"op":"test","path":"/active","value":false}]
     "data": "W3sib3AiOiJyZXBsYWNlIiwicGF0aCI6Ii9hY3RpdmUiLCJ2YWx1ZSI6ZmFsc2V9XQo="
   },
+}
+```
+
+Additionally, Medplum supports passing JSON Patch formatted as a [Parameters](/docs/api/fhir/resources/parameters)
+resource, making it easier to see what operations are happening in the batch:
+
+```js
+{
+  "request": {
+    "method": "PATCH",
+    "url": "Patient/6ffaaab4-ff7e-4416-80c7-8fce95c3e31c"
+  },
+  "resource": {
+    "resourceType": "Parameters",
+    "parameter": [
+      {
+        "name": "operation",
+        "part": [
+          { "name": "op", "valueCode": "test" },
+          { "name": "path", "valueString": "/active" },
+          { "name": "value", "valueString": "false" }
+        ]
+      },
+      {
+        "name": "operation",
+        "part": [
+          { "name": "op", "valueCode": "add" },
+          { "name": "path", "valueString": "/name/-" },
+          // Note that values must be JSON encoded
+          { "name": "value", "valueString": "{\"given\":[\"Dave\"],\"family\":\"Smith\"}" }
+        ]
+      }
+    ]
+  }
 }
 ```
 
