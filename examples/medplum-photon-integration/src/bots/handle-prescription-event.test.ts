@@ -27,19 +27,15 @@ describe('Prescription webhooks', async () => {
     return {
       ...actualModule,
       verifyEvent: vi.fn().mockImplementation(() => true),
-      // handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+      handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
     };
   });
 
   const bot: Reference<Bot> = { reference: 'Bot/123' };
   const contentType = 'application/json';
   const secrets = {
-    PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'E7FNao89rtmdqicUMjI0LLPetEwKki8b' },
-    PHOTON_CLIENT_SECRET: {
-      name: 'Photon Client Secret',
-      valueString: 'mrxwnp4n5SovcI3zNT1p8zBmvDmAWspU2_W9Gn4Sb5tacWR9EY__frBExerupvFl',
-    },
-    PHOTON_ORDER_WEBHOOK_SECRET: { name: 'Photon Webhook Secret', valueString: 'EXAMPLE_ORDER_WEBHOOK_SECRET' },
+    PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
+    PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
   };
 
   test.skip('actual event', async () => {
@@ -126,7 +122,7 @@ describe('Prescription webhooks', async () => {
     });
 
     expect(prescription).toBeDefined();
-    expect(prescription.status).toBe('active');
+    expect(prescription.status).toBe('draft');
   }, 10000);
 
   test.skip('Handle a prescription created event and create a new medication', async () => {

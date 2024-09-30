@@ -137,7 +137,7 @@ export async function handleCreatePrescription(
 
   const medicationRequest: MedicationRequest = {
     resourceType: 'MedicationRequest',
-    status: 'active',
+    status: 'draft',
     intent: 'order',
     subject,
     identifier: [
