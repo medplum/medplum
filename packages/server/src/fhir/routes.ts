@@ -42,6 +42,7 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { pgSleepHandler } from './operations/pgsleep';
 
 export const fhirRouter = Router();
 
@@ -264,6 +265,8 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Super admin operations
   router.add('POST', '/$db-stats', dbStatsHandler);
+
+  router.add('POST', '/$pg-sleep', pgSleepHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();
