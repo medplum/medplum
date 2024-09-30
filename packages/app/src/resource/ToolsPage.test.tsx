@@ -20,6 +20,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, screen } from '../test-utils/render';
 
+jest.mock('react-dom', () => ({
+  ...jest.requireActual('react-dom'),
+  createPortal: (children: unknown) => <>{children}</>,
+}));
+
 function mockFetch(
   status: number,
   body: Record<string, unknown> | ((url: string, options?: any) => any),
@@ -43,24 +48,19 @@ describe('ToolsPage', () => {
   let agent: Agent;
   let medplum: MockClient;
 
-  function setup(url: string): { rerender: ReturnType<typeof render>['rerender'] } {
-    let rerender: ReturnType<typeof render>['rerender'];
+  function setup(url: string): void {
     act(() => {
-      const { rerender: _rerender } = render(<AppRoutes />, {
+      render(<AppRoutes />, {
         wrapper: ({ children }) => (
-          <MantineProvider>
-            <MedplumProvider medplum={medplum}>
-              <MemoryRouter initialEntries={[url]} initialIndex={0}>
-                {children}
-                <Notifications />
-              </MemoryRouter>
-            </MedplumProvider>
-          </MantineProvider>
+          <MemoryRouter initialEntries={[url]} initialIndex={0}>
+            <MantineProvider>
+              <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
+              <Notifications />
+            </MantineProvider>
+          </MemoryRouter>
         ),
       });
-      rerender = _rerender;
     });
-    return { rerender: () => act(() => rerender(<AppRoutes />)) };
   }
 
   beforeAll(async () => {
@@ -79,7 +79,8 @@ describe('ToolsPage', () => {
     agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
       name: 'Agente',
-    } as Agent);
+      status: 'active',
+    } satisfies Agent);
   });
 
   afterEach(() => {
@@ -91,7 +92,7 @@ describe('ToolsPage', () => {
   test('Get status', async () => {
     setup(`/${getReferenceString(agent)}/tools`);
 
-    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByText('Get Status'));
@@ -230,7 +231,7 @@ describe('ToolsPage', () => {
 
     setup(`/${getReferenceString(agent)}/tools`);
 
-    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /reload config/i }));
@@ -252,16 +253,16 @@ describe('ToolsPage', () => {
 
     setup(`/${getReferenceString(agent)}/tools`);
 
-    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /reload config/i }));
     });
 
-    await expect(screen.findByText('Error')).resolves.toBeInTheDocument();
+    expect(await screen.findByText(/something is broken/i)).toBeInTheDocument();
   });
 
-  test.only('Upgrade -- Success', async () => {
+  test('Upgrade -- Success', async () => {
     clearReleaseCache();
     globalThis.fetch = mockFetch(200, (url) => {
       if (url.startsWith(`${GITHUB_RELEASES_URL}/latest`)) {
@@ -324,9 +325,18 @@ describe('ToolsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
     });
 
-    expect(
-      await screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
-    ).toBeInTheDocument();
+    // This sleep is load bearing
+    // Basically there is some strange behavior around the Mantine Portal implementation where it is initially rendered as `null`
+    // The theory is that the above `act` is unable to track the Modal children since they are initially not rendered and therefore their useEffects
+    // Are not queued before the end of the `act` block
+    // See: https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Portal/Portal.tsx
+    await act(async () => {
+      await sleep(150);
+    });
+
+    await expect(
+      screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
+    ).resolves.toBeInTheDocument();
 
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /confirm upgrade/i }));
@@ -390,18 +400,25 @@ describe('ToolsPage', () => {
       status: 'active',
     });
 
-    await act(async () => {
-      setup(`/${getReferenceString(agent)}/tools`);
-    });
+    setup(`/${getReferenceString(agent)}/tools`);
 
-    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
 
-    await act(async () => {
+    act(() => {
       fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
     });
 
+    // This sleep is load bearing
+    // Basically there is some strange behavior around the Mantine Portal implementation where it is initially rendered as `null`
+    // The theory is that the above `act` is unable to track the Modal children since they are initially not rendered and therefore their useEffects
+    // Are not queued before the end of the `act` block
+    // See: https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Portal/Portal.tsx
+    await act(async () => {
+      await sleep(150);
+    });
+
     await expect(
-      screen.findByText('This agent is already on the latest version (3.2.14)')
+      screen.findByText('This agent is already on the latest version (3.2.14).')
     ).resolves.toBeInTheDocument();
 
     expect(screen.queryByRole('button', { name: /confirm upgrade/i })).not.toBeInTheDocument();
@@ -458,22 +475,26 @@ describe('ToolsPage', () => {
       status: 'active',
     });
 
-    await act(async () => {
-      setup(`/${getReferenceString(agent)}/tools`);
-    });
+    setup(`/${getReferenceString(agent)}/tools`);
 
-    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
 
-    await act(async () => {
+    act(() => {
       fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
-      await sleep(2000);
     });
 
-    screen.logTestingPlaygroundURL();
+    // This sleep is load bearing
+    // Basically there is some strange behavior around the Mantine Portal implementation where it is initially rendered as `null`
+    // The theory is that the above `act` is unable to track the Modal children since they are initially not rendered and therefore their useEffects
+    // Are not queued before the end of the `act` block
+    // See: https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Portal/Portal.tsx
+    await act(async () => {
+      await sleep(150);
+    });
 
     expect(
       await screen.findByText(
-        'Unable to determine the current version of the agent. Check the network connectivity of the agent'
+        'Unable to determine the current version of the agent. Check the network connectivity of the agent.'
       )
     ).toBeInTheDocument();
 
@@ -481,24 +502,90 @@ describe('ToolsPage', () => {
   });
 
   test('Upgrade -- Error', async () => {
+    clearReleaseCache();
+    globalThis.fetch = mockFetch(200, (url) => {
+      if (url.startsWith(`${GITHUB_RELEASES_URL}/latest`)) {
+        return {
+          tag_name: 'v3.2.14',
+          assets: [
+            {
+              url: 'https://api.github.com/repos/medplum/medplum/releases/assets/193665170',
+              id: 193665170,
+              name: 'medplum-agent-3.2.14-linux',
+              browser_download_url:
+                'https://github.com/medplum/medplum/releases/download/v3.2.14/medplum-agent-3.2.14-linux',
+            },
+          ],
+        };
+      }
+
+      throw new Error('Expected Github releases URL to be called');
+    });
+
     medplum = new MockClient();
-    medplum.router.router.add('GET', 'Agent/:id/$upgrade', async () => [serverError(new Error('Something is broken'))]);
+    medplum.router.router.add('GET', 'Agent/:id/$status', async () => [
+      allOk,
+      {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'status',
+            valueCode: 'connected',
+          },
+          {
+            name: 'version',
+            valueString: '3.2.13',
+          },
+          {
+            name: 'lastUpdated',
+            valueCode: new Date().toISOString(),
+          },
+        ],
+      },
+    ]);
+    medplum.router.router.add('GET', 'Agent/:id/$upgrade', async () => {
+      console.log('called');
+      return [serverError(new Error('Something is broken'))];
+    });
+
+    const medplumGetSpy = jest.spyOn(medplum, 'get');
+
     agent = await medplum.createResource<Agent>({
       resourceType: 'Agent',
       name: 'Agente - Upgrade error',
       status: 'active',
     });
 
-    await act(async () => {
-      setup(`/${getReferenceString(agent)}/tools`);
-    });
+    setup(`/${getReferenceString(agent)}/tools`);
 
-    expect(screen.getAllByText(agent.name)[0]).toBeInTheDocument();
+    expect((await screen.findAllByText(agent.name))[0]).toBeInTheDocument();
 
-    await act(async () => {
+    act(() => {
       fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
     });
 
-    await expect(screen.findByText('Error')).resolves.toBeInTheDocument();
+    // This sleep is load bearing
+    // Basically there is some strange behavior around the Mantine Portal implementation where it is initially rendered as `null`
+    // The theory is that the above `act` is unable to track the Modal children since they are initially not rendered and therefore their useEffects
+    // Are not queued before the end of the `act` block
+    // See: https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Portal/Portal.tsx
+    await act(async () => {
+      await sleep(150);
+    });
+
+    await expect(
+      screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
+    ).resolves.toBeInTheDocument();
+
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /confirm upgrade/i }));
+    });
+
+    expect(medplumGetSpy).toHaveBeenCalledWith(
+      medplum.fhirUrl('Agent', agent.id as string, '$upgrade'),
+      expect.objectContaining({ cache: 'reload' })
+    );
+
+    expect(await screen.findByText(/something is broken/i)).toBeInTheDocument();
   });
 });

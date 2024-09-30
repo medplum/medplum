@@ -1,4 +1,4 @@
-import { fetchLatestVersionString, isValidSemver, Logger, normalizeErrorString } from '@medplum/core';
+import { fetchLatestVersionString, isValidMedplumSemver, Logger, normalizeErrorString } from '@medplum/core';
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { platform } from 'node:os';
@@ -31,7 +31,7 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   process.send({ type: 'STARTED' });
 
   // Make sure if version is given, it matches semver
-  if (argv[3] && !isValidSemver(argv[3])) {
+  if (argv[3] && !isValidMedplumSemver(argv[3])) {
     throw new Error('Invalid version specified');
   }
   const version = argv[3] ?? (await fetchLatestVersionString());

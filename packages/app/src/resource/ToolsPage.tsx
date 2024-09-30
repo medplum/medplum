@@ -1,4 +1,5 @@
 import { ActionIcon, Button, Divider, Group, Modal, NumberInput, Table, TextInput, Title } from '@mantine/core';
+import { useDisclosure } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
 import { ContentType, fetchLatestVersionString, formatDateTime, normalizeErrorString } from '@medplum/core';
 import { Agent, Bundle, Parameters, Reference } from '@medplum/fhirtypes';
@@ -9,7 +10,7 @@ import { useParams } from 'react-router-dom';
 
 type UpgradeConfirmContentProps = {
   opened: boolean;
-  setOpened: (opened: boolean) => void;
+  close: () => void;
   version: string | undefined;
   loadingStatus: boolean;
   handleStatus: () => void;
@@ -17,7 +18,7 @@ type UpgradeConfirmContentProps = {
 };
 
 function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
-  const { opened, setOpened, version, loadingStatus, handleStatus, handleUpgrade } = props;
+  const { opened, close, version, loadingStatus, handleStatus, handleUpgrade } = props;
 
   const [latestVersionString, setLatestVersionString] = useState<string>();
 
@@ -29,10 +30,6 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
       handleStatus();
     }
   }, [opened, latestVersionString, handleStatus]);
-
-  console.log({ latestVersionString });
-  console.log({ version });
-  console.log({ loadingStatus });
 
   // If we don't have the latest version string
   // The current agent version
@@ -58,7 +55,7 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
       <Button
         onClick={() => {
           handleUpgrade();
-          setOpened(false);
+          close();
         }}
         aria-label="Confirm upgrade"
       >
@@ -81,7 +78,7 @@ export function ToolsPage(): JSX.Element | null {
   const [lastPing, setLastPing] = useState<string | undefined>();
   const [pinging, setPinging] = useState(false);
   const [working, setWorking] = useState(false);
-  const [modalOpened, setModalOpened] = useState(false);
+  const [modalOpened, { open: openModal, close: closeModal }] = useDisclosure(false);
 
   useEffect(() => {
     if (loadingStatus || reloadingConfig || upgrading || pinging) {
@@ -153,6 +150,7 @@ export function ToolsPage(): JSX.Element | null {
   }
 
   function showError(message: string): void {
+    console.log('showing');
     showNotification({
       color: 'red',
       title: 'Error',
@@ -163,10 +161,10 @@ export function ToolsPage(): JSX.Element | null {
 
   return (
     <Document>
-      <Modal opened={modalOpened} onClose={() => setModalOpened(false)} title="Upgrade Agent" centered>
+      <Modal opened={modalOpened} onClose={closeModal} title="Upgrade Agent" centered>
         <UpgradeConfirmContent
           opened={modalOpened}
-          setOpened={setModalOpened}
+          close={closeModal}
           version={version}
           loadingStatus={loadingStatus}
           handleStatus={handleStatus}
@@ -223,12 +221,7 @@ export function ToolsPage(): JSX.Element | null {
       <Divider my="lg" />
       <Title order={2}>Upgrade Agent</Title>
       <p>Upgrade the version of this agent, to either the latest (default) or a specified version.</p>
-      <Button
-        onClick={() => setModalOpened(true)}
-        loading={upgrading}
-        disabled={working && !upgrading}
-        aria-label="Upgrade agent"
-      >
+      <Button onClick={openModal} loading={upgrading} disabled={working && !upgrading} aria-label="Upgrade agent">
         Upgrade
       </Button>
       <Divider my="lg" />
