@@ -38,7 +38,7 @@ tar \
 ATTESTATIONS="--provenance=true --sbom=true"
 
 # Target platforms
-PLATFORMS="--platform linux/amd64,linux/arm64,linux/arm/v7"
+PLATFORMS="${PLATFORMS:="linux/amd64,linux/arm64,linux/arm/v7"}"
 
 # Build tags
 TAGS="--tag $DOCKERHUB_REPOSITORY:latest --tag $DOCKERHUB_REPOSITORY:$GITHUB_SHA"
@@ -54,4 +54,4 @@ for arg in "$@"; do
 done
 
 # Build and push Docker images
-docker buildx build $ATTESTATIONS $PLATFORMS $TAGS --push .
+docker buildx build $ATTESTATIONS --platform $PLATFORMS $TAGS --push .
