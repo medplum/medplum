@@ -79,6 +79,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     platform: process.platform,
     runtime: process.version,
     postgres: postgresWriterOk,
+    postgresWriter: writerPool.options.host ?? 'n/a',
     redis: redisOk,
   });
 }

@@ -55,6 +55,7 @@ async function initPool(config: MedplumDatabaseConfig, proxyEndpoint: string | u
     poolConfig.host = proxyEndpoint;
     poolConfig.ssl = poolConfig.ssl ?? {};
     poolConfig.ssl.require = true;
+    poolConfig.ssl.rejectUnauthorized = false; // TODO{mattlong} eventually remove this
   }
 
   const pool = new Pool(poolConfig);
