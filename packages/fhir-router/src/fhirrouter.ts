@@ -106,6 +106,13 @@ async function createResource(
   const resource = req.body as Resource;
   const assignedId = Boolean(options?.batch);
 
+  if (req.query?._account && typeof req.query._account === 'string') {
+    // Some FHIR clients do not allow custom meta fields, so we use a query parameter instead
+    // See: https://github.com/medplum/medplum/issues/5145
+    resource.meta = resource.meta || {};
+    resource.meta.account = { reference: req.query._account };
+  }
+
   if (req.headers?.['if-none-exist']) {
     const ifNoneExist = singularize(req.headers['if-none-exist']);
     const result = await repo.conditionalCreate(resource, parseSearchRequest(`${resourceType}?${ifNoneExist}`), {
