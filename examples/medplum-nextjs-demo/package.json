@@ -10,9 +10,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@mantine/core": "7.12.2",
-    "@mantine/hooks": "7.12.2",
-    "@mantine/notifications": "7.12.2",
+    "@mantine/core": "7.13.1",
+    "@mantine/hooks": "7.13.1",
+    "@mantine/notifications": "7.13.1",
     "@medplum/core": "3.2.16",
     "@medplum/react": "3.2.16",
     "@next/bundle-analyzer": "14.2.13",
@@ -23,8 +23,8 @@
   },
   "devDependencies": {
     "@medplum/fhirtypes": "3.2.16",
-    "@types/node": "22.5.5",
-    "@types/react": "18.3.8",
+    "@types/node": "22.7.4",
+    "@types/react": "18.3.10",
     "@types/react-dom": "18.3.0",
     "eslint": "8.57.0",
     "eslint-config-next": "14.2.13",
