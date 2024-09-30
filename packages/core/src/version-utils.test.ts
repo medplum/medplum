@@ -57,6 +57,10 @@ test('assertReleaseManifest', () => {
 });
 
 describe('checkIfValidMedplumVersion', () => {
+  beforeAll(() => {
+    globalThis.fetch = jest.fn();
+  });
+
   beforeEach(() => {
     clearReleaseCache();
   });
