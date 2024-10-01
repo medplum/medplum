@@ -441,4 +441,27 @@ describe('FHIR Router', () => {
     expect(res2).toMatchObject(allOk);
     expect(resource2).toBeUndefined();
   });
+
+  test('Create resource with query param account', async () => {
+    const mrn = randomUUID();
+    const patient: Patient = {
+      resourceType: 'Patient',
+      identifier: [{ system: 'http://example.com/mrn', value: mrn }],
+    };
+    const [res, resource] = await router.handleRequest(
+      {
+        method: 'POST',
+        pathname: '/Patient',
+        body: patient,
+        params: {},
+        query: {
+          _account: 'Organization/123',
+        },
+      },
+      repo
+    );
+    expect(res).toMatchObject(created);
+    expect(resource).toMatchObject(patient);
+    expect(resource?.meta?.account?.reference).toEqual('Organization/123');
+  });
 });
