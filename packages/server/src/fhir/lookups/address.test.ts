@@ -1,5 +1,5 @@
 import { Operator } from '@medplum/core';
-import { Patient } from '@medplum/fhirtypes';
+import { InsurancePlan, Patient, Location, ResourceType, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
@@ -120,19 +120,39 @@ describe('Address Lookup Table', () => {
       expect(searchResult2.entry?.[0]?.resource?.id).toEqual(patient.id);
     }));
 
-  test('Update address', () =>
+  test.each([
+    [
+      'Patient' as ResourceType,
+      (address: string): Patient => ({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+        address: [{ use: 'home', line: [address] }],
+      }),
+    ],
+    [
+      'InsurancePlan' as ResourceType,
+      (address: string): InsurancePlan => ({
+        resourceType: 'InsurancePlan',
+        name: 'Test Insurance Plan',
+        contact: [{ address: { use: 'home', line: [address] } }],
+      }),
+    ],
+    [
+      'Location' as ResourceType,
+      (address: string): Location => ({
+        resourceType: 'Location',
+        address: { use: 'home', line: [address] },
+      }),
+    ],
+  ])('Update %s address', (resourceType, buildResource) =>
     withTestContext(async () => {
       const address1 = randomUUID();
       const address2 = randomUUID();
 
-      const patient1 = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        address: [{ use: 'home', line: [address1] }],
-      });
+      const resource1 = await systemRepo.createResource(buildResource(address1));
 
       const bundle2 = await systemRepo.search({
-        resourceType: 'Patient',
+        resourceType,
         filters: [
           {
             code: 'address',
@@ -142,10 +162,10 @@ describe('Address Lookup Table', () => {
         ],
       });
       expect(bundle2.entry?.length).toEqual(1);
-      expect(bundle2.entry?.[0]?.resource?.id).toEqual(patient1.id);
+      expect(bundle2.entry?.[0]?.resource?.id).toEqual(resource1.id);
 
       const bundle3 = await systemRepo.search({
-        resourceType: 'Patient',
+        resourceType,
         filters: [
           {
             code: 'address',
@@ -156,13 +176,13 @@ describe('Address Lookup Table', () => {
       });
       expect(bundle3.entry?.length).toEqual(0);
 
-      await systemRepo.updateResource<Patient>({
-        ...patient1,
-        address: [{ use: 'home', line: [address2] }],
-      });
+      await systemRepo.updateResource({
+        ...resource1,
+        ...buildResource(address2),
+      } as Resource);
 
       const bundle5 = await systemRepo.search({
-        resourceType: 'Patient',
+        resourceType,
         filters: [
           {
             code: 'address',
@@ -174,7 +194,7 @@ describe('Address Lookup Table', () => {
       expect(bundle5.entry?.length).toEqual(0);
 
       const bundle6 = await systemRepo.search({
-        resourceType: 'Patient',
+        resourceType,
         filters: [
           {
             code: 'address',
@@ -184,6 +204,7 @@ describe('Address Lookup Table', () => {
         ],
       });
       expect(bundle6.entry?.length).toEqual(1);
-      expect(bundle6.entry?.[0]?.resource?.id).toEqual(patient1.id);
-    }));
+      expect(bundle6.entry?.[0]?.resource?.id).toEqual(resource1.id);
+    })
+  );
 });

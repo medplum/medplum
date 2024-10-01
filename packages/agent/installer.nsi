@@ -170,14 +170,14 @@ Function UpgradeApp
     DetailPrint "Exit code $1"
 
     # Copy the new files to the installation directory
-    File dist\shawl-v1.4.0-legal.txt
-    File dist\shawl-v1.4.0-win64.exe
+    File dist\shawl-v1.5.0-legal.txt
+    File dist\shawl-v1.5.0-win64.exe
     File dist\${SERVICE_FILE_NAME}
     File README.md
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.4.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
+    ExecWait "shawl-v1.5.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name
@@ -224,8 +224,8 @@ Function InstallApp
     DetailPrint "Agent ID: $agentId"
 
     # Copy the service files to the root directory
-    File dist\shawl-v1.4.0-legal.txt
-    File dist\shawl-v1.4.0-win64.exe
+    File dist\shawl-v1.5.0-legal.txt
+    File dist\shawl-v1.5.0-win64.exe
     File dist\${SERVICE_FILE_NAME}
     File README.md
 
@@ -239,7 +239,7 @@ Function InstallApp
 
     # Create the service
     DetailPrint "Creating service..."
-    ExecWait "shawl-v1.4.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
+    ExecWait "shawl-v1.5.0-win64.exe add --name $\"${SERVICE_NAME}$\" --log-as $\"${SERVICE_NAME}$\" --cwd $\"$INSTDIR$\" -- $\"$INSTDIR\${SERVICE_FILE_NAME}$\"" $1
     DetailPrint "Exit code $1"
 
     # Set service display name

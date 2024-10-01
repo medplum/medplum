@@ -614,6 +614,9 @@ describe('FHIR Routes', () => {
         .get('/fhir/R4/?_type=Patient,Observation')
         .set('Authorization', 'Bearer ' + accessToken);
       expect(res4.status).toBe(200);
-      expect(res4.body).toEqual(res3.body);
+      const bundle2 = res4.body;
+      expect(bundle2.entry?.length).toBe(2);
+      expect(bundleContains(bundle2, patient)).toBeTruthy();
+      expect(bundleContains(bundle2, obs)).toBeTruthy();
     }));
 });

@@ -935,6 +935,21 @@ describe('FHIR Search', () => {
         expect(searchResult2.entry?.length).toEqual(0);
       }));
 
+    test('Filter by chained _id', () =>
+      withTestContext(async () => {
+        const organizationId = randomUUID();
+
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          managingOrganization: { reference: 'Organization/' + organizationId },
+        });
+
+        const searchResult1 = await repo.search(parseSearchRequest('Patient?organization._id=' + organizationId));
+
+        expect(searchResult1.entry?.length).toEqual(1);
+        expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toBeDefined();
+      }));
+
     test('Empty _id', async () =>
       withTestContext(async () => {
         const searchResult1 = await repo.search({
@@ -2524,6 +2539,79 @@ describe('FHIR Search', () => {
           type: 'searchset',
           entry: [],
           total: undefined,
+        });
+      }));
+
+    test('_include on page boundary', () =>
+      withTestContext(async () => {
+        const mrn = randomUUID();
+        const gp1 = await repo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+        });
+        const patient1 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: mrn }],
+          generalPractitioner: [createReference(gp1)],
+        });
+        const gp2 = await repo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+        });
+        const patient2 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: mrn }],
+          generalPractitioner: [createReference(gp2)],
+        });
+
+        const searchRequest: SearchRequest = {
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'identifier',
+              operator: Operator.EQUALS,
+              value: mrn,
+            },
+          ],
+          sortRules: [{ code: '_lastUpdated' }],
+          include: [{ resourceType: 'Patient', searchParam: 'general-practitioner' }],
+          count: 1,
+        };
+        await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          entry: [
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(patient1)),
+              search: { mode: 'match' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(gp1)),
+              search: { mode: 'include' },
+            }),
+          ],
+        });
+
+        searchRequest.count = 2;
+        await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          entry: [
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(patient1)),
+              search: { mode: 'match' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(patient2)),
+              search: { mode: 'match' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(gp1)),
+              search: { mode: 'include' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(gp2)),
+              search: { mode: 'include' },
+            }),
+          ],
         });
       }));
 

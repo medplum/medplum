@@ -278,6 +278,10 @@ async function getSearchEntries<T extends Resource>(
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const rowCount = rows.length;
   const resources = rows.map((row) => JSON.parse(row.content as string)) as T[];
+  let nextResource: T | undefined;
+  if (resources.length > searchRequest.count) {
+    nextResource = resources.pop();
+  }
   const entries = resources.map(
     (resource) =>
       ({
@@ -286,10 +290,6 @@ async function getSearchEntries<T extends Resource>(
         resource,
       }) as BundleEntry
   );
-  let nextResource: T | undefined;
-  if (entries.length > searchRequest.count) {
-    nextResource = entries.pop()?.resource as T;
-  }
 
   if (searchRequest.include || searchRequest.revInclude) {
     await getExtraEntries(repo, searchRequest, resources, entries);
@@ -1290,6 +1290,19 @@ function buildChainedSearch(
 ): Expression {
   if (param.chain.length > 3) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
+  }
+
+  // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
+  // Note that this does slightly change the behavior of the search query: true chained search would require the
+  // reference to point to an existing resource, while the rewritten query just matches the reference string
+  if (param.chain.length === 1 && param.chain[0].filter?.code === '_id') {
+    const { resourceType: targetType, code, filter } = param.chain[0];
+    const targetId = filter.value;
+    return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
+      code,
+      operator: Operator.EQUALS,
+      value: `${targetType}/${targetId}`,
+    });
   }
 
   if (usesReferenceLookupTable(repo)) {
