@@ -10,6 +10,7 @@ import {
   getStatus,
   isOperationOutcome,
   serverError,
+  sleep,
 } from '@medplum/core';
 import { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
@@ -324,7 +325,14 @@ describe('ToolsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
     });
 
-    await act(async () => {});
+    // This sleep is load bearing
+    // Basically there is some strange behavior around the Mantine Portal implementation where it is initially rendered as `null`
+    // The theory is that the above `act` is unable to track the Modal children since they are initially not rendered and therefore their useEffects
+    // Are not queued before the end of the `act` block
+    // See: https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Portal/Portal.tsx
+    await act(async () => {
+      await sleep(150);
+    });
 
     await expect(
       screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
@@ -405,7 +413,9 @@ describe('ToolsPage', () => {
     // The theory is that the above `act` is unable to track the Modal children since they are initially not rendered and therefore their useEffects
     // Are not queued before the end of the `act` block
     // See: https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Portal/Portal.tsx
-    await act(async () => {});
+    await act(async () => {
+      await sleep(150);
+    });
 
     await expect(
       screen.findByText('This agent is already on the latest version (3.2.14).')
@@ -473,7 +483,14 @@ describe('ToolsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
     });
 
-    await act(async () => {});
+    // This sleep is load bearing
+    // Basically there is some strange behavior around the Mantine Portal implementation where it is initially rendered as `null`
+    // The theory is that the above `act` is unable to track the Modal children since they are initially not rendered and therefore their useEffects
+    // Are not queued before the end of the `act` block
+    // See: https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Portal/Portal.tsx
+    await act(async () => {
+      await sleep(150);
+    });
 
     expect(
       await screen.findByText(
@@ -544,7 +561,14 @@ describe('ToolsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
     });
 
-    await act(async () => {});
+    // This sleep is load bearing
+    // Basically there is some strange behavior around the Mantine Portal implementation where it is initially rendered as `null`
+    // The theory is that the above `act` is unable to track the Modal children since they are initially not rendered and therefore their useEffects
+    // Are not queued before the end of the `act` block
+    // See: https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/core/src/components/Portal/Portal.tsx
+    await act(async () => {
+      await sleep(150);
+    });
 
     await expect(
       screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
