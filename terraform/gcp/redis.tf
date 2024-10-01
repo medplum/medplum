@@ -16,7 +16,7 @@ module "redis_cluster" {
     medplum-redis-cluster-scp = {
       network_name    = var.vpc_name
       network_project = var.project_id
-      subnet_names    = [module.vpc.subnets["us-west1/medplum-us-west1-sn-sql-01"].name]
+      subnet_names    = [module.vpc.subnets["us-west1/medplum-us-west1-sn-psa-01"].name]
     }
   }
 

@@ -12,7 +12,7 @@ module "vpc" {
       subnet_region = var.region
     },
     {
-      subnet_name              = "medplum-us-west1-sn-sql-01"
+      subnet_name              = "medplum-us-west1-sn-psa-01"
       subnet_ip                = "192.168.32.0/20"
       subnet_region            = var.region
       private_ip_google_access = true
