@@ -764,6 +764,24 @@
         "expression": "Slot.end",
         "target": ["Slot"]
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/DiagnosticReport-study",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "DiagnosticReport-study",
+        "url": "https://medplum.com/fhir/SearchParameter/DiagnosticReport-study",
+        "version": "4.0.1",
+        "name": "study",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Studies associated with the diagnostic report",
+        "code": "study",
+        "base": ["DiagnosticReport"],
+        "type": "reference",
+        "expression": "DiagnosticReport.imagingStudy",
+        "target": ["ImagingStudy"]
+      }
     }
   ]
 }

@@ -226,9 +226,7 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
     ],
     indexes: [
       { columns: ['resourceId'], indexType: 'btree' },
-      { columns: ['code'], indexType: 'btree' },
-      { columns: ['system'], indexType: 'btree' },
-      { columns: ['value'], indexType: 'btree' },
+      // TODO: Add composite indexes and support for `include`
     ],
   });
 
