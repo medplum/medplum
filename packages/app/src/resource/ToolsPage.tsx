@@ -150,7 +150,6 @@ export function ToolsPage(): JSX.Element | null {
   }
 
   function showError(message: string): void {
-    console.log('showing');
     showNotification({
       color: 'red',
       title: 'Error',
