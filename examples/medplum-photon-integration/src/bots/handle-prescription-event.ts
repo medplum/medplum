@@ -6,7 +6,7 @@ import {
   normalizeErrorString,
   PatchOperation,
 } from '@medplum/core';
-import { MedicationKnowledge, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
+import { CodeableConcept, MedicationKnowledge, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
 import {
   PhotonEvent,
   PrescriptionCreatedData,
@@ -52,10 +52,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEven
   const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
   const PHOTON_AUTH_TOKEN = await handlePhotonAuth(PHOTON_CLIENT_ID, PHOTON_CLIENT_SECRET);
 
+  const medicationCode = await getMedicationCodeFromPrescription(body.data.id, PHOTON_AUTH_TOKEN);
+
   // Create or update the prescription, depending on the event type
   let prescription: MedicationRequest;
   if (body.type === 'photon:prescription:created') {
-    prescription = await handleCreatePrescription(body, medplum, PHOTON_AUTH_TOKEN);
+    prescription = await handleCreatePrescription(body, medplum, PHOTON_AUTH_TOKEN, medicationCode);
   } else if (body.type === 'photon:prescription:depleted' || body.type === 'photon:prescription:expired') {
     prescription = await handleUpdatePrescription(body, medplum, existingPrescription);
   } else {
@@ -63,6 +65,29 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEven
   }
 
   return prescription;
+}
+
+async function getMedicationCodeFromPrescription(
+  prescriptionId: string,
+  authToken: string
+): Promise<string | undefined> {
+  const query = `
+    query prescription($id: ID!) {
+      prescription(id: $id) {
+        treatment {
+          codes {
+            rxcui
+          }
+        }
+      }
+    }
+  `;
+
+  const variables = { id: prescriptionId };
+
+  const body = JSON.stringify({ query, variables });
+  const result = await photonGraphqlFetch(body, authToken);
+  return result.data.prescription.treatment.codes.rxcui;
 }
 
 /**
@@ -108,17 +133,19 @@ export async function handleUpdatePrescription(
  * @param event - The webhook event with the details needed to create the prescription
  * @param medplum - Medplum Client to create the prescription in your project
  * @param authToken - Photon auth token to authorize GraphQL queries
+ * @param medicationCode - The RXCUI code for the medication
  * @returns The created prescription as MedicationRequest resource
  */
 export async function handleCreatePrescription(
   event: PhotonEvent,
   medplum: MedplumClient,
-  authToken: string
+  authToken: string,
+  medicationCode?: string
 ): Promise<MedicationRequest> {
   const data = event.data as PrescriptionCreatedData;
   // Get the prescribing practitioner and the medication from Medplum
   const prescriber = await getPrescriber(data, medplum, authToken);
-  const medicationRxcui = await getPhotonMedicationCode(data.treatmentId, authToken);
+  // const medicationRxcui = await getPhotonMedicationCode(data.treatmentId, authToken);
   const patient = await getPatient(data.patient, medplum);
   if (!patient) {
     throw new Error('No patient to link prescription to.');
@@ -127,13 +154,8 @@ export async function handleCreatePrescription(
   const subject = patientName
     ? { reference: getReferenceString(patient), display: formatHumanName(patientName) }
     : { reference: getReferenceString(patient) };
-  let medication: MedicationKnowledge | undefined = medicationRxcui
-    ? await getMedicationKnowledge(medplum, medicationRxcui)
-    : undefined;
 
-  if (!medication) {
-    medication = await createMedicationKnowledge(data, medplum, authToken);
-  }
+  const medicationElement = await getMedicationElement(medplum, medicationCode);
 
   const medicationRequest: MedicationRequest = {
     resourceType: 'MedicationRequest',
@@ -158,14 +180,11 @@ export async function handleCreatePrescription(
     },
     substitution: { allowedBoolean: !data.dispenseAsWritten },
     dosageInstruction: [{ patientInstruction: data.instructions }],
+    medicationCodeableConcept: medicationElement,
   };
 
   if (data.notes) {
     medicationRequest.note = [{ text: data.notes }];
-  }
-
-  if (medication) {
-    medicationRequest.medicationCodeableConcept = medication.code;
   }
 
   if (prescriber) {
@@ -180,28 +199,40 @@ export async function handleCreatePrescription(
   }
 }
 
+async function getMedicationElement(medplum: MedplumClient, rxcui?: string): Promise<CodeableConcept> {
+  let medicationKnowledge = await getMedicationKnowledge(medplum, rxcui);
+  if (!medicationKnowledge) {
+    try {
+      medicationKnowledge = await createMedicationKnowledge(medplum, rxcui);
+    } catch (err) {
+      throw new Error(normalizeErrorString(err));
+    }
+  }
+
+  const medicationCode = medicationKnowledge.code;
+  if (!medicationCode) {
+    throw new Error('Medication has no code and could not be added to the prescription');
+  }
+
+  return medicationCode;
+}
+
 /**
  * Takes data from a Photon prescription created event and creates a FHIR Medication resource in your project. If there is no
  * linked RX Norm code, the Medication will not be created.
  *
- * @param data - Webhook data from a Photon prescription created event
  * @param medplum - Medplum Client to create the medication in your project
- * @param authToken - Photon auth token to authorize GraphQL queries
+ * @param rxcui - The RXCUI code of the medication
  * @returns The created FHIR Medication resource if it can be created
  */
-async function createMedicationKnowledge(
-  data: PrescriptionCreatedData,
-  medplum: MedplumClient,
-  authToken: string
-): Promise<MedicationKnowledge | undefined> {
-  const medicationCode = await getPhotonMedicationCode(data.treatmentId, authToken);
-  if (!medicationCode) {
-    return undefined;
+async function createMedicationKnowledge(medplum: MedplumClient, rxcui?: string): Promise<MedicationKnowledge> {
+  if (!rxcui) {
+    throw new Error('Unable to create a MedicationKnowledge resource');
   }
 
   const medicationData: MedicationKnowledge = {
     resourceType: 'MedicationKnowledge',
-    code: { coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: medicationCode }] },
+    code: { coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: rxcui }] },
     status: 'active',
   };
 
@@ -260,36 +291,6 @@ async function getPrescriber(
     });
 
     return practitioner;
-  } catch (err) {
-    throw new Error(normalizeErrorString(err));
-  }
-}
-
-/**
- * Gets the RXCUI code of the medication from Photon
- *
- * @param photonMedicationId - The Photon ID of the medication
- * @param authToken - The Photon auth token to authorize GraphQL queries
- * @returns The RXCUI code, if it exists
- */
-async function getPhotonMedicationCode(photonMedicationId: string, authToken: string): Promise<string | undefined> {
-  const query = `
-    query medicationProducts($id: String!) {
-      medicationProducts(id: $id) {
-        codes {
-          rxcui
-        }
-      }
-    }
-  `;
-
-  const variables = { id: photonMedicationId };
-  const body = JSON.stringify({ query, variables });
-
-  try {
-    const result = await photonGraphqlFetch(body, authToken);
-    const rxcui = result.data.medicationProducts?.[0].codes?.rxcui;
-    return rxcui;
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }

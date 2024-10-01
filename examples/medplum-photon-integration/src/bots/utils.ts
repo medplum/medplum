@@ -192,7 +192,6 @@ export async function getPatient(
 
   // Search for the patient based on the medplum id
   patient = await medplum.readResource('Patient', id);
-
   return patient;
 }
 
@@ -205,8 +204,11 @@ export async function getPatient(
  */
 export async function getMedicationKnowledge(
   medplum: MedplumClient,
-  rxcui: string
+  rxcui?: string
 ): Promise<MedicationKnowledge | undefined> {
+  if (!rxcui) {
+    return undefined;
+  }
   try {
     const medication = await medplum.searchOne('MedicationKnowledge', {
       code: rxcui,

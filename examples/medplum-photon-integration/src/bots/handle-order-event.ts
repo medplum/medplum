@@ -1,15 +1,15 @@
-import { BotEvent, getReferenceString, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { BotEvent, createReference, getReferenceString, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { MedicationDispense, MedicationRequest, Patient, Reference } from '@medplum/fhirtypes';
-import { Fill, OrderCreatedData, OrderData, PhotonWebhook } from '../photon-types';
+import { Fill, OrderCreatedData, OrderData, PhotonEvent } from '../photon-types';
 import { NEUTRON_HEALTH } from './system-strings';
 import { handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 export async function handler(
   medplum: MedplumClient,
-  event: BotEvent<PhotonWebhook>
+  event: BotEvent<PhotonEvent>
 ): Promise<MedicationDispense[] | undefined> {
-  const webhook = event.input;
-  if (webhook.body.type !== 'photon:order:created') {
+  const body = event.input;
+  if (body.type !== 'photon:order:created') {
     return undefined;
   }
 
@@ -17,7 +17,6 @@ export async function handler(
   const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
   const PHOTON_AUTH_TOKEN = await handlePhotonAuth(PHOTON_CLIENT_ID, PHOTON_CLIENT_SECRET);
 
-  const body = webhook.body;
   const data = body.data;
 
   const photonPatientData = data.patient;
@@ -27,14 +26,15 @@ export async function handler(
     throw new Error('No linked patient');
   }
 
-  const dispenses = handleOrderCreatedEvent(data as OrderCreatedData, PHOTON_AUTH_TOKEN, medplum);
+  const dispenses = handleOrderCreatedEvent(data as OrderCreatedData, PHOTON_AUTH_TOKEN, medplum, patient);
   return dispenses;
 }
 
 async function handleOrderCreatedEvent(
   data: OrderCreatedData,
   authToken: string,
-  medplum: MedplumClient
+  medplum: MedplumClient,
+  patient: Patient
 ): Promise<MedicationDispense[]> {
   const fills = data.fills;
   const orderId = data.id;
@@ -53,7 +53,7 @@ async function handleOrderCreatedEvent(
       throw new Error('Medication could not be dispensed as there is no authorizing prescription');
     }
 
-    const dispense = await createMedicationDispense(fillData, medplum, prescription);
+    const dispense = await createMedicationDispense(fillData, medplum, prescription, patient);
     await updatePrescription(prescription, medplum, orderId);
     dispenses.push(dispense);
   }
@@ -76,10 +76,11 @@ async function updatePrescription(
 ): Promise<void> {
   const identifier = prescription.identifier ?? [];
   identifier.push({ system: NEUTRON_HEALTH, value: orderId });
+  const status = prescription.status === 'draft' ? 'active' : prescription.status;
   const udpatedPrescriptionData: MedicationRequest = {
     ...prescription,
     identifier,
-    status: 'active',
+    status,
   };
 
   try {
@@ -95,18 +96,21 @@ async function updatePrescription(
  * @param fill - The fill data from the Photon order created event
  * @param medplum - The MedplumClient
  * @param request - The MedicationRequest that authorizes the MedicationDispense/Fill
+ * @param patient - The patient that the dispense is for
  * @returns The created MedicationDispense
  */
 async function createMedicationDispense(
   fill: Fill,
   medplum: MedplumClient,
-  request: MedicationRequest
+  request: MedicationRequest,
+  patient: Patient
 ): Promise<MedicationDispense> {
   // The partial fills from the created event only have ids, so we need to query for the expanded details from Photon
   // Search for the prescription linked to the fills
   const prescription = await medplum.searchOne('MedicationRequest', {
     identifier: NEUTRON_HEALTH + `|${fill.prescription?.id ?? ''}`,
   });
+  const patientRef = createReference(patient);
 
   const pharmacy = request.dispenseRequest?.performer;
   const performer: MedicationDispense['performer'] = [];
@@ -114,10 +118,20 @@ async function createMedicationDispense(
     performer.push({ actor: pharmacy });
   }
 
+  const medication = request.medicationCodeableConcept ?? {
+    coding: [
+      {
+        system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+        code: fill.treatment?.codes.rxcui,
+        display: fill.treatment?.name,
+      },
+    ],
+  };
+
   // Link the dispense to the prescription if it exists
   const authorizingPrescription: Reference<MedicationRequest>[] = [{ reference: getReferenceString(request) }];
   if (prescription) {
-    authorizingPrescription.push({ reference: getReferenceString(prescription) });
+    authorizingPrescription.push(createReference(prescription));
   }
 
   // Build the MedicationDispense object
@@ -126,10 +140,9 @@ async function createMedicationDispense(
     status: getFillStatus(fill.state),
     identifier: [{ system: NEUTRON_HEALTH, value: fill.id }],
     authorizingPrescription,
-    medicationCodeableConcept: {
-      coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: fill.treatment?.codes.rxcui }],
-    },
+    medicationCodeableConcept: medication,
     performer,
+    subject: patientRef,
   };
 
   if (fill.filledAt) {
@@ -167,6 +180,7 @@ async function getFill(id: string, authToken: string): Promise<Fill> {
           id
           treatment {
             id
+            name
             codes {
               rxcui
             }

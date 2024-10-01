@@ -11,6 +11,7 @@ import {
   PrescriptionDepletedEvent,
 } from '../photon-types';
 import { handleCreatePrescription, handler, handleUpdatePrescription } from './handle-prescription-event';
+import { NEUTRON_HEALTH } from './system-strings';
 import { getExistingMedicationRequest } from './utils';
 
 describe('Prescription webhooks', async () => {
@@ -27,18 +28,21 @@ describe('Prescription webhooks', async () => {
     return {
       ...actualModule,
       verifyEvent: vi.fn().mockImplementation(() => true),
-      handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+      // handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
     };
   });
 
   const bot: Reference<Bot> = { reference: 'Bot/123' };
   const contentType = 'application/json';
   const secrets = {
-    PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
-    PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
+    PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'E7FNao89rtmdqicUMjI0LLPetEwKki8b' },
+    PHOTON_CLIENT_SECRET: {
+      name: 'Photon Client Secret',
+      valueString: 'mrxwnp4n5SovcI3zNT1p8zBmvDmAWspU2_W9Gn4Sb5tacWR9EY__frBExerupvFl',
+    },
   };
 
-  test.skip('actual event', async () => {
+  test('actual event', async () => {
     const medplum = new MockClient();
     await medplum.createResource({
       resourceType: 'Practitioner',
@@ -62,33 +66,34 @@ describe('Prescription webhooks', async () => {
         },
       ],
     });
+
+    await medplum.createResource({
+      resourceType: 'Patient',
+      identifier: [{ system: NEUTRON_HEALTH, value: 'pat_01J5RHGXB2ZJFQ7B694CQGSGT5' }],
+    });
     const event: PrescriptionCreatedEvent = {
-      id: '01J7GX1PHZ1V18JD7BMVM4BJKB',
+      id: '01J92NESAQ0XR0V8G1K39H157Z',
       type: 'photon:prescription:created',
       specversion: '1.0',
       datacontenttype: 'application/json',
-      time: '2024-09-11T16:00:46.655Z',
-      subject: 'rx_01J7GX1PGPWMAFP4KQHGQ5186G',
+      time: '2024-09-30T23:50:08.472Z',
+      subject: 'rx_01J92NES902ZN34RFXZHD7F4N6',
       source: 'org:org_q5l4IPPdSR95k8Lc',
       data: {
-        id: 'rx_01J7GX1PGPWMAFP4KQHGQ5186G',
-        // externalId: null,
-        patient: {
-          id: 'pat_01J5RHGXB2ZJFQ7B694CQGSGT5',
-          externalId: 'ec3bb2b3-474f-4d40-804d-9fdb6149b492',
-        },
-        dispenseQuantity: 226.8,
-        dispenseAsWritten: true,
+        id: 'rx_01J92NES902ZN34RFXZHD7F4N6',
+        patient: { id: 'pat_01J5RHGXB2ZJFQ7B694CQGSGT5', externalId: 'ec3bb2b3-474f-4d40-804d-9fdb6149b492' },
+        dispenseQuantity: 34,
+        dispenseAsWritten: false,
         dispenseUnit: 'Milliliter',
-        refillsAllowed: 1,
-        fillsAllowed: 2,
+        refillsAllowed: 0,
+        fillsAllowed: 1,
         daysSupply: 1,
-        instructions: '226.8 mL ',
+        instructions: '34 mL ',
         notes: '',
-        effectiveDate: '2024-09-11',
-        expirationDate: '2025-09-11',
+        effectiveDate: '2024-09-30',
+        expirationDate: '2025-09-30',
         prescriberId: 'usr_01J21EPR81W9XRYTY69RQY3R9J',
-        treatmentId: 'med_01GGT9ZK1327R6SGZDJADSSNKN',
+        treatmentId: 'med_01J5VJG4ZXKD8BGVVFBG9QYDN0',
       },
     };
     const result = await handler(medplum, { bot, contentType, secrets, input: event });

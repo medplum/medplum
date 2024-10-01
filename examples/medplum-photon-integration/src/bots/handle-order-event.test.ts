@@ -35,13 +35,13 @@ describe('Order event handler', async () => {
 
   test.skip('Returns undefined if it is not an order created event', async () => {
     const medplum = new MockClient();
-    const result = await handler(medplum, { bot, contentType, secrets: {}, input: placedWebhook });
+    const result = await handler(medplum, { bot, contentType, secrets: {}, input: placedWebhook.body });
     expect(result).toBeUndefined();
   });
 
   test.skip('Patient is not in Medplum', async () => {
     const medplum = new MockClient();
-    await expect(() => handler(medplum, { bot, contentType, secrets, input: createdWebhook })).rejects.toThrow(
+    await expect(() => handler(medplum, { bot, contentType, secrets, input: createdWebhook.body })).rejects.toThrow(
       'No linked patient'
     );
   });
@@ -63,7 +63,7 @@ describe('Order event handler', async () => {
 
     const prescriptionId = authorizingPrescription.id as string;
 
-    const dispenses = await handler(medplum, { bot, contentType, secrets, input: createdWebhook });
+    const dispenses = await handler(medplum, { bot, contentType, secrets, input: createdWebhook.body });
     const updatedPrescription = await medplum.readResource('MedicationRequest', prescriptionId);
     expect(dispenses?.length).toBe(1);
     expect(dispenses?.[0].status).toBe('in-progress');
@@ -78,7 +78,7 @@ describe('Order event handler', async () => {
       identifier: [{ system: NEUTRON_HEALTH, value: 'pat_01J5RHGXB2ZJFQ7B694CQGSGT5' }],
     });
 
-    await expect(() => handler(medplum, { bot, contentType, secrets, input: noPrescriptionId })).rejects.toThrow(
+    await expect(() => handler(medplum, { bot, contentType, secrets, input: noPrescriptionId.body })).rejects.toThrow(
       'Medication could not be dispensed as there is no authorizing prescription'
     );
   });
