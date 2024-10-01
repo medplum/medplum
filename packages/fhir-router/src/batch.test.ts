@@ -33,7 +33,8 @@ const router: FhirRouter = new FhirRouter();
 const repo: FhirRepository = new MemoryRepository();
 const req: FhirRequest = {
   method: 'POST',
-  pathname: '/',
+  url: '/',
+  pathname: '',
   params: {},
   query: {},
   body: '',
@@ -1094,6 +1095,68 @@ describe('Batch', () => {
               status: 'active',
               reason: 'Test',
               criteria: 'QuestionnaireResponse?questionnaire=urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+              channel: {
+                type: 'rest-hook',
+                endpoint: 'urn:uuid:32178250-67a4-4ec9-89bc-d16f1d619403',
+                payload: ContentType.FHIR_JSON,
+              },
+            },
+          },
+        ],
+      });
+      expect(bundle).toBeDefined();
+      expect(bundle.type).toEqual('transaction-response');
+      expect(bundle.entry).toBeDefined();
+
+      const results = bundle.entry as BundleEntry[];
+      expect(results.length).toEqual(2);
+      expect(results[0].response?.status).toEqual('201');
+      expect(results[1].response?.status).toEqual('201');
+
+      const subscription = await repo.readReference<Subscription>({
+        reference: results[1].response?.location as string,
+      });
+      expect(subscription.criteria).toMatch(
+        /QuestionnaireResponse\?questionnaire=Questionnaire\/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/
+      );
+    });
+
+    test('Encoded urn:uuid', async () => {
+      const bundle = await processBatch(req, repo, router, {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+            request: {
+              method: 'POST',
+              url: 'Questionnaire',
+            },
+            resource: {
+              resourceType: 'Questionnaire',
+              status: 'active',
+              name: 'Example Questionnaire',
+              title: 'Example Questionnaire',
+              item: [
+                {
+                  linkId: 'q1',
+                  type: 'string',
+                  text: 'Question',
+                },
+              ],
+            },
+          },
+          {
+            fullUrl: 'urn:uuid:14b4f91f-1119-40b8-b10e-3db77cf1c191',
+            request: {
+              method: 'POST',
+              url: 'Subscription',
+            },
+            resource: {
+              resourceType: 'Subscription',
+              status: 'active',
+              reason: 'Test',
+              criteria: 'QuestionnaireResponse?questionnaire=urn%3Auuid%3Ae95d01cf-60ae-43f7-a8fc-0500a8b045bb',
               channel: {
                 type: 'rest-hook',
                 endpoint: 'urn:uuid:32178250-67a4-4ec9-89bc-d16f1d619403',

@@ -12,6 +12,7 @@ import {
   isValidHostname,
   parseSearchRequest,
   serverError,
+  singularize,
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, Bundle, BundleEntry, Device, OperationOutcome, Parameters } from '@medplum/fhirtypes';
@@ -99,8 +100,9 @@ export async function handleBulkAgentOperation(
 ): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
 
-  if (req.query._count && Number.parseInt(req.query._count, 10) > MAX_AGENTS_PER_PAGE) {
-    return [badRequest(`'_count' of ${req.query._count} is greater than max of ${MAX_AGENTS_PER_PAGE}`)];
+  const count = singularize(req.query._count);
+  if (count && Number.parseInt(count, 10) > MAX_AGENTS_PER_PAGE) {
+    return [badRequest(`'_count' of ${count} is greater than max of ${MAX_AGENTS_PER_PAGE}`)];
   }
 
   const agents = await getAgentsForRequest(req, repo);
