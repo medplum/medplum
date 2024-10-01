@@ -2,7 +2,6 @@ import {
   BinarySource,
   ContentType,
   CreateBinaryOptions,
-  FetchLike,
   LoginState,
   MedplumClient,
   MedplumClientOptions,
@@ -87,7 +86,7 @@ import {
 import { MockSubscriptionManager } from './subscription-manager';
 
 export interface MockClientOptions
-  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime'> {
+  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime' | 'fetch'> {
   readonly debug?: boolean;
   /**
    * Override currently logged in user. Specifying null results in
@@ -98,7 +97,6 @@ export interface MockClientOptions
    * Override the `MockFetchClient` used by this `MockClient`.
    */
   readonly mockFetchOverride?: MockFetchOverrideOptions;
-  readonly fetch?: FetchLike;
 }
 
 /**
