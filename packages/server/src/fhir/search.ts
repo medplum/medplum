@@ -1292,6 +1292,19 @@ function buildChainedSearch(
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
   }
 
+  // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
+  // Note that this does slightly change the behavior of the search query: true chained search would require the
+  // reference to point to an existing resource, while the rewritten query just matches the reference string
+  if (param.chain.length === 1 && param.chain[0].filter?.code === '_id') {
+    const { resourceType: targetType, code, filter } = param.chain[0];
+    const targetId = filter.value;
+    return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
+      code,
+      operator: Operator.EQUALS,
+      value: `${targetType}/${targetId}`,
+    });
+  }
+
   if (usesReferenceLookupTable(repo)) {
     return buildChainedSearchUsingReferenceTable(repo, selectQuery, resourceType, param);
   } else {
