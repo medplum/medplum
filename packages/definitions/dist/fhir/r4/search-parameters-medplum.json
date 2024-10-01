@@ -728,6 +728,42 @@
         "type": "token",
         "expression": "Location.physicalType"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Appointment-end",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Appointment-end",
+        "url": "https://medplum.com/fhir/SearchParameter/Appointment-end",
+        "version": "4.0.1",
+        "name": "end",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The end time of the Appointment",
+        "code": "end",
+        "base": ["Appointment"],
+        "type": "date",
+        "expression": "Appointment.end",
+        "target": ["Appointment"]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Slot-end",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Slot-end",
+        "url": "https://medplum.com/fhir/SearchParameter/Slot-end",
+        "version": "4.0.1",
+        "name": "end",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The end time of the Slot",
+        "code": "end",
+        "base": ["Slot"],
+        "type": "date",
+        "expression": "Slot.end",
+        "target": ["Slot"]
+      }
     }
   ]
 }
