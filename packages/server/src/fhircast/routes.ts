@@ -12,7 +12,7 @@ import { body, oneOf, validationResult } from 'express-validator';
 import assert from 'node:assert';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { getLogger } from '../context';
+import { getAuthenticatedContext, getLogger } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { getRedis } from '../redis';
@@ -135,6 +135,8 @@ protectedCommonRoutes.post(
 );
 
 async function handleSubscriptionRequest(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
+
   const type = req.body['hub.channel.type'];
   if (type !== 'websocket') {
     sendOutcome(res, badRequest('Invalid hub.channel.type'));
@@ -150,13 +152,14 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
   const topic = req.body['hub.topic'];
   let subscriptionEndpoint: string;
   try {
+    const topicKey = `medplum:fhircast:project:${ctx.project.id as string}:topic:${topic}:endpoint`;
     const results = await getRedis()
       // Multi allows for multiple commands to be executed in a transaction
       .multi()
       // Sets the endpoint key for this topic if it doesn't exist
-      .setnx(`medplum:fhircast:topic:${topic}:endpoint`, generateId())
+      .setnx(topicKey, generateId())
       // Gets the endpoint, either previously generated endpoint secret or the newly generated key if a previous one did not exist
-      .get(`medplum:fhircast:topic:${topic}:endpoint`)
+      .get(topicKey)
       // Executes the transaction
       .exec();
 

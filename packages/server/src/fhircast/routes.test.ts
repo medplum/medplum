@@ -12,7 +12,7 @@ import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { getRedis } from '../redis';
-import { initTestAuth } from '../test.setup';
+import { initTestAuth, withTestContext } from '../test.setup';
 
 const STU2_BASE_ROUTE = '/fhircast/STU2/';
 const STU3_BASE_ROUTE = '/fhircast/STU3/';
@@ -22,13 +22,16 @@ describe('FHIRCast routes', () => {
   let config: MedplumServerConfig;
   let server: Server;
   let accessToken: string;
+  let tokenForAnotherProject: string;
 
   beforeAll(async () => {
     app = express();
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
     server = await initApp(app, config);
-    accessToken = await initTestAuth({ membership: { admin: true } });
+    accessToken = await withTestContext(() => initTestAuth({ membership: { admin: true } }));
+    tokenForAnotherProject = await withTestContext(() => initTestAuth({ membership: { admin: true } }));
+
     await new Promise<void>((resolve) => {
       server.listen(0, 'localhost', 511, resolve);
     });
@@ -167,6 +170,35 @@ describe('FHIRCast routes', () => {
       });
     expect(res2.status).toBe(202);
     expect(res2.body['hub.channel.endpoint']).toEqual(res1.body['hub.channel.endpoint']);
+  });
+
+  test('Subscribing to the same topic from a different project yields a different endpoint', async () => {
+    const res1 = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': 'topic',
+        'hub.events': 'Patient-open',
+      });
+    expect(res1.status).toBe(202);
+    expect(res1.body['hub.channel.endpoint']).toMatch(/ws:\/\/localhost:8103\/ws\/fhircast\/*/);
+    expect(res1.body['hub.channel.endpoint']).not.toContain('topic');
+
+    const res2 = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + tokenForAnotherProject)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': 'topic',
+        'hub.events': 'Patient-open',
+      });
+    expect(res2.status).toBe(202);
+    expect(res2.body['hub.channel.endpoint']).not.toEqual(res1.body['hub.channel.endpoint']);
   });
 
   test('Unsubscribe', async () => {
