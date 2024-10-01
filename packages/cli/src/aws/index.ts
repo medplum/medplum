@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { createMedplumCommand } from '../util/command';
+import { color, createMedplumCommand, processDescription } from '../util/command';
 import { describeStacksCommand } from './describe';
 import { initStackCommand } from './init';
 import { listStacksCommand } from './list';
@@ -7,7 +7,6 @@ import { updateAppCommand } from './update-app';
 import { updateBucketPoliciesCommand } from './update-bucket-policies';
 import { updateConfigCommand } from './update-config';
 import { updateServerCommand } from './update-server';
-import { processDescription } from '../util/command';
 
 export function buildAwsCommand(): Command {
   const aws = new Command('aws').description('Commands to manage AWS resources');
@@ -25,9 +24,11 @@ export function buildAwsCommand(): Command {
   aws
     .command('update-config')
     .alias('deploy-config')
+    .summary('Update the AWS Parameter Store config values.')
     .description(
       processDescription(
-        'Update the AWS Parameter Store config values.\n\nConfiguration values come from a file named **medplum.<tag>.config.server.json** where **<tag>** is the Medplum stack tag.\n\n**Services must be restarted to apply changes.**'
+        'Update the AWS Parameter Store config values.\n\nConfiguration values come from a file named **medplum.<tag>.config.server.json** where **<tag>** is the Medplum stack tag.\n\n' +
+          color.yellow('**Services must be restarted to apply changes.**')
       )
     )
     .argument('<tag>', 'The Medplum stack tag')
