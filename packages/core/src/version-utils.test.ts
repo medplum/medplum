@@ -71,7 +71,6 @@ describe('checkIfValidMedplumVersion', () => {
 
   test('Version not found', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-      // @ts-expect-error Not perfect match to fetch
       jest.fn(async () => {
         return Promise.resolve({
           status: 404,
@@ -79,7 +78,7 @@ describe('checkIfValidMedplumVersion', () => {
             return { message: 'Not Found' };
           },
         });
-      })
+      }) as unknown as typeof globalThis.fetch
     );
 
     await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toEqual(false);
@@ -88,7 +87,6 @@ describe('checkIfValidMedplumVersion', () => {
 
   test('Version not found', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-      // @ts-expect-error Not perfect match to fetch
       jest.fn(async () => {
         return Promise.resolve({
           status: 404,
@@ -96,7 +94,7 @@ describe('checkIfValidMedplumVersion', () => {
             return { message: 'Not Found' };
           },
         });
-      })
+      }) as unknown as typeof globalThis.fetch
     );
     await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toEqual(false);
     fetchSpy.mockRestore();
@@ -129,7 +127,6 @@ describe('fetchVersionManifest', () => {
       ],
     } as ReleaseManifest;
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-      // @ts-expect-error Not perfect match to fetch
       jest.fn(async () => {
         return Promise.resolve({
           status: 200,
@@ -137,7 +134,7 @@ describe('fetchVersionManifest', () => {
             return manifest;
           },
         });
-      })
+      }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchVersionManifest()).resolves.toMatchObject<ReleaseManifest>(manifest);
     // Should be called with latest
@@ -160,7 +157,6 @@ describe('fetchVersionManifest', () => {
       ],
     } as ReleaseManifest;
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-      // @ts-expect-error Not perfect match to fetch
       jest.fn(async () => {
         return Promise.resolve({
           status: 200,
@@ -168,7 +164,7 @@ describe('fetchVersionManifest', () => {
             return manifest;
           },
         });
-      })
+      }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchVersionManifest('3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
     // Should be called with latest
@@ -192,7 +188,6 @@ describe('fetchVersionManifest', () => {
 
   test('Version not found', async () => {
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-      // @ts-expect-error Not perfect match to fetch
       jest.fn(async () => {
         return Promise.resolve({
           status: 404,
@@ -200,7 +195,7 @@ describe('fetchVersionManifest', () => {
             return { message: 'Not Found' };
           },
         });
-      })
+      }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchVersionManifest('3.1.6')).rejects.toThrow(
       "Received status code 404 while fetching manifest for version '3.1.6'. Message: Not Found"
@@ -225,7 +220,6 @@ describe('fetchLatestVersionString', () => {
       ],
     } as ReleaseManifest;
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-      // @ts-expect-error Not perfect match to fetch
       jest.fn(async () => {
         return Promise.resolve({
           status: 200,
@@ -233,7 +227,7 @@ describe('fetchLatestVersionString', () => {
             return manifest;
           },
         });
-      })
+      }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchLatestVersionString()).resolves.toEqual('3.1.6');
     fetchSpy.mockRestore();
@@ -250,7 +244,6 @@ describe('fetchLatestVersionString', () => {
       ],
     } as ReleaseManifest;
     const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
-      // @ts-expect-error Not perfect match to fetch
       jest.fn(async () => {
         return Promise.resolve({
           status: 200,
@@ -258,7 +251,7 @@ describe('fetchLatestVersionString', () => {
             return manifest;
           },
         });
-      })
+      }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchLatestVersionString()).rejects.toThrow(
       "Invalid release name found. Release tag 'canary' did not start with 'v'"
