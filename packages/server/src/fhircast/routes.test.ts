@@ -4,8 +4,10 @@ import {
   FhircastEventPayload,
   createFhircastMessagePayload,
   generateId,
+  isOperationOutcome,
 } from '@medplum/core';
 import express from 'express';
+import { ChainableCommander } from 'ioredis';
 import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
 import request from 'superwstest';
@@ -16,6 +18,24 @@ import { initTestAuth, withTestContext } from '../test.setup';
 
 const STU2_BASE_ROUTE = '/fhircast/STU2/';
 const STU3_BASE_ROUTE = '/fhircast/STU3/';
+
+type ExecResult = Awaited<ReturnType<ChainableCommander['exec']>>;
+
+class MockChainableCommander {
+  result: ExecResult = null;
+  setnx(): this {
+    return this;
+  }
+  get(): this {
+    return this;
+  }
+  async exec(): Promise<[Error | null, unknown][] | null> {
+    return this.result;
+  }
+  setNextExecResult(result: ExecResult): void {
+    this.result = result;
+  }
+}
 
 describe('FHIRCast routes', () => {
   let app: express.Express;
@@ -199,6 +219,85 @@ describe('FHIRCast routes', () => {
       });
     expect(res2.status).toBe(202);
     expect(res2.body['hub.channel.endpoint']).not.toEqual(res1.body['hub.channel.endpoint']);
+  });
+
+  test('Redis returns `null`', async () => {
+    const redis = getRedis();
+    const mockCommander = new MockChainableCommander();
+    const mockFn = (() => {
+      return mockCommander;
+    }) as unknown as (commands?: unknown[][]) => ChainableCommander;
+    const redisMulti = jest.spyOn(redis, 'multi').mockImplementation(mockFn);
+
+    mockCommander.setNextExecResult(null);
+
+    const res = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': 'topic',
+        'hub.events': 'Patient-open',
+      });
+
+    expect(res.status).toBe(500);
+    expect(isOperationOutcome(res.body)).toEqual(true);
+    expect(res.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'exception',
+          details: { text: 'Internal server error' },
+          diagnostics: 'Error: Failed to get endpoint for topic',
+        },
+      ],
+    });
+
+    redisMulti.mockRestore();
+  });
+
+  test('Redis result contains error', async () => {
+    const redis = getRedis();
+    const mockCommander = new MockChainableCommander();
+    const mockFn = (() => {
+      return mockCommander;
+    }) as unknown as (commands?: unknown[][]) => ChainableCommander;
+    const redisMulti = jest.spyOn(redis, 'multi').mockImplementation(mockFn);
+
+    mockCommander.setNextExecResult([
+      [null, 'OK'],
+      [new Error('Something happened when querying Redis'), null],
+    ]);
+
+    const res = await request(server)
+      .post(STU3_BASE_ROUTE)
+      .set('Content-Type', ContentType.JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        'hub.channel.type': 'websocket',
+        'hub.mode': 'subscribe',
+        'hub.topic': 'topic',
+        'hub.events': 'Patient-open',
+      });
+
+    expect(res.status).toBe(500);
+    expect(isOperationOutcome(res.body)).toEqual(true);
+    expect(res.body).toMatchObject({
+      resourceType: 'OperationOutcome',
+      issue: [
+        {
+          severity: 'error',
+          code: 'exception',
+          details: { text: 'Internal server error' },
+          diagnostics: 'Error: Failed to get endpoint for topic',
+        },
+      ],
+    });
+
+    redisMulti.mockRestore();
   });
 
   test('Unsubscribe', async () => {
