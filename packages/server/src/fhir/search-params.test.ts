@@ -1,5 +1,5 @@
-import { createReference, Operator } from '@medplum/core';
-import { Appointment, Practitioner, Slot } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, Operator } from '@medplum/core';
+import { Appointment, DiagnosticReport, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
@@ -171,5 +171,80 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(results2.entry).toHaveLength(2);
+    }));
+
+  test('Search by DiagnosticReport.study', async () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: 'Smith' }],
+      });
+
+      const study1 = await repo.createResource({
+        resourceType: 'ImagingStudy',
+        status: 'available',
+        subject: createReference(patient),
+      });
+
+      const study2 = await repo.createResource({
+        resourceType: 'ImagingStudy',
+        status: 'available',
+        subject: createReference(patient),
+      });
+
+      const report1 = (await repo.createResource({
+        resourceType: 'DiagnosticReport',
+        imagingStudy: [createReference(study1)],
+        status: 'final',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '10221-0',
+              display: 'Surgical operation note specimens taken Narrative',
+            },
+          ],
+          text: 'Surgical operation note specimens taken Narrative',
+        },
+      })) as DiagnosticReport;
+
+      const report2 = (await repo.createResource({
+        resourceType: 'DiagnosticReport',
+        imagingStudy: [createReference(study2)],
+        status: 'final',
+        code: {
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: '10221-0',
+              display: 'Surgical operation note specimens taken Narrative',
+            },
+          ],
+          text: 'Surgical operation note specimens taken Narrative',
+        },
+      })) as DiagnosticReport;
+
+      expect(study1).toBeDefined();
+      expect(study2).toBeDefined();
+      expect(report1).toBeDefined();
+      expect(report2).toBeDefined();
+
+      const results1 = await repo.search({
+        resourceType: 'DiagnosticReport',
+        filters: [{ code: 'study', operator: Operator.EQUALS, value: getReferenceString(study1) }],
+      });
+
+      expect(results1.entry).toHaveLength(1);
+      expect(results1.entry?.[0].resource?.resourceType).toEqual('DiagnosticReport');
+      expect((results1.entry?.[0].resource as DiagnosticReport).id).toEqual(report1.id);
+
+      const results2 = await repo.search({
+        resourceType: 'DiagnosticReport',
+        filters: [{ code: 'study', operator: Operator.NOT_EQUALS, value: getReferenceString(study1) }],
+      });
+
+      expect(results2.entry).toHaveLength(1);
+      expect(results2.entry?.[0].resource?.resourceType).toEqual('DiagnosticReport');
+      expect((results2.entry?.[0].resource as DiagnosticReport).id).toEqual(report2.id);
     }));
 });
