@@ -1,5 +1,5 @@
 import { createReference, Operator } from '@medplum/core';
-import { Appointment, Practitioner } from '@medplum/fhirtypes';
+import { Appointment, Practitioner, Slot } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
@@ -105,6 +105,67 @@ describe('Medplum Custom Search Parameters', () => {
         resourceType: 'Appointment',
         filters: [
           { code: 'date', operator: Operator.GREATER_THAN_OR_EQUALS, value: startTime1 },
+          { code: 'end', operator: Operator.LESS_THAN_OR_EQUALS, value: endTime2 },
+        ],
+      });
+
+      expect(results2.entry).toHaveLength(2);
+    }));
+
+  test('Search by Slot.end', () =>
+    withTestContext(async () => {
+      const startTime1 = new Date('1970-01-01T12:00:00.000Z').toISOString();
+      const endTime1 = new Date('1970-01-01T13:00:00.000Z').toISOString();
+
+      const startTime2 = new Date('1970-01-01T13:00:00.000Z').toISOString();
+      const endTime2 = new Date('1970-01-01T14:00:00.000Z').toISOString();
+
+      const practitioner = await repo.createResource<Practitioner>({
+        resourceType: 'Practitioner',
+        name: [{ prefix: ['Dr.'], given: ['Alice'], family: 'Smith' }],
+      });
+
+      expect(practitioner).toBeDefined();
+
+      const baseSlot = {
+        resourceType: 'Slot',
+        status: 'free',
+        schedule: { reference: 'Schedule/123' },
+        start: new Date().toISOString(),
+        end: new Date().toISOString(),
+      } satisfies Slot;
+
+      const slot1 = await repo.createResource<Slot>({
+        ...baseSlot,
+        start: startTime1,
+        end: endTime1,
+      });
+
+      const slot2 = await repo.createResource<Slot>({
+        ...baseSlot,
+        start: startTime2,
+        end: endTime2,
+      });
+
+      expect(slot1).toBeDefined();
+      expect(slot2).toBeDefined();
+
+      const results1 = await repo.search({
+        resourceType: 'Slot',
+        filters: [
+          { code: 'start', operator: Operator.GREATER_THAN_OR_EQUALS, value: startTime1 },
+          { code: 'end', operator: Operator.LESS_THAN_OR_EQUALS, value: startTime2 },
+        ],
+      });
+
+      expect(results1.entry).toHaveLength(1);
+      expect(results1.entry?.[0].resource?.resourceType).toEqual('Slot');
+      expect((results1.entry?.[0].resource as Slot).id).toEqual(slot1.id);
+
+      const results2 = await repo.search({
+        resourceType: 'Slot',
+        filters: [
+          { code: 'start', operator: Operator.GREATER_THAN_OR_EQUALS, value: startTime1 },
           { code: 'end', operator: Operator.LESS_THAN_OR_EQUALS, value: endTime2 },
         ],
       });
