@@ -278,6 +278,10 @@ async function getSearchEntries<T extends Resource>(
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const rowCount = rows.length;
   const resources = rows.map((row) => JSON.parse(row.content as string)) as T[];
+  let nextResource: T | undefined;
+  if (resources.length > searchRequest.count) {
+    nextResource = resources.pop();
+  }
   const entries = resources.map(
     (resource) =>
       ({
@@ -286,10 +290,6 @@ async function getSearchEntries<T extends Resource>(
         resource,
       }) as BundleEntry
   );
-  let nextResource: T | undefined;
-  if (entries.length > searchRequest.count) {
-    nextResource = entries.pop()?.resource as T;
-  }
 
   if (searchRequest.include || searchRequest.revInclude) {
     await getExtraEntries(repo, searchRequest, resources, entries);

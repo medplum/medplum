@@ -827,6 +827,12 @@
       "type": "reference",
       "description": "Additional information to support the appointment",
       "expression": "Appointment.supportingInformation"
+    },
+    {
+      "name": "end",
+      "type": "date",
+      "description": "The end time of the Appointment",
+      "expression": "Appointment.end"
     }
   ]
 }

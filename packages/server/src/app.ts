@@ -129,6 +129,15 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
+  if (err.type === 'stream.not.readable') {
+    // This is a common error when the client disconnects
+    // See: https://expressjs.com/en/resources/middleware/body-parser.html
+    // It is commonly associated with an AWS ALB disconnect status code 460
+    // See: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-troubleshooting.html#http-460-issues
+    getLogger().warn('Stream not readable', err);
+    sendOutcome(res, badRequest('Stream not readable'));
+    return;
+  }
   getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }

@@ -1,0 +1,40 @@
+---
+sidebar_position: 6
+---
+
+# Project Settings
+
+Many settings are also available at the Project level, allowing them to be configured for specific tenants on the server
+rather than globally. Only Super Admin users are allowed to edit Project settings.
+
+Additional details are available in the full [`Project` resource schema](/docs/api/fhir/medplum/project).
+
+| Setting                      | Description                                                                                                                                                                                                                                                                                                 | Default |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `superAdmin`                 | Users belonging to a Project with this flag are granted [Super Admin](/docs/access/projects#superadmin) access to the server. Multiple Projects can have this set.                                                                                                                                          | `false` |
+| `checkReferencesOnWrite`     | If `true`, the the server will reject any create or write operations to FHIR resources with a reference to a resource that does not exist.                                                                                                                                                                  | `false` |
+| `features`                   | A list of optional features that are enabled for the project. Possible values are listed [below](#project-feature-flags).                                                                                                                                                                                   |         |
+| `defaultPatientAccessPolicy` | The default [`AccessPolicy`](/docs/access/access-policies) applied to all [Patient Users](/docs/auth/user-management-guide#project-scoped-users) invited to this [`Project`](/docs/api/fhir/medplum/project). This is required to enable [open patient registration](/docs/auth/open-patient-registration). |         |
+| `link`                       | Additional Projects whose [contents should be accessible](/docs/access/projects#project-linking) to users in the current Project.                                                                                                                                                                           |         |
+| `defaultProfile`             | [Resource profiles](http://hl7.org/fhir/R4/profiling.html#resources) that will be added to resources written in the Project that do not specify a profile directly. This enables automatic custom resource validation.                                                                                      |         |
+| `setting`                    | Arbitrary key-value pairs available to anyone in the Project, can be set by Project Admins.                                                                                                                                                                                                                 |         |
+| `secret`                     | Key-value pairs similar to `setting`, that can only be read by Project Admins. These can be used to [pass secrets to Bots](/docs/bots/bot-secrets)                                                                                                                                                          |         |
+| `systemSetting`              | Server settings related to the Project: visible to anyone, but can only be set by Super Admins.                                                                                                                                                                                                             |         |
+| `systemSecret`               | Key-value pairs that can only be accessed by Super Admins.                                                                                                                                                                                                                                                  |         |
+
+## Project feature flags
+
+Medplum server exposes settings to control access to specific features on a per-Project basis. The available features
+are:
+
+| Feature                   | Description                                                                                                                      |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `bots`                    | Project is allowed to create and run [Bots](/docs/bots/bot-basics)                                                               |
+| `cron`                    | Can run Bots periodically on [CRON timers](https://www.medplum.com/docs/bots/bot-cron-job)                                       |
+| `email`                   | Bots in this project can [send emails](/docs/sdk/core.medplumclient.sendemail)                                                   |
+| `google-auth-required`    | [Google authentication](/docs/auth/methods/google-auth) is the only method allowed                                               |
+| `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql/basic-queries#overview) queries                        |
+| `terminology`             | Enable full standards-compliant implementation for the [`ValueSet/$expand` operation](/docs/api/fhir/operations/valueset-expand) |
+| `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                          |
+| `reference-lookups`       | Uses dedicated lookup tables for faster [chained search](/docs/search/chained-search)                                            |
+| `transaction-bundles`     | Use strong database transaction isolation for `transaction` Bundles                                                              |
