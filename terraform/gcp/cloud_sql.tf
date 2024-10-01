@@ -44,5 +44,8 @@ module "sql-db" {
   db_charset   = "UTF8"
   db_collation = "en_US.UTF8"
 
-  depends_on = [google_service_networking_connection.private_service_access]
+  depends_on = [
+    google_service_networking_connection.private_service_access,
+    google_project_service.project
+  ]
 }

@@ -8,10 +8,12 @@ services_api = [
   "compute.googleapis.com",
   "container.googleapis.com",
   "servicenetworking.googleapis.com",
-  # "sql-component.googleapis.com",
-  # "sqladmin.googleapis.com",
-  # "logging.googleapis.com",
-  # "monitoring.googleapis.com",
+  "logging.googleapis.com",
+  "monitoring.googleapis.com",
+  "redis.googleapis.com",
+  "serviceconsumermanagement.googleapis.com",
+  "networkconnectivity.googleapis.com",
+  "compute.googleapis.com",
 ]
 
 # Common enforced labels
