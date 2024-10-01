@@ -1292,6 +1292,17 @@ function buildChainedSearch(
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
   }
 
+  // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
+  if (param.chain.length === 1 && param.chain[0].filter?.code === '_id') {
+    const searchParam = param.chain[0];
+    const targetId = searchParam.filter?.value;
+    return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
+      code: searchParam.code,
+      operator: Operator.EQUALS,
+      value: `${searchParam.resourceType}/${targetId}`,
+    });
+  }
+
   if (usesReferenceLookupTable(repo)) {
     return buildChainedSearchUsingReferenceTable(repo, selectQuery, resourceType, param);
   } else {
