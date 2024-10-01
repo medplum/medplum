@@ -5,7 +5,7 @@ module "redis_cluster" {
   name      = "medplum-redis-cluster"
   project   = var.project_id
   region    = var.region
-  network   = module.vpc.network_self_link
+  network   = ["projects/${var.project_id}/global/networks/${var.vpc_name}"]
   node_type = "REDIS_STANDARD_SMALL"
 
   redis_configs = {
@@ -13,10 +13,10 @@ module "redis_cluster" {
   }
 
   service_connection_policies = {
-    test-net-redis-cluster-scp = {
+    medplum-redis-cluster-scp = {
       network_name    = var.vpc_name
       network_project = var.project_id
-      subnet_names    = module.vpc.subnets["us-west1/medplum-us-west1-sn-sql-01"].name
+      subnet_names    = [module.vpc.subnets["us-west1/medplum-us-west1-sn-sql-01"].name]
     }
   }
 
