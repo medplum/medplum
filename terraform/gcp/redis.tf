@@ -1,6 +1,6 @@
 module "redis_cluster" {
   source  = "terraform-google-modules/memorystore/google//modules/redis-cluster"
-  version = "~> 11.0"
+  version = "~> 10.0"
 
   name      = "medplum-redis-cluster"
   project   = var.project_id
