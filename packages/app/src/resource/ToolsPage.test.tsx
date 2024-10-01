@@ -324,6 +324,8 @@ describe('ToolsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
     });
 
+    await act(async () => {});
+
     await expect(
       screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
     ).resolves.toBeInTheDocument();
@@ -471,6 +473,8 @@ describe('ToolsPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
     });
 
+    await act(async () => {});
+
     expect(
       await screen.findByText(
         'Unable to determine the current version of the agent. Check the network connectivity of the agent.'
@@ -539,6 +543,8 @@ describe('ToolsPage', () => {
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /upgrade/i }));
     });
+
+    await act(async () => {});
 
     await expect(
       screen.findByText('Are you sure you want to upgrade this agent from version 3.2.13 to version 3.2.14?')
