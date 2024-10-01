@@ -1,5 +1,5 @@
-import { accepted, badRequest, ContentType, OperationOutcomeError } from '@medplum/core';
-import { Bundle, OperationOutcome } from '@medplum/fhirtypes';
+import { badRequest, ContentType } from '@medplum/core';
+import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
 import { Express, json, NextFunction, Request, Response, Router, text, urlencoded } from 'express';
@@ -15,7 +15,6 @@ import {
   attachRequestContext,
   AuthenticatedRequestContext,
   closeRequestContext,
-  getAuthenticatedContext,
   getLogger,
   getRequestContext,
   requestContextStore,
@@ -46,10 +45,11 @@ import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
 import { authenticateRequest } from './oauth/middleware';
-import { queueBatchProcessing } from './workers/batch';
-import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
+import { asyncBatchHandler } from './async-batch';
 
 let server: http.Server | undefined = undefined;
+
+export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
 
 /**
  * Sets standard headers for all requests.
@@ -142,8 +142,6 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
   res.status(500).json({ msg: 'Internal Server Error' });
 }
 
-export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
-
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
   await initAppServices(config);
   server = http.createServer(app);
@@ -160,32 +158,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use('/fhir/R4/Binary', binaryRouter);
 
   // Handle async batch by enqueueing job
-  app.post(
-    '/fhir/R4/',
-    authenticateRequest,
-    asyncWrap(async (req, res, next) => {
-      if (req.get('Prefer') !== 'respond-async') {
-        next();
-        return;
-      }
-
-      await runMiddleware(req, res, json({ type: JSON_TYPE, limit: config.maxBatchSize }));
-      if (req.body.resourceType !== 'Bundle') {
-        throw new OperationOutcomeError(badRequest('Expected request body to be a Bundle'));
-      }
-      const bundle = req.body as Bundle;
-
-      const { repo } = getAuthenticatedContext();
-      const exec = new AsyncJobExecutor(repo);
-      await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
-      await exec.run(async (asyncJob) => {
-        await queueBatchProcessing(bundle, asyncJob);
-      });
-
-      const { baseUrl } = getConfig();
-      sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
-    })
-  );
+  app.post('/fhir/R4/', authenticateRequest, asyncWrap(asyncBatchHandler(config)));
 
   app.use(
     urlencoded({
@@ -298,7 +271,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
   next();
 };
 
-async function runMiddleware(
+export async function runMiddleware(
   req: Request,
   res: Response,
   handler: (req: Request, res: Response, next: (err?: any) => void) => void
