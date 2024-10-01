@@ -369,7 +369,8 @@ describe('FHIR Router', () => {
     const [res, resource] = await router.handleRequest(
       {
         method: 'POST',
-        pathname: '/Patient',
+        url: '/Patient',
+        pathname: '',
         body: patient,
         params: {},
         query: {
