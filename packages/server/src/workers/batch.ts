@@ -128,7 +128,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   const req: FhirRequest = {
     method: 'POST',
     url: '/',
-    pathname: '/',
+    pathname: '',
     params: Object.create(null),
     query: Object.create(null),
     body: bundle,

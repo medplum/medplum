@@ -268,7 +268,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.FHIR_JSON);
     expect(res3.status).toBe(200);
-    expect(res3.body.data).toEqual('');
+    expect(res3.body.data).toBeUndefined();
   });
 
   test('Handle non-binary JSON', async () => {

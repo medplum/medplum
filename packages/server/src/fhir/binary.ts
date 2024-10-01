@@ -49,28 +49,30 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
     const str = await readStreamToString(stream);
     binarySource = str;
 
+    let body: any;
     try {
       // The binary handler does *not* use Express body-parser in order to support raw binary data.
       // Therefore, we need to manually parse the body stream as JSON.
-      const body = JSON.parse(str);
-      if (isResource(body) && body.resourceType === 'Binary' && (!id || body.id === id)) {
-        // Special case where the content is actually a Binary resource.
-        // From the spec: https://hl7.org/fhir/R4/binary.html#rest
-        //
-        // """
-        //   When binary data is written to the server (create/update - POST or PUT),
-        //   the data is accepted as is and treated as the content of a Binary,
-        //   including when the content type is "application/fhir+xml" or "application/fhir+json",
-        //   except for the special case where the content is actually a Binary resource.
-        // """
-        const resource = body as Binary;
-        const binary = await (create ? repo.createResource<Binary>(resource) : repo.updateResource<Binary>(resource));
-        await sendResponse(req, res, create ? created : allOk, binary);
-        return;
-      }
+      body = JSON.parse(str);
     } catch (err) {
       // If the JSON is invalid, then it is not eligible for the special case.
       getLogger().debug('Invalid JSON', { error: err });
+    }
+
+    if (isResource(body) && body.resourceType === 'Binary' && (!id || body.id === id)) {
+      // Special case where the content is actually a Binary resource.
+      // From the spec: https://hl7.org/fhir/R4/binary.html#rest
+      //
+      // """
+      //   When binary data is written to the server (create/update - POST or PUT),
+      //   the data is accepted as is and treated as the content of a Binary,
+      //   including when the content type is "application/fhir+xml" or "application/fhir+json",
+      //   except for the special case where the content is actually a Binary resource.
+      // """
+      const resource = body as Binary;
+      const binary = await (create ? repo.createResource<Binary>(resource) : repo.updateResource<Binary>(resource));
+      await sendResponse(req, res, create ? created : allOk, binary);
+      return;
     }
   }
 
