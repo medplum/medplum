@@ -162,7 +162,7 @@ export function indexDefaultSearchParameters(bundle: StructureDefinition[] | Bun
   }
 }
 
-export function getOrInitTypeSchema(resourceType: string): TypeInfo {
+function getOrInitTypeSchema(resourceType: string): TypeInfo {
   let typeSchema = globalSchema.types[resourceType];
   if (!typeSchema) {
     typeSchema = {
