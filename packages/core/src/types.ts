@@ -8,6 +8,7 @@ import {
   Resource,
   ResourceType,
   SearchParameter,
+  StructureDefinition,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 import { SearchParameterDetails } from './search/details';
@@ -152,15 +153,17 @@ export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): voi
   }
 }
 
-/**
- * Indexes a SearchParameter resource for fast lookup.
- * Indexes by SearchParameter.code, which is the query string parameter name.
- * @param searchParam - The SearchParameter resource.
- * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
- */
-export function indexSearchParameter(searchParam: SearchParameter): void {
-  for (const resourceType of searchParam.base ?? []) {
-    let typeSchema = globalSchema.types[resourceType];
+export function indexDefaultSearchParameters(bundle: StructureDefinition[] | Bundle): void {
+  const sds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource as StructureDefinition) ?? []);
+  for (const sd of sds) {
+    if(sd.resourceType === 'StructureDefinition'){
+      getOrInitTypeSchema(sd.type);
+    }
+  }
+}
+
+export function getOrInitTypeSchema(resourceType: string): TypeInfo {
+  let typeSchema = globalSchema.types[resourceType];
     if (!typeSchema) {
       typeSchema = {
         searchParamsDetails: {},
@@ -213,6 +216,23 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
           expression: resourceType + '.meta.tag',
         } as SearchParameter,
       };
+    }
+
+    return typeSchema;
+}
+
+/**
+ * Indexes a SearchParameter resource for fast lookup.
+ * Indexes by SearchParameter.code, which is the query string parameter name.
+ * @param searchParam - The SearchParameter resource.
+ * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
+ */
+export function indexSearchParameter(searchParam: SearchParameter): void {
+  for (const resourceType of searchParam.base ?? []) {
+    const typeSchema = getOrInitTypeSchema(resourceType);
+
+    if(!typeSchema.searchParams){
+      typeSchema.searchParams = {};
     }
 
     typeSchema.searchParams[searchParam.code as string] = searchParam;
