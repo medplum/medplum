@@ -153,7 +153,9 @@ export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): voi
 }
 
 export function indexDefaultSearchParameters(bundle: Bundle): void {
-  const sds = flatMapFilter(bundle.entry, (e) => e.resource?.resourceType === 'StructureDefinition' ? e.resource : undefined) ?? [];
+  const sds =
+    flatMapFilter(bundle.entry, (e) => (e.resource?.resourceType === 'StructureDefinition' ? e.resource : undefined)) ??
+    [];
   for (const sd of sds) {
     getOrInitTypeSchema(sd.type);
   }
