@@ -1,21 +1,19 @@
-import { Command } from 'commander';
 import { readdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { resolve } from 'node:path';
 import { FileSystemStorage } from './storage';
-import { createMedplumCommand } from './util/command';
-import { loadProfile, saveProfile } from './utils';
+import { MedplumCommand, addSubcommand, loadProfile, saveProfile } from './utils';
 
-const setProfile = createMedplumCommand('set');
-const removeProfile = createMedplumCommand('remove');
-const listProfiles = createMedplumCommand('list');
-const describeProfile = createMedplumCommand('describe');
+const setProfile = new MedplumCommand('set');
+const removeProfile = new MedplumCommand('remove');
+const listProfiles = new MedplumCommand('list');
+const describeProfile = new MedplumCommand('describe');
 
-export const profile = new Command('profile')
-  .addCommand(setProfile)
-  .addCommand(removeProfile)
-  .addCommand(listProfiles)
-  .addCommand(describeProfile);
+export const profile = new MedplumCommand('profile');
+addSubcommand(profile, setProfile);
+addSubcommand(profile, removeProfile);
+addSubcommand(profile, listProfiles);
+addSubcommand(profile, describeProfile);
 
 setProfile
   .argument('<profileName>', 'Name of the profile')
