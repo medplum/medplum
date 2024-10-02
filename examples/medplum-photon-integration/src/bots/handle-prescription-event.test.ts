@@ -11,7 +11,6 @@ import {
   PrescriptionDepletedEvent,
 } from '../photon-types';
 import { handleCreatePrescription, handler, handleUpdatePrescription } from './handle-prescription-event';
-import { NEUTRON_HEALTH } from './system-strings';
 import { getExistingMedicationRequest } from './utils';
 
 describe('Prescription webhooks', async () => {
