@@ -8,12 +8,11 @@ import {
   Resource,
   ResourceType,
   SearchParameter,
-  StructureDefinition,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 import { SearchParameterDetails } from './search/details';
 import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
-import { capitalize, createReference } from './utils';
+import { capitalize, createReference, flatMapFilter } from './utils';
 
 export type TypeName<T> = T extends string
   ? 'string'
@@ -153,12 +152,10 @@ export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): voi
   }
 }
 
-export function indexDefaultSearchParameters(bundle: StructureDefinition[] | Bundle): void {
-  const sds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource as StructureDefinition) ?? []);
+export function indexDefaultSearchParameters(bundle: Bundle): void {
+  const sds = flatMapFilter(bundle.entry, (e) => e.resource?.resourceType === 'StructureDefinition' ? e.resource : undefined) ?? [];
   for (const sd of sds) {
-    if (sd.resourceType === 'StructureDefinition') {
-      getOrInitTypeSchema(sd.type);
-    }
+    getOrInitTypeSchema(sd.type);
   }
 }
 
