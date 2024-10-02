@@ -156,7 +156,7 @@ export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): voi
 export function indexDefaultSearchParameters(bundle: StructureDefinition[] | Bundle): void {
   const sds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource as StructureDefinition) ?? []);
   for (const sd of sds) {
-    if(sd.resourceType === 'StructureDefinition'){
+    if (sd.resourceType === 'StructureDefinition') {
       getOrInitTypeSchema(sd.type);
     }
   }
@@ -164,61 +164,61 @@ export function indexDefaultSearchParameters(bundle: StructureDefinition[] | Bun
 
 export function getOrInitTypeSchema(resourceType: string): TypeInfo {
   let typeSchema = globalSchema.types[resourceType];
-    if (!typeSchema) {
-      typeSchema = {
-        searchParamsDetails: {},
-      } as TypeInfo;
-      globalSchema.types[resourceType] = typeSchema;
-    }
+  if (!typeSchema) {
+    typeSchema = {
+      searchParamsDetails: {},
+    } as TypeInfo;
+    globalSchema.types[resourceType] = typeSchema;
+  }
 
-    if (!typeSchema.searchParams) {
-      typeSchema.searchParams = {
-        _id: {
-          base: [resourceType],
-          code: '_id',
-          type: 'token',
-          expression: resourceType + '.id',
-        } as SearchParameter,
-        _lastUpdated: {
-          base: [resourceType],
-          code: '_lastUpdated',
-          type: 'date',
-          expression: resourceType + '.meta.lastUpdated',
-        } as SearchParameter,
-        _compartment: {
-          base: [resourceType],
-          code: '_compartment',
-          type: 'reference',
-          expression: resourceType + '.meta.compartment',
-        } as SearchParameter,
-        _profile: {
-          base: [resourceType],
-          code: '_profile',
-          type: 'uri',
-          expression: resourceType + '.meta.profile',
-        } as SearchParameter,
-        _security: {
-          base: [resourceType],
-          code: '_security',
-          type: 'token',
-          expression: resourceType + '.meta.security',
-        } as SearchParameter,
-        _source: {
-          base: [resourceType],
-          code: '_source',
-          type: 'uri',
-          expression: resourceType + '.meta.source',
-        } as SearchParameter,
-        _tag: {
-          base: [resourceType],
-          code: '_tag',
-          type: 'token',
-          expression: resourceType + '.meta.tag',
-        } as SearchParameter,
-      };
-    }
+  if (!typeSchema.searchParams) {
+    typeSchema.searchParams = {
+      _id: {
+        base: [resourceType],
+        code: '_id',
+        type: 'token',
+        expression: resourceType + '.id',
+      } as SearchParameter,
+      _lastUpdated: {
+        base: [resourceType],
+        code: '_lastUpdated',
+        type: 'date',
+        expression: resourceType + '.meta.lastUpdated',
+      } as SearchParameter,
+      _compartment: {
+        base: [resourceType],
+        code: '_compartment',
+        type: 'reference',
+        expression: resourceType + '.meta.compartment',
+      } as SearchParameter,
+      _profile: {
+        base: [resourceType],
+        code: '_profile',
+        type: 'uri',
+        expression: resourceType + '.meta.profile',
+      } as SearchParameter,
+      _security: {
+        base: [resourceType],
+        code: '_security',
+        type: 'token',
+        expression: resourceType + '.meta.security',
+      } as SearchParameter,
+      _source: {
+        base: [resourceType],
+        code: '_source',
+        type: 'uri',
+        expression: resourceType + '.meta.source',
+      } as SearchParameter,
+      _tag: {
+        base: [resourceType],
+        code: '_tag',
+        type: 'token',
+        expression: resourceType + '.meta.tag',
+      } as SearchParameter,
+    };
+  }
 
-    return typeSchema;
+  return typeSchema;
 }
 
 /**
@@ -231,7 +231,7 @@ export function indexSearchParameter(searchParam: SearchParameter): void {
   for (const resourceType of searchParam.base ?? []) {
     const typeSchema = getOrInitTypeSchema(resourceType);
 
-    if(!typeSchema.searchParams){
+    if (!typeSchema.searchParams) {
       typeSchema.searchParams = {};
     }
 

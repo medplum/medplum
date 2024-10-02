@@ -1,4 +1,8 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle, indexDefaultSearchParameters } from '@medplum/core';
+import {
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+  indexDefaultSearchParameters,
+} from '@medplum/core';
 import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
 import { Bundle, SearchParameter } from '@medplum/fhirtypes';
 
