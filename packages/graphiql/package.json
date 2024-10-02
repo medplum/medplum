@@ -31,7 +31,7 @@
     "@medplum/core": "3.2.16",
     "@medplum/fhirtypes": "3.2.16",
     "@medplum/react": "3.2.16",
-    "@types/react": "18.3.10",
+    "@types/react": "18.3.11",
     "@types/react-dom": "18.3.0",
     "graphiql": "3.7.1",
     "graphql": "16.9.0",

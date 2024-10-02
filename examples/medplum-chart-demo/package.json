@@ -36,7 +36,7 @@
     "@medplum/react": "3.2.16",
     "@tabler/icons-react": "3.19.0",
     "@types/node": "22.7.4",
-    "@types/react": "18.3.10",
+    "@types/react": "18.3.11",
     "@types/react-dom": "18.3.0",
     "@vitejs/plugin-react": "4.3.2",
     "chart.js": "4.4.4",
@@ -51,6 +51,6 @@
     "ts-node": "10.9.2",
     "typescript": "5.6.2",
     "vite": "5.4.8",
-    "vitest": "2.1.1"
+    "vitest": "2.1.2"
   }
 }
