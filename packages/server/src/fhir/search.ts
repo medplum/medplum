@@ -355,6 +355,8 @@ function getBaseSelectQueryForResourceType(
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
   }
+
+  builder.distinctOn(new Column(resourceType, 'id'));
   return builder;
 }
 

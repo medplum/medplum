@@ -1980,6 +1980,49 @@ describe('FHIR Search', () => {
         expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
       }));
 
+    test('Chained search deduplication', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+        const code2 = randomUUID();
+        // Create linked resources
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+        await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ code }], text: 'Throat culture' },
+          subject: createReference(patient),
+        });
+        await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ code: code2 }], text: 'Blood test' },
+          subject: createReference(patient),
+        });
+
+        const result = await repo.search(parseSearchRequest(`Patient?_has:Observation:subject:code=${code},${code2}`));
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
+      }));
+
+    test('Token search deduplication', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+        const code2 = randomUUID();
+        // Create resource with multiple codes
+        const observation = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'Blood test' },
+          component: [{ code: { coding: [{ code }] } }, { code: { coding: [{ code: code2 }] } }],
+        });
+
+        const result = await repo.search(parseSearchRequest(`Observation?component-code=${code},${code2}`));
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toEqual(observation.id);
+      }));
+
     test('Include references success', () =>
       withTestContext(async () => {
         const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
