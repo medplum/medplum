@@ -21,6 +21,7 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const bot = await systemRepo.readResource<Bot>('Bot', id);
 
   // Validate that the request body has a code property
+  // Or that the Bot already has executable code attached
   const code = req.body.code as string | undefined;
   if (!code && !bot.executableCode?.url) {
     return [badRequest('Bot missing executable code')];
