@@ -129,7 +129,7 @@ async function createMedicationDispense(
   };
 
   // Link the dispense to the prescription if it exists
-  const authorizingPrescription: Reference<MedicationRequest>[] = [{ reference: getReferenceString(request) }];
+  const authorizingPrescription: Reference<MedicationRequest>[] = [];
   if (prescription) {
     authorizingPrescription.push(createReference(prescription));
   }
