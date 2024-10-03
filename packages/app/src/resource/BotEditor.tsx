@@ -55,10 +55,6 @@ export function BotEditor(): JSX.Element | null {
     return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
   }, []);
 
-  const getCodeOutput = useCallback(() => {
-    return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
-  }, []);
-
   const getSampleInput = useCallback(async () => {
     if (contentType === ContentType.FHIR_JSON) {
       return JSON.parse(fhirInput);
@@ -75,20 +71,18 @@ export function BotEditor(): JSX.Element | null {
       try {
         const code = await getCode();
         const sourceCode = await medplum.createAttachment(code, 'index.ts', 'text/typescript');
-        const operations: PatchOperation[] = [];
-        if (bot?.sourceCode) {
-          operations.push({
-            op: 'replace',
-            path: '/sourceCode',
-            value: sourceCode,
-          });
-        } else {
-          operations.push({
+        const operations: PatchOperation[] = [
+          {
             op: 'add',
             path: '/sourceCode',
             value: sourceCode,
-          });
-        }
+          },
+          {
+            op: 'add',
+            path: '/executableCode',
+            value: sourceCode,
+          },
+        ];
         await medplum.patchResource('Bot', id, operations);
         showNotification({ color: 'green', message: 'Saved' });
       } catch (err) {
@@ -97,7 +91,7 @@ export function BotEditor(): JSX.Element | null {
         setLoading(false);
       }
     },
-    [medplum, id, bot, getCode]
+    [medplum, id, getCode]
   );
 
   const deployBot = useCallback(
@@ -106,8 +100,7 @@ export function BotEditor(): JSX.Element | null {
       e.stopPropagation();
       setLoading(true);
       try {
-        const code = await getCodeOutput();
-        await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'), { code });
+        await medplum.get(medplum.fhirUrl('Bot', id, '$deploy'));
         showNotification({ color: 'green', message: 'Deployed' });
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
@@ -115,7 +108,7 @@ export function BotEditor(): JSX.Element | null {
         setLoading(false);
       }
     },
-    [medplum, id, getCodeOutput]
+    [medplum, id]
   );
 
   const executeBot = useCallback(
