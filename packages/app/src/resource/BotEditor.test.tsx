@@ -13,7 +13,7 @@ describe('BotEditor', () => {
     jest.spyOn(medplum, 'download').mockImplementation(async () => ({ text: async () => 'test' }) as unknown as Blob);
 
     // Mock bot operations
-    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
+    medplum.router.router.add('GET', 'Bot/:id/$deploy', async () => [allOk]);
     medplum.router.router.add('POST', 'Bot/:id/$execute', async () => [allOk]);
 
     await act(async () => {
@@ -120,23 +120,17 @@ describe('BotEditor', () => {
   });
 
   test('Deploy error', async () => {
-    await setup('/Bot/123/editor');
-    expect(await screen.findByText('Deploy')).toBeInTheDocument();
+    const medplum = new MockClient();
+    medplum.router.router.add('GET', 'Bot/:id/$deploy', async () => [badRequest('Something went wrong')]);
 
-    // Mock the code frame
-    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
-      _message: any,
-      _targetOrigin: any,
-      transfer?: Transferable[]
-    ) => {
-      (transfer?.[0] as MessagePort).postMessage({ error: badRequest('Error') });
-    };
+    await setup('/Bot/123/editor', medplum);
+    expect(await screen.findByText('Deploy')).toBeInTheDocument();
 
     await act(async () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
 
-    expect(screen.getByText('Error')).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
   });
 
   test('Execute success', async () => {
