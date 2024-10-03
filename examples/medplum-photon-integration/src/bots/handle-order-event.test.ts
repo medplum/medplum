@@ -5,7 +5,7 @@ import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
 import { Fill, OrderCreatedData } from '../photon-types';
 import { getFillStatus, getPatient, handler } from './handle-order-event';
-import { NEUTRON_HEALTH } from './system-strings';
+import { NEUTRON_HEALTH } from './constants';
 import { createdWebhook, noPrescriptionId, placedWebhook } from './test-data/order-event-test-data';
 
 describe('Order event handler', async () => {

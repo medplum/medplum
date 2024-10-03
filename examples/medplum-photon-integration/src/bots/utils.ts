@@ -2,7 +2,7 @@ import { MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Address, ContactPoint, MedicationKnowledge, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
 import { OrderData, PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
-import { NEUTRON_HEALTH } from './system-strings';
+import { NEUTRON_HEALTH } from './constants';
 
 export async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {
   try {

@@ -13,7 +13,7 @@ import {
   PrescriptionDepletedEvent,
   PrescriptionExpiredEvent,
 } from '../photon-types';
-import { NEUTRON_HEALTH, NEUTRON_HEALTH_WEBHOOKS } from './system-strings';
+import { NEUTRON_HEALTH, NEUTRON_HEALTH_WEBHOOKS } from './constants';
 import {
   checkForDuplicateEvent,
   getExistingMedicationRequest,

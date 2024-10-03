@@ -1,7 +1,7 @@
 import { BotEvent, createReference, getReferenceString, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { MedicationDispense, MedicationRequest, Patient, Reference } from '@medplum/fhirtypes';
 import { Fill, OrderCreatedData, OrderData, PhotonEvent } from '../photon-types';
-import { NEUTRON_HEALTH } from './system-strings';
+import { NEUTRON_HEALTH } from './constants';
 import { handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 export async function handler(
