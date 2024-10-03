@@ -1,6 +1,6 @@
 import { Button, Flex, Modal, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference, getReferenceString, Operator, SearchRequest } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import { MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
@@ -14,11 +14,6 @@ export function HeadlessPrescription(props: HeadlessPrescriptionProps): JSX.Elem
   const medplum = useMedplum();
   const [prescriptions, setPrescriptions] = useState<MedicationRequest[]>([]);
   const [opened, { open, close }] = useDisclosure();
-  const search: SearchRequest = {
-    resourceType: 'MedicationRequest',
-    filters: [{ code: 'subject', operator: Operator.EQUALS, value: getReferenceString(props.patient) }],
-    fields: ['code', 'authoredOn', 'status'],
-  };
 
   useEffect(() => {
     medplum
@@ -27,7 +22,7 @@ export function HeadlessPrescription(props: HeadlessPrescriptionProps): JSX.Elem
       })
       .then(setPrescriptions)
       .catch(console.error);
-  }, [medplum, prescriptions]);
+  }, [medplum, prescriptions, props.patient.id]);
 
   const medicationRequest: MedicationRequest = {
     resourceType: 'MedicationRequest',
@@ -36,11 +31,11 @@ export function HeadlessPrescription(props: HeadlessPrescriptionProps): JSX.Elem
     subject: createReference(props.patient),
   };
 
-  function handlePrescriptionChange(prescription: MedicationRequest) {
+  function handlePrescriptionChange(prescription: MedicationRequest): void {
     console.log(prescription);
   }
 
-  function handleCreatePrescription(prescription: Resource) {
+  function handleCreatePrescription(prescription: Resource): void {
     if (prescription.resourceType !== 'MedicationRequest') {
       throw new Error('Invalid resource type');
     }

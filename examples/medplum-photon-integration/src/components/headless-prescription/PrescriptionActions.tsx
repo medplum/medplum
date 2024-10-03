@@ -8,15 +8,15 @@ interface PrescriptionActionButtonProps {
 }
 
 export function PrescriptionActionButton(props: PrescriptionActionButtonProps): JSX.Element {
-  function handleRenewPrescription() {
+  function handleRenewPrescription(): void {
     console.log(props.prescription);
   }
 
-  function handleEditPrescription() {
+  function handleEditPrescription(): void {
     console.log(props.prescription);
   }
 
-  function handleCancelPrescription() {
+  function handleCancelPrescription(): void {
     console.log(props.prescription);
   }
 
