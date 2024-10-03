@@ -1,4 +1,4 @@
-import { BotEvent, createReference, getReferenceString, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { BotEvent, createReference, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { MedicationDispense, MedicationRequest, Patient, Reference } from '@medplum/fhirtypes';
 import { Fill, OrderCreatedData, OrderData, PhotonEvent } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
