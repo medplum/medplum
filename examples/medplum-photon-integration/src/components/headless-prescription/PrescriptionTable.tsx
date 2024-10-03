@@ -5,9 +5,10 @@ import { PrescriptionRow } from './PrescriptionRow';
 
 interface PrescriptionTableProps {
   prescriptions: MedicationRequest[];
+  onChange: (prescription: MedicationRequest) => void;
 }
 
-export function PrescriptionTable({ prescriptions }: PrescriptionTableProps): JSX.Element {
+export function PrescriptionTable(props: PrescriptionTableProps): JSX.Element {
   return (
     <Table highlightOnHover>
       <Table.Thead>
@@ -18,8 +19,8 @@ export function PrescriptionTable({ prescriptions }: PrescriptionTableProps): JS
         </Table.Tr>
       </Table.Thead>
       <Table.Tbody>
-        {prescriptions.map((prescription) => (
-          <PrescriptionRow prescription={prescription} />
+        {props.prescriptions.map((prescription) => (
+          <PrescriptionRow prescription={prescription} onChange={props.onChange} key={prescription.id} />
         ))}
       </Table.Tbody>
     </Table>

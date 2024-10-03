@@ -4,7 +4,7 @@ import { Patient } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { HeadlessPrescription } from '../components/HeadlessPrescription';
+import { HeadlessPrescription } from '../components/headless-prescription/HeadlessPrescription';
 import { PatientHistory } from '../components/PatientHistory';
 import { PatientOverview } from '../components/PatientOverview';
 import { PatientPrescription } from '../components/PatientPrescription';
