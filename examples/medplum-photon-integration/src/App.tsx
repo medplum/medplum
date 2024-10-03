@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconRobot, IconUser } from '@tabler/icons-react';
+import { IconPrescription, IconRobot, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { HomePage } from './pages/HomePage';
@@ -11,6 +11,7 @@ import { UploadDataPage } from './pages/UploadDataPage';
 
 import '@photonhealth/elements';
 import { PHOTON_CLIENT_ID, PHOTON_ORG_ID } from './config';
+import { PrescriptionPage } from './pages/PrescriptionPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -41,6 +42,7 @@ export function App(): JSX.Element | null {
               <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/Patient/:id/*" element={<PatientPage />} />
+              <Route path="/MedicationRequest/:id/*" element={<PrescriptionPage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />} />
               <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
               <Route path="/upload/:dataType" element={<UploadDataPage />} />
