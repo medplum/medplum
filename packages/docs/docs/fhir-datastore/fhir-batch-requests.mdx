@@ -75,13 +75,9 @@ When using batch requests, it is common to require resources to refer to one ano
 
 Resources within the same Bundle often need to link to one another: for example, you may create a `Patient` resource that is the `subject` of an `Encounter` created in the same batch request.
 
-Creating internal references is done by assigning temporary ids to each bundle entry. The `fullUrl` field is set to `'urn:uuid:'` followed by a temporary UUID.
+Creating internal references is done by assigning temporary IDs to each bundle entry. The `fullUrl` field is set to `'urn:uuid:'` followed by a temporary UUID.
 
-Future bundle entries can refer to this resource using the temporary `urn:uuid`.
-
-:::caution Note
-Batches are processed in order, so resources must be created in your bundle prior to being referenced. To assist with this, you can use the [reorderBundle](/docs/sdk/core.reorderbundle) helper function, which performs a topological sort to reorder bundle entries such that a resource is created _before_ references to that resource appear in the bundle.
-:::
+Other bundle entries can refer to this resource using the temporary `urn:uuid:` string, which is replaced by the real reference during batch processing.
 
 <details>
   <summary>Example: Create a patient and encounter whose subject is the created patient</summary>
@@ -92,7 +88,7 @@ Batches are processed in order, so resources must be created in your bundle prio
 
 ### External \(Conditional) References
 
-Additionally, it may be necessary to link to other resources that already exist on the server, for which the ID of the
+Additionally, it may be necessary to link to resources that already exist on the server outside of the Bundle, for which the ID of the
 target resource is not known. To handle this use case, FHIR allows populating the reference with a search query string,
 which will be resolved by Medplum server at resource creation time. This search must resolve to a single resource, otherwise
 an error will be returned. For example:
