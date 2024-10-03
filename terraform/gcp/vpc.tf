@@ -7,9 +7,10 @@ module "vpc" {
 
   subnets = [
     {
-      subnet_name   = "medplum-us-west1-sn-gke-01"
-      subnet_ip     = "10.0.0.0/20"
-      subnet_region = var.region
+      subnet_name              = "medplum-us-west1-sn-gke-01"
+      subnet_ip                = "10.0.0.0/20"
+      subnet_region            = var.region
+      private_ip_google_access = true
     },
     {
       subnet_name              = "medplum-us-west1-sn-psa-01"
