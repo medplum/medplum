@@ -584,20 +584,18 @@ export class SelectQuery extends BaseQuery implements Expression {
   }
 
   private buildDistinctOn(sql: SqlBuilder): void {
-    if (!this.distinctOns.length) {
-      return;
-    }
-
-    sql.append('DISTINCT ON (');
-    let first = true;
-    for (const expr of this.distinctOns) {
-      if (!first) {
-        sql.append(', ');
+    if (this.distinctOns.length > 0) {
+      sql.append('DISTINCT ON (');
+      let first = true;
+      for (const column of this.distinctOns) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendColumn(column);
+        first = false;
       }
-      sql.appendExpression(expr);
-      first = false;
+      sql.append(') ');
     }
-    sql.append(') ');
   }
 
   private buildColumns(sql: SqlBuilder): void {
@@ -661,7 +659,7 @@ export class SelectQuery extends BaseQuery implements Expression {
   }
 
   private buildOrderBy(sql: SqlBuilder): void {
-    if (!this.orderBys.length) {
+    if (this.orderBys.length === 0) {
       return;
     }
 
