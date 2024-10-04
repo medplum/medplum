@@ -78,11 +78,8 @@ describe('BaseChat', () => {
   let defaultMedplum: MockClient;
   let defaultSubManager: MockSubscriptionManager;
 
-  beforeAll(() => {
-    defaultMedplum = new MockClient({ profile: DrAliceSmith });
-  });
-
   beforeEach(() => {
+    defaultMedplum = new MockClient({ profile: DrAliceSmith });
     defaultSubManager = new MockSubscriptionManager(
       defaultMedplum,
       getWebSocketUrl(defaultMedplum.getBaseUrl(), '/ws/subscriptions-r4'),
