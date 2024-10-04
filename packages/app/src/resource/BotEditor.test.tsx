@@ -13,7 +13,7 @@ describe('BotEditor', () => {
     jest.spyOn(medplum, 'download').mockImplementation(async () => ({ text: async () => 'test' }) as unknown as Blob);
 
     // Mock bot operations
-    medplum.router.router.add('GET', 'Bot/:id/$deploy', async () => [allOk]);
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [allOk]);
     medplum.router.router.add('POST', 'Bot/:id/$execute', async () => [allOk]);
 
     await act(async () => {
@@ -121,7 +121,7 @@ describe('BotEditor', () => {
 
   test('Deploy error', async () => {
     const medplum = new MockClient();
-    medplum.router.router.add('GET', 'Bot/:id/$deploy', async () => [badRequest('Something went wrong')]);
+    medplum.router.router.add('POST', 'Bot/:id/$deploy', async () => [badRequest('Something went wrong')]);
 
     await setup('/Bot/123/editor', medplum);
     expect(await screen.findByText('Deploy')).toBeInTheDocument();

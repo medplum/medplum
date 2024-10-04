@@ -51,8 +51,14 @@ export function BotEditor(): JSX.Element | null {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum, id]);
 
+  // Gets the uncompiled TS code
   const getCode = useCallback(() => {
     return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
+  }, []);
+
+  // Gets the compiled JS output
+  const getCodeOutput = useCallback(() => {
+    return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
   }, []);
 
   const getSampleInput = useCallback(async () => {
@@ -70,7 +76,9 @@ export function BotEditor(): JSX.Element | null {
       setLoading(true);
       try {
         const code = await getCode();
+        const codeOutput = await getCodeOutput();
         const sourceCode = await medplum.createAttachment(code, 'index.ts', 'text/typescript');
+        const executableCode = await medplum.createAttachment(codeOutput, 'index.js', 'text/typescript');
         const operations: PatchOperation[] = [
           {
             op: 'add',
@@ -80,7 +88,7 @@ export function BotEditor(): JSX.Element | null {
           {
             op: 'add',
             path: '/executableCode',
-            value: sourceCode,
+            value: executableCode,
           },
         ];
         await medplum.patchResource('Bot', id, operations);
@@ -91,7 +99,7 @@ export function BotEditor(): JSX.Element | null {
         setLoading(false);
       }
     },
-    [medplum, id, getCode]
+    [medplum, id, getCode, getCodeOutput]
   );
 
   const deployBot = useCallback(
@@ -100,7 +108,7 @@ export function BotEditor(): JSX.Element | null {
       e.stopPropagation();
       setLoading(true);
       try {
-        await medplum.get(medplum.fhirUrl('Bot', id, '$deploy'));
+        await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'), undefined);
         showNotification({ color: 'green', message: 'Deployed' });
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
