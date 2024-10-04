@@ -6,7 +6,7 @@ import {
   normalizeErrorString,
   PatchOperation,
 } from '@medplum/core';
-import { CodeableConcept, MedicationKnowledge, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
+import { CodeableConcept, Coding, MedicationKnowledge, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
 import {
   PhotonEvent,
   PrescriptionCreatedData,
@@ -52,12 +52,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEven
   const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
   const PHOTON_AUTH_TOKEN = await handlePhotonAuth(PHOTON_CLIENT_ID, PHOTON_CLIENT_SECRET);
 
-  const medicationCode = await getMedicationCodeFromPrescription(body.data.id, PHOTON_AUTH_TOKEN);
+  const { name, rxcui } = await getMedicationCodeFromPrescription(body.data.id, PHOTON_AUTH_TOKEN);
 
   // Create or update the prescription, depending on the event type
   let prescription: MedicationRequest;
   if (body.type === 'photon:prescription:created') {
-    prescription = await handleCreatePrescription(body, medplum, PHOTON_AUTH_TOKEN, medicationCode);
+    prescription = await handleCreatePrescription(body, medplum, PHOTON_AUTH_TOKEN, rxcui, name);
   } else if (body.type === 'photon:prescription:depleted' || body.type === 'photon:prescription:expired') {
     prescription = await handleUpdatePrescription(body, medplum, existingPrescription);
   } else {
@@ -70,11 +70,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEven
 async function getMedicationCodeFromPrescription(
   prescriptionId: string,
   authToken: string
-): Promise<string | undefined> {
+): Promise<Record<string, string | undefined>> {
   const query = `
     query prescription($id: ID!) {
       prescription(id: $id) {
         treatment {
+          name
           codes {
             rxcui
           }
@@ -87,7 +88,9 @@ async function getMedicationCodeFromPrescription(
 
   const body = JSON.stringify({ query, variables });
   const result = await photonGraphqlFetch(body, authToken);
-  return result.data.prescription.treatment.codes.rxcui;
+  const rxcui = result.data.prescription.treatment.codes.rxcui;
+  const name = result.data.prescription.treatment.name;
+  return { name, rxcui };
 }
 
 /**
@@ -140,7 +143,8 @@ export async function handleCreatePrescription(
   event: PhotonEvent,
   medplum: MedplumClient,
   authToken: string,
-  medicationCode?: string
+  medicationCode?: string,
+  medicationName?: string
 ): Promise<MedicationRequest> {
   const data = event.data as PrescriptionCreatedData;
   // Get the prescribing practitioner and the medication from Medplum
@@ -155,7 +159,7 @@ export async function handleCreatePrescription(
     ? { reference: getReferenceString(patient), display: formatHumanName(patientName) }
     : { reference: getReferenceString(patient) };
 
-  const medicationElement = await getMedicationElement(medplum, medicationCode);
+  const medicationElement = await getMedicationElement(medplum, medicationCode, medicationName);
 
   const medicationRequest: MedicationRequest = {
     resourceType: 'MedicationRequest',
@@ -199,11 +203,15 @@ export async function handleCreatePrescription(
   }
 }
 
-async function getMedicationElement(medplum: MedplumClient, rxcui?: string): Promise<CodeableConcept> {
+async function getMedicationElement(
+  medplum: MedplumClient,
+  rxcui?: string,
+  medicationName?: string
+): Promise<CodeableConcept> {
   let medicationKnowledge = await getMedicationKnowledge(medplum, rxcui);
   if (!medicationKnowledge) {
     try {
-      medicationKnowledge = await createMedicationKnowledge(medplum, rxcui);
+      medicationKnowledge = await createMedicationKnowledge(medplum, rxcui, medicationName);
     } catch (err) {
       throw new Error(normalizeErrorString(err));
     }
@@ -225,14 +233,23 @@ async function getMedicationElement(medplum: MedplumClient, rxcui?: string): Pro
  * @param rxcui - The RXCUI code of the medication
  * @returns The created FHIR Medication resource if it can be created
  */
-async function createMedicationKnowledge(medplum: MedplumClient, rxcui?: string): Promise<MedicationKnowledge> {
+async function createMedicationKnowledge(
+  medplum: MedplumClient,
+  rxcui?: string,
+  medicationName?: string
+): Promise<MedicationKnowledge> {
   if (!rxcui) {
     throw new Error('Unable to create a MedicationKnowledge resource');
   }
 
+  const coding: Coding = { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: rxcui };
+  if (medicationName) {
+    coding.display = medicationName;
+  }
+
   const medicationData: MedicationKnowledge = {
     resourceType: 'MedicationKnowledge',
-    code: { coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: rxcui }] },
+    code: { coding: [coding] },
     status: 'active',
   };
 
