@@ -103,20 +103,11 @@ describe('BotEditor', () => {
     await setup('/Bot/123/editor');
     expect(await screen.findByText('Deploy')).toBeInTheDocument();
 
-    // Mock the code frame
-    (screen.getByTestId<HTMLIFrameElement>('code-frame').contentWindow as Window).postMessage = (
-      _message: any,
-      _targetOrigin: any,
-      transfer?: Transferable[]
-    ) => {
-      (transfer?.[0] as MessagePort).postMessage({ result: 'console.log("foo");' });
-    };
-
     await act(async () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
 
-    expect(await screen.findByText('Deployed')).toBeInTheDocument();
+    expect(screen.getByText('Deployed')).toBeInTheDocument();
   });
 
   test('Deploy error', async () => {
@@ -130,7 +121,7 @@ describe('BotEditor', () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
 
-    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
   });
 
   test('Execute success', async () => {
