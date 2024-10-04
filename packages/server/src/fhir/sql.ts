@@ -145,13 +145,17 @@ export function escapeLikeString(str: string): string {
   return str.replaceAll(/[\\_%]/g, (c) => '\\' + c);
 }
 
-export class Column {
+export class Column implements Expression {
   constructor(
     readonly tableName: string | undefined,
     readonly columnName: string,
     readonly raw?: boolean,
     readonly alias?: string
   ) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.appendColumn(this);
+  }
 }
 
 export class Literal implements Expression {
@@ -336,12 +340,8 @@ export class SqlBuilder {
     return this;
   }
 
-  appendExpression(expr: Expression | Column): this {
-    if (expr instanceof Column) {
-      this.appendColumn(expr);
-    } else {
-      expr.buildSql(this);
-    }
+  appendExpression(expr: Expression): this {
+    expr.buildSql(this);
     return this;
   }
 
