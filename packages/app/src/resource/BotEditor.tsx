@@ -108,7 +108,7 @@ export function BotEditor(): JSX.Element | null {
       e.stopPropagation();
       setLoading(true);
       try {
-        await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'), undefined);
+        await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'));
         showNotification({ color: 'green', message: 'Deployed' });
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });

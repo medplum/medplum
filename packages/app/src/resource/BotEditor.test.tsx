@@ -116,7 +116,7 @@ describe('BotEditor', () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
 
-    expect(screen.getByText('Deployed')).toBeInTheDocument();
+    expect(await screen.findByText('Deployed')).toBeInTheDocument();
   });
 
   test('Deploy error', async () => {
@@ -130,7 +130,7 @@ describe('BotEditor', () => {
       fireEvent.click(screen.getByText('Deploy'));
     });
 
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    expect(await screen.findByText('Something went wrong')).toBeInTheDocument();
   });
 
   test('Execute success', async () => {
