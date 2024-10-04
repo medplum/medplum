@@ -2194,6 +2194,14 @@
           }
         ]
       },
+      "accounts": {
+        "max": 9007199254740991,
+        "type": [
+          {
+            "code": "Reference"
+          }
+        ]
+      },
       "compartment": {
         "max": 9007199254740991,
         "type": [

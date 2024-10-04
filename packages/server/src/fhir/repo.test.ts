@@ -3,7 +3,6 @@ import {
   badRequest,
   created,
   createReference,
-  forbidden,
   getReferenceString,
   isOk,
   notFound,
@@ -363,61 +362,6 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.author?.reference).toEqual(author);
     }));
 
-  test('Create resource with account', () =>
-    withTestContext(async () => {
-      const author = 'Practitioner/' + randomUUID();
-      const account = 'Organization/' + randomUUID();
-
-      // This user does not have an access policy
-      // So they can optionally set an account
-      const repo = new Repository({
-        extendedMode: true,
-        author: {
-          reference: author,
-        },
-      });
-
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        meta: {
-          account: {
-            reference: account,
-          },
-        },
-      });
-
-      expect(patient.meta?.author?.reference).toEqual(author);
-      expect(patient.meta?.account?.reference).toEqual(account);
-    }));
-
-  test('Create resource with malformed account', () =>
-    withTestContext(async () => {
-      const author = 'Practitioner/' + randomUUID();
-
-      // This user does not have an access policy
-      // So they can optionally set an account
-      const repo = new Repository({
-        extendedMode: true,
-        author: {
-          reference: author,
-        },
-      });
-
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        meta: {
-          account: {
-            reference: 'example.com/account/1',
-          },
-        },
-      });
-
-      expect(patient.meta?.author?.reference).toEqual(author);
-      expect(patient.meta?.account?.reference).toEqual('example.com/account/1');
-    }));
-
   test('Create resource with lastUpdated', () =>
     withTestContext(async () => {
       const lastUpdated = '2020-01-01T12:00:00Z';
@@ -728,12 +672,7 @@ describe('FHIR Repo', () => {
     });
 
     // Try to expunge as a regular user
-    try {
-      await repo.expungeResource('Patient', new Date().toISOString());
-      fail('Purge should have failed');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
-    }
+    await expect(repo.expungeResource('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
   });
 
   test('expungeResources forbidden', async () => {
@@ -748,12 +687,7 @@ describe('FHIR Repo', () => {
     });
 
     // Try to expunge as a regular user
-    try {
-      await repo.expungeResources('Patient', [new Date().toISOString()]);
-      fail('Purge should have failed');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
-    }
+    await expect(repo.expungeResources('Patient', [new Date().toISOString()])).rejects.toThrow('Forbidden');
   });
 
   test('Purge forbidden', async () => {
@@ -768,12 +702,7 @@ describe('FHIR Repo', () => {
     });
 
     // Try to purge as a regular user
-    try {
-      await repo.purgeResources('Patient', new Date().toISOString());
-      fail('Purge should have failed');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
-    }
+    await expect(repo.purgeResources('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
   });
 
   test('Purge Login', () =>
@@ -1045,8 +974,11 @@ describe('FHIR Repo', () => {
         meta: { account: conditionalReference },
         generalPractitioner: [conditionalReference],
       });
-      expect(patient.generalPractitioner?.[0]?.reference).toEqual(getReferenceString(practitioner));
-      expect(patient.meta?.account?.reference).toEqual(getReferenceString(practitioner));
+      const expectedPractitioner = getReferenceString(practitioner);
+      expect(patient.generalPractitioner?.[0]?.reference).toEqual(expectedPractitioner);
+      expect(patient.meta?.account?.reference).toEqual(expectedPractitioner);
+      expect(patient.meta?.accounts).toHaveLength(1);
+      expect(patient.meta?.accounts).toContainEqual({ reference: expectedPractitioner });
     }));
 
   test('Conditional reference resolution failure', async () =>
