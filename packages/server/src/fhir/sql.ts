@@ -89,7 +89,7 @@ export const Operator = {
     if (paramType) {
       sql.append('(');
     }
-    (parameter as SelectQuery).buildSql(sql);
+    sql.appendExpression(parameter);
     if (paramType) {
       sql.append(')::' + paramType);
     }
@@ -175,7 +175,7 @@ export class Negation implements Expression {
 
   buildSql(sql: SqlBuilder): void {
     sql.append('NOT (');
-    this.expression.buildSql(sql);
+    sql.appendExpression(this.expression);
     sql.append(')');
   }
 }
@@ -225,7 +225,7 @@ export abstract class Connective implements Expression {
       if (!first) {
         builder.append(this.keyword);
       }
-      expr.buildSql(builder);
+      builder.appendExpression(expr);
       first = false;
     }
     if (this.expressions.length > 1) {
@@ -277,7 +277,7 @@ export class Union implements Expression {
         sql.append(' UNION ');
       }
       sql.append('(');
-      this.queries[i].buildSql(sql);
+      sql.appendExpression(this.queries[i]);
       sql.append(')');
     }
   }
@@ -446,7 +446,7 @@ export abstract class BaseQuery {
   protected buildConditions(sql: SqlBuilder): void {
     if (this.predicate.expressions.length > 0) {
       sql.append(' WHERE ');
-      this.predicate.buildSql(sql);
+      sql.appendExpression(this.predicate);
     }
   }
 }
@@ -555,7 +555,7 @@ export class SelectQuery extends BaseQuery implements Expression {
       }
       sql.appendIdentifier(this.with.name);
       sql.append(' AS (');
-      this.with.expr.buildSql(sql);
+      sql.appendExpression(this.with.expr);
       sql.append(') ');
     }
     sql.append('SELECT ');
@@ -579,7 +579,7 @@ export class SelectQuery extends BaseQuery implements Expression {
 
   async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
-    this.buildSql(sql);
+    sql.appendExpression(this);
     return (await sql.execute(conn)).rows;
   }
 
@@ -621,7 +621,7 @@ export class SelectQuery extends BaseQuery implements Expression {
 
     if (this.innerQuery) {
       sql.append('(');
-      this.innerQuery.buildSql(sql);
+      sql.appendExpression(this.innerQuery);
       sql.append(') AS ');
     }
 
@@ -636,7 +636,7 @@ export class SelectQuery extends BaseQuery implements Expression {
       sql.append(` ${join.joinType} `);
       if (join.joinItem instanceof SelectQuery) {
         sql.append('(');
-        join.joinItem.buildSql(sql);
+        sql.appendExpression(join.joinItem);
         sql.append(')');
       } else {
         sql.appendIdentifier(join.joinItem);
@@ -644,7 +644,7 @@ export class SelectQuery extends BaseQuery implements Expression {
       sql.append(' AS ');
       sql.appendIdentifier(join.joinAlias);
       sql.append(' ON ');
-      join.onExpression.buildSql(sql);
+      sql.appendExpression(join.onExpression);
     }
   }
 
@@ -692,7 +692,7 @@ export class ArraySubquery implements Expression {
     sql.append(') AS ');
     sql.appendIdentifier(this.column.columnName);
     sql.append(' WHERE ');
-    this.filter.buildSql(sql);
+    sql.appendExpression(this.filter);
     sql.append(' LIMIT 1');
     sql.append(')');
   }
@@ -780,7 +780,7 @@ export class InsertQuery extends BaseQuery {
       return;
     }
     sql.append(' ');
-    this.query.buildSql(sql);
+    sql.appendExpression(this.query);
   }
 
   private appendValues(sql: SqlBuilder, columnNames: string[], values: Record<string, any>): void {
