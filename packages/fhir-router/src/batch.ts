@@ -25,7 +25,7 @@ import { IncomingHttpHeaders } from 'node:http';
 const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
 
-const localBundleReference = /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 const uuidUriPrefix = 'urn:uuid';
 
 type BundleEntryIdentity = { placeholder: string; reference: string };
@@ -415,7 +415,7 @@ class BatchProcessor {
       throw new OperationOutcomeError(notFound);
     }
 
-    const request = this.parseBatchRequest(entry, route?.params);
+    const request = this.parseBatchRequest(entry, route);
     const [outcome, resource] = await route.handler(request, this.repo, this.router, { batch: true });
 
     if (!isOk(outcome) && this.isTransaction()) {
@@ -427,10 +427,10 @@ class BatchProcessor {
   /**
    * Constructs the equivalent HTTP request for a Bundle entry, based on its `request` field.
    * @param entry - The Bundle entry to parse.
-   * @param params - Route path parameters
+   * @param route - The route associated with the request.
    * @returns The HTTP request to perform the operation specified by the given batch entry.
    */
-  private parseBatchRequest(entry: BundleEntry, params?: Record<string, string>): FhirRequest {
+  private parseBatchRequest(entry: BundleEntry, route?: RouteResult<FhirRouteHandler, FhirRouteMetadata>): FhirRequest {
     const request = entry.request as BundleEntryRequest;
     const headers = Object.create(null) as IncomingHttpHeaders;
     if (request.ifNoneExist) {
@@ -453,12 +453,12 @@ class BatchProcessor {
       body = entry.resource;
     }
 
-    const url = new URL(request.url as string, 'https://example.com/');
     return {
       method: request.method as HttpMethod,
-      pathname: url.pathname,
-      params: params ?? Object.create(null),
-      query: Object.fromEntries(url.searchParams),
+      url: route?.query ? request.url.slice(0, request.url.indexOf('?')) : request.url,
+      pathname: '',
+      params: route?.params ?? Object.create(null),
+      query: route?.query ?? Object.create(null),
       body,
       headers,
     };
@@ -561,7 +561,8 @@ class BatchProcessor {
       return input;
     }
 
-    const referenceString = this.resolvedIdentities[rewritable];
+    const urn = rewritable.replaceAll('%3A', ':'); // Handle specific URL encoding for the URN format
+    const referenceString = this.resolvedIdentities[urn];
     return referenceString ? input.replaceAll(rewritable, referenceString) : input;
   }
 

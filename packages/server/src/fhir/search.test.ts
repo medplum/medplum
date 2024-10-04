@@ -935,6 +935,21 @@ describe('FHIR Search', () => {
         expect(searchResult2.entry?.length).toEqual(0);
       }));
 
+    test('Filter by chained _id', () =>
+      withTestContext(async () => {
+        const organizationId = randomUUID();
+
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          managingOrganization: { reference: 'Organization/' + organizationId },
+        });
+
+        const searchResult1 = await repo.search(parseSearchRequest('Patient?organization._id=' + organizationId));
+
+        expect(searchResult1.entry?.length).toEqual(1);
+        expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toBeDefined();
+      }));
+
     test('Empty _id', async () =>
       withTestContext(async () => {
         const searchResult1 = await repo.search({

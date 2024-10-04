@@ -11,7 +11,7 @@ import {
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, OperationOutcome, Patient, SearchParameter } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { FhirRequest, FhirRouter } from './fhirrouter';
+import { FhirRouter, makeSimpleRequest } from './fhirrouter';
 import { FhirRepository, MemoryRepository } from './repo';
 
 const router: FhirRouter = new FhirRouter();
@@ -25,27 +25,21 @@ describe('FHIR Router', () => {
   });
 
   test('Batch success', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/',
-      body: {
-        resourceType: 'Bundle',
-        type: 'batch',
-        entry: [
-          {
-            request: {
-              method: 'POST',
-              url: 'Patient',
-            },
-            resource: {
-              resourceType: 'Patient',
-            },
+    const request = makeSimpleRequest('POST', '/', {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Patient',
           },
-        ],
-      },
-      params: {},
-      query: {},
-    };
+          resource: {
+            resourceType: 'Patient',
+          },
+        },
+      ],
+    });
     const [outcome, bundle] = (await router.handleRequest(request, repo)) as [OperationOutcome, Bundle];
     expect(outcome).toMatchObject(allOk);
     expect(bundle).toBeDefined();
@@ -57,55 +51,28 @@ describe('FHIR Router', () => {
   });
 
   test('Batch invalid bundle', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/',
-      body: { resourceType: 'Patient' },
-      params: {},
-      query: {},
-    };
+    const request = makeSimpleRequest('POST', '/', { resourceType: 'Patient' });
     const [outcome] = await router.handleRequest(request, repo);
     expect(outcome).toMatchObject(badRequest('Not a bundle'));
   });
 
   test('Read resource by ID', async () => {
     const [res1, patient] = await router.handleRequest(
-      {
-        method: 'POST',
-        pathname: '/Patient',
-        body: {
-          resourceType: 'Patient',
-          name: [{ given: ['John'], family: 'Doe' }],
-        },
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('POST', '/Patient', {
+        resourceType: 'Patient',
+        name: [{ given: ['John'], family: 'Doe' }],
+      }),
       repo
     );
     expect(res1).toMatchObject(created);
     expect(patient).toBeDefined();
 
-    const [res2, patient2] = await router.handleRequest(
-      {
-        method: 'GET',
-        pathname: `/Patient/${patient?.id}`,
-        body: {},
-        params: {},
-        query: {},
-      },
-      repo
-    );
+    const [res2, patient2] = await router.handleRequest(makeSimpleRequest('GET', `/Patient/${patient?.id}`, {}), repo);
     expect(res2).toMatchObject(allOk);
     expect(patient2).toBeDefined();
 
     const [res3, patient3] = await router.handleRequest(
-      {
-        method: 'GET',
-        pathname: `/Patient/${patient?.id}/_history/${patient?.meta?.versionId}`,
-        body: {},
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('GET', `/Patient/${patient?.id}/_history/${patient?.meta?.versionId}`, {}),
       repo
     );
     expect(res3).toMatchObject(allOk);
@@ -113,27 +80,12 @@ describe('FHIR Router', () => {
   });
 
   test('Read resource by ID not found', async () => {
-    const [res2, patient2] = await router.handleRequest(
-      {
-        method: 'GET',
-        pathname: `/Patient/${randomUUID()}`,
-        body: {},
-        params: {},
-        query: {},
-      },
-      repo
-    );
+    const [res2, patient2] = await router.handleRequest(makeSimpleRequest('GET', `/Patient/${randomUUID()}`, {}), repo);
     expect(res2).toMatchObject(notFound);
     expect(patient2).toBeUndefined();
 
     const [res3, patient3] = await router.handleRequest(
-      {
-        method: 'GET',
-        pathname: `/Patient/${randomUUID()}/_history/${randomUUID()}`,
-        body: {},
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('GET', `/Patient/${randomUUID()}/_history/${randomUUID()}`, {}),
       repo
     );
     expect(res3).toMatchObject(notFound);
@@ -142,16 +94,10 @@ describe('FHIR Router', () => {
 
   test('Update incorrect resource type', async () => {
     const [res] = await router.handleRequest(
-      {
-        method: 'PUT',
-        pathname: '/Patient/123',
-        body: {
-          resourceType: 'ServiceRequest',
-          id: '123',
-        },
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('PUT', '/Patient/123', {
+        resourceType: 'ServiceRequest',
+        id: '123',
+      }),
       repo
     );
     expect(res).toMatchObject(badRequest('Incorrect resource type'));
@@ -159,16 +105,10 @@ describe('FHIR Router', () => {
 
   test('Update incorrect ID', async () => {
     const [res] = await router.handleRequest(
-      {
-        method: 'PUT',
-        pathname: '/Patient/123',
-        body: {
-          resourceType: 'Patient',
-          id: '456',
-        },
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('PUT', '/Patient/123', {
+        resourceType: 'Patient',
+        id: '456',
+      }),
       repo
     );
     expect(res).toMatchObject(badRequest('Incorrect resource ID'));
@@ -179,7 +119,8 @@ describe('FHIR Router', () => {
     const [res] = await router.handleRequest(
       {
         method: 'PUT',
-        pathname: '/Patient/' + patient.id,
+        url: '/Patient/' + patient.id,
+        pathname: '',
         body: patient,
         params: {},
         query: {},
@@ -192,17 +133,11 @@ describe('FHIR Router', () => {
 
   test('Update with correct precondition', async () => {
     const [res1, patient] = await router.handleRequest(
-      {
-        method: 'POST',
-        pathname: '/Patient',
-        body: {
-          resourceType: 'Patient',
-          name: [{ given: ['John'], family: 'Doe' }],
-          active: false,
-        },
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('POST', '/Patient', {
+        resourceType: 'Patient',
+        name: [{ given: ['John'], family: 'Doe' }],
+        active: false,
+      }),
       repo
     );
     expect(res1).toMatchObject(created);
@@ -217,7 +152,8 @@ describe('FHIR Router', () => {
     const [res2, updatedPatient] = await router.handleRequest(
       {
         method: 'PUT',
-        pathname: `/Patient/${patient?.id}`,
+        url: `/Patient/${patient?.id}`,
+        pathname: '',
         body: {
           ...patient,
           active: true,
@@ -234,16 +170,10 @@ describe('FHIR Router', () => {
 
   test('Update incorrect precondition', async () => {
     const [res1, patient] = await router.handleRequest(
-      {
-        method: 'POST',
-        pathname: '/Patient',
-        body: {
-          resourceType: 'Patient',
-          name: [{ given: ['John'], family: 'Doe' }],
-        },
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('POST', '/Patient', {
+        resourceType: 'Patient',
+        name: [{ given: ['John'], family: 'Doe' }],
+      }),
       repo
     );
     expect(res1).toMatchObject(created);
@@ -254,7 +184,8 @@ describe('FHIR Router', () => {
     const [res2] = await router.handleRequest(
       {
         method: 'PUT',
-        pathname: `/Patient/${patient?.id}`,
+        url: `/Patient/${patient?.id}`,
+        pathname: '',
         body: {
           ...patient,
           status: 'active',
@@ -270,15 +201,7 @@ describe('FHIR Router', () => {
 
   test('Search by post', async () => {
     const [res, bundle] = await router.handleRequest(
-      {
-        method: 'POST',
-        pathname: '/Patient/_search',
-        body: {
-          name: 'Simpson',
-        },
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('POST', '/Patient/_search', { name: 'Simpson' }),
       repo
     );
     expect(res).toMatchObject(allOk);
@@ -289,7 +212,8 @@ describe('FHIR Router', () => {
     const [res, bundle] = await router.handleRequest(
       {
         method: 'GET',
-        pathname: '/',
+        url: '/',
+        pathname: '',
         body: {},
         params: {},
         query: {
@@ -311,7 +235,8 @@ describe('FHIR Router', () => {
     const [res, resource] = await router.handleRequest(
       {
         method: 'PUT',
-        pathname: '/Patient',
+        url: '/Patient',
+        pathname: '',
         body: patient,
         params: {},
         query: {
@@ -324,31 +249,33 @@ describe('FHIR Router', () => {
     expect(resource).toMatchObject(patient);
   });
 
+  test('Conditional update with unparsed query string', async () => {
+    const mrn = randomUUID();
+    const patient: Patient = {
+      resourceType: 'Patient',
+      identifier: [{ system: 'http://example.com/mrn', value: mrn }],
+    };
+    const [res, resource] = await router.handleRequest(
+      makeSimpleRequest('PUT', '/Patient?identifier=http://example.com/mrn|' + mrn, patient),
+      repo
+    );
+    expect(res).toMatchObject(created);
+    expect(resource).toMatchObject(patient);
+  });
+
   test('Patch resource', async () => {
     const [res1, patient] = await router.handleRequest(
-      {
-        method: 'POST',
-        pathname: '/Patient',
-        body: {
-          resourceType: 'Patient',
-          name: [{ given: ['John'], family: 'Doe' }],
-        },
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('POST', '/Patient', {
+        resourceType: 'Patient',
+        name: [{ given: ['John'], family: 'Doe' }],
+      }),
       repo
     );
     expect(res1).toMatchObject(created);
     expect(patient).toBeDefined();
 
     const [res2, patient2] = await router.handleRequest(
-      {
-        method: 'PATCH',
-        pathname: `/Patient/${patient?.id}`,
-        body: [{ op: 'add', path: '/active', value: true }],
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('PATCH', `/Patient/${patient?.id}`, [{ op: 'add', path: '/active', value: true }]),
       repo
     );
     expect(res2).toMatchObject(allOk);
@@ -356,26 +283,14 @@ describe('FHIR Router', () => {
     expect((patient2 as Patient).active).toEqual(true);
 
     const [res3, patient3] = await router.handleRequest(
-      {
-        method: 'PATCH',
-        pathname: `/Patient/${patient?.id}`,
-        body: null,
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('PATCH', `/Patient/${patient?.id}`, null),
       repo
     );
     expect(res3).toMatchObject(badRequest('Empty patch body'));
     expect(patient3).toBeUndefined();
 
     const [res4, patient4] = await router.handleRequest(
-      {
-        method: 'PATCH',
-        pathname: `/Patient/${patient?.id}`,
-        body: { foo: 'bar' },
-        params: {},
-        query: {},
-      },
+      makeSimpleRequest('PATCH', `/Patient/${patient?.id}`, { foo: 'bar' }),
       repo
     );
     expect(res4).toMatchObject(badRequest('Patch body must be an array'));
@@ -397,7 +312,8 @@ describe('FHIR Router', () => {
     const [res3, resource3] = await router.handleRequest(
       {
         method: 'DELETE',
-        pathname: '/Patient',
+        url: '/Patient',
+        pathname: '',
         body: patient,
         params: {},
         query: {
@@ -413,7 +329,8 @@ describe('FHIR Router', () => {
     const [res, resource] = await router.handleRequest(
       {
         method: 'DELETE',
-        pathname: '/Patient',
+        url: '/Patient',
+        pathname: '',
         body: patient,
         params: {},
         query: {
@@ -429,7 +346,8 @@ describe('FHIR Router', () => {
     const [res2, resource2] = await router.handleRequest(
       {
         method: 'DELETE',
-        pathname: '/Patient',
+        url: '/Patient',
+        pathname: '',
         body: patient,
         params: {},
         query: {
@@ -451,7 +369,8 @@ describe('FHIR Router', () => {
     const [res, resource] = await router.handleRequest(
       {
         method: 'POST',
-        pathname: '/Patient',
+        url: '/Patient',
+        pathname: '',
         body: patient,
         params: {},
         query: {
