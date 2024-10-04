@@ -2,11 +2,14 @@ module "redis_cluster" {
   source  = "terraform-google-modules/memorystore/google//modules/redis-cluster"
   version = "~> 10.0"
 
-  name      = "medplum-redis-cluster"
-  project   = var.project_id
-  region    = var.region
-  network   = ["projects/${var.project_id}/global/networks/${var.vpc_name}"]
-  node_type = "REDIS_STANDARD_SMALL"
+  name          = "medplum-redis-cluster"
+  project       = var.project_id
+  region        = var.region
+  network       = ["projects/${var.project_id}/global/networks/${var.vpc_name}"]
+  node_type     = "REDIS_STANDARD_SMALL"
+  shard_count   = 3
+  replica_count = 0
+
 
   redis_configs = {
     maxmemory-policy = "volatile-ttl"
