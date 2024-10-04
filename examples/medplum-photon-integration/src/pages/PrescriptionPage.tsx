@@ -16,7 +16,7 @@ export function PrescriptionPage(): JSX.Element {
     if (id) {
       medplum.readResource('MedicationRequest', id).then(setPrescription).catch(console.error);
     }
-  });
+  }, [id, medplum]);
 
   if (!prescription) {
     return <Loading />;

@@ -1,17 +1,16 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconPrescription, IconRobot, IconUser } from '@tabler/icons-react';
+import '@photonhealth/elements';
+import { IconRobot, IconUser } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Route, Routes } from 'react-router-dom';
+import { PHOTON_CLIENT_ID, PHOTON_ORG_ID } from './config';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
+import { PrescriptionPage } from './pages/PrescriptionPage';
 import { ResourcePage } from './pages/ResourcePage';
 import { SignInPage } from './pages/SignInPage';
 import { UploadDataPage } from './pages/UploadDataPage';
-
-import '@photonhealth/elements';
-import { PHOTON_CLIENT_ID, PHOTON_ORG_ID } from './config';
-import { PrescriptionPage } from './pages/PrescriptionPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
