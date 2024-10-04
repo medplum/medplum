@@ -137,6 +137,7 @@ export async function handleUpdatePrescription(
  * @param medplum - Medplum Client to create the prescription in your project
  * @param authToken - Photon auth token to authorize GraphQL queries
  * @param medicationCode - The RXCUI code for the medication
+ * @param medicationName - The name of the medication for display
  * @returns The created prescription as MedicationRequest resource
  */
 export async function handleCreatePrescription(
@@ -231,6 +232,7 @@ async function getMedicationElement(
  *
  * @param medplum - Medplum Client to create the medication in your project
  * @param rxcui - The RXCUI code of the medication
+ * @param medicationName - The name of the medication, used to display it in the reference
  * @returns The created FHIR Medication resource if it can be created
  */
 async function createMedicationKnowledge(
