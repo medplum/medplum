@@ -217,6 +217,7 @@ describe('BaseChat', () => {
 
     expect(await screen.findByText("Doc, I can't feel my legs")).toBeInTheDocument();
     expect(onMessageReceived).toHaveBeenCalledWith(incomingMessage);
+    expect(onMessageReceived).toHaveBeenCalledTimes(1);
   });
 
   test('`onMessageReceived` not called on outgoing message', async () => {
@@ -243,6 +244,55 @@ describe('BaseChat', () => {
 
     expect(await screen.findByText('Homer, are you there?')).toBeInTheDocument();
     expect(onMessageReceived).not.toHaveBeenCalled();
+  });
+
+  test('`onMessageUpdated` called on incoming message update', async () => {
+    const onMessageReceived = jest.fn();
+    const onMessageUpdated = jest.fn();
+
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      onMessageReceived,
+      onMessageUpdated,
+    });
+
+    const incomingMessage = await createCommunication(defaultMedplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentString: "Doc, I can't feel my legs" }],
+    });
+
+    const bundle1 = await createCommunicationSubBundle(defaultMedplum, incomingMessage);
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle1,
+      });
+    });
+
+    expect(await screen.findByText("Doc, I can't feel my legs")).toBeInTheDocument();
+    expect(onMessageReceived).toHaveBeenCalledTimes(1);
+    expect(onMessageUpdated).not.toHaveBeenCalled();
+
+    const updatedMessage = await defaultMedplum.updateResource({
+      ...incomingMessage,
+      payload: [{ contentString: "Doc, I can't feel my arms" }],
+    });
+
+    const bundle2 = await createCommunicationSubBundle(defaultMedplum, updatedMessage);
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle2,
+      });
+    });
+
+    expect(await screen.findByText("Doc, I can't feel my arms")).toBeInTheDocument();
+    expect(onMessageUpdated).toHaveBeenCalledWith(updatedMessage);
+    expect(onMessageUpdated).toHaveBeenCalledTimes(1);
+    expect(onMessageReceived).toHaveBeenCalledTimes(1);
   });
 
   test('Messages cleared if profile changes', async () => {
