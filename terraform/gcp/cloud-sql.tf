@@ -5,7 +5,7 @@ module "sql-db" {
   name                 = var.pg_ha_name
   random_instance_name = true
   project_id           = var.project_id
-  database_version     = "POSTGRES_15"
+  database_version     = "POSTGRES_16"
   region               = var.region
 
   // Master configurations
