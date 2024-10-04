@@ -252,11 +252,7 @@ export class SqlFunction implements Expression {
     sql.append(this.name + '(');
     for (let i = 0; i < this.args.length; i++) {
       const arg = this.args[i];
-      if (arg instanceof Column) {
-        sql.appendColumn(arg);
-      } else {
-        arg.buildSql(sql);
-      }
+      sql.appendExpression(arg);
       if (i + 1 < this.args.length) {
         sql.append(', ');
       }
@@ -340,6 +336,15 @@ export class SqlBuilder {
     return this;
   }
 
+  appendExpression(expr: Expression | Column): this {
+    if (expr instanceof Column) {
+      this.appendColumn(expr);
+    } else {
+      expr.buildSql(this);
+    }
+    return this;
+  }
+
   param(value: any): this {
     if (value instanceof Column) {
       this.appendColumn(value);
@@ -391,7 +396,7 @@ export class SqlBuilder {
       if (this.debug) {
         const endTime = Date.now();
         const duration = endTime - startTime;
-        console.log(`result: ${result.rowCount} rows (${duration} ms)`);
+        console.log(`result: ${result.rowCount ?? 0} rows (${duration} ms)`);
       }
 
       return { rowCount: result.rowCount ?? 0, rows: result.rows };
@@ -579,18 +584,20 @@ export class SelectQuery extends BaseQuery implements Expression {
   }
 
   private buildDistinctOn(sql: SqlBuilder): void {
-    if (this.distinctOns.length > 0) {
-      sql.append('DISTINCT ON (');
-      let first = true;
-      for (const column of this.distinctOns) {
-        if (!first) {
-          sql.append(', ');
-        }
-        sql.appendColumn(column);
-        first = false;
-      }
-      sql.append(') ');
+    if (!this.distinctOns.length) {
+      return;
     }
+
+    sql.append('DISTINCT ON (');
+    let first = true;
+    for (const expr of this.distinctOns) {
+      if (!first) {
+        sql.append(', ');
+      }
+      sql.appendExpression(expr);
+      first = false;
+    }
+    sql.append(') ');
   }
 
   private buildColumns(sql: SqlBuilder): void {
@@ -654,7 +661,7 @@ export class SelectQuery extends BaseQuery implements Expression {
   }
 
   private buildOrderBy(sql: SqlBuilder): void {
-    if (this.orderBys.length === 0) {
+    if (!this.orderBys.length) {
       return;
     }
 
@@ -663,11 +670,7 @@ export class SelectQuery extends BaseQuery implements Expression {
 
     for (const orderBy of combined) {
       sql.append(first ? ' ORDER BY ' : ', ');
-      if (orderBy.key instanceof Column) {
-        sql.appendColumn(orderBy.key);
-      } else {
-        orderBy.key.buildSql(sql);
-      }
+      sql.appendExpression(orderBy.key);
       if (orderBy.descending) {
         sql.append(' DESC');
       }

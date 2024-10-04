@@ -3218,11 +3218,11 @@ describe('FHIR Search', () => {
           ],
         });
         expect(bundle.entry?.length).toEqual(2);
-        expect(bundle.total).toEqual(2);
         expect(bundleContains(bundle, p1)).toBeTruthy();
         expect(bundleContains(bundle, p2)).not.toBeTruthy();
         expect(bundleContains(bundle, p3)).toBeTruthy();
         expect(bundleContains(bundle, p4)).not.toBeTruthy();
+        expect(bundle.total).toEqual(2);
       }));
 
     test('Duplicate rows from token lookup', () =>
