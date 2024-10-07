@@ -1,6 +1,6 @@
 import { BotEvent, getCodeBySystem, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { List, ListEntry, MedicationKnowledge } from '@medplum/fhirtypes';
-import { NEUTRON_HEALTH } from './system-strings';
+import { NEUTRON_HEALTH } from './constants';
 import { handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 /**
