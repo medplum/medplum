@@ -184,6 +184,7 @@ export class BackEnd extends Construct {
           cloudwatchLogsExports: ['postgresql'],
           instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
           parameterGroup: dbParams,
+          deletionProtection: true,
         });
 
         this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
