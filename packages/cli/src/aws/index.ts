@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { createMedplumCommand } from '../util/command';
+import { color, createMedplumCommand, processDescription } from '../util/command';
 import { describeStacksCommand } from './describe';
 import { initStackCommand } from './init';
 import { listStacksCommand } from './list';
@@ -24,9 +24,20 @@ export function buildAwsCommand(): Command {
   aws
     .command('update-config')
     .alias('deploy-config')
-    .description('Update the AWS Parameter Store config values')
+    .summary('Update the AWS Parameter Store config values.')
+    .description(
+      processDescription(
+        'Update the AWS Parameter Store config values.\n\nConfiguration values come from a file named **medplum.<tag>.config.server.json** where **<tag>** is the Medplum stack tag.\n\n' +
+          color.yellow('**Services must be restarted to apply changes.**')
+      )
+    )
     .argument('<tag>', 'The Medplum stack tag')
-    .option('--file [file]', 'Specifies the config file to use. If not specified, the file is based on the tag.')
+    .option(
+      '--file [file]',
+      processDescription(
+        'File to provide overrides for **apiPort**, **baseUrl**, **appDomainName** and **storageDomainName** values that appear in the config file.'
+      )
+    )
     .option(
       '--dryrun',
       'Displays the operations that would be performed using the specified command without actually running them.'
