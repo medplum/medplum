@@ -10,7 +10,7 @@ export function PrescriptionPage(): JSX.Element {
   const navigate = useNavigate();
   const { id } = useParams();
   const [prescription, setPrescription] = useState<MedicationRequest>();
-  const tabs = ['details', 'orders'];
+  const tabs = ['details', 'fills'];
 
   useEffect(() => {
     if (id) {
@@ -31,7 +31,9 @@ export function PrescriptionPage(): JSX.Element {
       <Tabs defaultValue="details">
         <Tabs.List>
           {tabs.map((tab) => (
-            <Tabs.Tab value={tab}>{getDisplay(tab)}</Tabs.Tab>
+            <Tabs.Tab value={tab} key={tab}>
+              {getDisplay(tab)}
+            </Tabs.Tab>
           ))}
         </Tabs.List>
         <Tabs.Panel value="details">
@@ -39,12 +41,13 @@ export function PrescriptionPage(): JSX.Element {
             <ResourceTable value={prescription} />
           </Paper>
         </Tabs.Panel>
-        <Tabs.Panel value="orders">
+        <Tabs.Panel value="fills">
           <Paper>
             <SearchControl
               search={{
                 resourceType: 'MedicationDispense',
                 filters: [{ code: 'prescription', operator: Operator.EQUALS, value: `MedicationRequest/${id}` }],
+                fields: ['id', '_lastUpdated', 'status'],
               }}
               hideFilters={true}
               hideToolbar={true}
