@@ -950,4 +950,19 @@ describe('Updated implementation', () => {
     const expansion = res.body.expansion as ValueSetExpansion;
     expect(expansion.contains).toHaveLength(12);
   });
+
+  test('Exact code match', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=http://terminology.hl7.org/ValueSet/v3-RoleCode&filter=MT`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains).toContainEqual<ValueSetExpansionContains>({
+      system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+      code: 'MT',
+      display: 'Meat',
+    });
+  });
 });

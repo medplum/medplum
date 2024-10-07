@@ -426,9 +426,14 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
   if (params.filter) {
     query
       .whereExpr(
-        new Conjunction(
-          params.filter.split(/\s+/g).map((filter) => new Condition('display', 'LIKE', `%${escapeLikeString(filter)}%`))
-        )
+        new Disjunction([
+          new Condition('code', '=', params.filter),
+          new Conjunction(
+            params.filter
+              .split(/\s+/g)
+              .map((filter) => new Condition('display', 'LIKE', `%${escapeLikeString(filter)}%`))
+          ),
+        ])
       )
       .orderByExpr(
         new SqlFunction('strict_word_similarity', [
