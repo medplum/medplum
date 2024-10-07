@@ -1085,6 +1085,13 @@ describe('Client', () => {
     expect(request3).not.toBe(request1);
   });
 
+  test('HTTP POST without a body', async () => {
+    const fetch = mockFetch(201, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.post(client.fhirUrl('Bot', randomUUID(), '$deploy'));
+    expect(result).toEqual({});
+  });
+
   test('Read expired and refresh', async () => {
     let tokenExpired = true;
 

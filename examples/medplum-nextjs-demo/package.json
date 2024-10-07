@@ -10,9 +10,9 @@
     "start": "next start"
   },
   "dependencies": {
-    "@mantine/core": "7.13.1",
-    "@mantine/hooks": "7.13.1",
-    "@mantine/notifications": "7.13.1",
+    "@mantine/core": "7.13.2",
+    "@mantine/hooks": "7.13.2",
+    "@mantine/notifications": "7.13.2",
     "@medplum/core": "3.2.16",
     "@medplum/react": "3.2.16",
     "@next/bundle-analyzer": "14.2.14",

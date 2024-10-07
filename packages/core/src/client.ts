@@ -1056,7 +1056,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
-  post(url: URL | string, body: any, contentType?: string, options: MedplumRequestOptions = {}): Promise<any> {
+  post(url: URL | string, body?: any, contentType?: string, options: MedplumRequestOptions = {}): Promise<any> {
     url = url.toString();
     this.setRequestBody(options, body);
     if (contentType) {
@@ -3349,9 +3349,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private setRequestBody(options: MedplumRequestOptions, data: any): void {
     if (
       typeof data === 'string' ||
-      (typeof Blob !== 'undefined' && (data instanceof Blob || data.constructor.name === 'Blob')) ||
-      (typeof File !== 'undefined' && (data instanceof File || data.constructor.name === 'File')) ||
-      (typeof Uint8Array !== 'undefined' && (data instanceof Uint8Array || data.constructor.name === 'Uint8Array'))
+      (typeof Blob !== 'undefined' && (data instanceof Blob || data?.constructor.name === 'Blob')) ||
+      (typeof File !== 'undefined' && (data instanceof File || data?.constructor.name === 'File')) ||
+      (typeof Uint8Array !== 'undefined' && (data instanceof Uint8Array || data?.constructor.name === 'Uint8Array'))
     ) {
       options.body = data;
     } else if (data) {
