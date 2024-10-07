@@ -23,6 +23,11 @@ import {
   getMedicationKnowledge,
 } from './utils';
 
+interface MedicationDetails {
+  name: string;
+  rxcui?: string;
+}
+
 export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEvent>): Promise<MedicationRequest> {
   const body = event.input;
 
@@ -52,7 +57,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEven
   const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
   const PHOTON_AUTH_TOKEN = await handlePhotonAuth(PHOTON_CLIENT_ID, PHOTON_CLIENT_SECRET);
 
-  const { name, rxcui } = await getMedicationCodeFromPrescription(body.data.id, PHOTON_AUTH_TOKEN);
+  const { name, rxcui } = await getMedicationDetailsFromPrescription(body.data.id, PHOTON_AUTH_TOKEN);
 
   // Create or update the prescription, depending on the event type
   let prescription: MedicationRequest;
@@ -67,10 +72,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent<PhotonEven
   return prescription;
 }
 
-async function getMedicationCodeFromPrescription(
-  prescriptionId: string,
+async function getMedicationDetailsFromPrescription(
+  photonPrescriptionId: string,
   authToken: string
-): Promise<Record<string, string | undefined>> {
+): Promise<MedicationDetails> {
   const query = `
     query prescription($id: ID!) {
       prescription(id: $id) {
@@ -84,12 +89,12 @@ async function getMedicationCodeFromPrescription(
     }
   `;
 
-  const variables = { id: prescriptionId };
+  const variables = { id: photonPrescriptionId };
 
   const body = JSON.stringify({ query, variables });
   const result = await photonGraphqlFetch(body, authToken);
-  const rxcui = result.data.prescription.treatment.codes.rxcui;
-  const name = result.data.prescription.treatment.name;
+  const rxcui = result.data?.prescription?.treatment?.codes?.rxcui;
+  const name = result.data?.prescription?.treatment?.name;
   return { name, rxcui };
 }
 
@@ -302,8 +307,8 @@ async function getPrescriber(
   try {
     const result = await photonGraphqlFetch(body, authToken);
 
-    const practitionerId = result.data.prescriber.externalId;
-    const practitionerEmail = result.data.prescriber.email;
+    const practitionerId = result.data?.prescriber?.externalId;
+    const practitionerEmail = result.data?.prescriber?.email;
 
     const practitioner = await medplum.searchOne('Practitioner', {
       _filter: `(_id eq ${practitionerId} or email eq ${practitionerEmail})`,
