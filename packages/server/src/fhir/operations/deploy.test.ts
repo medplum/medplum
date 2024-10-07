@@ -120,7 +120,7 @@ describe('Deploy', () => {
     );
   });
 
-  test('Deprecated: Deploy bot with code parameter', async () => {
+  test('Deploy bot with code parameter', async () => {
     const deployLambdaSpy = jest.spyOn(awsDeploy, 'deployLambda').mockImplementation(jest.fn());
 
     const code = `
