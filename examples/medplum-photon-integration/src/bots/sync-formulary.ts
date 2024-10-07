@@ -1,13 +1,25 @@
-import { BotEvent, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { BotEvent, getCodeBySystem, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { List, ListEntry, MedicationKnowledge } from '@medplum/fhirtypes';
+import { NEUTRON_HEALTH } from './system-strings';
 import { handlePhotonAuth, photonGraphqlFetch } from './utils';
 
+/**
+ * This bot takes your formulary as an input and syncs it with your Catalog in your Photon project. It filters out all medications
+ * that are already synced, then goes through the rest and adds them to your catalog in Photon if possible. Any medications that
+ * were not able to be synced are added to an array that is returned to the user.
+ *
+ * @param medplum - Medplum Client to access your Medplum project
+ * @param event - The Bot Event, a List of MedicationKnowledge resources
+ * @returns An array of MedicationKnowledge resources that were not able to be synced
+ */
 export async function handler(medplum: MedplumClient, event: BotEvent<List>): Promise<MedicationKnowledge[]> {
   const formulary = event.input;
-  const PHOTON_CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
-  const PHOTON_CLIENT_SECRET = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
-  const PHOTON_AUTH_TOKEN = await handlePhotonAuth(PHOTON_CLIENT_ID, PHOTON_CLIENT_SECRET);
+  // Get the Photon client ID and secret to ensure the user is authorized to read and write to the Photon API
+  const photonClientId = event.secrets['PHOTON_CLIENT_ID']?.valueString;
+  const photonClientSecret = event.secrets['PHOTON_CLIENT_SECRET']?.valueString;
+  const photonAuthToken = await handlePhotonAuth(photonClientId, photonClientSecret);
 
+  // Filter out already synced medications to avoid duplication
   const medications = formulary.entry?.filter((entry) => {
     if (entry.flag) {
       return !entry.flag?.coding?.some((coding) => coding.code === 'synced');
@@ -19,35 +31,51 @@ export async function handler(medplum: MedplumClient, event: BotEvent<List>): Pr
     throw new Error('No medications to sync');
   }
 
-  const catalogId = await getCatalogId(PHOTON_AUTH_TOKEN);
-  const unAddedMedications: MedicationKnowledge[] = [];
+  // Get the catalog ID from Photon so your medicaitons can be added
+  const catalogId = await getCatalogId(photonAuthToken);
+  // This array will be used to store any medications that could not be synced
+  const unaddedMedications: MedicationKnowledge[] = [];
 
   if (!catalogId) {
     throw new Error('No catalog found in Photon Health');
   }
 
+  // Loop over each medication and sync it to your Photon catalog
   for (const medication of medications) {
+    // Get the full MedicationKnowledge resource and validate it
     const medReference = medication.item;
     const medicationKnowledge = await medplum.readReference(medReference);
     if (medicationKnowledge.resourceType !== 'MedicationKnowledge') {
       throw new Error('Invalid resource type in formulary');
     }
 
+    // Get the medication's RXCUI code
     const rxcui = medicationKnowledge.code?.coding?.[0].code;
 
-    const photonMedicationId = await getPhotonMedication(PHOTON_AUTH_TOKEN, rxcui);
+    // Get the medication from photon. If it is not in Photon, store it in the unadded medications array
+    const photonMedicationId = await getPhotonMedication(photonAuthToken, rxcui);
     if (!photonMedicationId) {
-      unAddedMedications.push(medicationKnowledge);
+      unaddedMedications.push(medicationKnowledge);
       continue;
     }
 
-    await syncFormulary(catalogId, photonMedicationId, PHOTON_AUTH_TOKEN);
+    // If the medication is in Photon, sync it by adding it to your Photon catalog.
+    await syncFormulary(catalogId, photonMedicationId, photonAuthToken);
   }
 
-  await updateFormulary(medplum, formulary, unAddedMedications);
-  return unAddedMedications;
+  // Update the formulary in Medplum
+  await updateFormulary(medplum, formulary, unaddedMedications);
+  // Return any medications that were not able to be synced
+  return unaddedMedications;
 }
 
+/**
+ * This function goes through your formulary and updates the entries to flag them if they were synced. It skips any entries that were not able to be synced.
+ *
+ * @param medplum - The Medplum Client to update the formulary in your project
+ * @param formulary - The List resource representing your formulary
+ * @param medsToSkip - An array of MedicationKnowledge resources that should not be updated as they were not synced
+ */
 async function updateFormulary(
   medplum: MedplumClient,
   formulary: List,
@@ -61,12 +89,12 @@ async function updateFormulary(
   }
   for (const medication of medications) {
     if (
-      medication.flag?.coding?.includes({ system: 'https://neutron.health', code: 'synced' }) ||
+      (medication.flag && getCodeBySystem(medication.flag, NEUTRON_HEALTH) === 'synced') ||
       (await checkIfSkipped(medsToSkip, medication, medplum))
     ) {
       updatedEntries.push(medication);
     } else {
-      medication.flag = { coding: [{ system: 'https://neutron.health', code: 'synced' }] };
+      medication.flag = { coding: [{ system: NEUTRON_HEALTH, code: 'synced' }] };
       updatedEntries.push(medication);
     }
   }
@@ -79,19 +107,42 @@ async function updateFormulary(
   }
 }
 
+/**
+ * This function takes a list entry from your formulary and checks it against the medications that could not be synced. It returns a boolean representing whether or not the resource should be omitted from your formulary update.
+ *
+ * @param medsToSkip - An array of MedicationKnowledge resources that should be skipped.
+ * @param medicationEntry - A List entry of a MedicationKnowledge resource that is being checked to see if it should be skipped.
+ * @param medplum - The Medplum Client used to get the full resource data so the check can be completed
+ * @returns A boolean indicating if the given List entry should be skipped
+ */
 async function checkIfSkipped(
   medsToSkip: MedicationKnowledge[],
   medicationEntry: ListEntry,
   medplum: MedplumClient
 ): Promise<boolean> {
   const fullMedication = (await medplum.readReference(medicationEntry.item)) as MedicationKnowledge;
-  if (medsToSkip.includes(fullMedication)) {
-    return true;
-  } else {
-    return false;
+  const medicationCodeableConcept = fullMedication.code;
+  if (!medicationCodeableConcept) {
+    throw new Error('Medication has no code');
   }
+  const medicationCode = getCodeBySystem(medicationCodeableConcept, 'http://www.nlm.nih.gov/research/umls/rxnorm');
+  const shouldSkip = medsToSkip.find((med) => {
+    if (!med.code) {
+      return false;
+    }
+    return getCodeBySystem(med.code, 'http://www.nlm.nih.gov/research/umls/rxnorm') === medicationCode;
+  });
+
+  return !!shouldSkip;
 }
 
+/**
+ * This functiont takes a catalog and treatment ID to add a given treatment to your catalog in Photon
+ *
+ * @param catalogId - Your catalog's ID in Photon
+ * @param treatmentId - The Photon ID of the treatment being synced
+ * @param authToken - The Photon auth token allowing the bot to write to the Photon API
+ */
 async function syncFormulary(catalogId: string, treatmentId: string, authToken: string): Promise<void> {
   const query = `
     mutation addToCatalog(
@@ -113,6 +164,12 @@ async function syncFormulary(catalogId: string, treatmentId: string, authToken: 
   await photonGraphqlFetch(body, authToken);
 }
 
+/**
+ * This queries for your catalog's ID in Photon
+ *
+ * @param authToken - Photon auth token to authorize reading from the Photon API
+ * @returns The id of your Photon catalog
+ */
 async function getCatalogId(authToken: string): Promise<string> {
   const query = `
     query catalogs {
@@ -127,6 +184,13 @@ async function getCatalogId(authToken: string): Promise<string> {
   return result.data.catalogs?.[0]?.id;
 }
 
+/**
+ * This function queries Photon for a medication given an RXCUI code.
+ *
+ * @param authToken - Photon auth token to authorize the bot to read from the Photon API
+ * @param code - The RXCUI code of the medication you are searching for
+ * @returns The Photon ID of the medication with the given RXCUI code
+ */
 async function getPhotonMedication(authToken: string, code?: string): Promise<string | undefined> {
   const query = `
     query medications(

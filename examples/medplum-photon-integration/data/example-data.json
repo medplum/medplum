@@ -1,10 +1,12 @@
 {
   "resourceType": "Bundle",
-  "type": "transaction",
+  "type": "batch",
   "entry": [
     {
-      "fullUrl": "urn:uuid:7c192ee3-b039-4fcc-8451-9e0c2f8980ff",
-      "request": { "method": "POST", "url": "MedicationKnowledge" },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationKnowledge?code=http://www.nlm.nih.gov/research/umls/rxnorm|861007"
+      },
       "resource": {
         "resourceType": "MedicationKnowledge",
         "status": "active",
@@ -98,7 +100,10 @@
     },
     {
       "fullUrl": "urn:uuid:fd57cc70-50ea-4766-886c-693814ac48f3",
-      "request": { "method": "POST", "url": "MedicationKnowledge" },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationKnowledge?code=http://www.nlm.nih.gov/research/umls/rxnorm|569998"
+      },
       "resource": {
         "resourceType": "MedicationKnowledge",
         "status": "active",
@@ -173,7 +178,10 @@
     },
     {
       "fullUrl": "urn:uuid:f5afd95d-f369-4fb6-9457-b8d16ef734fc",
-      "request": { "method": "POST", "url": "MedicationKnowledge" },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationKnowledge?code=http://www.nlm.nih.gov/research/umls/rxnorm|308136"
+      },
       "resource": {
         "resourceType": "MedicationKnowledge",
         "status": "active",
@@ -256,7 +264,10 @@
     },
     {
       "fullUrl": "urn:uuid:d85345be-881b-41e6-a37f-6d8165a5be64",
-      "request": { "method": "POST", "url": "MedicationKnowledge" },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationKnowledge?code=http://www.nlm.nih.gov/research/umls/rxnorm|313252"
+      },
       "resource": {
         "resourceType": "MedicationKnowledge",
         "status": "active",
@@ -343,7 +354,10 @@
     },
     {
       "fullUrl": "urn:uuid:971e952e-1e21-47be-98b6-6a83d7063111",
-      "request": { "method": "POST", "url": "MedicationKnowledge" },
+      "request": {
+        "method": "PUT",
+        "url": "MedicationKnowledge?code=http://www.nlm.nih.gov/research/umls/rxnorm|855332"
+      },
       "resource": {
         "resourceType": "MedicationKnowledge",
         "status": "active",
