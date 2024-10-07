@@ -344,8 +344,9 @@ function getBaseSelectQueryForResourceType(
   opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
   const builder = new SelectQuery(resourceType);
+  const addColumns = opts?.addColumns !== false;
   const idColumn = new Column(resourceType, 'id');
-  if (opts?.addColumns !== false) {
+  if (addColumns) {
     builder.column(idColumn).column(new Column(resourceType, 'content'));
   }
   repo.addDeletedFilter(builder);
@@ -355,7 +356,7 @@ function getBaseSelectQueryForResourceType(
     opts.resourceTypeQueryCallback(resourceType, builder);
   }
 
-  if (builder.joins.length > 0) {
+  if (addColumns && builder.joins.length > 0) {
     builder.distinctOn(idColumn);
   }
   return builder;

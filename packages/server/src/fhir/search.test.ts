@@ -4463,5 +4463,15 @@ describe('FHIR Search', () => {
         expect(bundle4.entry?.[0]?.resource?.id).toEqual(patient2.id);
         expect(bundle4.entry?.[1]?.resource?.id).toEqual(patient1.id);
       }));
+
+    test('Should calculate count with join', () =>
+      withTestContext(async () => {
+        const type = randomUUID();
+        const searchRequest = parseSearchRequest(`PractitionerRole?_total=accurate&organization.type=${type}`);
+        await expect(systemRepo.search(searchRequest)).resolves.toMatchObject<Partial<Bundle>>({
+          type: 'searchset',
+          total: 0,
+        });
+      }));
   });
 });
