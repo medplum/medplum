@@ -12550,6 +12550,17 @@
           ]
         },
         {
+          "id": "Bot.system",
+          "path": "Bot.system",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "boolean"
+            }
+          ]
+        },
+        {
           "id": "Bot.runAsUser",
           "path": "Bot.runAsUser",
           "min": 0,

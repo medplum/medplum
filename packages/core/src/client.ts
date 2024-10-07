@@ -65,6 +65,9 @@ import {
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
+  unauthorized,
+  unauthorizedTokenAudience,
+  unauthorizedTokenExpired,
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
@@ -348,8 +351,8 @@ export type ResourceArray<T extends Resource = Resource> = T[] & { bundle: Bundl
 export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
-    tableLayouts?: Record<string, CustomTableLayout> | undefined,
-    fonts?: TFontDictionary | undefined
+    tableLayouts?: Record<string, CustomTableLayout>,
+    fonts?: TFontDictionary
   ): Promise<any>;
 }
 
@@ -557,7 +560,7 @@ export type MailDestination = string | MailAddress | string[] | MailAddress[];
  * Compatible with nodemailer Mail.Options.
  */
 export interface MailAttachment {
-  /** String, Buffer or a Stream contents for the attachmentent */
+  /** String, Buffer or a Stream contents for the attachment */
   readonly content?: string;
   /** path to a file or an URL (data uris are allowed as well) if you want to stream the file instead of including it (better for larger attachments) */
   readonly path?: string;
@@ -1555,7 +1558,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Creates an
    * [async generator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncGenerator)
    * over a series of FHIR search requests for paginated search results. Each iteration of the generator yields
-   * the array of resources on each page.
+   * the array of resources on each page. Searches using _offset based pagination are limited to 10,000 records.
+   * For larger result sets, _cursor based pagination should be used instead.
+   * See: https://www.medplum.com/docs/search/paginated-search#cursor-based-pagination
    *
    * @example
    *
@@ -2187,7 +2192,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       };
 
       xhr.responseType = 'json';
-      xhr.onabort = () => sendResult(new Error('Request aborted'));
+      xhr.onabort = () => sendResult(new DOMException('Request aborted', 'AbortError'));
       xhr.onerror = () => sendResult(new Error('Request error'));
 
       if (onProgress) {
@@ -2282,7 +2287,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   /**
    * Creates a FHIR `Communication` resource with the provided data content.
    *
-   * This is a convenience method to handle commmon cases where a `Communication` resource is created with a `payload`.
+   * This is a convenience method to handle common cases where a `Communication` resource is created with a `payload`.
    * @category Create
    * @param resource - The FHIR resource to comment on.
    * @param text - The text of the comment.
@@ -2748,9 +2753,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!this.medplumServer) {
       return Promise.resolve(undefined);
     }
+
     this.profilePromise = new Promise((resolve, reject) => {
-      this.dispatchEvent({ type: 'profileRefreshing' });
-      this.get('auth/me')
+      this.get('auth/me', { cache: 'no-cache' })
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
           const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
@@ -2758,22 +2763,23 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           if (profileChanged) {
             this.dispatchEvent({ type: 'change' });
           }
-          this.dispatchEvent({ type: 'profileRefreshed' });
           resolve(result.profile);
+          this.dispatchEvent({ type: 'profileRefreshed' });
         })
         .catch(reject);
     });
 
+    this.dispatchEvent({ type: 'profileRefreshing' });
     return this.profilePromise;
   }
 
   /**
-   * Returns true if the client is waiting for authentication.
-   * @returns True if the client is waiting for authentication.
+   * Returns true if the client is waiting for initial authentication.
+   * @returns True if the client is waiting for initial authentication.
    * @category Authentication
    */
   isLoading(): boolean {
-    return !this.isInitialized || !!this.profilePromise;
+    return !this.isInitialized || (Boolean(this.profilePromise) && !this.sessionDetails?.profile);
   }
 
   /**
@@ -3370,7 +3376,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (this.onUnauthenticated) {
       this.onUnauthenticated();
     }
-    return Promise.reject(new Error('Unauthenticated'));
+    return Promise.reject(new OperationOutcomeError(unauthorized));
   }
 
   /**
@@ -3383,7 +3389,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const pkceState = getRandomString();
     sessionStorage.setItem('pkceState', pkceState);
 
-    const codeVerifier = getRandomString();
+    const codeVerifier = getRandomString().slice(0, 128);
     sessionStorage.setItem('codeVerifier', codeVerifier);
 
     const arrayHash = await encryptSHA256(codeVerifier);
@@ -3691,7 +3697,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     topic: string,
     event: EventName,
     context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
-    versionId?: string | undefined
+    versionId?: string
   ): Promise<Record<string, any>> {
     if (isContextVersionRequired(event)) {
       return this.post(
@@ -3786,18 +3792,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
       if (Date.now() >= (tokenPayload.exp as number) * 1000) {
         this.clearActiveLogin();
-        throw new Error('Token expired');
+        throw new OperationOutcomeError(unauthorizedTokenExpired);
       }
 
       // Verify app_client_id
       if (tokenPayload.cid) {
         if (tokenPayload.cid !== this.clientId) {
           this.clearActiveLogin();
-          throw new Error('Token was not issued for this audience');
+          throw new OperationOutcomeError(unauthorizedTokenAudience);
         }
       } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
         this.clearActiveLogin();
-        throw new Error('Token was not issued for this audience');
+        throw new OperationOutcomeError(unauthorizedTokenAudience);
       }
     }
 
@@ -3809,6 +3815,16 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     });
   }
 
+  private checkSessionDetailsMatchLogin(login?: LoginState): boolean {
+    // We only need to validate if we already have session details
+    if (!(this.sessionDetails && login)) {
+      return true;
+    }
+    // Make sure sessionDetails.profile.id matches the ID in the profile reference we are checking against
+    // Otherwise return false if no profile reference in login
+    return login.profile?.reference?.endsWith(this.sessionDetails.profile.id as string) ?? false;
+  }
+
   /**
    * Sets up a listener for window storage events.
    * This synchronizes state across browser windows and browser tabs.
@@ -3816,11 +3832,25 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private setupStorageListener(): void {
     try {
       window.addEventListener('storage', (e: StorageEvent) => {
-        if (e.key === null || e.key === 'activeLogin') {
-          // Storage events fire when different tabs make changes.
-          // On storage clear (key === null) or activeLogin change (key === 'activeLogin')
-          // Refresh the page to ensure the active login is up to date.
+        // Storage events fire when different tabs make changes.
+        // On storage clear (key === null) or profile change (key === 'activeLogin', and profile in 'activeLogin' is different)
+        // Refresh the page to ensure the active login is up to date.
+        if (e.key === null) {
           window.location.reload();
+        } else if (e.key === 'activeLogin') {
+          const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
+          const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
+          if (
+            oldState?.profile.reference !== newState?.profile.reference ||
+            !this.checkSessionDetailsMatchLogin(newState)
+          ) {
+            window.location.reload();
+          } else if (newState) {
+            this.setAccessToken(newState.accessToken, newState.refreshToken);
+          } else {
+            // Theoretically this should never be called, but we might want to keep it here just in case
+            this.clear();
+          }
         }
       });
     } catch (_err) {

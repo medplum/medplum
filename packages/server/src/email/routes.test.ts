@@ -85,4 +85,27 @@ describe('Email API Routes', () => {
     expect(parsed.subject).toBe('Subject');
     expect(parsed.text).toBe('Body\n');
   });
+
+  test('Handle SES error', async () => {
+    (SESv2Client as unknown as jest.Mock).mockImplementation(() => {
+      return {
+        send: () => {
+          throw new Error('BadRequestException: Illegal address');
+        },
+      };
+    });
+
+    const accessToken = await initTestAuth({ membership: { admin: true } });
+    const res = await request(app)
+      .post(`/email/v1/send`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        to: 'alice@example.com',
+        subject: 'Subject',
+        text: 'Body',
+      });
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0].details.text).toBe('Error sending email: BadRequestException: Illegal address');
+  });
 });

@@ -1,26 +1,23 @@
 import { BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
-import {
-  Address,
-  HumanName,
-  Patient,
-  Questionnaire,
-  QuestionnaireResponse,
-  QuestionnaireResponseItemAnswer,
-} from '@medplum/fhirtypes';
+import { Organization, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addAllergy,
   addCondition,
   addConsent,
   addCoverage,
   addFamilyMemberHistory,
+  addImmunization,
   addLanguage,
   addMedication,
+  addPharmacy,
   consentCategoryMapping,
   consentPolicyRuleMapping,
   consentScopeMapping,
   convertDateToDateTime,
   extensionURLMapping,
   getGroupRepeatedAnswers,
+  getHumanName,
+  getPatientAddress,
   observationCategoryMapping,
   observationCodeMapping,
   setExtension,
@@ -185,6 +182,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   }
 
   // Handle medications
+
   const medications = getGroupRepeatedAnswers(questionnaire, response, 'medications');
   for (const medication of medications) {
     await addMedication(medplum, patient, medication);
@@ -202,11 +200,25 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     await addFamilyMemberHistory(medplum, patient, history);
   }
 
+  // Handle vaccination history (immunizations)
+
+  const vaccinationHistory = getGroupRepeatedAnswers(questionnaire, response, 'vaccination-history');
+  for (const vaccine of vaccinationHistory) {
+    await addImmunization(medplum, patient, vaccine);
+  }
+
   // Handle coverage
 
   const insuranceProviders = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
   for (const provider of insuranceProviders) {
     await addCoverage(medplum, patient, provider);
+  }
+
+  // Handle preferred pharmacy
+
+  const preferredPharmacyReference = answers['preferred-pharmacy-reference']?.valueReference;
+  if (preferredPharmacyReference) {
+    await addPharmacy(medplum, patient, preferredPharmacyReference as Reference<Organization>);
   }
 
   // Handle consents
@@ -250,52 +262,4 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     consentPolicyRuleMapping.adr,
     convertDateToDateTime(answers['acknowledgement-for-advance-directives-date']?.valueDate)
   );
-}
-
-function getHumanName(
-  answers: Record<string, QuestionnaireResponseItemAnswer>,
-  prefix: string = ''
-): HumanName | undefined {
-  const patientName: HumanName = {};
-
-  const givenName = [];
-  if (answers[`${prefix}first-name`]?.valueString) {
-    givenName.push(answers[`${prefix}first-name`].valueString as string);
-  }
-  if (answers[`${prefix}middle-name`]?.valueString) {
-    givenName.push(answers[`${prefix}middle-name`].valueString as string);
-  }
-
-  if (givenName.length > 0) {
-    patientName.given = givenName;
-  }
-
-  if (answers[`${prefix}last-name`]?.valueString) {
-    patientName.family = answers[`${prefix}last-name`].valueString;
-  }
-
-  return Object.keys(patientName).length > 0 ? patientName : undefined;
-}
-
-function getPatientAddress(answers: Record<string, QuestionnaireResponseItemAnswer>): Address | undefined {
-  const patientAddress: Address = {};
-
-  if (answers['street']?.valueString) {
-    patientAddress.line = [answers['street'].valueString];
-  }
-
-  if (answers['city']?.valueString) {
-    patientAddress.city = answers['city'].valueString;
-  }
-
-  if (answers['state']?.valueCoding?.code) {
-    patientAddress.state = answers['state'].valueCoding.code;
-  }
-
-  if (answers['zip']?.valueString) {
-    patientAddress.postalCode = answers['zip'].valueString;
-  }
-
-  // To simplify the demo, we're assuming the address is always a home address
-  return Object.keys(patientAddress).length > 0 ? { use: 'home', type: 'physical', ...patientAddress } : undefined;
 }

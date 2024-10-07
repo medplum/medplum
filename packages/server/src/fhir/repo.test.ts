@@ -3,7 +3,6 @@ import {
   badRequest,
   created,
   createReference,
-  forbidden,
   getReferenceString,
   isOk,
   notFound,
@@ -19,6 +18,7 @@ import {
   Login,
   Observation,
   OperationOutcome,
+  Organization,
   Patient,
   Practitioner,
   Project,
@@ -26,6 +26,7 @@ import {
   Questionnaire,
   ResourceType,
   StructureDefinition,
+  User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
@@ -361,61 +362,6 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.author?.reference).toEqual(author);
     }));
 
-  test('Create resource with account', () =>
-    withTestContext(async () => {
-      const author = 'Practitioner/' + randomUUID();
-      const account = 'Organization/' + randomUUID();
-
-      // This user does not have an access policy
-      // So they can optionally set an account
-      const repo = new Repository({
-        extendedMode: true,
-        author: {
-          reference: author,
-        },
-      });
-
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        meta: {
-          account: {
-            reference: account,
-          },
-        },
-      });
-
-      expect(patient.meta?.author?.reference).toEqual(author);
-      expect(patient.meta?.account?.reference).toEqual(account);
-    }));
-
-  test('Create resource with malformed account', () =>
-    withTestContext(async () => {
-      const author = 'Practitioner/' + randomUUID();
-
-      // This user does not have an access policy
-      // So they can optionally set an account
-      const repo = new Repository({
-        extendedMode: true,
-        author: {
-          reference: author,
-        },
-      });
-
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        meta: {
-          account: {
-            reference: 'example.com/account/1',
-          },
-        },
-      });
-
-      expect(patient.meta?.author?.reference).toEqual(author);
-      expect(patient.meta?.account?.reference).toEqual('example.com/account/1');
-    }));
-
   test('Create resource with lastUpdated', () =>
     withTestContext(async () => {
       const lastUpdated = '2020-01-01T12:00:00Z';
@@ -485,8 +431,7 @@ describe('FHIR Repo', () => {
 
       (patient as Patient).name = [{ family: 'TestUpdated' }];
 
-      const versionId = patient.meta?.versionId;
-      await systemRepo.updateResource<Patient>(patient, versionId);
+      await systemRepo.updateResource<Patient>(patient, { ifMatch: patient.meta?.versionId });
       expect(patient.name?.at(0)?.family).toEqual('TestUpdated');
     }));
 
@@ -498,7 +443,7 @@ describe('FHIR Repo', () => {
       });
 
       try {
-        await systemRepo.updateResource<Patient>(patient1, 'bad-id');
+        await systemRepo.updateResource<Patient>(patient1, { ifMatch: 'bad-id' });
         fail('Should have thrown');
       } catch (err) {
         expect((err as OperationOutcomeError).outcome).toMatchObject(preconditionFailed);
@@ -727,12 +672,7 @@ describe('FHIR Repo', () => {
     });
 
     // Try to expunge as a regular user
-    try {
-      await repo.expungeResource('Patient', new Date().toISOString());
-      fail('Purge should have failed');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
-    }
+    await expect(repo.expungeResource('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
   });
 
   test('expungeResources forbidden', async () => {
@@ -747,12 +687,7 @@ describe('FHIR Repo', () => {
     });
 
     // Try to expunge as a regular user
-    try {
-      await repo.expungeResources('Patient', [new Date().toISOString()]);
-      fail('Purge should have failed');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
-    }
+    await expect(repo.expungeResources('Patient', [new Date().toISOString()])).rejects.toThrow('Forbidden');
   });
 
   test('Purge forbidden', async () => {
@@ -767,12 +702,7 @@ describe('FHIR Repo', () => {
     });
 
     // Try to purge as a regular user
-    try {
-      await repo.purgeResources('Patient', new Date().toISOString());
-      fail('Purge should have failed');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
-    }
+    await expect(repo.purgeResources('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
   });
 
   test('Purge Login', () =>
@@ -1044,8 +974,11 @@ describe('FHIR Repo', () => {
         meta: { account: conditionalReference },
         generalPractitioner: [conditionalReference],
       });
-      expect(patient.generalPractitioner?.[0]?.reference).toEqual(getReferenceString(practitioner));
-      expect(patient.meta?.account?.reference).toEqual(getReferenceString(practitioner));
+      const expectedPractitioner = getReferenceString(practitioner);
+      expect(patient.generalPractitioner?.[0]?.reference).toEqual(expectedPractitioner);
+      expect(patient.meta?.account?.reference).toEqual(expectedPractitioner);
+      expect(patient.meta?.accounts).toHaveLength(1);
+      expect(patient.meta?.accounts).toContainEqual({ reference: expectedPractitioner });
     }));
 
   test('Conditional reference resolution failure', async () =>
@@ -1115,21 +1048,25 @@ describe('FHIR Repo', () => {
       });
     }));
 
-  test('Allows adding compartments', async () =>
+  test('Allows adding compartments for specific types', async () =>
     withTestContext(async () => {
       const { repo, project } = await createTestProject({ withRepo: true });
+      const org = await repo.createResource<Organization>({ resourceType: 'Organization' });
       const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+
+      const orgReference = createReference(org);
       const practitionerReference = createReference(practitioner);
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
-        meta: { compartment: [practitionerReference] },
+        meta: { compartment: [orgReference, practitionerReference] },
       });
-      expect(patient.meta?.compartment).toContainEqual(practitionerReference);
+      expect(patient.meta?.compartment).toContainEqual(orgReference);
+      expect(patient.meta?.compartment).not.toContainEqual(practitionerReference);
       expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
       expect(patient.meta?.compartment).toContainEqual({ reference: getReferenceString(patient) });
 
       const results = await repo.searchResources(
-        parseSearchRequest('Patient?_compartment=' + getReferenceString(practitioner))
+        parseSearchRequest('Patient?_compartment=' + getReferenceString(orgReference))
       );
       expect(results).toHaveLength(1);
     }));
@@ -1151,22 +1088,6 @@ describe('FHIR Repo', () => {
       expect(results).toHaveLength(0);
     }));
 
-  test('Prevents setting too many compartments', async () =>
-    withTestContext(async () => {
-      const config = await loadTestConfig();
-      config.maxCompartments = 3;
-      await initAppServices(config);
-
-      const { repo, client } = await createTestProject({ withRepo: true, withClient: true });
-      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
-      await expect(
-        repo.createResource<Patient>({
-          resourceType: 'Patient',
-          meta: { compartment: [createReference(practitioner), createReference(client)] },
-        })
-      ).rejects.toThrow('Too many compartments (Patient.meta.compartment)');
-    }));
-
   test('setTypedValue', () => {
     const patient: Patient = {
       resourceType: 'Patient',
@@ -1185,4 +1106,80 @@ describe('FHIR Repo', () => {
     setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
     expect(patient.photo?.[1].contentType).toEqual('image/jpeg');
   });
+
+  test('Super admin can edit User.meta.project', async () =>
+    withTestContext(async () => {
+      const { project, repo } = await createTestProject({ withRepo: true });
+
+      // Create a user in the project
+      const user1 = await repo.createResource<User>({
+        resourceType: 'User',
+        email: randomUUID() + '@example.com',
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+      });
+      expect(user1.meta?.project).toEqual(project.id);
+
+      // Try to change the project as the normal user
+      // Should silently fail, and preserve the meta.project
+      const user2 = await repo.updateResource<User>({
+        ...user1,
+        meta: { project: undefined },
+      });
+      expect(user2.meta?.project).toEqual(project.id);
+
+      // Now try to change the project as the super admin
+      // Should succeed
+      const user3 = await systemRepo.updateResource<User>({
+        ...user2,
+        meta: { project: undefined },
+      });
+      expect(user3.meta?.project).toBeUndefined();
+    }));
+
+  test('Handles caching of profile from linked project', async () =>
+    withTestContext(async () => {
+      const { membership, project } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+
+      const { membership: membership2, project: project2 } = await registerNew({
+        firstName: randomUUID(),
+        lastName: randomUUID(),
+        projectName: randomUUID(),
+        email: randomUUID() + '@example.com',
+        password: randomUUID(),
+      });
+      project.link = [{ project: createReference(project2) }];
+
+      const repo2 = await getRepoForLogin({ login: {} as Login, membership: membership2, project: project2 });
+      const profileJson = JSON.parse(
+        readFileSync(resolve(__dirname, '__test__/us-core-patient.json'), 'utf8')
+      ) as StructureDefinition;
+      const profile = await repo2.createResource(profileJson);
+
+      const patientJson: Patient = {
+        resourceType: 'Patient',
+        meta: {
+          profile: [profile.url],
+        },
+      };
+
+      // Resource upload should fail with profile linked
+      let repo = await getRepoForLogin({ login: {} as Login, membership, project });
+      await expect(repo.createResource(patientJson)).rejects.toThrow(/Missing required property/);
+
+      // Unlink Project and verify that profile is not cached; resource upload should succeed without access to profile
+      project.link = undefined;
+      repo = await getRepoForLogin({
+        login: {} as Login,
+        membership,
+        project,
+      });
+      await expect(repo.createResource(patientJson)).resolves.toBeDefined();
+    }));
 });

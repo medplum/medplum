@@ -1,26 +1,35 @@
 import {
   EventTarget,
+  OperationOutcomeError,
   allOk,
   badRequest,
   created,
   normalizeOperationOutcome,
   notFound,
   parseSearchRequest,
+  singularize,
 } from '@medplum/core';
-import { OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
+import {
+  CapabilityStatementRestInteraction,
+  CapabilityStatementRestResourceInteraction,
+  OperationOutcome,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import type { IncomingHttpHeaders } from 'node:http';
 import { Operation } from 'rfc6902';
 import { LogEvent, processBatch } from './batch';
 import { graphqlHandler } from './graphql';
-import { FhirRepository } from './repo';
-import { HttpMethod, Router } from './urlrouter';
+import { CreateResourceOptions, FhirRepository, UpdateResourceOptions } from './repo';
+import { HttpMethod, RouteResult, Router } from './urlrouter';
 
 export type FhirRequest = {
   method: HttpMethod;
+  url: string;
   pathname: string;
   body: any;
   params: Record<string, string>;
-  query: Record<string, string>;
+  query: Record<string, string | string[] | undefined>;
   headers?: IncomingHttpHeaders;
   config?: FhirRequestConfig;
 };
@@ -30,11 +39,21 @@ export type FhirRequestConfig = {
   graphqlMaxDepth?: number;
   graphqlMaxPageSize?: number;
   graphqlMaxSearches?: number;
+  transactions?: boolean;
 };
 
 export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
 
-export type FhirRouteHandler = (req: FhirRequest, repo: FhirRepository, router: FhirRouter) => Promise<FhirResponse>;
+export type FhirRouteOptions = {
+  batch?: boolean;
+};
+
+export type FhirRouteHandler = (
+  req: FhirRequest,
+  repo: FhirRepository,
+  router: FhirRouter,
+  options?: FhirRouteOptions
+) => Promise<FhirResponse>;
 
 export interface FhirOptions {
   introspectionEnabled?: boolean;
@@ -46,22 +65,21 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
   if (bundle.resourceType !== 'Bundle') {
     return [badRequest('Not a bundle')];
   }
-  const result = await processBatch(router, repo, bundle);
+
+  const result = await processBatch(req, repo, router, bundle);
   return [allOk, result];
 }
 
 // Search
 async function search(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType } = req.params;
-  const query = req.query as Record<string, string[] | string | undefined>;
-  const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
+  const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, req.query));
   return [allOk, bundle];
 }
 
 // Search multiple types
 async function searchMultipleTypes(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  const query = req.query as Record<string, string[] | string | undefined>;
-  const searchRequest = parseSearchRequest('MultipleTypes' as ResourceType, query);
+  const searchRequest = parseSearchRequest('MultipleTypes' as ResourceType, req.query);
   if (!searchRequest.types || searchRequest.types.length === 0) {
     return [badRequest('No types specified')];
   }
@@ -78,15 +96,47 @@ async function searchByPost(req: FhirRequest, repo: FhirRepository): Promise<Fhi
 }
 
 // Create resource
-async function createResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+async function createResource(
+  req: FhirRequest,
+  repo: FhirRepository,
+  _router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
   const { resourceType } = req.params;
   const resource = req.body as Resource;
+  const assignedId = Boolean(options?.batch);
+
+  if (req.query?._account && typeof req.query._account === 'string') {
+    // Some FHIR clients do not allow custom meta fields, so we use a query parameter instead
+    // See: https://github.com/medplum/medplum/issues/5145
+    resource.meta = resource.meta || {};
+    resource.meta.account = { reference: req.query._account };
+  }
+
+  if (req.headers?.['if-none-exist']) {
+    const ifNoneExist = singularize(req.headers['if-none-exist']);
+    const result = await repo.conditionalCreate(resource, parseSearchRequest(`${resourceType}?${ifNoneExist}`), {
+      assignedId,
+    });
+    return [result.outcome, result.resource];
+  }
+
+  return createResourceImpl(resourceType as ResourceType, resource, repo, { assignedId });
+}
+
+export async function createResourceImpl<T extends Resource>(
+  resourceType: T['resourceType'],
+  resource: T,
+  repo: FhirRepository,
+  options?: CreateResourceOptions
+): Promise<FhirResponse> {
   if (resource.resourceType !== resourceType) {
     return [
       badRequest(`Incorrect resource type: expected ${resourceType}, but found ${resource.resourceType || '<EMPTY>'}`),
     ];
   }
-  const result = await repo.createResource(resource);
+
+  const result = await repo.createResource(resource, options);
   return [created, result];
 }
 
@@ -115,24 +165,40 @@ async function readVersion(req: FhirRequest, repo: FhirRepository): Promise<Fhir
 async function updateResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
   const resource = req.body;
+  return updateResourceImpl(resourceType, id, resource, repo, {
+    ifMatch: parseIfMatchHeader(req.headers?.['if-match']),
+  });
+}
+
+export async function updateResourceImpl<T extends Resource>(
+  resourceType: T['resourceType'],
+  id: string,
+  resource: T,
+  repo: FhirRepository,
+  options?: UpdateResourceOptions
+): Promise<FhirResponse> {
   if (resource.resourceType !== resourceType) {
     return [badRequest('Incorrect resource type')];
   }
   if (resource.id !== id) {
-    return [badRequest('Incorrect ID')];
+    return [badRequest('Incorrect resource ID')];
   }
-  const result = await repo.updateResource(resource, parseIfMatchHeader(req.headers?.['if-match']));
+  const result = await repo.updateResource(resource, options);
   return [allOk, result];
 }
 
 // Conditional update
-async function conditionalUpdate(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+async function conditionalUpdate(
+  req: FhirRequest,
+  repo: FhirRepository,
+  _router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
   const { resourceType } = req.params;
-  const params = req.query;
   const resource = req.body;
 
-  const search = parseSearchRequest(resourceType as ResourceType, params);
-  const result = await repo.conditionalUpdate(resource, search);
+  const search = parseSearchRequest(resourceType as ResourceType, req.query);
+  const result = await repo.conditionalUpdate(resource, search, { assignedId: options?.batch });
   return [result.outcome, result.resource];
 }
 
@@ -140,6 +206,15 @@ async function conditionalUpdate(req: FhirRequest, repo: FhirRepository): Promis
 async function deleteResource(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType, id } = req.params;
   await repo.deleteResource(resourceType, id);
+  return [allOk];
+}
+
+// Conditional delete
+async function conditionalDelete(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+  const { resourceType } = req.params;
+
+  const search = parseSearchRequest(resourceType as ResourceType, req.query);
+  await repo.conditionalDelete(search);
   return [allOk];
 }
 
@@ -157,40 +232,66 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   return [allOk, resource];
 }
 
+/** @see http://hl7.org/fhir/R4/codesystem-restful-interaction.html */
+export type RestInteraction =
+  | CapabilityStatementRestInteraction['code']
+  | CapabilityStatementRestResourceInteraction['code']
+  | 'operation';
+
+export type FhirRouteMetadata = {
+  interaction: RestInteraction;
+};
+
 export class FhirRouter extends EventTarget {
-  readonly router = new Router<FhirRouteHandler>();
+  readonly router = new Router<FhirRouteHandler, FhirRouteMetadata>();
   readonly options: FhirOptions;
 
   constructor(options = {}) {
     super();
     this.options = options;
 
-    this.router.add('GET', '', searchMultipleTypes);
-    this.router.add('POST', '', batch);
-    this.router.add('GET', ':resourceType', search);
-    this.router.add('POST', ':resourceType/_search', searchByPost);
-    this.router.add('POST', ':resourceType', createResource);
-    this.router.add('GET', ':resourceType/:id', readResourceById);
-    this.router.add('GET', ':resourceType/:id/_history', readHistory);
-    this.router.add('GET', ':resourceType/:id/_history/:vid', readVersion);
-    this.router.add('PUT', ':resourceType', conditionalUpdate);
-    this.router.add('PUT', ':resourceType/:id', updateResource);
-    this.router.add('DELETE', ':resourceType/:id', deleteResource);
-    this.router.add('PATCH', ':resourceType/:id', patchResource);
-    this.router.add('POST', '$graphql', graphqlHandler);
+    this.router.add('GET', '', searchMultipleTypes, { interaction: 'search-system' });
+    this.router.add('POST', '', batch, { interaction: 'batch' });
+    this.router.add('GET', ':resourceType', search, { interaction: 'search-type' });
+    this.router.add('POST', ':resourceType/_search', searchByPost, { interaction: 'search-type' });
+    this.router.add('POST', ':resourceType', createResource, { interaction: 'create' });
+    this.router.add('GET', ':resourceType/:id', readResourceById, { interaction: 'read' });
+    this.router.add('GET', ':resourceType/:id/_history', readHistory, { interaction: 'history-instance' });
+    this.router.add('GET', ':resourceType/:id/_history/:vid', readVersion, { interaction: 'vread' });
+    this.router.add('PUT', ':resourceType/:id', updateResource, { interaction: 'update' });
+    this.router.add('PUT', ':resourceType', conditionalUpdate, { interaction: 'update' });
+    this.router.add('DELETE', ':resourceType/:id', deleteResource, { interaction: 'delete' });
+    this.router.add('DELETE', ':resourceType', conditionalDelete, { interaction: 'delete' });
+    this.router.add('PATCH', ':resourceType/:id', patchResource, { interaction: 'patch' });
+    this.router.add('POST', '$graphql', graphqlHandler, { interaction: 'operation' });
   }
 
-  add(method: HttpMethod, path: string, handler: FhirRouteHandler): void {
-    this.router.add(method, path, handler);
+  add(method: HttpMethod, path: string, handler: FhirRouteHandler, interaction?: RestInteraction): void {
+    this.router.add(method, path, handler, { interaction: interaction ?? 'operation' });
+  }
+
+  find(method: HttpMethod, url: string): RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined {
+    return this.router.find(method, url);
   }
 
   async handleRequest(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-    const result = this.router.find(req.method, req.pathname);
+    const url = req.url;
+    // User-specified URL is parsed into component parts, which are populated back onto the request
+    if (req.pathname) {
+      throw new OperationOutcomeError(badRequest('FhirRequest must specify url instead of pathname'));
+    }
+    const result = this.find(req.method, url);
     if (!result) {
       return [notFound];
     }
-    const { handler, params } = result;
+    const { handler, path, params, query } = result;
+
+    // Populate request object with parsed URL components from router
     req.params = params;
+    req.pathname = path;
+    if (query) {
+      req.query = query;
+    }
     try {
       return await handler(req, repo, this);
     } catch (err) {
@@ -210,4 +311,15 @@ function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
   }
   const match = /"([^"]+)"/.exec(ifMatch);
   return match ? match[1] : undefined;
+}
+
+export function makeSimpleRequest(method: HttpMethod, path: string, body?: any): FhirRequest {
+  return {
+    method,
+    url: path,
+    pathname: '',
+    query: {},
+    params: {},
+    body,
+  };
 }

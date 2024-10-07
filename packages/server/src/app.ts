@@ -74,7 +74,7 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
 
   // Disable browser features
   res.set(
-    'Permission-Policy',
+    'Permissions-Policy',
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()'
   );
 
@@ -125,9 +125,20 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
+  if (err.type === 'stream.not.readable') {
+    // This is a common error when the client disconnects
+    // See: https://expressjs.com/en/resources/middleware/body-parser.html
+    // It is commonly associated with an AWS ALB disconnect status code 460
+    // See: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-troubleshooting.html#http-460-issues
+    getLogger().warn('Stream not readable', err);
+    sendOutcome(res, badRequest('Stream not readable'));
+    return;
+  }
   getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
+
+export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
   await initAppServices(config);
@@ -153,12 +164,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.TEXT, ContentType.HL7_V2],
     })
   );
-  app.use(
-    json({
-      type: [ContentType.JSON, ContentType.FHIR_JSON, ContentType.JSON_PATCH, ContentType.SCIM_JSON],
-      limit: config.maxJsonSize,
-    })
-  );
+  app.use(json({ type: JSON_TYPE, limit: config.maxJsonSize }));
   app.use(
     hl7BodyParser({
       type: [ContentType.HL7_V2],
@@ -209,17 +215,17 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
 export async function shutdownApp(): Promise<void> {
   cleanupHeartbeat();
   await closeWebSockets();
-  await closeWorkers();
-  await closeDatabase();
-  await closeRedis();
-  closeRateLimiter();
-
   if (server) {
     await new Promise((resolve) => {
       (server as http.Server).close(resolve);
     });
     server = undefined;
   }
+
+  await closeWorkers();
+  await closeDatabase();
+  await closeRedis();
+  closeRateLimiter();
 
   // If binary storage is a temporary directory, delete it
   const binaryStorage = getConfig().binaryStorage;

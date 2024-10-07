@@ -143,7 +143,7 @@ export function isValidDate(date: Date): boolean {
 export function formatDate(
   date: string | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!date) {
     return '';
@@ -167,7 +167,7 @@ export function formatDate(
 export function formatTime(
   time: string | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!time) {
     return '';
@@ -190,7 +190,7 @@ export function formatTime(
 export function formatDateTime(
   dateTime: string | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!dateTime) {
     return '';
@@ -212,7 +212,7 @@ export function formatDateTime(
 export function formatPeriod(
   period: Period | undefined,
   locales?: Intl.LocalesArgument,
-  options?: Intl.DateTimeFormatOptions | undefined
+  options?: Intl.DateTimeFormatOptions
 ): string {
   if (!period || (!period.start && !period.end)) {
     return '';
@@ -423,10 +423,17 @@ export function formatCodeableConcept(codeableConcept: CodeableConcept | undefin
 /**
  * Formats a Coding element as a string.
  * @param coding - A FHIR Coding element
+ * @param includeCode - If true, includes both the code and display if available
  * @returns The coding as a string.
  */
-export function formatCoding(coding: Coding | undefined): string {
-  return ensureString(coding?.display) ?? ensureString(coding?.code) ?? '';
+export function formatCoding(coding: Coding | undefined, includeCode?: boolean): string {
+  const display = ensureString(coding?.display);
+  if (display) {
+    const code = includeCode ? ensureString(coding?.code) : undefined;
+    return `${display}${code ? ' (' + code + ')' : ''}`;
+  }
+
+  return ensureString(coding?.code) ?? '';
 }
 
 /**

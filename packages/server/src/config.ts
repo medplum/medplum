@@ -54,10 +54,7 @@ export interface MedplumServerConfig {
   heartbeatMilliseconds?: number;
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
-  slowQueryThresholdMilliseconds?: number;
-  slowQuerySampleRate?: number;
   maxSearchOffset?: number;
-  maxCompartments?: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?:
     | (
@@ -286,17 +283,16 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.defaultBotRuntimeVersion = config.defaultBotRuntimeVersion ?? 'awslambda';
   config.defaultProjectFeatures = config.defaultProjectFeatures ?? [];
   config.emailProvider = config.emailProvider || (config.smtp ? 'smtp' : 'awsses');
-  config.maxCompartments = config.maxCompartments ?? 10;
   return config;
 }
 
-const integerKeys = ['port', 'accurateCountThreshold', 'slowQueryThresholdMilliseconds', 'maxCompartments'];
+const integerKeys = ['port', 'accurateCountThreshold'];
 function isIntegerConfig(key: string): boolean {
   return integerKeys.includes(key);
 }
 
-function isFloatConfig(key: string): boolean {
-  return key === 'slowQuerySampleRate';
+function isFloatConfig(_key: string): boolean {
+  return false;
 }
 
 const booleanKeys = [

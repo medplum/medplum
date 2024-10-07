@@ -384,6 +384,10 @@ export function expansionQuery(
         case 'is-a':
         case 'descendent-of':
           if (params?.filter) {
+            if (params.filter.length < 3) {
+              return undefined; // Must specify minimum filter length to make this expensive query workable
+            }
+
             const base = new SelectQuery('Coding', undefined, 'origin')
               .column('id')
               .column('code')

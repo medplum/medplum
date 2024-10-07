@@ -106,7 +106,7 @@ export class MockMedplumClient extends MedplumClient {
     this.nextResourceId = id;
   }
 
-  createResource<T extends Resource = Resource>(resource: T, _options?: RequestInit | undefined): Promise<T> {
+  createResource<T extends Resource = Resource>(resource: T, _options?: RequestInit): Promise<T> {
     return Promise.resolve<T>({ ...resource, id: this.nextResourceId });
   }
 

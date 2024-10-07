@@ -136,6 +136,12 @@ export interface Bot {
   category?: CodeableConcept[];
 
   /**
+   * Optional flag to indicate that the bot is a system bot and therefore
+   * has access to system secrets.
+   */
+  system?: boolean;
+
+  /**
    * Optional flag to indicate that the bot should be run as the user.
    */
   runAsUser?: boolean;

@@ -1,5 +1,12 @@
 import { Notifications } from '@mantine/notifications';
-import { ProfileResource, createReference, generateId, getReferenceString, getWebSocketUrl } from '@medplum/core';
+import {
+  ProfileResource,
+  createReference,
+  generateId,
+  getReferenceString,
+  getWebSocketUrl,
+  sleep,
+} from '@medplum/core';
 import { Bundle, Communication } from '@medplum/fhirtypes';
 import { BartSimpson, DrAliceSmith, HomerSimpson, MockClient, MockSubscriptionManager } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
@@ -71,11 +78,8 @@ describe('BaseChat', () => {
   let defaultMedplum: MockClient;
   let defaultSubManager: MockSubscriptionManager;
 
-  beforeAll(() => {
-    defaultMedplum = new MockClient({ profile: DrAliceSmith });
-  });
-
   beforeEach(() => {
+    defaultMedplum = new MockClient({ profile: DrAliceSmith });
     defaultSubManager = new MockSubscriptionManager(
       defaultMedplum,
       getWebSocketUrl(defaultMedplum.getBaseUrl(), '/ws/subscriptions-r4'),
@@ -210,6 +214,7 @@ describe('BaseChat', () => {
 
     expect(await screen.findByText("Doc, I can't feel my legs")).toBeInTheDocument();
     expect(onMessageReceived).toHaveBeenCalledWith(incomingMessage);
+    expect(onMessageReceived).toHaveBeenCalledTimes(1);
   });
 
   test('`onMessageReceived` not called on outgoing message', async () => {
@@ -236,6 +241,55 @@ describe('BaseChat', () => {
 
     expect(await screen.findByText('Homer, are you there?')).toBeInTheDocument();
     expect(onMessageReceived).not.toHaveBeenCalled();
+  });
+
+  test('`onMessageUpdated` called on incoming message update', async () => {
+    const onMessageReceived = jest.fn();
+    const onMessageUpdated = jest.fn();
+
+    await setup({
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      onMessageReceived,
+      onMessageUpdated,
+    });
+
+    const incomingMessage = await createCommunication(defaultMedplum, {
+      sender: homerReference,
+      recipient: [drAliceReference],
+      payload: [{ contentString: "Doc, I can't feel my legs" }],
+    });
+
+    const bundle1 = await createCommunicationSubBundle(defaultMedplum, incomingMessage);
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle1,
+      });
+    });
+
+    expect(await screen.findByText("Doc, I can't feel my legs")).toBeInTheDocument();
+    expect(onMessageReceived).toHaveBeenCalledTimes(1);
+    expect(onMessageUpdated).not.toHaveBeenCalled();
+
+    const updatedMessage = await defaultMedplum.updateResource({
+      ...incomingMessage,
+      payload: [{ contentString: "Doc, I can't feel my arms" }],
+    });
+
+    const bundle2 = await createCommunicationSubBundle(defaultMedplum, updatedMessage);
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'message',
+        payload: bundle2,
+      });
+    });
+
+    expect(await screen.findByText("Doc, I can't feel my arms")).toBeInTheDocument();
+    expect(onMessageUpdated).toHaveBeenCalledWith(updatedMessage);
+    expect(onMessageUpdated).toHaveBeenCalledTimes(1);
+    expect(onMessageReceived).toHaveBeenCalledTimes(1);
   });
 
   test('Messages cleared if profile changes', async () => {
@@ -341,5 +395,80 @@ describe('BaseChat', () => {
 
     // Make sure the new message is fetched via search after subscription reconnects
     await expect(screen.findByText(/homer please/i)).resolves.toBeInTheDocument();
+  });
+
+  test('Displays an error notification when a subscription error occurs', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const baseProps = {
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+    };
+
+    await Promise.all([
+      createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
+      createCommunication(medplum),
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        payload: [{ contentString: 'Hello again!' }],
+      }),
+    ]);
+
+    // Setup and check setup successful
+    await setup(baseProps, medplum);
+    expect(screen.getAllByText('Hello, Medplum!').length).toEqual(2);
+    expect(screen.getByText('Hello again!')).toBeInTheDocument();
+
+    // Emit error event on subscription
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'error',
+        payload: new Error('Something is broken'),
+      });
+    });
+
+    // Check for the reconnected notification(s)
+    await expect(screen.findByText(/something is broken/i)).resolves.toBeInTheDocument();
+  });
+
+  test('Calls onError cb when `onError` is specified', async () => {
+    const medplum = new MockClient({ profile: DrAliceSmith });
+    medplum.setSubscriptionManager(defaultSubManager);
+
+    const baseProps = {
+      title: 'Test Chat',
+      query: HOMER_DR_ALICE_CHAT_QUERY,
+      sendMessage: () => undefined,
+      onError: jest.fn(),
+    };
+
+    await Promise.all([
+      createCommunication(medplum, { sender: drAliceReference, recipient: [homerReference] }),
+      createCommunication(medplum),
+      createCommunication(medplum, {
+        sender: drAliceReference,
+        recipient: [homerReference],
+        payload: [{ contentString: 'Hello again!' }],
+      }),
+    ]);
+
+    // Setup and check setup successful
+    await setup(baseProps, medplum);
+    expect(screen.getAllByText('Hello, Medplum!').length).toEqual(2);
+    expect(screen.getByText('Hello again!')).toBeInTheDocument();
+
+    // Emit error event on subscription
+    act(() => {
+      defaultSubManager.emitEventForCriteria(`Communication?${HOMER_DR_ALICE_CHAT_QUERY}`, {
+        type: 'error',
+        payload: new Error('Something is broken'),
+      });
+    });
+
+    await sleep(500);
+    expect(baseProps.onError).toHaveBeenCalledWith(new Error('Something is broken'));
   });
 });

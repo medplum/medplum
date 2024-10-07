@@ -303,6 +303,22 @@
       "definition": "Optional external Identity Provider (IdP) for the client application.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "refreshTokenLifetime",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.refreshTokenLifetime",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional configuration to set the refresh token duration",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [

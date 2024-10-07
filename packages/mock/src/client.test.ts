@@ -189,7 +189,7 @@ describe('MockClient', () => {
 
   test('Who am i', async () => {
     const client = new MockClient();
-    expect(await client.get('auth/me')).toMatchObject({ profile: DrAliceSmith });
+    expect(await client.get('auth/me', { cache: 'no-cache' })).toMatchObject({ profile: DrAliceSmith });
   });
 
   test('MFA status', async () => {
@@ -327,6 +327,25 @@ describe('MockClient', () => {
     await sleep(0);
     expect(mockClient).toBeDefined();
     expect(fetchClientSpy).toHaveBeenCalledWith(`${baseUrl}auth/me`, expect.objectContaining({ method: 'GET' }));
+  });
+
+  test('mockFhirHandler receives headers', async () => {
+    const baseUrl = 'https://example.com/';
+
+    const router = new FhirRouter();
+    const repo = new MemoryRepository();
+    const client = new MockFetchClient(router, repo, baseUrl);
+    const mockClient = new MockClient({
+      mockFetchOverride: { router, repo, client },
+    });
+
+    const handleRequestSpy = jest.spyOn(router, 'handleRequest');
+    await mockClient.search('Patient', 'name=Simpson', { headers: { 'X-Hello-World': 'hAi' } });
+    expect(handleRequestSpy).toHaveBeenCalledTimes(1);
+    expect(handleRequestSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ headers: expect.objectContaining({ 'x-hello-world': 'hAi' }) }),
+      repo
+    );
   });
 
   test('Search', async () => {

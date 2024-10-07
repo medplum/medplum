@@ -38,10 +38,10 @@ GET /Patient?_offset=20
 
 This request would return results starting from the 21st matching Patient resource.
 
-#### Limitations:
-
+:::caution Limitations:
 - Our server supports `_offset` values up to 10,000.
 - Offset-based pagination can lead to performance issues with very large datasets.
+:::
 
 #### Implementation Details:
 

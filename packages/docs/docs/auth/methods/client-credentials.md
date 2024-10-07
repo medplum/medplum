@@ -32,6 +32,7 @@ curl -X POST https://api.medplum.com/oauth2/token \
 ```
 
   </TabItem>
+
   <TabItem value="python" label="Python">
 
 ```py
@@ -53,6 +54,8 @@ def get_auth_token(url, client_id, client_secret):
 
   </TabItem>
 </BrowserOnlyTabs>
+
+**Note:** If you are hosting this on localhost, without editing the configuration file, the URL will be `http://localhost:8103/oauth2/token`
 
 On success, the response will be a JSON object with the following properties:
 

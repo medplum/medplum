@@ -35,7 +35,7 @@ server. This helps ensure data quality by preventing data that does not match th
 
 The schema for each FHIR resource type is defined by a [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource. By default, Medplum ships with [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) for each FHIR base resource type and for Medplum defined resource types. The source data for these [`StructureDefinitions`](/docs/api/fhir/resources/structuredefinition) can be found the [@medplum/definitions](https://github.com/medplum/medplum/tree/main/packages/definitions) package.
 
-FHIR profiles are also stored as [`StructureDefinÏition`](/docs/api/fhir/resources/structuredefinition) resources that inherit from the base schemas. You can create a new profile in your Medplum project simply by uploading the corresponding [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) to your project.
+FHIR profiles are also stored as [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resources that inherit from the base schemas. You can create a new profile in your Medplum project simply by uploading the corresponding [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) to your project.
 
 Authoring profiles from scratch can be complicated and time consuming. Many organizations publish **implementation guides** with collections for FHIR profiles, tailored to specific healthcare domains.
 
@@ -178,7 +178,7 @@ Updating FHIR profiles is different than updating other resources in FHIR. The p
 
 This section offers some best practices to make updating profiles as smooth and painless as possible when using Medplum.
 
-When updating a profile, you should create a _new_ [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource for the updated profile. This will be similar to the original, but it will have the changes you've made, as well as an udpated `url` field. This allows you to make changes to your profile without invalidating resources that do not yet comply to the new profile.
+When updating a profile, you should create a _new_ [`StructureDefinition`](/docs/api/fhir/resources/structuredefinition) resource for the updated profile. This will be similar to the original, but it will have the changes you've made, as well as an updated `url` field. This allows you to make changes to your profile without invalidating resources that do not yet comply to the new profile.
 
 For example, say you have a patient profile that requires patients to have an associated email address and you want to update it so that they must also have an associated phone number. The steps for this would be the following:
 

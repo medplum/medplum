@@ -935,6 +935,21 @@ describe('FHIR Search', () => {
         expect(searchResult2.entry?.length).toEqual(0);
       }));
 
+    test('Filter by chained _id', () =>
+      withTestContext(async () => {
+        const organizationId = randomUUID();
+
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          managingOrganization: { reference: 'Organization/' + organizationId },
+        });
+
+        const searchResult1 = await repo.search(parseSearchRequest('Patient?organization._id=' + organizationId));
+
+        expect(searchResult1.entry?.length).toEqual(1);
+        expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toBeDefined();
+      }));
+
     test('Empty _id', async () =>
       withTestContext(async () => {
         const searchResult1 = await repo.search({
@@ -2527,6 +2542,79 @@ describe('FHIR Search', () => {
         });
       }));
 
+    test('_include on page boundary', () =>
+      withTestContext(async () => {
+        const mrn = randomUUID();
+        const gp1 = await repo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+        });
+        const patient1 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: mrn }],
+          generalPractitioner: [createReference(gp1)],
+        });
+        const gp2 = await repo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+        });
+        const patient2 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: mrn }],
+          generalPractitioner: [createReference(gp2)],
+        });
+
+        const searchRequest: SearchRequest = {
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'identifier',
+              operator: Operator.EQUALS,
+              value: mrn,
+            },
+          ],
+          sortRules: [{ code: '_lastUpdated' }],
+          include: [{ resourceType: 'Patient', searchParam: 'general-practitioner' }],
+          count: 1,
+        };
+        await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          entry: [
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(patient1)),
+              search: { mode: 'match' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(gp1)),
+              search: { mode: 'include' },
+            }),
+          ],
+        });
+
+        searchRequest.count = 2;
+        await expect(repo.search(searchRequest)).resolves.toMatchObject<Bundle>({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          entry: [
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(patient1)),
+              search: { mode: 'match' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(patient2)),
+              search: { mode: 'match' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(gp1)),
+              search: { mode: 'include' },
+            }),
+            expect.objectContaining<BundleEntry>({
+              fullUrl: expect.stringContaining(getReferenceString(gp2)),
+              search: { mode: 'include' },
+            }),
+          ],
+        });
+      }));
+
     test('DiagnosticReport category with system', () =>
       withTestContext(async () => {
         const code = randomUUID();
@@ -4069,7 +4157,7 @@ describe('FHIR Search', () => {
       test('Cursor pagination', () =>
         withTestContext(async () => {
           const tasks: Task[] = [];
-          for (let i = 0; i < 10; i++) {
+          for (let i = 0; i < 50; i++) {
             const task = await repo.createResource<Task>({
               resourceType: 'Task',
               status: 'accepted',
@@ -4079,21 +4167,21 @@ describe('FHIR Search', () => {
             tasks.push(task);
           }
 
-          let url = 'Task?code=cursor_test&_sort=_lastUpdated&_count=1';
-          for (let i = 0; i < 10; i++) {
+          let url = 'Task?code=cursor_test&_sort=_lastUpdated';
+          let count = 0;
+          while (url) {
             const bundle = await repo.search(parseSearchRequest(url));
-            expect(bundle.entry?.length).toBe(1);
-            expect(bundle.entry?.[0]?.resource?.id).toEqual(tasks[i].id);
+            count += bundle.entry?.length ?? 0;
 
             const link = bundle.link?.find((l) => l.relation === 'next')?.url;
-            if (i < 9) {
-              expect(link).toBeDefined();
-              expect(link?.includes('_cursor')).toBe(true);
-              url = link as string;
+            if (link) {
+              expect(link.includes('_cursor')).toBe(true);
+              url = link;
             } else {
-              expect(link).toBeUndefined();
+              url = '';
             }
           }
+          expect(count).toBe(50);
         }));
     });
   });

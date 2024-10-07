@@ -7,6 +7,7 @@ import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { PatientConsents } from './PatientConsents';
 import { PatientObservations } from './PatientObservations';
+import { PatientImmunizations } from './PatientImmunizations';
 
 interface PatientDetailsProps {
   patient: Patient;
@@ -24,6 +25,7 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
     ['history', 'History'],
     ['observations', 'SDOH'],
     ['consents', 'Consents'],
+    ['immunizations', 'Immunizations'],
   ];
   // Get the current tab
   const tab = window.location.pathname.split('/').pop();
@@ -81,6 +83,9 @@ export function PatientDetails(props: PatientDetailsProps): JSX.Element {
         </Tabs.Panel>
         <Tabs.Panel value="consents">
           <PatientConsents patient={props.patient} />
+        </Tabs.Panel>
+        <Tabs.Panel value="immunizations">
+          <PatientImmunizations patient={props.patient} />
         </Tabs.Panel>
       </Tabs>
     </Document>

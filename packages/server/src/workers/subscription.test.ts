@@ -1187,8 +1187,9 @@ describe('Subscription Worker', () => {
       expect(bundle.entry?.length).toEqual(1);
 
       const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
-      expect(auditEvent.meta?.account).toBeDefined();
       expect(auditEvent.meta?.account?.reference).toEqual(account.reference);
+      expect(auditEvent.meta?.accounts).toHaveLength(1);
+      expect(auditEvent.meta?.accounts).toContainEqual({ reference: account.reference });
       expect(auditEvent.entity).toHaveLength(2);
     }));
 

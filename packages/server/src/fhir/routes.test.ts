@@ -89,33 +89,6 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Create batch', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Bundle', type: 'batch', entry: [] });
-    expect(res.status).toBe(200);
-  });
-
-  test('Create batch wrong content type', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.TEXT)
-      .send('hello');
-    expect(res.status).toBe(400);
-  });
-
-  test('Create batch wrong resource type', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Patient', name: [{ given: ['Homer'] }] });
-    expect(res.status).toBe(400);
-  });
-
   test('Create resource success', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -641,6 +614,9 @@ describe('FHIR Routes', () => {
         .get('/fhir/R4/?_type=Patient,Observation')
         .set('Authorization', 'Bearer ' + accessToken);
       expect(res4.status).toBe(200);
-      expect(res4.body).toEqual(res3.body);
+      const bundle2 = res4.body;
+      expect(bundle2.entry?.length).toBe(2);
+      expect(bundleContains(bundle2, patient)).toBeTruthy();
+      expect(bundleContains(bundle2, obs)).toBeTruthy();
     }));
 });

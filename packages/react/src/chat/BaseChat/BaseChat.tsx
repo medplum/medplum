@@ -22,6 +22,15 @@ import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
 
+function showError(message: string): void {
+  showNotification({
+    color: 'red',
+    title: 'Error',
+    message,
+    autoClose: false,
+  });
+}
+
 function parseSentTime(communication: Communication): string {
   const sentTime = new Date(communication.sent ?? 0);
   const sentTimeMins = sentTime.getMinutes().toString();
@@ -59,7 +68,9 @@ export interface BaseChatProps extends PaperProps {
   readonly query: string;
   readonly sendMessage: (content: string) => void;
   readonly onMessageReceived?: (message: Communication) => void;
+  readonly onMessageUpdated?: (message: Communication) => void;
   readonly inputDisabled?: boolean;
+  readonly onError?: (err: Error) => void;
 }
 
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
@@ -70,7 +81,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     query,
     sendMessage,
     onMessageReceived,
+    onMessageUpdated,
     inputDisabled,
+    onError,
     ...paperProps
   } = props;
   const medplum = useMedplum();
@@ -111,9 +124,17 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     (bundle: Bundle) => {
       const communication = bundle.entry?.[1]?.resource as Communication;
       upsertCommunications(communicationsRef.current, [communication], setCommunications);
-      // Call `onMessageReceived` when we are not the sender of a chat message that came in
-      if (onMessageReceived && getReferenceString(communication.sender as Reference) !== profileRefStr) {
-        onMessageReceived(communication);
+      // If we are the sender of this message, then we want to skip calling `onMessageUpdated` or `onMessageReceived`
+      if (getReferenceString(communication.sender as Reference) === profileRefStr) {
+        return;
+      }
+      // If this communication already exists, call `onMessageUpdated`
+      if (communicationsRef.current.find((c) => c.id === communication.id)) {
+        onMessageUpdated?.(communication);
+      } else {
+        // Else a new message was created
+        // Call `onMessageReceived` when we are not the sender of a chat message that came in
+        onMessageReceived?.(communication);
       }
     },
     {
@@ -122,7 +143,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           setReconnecting(true);
         }
         showNotification({ color: 'red', message: 'Live chat disconnected. Attempting to reconnect...' });
-      }, [setReconnecting, reconnecting]),
+      }, [reconnecting]),
       onWebSocketOpen: useCallback(() => {
         if (reconnecting) {
           showNotification({ color: 'green', message: 'Live chat reconnected.' });
@@ -133,7 +154,17 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
           searchMessages().catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err) }));
           setReconnecting(false);
         }
-      }, [reconnecting, setReconnecting, searchMessages]),
+      }, [reconnecting, searchMessages]),
+      onError: useCallback(
+        (err: Error) => {
+          if (onError) {
+            onError(err);
+          } else {
+            showError(normalizeErrorString(err));
+          }
+        },
+        [onError]
+      ),
     }
   );
 
