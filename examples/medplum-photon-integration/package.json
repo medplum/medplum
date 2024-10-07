@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "lint": "eslint src/",
     "test": "vitest run",
-    "test:coverage": "vitest run --coveragex"
+    "test:coverage": "vitest run --coverage"
   },
   "prettier": {
     "printWidth": 120,
