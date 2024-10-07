@@ -25,6 +25,7 @@ import {
   ProjectMembership,
   Questionnaire,
   ResourceType,
+  ServiceRequest,
   StructureDefinition,
   User,
 } from '@medplum/fhirtypes';
@@ -990,7 +991,7 @@ describe('FHIR Repo', () => {
           { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
         ],
       };
-      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow('f');
+      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow(/did not match any resources/);
     }));
 
   test('Conditional reference resolution multiple matches', async () =>
@@ -1012,6 +1013,48 @@ describe('FHIR Repo', () => {
         ],
       };
       await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
+    }));
+
+  test('Conditional reference replaced before validation', async () =>
+    withTestContext(async () => {
+      const mrn = randomUUID();
+      const patient: Patient = {
+        resourceType: 'Patient',
+        identifier: [{ value: mrn }],
+      };
+      await systemRepo.createResource<Patient>(patient);
+
+      const serviceRequest = {
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        code: {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '308471005',
+              display: 'Referral to cardiologist',
+            },
+          ],
+        },
+        // Reference should be replaced and NOT cause a validation error
+        subject: {
+          reference: 'Patient?identifier=' + mrn,
+        },
+        // The performerType field should be a CodeableConcept, not an array
+        performerType: [
+          {
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: '17561000',
+                display: 'Cardiologist',
+              },
+            ],
+          },
+        ],
+      } as unknown as ServiceRequest;
+      await expect(systemRepo.createResource(serviceRequest)).rejects.toThrow(/^Expected single .*?performerType\)$/);
     }));
 
   test('Project default profiles', async () =>
