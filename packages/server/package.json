@@ -34,6 +34,7 @@
     "@aws-sdk/cloudfront-signer": "3.662.0",
     "@aws-sdk/lib-storage": "3.663.0",
     "@aws-sdk/types": "3.662.0",
+    "@copilotkit/runtime": "^1.3.2",
     "@medplum/core": "3.2.16",
     "@medplum/definitions": "3.2.16",
     "@medplum/fhir-router": "3.2.16",
