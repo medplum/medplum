@@ -562,8 +562,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       resource.meta = { ...resource.meta, profile: defaultProfiles };
     }
 
-    await this.validateResource(resource);
-
     if (!this.canWriteResourceType(resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
@@ -606,6 +604,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
     resultMeta.compartment = this.getCompartments(result);
 
+    // Validate resource after all modifications and touchups above are done
+    await this.validateResource(result);
     if (this.context.checkReferencesOnWrite) {
       await this.preCommit(async () => {
         await validateReferences(this, result);
