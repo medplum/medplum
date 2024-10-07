@@ -590,11 +590,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       versionId: randomUUID(),
       lastUpdated: this.getLastUpdated(existing, resource),
       author: this.getAuthor(resource),
+      onBehalfOf: this.context.onBehalfOf,
     };
-
-    if (this.context.onBehalfOf) {
-      resultMeta.onBehalfOf = this.context.onBehalfOf;
-    }
 
     const result: T = { ...updated, meta: resultMeta };
 
