@@ -139,6 +139,10 @@ describe('Sync patient', async () => {
     });
 
     const result = await handler(medplum, { bot, contentType, secrets, input: patient });
+    const allergy = await medplum.searchOne('AllergyIntolerance', {
+      patient: getReferenceString(patient),
+    });
+    console.log(allergy);
     expect(result.allergies?.length).toBe(1);
     expect(result.allergies?.[0].allergen.id).toBeDefined();
   }, 10000);

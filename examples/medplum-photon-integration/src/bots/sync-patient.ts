@@ -11,6 +11,13 @@ import {
   photonGraphqlFetch,
 } from './utils';
 
+interface AllergenData {
+  allergen?: {
+    id?: string;
+    rxcui?: string;
+  };
+}
+
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<PhotonPatient> {
   const patient = event.input;
   const CLIENT_ID = event.secrets['PHOTON_CLIENT_ID']?.valueString;
@@ -116,7 +123,32 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
   const body = JSON.stringify({ query, variables });
   const result = await photonGraphqlFetch(body, PHOTON_AUTH_TOKEN);
   await updatePatient(medplum, patient, result);
+
+  if (allergies) {
+    await updateAllergies(medplum, allergies, result);
+  }
+
   return result.data.createPatient;
+}
+
+async function updateAllergies(medplum: MedplumClient, allergies: AllergyIntolerance[], result: any): Promise<void> {
+  const allergyData = result.data?.createPatient?.allergies as AllergenData[];
+
+  for (const allergy of allergies) {
+    if (allergy.code) {
+      const allergyCode = getCodeBySystem(allergy.code, 'http://www.nlm.nih.gov/research/umls/rxnorm');
+      const photonAllergy = allergyData.find(({ allergen }) => allergen?.rxcui === allergyCode);
+
+      if (photonAllergy?.allergen?.id) {
+        const identifier = allergy.identifier ?? [];
+        identifier.push({ system: NEUTRON_HEALTH, value: photonAllergy.allergen.id });
+        await medplum.updateResource({
+          ...allergy,
+          identifier,
+        });
+      }
+    }
+  }
 }
 
 async function updatePatient(medplum: MedplumClient, patient: Patient, result: any): Promise<void> {
