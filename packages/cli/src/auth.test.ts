@@ -178,7 +178,7 @@ describe('CLI auth', () => {
     );
 
     await main(['node', 'index.js', 'token']);
-    expect((console.log as unknown as jest.Mock).mock.calls).toEqual([['Access token:'], [], [expect.any(String)]]);
+    expect((console.log as unknown as jest.Mock).mock.calls).toEqual([[expect.any(String)]]);
   });
 
   test('Get access token -- needs auth (expired or not logged in)', async () => {
