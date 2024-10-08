@@ -2003,6 +2003,49 @@ describe('FHIR Search', () => {
         expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
       }));
 
+    test('Chained search deduplication', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+        const code2 = randomUUID();
+        // Create linked resources
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+        });
+        await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ code }], text: 'Throat culture' },
+          subject: createReference(patient),
+        });
+        await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { coding: [{ code: code2 }], text: 'Blood test' },
+          subject: createReference(patient),
+        });
+
+        const result = await repo.search(parseSearchRequest(`Patient?_has:Observation:subject:code=${code},${code2}`));
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
+      }));
+
+    test('Token search deduplication', () =>
+      withTestContext(async () => {
+        const code = randomUUID();
+        const code2 = randomUUID();
+        // Create resource with multiple codes
+        const observation = await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          status: 'final',
+          code: { text: 'Blood test' },
+          component: [{ code: { coding: [{ code }] } }, { code: { coding: [{ code: code2 }] } }],
+        });
+
+        const result = await repo.search(parseSearchRequest(`Observation?component-code=${code},${code2}`));
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toEqual(observation.id);
+      }));
+
     test('Include references success', () =>
       withTestContext(async () => {
         const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -3198,11 +3241,11 @@ describe('FHIR Search', () => {
           ],
         });
         expect(bundle.entry?.length).toEqual(2);
-        expect(bundle.total).toEqual(2);
         expect(bundleContains(bundle, p1)).toBeTruthy();
         expect(bundleContains(bundle, p2)).not.toBeTruthy();
         expect(bundleContains(bundle, p3)).toBeTruthy();
         expect(bundleContains(bundle, p4)).not.toBeTruthy();
+        expect(bundle.total).toEqual(2);
       }));
 
     test('Duplicate rows from token lookup', () =>
@@ -4442,6 +4485,16 @@ describe('FHIR Search', () => {
         expect(bundle4.entry?.length).toEqual(2);
         expect(bundle4.entry?.[0]?.resource?.id).toEqual(patient2.id);
         expect(bundle4.entry?.[1]?.resource?.id).toEqual(patient1.id);
+      }));
+
+    test('Should calculate count with join', () =>
+      withTestContext(async () => {
+        const type = randomUUID();
+        const searchRequest = parseSearchRequest(`PractitionerRole?_total=accurate&organization.type=${type}`);
+        await expect(systemRepo.search(searchRequest)).resolves.toMatchObject<Partial<Bundle>>({
+          type: 'searchset',
+          total: 0,
+        });
       }));
   });
 });
