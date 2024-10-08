@@ -8,7 +8,7 @@ import {
   ValueSetComposeIncludeFilter,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import {
   Column,
@@ -371,7 +371,6 @@ export function expansionQuery(
   codeSystem: CodeSystem,
   params?: ValueSetExpandParameters
 ): SelectQuery | undefined {
-  const ctx = getRequestContext();
   let query = new SelectQuery('Coding')
     .column('id')
     .column('code')
@@ -410,7 +409,7 @@ export function expansionQuery(
           query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','));
           break;
         default:
-          ctx.logger.warn('Unknown filter type in ValueSet', { filter: condition });
+          getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
           return undefined; // Unknown filter type, don't make DB query with incorrect filters
       }
     }

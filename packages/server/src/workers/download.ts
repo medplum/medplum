@@ -4,7 +4,7 @@ import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { getConfig, MedplumServerConfig } from '../config';
-import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { getLogger, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
 import { globalLogger } from '../logger';
@@ -158,7 +158,7 @@ async function addDownloadJobData(job: DownloadJobData): Promise<void> {
  */
 export async function execDownloadJob<T extends Resource = Resource>(job: Job<DownloadJobData>): Promise<void> {
   const systemRepo = getSystemRepo();
-  const ctx = getRequestContext();
+  const log = getLogger();
   const { resourceType, id, url } = job.data;
 
   let resource: T;
@@ -188,12 +188,12 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
   }
 
   try {
-    ctx.logger.info('Requesting content at: ' + url);
+    log.info('Requesting content at: ' + url);
     const response = await fetch(url, {
       headers,
     });
 
-    ctx.logger.info('Received status: ' + response.status);
+    log.info('Received status: ' + response.status);
     if (response.status >= 400) {
       throw new Error('Received status ' + response.status);
     }
@@ -221,9 +221,9 @@ export async function execDownloadJob<T extends Resource = Resource>(job: Job<Do
     const updated = JSON.parse(JSON.stringify(resource).replace(url, `Binary/${binary.id}`)) as Resource;
     (updated.meta as Meta).author = { reference: 'system' };
     await systemRepo.updateResource(updated);
-    ctx.logger.info('Downloaded content successfully');
+    log.info('Downloaded content successfully');
   } catch (ex) {
-    ctx.logger.info('Download exception: ' + ex);
+    log.info('Download exception: ' + ex);
     throw ex;
   }
 }

@@ -2,7 +2,7 @@ import { SearchRequest, Operator, normalizeErrorString, parseSearchRequest } fro
 import { ResourceType, Resource, AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
 import { Queue, QueueBaseOptions, Job, Worker } from 'bullmq';
 import { MedplumServerConfig } from '../config';
-import { getRequestContext, tryRunInRequestContext } from '../context';
+import { getLogger, getRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -86,7 +86,7 @@ export async function execReindexJob(job: Job<ReindexJobData>): Promise<void> {
   let resourceTypes = job.data.resourceTypes;
   const resourceType = job.data.resourceTypes[0];
   if (!job.data.count) {
-    getRequestContext().logger.info('Reindex started', { resourceType });
+    getLogger().info('Reindex started', { resourceType });
   }
   let asyncJob = job.data.asyncJob;
 
@@ -178,7 +178,7 @@ async function processPage(job: Job<ReindexJobData>): Promise<ReindexResult> {
   } else if (resourceTypes.length > 1) {
     // Completed reindex for this resource type
     const elapsedTime = Date.now() - job.data.startTime;
-    getRequestContext().logger.info('Reindex completed', {
+    getLogger().info('Reindex completed', {
       resourceType,
       count: newCount,
       duration: `${elapsedTime} ms`,
@@ -187,7 +187,7 @@ async function processPage(job: Job<ReindexJobData>): Promise<ReindexResult> {
     return { count: newCount, duration: elapsedTime };
   } else {
     const elapsedTime = Date.now() - job.data.startTime;
-    getRequestContext().logger.info('Reindex completed', { resourceType, count, duration: `${elapsedTime} ms` });
+    getLogger().info('Reindex completed', { resourceType, count, duration: `${elapsedTime} ms` });
     return { count: newCount, duration: elapsedTime };
   }
 }

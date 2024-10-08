@@ -2,6 +2,7 @@ import { OperationOutcomeError, append, conflict, normalizeOperationOutcome } fr
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
+import { getLogger } from '../context';
 
 const DEBUG = env['SQL_DEBUG'];
 
@@ -417,6 +418,8 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
     // Catch transaction serialization errors and throw a 409 Conflict
     return new OperationOutcomeError(conflict(err.message));
   }
+
+  getLogger().error('Database error', err);
   return new OperationOutcomeError(normalizeOperationOutcome(err));
 }
 
