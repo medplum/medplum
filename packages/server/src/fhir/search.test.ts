@@ -25,6 +25,7 @@ import {
   DiagnosticReport,
   Encounter,
   Goal,
+  HealthcareService,
   Location,
   MeasureReport,
   Observation,
@@ -948,6 +949,28 @@ describe('FHIR Search', () => {
 
         expect(searchResult1.entry?.length).toEqual(1);
         expect(bundleContains(searchResult1 as Bundle, patient as Patient)).toBeDefined();
+      }));
+
+    test('Reverse filter by chained _id', () =>
+      withTestContext(async () => {
+        config.chainedSearchWithReferenceTables = true;
+
+        // Create Location
+        const location = await repo.createResource<Location>({
+          resourceType: 'Location',
+        });
+
+        // Create Patient
+        const healthcareService = await repo.createResource<HealthcareService>({
+          resourceType: 'HealthcareService',
+          location: [createReference(location)],
+        });
+
+        // Search chain
+        const searchResult = await repo.search(
+          parseSearchRequest(`Location?_has:HealthcareService:location:_id=${healthcareService.id}`)
+        );
+        expect(searchResult.entry?.[0]?.resource?.id).toEqual(location.id);
       }));
 
     test('Empty _id', async () =>
