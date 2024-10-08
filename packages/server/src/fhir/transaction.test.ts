@@ -496,7 +496,7 @@ describe('FHIR Repo Transactions', () => {
       const tx1 = repo.withTransaction(async () => {
         await repo.searchResources(parseSearchRequest('Patient?_id=' + existing.id)); // Ensure request hits the DB
         await sleep(500);
-        return repo.updateResource({ ...resource, gender: 'other' });
+        return repo.updateResource({ ...existing, gender: 'other' });
       });
 
       await sleep(200);
@@ -505,7 +505,7 @@ describe('FHIR Repo Transactions', () => {
       const tx2 = systemRepo.updateResource({ ...existing, deceasedBoolean: false });
 
       const results = await Promise.allSettled([tx1, tx2]);
-      const resource = await repo.readResource(existing.resourceType, existing.id as string);
+      await expect(repo.readResource(existing.resourceType, existing.id as string)).resolves.toBeDefined();
       expect(results.map((r) => r.status)).toContain('rejected');
     }));
 });

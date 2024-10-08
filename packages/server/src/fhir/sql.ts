@@ -408,6 +408,10 @@ export class SqlBuilder {
 }
 
 export function normalizeDatabaseError(err: any): OperationOutcomeError {
+  if (err instanceof OperationOutcomeError) {
+    return err;
+  }
+
   if (err?.code === '23505') {
     // Catch duplicate key errors and throw a 409 Conflict
     // See https://github.com/brianc/node-postgres/issues/1602
