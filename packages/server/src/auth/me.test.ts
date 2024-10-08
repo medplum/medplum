@@ -1,10 +1,11 @@
-import { createReference } from '@medplum/core';
+import { createReference, resolveId } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
+import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { registerNew } from './register';
 
@@ -85,6 +86,16 @@ describe('Me', () => {
       });
     expect(res5.status).toBe(200);
 
+    // As super admin user, add an identifier to the user
+    const systemRepo = getSystemRepo();
+    await systemRepo.patchResource('User', resolveId(res4.body.user) as string, [
+      {
+        op: 'add',
+        path: '/identifier',
+        value: [{ system: 'http://example.com', value: '12345' }],
+      },
+    ]);
+
     // Reload the user profile with the new user configuration
     const res6 = await request(app).get('/auth/me').set('Authorization', `Bearer ${accessToken}`);
     expect(res6.status).toBe(200);
@@ -94,6 +105,9 @@ describe('Me', () => {
     expect(res6.body.security.sessions).toBeDefined();
     expect(res6.body.security.sessions[0].browser).toBeDefined();
     expect(res6.body.security.sessions[0].os).toBeDefined();
+    expect(res6.body.user.identifier).toBeDefined();
+    expect(res6.body.user.identifier.length).toBe(1);
+    expect(res6.body.user.identifier[0]).toMatchObject({ system: 'http://example.com', value: '12345' });
   });
 
   test('Get me as ClientApplication', async () => {
