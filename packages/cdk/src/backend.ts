@@ -32,6 +32,7 @@ export class BackEnd extends Construct {
   botLambdaRole: iam.IRole;
   rdsSecretsArn?: string;
   rdsCluster?: rds.DatabaseCluster;
+  rds16Cluster?: rds.DatabaseCluster;
   rdsProxy?: rds.DatabaseProxy;
   redisSubnetGroup: elasticache.CfnSubnetGroup;
   redisSecurityGroup: ec2.ISecurityGroup;
@@ -131,14 +132,15 @@ export class BackEnd extends Construct {
           caCertificate: rds.CaCertificate.RDS_CA_RSA2048_G1,
         };
 
+        const engineVersion = config.rdsInstanceVersion
+          ? rds.AuroraPostgresEngineVersion.of(
+              config.rdsInstanceVersion,
+              config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
+              { s3Import: true, s3Export: true }
+            )
+          : rds.AuroraPostgresEngineVersion.VER_12_9;
         const engine = rds.DatabaseClusterEngine.auroraPostgres({
-          version: config.rdsInstanceVersion
-            ? rds.AuroraPostgresEngineVersion.of(
-                config.rdsInstanceVersion,
-                config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
-                { s3Import: true, s3Export: true }
-              )
-            : rds.AuroraPostgresEngineVersion.VER_12_9,
+          version: engineVersion,
         });
 
         const paramHash = hashObject(postgresSettings, { encoding: 'base64' }).slice(0, 8);
@@ -159,17 +161,26 @@ export class BackEnd extends Construct {
           instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
         };
 
-        let readers = undefined;
+        let readers: rds.IClusterInstance[] | undefined;
+        let pg16Readers: rds.IClusterInstance[] | undefined;
         if (config.rdsInstances > 1) {
           readers = [];
+          pg16Readers = [];
           for (let i = 1; i < config.rdsInstances; i++) {
             readers.push(ClusterInstance.provisioned('Instance' + (i + 1), readerInstanceProps));
+            pg16Readers.push(
+              ClusterInstance.provisioned('Instance' + (i + 1), {
+                ...readerInstanceProps,
+                parameterGroup: this.pg16ReaderParameterGroup,
+              })
+            );
           }
         }
 
+        const credentials = rds.Credentials.fromGeneratedSecret('clusteradmin');
         this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
           engine,
-          credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
+          credentials,
           defaultDatabaseName: 'medplum',
           storageEncrypted: true,
           vpc: this.vpc,
@@ -184,7 +195,28 @@ export class BackEnd extends Construct {
           cloudwatchLogsExports: ['postgresql'],
           instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
           parameterGroup: dbParams,
-          deletionProtection: true,
+        });
+
+        this.rds16Cluster = new rds.DatabaseCluster(this, 'Postgres16Cluster', {
+          engine,
+          credentials,
+          defaultDatabaseName: 'medplum',
+          storageEncrypted: true,
+          vpc: this.vpc,
+          vpcSubnets: {
+            subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          },
+          writer: ClusterInstance.provisioned('Instance1', {
+            ...writerInstanceProps,
+            parameterGroup: this.pg16WriterParameterGroup,
+          }),
+          readers: pg16Readers,
+          backup: {
+            retention: Duration.days(7),
+          },
+          cloudwatchLogsExports: ['postgresql'],
+          instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
+          parameterGroup: this.pg16ClusterParameterGroup,
         });
 
         this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
