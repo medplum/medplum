@@ -64,7 +64,7 @@ import { Pool, PoolClient } from 'pg';
 import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { getLogger, getRequestContext } from '../context';
+import { getLogger } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
@@ -1718,7 +1718,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           // If the patient has an account, then use it as the resource account.
           return this.extractAccountReferences(patient.meta);
         } catch (err: any) {
-          getRequestContext().logger.debug('Error setting patient compartment', err);
+          getLogger().debug('Error setting patient compartment', err);
         }
       }
     }
@@ -2285,7 +2285,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.assertNotClosed();
     if (this.transactionDepth > 0) {
       // Bad state, remove connection from pool
-      getRequestContext().logger.error('Closing Repository with active transaction');
+      getLogger().error('Closing Repository with active transaction');
       this.releaseConnection(new Error('Closing Repository with active transaction'));
     } else {
       // Good state, return healthy connection to pool

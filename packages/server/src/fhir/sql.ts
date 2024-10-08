@@ -2,6 +2,7 @@ import { OperationOutcomeError, append, conflict, normalizeOperationOutcome } fr
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
+import { getLogger } from '../context';
 
 const DEBUG = env['SQL_DEBUG'];
 
@@ -396,6 +397,7 @@ export class SqlBuilder {
 
       return { rowCount: result.rowCount ?? 0, rows: result.rows };
     } catch (err: any) {
+      getLogger().error('Database error', err);
       throw normalizeDatabaseError(err);
     }
   }

@@ -474,11 +474,11 @@ async function sendRestHook(
   interaction: BackgroundJobInteraction,
   requestTime: string
 ): Promise<void> {
-  const ctx = getRequestContext();
+  const log = getLogger();
   const url = subscription.channel?.endpoint as string;
   if (!url) {
     // This can happen if a user updates the Subscription after the job is created.
-    ctx.logger.debug(`Ignore rest hook missing URL`);
+    log.debug(`Ignore rest hook missing URL`);
     return;
   }
 
@@ -487,10 +487,10 @@ async function sendRestHook(
   let error: Error | undefined = undefined;
 
   try {
-    ctx.logger.info('Sending rest hook to: ' + url);
-    ctx.logger.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
+    log.info('Sending rest hook to: ' + url);
+    log.debug('Rest hook headers: ' + JSON.stringify(headers, undefined, 2));
     const response = await fetch(url, { method: 'POST', headers, body });
-    ctx.logger.info('Received rest hook status: ' + response.status);
+    log.info('Received rest hook status: ' + response.status);
     const success = isJobSuccessful(subscription, response.status);
     await createAuditEvent(
       resource,
@@ -504,7 +504,7 @@ async function sendRestHook(
       error = new Error('Received status ' + response.status);
     }
   } catch (ex) {
-    ctx.logger.info('Subscription exception: ' + ex);
+    log.info('Subscription exception: ' + ex);
     await createAuditEvent(
       resource,
       requestTime,
