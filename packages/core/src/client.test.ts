@@ -237,11 +237,13 @@ describe('Client', () => {
       authorizeUrl: 'https://authorize.example.com',
       tokenUrl: 'https://token.example.com',
       logoutUrl: 'https://logout.example.com',
+      fhircastHubUrl: 'https://hub.example.com',
     });
     expect(client.getBaseUrl()).toBe('https://example.com/');
     expect(client.getAuthorizeUrl()).toBe('https://authorize.example.com/');
     expect(client.getTokenUrl()).toBe('https://token.example.com/');
     expect(client.getLogoutUrl()).toBe('https://logout.example.com/');
+    expect(client.getFhircastHubUrl()).toBe('https://hub.example.com/');
   });
 
   test('getAuthorizeUrl', () => {
