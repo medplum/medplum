@@ -74,17 +74,6 @@ gcs_buckets = {
 
 # Buckets bindings
 bucket_bindings = {
-  medplum-app-backend = [ # This is the bucket name
-    {
-      roles = [
-        "roles/storage.objectCreator",
-        "roles/storage.objectViewer",
-      ]
-      members = [
-        "serviceAccount:medplum-app-sa@medplum-zencore.iam.gserviceaccount.com",
-      ]
-    },
-  ],
   "medplum-static-assets" = [ # This is the bucket name
     {
       roles = [

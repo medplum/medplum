@@ -1,9 +1,15 @@
+## External IP reservation for load balancer
+resource "google_compute_global_address" "elb_public_ip" {
+  name = "elb-public-ip"
+}
+
 ## CDN external load balancer
 module "medplum-lb-https" {
   source                          = "GoogleCloudPlatform/lb-http/google"
   version                         = "~> 11.1"
   name                            = "medplum-elb"
   project                         = var.project_id
+  address                         = google_compute_global_address.elb_public_ip.address
   firewall_networks               = [module.vpc.network_name]
   target_tags                     = []
   url_map                         = google_compute_url_map.cdn_url_map.self_link
