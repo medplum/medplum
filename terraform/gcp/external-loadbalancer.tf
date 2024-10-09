@@ -91,7 +91,7 @@ resource "google_compute_url_map" "cdn_url_map" {
 }
 
 resource "google_compute_backend_bucket" "user_content_bucket" {
-  name             = "medplum-cdn-backend-bucket"
+  name             = "medplum-cdn-backend-content-bucket"
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
   bucket_name      = module.buckets["medplum-user-content"].name
@@ -100,7 +100,7 @@ resource "google_compute_backend_bucket" "user_content_bucket" {
 }
 
 resource "google_compute_backend_bucket" "static_assets_bucket" {
-  name             = "medplum-cdn-backend-bucket"
+  name             = "medplum-cdn-backend-assets-bucket"
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
   bucket_name      = module.buckets["medplum-static-assets"].name
