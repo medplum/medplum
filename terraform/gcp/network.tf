@@ -157,8 +157,8 @@ resource "google_compute_backend_bucket" "medplum" {
   name        = "medplum-cdn-backend-bucket"
   project     = var.project_id
   description = "Backend bucket for serving static content through CDN"
-  # bucket_name      = module.module.buckets.name[storage.medplum.com]
-  bucket_name      = "storage.medplum.com"
+  bucket_name = module.buckets["storage-medplum-com"].name
+  # bucket_name      = "storage-medplum-com"
   enable_cdn       = true
   compression_mode = "DISABLED"
 }
