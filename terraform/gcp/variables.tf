@@ -48,3 +48,97 @@ variable "psa_range" {
   type        = string
   default     = ""
 }
+
+## Buckets
+variable "gcs_buckets" {
+  description = "GCS buckets to be created"
+  type = map(object({
+    project_id = string
+    location   = optional(string)
+    # Configuration of the bucket's custom location in a dual-region bucket setup.
+    custom_placement_config = optional(object({
+      data_locations = list(string)
+    }))
+    force_destroy            = optional(bool, false)
+    bucket_policy_only       = optional(bool, true)
+    public_access_prevention = optional(string, "enforced")
+    storage_class            = optional(string, "STANDARD")
+    versioning               = optional(bool, false)
+    autoclass                = optional(bool, false)
+    log_bucket               = optional(string)
+
+    iam_members = optional(list(object({
+      role   = string
+      member = string
+    })), [])
+
+    lifecycle_rules = optional(list(object({
+      # See https://github.com/terraform-google-modules/terraform-google-cloud-storage/blob/master/modules/simple_bucket/main.tf#L75-L96
+      action    = map(any)
+      condition = map(any)
+    })), [])
+
+    retention_policy = optional(object({
+      is_locked        = bool
+      retention_period = number
+    }))
+
+    website = optional(map(any), {})
+    cors = optional(list(object({
+      origin          = list(string)
+      method          = list(string)
+      response_header = list(string)
+      max_age_seconds = number
+    })), [])
+
+    labels = optional(map(string), {})
+  }))
+  default = {}
+}
+
+# Buckets bindings
+variable "bucket_bindings" {
+  description = "Bucket level permissions"
+  type = map(list(object({
+    roles   = list(string)
+    members = list(string)
+  })))
+}
+
+## External Load Balancer
+variable "external_load_balancer" {
+  description = "External Load Balancer configuration"
+  type = map(object({
+    project                 = string
+    region                  = string
+    network                 = string
+    firewall_project        = string
+    name                    = string
+    service_port            = number
+    target_tags             = list(string)
+    target_service_accounts = list(string)
+    disable_health_check    = bool
+    health_check = object({
+      check_interval_sec  = number
+      healthy_threshold   = number
+      timeout_sec         = number
+      unhealthy_threshold = number
+      port                = number
+      request_path        = string
+      host                = string
+    })
+    ip_address       = optional(string)
+    ip_protocol      = optional(string)
+    allowed_ips      = optional(list(string))
+    labels           = optional(map(string))
+    session_affinity = optional(string)
+  }))
+  default = {}
+}
+
+## Load Balancer
+variable "service_port" {
+  description = "The port to use for the load balancer"
+  type        = number
+  default     = 80
+}

@@ -27,3 +27,73 @@ pg_ha_name = "medplum-pg-ha"
 
 # Private Service
 psa_range = "192.168.30.0/24"
+
+## Buckets
+gcs_buckets = {
+  medplum-app-backend = {
+    project_id = "medplum-zencore"
+    versioning = true
+    lifecycle_rules = [{
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        is_live                    = "false"
+        days_since_noncurrent_time = "7"
+        num_newer_versions         = "2"
+      }
+    }]
+  },
+  # "storage.medplum.com" = {
+  #   project_id               = "medplum-zencore"
+  #   location                 = "US"
+  #   versioning               = true
+  #   public_access_prevention = "inherited"
+  #   storage_class            = "MULTI_REGIONAL"
+  #   website = {
+  #     main_page_suffix = "index.html"
+  #     not_found_page   = "404.html"
+  #   }
+  #   cors = [{
+  #     origin          = ["*"]
+  #     method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+  #     response_header = ["*"]
+  #     max_age_seconds = 3600
+  #   }]
+  #   lifecycle_rules = [{
+  #     action = {
+  #       type = "Delete"
+  #     }
+  #     condition = {
+  #       is_live                    = "false"
+  #       days_since_noncurrent_time = "7"
+  #       num_newer_versions         = "2"
+  #     }
+  #   }]
+  # }
+}
+
+# Buckets bindings
+bucket_bindings = {
+  medplum-app-backend = [ # This is the bucket name
+    {
+      roles = [
+        "roles/storage.objectCreator",
+        "roles/storage.objectViewer",
+      ]
+      members = [
+        "serviceAccount:medplum-app-sa@medplum-zencore.iam.gserviceaccount.com",
+      ]
+    },
+  ],
+  # "storage.medplum.com" = [ # This is the bucket name
+  #   {
+  #     roles = [
+  #       "roles/storage.objectViewer",
+  #     ]
+  #     members = [
+  #       "allUsers",
+  #     ]
+  #   },
+  # ],
+}
