@@ -9,7 +9,7 @@ module "medplum-lb-https" {
   url_map                         = google_compute_url_map.cdn_url_map.self_link
   create_url_map                  = false
   ssl                             = true
-  managed_ssl_certificate_domains = ["storage.medplum.com"]
+  managed_ssl_certificate_domains = ["storage.medplum.com", "app.medplum.com"]
 
   backends = {
     default = {
@@ -65,7 +65,7 @@ resource "google_compute_url_map" "cdn_url_map" {
 
     path_rule {
       paths   = ["/*"]
-      service = google_compute_backend_bucket.medplum.self_link
+      service = google_compute_backend_bucket.user_content_bucket.self_link
     }
   }
   host_rule {
@@ -79,16 +79,25 @@ resource "google_compute_url_map" "cdn_url_map" {
 
     path_rule {
       paths   = ["/*"]
-      service = google_compute_backend_bucket.medplum.self_link
+      service = google_compute_backend_bucket.static_assets_bucket.self_link
     }
   }
 }
 
-resource "google_compute_backend_bucket" "medplum" {
+resource "google_compute_backend_bucket" "user_content_bucket" {
   name             = "medplum-cdn-backend-bucket"
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
-  bucket_name      = module.buckets["storage-medplum-com"].name
+  bucket_name      = module.buckets["medplum-user-content"].name
+  enable_cdn       = true
+  compression_mode = "DISABLED"
+}
+
+resource "google_compute_backend_bucket" "static_assets_bucket" {
+  name             = "medplum-cdn-backend-bucket"
+  project          = var.project_id
+  description      = "Backend bucket for serving static content through CDN"
+  bucket_name      = module.buckets["medplum-static-assets"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
 }

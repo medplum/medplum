@@ -30,7 +30,7 @@ psa_range = "192.168.30.0/24"
 
 ## Buckets
 gcs_buckets = {
-  medplum-app-backend = {
+  medplum-user-content = {
     project_id = "medplum-zencore"
     versioning = true
     lifecycle_rules = [{
@@ -44,7 +44,7 @@ gcs_buckets = {
       }
     }]
   },
-  "storage-medplum-com" = {
+  "medplum-static-assets" = {
     project_id               = "medplum-zencore"
     location                 = "US"
     versioning               = true
@@ -85,7 +85,7 @@ bucket_bindings = {
       ]
     },
   ],
-  "storage-medplum-com" = [ # This is the bucket name
+  "medplum-static-assets" = [ # This is the bucket name
     {
       roles = [
         "roles/storage.objectViewer",
