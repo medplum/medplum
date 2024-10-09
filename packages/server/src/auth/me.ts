@@ -61,6 +61,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     membership: {
       resourceType: 'ProjectMembership',
       id: membership.id,
+      identifier: membership.identifier,
       user: membership.user,
       profile: membership.profile,
       admin: membership.admin,
