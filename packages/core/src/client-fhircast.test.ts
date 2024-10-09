@@ -264,6 +264,7 @@ describe('FHIRcast', () => {
     let client: MedplumClient;
     let topic: string;
     let topicContext: CurrentContext<'DiagnosticReport-open'>;
+    let medplumGetSpy: jest.SpyInstance;
 
     beforeAll(() => {
       topic = generateId();
@@ -280,14 +281,17 @@ describe('FHIRcast', () => {
         }
       });
       client = new MedplumClient({ fetch });
+      medplumGetSpy = jest.spyOn(client, 'get');
     });
 
     test('Get context for topic with context', async () => {
       await expect(client.fhircastGetContext(topic)).resolves.toEqual(topicContext);
+      expect(medplumGetSpy).toHaveBeenCalledWith(`https://api.medplum.com/fhircast/STU3/${topic}`);
     });
 
     test('Get context for topic without context', async () => {
       await expect(client.fhircastGetContext('abc-123')).resolves.toEqual({ 'context.type': '', context: [] });
+      expect(medplumGetSpy).toHaveBeenCalledWith('https://api.medplum.com/fhircast/STU3/abc-123');
     });
   });
 });
