@@ -22,11 +22,8 @@ describe('Sync patient', async () => {
   const bot: Reference<Bot> = { reference: 'Bot/123' };
   const contentType = 'application/json';
   const secrets = {
-    PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'E7FNao89rtmdqicUMjI0LLPetEwKki8b' },
-    PHOTON_CLIENT_SECRET: {
-      name: 'Photon Client Secret',
-      valueString: 'mrxwnp4n5SovcI3zNT1p8zBmvDmAWspU2_W9Gn4Sb5tacWR9EY__frBExerupvFl',
-    },
+    PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
+    PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
   };
 
   test.skip('Successful sync', async () => {
@@ -142,13 +139,44 @@ describe('Sync patient', async () => {
     });
 
     const result = await handler(medplum, { bot, contentType, secrets, input: patient });
-    const allergy = await medplum.searchOne('AllergyIntolerance', {
-      patient: getReferenceString(patient),
-    });
-    console.log(allergy);
     expect(result.allergies?.length).toBe(1);
     expect(result.allergies?.[0].allergen.id).toBeDefined();
-  }, 50000);
+  }, 10000);
+
+  test.skip('Create patient with medication history', async () => {
+    const medplum = new MockClient();
+
+    const patient: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      name: [{ family: 'Smith', given: ['Alice'] }],
+      telecom: [
+        { system: 'phone', value: '9085553329' },
+        { system: 'email', value: 'alices01@alice.com' },
+      ],
+      address: [{ line: ['3 Green Street'], city: 'Salt Lake City', state: 'UT', postalCode: '84044' }],
+      gender: 'female',
+      birthDate: '1974-03-22',
+    });
+
+    await medplum.createResource({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'filler-order',
+      subject: createReference(patient),
+      medicationCodeableConcept: {
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '313252',
+            display: 'tetracycline hydrochloride 250 MG Oral Tablet',
+          },
+        ],
+      },
+    });
+
+    const result = await handler(medplum, { bot, contentType, secrets, input: patient });
+    expect(result.medicationHistory?.length).toBe(1);
+  }, 10000);
 });
 
 const allergies: Bundle = {
