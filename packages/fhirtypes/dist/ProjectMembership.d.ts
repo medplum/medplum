@@ -7,6 +7,7 @@ import { AccessPolicy } from './AccessPolicy';
 import { Bot } from './Bot';
 import { ClientApplication } from './ClientApplication';
 import { Extension } from './Extension';
+import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Patient } from './Patient';
@@ -99,6 +100,11 @@ export interface ProjectMembership {
    * modifierExtension itself).
    */
   modifierExtension?: Extension[];
+
+  /**
+   * An identifier for this ProjectMembership.
+   */
+  identifier?: Identifier[];
 
   /**
    * Project where the memberships are available.

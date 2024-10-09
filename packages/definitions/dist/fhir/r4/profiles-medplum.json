@@ -1374,6 +1374,22 @@
             }]
           },
           {
+            "id" : "ProjectMembership.identifier",
+            "path" : "ProjectMembership.identifier",
+            "short" : "An identifier for this ProjectMembership",
+            "definition" : "An identifier for this ProjectMembership.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "ProjectMembership.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "ProjectMembership.project",
             "path" : "ProjectMembership.project",
             "definition" : "Project where the memberships are available.",

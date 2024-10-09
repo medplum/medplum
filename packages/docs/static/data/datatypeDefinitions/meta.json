@@ -218,8 +218,26 @@
       "min": 0,
       "max": "1",
       "short": "Optional account reference that can be used for sub-project compartments.",
-      "definition": "@deprecated Use Meta.compartment instead",
+      "definition": "@deprecated Use Meta.accounts instead",
       "comment": "Optional account reference that can be used for sub-project compartments.",
+      "inherited": false
+    },
+    {
+      "name": "accounts",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [],
+      "path": "Meta.accounts",
+      "min": 0,
+      "max": "*",
+      "short": "Optional account references that can be used for sub-project compartments.",
+      "definition": "Optional account references that can be used for sub-project compartments.",
+      "comment": "",
       "inherited": false
     },
     {

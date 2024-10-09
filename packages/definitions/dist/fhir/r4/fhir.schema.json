@@ -59675,6 +59675,13 @@
           },
           "type": "array"
         },
+        "identifier": {
+          "description": "An identifier for this ProjectMembership.",
+          "items": {
+            "$ref": "#/definitions/Identifier"
+          },
+          "type": "array"
+        },
         "project": {
           "description": "Project where the memberships are available.",
           "$ref": "#/definitions/Reference"
