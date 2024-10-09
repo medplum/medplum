@@ -55,12 +55,26 @@ resource "google_compute_url_map" "cdn_url_map" {
   default_service = module.medplum-lb-https.backend_services.default.self_link
 
   host_rule {
-    hosts        = ["*"]
-    path_matcher = "allpaths"
+    hosts        = ["storage.medplum.com"]
+    path_matcher = "storage"
   }
 
   path_matcher {
-    name            = "allpaths"
+    name            = "storage"
+    default_service = module.medplum-lb-https.backend_services.default.self_link
+
+    path_rule {
+      paths   = ["/*"]
+      service = google_compute_backend_bucket.medplum.self_link
+    }
+  }
+  host_rule {
+    hosts        = ["app.medplum.com"]
+    path_matcher = "app"
+  }
+
+  path_matcher {
+    name            = "app"
     default_service = module.medplum-lb-https.backend_services.default.self_link
 
     path_rule {
