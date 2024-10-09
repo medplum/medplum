@@ -7,7 +7,7 @@ import {
   normalizeErrorString,
 } from '@medplum/core';
 import { Request, Response, Router } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body, oneOf, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
@@ -71,14 +71,28 @@ publicSTU3Routes.get('/.well-known/fhircast-configuration', (_req: Request, res:
 });
 
 // Register a new subscription
+// Or publish an event depending on payload
 protectedCommonRoutes.post(
   '/',
-  [
-    body('hub.channel.type').notEmpty().withMessage('Missing hub.channel.type'),
-    body('hub.mode').notEmpty().withMessage('Missing hub.mode'),
-    body('hub.topic').notEmpty().withMessage('Missing hub.topic'),
-    body('hub.events').notEmpty().withMessage('Missing hub.events'),
-  ],
+  oneOf(
+    [
+      [
+        body('id').notEmpty().withMessage('Missing event ID'),
+        body('timestamp').notEmpty().withMessage('Missing event timestamp'),
+        body('event').notEmpty().withMessage('Missing event payload'),
+        body('event["hub.topic"]').notEmpty().withMessage('Missing event["hub.topic"]'),
+        body('event["hub.event"]').notEmpty().withMessage('Missing event["hub.event"]'),
+        body('event.context').notEmpty().withMessage('Missing event.context'),
+      ],
+      [
+        body('hub.channel.type').notEmpty().withMessage('Missing hub.channel.type'),
+        body('hub.mode').notEmpty().withMessage('Missing hub.mode'),
+        body('hub.topic').notEmpty().withMessage('Missing hub.topic'),
+        body('hub.events').notEmpty().withMessage('Missing hub.events'),
+      ],
+    ],
+    { errorType: 'least_errored' }
+  ),
   asyncWrap(async (req: Request, res: Response) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -86,50 +100,13 @@ protectedCommonRoutes.post(
       return;
     }
 
-    const type = req.body['hub.channel.type'];
-    if (type !== 'websocket') {
-      sendOutcome(res, badRequest('Invalid hub.channel.type'));
+    // If there is an ID, this is a context change request
+    if (req.body.id) {
+      await handleContextChangeRequest(req, res);
       return;
     }
-
-    const mode = req.body['hub.mode'] as 'subscribe' | 'unsubscribe';
-    if (!(['subscribe', 'unsubscribe'] as const).includes(mode)) {
-      sendOutcome(res, badRequest('Invalid hub.mode'));
-      return;
-    }
-
-    const topic = req.body['hub.topic'];
-    const subscriptionEndpoint = topic; // TODO: Create separate subscription endpoint for topic
-    const config = getConfig();
-
-    switch (mode) {
-      case 'subscribe':
-        res.status(202).json({
-          'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
-        });
-        break;
-      case 'unsubscribe':
-        res.status(202).json({
-          'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
-        });
-        getRedis()
-          .publish(
-            topic,
-            JSON.stringify({
-              'hub.mode': 'denied',
-              'hub.topic': topic,
-              'hub.events': req.body['hub.events'],
-              'hub.reason': 'Subscriber unsubscribed from topic',
-            })
-          )
-          .catch((err: Error) => {
-            getLogger().error(
-              `Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`,
-              { topic }
-            );
-          });
-        break;
-    }
+    // Otherwise it has to be a subscription request
+    await handleSubscriptionRequest(req, res);
   })
 );
 
@@ -140,6 +117,9 @@ protectedCommonRoutes.post(
     body('id').notEmpty().withMessage('Missing event ID'),
     body('timestamp').notEmpty().withMessage('Missing event timestamp'),
     body('event').notEmpty().withMessage('Missing event payload'),
+    body('event["hub.topic"]').notEmpty().withMessage('Missing event["hub.topic"]'),
+    body('event["hub.event"]').notEmpty().withMessage('Missing event["hub.event"]'),
+    body('event.context').notEmpty().withMessage('Missing event.context'),
   ],
   asyncWrap(async (req: Request, res: Response) => {
     const errors = validationResult(req);
@@ -147,33 +127,82 @@ protectedCommonRoutes.post(
       sendOutcome(res, invalidRequest(errors));
       return;
     }
-
-    const { event } = req.body as FhircastMessagePayload;
-    let stringifiedBody = JSON.stringify(req.body);
-    // Check if this an open event
-    if (event['hub.event'].endsWith('-open')) {
-      // TODO: Support this as a param for event type: "versionable"?
-      if (event['hub.event'] === 'DiagnosticReport-open') {
-        event['context.versionId'] = generateId();
-        stringifiedBody = JSON.stringify(req.body);
-      }
-      // TODO: we need to get topic from event and not route param since per spec, the topic shouldn't be the slug like we have it
-      await getRedis().set(`medplum:fhircast:topic:${req.params.topic}:latest`, stringifiedBody);
-    } else if (event['hub.event'].endsWith('-close')) {
-      // We always close the current context, even if the event is not for the original resource... There isn't any mention of checking to see it's the right resource, so it seems it may be assumed to be always valid to do any arbitrary close as long as there is an existing context...
-      await getRedis().del(`medplum:fhircast:topic:${req.params.topic}:latest`);
-    } else if (event['hub.event'] === 'DiagnosticReport-update') {
-      // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-3-DiagnosticReport-update.html#:~:text=The%20Hub%20SHALL,the%20new%20updates.
-      event['context.priorVersionId'] = event['context.versionId'];
-      event['context.versionId'] = generateId();
-      stringifiedBody = JSON.stringify(req.body);
-      // TODO: Make sure this is actually supposed to be stored / overwrite open context? (ambiguous from docs, see: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html)
-      await getRedis().set(`medplum:fhircast:topic:${req.params.topic}:latest`, stringifiedBody);
-    }
-    await getRedis().publish(req.params.topic as string, stringifiedBody);
-    res.status(201).json({ success: true, event: body });
+    await handleContextChangeRequest(req, res);
   })
 );
+
+async function handleSubscriptionRequest(req: Request, res: Response): Promise<void> {
+  const type = req.body['hub.channel.type'];
+  if (type !== 'websocket') {
+    sendOutcome(res, badRequest('Invalid hub.channel.type'));
+    return;
+  }
+
+  const mode = req.body['hub.mode'] as 'subscribe' | 'unsubscribe';
+  if (!(['subscribe', 'unsubscribe'] as const).includes(mode)) {
+    sendOutcome(res, badRequest('Invalid hub.mode'));
+    return;
+  }
+
+  const topic = req.body['hub.topic'];
+  const subscriptionEndpoint = topic; // TODO: Create separate subscription endpoint for topic
+  const config = getConfig();
+
+  switch (mode) {
+    case 'subscribe':
+      res.status(202).json({
+        'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
+      });
+      break;
+    case 'unsubscribe':
+      res.status(202).json({
+        'hub.channel.endpoint': getWebSocketUrl(config.baseUrl, `/ws/fhircast/${subscriptionEndpoint}`),
+      });
+      getRedis()
+        .publish(
+          topic,
+          JSON.stringify({
+            'hub.mode': 'denied',
+            'hub.topic': topic,
+            'hub.events': req.body['hub.events'],
+            'hub.reason': 'Subscriber unsubscribed from topic',
+          })
+        )
+        .catch((err: Error) => {
+          getLogger().error(`Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`, {
+            topic,
+          });
+        });
+    // break;
+  }
+}
+
+async function handleContextChangeRequest(req: Request, res: Response): Promise<void> {
+  const { event } = req.body as FhircastMessagePayload;
+  let stringifiedBody = JSON.stringify(req.body);
+  // Check if this an open event
+  if (event['hub.event'].endsWith('-open')) {
+    // TODO: Support this as a param for event type: "versionable"?
+    if (event['hub.event'] === 'DiagnosticReport-open') {
+      event['context.versionId'] = generateId();
+      stringifiedBody = JSON.stringify(req.body);
+    }
+    // TODO: we need to get topic from event and not route param since per spec, the topic shouldn't be the slug like we have it
+    await getRedis().set(`medplum:fhircast:topic:${event['hub.topic']}:latest`, stringifiedBody);
+  } else if (event['hub.event'].endsWith('-close')) {
+    // We always close the current context, even if the event is not for the original resource... There isn't any mention of checking to see it's the right resource, so it seems it may be assumed to be always valid to do any arbitrary close as long as there is an existing context...
+    await getRedis().del(`medplum:fhircast:topic:${event['hub.topic']}:latest`);
+  } else if (event['hub.event'] === 'DiagnosticReport-update') {
+    // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-3-DiagnosticReport-update.html#:~:text=The%20Hub%20SHALL,the%20new%20updates.
+    event['context.priorVersionId'] = event['context.versionId'];
+    event['context.versionId'] = generateId();
+    stringifiedBody = JSON.stringify(req.body);
+    // TODO: Make sure this is actually supposed to be stored / overwrite open context? (ambiguous from docs, see: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html)
+    await getRedis().set(`medplum:fhircast:topic:${event['hub.topic']}:latest`, stringifiedBody);
+  }
+  await getRedis().publish(event['hub.topic'], stringifiedBody);
+  res.status(201).json({ success: true, event: body });
+}
 
 // Get the current subscription status
 protectedSTU2Routes.get(

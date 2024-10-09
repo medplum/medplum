@@ -169,11 +169,11 @@ describe('FHIRcast', () => {
       const client = new MedplumClient({ fetch });
       await expect(client.fhircastPublish('abc123', 'Patient-open', context)).resolves.toBeDefined();
       expect(fetch).toHaveBeenCalledWith(
-        'https://api.medplum.com/fhircast/STU3/abc123',
+        'https://api.medplum.com/fhircast/STU3',
         expect.objectContaining<RequestInit>({
           method: 'POST',
           headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
-          body: expect.any(String),
+          body: expect.stringContaining('"hub.topic":"abc123"'),
         })
       );
 
@@ -185,11 +185,11 @@ describe('FHIRcast', () => {
         ])
       ).resolves.toBeDefined();
       expect(fetch).toHaveBeenCalledWith(
-        'https://api.medplum.com/fhircast/STU3/def456',
+        'https://api.medplum.com/fhircast/STU3',
         expect.objectContaining<RequestInit>({
           method: 'POST',
           headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
-          body: expect.any(String),
+          body: expect.stringContaining('"hub.topic":"def456"'),
         })
       );
 
@@ -201,11 +201,11 @@ describe('FHIRcast', () => {
         ])
       ).resolves.toBeDefined();
       expect(fetch).toHaveBeenCalledWith(
-        'https://api.medplum.com/fhircast/STU3/xyz-789',
+        'https://api.medplum.com/fhircast/STU3',
         expect.objectContaining<RequestInit>({
           method: 'POST',
           headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
-          body: expect.any(String),
+          body: expect.stringContaining('"hub.topic":"xyz-789"'),
         })
       );
     });
@@ -242,6 +242,21 @@ describe('FHIRcast', () => {
           createFhircastMessageContext<'DiagnosticReport-open'>('report', 'DiagnosticReport', 'report-987')
         )
       ).rejects.toBeInstanceOf(OperationOutcomeError);
+    });
+
+    test('Setting `fhircastHubUrl`', async () => {
+      const context = createFhircastMessageContext<'Patient-open'>('patient', 'Patient', 'patient-123');
+      const fetch = mockFetch(201, { success: true, event: context });
+      const client = new MedplumClient({ fetch, fhircastHubUrl: 'http://example.com/foo/hub' });
+      await expect(client.fhircastPublish('abc123', 'Patient-open', context)).resolves.toBeDefined();
+      expect(fetch).toHaveBeenCalledWith(
+        'http://example.com/foo/hub',
+        expect.objectContaining<RequestInit>({
+          method: 'POST',
+          headers: expect.objectContaining({ 'Content-Type': ContentType.JSON }),
+          body: expect.stringContaining('"hub.topic":"abc123"'),
+        })
+      );
     });
   });
 
