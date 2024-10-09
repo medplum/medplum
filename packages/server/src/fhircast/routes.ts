@@ -72,6 +72,7 @@ publicSTU3Routes.get('/.well-known/fhircast-configuration', (_req: Request, res:
 
 // Register a new subscription
 // Or publish an event depending on payload
+// See: https://hl7.org/fhir/uv/fhircast/2024May/2-6-RequestContextChange.html#:~:text=Similar%20to%20the%20Hub%E2%80%99s%20notifications%20to%20the%20Subscriber%2C%20the%20Subscriber%20MAY%20request%20context%20changes%20with%20an%20HTTP%20POST%20to%20the%20hub.url
 protectedCommonRoutes.post(
   '/',
   oneOf(
