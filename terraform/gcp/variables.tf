@@ -43,12 +43,6 @@ variable "psa_range_name" {
   default     = "priv-ip-alloc"
 }
 
-variable "psa_range" {
-  description = "First IP address of the IP range to allocate to CLoud SQL instances and other Private Service Access services. If not set, GCP will pick a valid one for you."
-  type        = string
-  default     = ""
-}
-
 ## Buckets
 variable "gcs_buckets" {
   description = "GCS buckets to be created"

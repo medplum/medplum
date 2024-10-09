@@ -25,9 +25,6 @@ vpc_name = "medplum-gke-vpc"
 ## Postgres
 pg_ha_name = "medplum-pg-ha"
 
-# Private Service
-psa_range = "192.168.30.0/24"
-
 ## Buckets
 gcs_buckets = {
   medplum-user-content = {
