@@ -334,6 +334,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
+    if (!validator.isUUID(id)) {
+      throw new OperationOutcomeError(notFound);
+    }
+
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType);
@@ -501,7 +505,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
     try {
-      if (!validator.isUUID(vid)) {
+      if (!validator.isUUID(id) || !validator.isUUID(vid)) {
         throw new OperationOutcomeError(notFound);
       }
 

@@ -2681,6 +2681,31 @@ describe('FHIR Search', () => {
         });
       }));
 
+    test('Include with invalid reference', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+        const order = await repo.createResource<ServiceRequest>({
+          resourceType: 'ServiceRequest',
+          status: 'active',
+          intent: 'order',
+          subject: { reference: `Patient/p_${patient.id}` }, // Invalid reference string
+        });
+        const bundle = await repo.search({
+          resourceType: 'ServiceRequest',
+          include: [
+            {
+              resourceType: 'ServiceRequest',
+              searchParam: 'subject',
+            },
+          ],
+          total: 'accurate',
+          filters: [{ code: '_id', operator: Operator.EQUALS, value: order.id as string }],
+        });
+        expect(bundle.total).toEqual(1);
+        expect(bundleContains(bundle, order)).toMatchObject<BundleEntry>({ search: { mode: 'match' } });
+        expect(bundleContains(bundle, patient)).toBeUndefined();
+      }));
+
     test('DiagnosticReport category with system', () =>
       withTestContext(async () => {
         const code = randomUUID();
