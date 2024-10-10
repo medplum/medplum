@@ -5,12 +5,14 @@ import {
   generateId,
   getWebSocketUrl,
   normalizeErrorString,
+  serverError,
 } from '@medplum/core';
 import { Request, Response, Router } from 'express';
 import { body, oneOf, validationResult } from 'express-validator';
+import assert from 'node:assert';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { getLogger } from '../context';
+import { getAuthenticatedContext, getLogger } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { authenticateRequest } from '../oauth/middleware';
 import { getRedis } from '../redis';
@@ -133,6 +135,8 @@ protectedCommonRoutes.post(
 );
 
 async function handleSubscriptionRequest(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
+
   const type = req.body['hub.channel.type'];
   if (type !== 'websocket') {
     sendOutcome(res, badRequest('Invalid hub.channel.type'));
@@ -146,9 +150,40 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
   }
 
   const topic = req.body['hub.topic'];
-  const subscriptionEndpoint = topic; // TODO: Create separate subscription endpoint for topic
-  const config = getConfig();
+  let subscriptionEndpoint: string;
+  try {
+    const topicKey = `medplum:fhircast:project:${ctx.project.id as string}:topic:${topic}:endpoint`;
+    const results = await getRedis()
+      // Multi allows for multiple commands to be executed in a transaction
+      .multi()
+      // Sets the endpoint key for this topic if it doesn't exist
+      .setnx(topicKey, generateId())
+      // Gets the endpoint, either previously generated endpoint secret or the newly generated key if a previous one did not exist
+      .get(topicKey)
+      // Executes the transaction
+      .exec();
 
+    if (!results) {
+      throw new Error('Redis returned no results while retrieving endpoint for this topic');
+    }
+
+    assert(results.length === 2, 'Redis did not return 2 command results for FHIRcast endpoint retrieval');
+
+    const [err, result] = results[1];
+    if (err) {
+      throw err;
+    }
+    subscriptionEndpoint = result as string;
+  } catch (err) {
+    sendOutcome(res, serverError(new Error('Failed to get endpoint for topic')));
+    getLogger().error(`[FHIRcast]: Received error while retrieving endpoint for topic`, {
+      topic,
+      error: normalizeErrorString(err),
+    });
+    return;
+  }
+
+  const config = getConfig();
   switch (mode) {
     case 'subscribe':
       res.status(202).json({
@@ -170,11 +205,12 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
           })
         )
         .catch((err: Error) => {
-          getLogger().error(`Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`, {
-            topic,
-          });
+          getLogger().error(
+            `[FHIRcast]: Error when publishing to Redis channel for FHIRcast topic: ${normalizeErrorString(err)}`,
+            { topic }
+          );
         });
-    // break;
+      break;
   }
 }
 
