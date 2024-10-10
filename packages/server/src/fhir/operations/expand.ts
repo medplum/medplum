@@ -136,10 +136,7 @@ async function queryValueSetElements(
     .offset(offset)
     .limit(count);
 
-  const filterQuery = filterToTsvectorQuery(filter);
-  if (filterQuery) {
-    query.where('display', 'TSVECTOR_ENGLISH', filterQuery);
-  }
+  query.where('display', 'TSVECTOR_ENGLISH', filter);
 
   const rows = await query.execute(client);
   const elements = rows.map((row) => ({
@@ -149,22 +146,6 @@ async function queryValueSetElements(
   })) as ValueSetExpansionContains[];
 
   return elements;
-}
-
-function filterToTsvectorQuery(filter: string | undefined): string | undefined {
-  if (!filter) {
-    return undefined;
-  }
-
-  const noPunctuation = filter.replace(/[^\p{Letter}\p{Number}]/gu, ' ').trim();
-  if (!noPunctuation) {
-    return undefined;
-  }
-
-  return noPunctuation
-    .split(/\s+/)
-    .map((token) => token + ':*')
-    .join(' & ');
 }
 
 function buildValueSetSystems(valueSet: ValueSet): Expression[] {

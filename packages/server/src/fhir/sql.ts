@@ -69,19 +69,29 @@ export const Operator = {
     sql.append(')');
   },
   TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    const query = formatTsquery(parameter);
+    if (!query) {
+      sql.append('true');
+      return;
+    }
+
     sql.append(`to_tsvector('simple',`);
     sql.appendColumn(column);
-    sql.append(')');
-    sql.append(` @@ to_tsquery('simple',`);
-    sql.param(parameter);
+    sql.append(`) @@ to_tsquery('simple',`);
+    sql.param(query);
     sql.append(')');
   },
   TSVECTOR_ENGLISH: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    const query = formatTsquery(parameter);
+    if (!query) {
+      sql.append('true');
+      return;
+    }
+
     sql.append(`to_tsvector('english',`);
     sql.appendColumn(column);
-    sql.append(')');
-    sql.append(` @@ to_tsquery('english',`);
-    sql.param(parameter);
+    sql.append(`) @@ to_tsquery('english',`);
+    sql.param(query);
     sql.append(')');
   },
   IN_SUBQUERY: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
@@ -144,6 +154,19 @@ function simpleBinaryOperator(operator: string): OperatorFunc {
 
 export function escapeLikeString(str: string): string {
   return str.replaceAll(/[\\_%]/g, (c) => '\\' + c);
+}
+
+function formatTsquery(filter: string | undefined): string | undefined {
+  if (!filter) {
+    return undefined;
+  }
+
+  const noPunctuation = filter.replace(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
+  if (!noPunctuation) {
+    return undefined;
+  }
+
+  return noPunctuation.replace(/\s+/g, ':* & ') + ':*';
 }
 
 export class Column implements Expression {
