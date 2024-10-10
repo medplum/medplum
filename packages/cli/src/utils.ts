@@ -175,14 +175,14 @@ function readFileContents(fileName: string): string {
   }
   return readFileSync(path, 'utf8');
 }
-
-function addBotToConfig(botConfig: MedplumBotConfig): void {
-  const config = readConfig() ?? {};
+// added default parameter called filename with default value medplum.config.json
+function addBotToConfig(botConfig: MedplumBotConfig, fileName: string = 'medplum.config.json'): void {
+  const config = readConfig(fileName) ?? {};
   if (!config.bots) {
     config.bots = [];
   }
   config.bots.push(botConfig);
-  writeFileSync('medplum.config.json', JSON.stringify(config, null, 2), 'utf8');
+  writeFileSync(fileName, JSON.stringify(config, null, 2), 'utf8');
   console.log(`Bot added to config: ${botConfig.id}`);
 }
 
