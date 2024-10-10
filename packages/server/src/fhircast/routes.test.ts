@@ -202,6 +202,193 @@ describe('FHIRCast routes', () => {
     }
   });
 
+  test('Context change request on hub.url', async () => {
+    const topic = randomUUID();
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(server)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          id: randomUUID(),
+          timestamp: new Date().toISOString(),
+          event: {
+            'hub.topic': topic,
+            'hub.event': 'Patient-close',
+            context: [
+              {
+                key: 'patient',
+                resource: {
+                  resourceType: 'Patient',
+                  id: '798E4MyMcpCWHab9',
+                  identifier: [
+                    {
+                      type: {
+                        coding: [
+                          {
+                            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                            value: 'MR',
+                            display: 'Medical Record Number',
+                          },
+                        ],
+                        text: 'MRN',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        });
+      expect(res.status).toBe(201);
+    }
+  });
+
+  test('Context change request on /:topic', async () => {
+    const topic = randomUUID();
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(server)
+        .post(route + topic)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          id: randomUUID(),
+          timestamp: new Date().toISOString(),
+          event: {
+            'hub.topic': topic,
+            'hub.event': 'Patient-close',
+            context: [
+              {
+                key: 'patient',
+                resource: {
+                  resourceType: 'Patient',
+                  id: '798E4MyMcpCWHab9',
+                  identifier: [
+                    {
+                      type: {
+                        coding: [
+                          {
+                            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                            value: 'MR',
+                            display: 'Medical Record Number',
+                          },
+                        ],
+                        text: 'MRN',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        });
+      expect(res.status).toBe(201);
+    }
+  });
+
+  test('Context change -- missing "hub.topic"', async () => {
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(server)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          id: randomUUID(),
+          timestamp: new Date().toISOString(),
+          event: {
+            'hub.event': 'Patient-close',
+            context: [
+              {
+                key: 'patient',
+                resource: {
+                  resourceType: 'Patient',
+                  id: '798E4MyMcpCWHab9',
+                  identifier: [
+                    {
+                      type: {
+                        coding: [
+                          {
+                            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                            value: 'MR',
+                            display: 'Medical Record Number',
+                          },
+                        ],
+                        text: 'MRN',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toEqual('Missing event["hub.topic"]');
+    }
+  });
+
+  test('Context change -- missing "hub.event"', async () => {
+    const topic = randomUUID();
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(server)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          id: randomUUID(),
+          timestamp: new Date().toISOString(),
+          event: {
+            'hub.topic': topic,
+            context: [
+              {
+                key: 'patient',
+                resource: {
+                  resourceType: 'Patient',
+                  id: '798E4MyMcpCWHab9',
+                  identifier: [
+                    {
+                      type: {
+                        coding: [
+                          {
+                            system: 'http://terminology.hl7.org/CodeSystem/v2-0203',
+                            value: 'MR',
+                            display: 'Medical Record Number',
+                          },
+                        ],
+                        text: 'MRN',
+                      },
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toEqual('Missing event["hub.event"]');
+    }
+  });
+
+  test('Context change -- missing context', async () => {
+    const topic = randomUUID();
+    for (const route of [STU2_BASE_ROUTE, STU3_BASE_ROUTE]) {
+      const res = await request(server)
+        .post(route)
+        .set('Content-Type', ContentType.JSON)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          id: randomUUID(),
+          timestamp: new Date().toISOString(),
+          event: {
+            'hub.topic': topic,
+            'hub.event': 'Patient-close',
+          },
+        });
+      expect(res.status).toBe(400);
+      expect(res.body.issue[0].details.text).toEqual('Missing event.context');
+    }
+  });
+
   test('Get context', async () => {
     const topic = randomUUID();
     let res;
@@ -230,7 +417,7 @@ describe('FHIRCast routes', () => {
       { key: 'patient', resource: { id: 'xyz-789', resourceType: 'Patient' } },
     ]);
     const publishRes = await request(server)
-      .post(`${STU3_BASE_ROUTE}my-topic`)
+      .post(STU3_BASE_ROUTE)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload);
@@ -288,7 +475,7 @@ describe('FHIRCast routes', () => {
     });
 
     const publishRes = await request(server)
-      .post(`${STU3_BASE_ROUTE}my-topic`)
+      .post(STU3_BASE_ROUTE)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(createFhircastMessagePayload('my-topic', 'DiagnosticReport-close', context));
@@ -320,7 +507,7 @@ describe('FHIRCast routes', () => {
     const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-open', context);
 
     const publishRes = await request(server)
-      .post(`${STU3_BASE_ROUTE}my-topic`)
+      .post(STU3_BASE_ROUTE)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload);
@@ -348,7 +535,7 @@ describe('FHIRCast routes', () => {
     const payload = createFhircastMessagePayload('my-topic', 'DiagnosticReport-update', context, versionId);
 
     const publishRes = await request(server)
-      .post(`${STU3_BASE_ROUTE}my-topic`)
+      .post(STU3_BASE_ROUTE)
       .set('Content-Type', ContentType.JSON)
       .set('Authorization', 'Bearer ' + accessToken)
       .send(payload);
