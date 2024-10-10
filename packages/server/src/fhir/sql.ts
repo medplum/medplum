@@ -1,4 +1,4 @@
-import { OperationOutcomeError, append, conflict, normalizeOperationOutcome } from '@medplum/core';
+import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
@@ -409,21 +409,26 @@ export class SqlBuilder {
 
 export function normalizeDatabaseError(err: any): OperationOutcomeError {
   if (err instanceof OperationOutcomeError) {
+    // Pass through already-normalized errors
     return err;
   }
 
-  if (err?.code === '23505') {
-    // Catch duplicate key errors and throw a 409 Conflict
-    // See https://github.com/brianc/node-postgres/issues/1602
-    // See https://www.postgresql.org/docs/10/errcodes-appendix.html
-    return new OperationOutcomeError(conflict(err.detail));
-  }
-  if (err?.code === '40001') {
-    // Catch transaction serialization errors and throw a 409 Conflict
-    return new OperationOutcomeError(conflict(err.message));
+  // Handle known Postgres error codes
+  // @see https://www.postgresql.org/docs/16/errcodes-appendix.html
+  switch (err?.code) {
+    case '23505': // unique_violation
+      // Duplicate key error -> 409 Conflict
+      // @see https://github.com/brianc/node-postgres/issues/1602
+      return new OperationOutcomeError(conflict(err.detail));
+    case '40001': // serialization_failure
+      // Transaction rollback due to serialization error -> 409 Conflict
+      return new OperationOutcomeError(conflict(err.message));
+    case '57014': // query_canceled
+      // Statement timeout -> 504 Gateway Timeout
+      return new OperationOutcomeError(serverTimeout(err.message));
   }
 
-  getLogger().error('Database error', err);
+  getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
   return new OperationOutcomeError(normalizeOperationOutcome(err));
 }
 
