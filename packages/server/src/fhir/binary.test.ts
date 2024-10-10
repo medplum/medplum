@@ -244,7 +244,7 @@ describe('Binary', () => {
     expect(res3.body.securityContext.reference).toEqual('Patient/123');
   });
 
-  test('Update JSON', async () => {
+  test('Invalid Binary JSON', async () => {
     const res = await request(app)
       .post('/fhir/R4/Binary')
       .set('Authorization', 'Bearer ' + accessToken)
@@ -259,23 +259,16 @@ describe('Binary', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         ...binary,
-        securityContext: { reference: 'Patient/123' },
+        data: 'Hello, world!', // Invalid: not encoded as base64Binary
       });
-    expect(res2.status).toBe(200);
+    expect(res2.status).toBe(400);
 
     const res3 = await request(app)
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.FHIR_JSON);
     expect(res3.status).toBe(200);
-    expect(res3.body.securityContext.reference).toEqual('Patient/123');
-
-    // Reading binary contents should still work, despite new version
-    const res4 = await request(app)
-      .get('/fhir/R4/Binary/' + binary.id)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res4.status).toBe(200);
-    expect(res4.text).toEqual('Hello world');
+    expect(res3.body.data).toBeUndefined();
   });
 
   test('Handle non-binary JSON', async () => {
