@@ -1,3 +1,4 @@
+import { clearReleaseCache } from '@medplum/core';
 import child_process from 'node:child_process';
 import fs from 'node:fs';
 import os, { platform } from 'node:os';
@@ -5,7 +6,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { upgraderMain } from './upgrader';
 import { mockFetchForUpgrader } from './upgrader-test-utils';
-import { clearReleaseCache, getReleaseBinPath } from './upgrader-utils';
+import { getReleaseBinPath } from './upgrader-utils';
 
 jest.mock('node:process', () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports

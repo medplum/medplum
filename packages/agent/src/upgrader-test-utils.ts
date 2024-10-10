@@ -1,4 +1,4 @@
-import type { ReleaseManifest } from './upgrader-utils';
+import type { ReleaseManifest } from '@medplum/core';
 
 export function mockFetchForUpgrader(version?: string): jest.SpyInstance {
   let count = 0;
