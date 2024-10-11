@@ -1,9 +1,12 @@
 import { Button, Flex, Modal, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { createReference } from '@medplum/core';
+import { notifications } from '@mantine/notifications';
+import { createReference, getCodeBySystem, normalizeErrorString } from '@medplum/core';
 import { MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, useMedplum } from '@medplum/react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
+import { NEUTRON_HEALTH_BOTS } from '../../bots/constants';
 import { PrescriptionTable } from './PrescriptionTable';
 
 interface HeadlessPrescriptionProps {
@@ -35,12 +38,47 @@ export function HeadlessPrescription(props: HeadlessPrescriptionProps): JSX.Elem
     console.log(prescription);
   }
 
-  function handleCreatePrescription(prescription: Resource): void {
+  async function handleCreatePrescription(prescription: Resource): Promise<void> {
     if (prescription.resourceType !== 'MedicationRequest') {
       throw new Error('Invalid resource type');
     }
-    console.log(prescription);
-    close();
+
+    try {
+      validateMedicationRequest(prescription);
+    } catch (err) {
+      notifications.show({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+      throw new Error(normalizeErrorString(err));
+    }
+
+    try {
+      const medicationRequest: MedicationRequest = await medplum.createResource({
+        ...prescription,
+      });
+
+      await medplum.executeBot(
+        { system: NEUTRON_HEALTH_BOTS, value: 'create-photon-prescription' },
+        { ...medicationRequest }
+      );
+      console.log(medicationRequest);
+      close();
+      notifications.show({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Prescription created',
+      });
+    } catch (err) {
+      notifications.show({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
   }
 
   return (
@@ -55,4 +93,26 @@ export function HeadlessPrescription(props: HeadlessPrescriptionProps): JSX.Elem
       </Modal>
     </Document>
   );
+}
+
+function validateMedicationRequest(prescription: MedicationRequest): void {
+  const medicationCode = prescription.medicationCodeableConcept;
+  const quantity = prescription.dispenseRequest?.quantity;
+  const instructions = prescription.dosageInstruction?.[0].patientInstruction;
+
+  if (!medicationCode) {
+    throw new Error('MedicationRequest.medicationCodeableConcept: A Medication code is required');
+  }
+
+  if (!quantity || !quantity.value || !quantity.unit) {
+    throw new Error(
+      'MedicationRequest.dispenseRequest.quantity: A quantity with a value and unit must be provided for the prescription'
+    );
+  }
+
+  if (!instructions) {
+    throw new Error(
+      'MedicationRequest.dosageInstruction.patientInstruction: Instructions must be provided for the patient'
+    );
+  }
 }
