@@ -1,9 +1,18 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, UserConfig } from 'vite';
 import dns from 'dns';
 import path from 'path';
+import { existsSync } from 'fs';
 
 dns.setDefaultResultOrder('verbatim');
+
+// Resolve aliases to local packages when working within the monorepo
+const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
+  Object.entries({
+    '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
+    '@medplum/react': path.resolve(__dirname, '../../packages/react/src'),
+  }).filter(([, relPath]) => existsSync(relPath))
+);
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -13,9 +22,6 @@ export default defineConfig({
     port: 3000,
   },
   resolve: {
-    alias: {
-      '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
-      '@medplum/react': path.resolve(__dirname, '../../packages/react/src'),
-    },
+    alias,
   },
 });
