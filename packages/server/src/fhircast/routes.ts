@@ -152,14 +152,14 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
   const topic = req.body['hub.topic'];
   let subscriptionEndpoint: string;
   try {
-    const topicKey = `medplum:fhircast:project:${ctx.project.id as string}:topic:${topic}:endpoint`;
+    const topicEndpointKey = `medplum:fhircast:project:${ctx.project.id as string}:topic:${topic}:endpoint`;
     const results = await getRedis()
       // Multi allows for multiple commands to be executed in a transaction
       .multi()
       // Sets the endpoint key for this topic if it doesn't exist
-      .setnx(topicKey, generateId())
+      .setnx(topicEndpointKey, generateId())
       // Gets the endpoint, either previously generated endpoint secret or the newly generated key if a previous one did not exist
-      .get(topicKey)
+      .get(topicEndpointKey)
       // Executes the transaction
       .exec();
 
@@ -215,8 +215,10 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
 }
 
 async function handleContextChangeRequest(req: Request, res: Response): Promise<void> {
+  const ctx = getAuthenticatedContext();
   const { event } = req.body as FhircastMessagePayload;
   let stringifiedBody = JSON.stringify(req.body);
+  const topicContextKey = `medplum:fhircast:project:${ctx.project.id as string}:topic:${event['hub.topic']}:latest`;
   // Check if this an open event
   if (event['hub.event'].endsWith('-open')) {
     // TODO: Support this as a param for event type: "versionable"?
@@ -224,18 +226,17 @@ async function handleContextChangeRequest(req: Request, res: Response): Promise<
       event['context.versionId'] = generateId();
       stringifiedBody = JSON.stringify(req.body);
     }
-    // TODO: we need to get topic from event and not route param since per spec, the topic shouldn't be the slug like we have it
-    await getRedis().set(`medplum:fhircast:topic:${event['hub.topic']}:latest`, stringifiedBody);
+    await getRedis().set(topicContextKey, stringifiedBody);
   } else if (event['hub.event'].endsWith('-close')) {
     // We always close the current context, even if the event is not for the original resource... There isn't any mention of checking to see it's the right resource, so it seems it may be assumed to be always valid to do any arbitrary close as long as there is an existing context...
-    await getRedis().del(`medplum:fhircast:topic:${event['hub.topic']}:latest`);
+    await getRedis().del(topicContextKey);
   } else if (event['hub.event'] === 'DiagnosticReport-update') {
     // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-3-DiagnosticReport-update.html#:~:text=The%20Hub%20SHALL,the%20new%20updates.
     event['context.priorVersionId'] = event['context.versionId'];
     event['context.versionId'] = generateId();
     stringifiedBody = JSON.stringify(req.body);
     // TODO: Make sure this is actually supposed to be stored / overwrite open context? (ambiguous from docs, see: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html)
-    await getRedis().set(`medplum:fhircast:topic:${event['hub.topic']}:latest`, stringifiedBody);
+    await getRedis().set(topicContextKey, stringifiedBody);
   }
   await getRedis().publish(event['hub.topic'], stringifiedBody);
   res.status(201).json({ success: true, event: body });
@@ -245,7 +246,10 @@ async function handleContextChangeRequest(req: Request, res: Response): Promise<
 protectedSTU2Routes.get(
   '/:topic',
   asyncWrap(async (req: Request, res: Response) => {
-    const latestEventStr = await getRedis().get(`medplum:fhircast:topic:${req.params.topic}:latest`);
+    const ctx = getAuthenticatedContext();
+    const latestEventStr = await getRedis().get(
+      `medplum:fhircast:project:${ctx.project.id as string}:topic:${req.params.topic}:latest`
+    );
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
     if (!latestEventStr) {
       res.status(200).json([]);
@@ -258,7 +262,10 @@ protectedSTU2Routes.get(
 protectedSTU3Routes.get(
   '/:topic',
   asyncWrap(async (req: Request, res: Response) => {
-    const latestEventStr = await getRedis().get(`medplum:fhircast:topic:${req.params.topic}:latest`);
+    const ctx = getAuthenticatedContext();
+    const latestEventStr = await getRedis().get(
+      `medplum:fhircast:project:${ctx.project.id as string}:topic:${req.params.topic}:latest`
+    );
     if (!latestEventStr) {
       // Source: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#:~:text=The%20following%20example%20shows%20the%20returned%20structure%20when%20no%20context%20is%20established%3A
       res.status(200).json({
