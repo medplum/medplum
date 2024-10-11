@@ -93,7 +93,7 @@ export async function addPhotonIdToMedicationKnowledge(
   photonMedicationId: string,
   medicationKnowledge: MedicationKnowledge,
   medplum: MedplumClient
-) {
+): Promise<void> {
   const medicationKnowledgeId = medicationKnowledge.id as string;
   const code = medicationKnowledge.code ?? { coding: [] };
   code?.coding?.push({ system: NEUTRON_HEALTH_TREATMENTS, code: photonMedicationId });
