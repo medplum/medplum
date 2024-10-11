@@ -26,6 +26,7 @@ import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
+import { AgentSerialChannel } from './serial';
 import {
   UPGRADER_LOG_PATH,
   UPGRADE_MANIFEST_PATH,
@@ -417,6 +418,9 @@ export class App {
         break;
       case ChannelType.HL7_V2:
         channel = new AgentHl7Channel(this, definition, endpoint);
+        break;
+      case ChannelType.SERIAL:
+        channel = new AgentSerialChannel(this, definition, endpoint);
         break;
       default:
         throw new Error(`Unsupported endpoint type: ${endpoint.address}`);
