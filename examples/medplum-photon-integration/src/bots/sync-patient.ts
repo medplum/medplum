@@ -1,6 +1,7 @@
-import { BotEvent, getReferenceString, MedplumClient, PatchOperation } from '@medplum/core';
+import { BotEvent, getCodeBySystem, getReferenceString, MedplumClient, PatchOperation } from '@medplum/core';
 import { AllergyIntolerance, Identifier, MedicationRequest, Patient } from '@medplum/fhirtypes';
 import { CreatePatientVariables, PhotonAllergenInput, PhotonMedHistoryInput, PhotonPatient } from '../photon-types';
+import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
 import {
   formatAWSDate,
   formatPhotonAddress,
@@ -9,7 +10,6 @@ import {
   handlePhotonAuth,
   photonGraphqlFetch,
 } from './utils';
-import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Patient>): Promise<PhotonPatient> {
   const patient = event.input;
@@ -20,25 +20,47 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
 
   const query = `
     mutation createPatient(
-      $externalId: ID
-      $name: NameInput!
-      $dateOfBirth: AWSDate!
-      $sex: SexType!
-      $gender: String
-      $email: AWSEmail
-      $phone: AWSPhone!
+      $externalId: ID,
+      $name: NameInput!,
+      $dateOfBirth: AWSDate!,
+      $sex: SexType!,
+      $gender: String,
+      $email: AWSEmail,
+      $phone: AWSPhone!,
+      $allergies: [AllergenInput],
+      $medicationHistory: [MedHistoryInput],
       $address: AddressInput
     ) {
       createPatient(
-        externalId: $externalId
-        name: $name
-        dateOfBirth: $dateOfBirth
-        sex: $sex
-        gender: $gender
-        email: $email
-        phone: $phone
+        externalId: $externalId,
+        name: $name,
+        dateOfBirth: $dateOfBirth,
+        sex: $sex,
+        gender: $gender,
+        email: $email,
+        phone: $phone,
+        allergies: $allergies,
+        medicationHistory: $medicationHistory,
         address: $address
-      ) { id }
+      ) { 
+        id
+        allergies {
+          allergen {
+            id
+            rxcui
+          }
+        }
+        medicationHistory {
+          prescription {
+            id
+          }
+          medication {
+            codes {
+              rxcui
+            }
+          }
+        }
+      }
     }
   `;
 
@@ -62,10 +84,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
     phone: getTelecom('phone', patient),
   };
 
+  const allergies = await medplum.searchResources('AllergyIntolerance', {
+    patient: getReferenceString(patient),
+  });
+
+  const medicationHistory = await medplum.searchResources('MedicationRequest', {
+    patient: getReferenceString(patient),
+  });
+
   const email = getTelecom('email', patient);
   const address = formatPhotonAddress(patient.address?.[0]);
-  const allergies = await createAllergyInputs(patient, medplum, PHOTON_AUTH_TOKEN);
-  const medicationHistory = await createMedHistoryInputs(patient, medplum, PHOTON_AUTH_TOKEN);
+  const allergyInputs = await createAllergyInputs(PHOTON_AUTH_TOKEN, allergies);
+  const medHistoryInput = await createMedHistoryInputs(PHOTON_AUTH_TOKEN, medicationHistory);
 
   if (email) {
     variables.email = email;
@@ -75,12 +105,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Patient>):
     variables.address = address;
   }
 
-  if (allergies) {
-    variables.allergies = allergies;
+  if (allergyInputs) {
+    variables.allergies = allergyInputs;
   }
 
-  if (medicationHistory) {
-    variables.medicationHistory = medicationHistory;
+  if (medHistoryInput) {
+    variables.medicationHistory = medHistoryInput;
   }
 
   const body = JSON.stringify({ query, variables });
@@ -118,21 +148,16 @@ async function updatePatient(medplum: MedplumClient, patient: Patient, result: a
 }
 
 export async function createMedHistoryInputs(
-  patient: Patient,
-  medplum: MedplumClient,
-  authToken: string
+  authToken: string,
+  medicationHistory?: MedicationRequest[]
 ): Promise<PhotonMedHistoryInput[]> {
-  const medicationRequests = await medplum.searchResources('MedicationRequest', {
-    patient: getReferenceString(patient),
-  });
-
-  if (medicationRequests.length === 0) {
+  if (!medicationHistory) {
     return [];
   }
 
   const resourceIds: [MedicationRequest, string][] = [];
 
-  for (const medicationRequest of medicationRequests) {
+  for (const medicationRequest of medicationHistory) {
     const photonMedicationId = await getPhotonMedicationId(medicationRequest, authToken);
     if (photonMedicationId) {
       resourceIds.push([medicationRequest, photonMedicationId]);
@@ -144,16 +169,12 @@ export async function createMedHistoryInputs(
 }
 
 export async function createAllergyInputs(
-  patient: Patient,
-  medplum: MedplumClient,
-  authToken: string
+  authToken: string,
+  allergies?: AllergyIntolerance[]
 ): Promise<PhotonAllergenInput[]> {
   const allergyInputs: PhotonAllergenInput[] = [];
-  const allergies = await medplum.searchResources('AllergyIntolerance', {
-    patient: getReferenceString(patient),
-  });
 
-  if (allergies.length === 0) {
+  if (!allergies) {
     return [];
   }
 
@@ -171,7 +192,7 @@ export async function createAllergyInputs(
 }
 
 export async function formatPhotonInput(
-  resources: [AllergyIntolerance | MedicationRequest, string][]
+  resources: [MedicationRequest, string][]
 ): Promise<(PhotonAllergenInput | PhotonMedHistoryInput)[] | undefined> {
   const inputs: (PhotonAllergenInput | PhotonMedHistoryInput)[] = [];
 
@@ -213,14 +234,21 @@ async function getPhotonAllergyId(allergy: AllergyIntolerance, authToken: string
     return photonId;
   }
 
-  const rxcui = allergy.code?.coding?.find(
+  const allergenName = allergy.code?.coding?.find(
     (code) => code.system === 'http://www.nlm.nih.gov/research/umls/rxnorm'
-  )?.code;
-  if (!rxcui) {
+  )?.display;
+  if (!allergenName) {
     return undefined;
   }
 
-  const body = formatRequestBody(allergy.resourceType, rxcui);
+  const query = `
+    query allergens($filter: AllergenFilter) {
+      allergens(filter: $filter) { id }
+    }
+  `;
+
+  const variables = { filter: { name: allergenName } };
+  const body = JSON.stringify({ query, variables });
   const result = await photonGraphqlFetch(body, authToken);
   const id = result.data.allergens?.[0]?.id as string;
   return id;
@@ -232,14 +260,33 @@ async function getPhotonMedicationId(medication: MedicationRequest, authToken: s
     return photonId;
   }
 
-  const rxcui = medication.medicationCodeableConcept?.coding?.find(
-    (code) => code.system === 'http://www.nlm.nih.gov/research/umls/rxnorm'
-  )?.code;
+  if (!medication.medicationCodeableConcept) {
+    return undefined;
+  }
+
+  const rxcui = getCodeBySystem(medication.medicationCodeableConcept, 'http://www.nlm.nih.gov/research/umls/rxnorm');
   if (!rxcui) {
     return undefined;
   }
 
-  const body = formatRequestBody(medication.resourceType, rxcui);
+  const query = `
+    query medications(
+      $filter: MedicationFilter,
+      $after: ID,
+      $first: Int
+    ) {
+      medications(
+        filter: $filter,
+        after: $after,
+        first: $first
+      ) {
+        id
+      }
+    }
+  `;
+  const variables = { filter: { drug: { code: rxcui } } };
+  const body = JSON.stringify({ query, variables });
+
   const result = await photonGraphqlFetch(body, authToken);
   const id = result.data.medications?.[0]?.id as string;
   return id;
@@ -252,39 +299,4 @@ function getIdentifier(identifiers?: Identifier[]): string | undefined {
 
   const photonId = identifiers.find((id) => id.system === NEUTRON_HEALTH)?.value;
   return photonId;
-}
-
-function formatRequestBody(resourceType: 'AllergyIntolerance' | 'MedicationRequest', rxcui: string): string {
-  let query: string;
-  let variables: any;
-  switch (resourceType) {
-    case 'AllergyIntolerance':
-      query = `
-        query allergens($filter: AllergenFilter) {
-          allergens(filter: $filter) { id }
-        }
-      `;
-      variables = { name: rxcui };
-      return JSON.stringify({ query, variables });
-    case 'MedicationRequest':
-      query = `
-        query medications(
-          $filter: MedicationFilter,
-          $after: ID,
-          $first: Int
-        ) {
-          medications(
-            filter: $filter,
-            after: $after,
-            first: $first
-          ) {
-            id
-          }
-        }
-      `;
-      variables = { drug: { code: rxcui } };
-      return JSON.stringify({ query, variables });
-    default:
-      throw new Error('Invalid resource type');
-  }
 }
