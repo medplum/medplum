@@ -1,4 +1,9 @@
-import { getReferenceString, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import {
+  getCodeBySystem,
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+} from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
   Bot,
@@ -13,7 +18,8 @@ import {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
-import { handler } from './sync-formulary';
+import { NEUTRON_HEALTH_TREATMENTS } from './constants';
+import { addPhotonIdToMedicationKnowledge, handler } from './sync-formulary';
 
 describe('Sync formulary', async () => {
   beforeAll(() => {
@@ -179,6 +185,23 @@ describe('Sync formulary', async () => {
     expect(medicationsUpdated?.[0]?.coding?.[0]).toEqual({ system: 'https://neutron.health', code: 'synced' });
     expect(result.length).toBe(0);
   }, 10000);
+
+  test('Add photon ID to MedicationKnowledge', async () => {
+    const medplum = new MockClient();
+    const knowledge: MedicationKnowledge = await medplum.createResource({
+      resourceType: 'MedicationKnowledge',
+      code: { coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '310430' }] },
+    });
+
+    await addPhotonIdToMedicationKnowledge('example-id', knowledge, medplum);
+    const updatedKnowledge = await medplum.searchOne('MedicationKnowledge');
+    const codes = updatedKnowledge?.code;
+    expect(codes).toBeDefined();
+    expect(codes?.coding?.length).toBe(2);
+    if (codes) {
+      expect(getCodeBySystem(codes, NEUTRON_HEALTH_TREATMENTS)).toBe('example-id');
+    }
+  });
 });
 
 const medicationKnowledgeBundleEntries: BundleEntry[] = [
