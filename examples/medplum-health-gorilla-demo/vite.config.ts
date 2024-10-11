@@ -6,10 +6,9 @@ import { defineConfig, UserConfig } from 'vite';
 // Resolve aliases to local packages when working within the monorepo
 const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
   Object.entries({
-    '@medplum/react': '../../packages/react/src',
-    '@medplum/health-gorilla-core': '../../packages/health-gorilla-core/src',
-    '@medplum/health-gorilla-react': '../../packages/health-gorilla-react/src',
-  }).filter(([, relPath]) => existsSync(path.resolve(__dirname, relPath)))
+    '@medplum/health-gorilla-core': path.resolve(__dirname, '../../packages/health-gorilla-core/src'),
+    '@medplum/health-gorilla-react': path.resolve(__dirname, '../../packages/health-gorilla-react/src'),
+  }).filter(([, relPath]) => existsSync(relPath))
 );
 // https://vitejs.dev/config/
 export default defineConfig({

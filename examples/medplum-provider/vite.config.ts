@@ -9,9 +9,9 @@ dns.setDefaultResultOrder('verbatim');
 // Resolve aliases to local packages when working within the monorepo
 const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
   Object.entries({
-    '@medplum/core': '../../packages/core/src',
-    '@medplum/react': '../../packages/react/src',
-  }).filter(([, relPath]) => existsSync(path.resolve(__dirname, relPath)))
+    '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
+    '@medplum/react': path.resolve(__dirname, '../../packages/react/src'),
+  }).filter(([, relPath]) => existsSync(relPath))
 );
 
 // https://vitejs.dev/config/
