@@ -38,16 +38,16 @@ export function DoseSpotTab(): JSX.Element {
 
   const handleSyncPatient = useCallback(async () => {
     try {
-      const result = await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, {});
+      const result = await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, patient);
       console.log('Sync result:', result);
       showNotification({ color: 'green', title: 'Success', message: 'Patient sync success' });
     } catch (err: unknown) {
       showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) });
     }
-  }, [medplum]);
+  }, [medplum, patient]);
 
   const handleStartNewOrder = useCallback(async () => {
-    const doseSpotPatientId = patient?.identifier?.find((i) => i.system === 'https://www.dosespot.com/patient')?.value;
+    const doseSpotPatientId = patient?.identifier?.find((i) => i.system === 'https://dosespot.com/patient-id')?.value;
     try {
       const result = await medplum.executeBot(DOSESPOT_IFRAME_BOT, { patientId: doseSpotPatientId });
       if (result.url) {
