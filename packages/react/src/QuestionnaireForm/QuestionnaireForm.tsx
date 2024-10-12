@@ -29,19 +29,10 @@ export interface QuestionnaireFormProps {
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
   const medplum = useMedplum();
   const source = medplum.getProfile();
-  const [schemaLoaded, setSchemaLoaded] = useState(false);
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [activePage, setActivePage] = useState(0);
   const { onChange } = props;
-
-  useEffect(() => {
-    medplum
-      .requestSchema('Questionnaire')
-      .then(() => medplum.requestSchema('QuestionnaireResponse'))
-      .then(() => setSchemaLoaded(true))
-      .catch(console.log);
-  }, [medplum]);
 
   useEffect(() => {
     setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
@@ -80,7 +71,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     return isQuestionEnabled(item, response?.item ?? []);
   }
 
-  if (!schemaLoaded || !questionnaire || !response) {
+  if (!questionnaire || !response) {
     return null;
   }
 
