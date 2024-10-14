@@ -9,6 +9,16 @@
     "lint": "next lint",
     "start": "next start"
   },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
+  },
   "dependencies": {
     "@mantine/core": "7.13.2",
     "@mantine/hooks": "7.13.2",
