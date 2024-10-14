@@ -1,6 +1,6 @@
-import { BotEvent, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { BotEvent, getCodeBySystem, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { CodeableConcept, MedicationRequest, Patient } from '@medplum/fhirtypes';
-import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
+import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS, NEUTRON_HEALTH_TREATMENTS } from './constants';
 import { formatAWSDate, handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 interface CreatePrescriptionVariables {
@@ -33,7 +33,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Medication
 
   // Get the medication's Photon ID
   const medicationCode = medicationRequest.medicationCodeableConcept;
-  const photonTreatmentId = await getPhotonTreatmentId(photonAuthToken, medicationCode);
+  const photonTreatmentId = await getPhotonTreatmentId(photonAuthToken, medplum, medicationCode);
 
   // Get the quantity and unit of the medication being dispensed as part of the prescription
   const dispenseDetails = medicationRequest.dispenseRequest;
@@ -155,9 +155,20 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Medication
  * @param medicationCode - The Codeable Concept representing the medication being prescribed
  * @returns The Photon ID of the medication being prescribed
  */
-async function getPhotonTreatmentId(authToken: string, medicationCode?: CodeableConcept): Promise<string | undefined> {
+async function getPhotonTreatmentId(
+  authToken: string,
+  medplum: MedplumClient,
+  medicationCode?: CodeableConcept
+): Promise<string | undefined> {
   if (!medicationCode) {
     throw new Error('Medication must have a code');
+  }
+
+  // If possible get the code from the MedicationKnowledge resource with the given code
+  const photonId = await getPhotonIdByCoding(medplum, medicationCode);
+
+  if (photonId) {
+    return photonId;
   }
 
   // Check for an RXNorm code and get the display string
@@ -211,6 +222,37 @@ async function getPhotonTreatmentId(authToken: string, medicationCode?: Codeable
     return result.data.treatmentOptions?.[0].medicationId;
   } catch (err) {
     throw new Error(normalizeErrorString(err));
+  }
+}
+
+/**
+ * Searches for Medication Knowledge resources with the given code, then checks if the Photon ID for that treatment is stored on
+ * them. If it is, it returns the Photon Treatment ID.
+ *
+ * @param medplum - Medplum Client to search for MedicationKnowledge resources
+ * @param medicationCode - The codeable concept of the medication for the prescription
+ * @returns - The Photon ID if it is store on the MedicationKnowledge
+ */
+async function getPhotonIdByCoding(
+  medplum: MedplumClient,
+  medicationCode: CodeableConcept
+): Promise<string | undefined> {
+  // Get the medication's code by RXNorm or NDC
+  let code =
+    getCodeBySystem(medicationCode, 'http://www.nlm.nih.gov/research/umls/rxnorm') ??
+    getCodeBySystem(medicationCode, 'http://hl7.org/fhir/sid/ndc');
+
+  // If there is a code, search for the relevant MedicationKnowledge in your project
+  if (code) {
+    const medicationKnowledge = await medplum.searchOne('MedicationKnowledge', {
+      code,
+    });
+
+    // Check for the Photon Treatment ID on your MedicationKnowledge, and return it if it exists
+    if (medicationKnowledge?.code) {
+      const photonId = getCodeBySystem(medicationKnowledge.code, NEUTRON_HEALTH_TREATMENTS);
+      return photonId;
+    }
   }
 }
 
