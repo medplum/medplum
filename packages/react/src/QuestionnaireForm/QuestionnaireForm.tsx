@@ -1,5 +1,5 @@
 import { Title } from '@mantine/core';
-import { ProfileResource, createReference, getReferenceString } from '@medplum/core';
+import { createReference, getReferenceString } from '@medplum/core';
 import {
   Encounter,
   Questionnaire,
@@ -19,6 +19,7 @@ export interface QuestionnaireFormProps {
   readonly questionnaire: Questionnaire | Reference<Questionnaire>;
   readonly subject?: Reference;
   readonly encounter?: Reference<Encounter>;
+  readonly source?: QuestionnaireResponse['source'];
   readonly disablePagination?: boolean;
   readonly excludeButtons?: boolean;
   readonly submitButtonText?: string;
@@ -28,7 +29,6 @@ export interface QuestionnaireFormProps {
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
   const medplum = useMedplum();
-  const source = medplum.getProfile();
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [activePage, setActivePage] = useState(0);
@@ -67,6 +67,26 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     [onChange]
   );
 
+  const handleSubmit = useCallback(() => {
+    if (props.onSubmit && response) {
+      let source = props.source;
+      if (!source) {
+        const profile = medplum.getProfile();
+        if (profile) {
+          source = createReference(profile);
+        }
+      }
+      props.onSubmit({
+        ...response,
+        questionnaire: getReferenceString(questionnaire as Questionnaire),
+        subject: props.subject,
+        source,
+        authored: new Date().toISOString(),
+        status: 'completed',
+      });
+    }
+  }, [medplum, props, questionnaire, response]);
+
   function checkForQuestionEnabled(item: QuestionnaireItem): boolean {
     return isQuestionEnabled(item, response?.item ?? []);
   }
@@ -81,21 +101,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   return (
     <QuestionnaireFormContext.Provider value={{ subject: props.subject, encounter: props.encounter }}>
-      <Form
-        testid="questionnaire-form"
-        onSubmit={() => {
-          if (props.onSubmit && response) {
-            props.onSubmit({
-              ...response,
-              questionnaire: getReferenceString(questionnaire),
-              subject: props.subject,
-              source: createReference(source as ProfileResource),
-              authored: new Date().toISOString(),
-              status: 'completed',
-            });
-          }
-        }}
-      >
+      <Form testid="questionnaire-form" onSubmit={handleSubmit}>
         {questionnaire.title && <Title>{questionnaire.title}</Title>}
         <QuestionnairePageSequence
           items={questionnaire.item ?? []}
