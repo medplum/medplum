@@ -28,7 +28,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Medication
   const photonAuthToken = await handlePhotonAuth(photonClientId, photonClientSecret);
 
   // Get the patient's Photon ID
-  const patient = (await medplum.readReference(medicationRequest.subject)) as Patient;
+  const patient = await medplum.readReference(medicationRequest.subject);
   const photonPatientId = patient.identifier?.find((id) => id.system === NEUTRON_HEALTH_PATIENTS)?.value;
 
   // Get the medication's Photon ID
@@ -130,17 +130,21 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Medication
     // Parse the prescription's id from the result
     const photonPrescriptionId = result.data?.createPrescription?.id;
     // Add the prescription's Photon ID to the MedicationRequest as an identifier
-    const identifier = medicationRequest.identifier ?? [];
-    identifier.push({ system: NEUTRON_HEALTH, value: photonPrescriptionId });
+    if (photonPrescriptionId) {
+      const identifier = medicationRequest.identifier ?? [];
+      identifier.push({ system: NEUTRON_HEALTH, value: photonPrescriptionId });
 
-    const ops: PatchOperation[] = [
-      { op: 'test', path: '/meta/versionId', value: medicationRequest.meta?.versionId },
-      { op: 'add', path: '/identifier', value: identifier },
-    ];
+      const ops: PatchOperation[] = [
+        { op: 'test', path: '/meta/versionId', value: medicationRequest.meta?.versionId },
+        { op: 'add', path: '/identifier', value: identifier },
+      ];
 
-    // Update the MedicationRequest with the new identifier and return it
-    const updatedRequest = await medplum.patchResource('MedicationRequest', medicationRequest.id as string, ops);
-    return updatedRequest;
+      // Update the MedicationRequest with the new identifier and return it
+      const updatedRequest = await medplum.patchResource('MedicationRequest', medicationRequest.id as string, ops);
+      return updatedRequest;
+    } else {
+      return medicationRequest;
+    }
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }
@@ -155,7 +159,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Medication
  * @param medicationCode - The Codeable Concept representing the medication being prescribed
  * @returns The Photon ID of the medication being prescribed
  */
-async function getPhotonTreatmentId(
+export async function getPhotonTreatmentId(
   authToken: string,
   medplum: MedplumClient,
   medicationCode?: CodeableConcept
@@ -233,7 +237,7 @@ async function getPhotonTreatmentId(
  * @param medicationCode - The codeable concept of the medication for the prescription
  * @returns - The Photon ID if it is store on the MedicationKnowledge
  */
-async function getPhotonIdByCoding(
+export async function getPhotonIdByCoding(
   medplum: MedplumClient,
   medicationCode: CodeableConcept
 ): Promise<string | undefined> {
@@ -267,7 +271,7 @@ async function getPhotonIdByCoding(
  * @param instructions - The instructions for the patient on how to take the prescription
  * @returns A validated object containing the required variables for Photon's createPrescription mutation
  */
-function createAndValidateVariables(
+export function createAndValidateVariables(
   photonPatientId?: string,
   photonTreatmentId?: string,
   dispenseQuantity?: number,
