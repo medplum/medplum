@@ -5,6 +5,7 @@ import {
   GetFunctionConfigurationCommand,
   LambdaClient,
   ListLayerVersionsCommand,
+  ResourceConflictException,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
@@ -164,9 +165,6 @@ describe('Deploy', () => {
     expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 0);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
-      FunctionName: name,
-    });
   });
 
   test('Deploy bot with lambda layer update', async () => {
@@ -228,7 +226,24 @@ describe('Deploy', () => {
       ],
     });
 
-    // Step 4: Deploy again to trigger the update path
+    // Step 4: Simulate an error when updating the code
+    // On the first call to UpdateFunctionCode, return a failure
+    // On the second call, return success
+    mockLambdaClient
+      .on(UpdateFunctionCodeCommand)
+      .rejectsOnce(
+        new ResourceConflictException({
+          $metadata: {},
+          message: 'The operation cannot be performed at this time. An update is in progress for resource',
+        })
+      )
+      .callsFake(({ FunctionName }) => ({
+        Configuration: {
+          FunctionName,
+        },
+      }));
+
+    // Step 5: Deploy again to trigger the update path
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -246,11 +261,8 @@ describe('Deploy', () => {
 
     expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(ListLayerVersionsCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 2);
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(GetFunctionConfigurationCommand, 1);
     expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionConfigurationCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 1);
-    expect(mockLambdaClient).toHaveReceivedCommandWith(GetFunctionCommand, {
-      FunctionName: name,
-    });
+    expect(mockLambdaClient).toHaveReceivedCommandTimes(UpdateFunctionCodeCommand, 2);
   });
 });
