@@ -158,7 +158,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use('/fhir/R4/Binary', binaryRouter);
 
   // Handle async batch by enqueueing job
-  app.post('/fhir/R4/', authenticateRequest, asyncWrap(asyncBatchHandler(config)));
+  app.post('/fhir/R4', authenticateRequest, asyncWrap(asyncBatchHandler(config)));
 
   app.use(
     urlencoded({

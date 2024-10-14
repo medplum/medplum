@@ -1,5 +1,5 @@
 import { ContentType, getReferenceString } from '@medplum/core';
-import { Meta, Patient } from '@medplum/fhirtypes';
+import { Bundle, Meta, Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -469,6 +469,9 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .type('form');
     expect(res.status).toBe(200);
+    const result = res.body as Bundle;
+    expect(result.type).toEqual('searchset');
+    expect(result.entry?.length).toBeGreaterThan(0);
   });
 
   test('Validate create success', async () => {
