@@ -156,6 +156,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Medication
  * of a CodeableConcept is used for the search term.
  *
  * @param authToken - Photon auth token to access Photon's API
+ * @param medplum - Medplum Client to get the id from a MedicationKnowledge in your project
  * @param medicationCode - The Codeable Concept representing the medication being prescribed
  * @returns The Photon ID of the medication being prescribed
  */
@@ -221,7 +222,7 @@ export async function getPhotonTreatmentId(
       throw new Error(`HTTP Error! Status: ${response.status} ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result = (await response.json()) as any;
     // Return the medication ID
     return result.data.treatmentOptions?.[0].medicationId;
   } catch (err) {
@@ -242,7 +243,7 @@ export async function getPhotonIdByCoding(
   medicationCode: CodeableConcept
 ): Promise<string | undefined> {
   // Get the medication's code by RXNorm or NDC
-  let code =
+  const code =
     getCodeBySystem(medicationCode, 'http://www.nlm.nih.gov/research/umls/rxnorm') ??
     getCodeBySystem(medicationCode, 'http://hl7.org/fhir/sid/ndc');
 
@@ -258,6 +259,8 @@ export async function getPhotonIdByCoding(
       return photonId;
     }
   }
+
+  return undefined;
 }
 
 /**

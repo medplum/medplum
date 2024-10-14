@@ -36,9 +36,12 @@ export function HeadlessPrescription(props: HeadlessPrescriptionProps): JSX.Elem
       .catch(console.error);
   }, [medplum, prescriptions, props.patient.id]);
 
-  function handleSelectCoding(coding?: Coding) {
+  function handleSelectCoding(coding?: Coding): void {
     if (!coding) {
-      return undefined;
+      notifications.show({
+        message: 'Please select a medication',
+      });
+      throw new Error('No coding selected');
     }
     const medicationCoding = prescription.medicationCodeableConcept?.coding ?? [];
     medicationCoding.push(coding);
@@ -131,7 +134,7 @@ function validateMedicationRequest(prescription: MedicationRequest): void {
     throw new Error('MedicationRequest.medicationCodeableConcept: A Medication code is required');
   }
 
-  if (!quantity || !quantity.value || !quantity.unit) {
+  if (!quantity?.value || !quantity?.unit) {
     throw new Error(
       'MedicationRequest.dispenseRequest.quantity: A quantity with a value and unit must be provided for the prescription'
     );

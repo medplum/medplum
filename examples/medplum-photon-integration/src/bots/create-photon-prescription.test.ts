@@ -186,7 +186,7 @@ describe('getPhotonIdByCoding', () => {
       coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '123456', display: 'Test Medication' }],
     };
 
-    const medicationKnowledge = await medplum.createResource({
+    await medplum.createResource({
       resourceType: 'MedicationKnowledge',
       code: {
         coding: [
