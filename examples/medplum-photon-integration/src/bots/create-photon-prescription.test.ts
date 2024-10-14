@@ -1,10 +1,14 @@
-import { createReference, getCodeBySystem } from '@medplum/core';
-import { Bot, CodeableConcept, MedicationKnowledge, MedicationRequest, Patient, Reference } from '@medplum/fhirtypes';
+import { createReference } from '@medplum/core';
+import { Bot, CodeableConcept, MedicationRequest, Patient, Reference } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS, NEUTRON_HEALTH_TREATMENTS } from './constants';
-import { createAndValidateVariables, getPhotonIdByCoding, getPhotonTreatmentId } from './create-photon-prescription';
-import { handler } from './create-photon-prescription';
+import {
+  createAndValidateVariables,
+  getPhotonIdByCoding,
+  getPhotonTreatmentId,
+  handler,
+} from './create-photon-prescription';
 
 const bot: Reference<Bot> = { reference: 'Bot/123' };
 const contentType = 'application/json';

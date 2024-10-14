@@ -1,5 +1,5 @@
 import { BotEvent, getCodeBySystem, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
-import { CodeableConcept, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import { CodeableConcept, MedicationRequest } from '@medplum/fhirtypes';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS, NEUTRON_HEALTH_TREATMENTS } from './constants';
 import { formatAWSDate, handlePhotonAuth, photonGraphqlFetch } from './utils';
 
