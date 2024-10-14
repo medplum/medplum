@@ -21,8 +21,8 @@
     ]
   },
   "devDependencies": {
-    "@babel/core": "7.25.7",
-    "@babel/preset-env": "7.25.7",
+    "@babel/core": "7.25.8",
+    "@babel/preset-env": "7.25.8",
     "@babel/preset-react": "7.25.7",
     "@babel/preset-typescript": "7.25.7",
     "@mantine/core": "7.13.2",
@@ -37,9 +37,9 @@
     "@testing-library/jest-dom": "6.5.0",
     "@testing-library/react": "16.0.1",
     "@types/jest": "29.5.13",
-    "@types/node": "22.7.4",
+    "@types/node": "22.7.5",
     "@types/react": "18.3.11",
-    "@types/react-dom": "18.3.0",
+    "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.2",
     "babel-jest": "29.7.0",
     "c8": "10.1.2",
@@ -53,8 +53,8 @@
     "react": "18.2.0",
     "react-chartjs-2": "5.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.26.2",
-    "typescript": "5.6.2",
+    "react-router-dom": "6.27.0",
+    "typescript": "5.6.3",
     "vite": "5.4.8"
   }
 }
