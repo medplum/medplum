@@ -577,7 +577,13 @@ async function sendTokenResponse(res: Response, login: Login, refreshLifetime?: 
     login.membership as Reference<ProjectMembership>
   );
 
-  const tokens = await getAuthTokens(user, login, membership.profile as Reference<ProfileResource>, refreshLifetime);
+  const tokens = await getAuthTokens(
+    user,
+    login,
+    membership.profile as Reference<ProfileResource>,
+    membership.project as Reference<Project>,
+    refreshLifetime
+  );
   let patient = undefined;
   let encounter = undefined;
 

@@ -505,11 +505,13 @@ export async function getAuthTokens(
   user: User | ClientApplication,
   login: Login,
   profile: Reference<ProfileResource>,
+  project?: Reference<Project>,
   refreshLifetime?: string
 ): Promise<TokenResult> {
   assert.equal(getReferenceString(user), login.user?.reference);
 
   const clientId = login.client && resolveId(login.client);
+  const project_id = resolveId(project);
 
   if (!login.membership) {
     throw new OperationOutcomeError(badRequest('Login missing profile'));
@@ -525,6 +527,7 @@ export async function getAuthTokens(
 
   const idToken = await generateIdToken({
     client_id: clientId,
+    project_id,
     login_id: login.id as string,
     fhirUser: profile.reference,
     email: login.scope?.includes('email') && user.resourceType === 'User' ? user.email : undefined,
@@ -536,6 +539,7 @@ export async function getAuthTokens(
 
   const accessToken = await generateAccessToken({
     client_id: clientId,
+    project_id,
     login_id: login.id as string,
     sub: user.id,
     username: user.id as string,

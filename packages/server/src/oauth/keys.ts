@@ -25,6 +25,12 @@ export interface MedplumBaseClaims extends JWTPayload {
   client_id?: string;
 
   /**
+   * Project ID.
+   * This is the UUID of the Project resource.
+   */
+  project_id?: string;
+
+  /**
    * Login ID.
    * This is the UUID of the Login resource.
    */
@@ -57,6 +63,12 @@ export interface MedplumAccessTokenClaims extends MedplumBaseClaims {
    * For example, "Patient/123" or "Practitioner/456".
    */
   profile: string;
+
+  /**
+   * Project ID.
+   * This is the UUID of the Project resource.
+   */
+  project_id?: string;
 }
 
 export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
