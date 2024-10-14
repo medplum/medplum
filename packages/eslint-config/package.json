@@ -23,7 +23,7 @@
     "@typescript-eslint/parser": "8.8.1",
     "eslint": "8.57.0",
     "eslint-plugin-jsdoc": "50.3.2",
-    "eslint-plugin-react-hooks": "4.6.2",
+    "eslint-plugin-react-hooks": "5.0.0",
     "eslint-plugin-react-refresh": "0.4.12"
   },
   "peerDependencies": {
