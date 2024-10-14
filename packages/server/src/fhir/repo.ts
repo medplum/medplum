@@ -10,6 +10,7 @@ import {
   SearchRequest,
   TypedValue,
   allOk,
+  arrayify,
   badRequest,
   canReadResourceType,
   canWriteResourceType,
@@ -63,7 +64,7 @@ import { Pool, PoolClient } from 'pg';
 import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { getLogger, getRequestContext } from '../context';
+import { getLogger } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
@@ -333,6 +334,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
+    if (!validator.isUUID(id)) {
+      throw new OperationOutcomeError(notFound);
+    }
+
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType);
@@ -500,7 +505,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
     try {
-      if (!validator.isUUID(vid)) {
+      if (!validator.isUUID(id) || !validator.isUUID(vid)) {
         throw new OperationOutcomeError(notFound);
       }
 
@@ -561,15 +566,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       resource.meta = { ...resource.meta, profile: defaultProfiles };
     }
 
-    await this.validateResource(resource);
-
     if (!this.canWriteResourceType(resourceType)) {
       throw new OperationOutcomeError(forbidden);
     }
 
     const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
     if (existing) {
-      (existing.meta as Meta).compartment = this.getCompartments(existing);
+      (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
       if (!this.canWriteToResource(existing)) {
         // Check before the update
         throw new OperationOutcomeError(forbidden);
@@ -589,11 +592,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       versionId: randomUUID(),
       lastUpdated: this.getLastUpdated(existing, resource),
       author: this.getAuthor(resource),
+      onBehalfOf: this.context.onBehalfOf,
     };
-
-    if (this.context.onBehalfOf) {
-      resultMeta.onBehalfOf = this.context.onBehalfOf;
-    }
 
     const result: T = { ...updated, meta: resultMeta };
 
@@ -601,12 +601,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (project) {
       resultMeta.project = project;
     }
-    const account = await this.getAccount(existing, updated, create);
-    if (account) {
-      resultMeta.account = account;
+    const accounts = await this.getAccounts(existing, updated, create);
+    if (accounts) {
+      resultMeta.account = accounts[0];
+      resultMeta.accounts = accounts;
     }
     resultMeta.compartment = this.getCompartments(result);
 
+    // Validate resource after all modifications and touchups above are done
+    await this.validateResource(result);
     if (this.context.checkReferencesOnWrite) {
       await this.preCommit(async () => {
         await validateReferences(this, result);
@@ -1292,7 +1295,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       compartments.add(resource.project.reference);
     }
 
-    if (resource.meta?.account && !resource.meta.account.reference?.startsWith('Project/')) {
+    if (resource.meta?.accounts) {
+      for (const account of resource.meta.accounts) {
+        const id = resolveId(resource.meta.account);
+        if (!account.reference?.startsWith('Project/') && id && validator.isUUID(id)) {
+          compartments.add(account.reference as string);
+        }
+      }
+    } else if (resource.meta?.account && !resource.meta.account.reference?.startsWith('Project/')) {
       const id = resolveId(resource.meta.account);
       if (id && validator.isUUID(id)) {
         compartments.add(resource.meta.account.reference as string);
@@ -1688,41 +1698,52 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param create - Flag for when "creating" vs "updating".
    * @returns The account value.
    */
-  private async getAccount(
+  private async getAccounts(
     existing: Resource | undefined,
     updated: Resource,
     create: boolean
-  ): Promise<Reference | undefined> {
-    const account = updated.meta?.account;
-    if (account && this.canWriteAccount()) {
+  ): Promise<Reference[] | undefined> {
+    const updatedAccounts = this.extractAccountReferences(updated.meta);
+    if (updatedAccounts && this.canWriteAccount()) {
       // If the user specifies an account, allow it if they have permission.
-      return account;
+      return updatedAccounts;
     }
 
     if (create && this.context.accessPolicy?.compartment) {
       // If the user access policy specifies a compartment, then use it as the account.
-      return this.context.accessPolicy.compartment;
+      return [this.context.accessPolicy.compartment];
     }
 
     if (updated.resourceType !== 'Patient') {
       for (const patientRef of getPatients(updated)) {
-        // If the resource is in a patient compartment, then lookup the patient.
         try {
-          const systemRepo = getSystemRepo();
-          const patient = await systemRepo.readReference(patientRef);
-          if (patient.meta?.account) {
-            // If the patient has an account, then use it as the resource account.
-            return patient.meta.account;
-          }
+          // If the resource is in a patient compartment, then lookup the patient.
+          const patient = await getSystemRepo().readReference(patientRef);
+          // If the patient has an account, then use it as the resource account.
+          return this.extractAccountReferences(patient.meta);
         } catch (err: any) {
-          const ctx = getRequestContext();
-          ctx.logger.debug('Error setting patient compartment', err);
+          getLogger().debug('Error setting patient compartment', err);
         }
       }
     }
 
     // Otherwise, default to the existing value.
-    return existing?.meta?.account ?? updated.meta?.account;
+    return this.extractAccountReferences(existing?.meta);
+  }
+
+  private extractAccountReferences(meta: Meta | undefined): Reference[] | undefined {
+    if (!meta) {
+      return undefined;
+    }
+    if (meta.accounts && meta.account) {
+      const accounts = meta.accounts;
+      if (accounts.some((a) => a.reference === meta.account?.reference)) {
+        return accounts;
+      }
+      return [meta.account, ...accounts];
+    } else {
+      return arrayify(meta.accounts ?? meta.account);
+    }
   }
 
   /**
@@ -2268,7 +2289,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.assertNotClosed();
     if (this.transactionDepth > 0) {
       // Bad state, remove connection from pool
-      getRequestContext().logger.error('Closing Repository with active transaction');
+      getLogger().error('Closing Repository with active transaction');
       this.releaseConnection(new Error('Closing Repository with active transaction'));
     } else {
       // Good state, return healthy connection to pool

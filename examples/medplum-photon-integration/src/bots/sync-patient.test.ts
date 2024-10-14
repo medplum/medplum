@@ -1,6 +1,11 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import {
+  createReference,
+  getReferenceString,
+  indexSearchParameterBundle,
+  indexStructureDefinitionBundle,
+} from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Patient, SearchParameter } from '@medplum/fhirtypes';
+import { Bot, Bundle, Patient, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { createAllergyInputs, createMedHistoryInputs, handler } from './sync-patient';
 
@@ -14,6 +19,13 @@ describe('Sync patient', async () => {
     }
   });
 
+  const bot: Reference<Bot> = { reference: 'Bot/123' };
+  const contentType = 'application/json';
+  const secrets = {
+    PHOTON_CLIENT_ID: { name: 'Photon Client ID', valueString: 'client-id' },
+    PHOTON_CLIENT_SECRET: { name: 'Photon Client Secret', valueString: 'client-secret' },
+  };
+
   test.skip('Successful sync', async () => {
     const medplum = new MockClient();
     const patient: Patient = {
@@ -26,15 +38,7 @@ describe('Sync patient', async () => {
       birthDate: '1956-05-12',
     };
 
-    const photonId = await handler(medplum, {
-      input: patient,
-      bot: { reference: 'Bot/123' },
-      secrets: {
-        PHOTON_CLIENT_ID: { name: 'PHOTON_CLIENT_ID', valueString: '1234567890' },
-        PHOTON_CLIENT_SECRET: { name: 'PHOTON_CLIENT_SECRET', valueString: '0987654321' },
-      },
-      contentType: 'application/fhir+json',
-    });
+    const photonId = await handler(medplum, { input: patient, bot, secrets, contentType });
 
     expect(photonId).toBeDefined();
   });
@@ -46,8 +50,11 @@ describe('Sync patient', async () => {
     const patient = (await medplum.searchOne('Patient', {
       identifier: 'https://example.org|homer-simpson',
     })) as Patient;
+    const allergyIntolerances = await medplum.searchResources('AllergyIntolerance', {
+      patient: getReferenceString(patient),
+    });
 
-    const inputs = await createAllergyInputs(patient, medplum, 'authToken');
+    const inputs = await createAllergyInputs('auth-token', allergyIntolerances);
 
     expect(inputs).toBeDefined();
     expect(inputs?.length).toBe(2);
@@ -59,8 +66,11 @@ describe('Sync patient', async () => {
     const patient = (await medplum.searchOne('Patient', {
       identifier: 'https://example.org|marge-simpson',
     })) as Patient;
+    const medicationHistory = await medplum.searchResources('MedicationRequest', {
+      patient: getReferenceString(patient),
+    });
 
-    const inputs = await createMedHistoryInputs(patient, medplum, 'authToken');
+    const inputs = await createMedHistoryInputs('auth-token', medicationHistory);
 
     expect(inputs).toBeDefined();
     expect(inputs?.length).toBe(2);
@@ -73,19 +83,100 @@ describe('Sync patient', async () => {
       identifier: 'https://example.org|homer-simpson',
     })) as Patient;
 
-    const result = await handler(medplum, {
-      input: patient,
-      bot: { reference: 'Bot/123' },
-      secrets: {
-        PHOTON_CLIENT_ID: { name: 'PHOTON_CLIENT_ID', valueString: '1234567890' },
-        PHOTON_CLIENT_SECRET: { name: 'PHOTON_CLIENT_SECRET', valueString: '0987654321' },
-      },
-      contentType: 'application/json',
-    });
+    const result = await handler(medplum, { input: patient, bot, secrets, contentType });
 
     expect(result).toBeDefined();
     expect(result.id.slice(0, 4)).toBe('pat_');
   });
+
+  test.skip('Create patient with allergies', async () => {
+    const medplum = new MockClient();
+
+    const patient: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      name: [{ family: 'Smith', given: ['Alice'] }],
+      telecom: [
+        { system: 'phone', value: '9085553329' },
+        { system: 'email', value: 'alices01@alice.com' },
+      ],
+      address: [{ line: ['3 Green Street'], city: 'Salt Lake City', state: 'UT', postalCode: '84044' }],
+      gender: 'female',
+      birthDate: '1974-03-22',
+    });
+
+    await medplum.createResource({
+      resourceType: 'AllergyIntolerance',
+      patient: createReference(patient),
+      code: {
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '1000112',
+            display: 'medroxyprogesterone acetate',
+          },
+        ],
+      },
+      type: 'allergy',
+      clinicalStatus: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+            code: 'active',
+            display: 'Active',
+          },
+        ],
+      },
+      verificationStatus: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-verification',
+            code: 'confirmed',
+            display: 'Confirmed',
+          },
+        ],
+      },
+      criticality: 'low',
+    });
+
+    const result = await handler(medplum, { bot, contentType, secrets, input: patient });
+    expect(result.allergies?.length).toBe(1);
+    expect(result.allergies?.[0].allergen.id).toBeDefined();
+  }, 10000);
+
+  test.skip('Create patient with medication history', async () => {
+    const medplum = new MockClient();
+
+    const patient: Patient = await medplum.createResource({
+      resourceType: 'Patient',
+      name: [{ family: 'Smith', given: ['Alice'] }],
+      telecom: [
+        { system: 'phone', value: '9085553329' },
+        { system: 'email', value: 'alices01@alice.com' },
+      ],
+      address: [{ line: ['3 Green Street'], city: 'Salt Lake City', state: 'UT', postalCode: '84044' }],
+      gender: 'female',
+      birthDate: '1974-03-22',
+    });
+
+    await medplum.createResource({
+      resourceType: 'MedicationRequest',
+      status: 'active',
+      intent: 'filler-order',
+      subject: createReference(patient),
+      medicationCodeableConcept: {
+        coding: [
+          {
+            system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+            code: '313252',
+            display: 'tetracycline hydrochloride 250 MG Oral Tablet',
+          },
+        ],
+      },
+    });
+
+    const result = await handler(medplum, { bot, contentType, secrets, input: patient });
+    expect(result.medicationHistory?.length).toBe(1);
+  }, 10000);
 });
 
 const allergies: Bundle = {
@@ -111,10 +202,12 @@ const allergies: Bundle = {
       request: { method: 'POST', url: 'AllergyIntolerance' },
       resource: {
         resourceType: 'AllergyIntolerance',
-        identifier: [{ system: 'https://neutron.health', value: 'intolerance1' }],
         patient: { reference: 'urn:uuid:12fb98db-ebf6-485c-a038-2ba40a389fbf' },
-        note: [{ text: 'These allergies freaking stinks!' }],
+        note: [{ text: 'Allergies' }],
         onsetDateTime: new Date('1984-08-08').toISOString(),
+        code: {
+          coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '2378832', display: '10-undecenal' }],
+        },
       },
     },
     {
@@ -122,10 +215,12 @@ const allergies: Bundle = {
       request: { method: 'POST', url: 'AllergyIntolerance' },
       resource: {
         resourceType: 'AllergyIntolerance',
-        identifier: [{ system: 'https://neutron.health', value: 'intolerance2' }],
         patient: { reference: 'urn:uuid:12fb98db-ebf6-485c-a038-2ba40a389fbf' },
-        note: [{ text: 'Allergic :(' }],
+        note: [{ text: 'Allergies' }],
         onsetDateTime: new Date('1991-11-22').toISOString(),
+        code: {
+          coding: [{ system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: '1013676', display: '300 PRO LA' }],
+        },
       },
     },
   ],
@@ -154,10 +249,18 @@ const medications: Bundle = {
       request: { method: 'POST', url: 'MedicationRequest' },
       resource: {
         resourceType: 'MedicationRequest',
-        identifier: [{ system: 'https://neutron.health', value: 'med-request1' }],
         status: 'active',
         subject: { reference: 'urn:uuid:8a06c6fb-4880-47c0-a048-60b70cd56f0a' },
         intent: 'order',
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+              code: '351993',
+              display: 'GONAL -f 600 UNT/ML Injectable Solution',
+            },
+          ],
+        },
         note: [{ text: 'New meds' }],
       },
     },
@@ -166,11 +269,19 @@ const medications: Bundle = {
       request: { method: 'POST', url: 'MedicationRequest' },
       resource: {
         resourceType: 'MedicationRequest',
-        identifier: [{ system: 'https://neutron.health', value: 'med-request2' }],
         status: 'active',
         subject: { reference: 'urn:uuid:8a06c6fb-4880-47c0-a048-60b70cd56f0a' },
         intent: 'filler-order',
         note: [{ text: 'Refill' }],
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+              code: '313252',
+              display: 'tetracycline hydrochloride 250 MG Oral Tablet',
+            },
+          ],
+        },
       },
     },
   ],

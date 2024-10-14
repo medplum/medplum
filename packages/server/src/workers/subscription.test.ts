@@ -1187,8 +1187,9 @@ describe('Subscription Worker', () => {
       expect(bundle.entry?.length).toEqual(1);
 
       const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
-      expect(auditEvent.meta?.account).toBeDefined();
       expect(auditEvent.meta?.account?.reference).toEqual(account.reference);
+      expect(auditEvent.meta?.accounts).toHaveLength(1);
+      expect(auditEvent.meta?.accounts).toContainEqual({ reference: account.reference });
       expect(auditEvent.entity).toHaveLength(2);
     }));
 
@@ -1598,7 +1599,7 @@ describe('Subscription Worker', () => {
 
         let notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          patient,
+          expect.objectContaining(patient),
           subscription.id as string,
           { includeResource: true },
         ]);
@@ -1613,7 +1614,7 @@ describe('Subscription Worker', () => {
 
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          updatedPatient,
+          expect.objectContaining(updatedPatient),
           subscription.id as string,
           { includeResource: true },
         ]);
@@ -1624,7 +1625,7 @@ describe('Subscription Worker', () => {
 
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          updatedPatient,
+          expect.objectContaining(updatedPatient),
           subscription.id as string,
           { includeResource: true },
         ]);
@@ -1881,7 +1882,7 @@ describe('Subscription Worker', () => {
 
         const notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          patient,
+          expect.objectContaining(patient),
           subscription.id as string,
           { includeResource: true },
         ]);

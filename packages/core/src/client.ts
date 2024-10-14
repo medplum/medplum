@@ -169,6 +169,17 @@ export interface MedplumClientOptions {
   logoutUrl?: string;
 
   /**
+   * FHIRcast Hub URL.
+   *
+   * Default value is `fhircast/STU3`.
+   *
+   * Can be specified as absolute URL or relative to `baseUrl`.
+   *
+   * Use this if you want to use a different path when connecting to a FHIRcast hub.
+   */
+  fhircastHubUrl?: string;
+
+  /**
    * The client ID.
    *
    * Client ID can be used for SMART-on-FHIR customization.
@@ -780,6 +791,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly authorizeUrl: string;
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
+  private readonly fhircastHubUrl: string;
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
@@ -818,6 +830,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.authorizeUrl = concatUrls(this.baseUrl, options?.authorizeUrl ?? 'oauth2/authorize');
     this.tokenUrl = concatUrls(this.baseUrl, options?.tokenUrl ?? 'oauth2/token');
     this.logoutUrl = concatUrls(this.baseUrl, options?.logoutUrl ?? 'oauth2/logout');
+    this.fhircastHubUrl = concatUrls(this.baseUrl, options?.fhircastHubUrl ?? 'fhircast/STU3');
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
     this.onUnauthenticated = options?.onUnauthenticated;
@@ -939,6 +952,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Returns the current FHIRcast Hub URL.
+   * By default, this is set to `https://api.medplum.com/fhircast/STU3`.
+   * This can be overridden by setting the `logoutUrl` option when creating the client.
+   * @category HTTP
+   * @returns The current FHIRcast Hub URL.
+   */
+  getFhircastHubUrl(): string {
+    return this.fhircastHubUrl;
+  }
+
+  /**
    * Clears all auth state including local storage and session storage.
    * @category Authentication
    */
@@ -1056,7 +1080,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
-  post(url: URL | string, body: any, contentType?: string, options: MedplumRequestOptions = {}): Promise<any> {
+  post(url: URL | string, body?: any, contentType?: string, options: MedplumRequestOptions = {}): Promise<any> {
     url = url.toString();
     this.setRequestBody(options, body);
     if (contentType) {
@@ -3349,9 +3373,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private setRequestBody(options: MedplumRequestOptions, data: any): void {
     if (
       typeof data === 'string' ||
-      (typeof Blob !== 'undefined' && (data instanceof Blob || data.constructor.name === 'Blob')) ||
-      (typeof File !== 'undefined' && (data instanceof File || data.constructor.name === 'File')) ||
-      (typeof Uint8Array !== 'undefined' && (data instanceof Uint8Array || data.constructor.name === 'Uint8Array'))
+      (typeof Blob !== 'undefined' && (data instanceof Blob || data?.constructor.name === 'Blob')) ||
+      (typeof File !== 'undefined' && (data instanceof File || data?.constructor.name === 'File')) ||
+      (typeof Uint8Array !== 'undefined' && (data instanceof Uint8Array || data?.constructor.name === 'Uint8Array'))
     ) {
       options.body = data;
     } else if (data) {
@@ -3618,7 +3642,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     } as PendingSubscriptionRequest;
 
     const body = (await this.post(
-      '/fhircast/STU3',
+      this.fhircastHubUrl,
       serializeFhircastSubscriptionRequest(subRequest),
       ContentType.FORM_URL_ENCODED
     )) as { 'hub.channel.endpoint': string };
@@ -3655,7 +3679,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     // Turn subRequest -> unsubRequest
     subRequest.mode = 'unsubscribe';
     // Send unsub request
-    await this.post('/fhircast/STU3', serializeFhircastSubscriptionRequest(subRequest), ContentType.FORM_URL_ENCODED);
+    await this.post(
+      this.fhircastHubUrl,
+      serializeFhircastSubscriptionRequest(subRequest),
+      ContentType.FORM_URL_ENCODED
+    );
   }
 
   /**
@@ -3701,14 +3729,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   ): Promise<Record<string, any>> {
     if (isContextVersionRequired(event)) {
       return this.post(
-        `/fhircast/STU3/${topic}`,
+        this.fhircastHubUrl,
         createFhircastMessagePayload<typeof event>(topic, event, context, versionId as string),
         ContentType.JSON
       );
     }
     assertContextVersionOptional(event);
     return this.post(
-      `/fhircast/STU3/${topic}`,
+      this.fhircastHubUrl,
       createFhircastMessagePayload<typeof event>(topic, event, context),
       ContentType.JSON
     );
@@ -3722,7 +3750,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns A Promise which resolves to the `CurrentContext` for the given topic.
    */
   async fhircastGetContext(topic: string): Promise<CurrentContext> {
-    return this.get(`/fhircast/STU3/${topic}`);
+    return this.get(`${this.fhircastHubUrl}/${topic}`);
   }
 
   /**

@@ -8,7 +8,7 @@ import {
   ValueSetComposeIncludeFilter,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import {
   Column,
@@ -136,10 +136,7 @@ async function queryValueSetElements(
     .offset(offset)
     .limit(count);
 
-  const filterQuery = filterToTsvectorQuery(filter);
-  if (filterQuery) {
-    query.where('display', 'TSVECTOR_ENGLISH', filterQuery);
-  }
+  query.where('display', 'TSVECTOR_ENGLISH', filter);
 
   const rows = await query.execute(client);
   const elements = rows.map((row) => ({
@@ -149,22 +146,6 @@ async function queryValueSetElements(
   })) as ValueSetExpansionContains[];
 
   return elements;
-}
-
-function filterToTsvectorQuery(filter: string | undefined): string | undefined {
-  if (!filter) {
-    return undefined;
-  }
-
-  const noPunctuation = filter.replace(/[^\p{Letter}\p{Number}]/gu, ' ').trim();
-  if (!noPunctuation) {
-    return undefined;
-  }
-
-  return noPunctuation
-    .split(/\s+/)
-    .map((token) => token + ':*')
-    .join(' & ');
 }
 
 function buildValueSetSystems(valueSet: ValueSet): Expression[] {
@@ -371,7 +352,6 @@ export function expansionQuery(
   codeSystem: CodeSystem,
   params?: ValueSetExpandParameters
 ): SelectQuery | undefined {
-  const ctx = getRequestContext();
   let query = new SelectQuery('Coding')
     .column('id')
     .column('code')
@@ -410,7 +390,7 @@ export function expansionQuery(
           query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','));
           break;
         default:
-          ctx.logger.warn('Unknown filter type in ValueSet', { filter: condition });
+          getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
           return undefined; // Unknown filter type, don't make DB query with incorrect filters
       }
     }
@@ -426,9 +406,14 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
   if (params.filter) {
     query
       .whereExpr(
-        new Conjunction(
-          params.filter.split(/\s+/g).map((filter) => new Condition('display', 'LIKE', `%${escapeLikeString(filter)}%`))
-        )
+        new Disjunction([
+          new Condition('code', '=', params.filter),
+          new Conjunction(
+            params.filter
+              .split(/\s+/g)
+              .map((filter) => new Condition('display', 'LIKE', `%${escapeLikeString(filter)}%`))
+          ),
+        ])
       )
       .orderByExpr(
         new SqlFunction('strict_word_similarity', [

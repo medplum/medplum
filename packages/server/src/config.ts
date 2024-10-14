@@ -112,6 +112,7 @@ export interface MedplumDatabaseConfig {
   queryTimeout?: number;
   runMigrations?: boolean;
   maxConnections?: number;
+  disableConnectionConfiguration?: boolean;
 }
 
 export interface MedplumRedisConfig {
@@ -289,7 +290,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
 }
 
 const integerKeys = ['port', 'accurateCountThreshold'];
-function isIntegerConfig(key: string): boolean {
+export function isIntegerConfig(key: string): boolean {
   return integerKeys.includes(key);
 }
 
@@ -301,16 +302,20 @@ const booleanKeys = [
   'botCustomFunctionsEnabled',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
+  'database.disableConnectionConfiguration',
+  'readonlyDatabase.ssl.rejectUnauthorized',
+  'readonlyDatabase.ssl.require',
+  'readonlyDatabase.disableConnectionConfiguration',
   'logRequests',
   'logAuditEvents',
   'registerEnabled',
   'require',
   'rejectUnauthorized',
 ];
-function isBooleanConfig(key: string): boolean {
+export function isBooleanConfig(key: string): boolean {
   return booleanKeys.includes(key);
 }
 
-function isObjectConfig(key: string): boolean {
+export function isObjectConfig(key: string): boolean {
   return key === 'tls' || key === 'ssl';
 }

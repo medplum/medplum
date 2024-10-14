@@ -14,7 +14,7 @@ import { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getConfig } from '../../config';
-import { getRequestContext } from '../../context';
+import { getLogger } from '../../context';
 
 const LAMBDA_RUNTIME = 'nodejs18.x';
 
@@ -95,7 +95,7 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 `;
 
 export async function deployLambda(bot: Bot, code: string): Promise<void> {
-  const ctx = getRequestContext();
+  const log = getLogger();
 
   // Create a new AWS Lambda client
   // Use a custom retry strategy to avoid throttling errors
@@ -110,9 +110,9 @@ export async function deployLambda(bot: Bot, code: string): Promise<void> {
   });
 
   const name = `medplum-bot-lambda-${bot.id}`;
-  ctx.logger.info('Deploying lambda function for bot', { name });
+  log.info('Deploying lambda function for bot', { name });
   const zipFile = await createZipFile(code);
-  ctx.logger.debug('Lambda function zip size', { bytes: zipFile.byteLength });
+  log.debug('Lambda function zip size', { bytes: zipFile.byteLength });
 
   const exists = await lambdaExists(client, name);
   if (!exists) {
