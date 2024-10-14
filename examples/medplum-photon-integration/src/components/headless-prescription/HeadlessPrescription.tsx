@@ -1,9 +1,9 @@
 import { Button, Flex, Modal, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { createReference, getCodeBySystem, normalizeErrorString } from '@medplum/core';
-import { MedicationRequest, Patient, Resource } from '@medplum/fhirtypes';
-import { Document, ResourceForm, useMedplum } from '@medplum/react';
+import { createReference, normalizeErrorString } from '@medplum/core';
+import { Coding, MedicationRequest, Patient, Practitioner, Resource } from '@medplum/fhirtypes';
+import { CodingInput, Document, ResourceForm, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useEffect, useState } from 'react';
 import { NEUTRON_HEALTH_BOTS } from '../../bots/constants';
@@ -15,7 +15,16 @@ interface HeadlessPrescriptionProps {
 
 export function HeadlessPrescription(props: HeadlessPrescriptionProps): JSX.Element {
   const medplum = useMedplum();
+  const profile = useMedplumProfile() as Practitioner;
   const [prescriptions, setPrescriptions] = useState<MedicationRequest[]>([]);
+  const [prescription, setPrescription] = useState<MedicationRequest>({
+    resourceType: 'MedicationRequest',
+    status: 'draft',
+    intent: 'original-order',
+    subject: createReference(props.patient),
+    requester: createReference(profile),
+  });
+  const [isMedSelected, setIsMedSelected] = useState<boolean>(false);
   const [opened, { open, close }] = useDisclosure();
 
   useEffect(() => {
@@ -27,12 +36,20 @@ export function HeadlessPrescription(props: HeadlessPrescriptionProps): JSX.Elem
       .catch(console.error);
   }, [medplum, prescriptions, props.patient.id]);
 
-  const medicationRequest: MedicationRequest = {
-    resourceType: 'MedicationRequest',
-    status: 'draft',
-    intent: 'original-order',
-    subject: createReference(props.patient),
-  };
+  function handleSelectCoding(coding?: Coding) {
+    if (!coding) {
+      return undefined;
+    }
+    const medicationCoding = prescription.medicationCodeableConcept?.coding ?? [];
+    medicationCoding.push(coding);
+    const updatedPrescription: MedicationRequest = {
+      ...prescription,
+      medicationCodeableConcept: { coding: medicationCoding },
+    };
+
+    setPrescription(updatedPrescription);
+    setIsMedSelected(true);
+  }
 
   function handlePrescriptionChange(prescription: MedicationRequest): void {
     console.log(prescription);
@@ -89,7 +106,17 @@ export function HeadlessPrescription(props: HeadlessPrescriptionProps): JSX.Elem
       </Flex>
       <PrescriptionTable prescriptions={prescriptions} onChange={handlePrescriptionChange} />
       <Modal opened={opened} onClose={close}>
-        <ResourceForm defaultValue={medicationRequest} onSubmit={handleCreatePrescription} />
+        {!isMedSelected ? (
+          <CodingInput
+            name="medication-code"
+            binding="http://hl7.org/fhir/us/davinci-drug-formulary/ValueSet/SemanticDrugVS"
+            path=""
+            onChange={handleSelectCoding}
+            description="Add a medication to your formulary"
+          />
+        ) : (
+          <ResourceForm defaultValue={prescription} onSubmit={handleCreatePrescription} />
+        )}
       </Modal>
     </Document>
   );
