@@ -14,6 +14,13 @@ variable "project_id" {
 variable "services_api" {
   description = "A list of GCP services to enable"
   type        = list(string)
+  default     = [
+  "compute.googleapis.com",
+  "container.googleapis.com",
+  "servicenetworking.googleapis.com",
+  "logging.googleapis.com",
+  "monitoring.googleapis.com",
+  ]
 }
 variable "labels" {
   description = "A map of common enforced labels"
@@ -28,12 +35,15 @@ variable "labels" {
 # VPC
 variable "vpc_name" {
   description = "The name for the VPC"
+  type        = string
+  default = "medplum-gke-vpc"
 }
 
 ## Postgres
 variable "pg_ha_name" {
   description = "The name for the HA Postgres instance"
   type        = string
+  default     = "medplum-pg-ha"
 }
 
 # Private Service

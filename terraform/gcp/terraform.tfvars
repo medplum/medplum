@@ -1,31 +1,17 @@
 
-# GCP project
-project_id = "medplum-zencore"
-region     = "us-west1"
-zone       = "us-west1-a"
+# GCP project configuration - Change these values to use your own project, region, and zone
+project_id = "medplum-zencore"# "your-project-id"
+region     = "us-west1"       # "your-region"
+zone       = "us-west1-a"     # "your-zone"
 
-services_api = [
-  "compute.googleapis.com",
-  "container.googleapis.com",
-  "servicenetworking.googleapis.com",
-  "logging.googleapis.com",
-  "monitoring.googleapis.com",
-]
-
-# Common enforced labels
+# Common enforced labels - Change these values to use your own labels
 labels = {
-  env     = "prod"
-  purpose = "gke"
-  owner   = "medplum"
+  env     = "your-environment"  # e.g., "dev", "staging", "prod"
+  purpose = "your-purpose"      # e.g., "gke", "web", "database"
+  owner   = "your-owner"        # e.g., "team-name", "project-owner"
 }
 
-## VPC's
-vpc_name = "medplum-gke-vpc"
-
-## Postgres
-pg_ha_name = "medplum-pg-ha"
-
-## Buckets
+## Buckets configuration 
 gcs_buckets = {
   medplum-user-content = {
     project_id = "medplum-zencore"
