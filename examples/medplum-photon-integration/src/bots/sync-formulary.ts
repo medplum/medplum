@@ -22,12 +22,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<List>): Pr
   // Filter out already synced medications to avoid duplication
   const medications = formulary.entry?.filter((entry) => {
     if (entry.flag) {
-      return !entry.flag?.coding?.some((coding) => coding.code === 'synced');
+      const synced = getCodeBySystem(entry.flag, NEUTRON_HEALTH);
+      return !synced;
     }
     return true;
   });
 
-  if (!medications) {
+  if (!medications || medications.length === 0) {
     throw new Error('No medications to sync');
   }
 

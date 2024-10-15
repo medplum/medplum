@@ -18,7 +18,7 @@ import {
 } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
-import { NEUTRON_HEALTH_TREATMENTS } from './constants';
+import { NEUTRON_HEALTH, NEUTRON_HEALTH_TREATMENTS } from './constants';
 import { addPhotonIdToMedicationKnowledge, handler } from './sync-formulary';
 
 describe('Sync formulary', async () => {
@@ -35,7 +35,7 @@ describe('Sync formulary', async () => {
     const actualModule = await vi.importActual('./utils.ts');
     return {
       ...actualModule,
-      // handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+      handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
     };
   });
 
@@ -125,6 +125,32 @@ describe('Sync formulary', async () => {
 
     expect(result.length).toBe(0);
   }, 20000);
+
+  test.skip('Skip already synced medications', async () => {
+    const medplum = new MockClient();
+    await medplum.executeBatch({
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: medicationKnowledgeBundleEntries,
+    });
+
+    const medicationKnowledges = await medplum.searchResources('MedicationKnowledge');
+    const listEntry: ListEntry[] = medicationKnowledges.map((knowledge) => {
+      return {
+        item: { reference: getReferenceString(knowledge) },
+        flag: { coding: [{ system: NEUTRON_HEALTH, code: 'synced' }] },
+      };
+    });
+
+    const list: List = await medplum.createResource({
+      ...baseList,
+      entry: listEntry,
+    });
+
+    await expect(() => handler(medplum, { bot, contentType, secrets, input: list })).rejects.toThrow(
+      'No medications to sync'
+    );
+  });
 
   test.skip('Sync a medication that is not in Photon', async () => {
     const medplum = new MockClient();
