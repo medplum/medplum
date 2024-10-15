@@ -9,7 +9,7 @@ import {
   Reference,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../utils/questionnaire';
 import { QuestionnaireFormContext } from './QuestionnaireForm.context';
@@ -29,63 +29,68 @@ export interface QuestionnaireFormProps {
 
 export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | null {
   const medplum = useMedplum();
+  const { subject, source: sourceFromProps } = props;
   const questionnaire = useResource(props.questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [activePage, setActivePage] = useState(0);
-  const { onChange } = props;
+
+  const onChangeRef = useRef(props.onChange);
+  onChangeRef.current = props.onChange;
+
+  const onSubmitRef = useRef(props.onSubmit);
+  onSubmitRef.current = props.onSubmit;
 
   useEffect(() => {
     setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
   }, [questionnaire]);
 
-  const setItems = useCallback(
-    (newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void => {
-      setResponse((prevResponse) => {
-        const currentItems = prevResponse?.item ?? [];
-        const mergedItems = mergeItems(
-          currentItems,
-          Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
-        );
+  const setItems = useCallback((newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void => {
+    setResponse((prevResponse) => {
+      const currentItems = prevResponse?.item ?? [];
+      const mergedItems = mergeItems(
+        currentItems,
+        Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
+      );
 
-        const newResponse: QuestionnaireResponse = {
-          resourceType: 'QuestionnaireResponse',
-          status: 'in-progress',
-          item: mergedItems,
-        };
+      const newResponse: QuestionnaireResponse = {
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: mergedItems,
+      };
 
-        if (onChange) {
-          try {
-            onChange(newResponse);
-          } catch (e) {
-            console.error('Error invoking QuestionnaireForm.onChange callback', e);
-          }
+      const onChange = onChangeRef.current;
+      if (onChange) {
+        try {
+          onChange(newResponse);
+        } catch (e) {
+          console.error('Error invoking QuestionnaireForm.onChange callback', e);
         }
+      }
 
-        return newResponse;
-      });
-    },
-    [onChange]
-  );
+      return newResponse;
+    });
+  }, []);
 
   const handleSubmit = useCallback(() => {
-    if (props.onSubmit && response) {
-      let source = props.source;
+    const onSubmit = onSubmitRef.current;
+    if (onSubmit && response) {
+      let source = sourceFromProps;
       if (!source) {
         const profile = medplum.getProfile();
         if (profile) {
           source = createReference(profile);
         }
       }
-      props.onSubmit({
+      onSubmit({
         ...response,
         questionnaire: getReferenceString(questionnaire as Questionnaire),
-        subject: props.subject,
+        subject,
         source,
         authored: new Date().toISOString(),
         status: 'completed',
       });
     }
-  }, [medplum, props, questionnaire, response]);
+  }, [medplum, questionnaire, response, subject, sourceFromProps]);
 
   function checkForQuestionEnabled(item: QuestionnaireItem): boolean {
     return isQuestionEnabled(item, response?.item ?? []);
