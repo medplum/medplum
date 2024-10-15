@@ -1,14 +1,14 @@
 
 # GCP project configuration - Change these values to use your own project, region, and zone
-project_id = "medplum-zencore"# "your-project-id"
-region     = "us-west1"       # "your-region"
-zone       = "us-west1-a"     # "your-zone"
+project_id = "medplum-zencore" # "your-project-id"
+region     = "us-west1"        # "your-region"
+zone       = "us-west1-a"      # "your-zone"
 
 # Common enforced labels - Change these values to use your own labels
 labels = {
-  env     = "your-environment"  # e.g., "dev", "staging", "prod"
-  purpose = "your-purpose"      # e.g., "gke", "web", "database"
-  owner   = "your-owner"        # e.g., "team-name", "project-owner"
+  env     = "your-environment" # e.g., "dev", "staging", "prod"
+  purpose = "your-purpose"     # e.g., "gke", "web", "database"
+  owner   = "your-owner"       # e.g., "team-name", "project-owner"
 }
 
 ## Buckets configuration 
