@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     name: Deploy
-    runs-on: ubuntu-latest
+    runs-on: Larger-runner-test
     timeout-minutes: 45
     if: github.repository == 'medplum/medplum'
     env:
@@ -36,7 +36,7 @@ jobs:
             ${{ runner.os }}-build-
             ${{ runner.os }}-
       - name: Install dependencies
-        run: npm ci --maxsockets 1
+        run: npm ci
       - name: Build
         run: npm run build:fast
       - name: Configure AWS Credentials

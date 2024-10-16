@@ -14,7 +14,7 @@ on:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: Larger-runner-test
     timeout-minutes: 45
     permissions:
       pull-requests: write
@@ -60,7 +60,7 @@ jobs:
           echo "node version: $(node --version)"
           echo "npm version: $(npm --version)"
       - name: Install
-        run: npm ci --maxsockets 1
+        run: npm ci
       - name: Build Project
         run: npm run build
         env:
@@ -150,7 +150,7 @@ jobs:
 
   test:
     name: Run tests
-    runs-on: ubuntu-latest
+    runs-on: Larger-runner-test
     timeout-minutes: 45
     needs: [build]
     strategy:
@@ -209,7 +209,7 @@ jobs:
             ${{ runner.os }}-
       - id: install
         name: Install deps
-        run: npm ci --maxsockets 1
+        run: npm ci
       - name: Setup TurboRepo
         # Conditionally setup turborepo
         # In the past, turborepo would silently ignore empty environment variables
@@ -245,7 +245,7 @@ jobs:
 
   build-docs:
     name: Build the docs
-    runs-on: ubuntu-latest
+    runs-on: Larger-runner-test
     timeout-minutes: 30
     permissions:
       pull-requests: write
