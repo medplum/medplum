@@ -19,6 +19,7 @@ import {
 } from '@tabler/icons-react';
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
+import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { HomePage } from './pages/HomePage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { SearchPage } from './pages/SearchPage';
@@ -103,6 +104,7 @@ export function App(): JSX.Element | null {
                 )
               }
             />
+            <DoseSpotIcon />
           </>
         )
       }
@@ -131,6 +133,7 @@ export function App(): JSX.Element | null {
               </Route>
               <Route path="/onboarding" element={<OnboardingPage />} />
               <Route path="/signin" element={<SignInPage />} />
+              <Route path="/dosespot" element={<DoseSpotTab />} />
               <Route path="/:resourceType" element={<SearchPage />} />
               <Route path="/:resourceType/new" element={<ResourceCreatePage />} />
               <Route path="/:resourceType/:id" element={<ResourcePage />}>
