@@ -5,10 +5,57 @@
 replicaCount: 1
 
 image:
-  repository: nginx
+  #repository: your-region-docker.pkg.dev/your-project-id/medplum-repo
+  repository: us-west1-docker.pkg.dev/medplum-zencore/medplum-repo
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: ""
+  tag: latest
+
+env:
+  - name: DATABASE_URL
+    value: "postgresql://username:password@cloudsql-instance-ip:5432/database-name"
+  - name: REDIS_URL
+    value: "redis://redis-instance-ip:6379"
+  - name: POSTGRES_HOST
+    value: "CLOUD_SQL_PRIVATE_IP"
+  - name: POSTGRES_PORT
+    value: "5432"
+  - name: POSTGRES_USER
+    value: "medplum"
+  - name: POSTGRES_PASSWORD
+    value: "medplum"
+  - name: POSTGRES_DB
+    value: "your-database-name"
+  - name: REDIS_HOST
+    value: "MEMORYSTORE_PRIVATE_IP"
+  - name: REDIS_PORT
+    value: "6379"
+  - name: REDIS_PASSWORD
+    value: "medplum"
+
+service:
+  type: ClusterIP
+  port: 5000
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+  hosts:
+    - host: app.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: medplum-app-service
+              port:
+                number: 5000
+  tls:
+    - secretName: tls-secret
+      hosts:
+        - app.yourdomain.com
+
 
 imagePullSecrets: []
 nameOverride: ""
@@ -38,26 +85,6 @@ securityContext: {}
   # readOnlyRootFilesystem: true
   # runAsNonRoot: true
   # runAsUser: 1000
-
-service:
-  type: ClusterIP
-  port: 80
-
-ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
 
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
