@@ -3,3 +3,8 @@ output "sql_db_generated_user_password" {
   value       = module.sql-db.generated_user_password
   sensitive   = true
 }
+
+output "medplum_repo_url" {
+  description = "The URL of the Medplum Docker repository"
+  value       = google_artifact_registry_repository.medplum_repo.id
+}
