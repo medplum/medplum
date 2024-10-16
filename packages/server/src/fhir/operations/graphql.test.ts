@@ -1065,8 +1065,10 @@ describe('GraphQL', () => {
   });
 
   test('Uses reader instance when available', async () => {
-    const pool = getDatabasePool(DatabaseMode.READER);
-    const readerSpy = jest.spyOn(pool, 'query');
+    const reader = getDatabasePool(DatabaseMode.READER);
+    const readerSpy = jest.spyOn(reader, 'query');
+    const writer = getDatabasePool(DatabaseMode.WRITER);
+    const writerSpy = jest.spyOn(writer, 'query');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')
@@ -1074,7 +1076,8 @@ describe('GraphQL', () => {
       .set('Content-Type', ContentType.JSON)
       .send({ query: `{ PatientList(_id: "${patient.id}") { id } }` });
     expect(res.status).toBe(200);
-    expect(readerSpy).toHaveBeenCalled();
+    expect(readerSpy).toHaveBeenCalledTimes(1);
+    expect(writerSpy).toHaveBeenCalledTimes(0);
   });
 });
 
