@@ -63,23 +63,23 @@ export class Logger {
     return { write, metadata, level, options };
   }
 
-  error(msg: string, data?: Record<string, any>): void {
+  error(msg: string, data?: Record<string, any> | Error): void {
     this.log(LogLevel.ERROR, msg, data);
   }
 
-  warn(msg: string, data?: Record<string, any>): void {
+  warn(msg: string, data?: Record<string, any> | Error): void {
     this.log(LogLevel.WARN, msg, data);
   }
 
-  info(msg: string, data?: Record<string, any>): void {
+  info(msg: string, data?: Record<string, any> | Error): void {
     this.log(LogLevel.INFO, msg, data);
   }
 
-  debug(msg: string, data?: Record<string, any>): void {
+  debug(msg: string, data?: Record<string, any> | Error): void {
     this.log(LogLevel.DEBUG, msg, data);
   }
 
-  log(level: LogLevel, msg: string, data?: Record<string, any>): void {
+  log(level: LogLevel, msg: string, data?: Record<string, any> | Error): void {
     if (level > this.level) {
       return;
     }
