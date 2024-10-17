@@ -4,7 +4,14 @@ import { MedplumServerConfig } from '../config';
 import { getAuthenticatedContext, getLogger, tryRunInRequestContext } from '../context';
 import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
 import { getRepoForLogin } from '../fhir/accesspolicy';
-import { ContentType, createReference, isOk, OperationOutcomeError, serverError } from '@medplum/core';
+import {
+  ContentType,
+  createReference,
+  getReferenceString,
+  isOk,
+  OperationOutcomeError,
+  serverError,
+} from '@medplum/core';
 import { getSystemRepo } from '../fhir/repo';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { uploadBinaryData } from '../fhir/binary';
@@ -155,6 +162,7 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
       logger.info('Completed async batch request', {
         jobId: job.id,
         asyncJob: job.data.asyncJob.id,
+        results: getReferenceString(binary),
         entries: bundle.entry.length,
         errors,
       });
