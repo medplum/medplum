@@ -1,8 +1,8 @@
 import { MedplumInfraConfig } from '@medplum/core';
-import { readConfig, readServerConfig, getConfigFileName } from '../utils';
+import { color } from '../util/color';
+import { getConfigFileName, readConfig, readServerConfig } from '../utils';
 import { closeTerminal, initTerminal, print, yesOrNo } from './terminal';
 import { printConfigNotFound, writeParameters } from './utils';
-import { color } from '../util/command';
 
 export interface UpdateConfigOptions {
   file?: string;
