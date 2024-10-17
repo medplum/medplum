@@ -20,7 +20,6 @@ import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance, ParameterGroup } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 import { buildWafConfig } from './waf';
-import hashObject from 'object-hash';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -142,8 +141,7 @@ export class BackEnd extends Construct {
           : rds.AuroraPostgresEngineVersion.VER_12_9,
       });
 
-      const paramHash = hashObject(clusterParameters, { encoding: 'base64' }).slice(0, 8);
-      const dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams' + paramHash, {
+      const dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams', {
         engine,
         parameters: clusterParameters,
       });
@@ -168,6 +166,12 @@ export class BackEnd extends Construct {
         }
       }
 
+      /*
+      Step 1. Add RemovalPolicy.RETAIN to the RDS cluster to prevent deletion of the existing RDS cluster
+      Step 2. this.rdsCluster = undefined to stop including it in the stack
+      Step 3. this.rdsCluster = new rds.DatabaseCluster(...) using updated config parameters
+
+      */
       this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
         engine,
         credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
@@ -185,6 +189,7 @@ export class BackEnd extends Construct {
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
         parameterGroup: dbParams,
+        removalPolicy: config.rdsReplaceClusterStep === 1 ? RemovalPolicy.RETAIN : RemovalPolicy.SNAPSHOT,
       });
 
       this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;

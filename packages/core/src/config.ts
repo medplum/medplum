@@ -167,4 +167,6 @@ export interface MedplumInfraConfig {
     scaleOutCooldown: number;
   };
   environment?: StringMap;
+
+  rdsReplaceClusterStep?: 1 | 2 | 3;
 }
