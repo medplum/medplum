@@ -142,11 +142,11 @@ export async function execBatchJob(job: Job<BatchJobData>): Promise<void> {
   try {
     const [outcome, result] = await router.handleRequest(req, repo);
 
-    // Upload resulting Bundle JSON as Binary for async retrieval
-    const binary = await uploadBinaryData(repo, JSON.stringify(result), { contentType: ContentType.FHIR_JSON });
-
     // Update the async job with system repo
     if (isOk(outcome)) {
+      // Upload resulting Bundle JSON as Binary for async retrieval
+      const binary = await uploadBinaryData(repo, JSON.stringify(result), { contentType: ContentType.FHIR_JSON });
+
       const bundle = result as Bundle;
       if (!bundle.entry) {
         return;

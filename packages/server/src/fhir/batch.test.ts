@@ -11,6 +11,7 @@ import {
   CareTeam,
   Observation,
   OperationOutcome,
+  OperationOutcomeIssue,
   Parameters,
   Patient,
   Practitioner,
@@ -956,5 +957,60 @@ describe('Batch and Transaction processing', () => {
       resourceType: 'Bundle',
       type: 'batch-response',
     });
+  });
+
+  test('Async batch does not retry on failure', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'pergola' as Bundle['type'], // Invalid batch type, with no entries -> error
+    };
+
+    const res = await await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res.status).toEqual(202);
+    const outcome = res.body as OperationOutcome;
+    expect(outcome.issue[0].diagnostics).toMatch('http://');
+
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'BatchJobData',
+      expect.objectContaining<Partial<BatchJobData>>({
+        bundle,
+      })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    await expect(execBatchJob(job)).resolves.toBe(undefined);
+
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    expect(asyncJob.output).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        {
+          name: 'outcome',
+          resource: expect.objectContaining({
+            issue: [
+              expect.objectContaining<OperationOutcomeIssue>({
+                code: 'invalid',
+                severity: 'error',
+                details: { text: expect.stringContaining('pergola') },
+              }),
+            ],
+          }),
+        },
+      ],
+    });
+
+    expect(queue.add).not.toHaveBeenCalled();
   });
 });
