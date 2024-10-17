@@ -1,42 +1,22 @@
-import { Button, Group, Loader, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
-import { Identifier } from '@medplum/fhirtypes';
-import { Container, Panel, useMedplum } from '@medplum/react';
-import { useCallback, useState } from 'react';
-import { usePatient } from '../../hooks/usePatient';
+import { Identifier, Patient } from '@medplum/fhirtypes';
+import { useMedplum, useResource } from '@medplum/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
 
 const MEDPLUM_BOT_SYSTEM = 'https://www.medplum.com/bots';
-const DOSESPOT_CONNECTION_TEST_BOT: Identifier = { system: MEDPLUM_BOT_SYSTEM, value: 'dosespot-connection-test-bot' };
-const DOSESPOT_PATIENT_SEARCH_BOT: Identifier = { system: MEDPLUM_BOT_SYSTEM, value: 'dosespot-patient-search-bot' };
 const DOSESPOT_PATIENT_SYNC_BOT: Identifier = { system: MEDPLUM_BOT_SYSTEM, value: 'dosespot-patient-sync-bot' };
 const DOSESPOT_IFRAME_BOT: Identifier = { system: MEDPLUM_BOT_SYSTEM, value: 'dosespot-iframe-bot' };
 
 export function DoseSpotTab(): JSX.Element {
   const medplum = useMedplum();
-  const patient = usePatient();
+  const { patientId } = useParams();
+  const patient = useResource<Patient>(patientId ? { reference: `Patient/${patientId}` } : undefined);
+  const initializingRef = useRef<boolean>(false);
   const [iframeUrl, setIframeUrl] = useState<string | undefined>(undefined);
 
-  const handleTestConnectivity = useCallback(async () => {
-    try {
-      await medplum.executeBot(DOSESPOT_CONNECTION_TEST_BOT, {});
-      showNotification({ color: 'green', title: 'Success', message: 'Connection test successful' });
-    } catch (err: unknown) {
-      showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) });
-    }
-  }, [medplum]);
-
-  const handleSearchPatients = useCallback(async () => {
-    try {
-      const result = await medplum.executeBot(DOSESPOT_PATIENT_SEARCH_BOT, {});
-      console.log('Search result:', result);
-      showNotification({ color: 'green', title: 'Success', message: 'Patient search success' });
-    } catch (err: unknown) {
-      showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) });
-    }
-  }, [medplum]);
-
-  const handleSyncPatient = useCallback(async () => {
+  const syncPatient = useCallback(async () => {
     try {
       const result = await medplum.executeBot(DOSESPOT_PATIENT_SYNC_BOT, patient);
       console.log('Sync result:', result);
@@ -46,7 +26,7 @@ export function DoseSpotTab(): JSX.Element {
     }
   }, [medplum, patient]);
 
-  const handleStartNewOrder = useCallback(async () => {
+  const openIframe = useCallback(async () => {
     const doseSpotPatientId = patient?.identifier?.find((i) => i.system === 'https://dosespot.com/patient-id')?.value;
     try {
       const result = await medplum.executeBot(DOSESPOT_IFRAME_BOT, { patientId: doseSpotPatientId });
@@ -58,26 +38,31 @@ export function DoseSpotTab(): JSX.Element {
     }
   }, [medplum, patient]);
 
-  if (!patient) {
-    return <Loader />;
-  }
+  const initPage = useCallback(async () => {
+    if (!initializingRef.current) {
+      initializingRef.current = true;
+      if (patient) {
+        await syncPatient();
+      }
+      await openIframe();
+    }
+  }, [patient, syncPatient, openIframe]);
+
+  useEffect(() => {
+    initPage().catch(console.error);
+  }, [initPage]);
 
   return (
-    <Container>
-      <Panel>
-        <Title order={2}>DoseSpot</Title>
-        <Group mt="xl">
-          <Button onClick={handleTestConnectivity}>Test connectivity...</Button>
-          <Button onClick={handleSearchPatients}>Search patients...</Button>
-          <Button onClick={handleSyncPatient}>Sync patient...</Button>
-          <Button onClick={handleStartNewOrder}>Start new order...</Button>
-        </Group>
-      </Panel>
+    <div style={{ width: '100%', height: '100%', minHeight: 'calc(100vh - 200px)' }}>
       {iframeUrl && (
-        <Panel>
-          <iframe id="dosespot-iframe" name="dosespot-iframe" src={iframeUrl} width={900} height={900}></iframe>
-        </Panel>
+        <iframe
+          id="dosespot-iframe"
+          name="dosespot-iframe"
+          frameBorder={0}
+          src={iframeUrl}
+          style={{ width: '100%', height: '100%', minHeight: 'calc(100vh - 200px)', border: 'none' }}
+        ></iframe>
       )}
-    </Container>
+    </div>
   );
 }

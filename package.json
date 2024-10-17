@@ -12,7 +12,6 @@
     "build:docs": "turbo run build --filter=@medplum/docs",
     "build:fast": "turbo run build --filter=@medplum/app --filter=@medplum/server",
     "clean": "turbo run clean",
-    "cyclonedx": "cyclonedx-npm --omit dev --omit optional --omit peer",
     "lint": "turbo run lint --filter=!@medplum/docs",
     "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs,json}\"",
     "sort-package-json": "sort-package-json package.json \"packages/*/package.json\" \"examples/*/package.json\"",
@@ -33,14 +32,13 @@
     "root": true
   },
   "devDependencies": {
-    "@babel/core": "7.25.7",
-    "@babel/preset-env": "7.25.7",
+    "@babel/core": "7.25.8",
+    "@babel/preset-env": "7.25.8",
     "@babel/preset-react": "7.25.7",
     "@babel/preset-typescript": "7.25.7",
-    "@cyclonedx/cyclonedx-npm": "1.19.3",
     "@microsoft/api-documenter": "7.25.17",
     "@microsoft/api-extractor": "7.47.9",
-    "@types/node": "22.7.4",
+    "@types/node": "22.7.5",
     "babel-jest": "29.7.0",
     "babel-preset-vite": "1.1.3",
     "cross-env": "7.0.3",
@@ -60,7 +58,7 @@
     "ts-node": "10.9.2",
     "tslib": "2.7.0",
     "turbo": "2.1.3",
-    "typescript": "5.6.2"
+    "typescript": "5.6.3"
   },
   "packageManager": "npm@10.9.0",
   "engines": {

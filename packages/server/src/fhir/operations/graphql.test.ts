@@ -9,6 +9,7 @@ import { loadTestConfig } from '../../config';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
+import { DatabaseMode, getDatabasePool } from '../../database';
 
 const app = express();
 let practitioner: Practitioner;
@@ -1061,6 +1062,22 @@ describe('GraphQL', () => {
         PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: null }] }],
       });
     });
+  });
+
+  test('Uses reader instance when available', async () => {
+    const reader = getDatabasePool(DatabaseMode.READER);
+    const readerSpy = jest.spyOn(reader, 'query');
+    const writer = getDatabasePool(DatabaseMode.WRITER);
+    const writerSpy = jest.spyOn(writer, 'query');
+
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ query: `{ PatientList(_id: "${patient.id}") { id } }` });
+    expect(res.status).toBe(200);
+    expect(readerSpy).toHaveBeenCalledTimes(1);
+    expect(writerSpy).toHaveBeenCalledTimes(0);
   });
 });
 

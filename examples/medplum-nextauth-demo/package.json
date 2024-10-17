@@ -25,18 +25,18 @@
     "@mantine/notifications": "7.13.2",
     "@medplum/core": "3.2.17",
     "@medplum/eslint-config": "3.2.17",
-    "next": "14.2.14",
+    "next": "14.2.15",
     "next-auth": "4.24.8",
     "react": "18.2.0",
     "react-dom": "18.2.0"
   },
   "devDependencies": {
     "@medplum/fhirtypes": "3.2.17",
-    "@types/node": "22.7.4",
+    "@types/node": "22.7.5",
     "@types/react": "18.3.11",
-    "@types/react-dom": "18.3.0",
+    "@types/react-dom": "18.3.1",
     "eslint": "8.57.0",
-    "eslint-config-next": "14.2.14",
-    "typescript": "5.6.2"
+    "eslint-config-next": "14.2.15",
+    "typescript": "5.6.3"
   }
 }
