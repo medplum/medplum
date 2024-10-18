@@ -299,9 +299,7 @@ export async function callAgentBulkOperation<
     failedRows.push(row);
   }
 
-  console.info();
-  console.info(`${successfulRows.length} successful response(s):`);
-  console.info();
+  console.info(`\n${successfulRows.length} successful response(s):\n`);
   console.table(successfulRows.length ? successfulRows : 'No successful responses received');
   console.info();
 
