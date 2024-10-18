@@ -67,6 +67,31 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 Medplum does not currently distinguish between `'batch'` and `'transaction'` type [`Bundle`](/docs/api/fhir/resources/bundle) resources and does not provide atomic transactions. This is currently being worked on, and you can track progress on the issue [here](https://github.com/medplum/medplum/issues/1369).
 :::
 
+### Asynchronous Batch Requests
+
+Processing very large batches (for example, a `Bundle` over 5 MB in size) can take a significant amount of time, often
+longer than the default request timeout of one minute. This causes issues with processing the batch, since an error is
+returned to the client before they can access the actual results of the batch request. To resolve this problem, Medplum
+offers the ability to process the batch asynchronously: a large `Bundle` (to to 50 MB by default) can be sent to the
+server, where it will be enqueued for processing, and a response is sent back to the client immediately with a URL where
+it can receive status updates around the batch processing job.
+
+To opt into asynchronous handling of the batch request, add the `Prefer: respond-async` header to the HTTP request for
+the batch:
+
+<Tabs groupId="language">
+  {/* <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="asyncBatchTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem> */}
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="asyncBatchCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
 ## References in Bundles
 
 When using batch requests, it is common to require resources to refer to one another: either between two resources within the Bundle, or to resources outside the Bundle. FHIR provides ways to automatically link the resources together, without needing to know the exact resource IDs up front.
