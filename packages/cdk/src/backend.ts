@@ -66,10 +66,6 @@ export class BackEnd extends Construct {
   rdsNewWriterParameterGroup?: rds.ParameterGroup;
   rdsNewReaderParameterGroup?: rds.ParameterGroup;
 
-  // pg16ClusterParameterGroup: rds.ParameterGroup;
-  // pg16WriterParameterGroup: rds.ParameterGroup;
-  // pg16ReaderParameterGroup: rds.ParameterGroup;
-
   constructor(scope: Construct, config: MedplumInfraConfig) {
     super(scope, 'BackEnd');
 
@@ -106,6 +102,73 @@ export class BackEnd extends Construct {
     });
 
     // RDS
+    /*
+
+    # Steps for replacing the RDS Aurora cluster after performing a major version upgrade:
+
+    ## Step 1.
+
+    Create parameter groups for the new cluster and the old cluster, RemovalPolicy.RETAIN to the RDS cluster
+    to prevent accidental deletion of the existing RDS cluster during the upgrade process
+
+    Config changes:
+    ```
+    rdsPersistentParameterGroups = true
+    rdsNewInstanceVersion = '16.4'
+    rdsReplaceClusterStep = 1
+    ```
+
+    Execute
+    ```
+    cdk diff
+    cdk deploy
+    ```
+
+    ## Step 2.
+    To perform the `cdk import` of the new RDS cluster resources
+
+    Config changes:
+    ```
+    rdsReplaceClusterStep = 2
+    ```
+
+    Execute
+    ```
+    cdk diff
+    cdk import
+    cdk diff
+    cdk deploy
+    ```
+
+    ## Step 3.
+
+    To swap the new cluster to be the current cluster
+
+    Config changes:
+    ```
+    rdsReplaceClusterStep = 3
+    ```
+
+    Execute
+    ```
+    cdk diff
+    cdk import
+    ```
+
+    ## Step 4.
+    Establish the new steady state configuration.
+    Both `rdsIdsMajorVersionSuffix` and `rdsPersistentParameterGroups` should remain true indefinitely.
+
+    Config changes:
+    ```
+    DELETE rdsReplaceClusterStep
+    DELETE rdsNewInstanceVersion
+    rdsInstanceVersion = '16.4'
+    rdsIdsMajorVersionSuffix = true
+    rdsPersistentParameterGroups = true
+    ```
+    */
+
     this.rdsSecretsArn = config.rdsSecretsArn;
     if (!this.rdsSecretsArn) {
       const { engine, majorVersion } = getPostgresEngine(
@@ -167,6 +230,21 @@ export class BackEnd extends Construct {
         }
       }
 
+      if (config.rdsIdsMajorVersionSuffix) {
+        if (
+          !config.rdsPersistentParameterGroups ||
+          !this.rdsClusterParameterGroup ||
+          !this.rdsWriterParameterGroup ||
+          !this.rdsReaderParameterGroup
+        ) {
+          throw new Error('rdsPersistentParameterGroups must be true when rdsIdsMajorVersionSuffix is true');
+        }
+
+        this.rdsClusterParameterGroup satisfies rds.ParameterGroup;
+        this.rdsWriterParameterGroup satisfies rds.ParameterGroup;
+        this.rdsReaderParameterGroup satisfies rds.ParameterGroup;
+      }
+
       // See: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds-readme.html#migrating-from-instanceprops
       const defaultInstanceProps: rds.ProvisionedClusterInstanceProps = {
         enablePerformanceInsights: true,
@@ -174,24 +252,24 @@ export class BackEnd extends Construct {
         caCertificate: rds.CaCertificate.RDS_CA_RSA2048_G1,
       };
 
-      const legacyDbParams =
-        this.rdsClusterParameterGroup ||
-        new ParameterGroup(this, 'MedplumDatabaseClusterParams', {
-          engine,
-          parameters: clusterParameters,
-          removalPolicy: config.rdsReplaceClusterStep ? RemovalPolicy.RETAIN : undefined,
-        });
+      const legacyClusterParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams', {
+        engine,
+        parameters: clusterParameters,
+        removalPolicy: config.rdsReplaceClusterStep ? RemovalPolicy.RETAIN : undefined,
+      });
 
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
       const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: readerInstanceType ? new ec2.InstanceType(readerInstanceType) : undefined,
+        parameterGroup: this.rdsReaderParameterGroup,
       };
 
       const writerInstanceType = config.rdsInstanceType;
       const writerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
+        parameterGroup: this.rdsWriterParameterGroup,
       };
 
       let readers: rds.IClusterInstance[] | undefined;
@@ -201,31 +279,6 @@ export class BackEnd extends Construct {
           readers.push(ClusterInstance.provisioned('Instance' + (i + 1), readerInstanceProps));
         }
       }
-
-      /*
-      Step 1. Create parameter groups for the new cluster and the old cluster, RemovalPolicy.RETAIN to the RDS cluster to prevent deletion of the existing RDS cluster
-      rdsReplaceClusterStep = 1
-      rdsPersistentParameterGroups = true
-      rdsNewInstanceVersion = '16.4'
-
-      Step 2. To perform the `cdk import`
-      rdsReplaceClusterStep = 2
-
-      Step 3. Swap this.rdsNewCluster to be this.rdsCluster
-      rdsReplaceClusterStep = 3
-
-      Step 4. this.rdsCluster = new rds.DatabaseCluster(...) using new major version
-      DELETE rdsReplaceClusterStep
-      DELETE rdsNewInstanceVersion
-      rdsInstanceVersion = '16.4'
-      rdsIdsMajorVersionSuffix = true
-      rdsPersistentParameterGroups = true
-
-      Indefinitely:
-      rdsInstanceVersion = '16.4'
-      rdsIdsMajorVersionSuffix = true
-      rdsPersistentParameterGroups = true
-      */
 
       const credentials = rds.Credentials.fromGeneratedSecret('clusteradmin');
 
@@ -246,7 +299,7 @@ export class BackEnd extends Construct {
         },
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
-        parameterGroup: legacyDbParams,
+        parameterGroup: this.rdsClusterParameterGroup ?? legacyClusterParams,
         removalPolicy: config.rdsReplaceClusterStep ? RemovalPolicy.RETAIN : undefined,
       });
 
