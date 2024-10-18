@@ -6,6 +6,7 @@ module "service_accounts" {
   names      = ["app-sa"]
   project_roles = [
     "medplum-zencore=>roles/redis.admin",
-    "medplum-zencore=>roles/cloudsql.admin"
+    "medplum-zencore=>roles/cloudsql.admin",
+    "medplum-zencore=>roles/secretmanager.secretAccessor"
   ]
 }

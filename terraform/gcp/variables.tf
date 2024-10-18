@@ -16,6 +16,7 @@ variable "services_api" {
   type        = list(string)
   default = [
     "compute.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
     "container.googleapis.com",
     "servicenetworking.googleapis.com",
     "logging.googleapis.com",
