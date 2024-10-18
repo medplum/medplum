@@ -1,8 +1,9 @@
 import { ContentType } from '@medplum/core';
+import { Option } from 'commander';
 import { Stats } from 'node:fs';
 import { Writable } from 'node:stream';
 import tar, { Unpack } from 'tar';
-import { getCodeContentType, safeTarExtractor } from './utils';
+import { getCodeContentType, MedplumCommand, safeTarExtractor } from './utils';
 
 jest.mock('tar', () => ({
   extract: jest.fn(),
@@ -66,5 +67,50 @@ describe('CLI utils', () => {
 
     expect(getCodeContentType('foo.txt')).toEqual(ContentType.TEXT);
     expect(getCodeContentType('foo')).toEqual(ContentType.TEXT);
+  });
+
+  describe('MedplumCommand', () => {
+    const originalConsoleInfo = console.info;
+
+    beforeAll(() => {
+      console.info = jest.fn();
+    });
+
+    afterAll(() => {
+      console.info = originalConsoleInfo;
+    });
+
+    test('Default options - reset on each call', async () => {
+      // Swapping this `MedplumCommand` with `Command` from `commander.js` causes this test to fail
+      // That's because by default each execution is expected to be done with a new command tree (all command objects must be rebuilt for each execution)
+      // This is fine in the real world where each lifetime of the process only runs one command
+      // But in tests it causes a lot of failures due to sticky options from previous commands overriding defaults for subsequent executions
+      const command = new MedplumCommand('test')
+        .addOption(
+          new Option('--output <format>', 'An optional output format, defaults to table')
+            .choices(['table', 'json'])
+            .default('table')
+        )
+        .action(async (opts) => {
+          console.info(opts);
+        });
+
+      await command.parseAsync(['test', '--output', 'json'], { from: 'user' });
+      expect(console.info).toHaveBeenLastCalledWith({ output: 'json' });
+      await command.parseAsync(['test'], { from: 'user' });
+      expect(console.info).toHaveBeenLastCalledWith({ output: 'table' });
+
+      // Test booleans separately (due to old code only checking `if (option.defaultValue)`)
+      const boolDefaultCommand = new MedplumCommand('test')
+        .addOption(new Option('--should-output', 'Whether the command should output, defaults to false').default(false))
+        .action(async (opts) => {
+          console.info(opts);
+        });
+
+      await boolDefaultCommand.parseAsync(['test', '--should-output'], { from: 'user' });
+      expect(console.info).toHaveBeenLastCalledWith({ shouldOutput: true });
+      await boolDefaultCommand.parseAsync(['test'], { from: 'user' });
+      expect(console.info).toHaveBeenLastCalledWith({ shouldOutput: false });
+    });
   });
 });

@@ -1,5 +1,5 @@
-import { Command } from 'commander';
-import { color, createMedplumCommand, processDescription } from '../util/command';
+import { color, processDescription } from '../util/color';
+import { addSubcommand, MedplumCommand } from '../utils';
 import { describeStacksCommand } from './describe';
 import { initStackCommand } from './init';
 import { listStacksCommand } from './list';
@@ -8,8 +8,8 @@ import { updateBucketPoliciesCommand } from './update-bucket-policies';
 import { updateConfigCommand } from './update-config';
 import { updateServerCommand } from './update-server';
 
-export function buildAwsCommand(): Command {
-  const aws = new Command('aws').description('Commands to manage AWS resources');
+export function buildAwsCommand(): MedplumCommand {
+  const aws = new MedplumCommand('aws').description('Commands to manage AWS resources');
 
   aws.command('init').description('Initialize a new Medplum AWS CloudFormation stacks').action(initStackCommand);
 
@@ -45,8 +45,9 @@ export function buildAwsCommand(): Command {
     .option('--yes', 'Automatically confirm the update')
     .action(updateConfigCommand);
 
-  aws.addCommand(
-    createMedplumCommand('update-server')
+  addSubcommand(
+    aws,
+    new MedplumCommand('update-server')
       .alias('deploy-server')
       .description('Update the server image')
       .argument('<tag>', 'The Medplum stack tag')

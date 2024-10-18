@@ -51,7 +51,14 @@ describe('CLI auth', () => {
   });
 
   test('Login success', async () => {
-    (cp.exec as unknown as jest.Mock).mockReturnValue(true);
+    (cp.exec as unknown as jest.Mock).mockImplementation(
+      (_, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+        if (callback) {
+          callback(null, '', '');
+        }
+        return true;
+      }
+    );
     (http.createServer as unknown as jest.Mock).mockReturnValue({
       listen: () => ({
         close: () => undefined,
