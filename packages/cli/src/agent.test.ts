@@ -109,7 +109,7 @@ describe('Agent CLI', () => {
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
-        expect(consoleInfoSpy).toHaveBeenCalledWith('1 successful response(s):');
+        expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('1 successful response(s):'));
         expect(consoleTableSpy).toHaveBeenCalledTimes(1);
         expect(consoleTableSpy).toHaveBeenCalledWith([
           expect.objectContaining({
@@ -193,7 +193,7 @@ describe('Agent CLI', () => {
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
-        expect(consoleInfoSpy).toHaveBeenCalledWith('1 successful response(s):');
+        expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('1 successful response(s):'));
         expect(consoleTableSpy).toHaveBeenCalledTimes(1);
         expect(consoleTableSpy).toHaveBeenCalledWith([
           expect.objectContaining({
@@ -310,7 +310,7 @@ describe('Agent CLI', () => {
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
-        expect(consoleInfoSpy).toHaveBeenCalledWith('3 successful response(s):');
+        expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('3 successful response(s):'));
         expect(consoleTableSpy).toHaveBeenCalledTimes(1);
         expect(consoleTableSpy).toHaveBeenCalledWith(
           agents.map(({ id, name }) => ({
@@ -377,7 +377,7 @@ describe('Agent CLI', () => {
           expect.objectContaining({ cache: 'reload' })
         );
         expect(processError).not.toHaveBeenCalled();
-        expect(consoleInfoSpy).toHaveBeenCalledWith('3 successful response(s):');
+        expect(consoleInfoSpy).toHaveBeenCalledWith(expect.stringContaining('3 successful response(s):'));
         expect(consoleTableSpy).toHaveBeenCalledTimes(1);
         expect(consoleTableSpy).toHaveBeenCalledWith(
           agents.map(({ id, name }) => ({

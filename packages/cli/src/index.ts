@@ -96,16 +96,17 @@ export async function main(argv: string[]): Promise<void> {
 
 export function handleError(err: Error | CommanderError): void {
   let exitCode = 1;
+  let shouldPrint = true;
   if (err instanceof CommanderError) {
     // We return if not in verbose mode for CommanderErrors
     // Since commander.js will already log the error to console for us
     // Previously we didn't have this guard here and it would always double print errors
     if (!process.env.VERBOSE) {
-      return;
+      shouldPrint = false;
     }
     exitCode = err.exitCode;
   }
-  if (exitCode !== 0) {
+  if (exitCode !== 0 && shouldPrint) {
     writeErrorToStderr(err, !!process.env.VERBOSE);
     const cause = err.cause;
     if (process.env.VERBOSE) {
