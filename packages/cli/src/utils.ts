@@ -348,7 +348,7 @@ export class MedplumCommand extends Command {
     for (const option of this.options) {
       // So we also set options that default to false
       // We explicitly check strict equality to undefined
-      if (option.defaultValue) {
+      if (option.defaultValue !== undefined) {
         // We use the attributeName since that's the camelCase'd name that is used to access options
         // @ts-expect-error Overriding private field
         this._optionValues[option.attributeName()] = option.defaultValue;
@@ -366,30 +366,15 @@ export function withMergedOptions(
     const expectedArgsCount = command.registeredArguments.length;
     const actionArgs = args.slice(0, expectedArgsCount);
     actionArgs[expectedArgsCount] = command.optsWithGlobals();
-    return new Promise((resolve, reject) => {
-      let result: Promise<void> | void = undefined;
-      try {
-        result = fn(...actionArgs);
-        if (isPromise(result)) {
-          result
-            .then(resolve)
-            .catch(reject)
-            .finally(() => {
-              // We always want to reset default options after the promise is settled
-              command.resetOptionDefaults();
-            });
-          return;
-        }
-        // If `fn` doesn't return a promise, then immediately resolve
-        resolve();
-      } finally {
-        // We want to always make sure to reset the options to default at the end of each execution,
-        // We do it in a finally block in case the command errors
-        // We only do it here in the case when `fn` doesn't return a promise
-        if (!isPromise(result)) {
-          command.resetOptionDefaults();
-        }
+    try {
+      const result: Promise<void> | void = fn(...actionArgs);
+      if (isPromise(result)) {
+        await result;
       }
-    });
+    } finally {
+      // We want to always make sure to reset the options to default at the end of each execution,
+      // We do it in a finally block in case the command errors
+      command.resetOptionDefaults();
+    }
   };
 }
