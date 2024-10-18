@@ -65,7 +65,7 @@ describe('Agent CLI', () => {
     medplumGetSpy = jest.spyOn(medplum, 'get');
   });
 
-  afterEach(() => {
+  afterAll(() => {
     process.env = env;
   });
 
