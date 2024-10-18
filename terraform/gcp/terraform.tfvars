@@ -1,31 +1,70 @@
 
-# GCP project
-project_id = "medplum-zencore"
-region     = "us-west1"
-zone       = "us-west1-a"
+# GCP project configuration - Change these values to use your own project, region, and zone
+project_id = "medplum-zencore" # "your-project-id"
+region     = "us-west1"        # "your-region"
+zone       = "us-west1-a"      # "your-zone"
 
-services_api = [
-  "compute.googleapis.com",
-  "container.googleapis.com",
-  "servicenetworking.googleapis.com",
-  # "sql-component.googleapis.com",
-  # "sqladmin.googleapis.com",
-  # "logging.googleapis.com",
-  # "monitoring.googleapis.com",
-]
-
-# Common enforced labels
+# Common enforced labels - Change these values to use your own labels
 labels = {
-  env     = "prod"
-  purpose = "gke"
-  owner   = "medplum"
+  env     = "your-environment" # e.g., "dev", "staging", "prod"
+  purpose = "your-purpose"     # e.g., "gke", "web", "database"
+  owner   = "your-owner"       # e.g., "team-name", "project-owner"
 }
 
-## VPC's
-vpc_name = "medplum-gke-vpc"
+## Buckets configuration 
+gcs_buckets = {
+  medplum-user-content = {
+    project_id = "medplum-zencore"
+    versioning = true
+    lifecycle_rules = [{
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        is_live                    = "false"
+        days_since_noncurrent_time = "7"
+        num_newer_versions         = "2"
+      }
+    }]
+  },
+  "medplum-static-assets" = {
+    project_id               = "medplum-zencore"
+    location                 = "US"
+    versioning               = true
+    public_access_prevention = "inherited"
+    website = {
+      main_page_suffix = "index.html"
+      not_found_page   = "404.html"
+    }
+    cors = [{
+      origin          = ["*"]
+      method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]
+      response_header = ["*"]
+      max_age_seconds = 3600
+    }]
+    lifecycle_rules = [{
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        is_live                    = "false"
+        days_since_noncurrent_time = "7"
+        num_newer_versions         = "2"
+      }
+    }]
+  }
+}
 
-## Postgres
-pg_ha_name = "medplum-pg-ha"
-
-# Private Service
-psa_range = "192.168.30.0/24"
+# Buckets bindings
+bucket_bindings = {
+  "medplum-static-assets" = [ # This is the bucket name
+    {
+      roles = [
+        "roles/storage.objectViewer",
+      ]
+      members = [
+        "allUsers",
+      ]
+    },
+  ],
+}

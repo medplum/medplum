@@ -5,7 +5,7 @@ module "sql-db" {
   name                 = var.pg_ha_name
   random_instance_name = true
   project_id           = var.project_id
-  database_version     = "POSTGRES_15"
+  database_version     = "POSTGRES_16"
   region               = var.region
 
   // Master configurations
@@ -44,5 +44,8 @@ module "sql-db" {
   db_charset   = "UTF8"
   db_collation = "en_US.UTF8"
 
-  depends_on = [google_service_networking_connection.private_service_access]
+  depends_on = [
+    google_service_networking_connection.private_service_access,
+    google_project_service.project
+  ]
 }

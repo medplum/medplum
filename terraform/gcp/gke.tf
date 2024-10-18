@@ -34,5 +34,8 @@ module "gke" {
       display_name = "Local Network"
     },
   ]
-  depends_on = [module.vpc]
+  depends_on = [
+    google_project_service.project,
+    module.vpc
+  ]
 }
