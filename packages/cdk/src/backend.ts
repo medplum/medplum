@@ -52,14 +52,23 @@ export class BackEnd extends Construct {
   wafAssociation: wafv2.CfnWebACLAssociation;
   dnsRecord?: route53.ARecord;
   regionParameter: ssm.StringParameter;
-  databaseSecretsParameter: ssm.StringParameter;
+  databaseSecretsParameter?: ssm.StringParameter;
   databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
 
-  pg16ClusterParameterGroup: rds.ParameterGroup;
-  pg16WriterParameterGroup: rds.ParameterGroup;
-  pg16ReaderParameterGroup: rds.ParameterGroup;
+  rdsClusterParameterGroup?: rds.ParameterGroup;
+  rdsWriterParameterGroup?: rds.ParameterGroup;
+  rdsReaderParameterGroup?: rds.ParameterGroup;
+
+  rdsNewCluster?: rds.DatabaseCluster;
+  rdsNewClusterParameterGroup?: rds.ParameterGroup;
+  rdsNewWriterParameterGroup?: rds.ParameterGroup;
+  rdsNewReaderParameterGroup?: rds.ParameterGroup;
+
+  // pg16ClusterParameterGroup: rds.ParameterGroup;
+  // pg16WriterParameterGroup: rds.ParameterGroup;
+  // pg16ReaderParameterGroup: rds.ParameterGroup;
 
   constructor(scope: Construct, config: MedplumInfraConfig) {
     super(scope, 'BackEnd');
@@ -97,33 +106,67 @@ export class BackEnd extends Construct {
     });
 
     // RDS
-    const clusterParameters = {
-      statement_timeout: '60000',
-      default_transaction_isolation: 'REPEATABLE READ',
-      ...config.rdsClusterParameters,
-    };
-
-    const pg16Engine = rds.DatabaseClusterEngine.auroraPostgres({
-      version: rds.AuroraPostgresEngineVersion.VER_16_4,
-    });
-    this.pg16ClusterParameterGroup = new ParameterGroup(this, 'MedlumPostgres16ClusterParams', {
-      engine: pg16Engine,
-      parameters: clusterParameters,
-    });
-
-    // bindToCluster and bindToInstance to force the parameter group to exist even if not used
-    this.pg16ClusterParameterGroup.bindToCluster({});
-    this.pg16WriterParameterGroup = new ParameterGroup(this, 'MedlumPostgres16WriterParams', {
-      engine: pg16Engine,
-    });
-    this.pg16WriterParameterGroup.bindToInstance({});
-    this.pg16ReaderParameterGroup = new ParameterGroup(this, 'MedlumPostgres16ReaderParams', {
-      engine: pg16Engine,
-    });
-    this.pg16ReaderParameterGroup.bindToInstance({});
-
     this.rdsSecretsArn = config.rdsSecretsArn;
     if (!this.rdsSecretsArn) {
+      const { engine, majorVersion } = getPostgresEngine(
+        config.rdsInstanceVersion,
+        rds.AuroraPostgresEngineVersion.VER_12_9
+      );
+      const newEngineInfo = config.rdsNewInstanceVersion ? getPostgresEngine(config.rdsNewInstanceVersion) : undefined;
+
+      if (newEngineInfo && parseInt(newEngineInfo.majorVersion, 10) <= parseInt(majorVersion, 10)) {
+        throw new Error('rdsNewInstanceVersion must have a greater major version than rdsInstanceVersion');
+      }
+
+      const clusterParameters: NonNullable<rds.ParameterGroupProps['parameters']> = {
+        statement_timeout: '60000',
+        default_transaction_isolation: 'REPEATABLE READ',
+        ...config.rdsClusterParameters,
+      };
+
+      if (config.rdsPersistentParameterGroups) {
+        // bindToCluster and bindToInstance to force parameter group existence even when not actively used by a cluster
+
+        const idPrefix = `MedplumPG${majorVersion}`;
+        this.rdsClusterParameterGroup = new ParameterGroup(this, `${idPrefix}ClusterParameterGroup`, {
+          engine,
+          parameters: clusterParameters,
+        });
+        this.rdsClusterParameterGroup.bindToCluster({});
+
+        this.rdsWriterParameterGroup = new ParameterGroup(this, `${idPrefix}WriterInstanceParameterGroup`, {
+          engine,
+        });
+        this.rdsWriterParameterGroup.bindToInstance({});
+
+        this.rdsReaderParameterGroup = new ParameterGroup(this, `${idPrefix}ReaderInstanceParameterGroup`, {
+          engine,
+        });
+        this.rdsReaderParameterGroup.bindToInstance({});
+
+        if (newEngineInfo) {
+          const newEngine = newEngineInfo.engine;
+          const newMajorVersion = newEngineInfo.majorVersion;
+          const newIdPrefix = `MedplumPG${newMajorVersion}`;
+
+          this.rdsNewClusterParameterGroup = new ParameterGroup(this, `${newIdPrefix}ClusterParameterGroup`, {
+            engine: newEngine,
+            parameters: clusterParameters,
+          });
+          this.rdsNewClusterParameterGroup.bindToCluster({});
+
+          this.rdsNewWriterParameterGroup = new ParameterGroup(this, `${newIdPrefix}WriterInstanceParameterGroup`, {
+            engine: newEngine,
+          });
+          this.rdsNewWriterParameterGroup.bindToInstance({});
+
+          this.rdsNewReaderParameterGroup = new ParameterGroup(this, `${newIdPrefix}ReaderInstanceParameterGroup`, {
+            engine: newEngine,
+          });
+          this.rdsNewReaderParameterGroup.bindToInstance({});
+        }
+      }
+
       // See: https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_rds-readme.html#migrating-from-instanceprops
       const defaultInstanceProps: rds.ProvisionedClusterInstanceProps = {
         enablePerformanceInsights: true,
@@ -131,20 +174,13 @@ export class BackEnd extends Construct {
         caCertificate: rds.CaCertificate.RDS_CA_RSA2048_G1,
       };
 
-      const engine = rds.DatabaseClusterEngine.auroraPostgres({
-        version: config.rdsInstanceVersion
-          ? rds.AuroraPostgresEngineVersion.of(
-              config.rdsInstanceVersion,
-              config.rdsInstanceVersion.slice(0, config.rdsInstanceVersion.indexOf('.')),
-              { s3Import: true, s3Export: true }
-            )
-          : rds.AuroraPostgresEngineVersion.VER_12_9,
-      });
-
-      const dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams', {
-        engine,
-        parameters: clusterParameters,
-      });
+      const legacyDbParams =
+        this.rdsClusterParameterGroup ||
+        new ParameterGroup(this, 'MedplumDatabaseClusterParams', {
+          engine,
+          parameters: clusterParameters,
+          removalPolicy: config.rdsReplaceClusterStep ? RemovalPolicy.RETAIN : undefined,
+        });
 
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
       const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
@@ -158,7 +194,7 @@ export class BackEnd extends Construct {
         instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
       };
 
-      let readers = undefined;
+      let readers: rds.IClusterInstance[] | undefined;
       if (config.rdsInstances > 1) {
         readers = [];
         for (let i = 1; i < config.rdsInstances; i++) {
@@ -167,14 +203,36 @@ export class BackEnd extends Construct {
       }
 
       /*
-      Step 1. Add RemovalPolicy.RETAIN to the RDS cluster to prevent deletion of the existing RDS cluster
-      Step 2. this.rdsCluster = undefined to stop including it in the stack
-      Step 3. this.rdsCluster = new rds.DatabaseCluster(...) using updated config parameters
+      Step 1. Create parameter groups for the new cluster and the old cluster, RemovalPolicy.RETAIN to the RDS cluster to prevent deletion of the existing RDS cluster
+      rdsReplaceClusterStep = 1
+      rdsPersistentParameterGroups = true
+      rdsNewInstanceVersion = '16.4'
 
+      Step 2. To perform the `cdk import`
+      rdsReplaceClusterStep = 2
+
+      Step 3. Swap this.rdsNewCluster to be this.rdsCluster
+      rdsReplaceClusterStep = 3
+
+      Step 4. this.rdsCluster = new rds.DatabaseCluster(...) using new major version
+      DELETE rdsReplaceClusterStep
+      DELETE rdsNewInstanceVersion
+      rdsInstanceVersion = '16.4'
+      rdsIdsMajorVersionSuffix = true
+      rdsPersistentParameterGroups = true
+
+      Indefinitely:
+      rdsInstanceVersion = '16.4'
+      rdsIdsMajorVersionSuffix = true
+      rdsPersistentParameterGroups = true
       */
-      this.rdsCluster = new rds.DatabaseCluster(this, 'DatabaseCluster', {
+
+      const credentials = rds.Credentials.fromGeneratedSecret('clusteradmin');
+
+      const rdsClusterId = getDatabaseClusterId(config.rdsIdsMajorVersionSuffix ? majorVersion : undefined);
+      this.rdsCluster = new rds.DatabaseCluster(this, rdsClusterId, {
         engine,
-        credentials: rds.Credentials.fromGeneratedSecret('clusteradmin'),
+        credentials,
         defaultDatabaseName: 'medplum',
         storageEncrypted: true,
         vpc: this.vpc,
@@ -188,9 +246,68 @@ export class BackEnd extends Construct {
         },
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
-        parameterGroup: dbParams,
-        removalPolicy: config.rdsReplaceClusterStep === 1 ? RemovalPolicy.RETAIN : RemovalPolicy.SNAPSHOT,
+        parameterGroup: legacyDbParams,
+        removalPolicy: config.rdsReplaceClusterStep ? RemovalPolicy.RETAIN : undefined,
       });
+
+      if (config.rdsReplaceClusterStep === 2 || config.rdsReplaceClusterStep === 3) {
+        if (!newEngineInfo) {
+          throw new Error('rdsNewInstanceVersion is required when replacing an existing RDS cluster');
+        }
+
+        if (!this.rdsNewClusterParameterGroup) {
+          throw new Error('rdsPersistentParameterGroups must be true when replacing an existing RDS cluster');
+        }
+
+        if (!this.rdsNewWriterParameterGroup) {
+          throw new Error('rdsPersistentParameterGroups must be true when replacing an existing RDS cluster');
+        }
+
+        if (!this.rdsNewReaderParameterGroup) {
+          throw new Error('rdsPersistentParameterGroups must be true when replacing an existing RDS cluster');
+        }
+
+        let newReaders: rds.IClusterInstance[] | undefined;
+        if (config.rdsInstances > 1) {
+          newReaders = [];
+          for (let i = 1; i < config.rdsInstances; i++) {
+            newReaders.push(
+              ClusterInstance.provisioned('Instance' + (i + 1), {
+                ...readerInstanceProps,
+                parameterGroup: this.rdsNewReaderParameterGroup,
+              })
+            );
+          }
+        }
+
+        const rdsNewClusterId = getDatabaseClusterId(newEngineInfo.majorVersion);
+        this.rdsNewCluster = new rds.DatabaseCluster(this, rdsNewClusterId, {
+          engine: newEngineInfo.engine,
+          credentials,
+          storageEncrypted: true,
+          vpc: this.vpc,
+          vpcSubnets: {
+            subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+          },
+          writer: ClusterInstance.provisioned('Instance1', {
+            ...writerInstanceProps,
+            parameterGroup: this.rdsNewWriterParameterGroup,
+          }),
+          readers: newReaders,
+          backup: {
+            retention: Duration.days(7),
+          },
+          cloudwatchLogsExports: ['postgresql'],
+          instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
+          parameterGroup: this.rdsNewClusterParameterGroup,
+          removalPolicy: RemovalPolicy.RETAIN,
+        });
+
+        if (config.rdsReplaceClusterStep === 3) {
+          this.rdsCluster = this.rdsNewCluster;
+          this.rdsNewCluster = undefined;
+        }
+      }
 
       this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
 
@@ -201,6 +318,13 @@ export class BackEnd extends Construct {
           vpc: this.vpc,
         });
       }
+
+      this.databaseSecretsParameter = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
+        tier: ssm.ParameterTier.STANDARD,
+        parameterName: `/medplum/${name}/DatabaseSecrets`,
+        description: 'Database secrets ARN',
+        stringValue: this.rdsSecretsArn,
+      });
     }
 
     // Redis
@@ -601,13 +725,6 @@ export class BackEnd extends Construct {
       stringValue: config.region,
     });
 
-    this.databaseSecretsParameter = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
-      tier: ssm.ParameterTier.STANDARD,
-      parameterName: `/medplum/${name}/DatabaseSecrets`,
-      description: 'Database secrets ARN',
-      stringValue: this.rdsSecretsArn,
-    });
-
     if (this.rdsProxy) {
       this.databaseProxyEndpointParameter = new ssm.StringParameter(this, 'DatabaseProxyEndpointParameter', {
         tier: ssm.ParameterTier.STANDARD,
@@ -661,4 +778,34 @@ export class BackEnd extends Construct {
     // Otherwise, use the standard container image
     return ecs.ContainerImage.fromRegistry(imageName);
   }
+}
+
+function getPostgresEngine(
+  version?: string,
+  defaultVersion?: rds.AuroraPostgresEngineVersion
+): { engine: rds.IClusterEngine; majorVersion: string } {
+  if (!version) {
+    if (defaultVersion) {
+      return {
+        engine: rds.DatabaseClusterEngine.auroraPostgres({ version: defaultVersion }),
+        majorVersion: defaultVersion.auroraPostgresMajorVersion,
+      };
+    }
+    throw new Error('Missing or empty RDS version: ' + version);
+  }
+
+  const majorVersion = version.slice(0, version.indexOf('.'));
+  return {
+    engine: rds.DatabaseClusterEngine.auroraPostgres({
+      version: rds.AuroraPostgresEngineVersion.of(version, majorVersion, {
+        s3Import: true,
+        s3Export: true,
+      }),
+    }),
+    majorVersion,
+  };
+}
+
+function getDatabaseClusterId(majorVersion?: string): string {
+  return majorVersion ? `DatabaseClusterPG${majorVersion}` : 'DatabaseCluster';
 }
