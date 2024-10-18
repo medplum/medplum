@@ -112,16 +112,14 @@ agentPingCommand
       throw new Error('--count <count> must be an integer if specified');
     }
 
-    let pingResult: string;
     try {
-      pingResult = (await medplum.pushToAgent(agentRef, ipOrDomain, `PING ${count}`, ContentType.PING, true, {
+      const pingResult = (await medplum.pushToAgent(agentRef, ipOrDomain, `PING ${count}`, ContentType.PING, true, {
         maxRetries: 0,
       })) as string;
+      console.info(pingResult);
     } catch (err) {
       throw new Error('Unexpected response from agent while pinging', { cause: err });
     }
-
-    console.info(pingResult);
   });
 
 agentPushCommand
