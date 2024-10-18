@@ -3529,15 +3529,12 @@ describe('FHIR Search', () => {
 
     test('Sort by unknown search parameter', async () =>
       withTestContext(async () => {
-        try {
-          await repo.search({
+        await expect(
+          repo.search({
             resourceType: 'Patient',
             sortRules: [{ code: 'xyz' }],
-          });
-        } catch (err) {
-          const outcome = normalizeOperationOutcome(err);
-          expect(outcome.issue?.[0]?.details?.text).toBe('Unknown search parameter: xyz');
-        }
+          })
+        ).rejects.toThrow(/^Unknown search parameter: xyz$/);
       }));
 
     test('Date range search', () =>
