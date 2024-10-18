@@ -4,7 +4,7 @@ module "medplum-gke-workload-identity" {
   project_id          = var.project_id
   use_existing_gcp_sa = true
   name                = module.service_accounts.service_accounts[0].account_id
-  # namespace           = "external-secrets"
+  namespace           = "external-secrets"
 
   # wait for the custom GSA to be created to force module data source read during apply
   # https://github.com/terraform-google-modules/terraform-google-kubernetes-engine/issues/1059
