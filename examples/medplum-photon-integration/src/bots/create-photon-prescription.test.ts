@@ -1,5 +1,14 @@
-import { createReference } from '@medplum/core';
-import { Bot, CodeableConcept, MedicationRequest, Patient, Reference } from '@medplum/fhirtypes';
+import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import {
+  Bot,
+  Bundle,
+  CodeableConcept,
+  MedicationRequest,
+  Patient,
+  Reference,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS, NEUTRON_HEALTH_TREATMENTS } from './constants';
@@ -18,6 +27,14 @@ const secrets = {
 };
 
 describe('Create photon prescription', async () => {
+  beforeAll(() => {
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+    for (const filename of SEARCH_PARAMETER_BUNDLE_FILES) {
+      indexSearchParameterBundle(readJson(filename) as Bundle<SearchParameter>);
+    }
+  });
+
   vi.mock('./utils.ts', async () => {
     const actualModule = await vi.importActual('./utils.ts');
     return {
@@ -26,6 +43,8 @@ describe('Create photon prescription', async () => {
       photonGraphqlFetch: vi.fn(),
     };
   });
+
+  const mockAuthToken = 'mock-token';
 
   test.skip('Create prescription and update MedicationRequest', async () => {
     const medplum = new MockClient();
@@ -101,9 +120,7 @@ describe('Create photon prescription', async () => {
       'Medication must have a code'
     );
   });
-});
 
-describe('Validate variables', () => {
   test.skip('Create and validate variables', () => {
     const result = createAndValidateVariables('patient-id', 'treatment-id', 30, 'tablets', 'Take one daily');
     expect(result).toEqual({
@@ -120,10 +137,6 @@ describe('Validate variables', () => {
       'The following required fields are missing: instructions'
     );
   });
-});
-
-describe('getPhotonTreatmentId', () => {
-  const mockAuthToken = 'mock-auth-token';
 
   test('Get treatment ID from MedicationKnowledge', async () => {
     const medplum = new MockClient();
@@ -177,9 +190,7 @@ describe('getPhotonTreatmentId', () => {
       'Could not find medication in Photon'
     );
   });
-});
 
-describe('getPhotonIdByCoding', () => {
   test('Get Photon ID from MedicationKnowledge', async () => {
     const medplum = new MockClient();
     const mockMedicationCode: CodeableConcept = {
