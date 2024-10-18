@@ -52,7 +52,7 @@ export class BackEnd extends Construct {
   wafAssociation: wafv2.CfnWebACLAssociation;
   dnsRecord?: route53.ARecord;
   regionParameter: ssm.StringParameter;
-  databaseSecretsParameter?: ssm.StringParameter;
+  databaseSecretsParameter: ssm.StringParameter;
   databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
@@ -371,13 +371,6 @@ export class BackEnd extends Construct {
           vpc: this.vpc,
         });
       }
-
-      this.databaseSecretsParameter = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
-        tier: ssm.ParameterTier.STANDARD,
-        parameterName: `/medplum/${name}/DatabaseSecrets`,
-        description: 'Database secrets ARN',
-        stringValue: this.rdsSecretsArn,
-      });
     }
 
     // Redis
@@ -776,6 +769,13 @@ export class BackEnd extends Construct {
       parameterName: `/medplum/${name}/awsRegion`,
       description: 'AWS region',
       stringValue: config.region,
+    });
+
+    this.databaseSecretsParameter = new ssm.StringParameter(this, 'DatabaseSecretsParameter', {
+      tier: ssm.ParameterTier.STANDARD,
+      parameterName: `/medplum/${name}/DatabaseSecrets`,
+      description: 'Database secrets ARN',
+      stringValue: this.rdsSecretsArn,
     });
 
     if (this.rdsProxy) {
