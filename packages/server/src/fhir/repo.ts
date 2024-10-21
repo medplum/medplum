@@ -1165,13 +1165,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resourceType - The resource type being searched.
    */
   private addAccessPolicyFilters(builder: SelectQuery, resourceType: string): void {
-    if (!this.context.accessPolicy?.resource) {
+    const accessPolicy = this.context.accessPolicy;
+    if (!accessPolicy?.resource) {
       return;
     }
 
     const expressions: Expression[] = [];
 
-    for (const policy of this.context.accessPolicy.resource) {
+    for (const policy of accessPolicy.resource) {
       if (policy.resourceType === resourceType) {
         const policyCompartmentId = resolveId(policy.compartment);
         if (policyCompartmentId) {
@@ -1179,6 +1180,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           // Add compartment restriction for the access policy.
           expressions.push(new Condition('compartments', 'ARRAY_CONTAINS', policyCompartmentId, 'UUID[]'));
         } else if (policy.criteria) {
+          if (!policy.criteria.startsWith(policy.resourceType + '?')) {
+            getLogger().warn('Invalid access policy criteria', {
+              accessPolicy: accessPolicy.id,
+              resourceType: policy.resourceType,
+              criteria: policy.criteria,
+            });
+            return; // Ignore invalid access policy criteria
+          }
           // Add subquery for access policy criteria.
           const searchRequest = parseSearchRequest(policy.criteria);
           const accessPolicyExpression = buildSearchExpression(
