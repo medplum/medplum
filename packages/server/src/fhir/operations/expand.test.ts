@@ -698,14 +698,18 @@ describe('Updated implementation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
+    const system = 'http://terminology.hl7.org/CodeSystem/v3-ActMood';
 
-    expect(expansion.contains).toHaveLength(3);
-    expect(expansion.contains).not.toContainEqual<ValueSetExpansionContains>({
-      code: '_ActMoodPredicate',
-    });
-    expect(expansion.contains).not.toContainEqual<ValueSetExpansionContains>({
-      code: 'RQO.CRT',
-    });
+    expect(expansion.contains).toHaveLength(5);
+    expect(expansion.contains).toEqual(
+      expect.arrayContaining([
+        { system, code: 'CRT', display: 'criterion' },
+        { system, code: 'GOL', display: 'goal' },
+        { system, code: 'RSK', display: 'risk' },
+        { system, code: 'EXPEC', display: 'expectation' },
+        { system, code: 'OPT', display: 'option' },
+      ])
+    );
   });
 
   test('Recursive subsumption', async () => {
