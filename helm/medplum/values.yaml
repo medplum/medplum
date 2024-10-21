@@ -13,17 +13,26 @@ image:
 
 env:
   - name: DATABASE_URL
-    value: "postgresql://username:password@cloudsql-instance-ip:5432/database-name"
+    valueFrom:
+      secretKeyRef:
+        name: postgresql-connection-string
+        key: connection-string
   - name: REDIS_URL
     value: "redis://redis-instance-ip:6379"
   - name: POSTGRES_HOST
-    value: "CLOUD_SQL_PRIVATE_IP"
+    valueFrom:
+      secretKeyRef:
+        name: postgresql-ip-address
+        key: ip-address
   - name: POSTGRES_PORT
     value: "5432"
   - name: POSTGRES_USER
     value: "medplum"
   - name: POSTGRES_PASSWORD
-    value: "medplum"
+    valueFrom:
+      secretKeyRef:
+        name: postgres-password
+        key: password
   - name: POSTGRES_DB
     value: "your-database-name"
   - name: REDIS_HOST
