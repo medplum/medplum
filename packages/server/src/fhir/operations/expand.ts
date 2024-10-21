@@ -212,7 +212,7 @@ export function filterIncludedConcepts(
   concepts: ValueSetComposeIncludeConcept[] | ValueSetExpansionContains[] | Coding[],
   params: ValueSetExpandParameters,
   system?: string
-): Coding[] {
+): ValueSetExpansionContains[] {
   const filter = params.filter?.trim().toLowerCase();
   const codings: Coding[] = flattenConcepts(concepts, { filter, system });
   if (!filter) {
@@ -241,7 +241,8 @@ function flattenConcepts(
       result.push(...flattenConcepts(contained, options));
     }
 
-    if (!options?.filter || concept.display?.toLowerCase().includes(options.filter)) {
+    const filter = options?.filter;
+    if (!filter || concept.display?.toLowerCase().includes(filter)) {
       result.push({ system, code: concept.code, display: concept.display });
     }
   }

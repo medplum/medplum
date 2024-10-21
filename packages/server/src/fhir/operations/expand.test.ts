@@ -983,8 +983,15 @@ describe('Updated implementation', () => {
         contains: [
           {
             system: 'http://loinc.org',
-            code: '8867-4',
-            display: 'Heart rate',
+            code: '82810-3',
+            display: 'Pregnancy status',
+            contains: [
+              {
+                system: 'http://loinc.org',
+                code: '86645-9',
+                display: 'Pregnancy intention in the next year - Reported',
+              },
+            ],
           },
         ],
       },
@@ -1001,7 +1008,16 @@ describe('Updated implementation', () => {
       status: 'draft',
       url: 'http://example.com/ValueSet/include-expanded-' + randomUUID(),
       compose: {
-        include: [{ valueSet: [preexpandedValueSet.url as string] }],
+        include: [
+          { valueSet: [preexpandedValueSet.url as string] },
+          {
+            system: 'http://loinc.org',
+            concept: [
+              { code: '8480-6', display: 'Systolic BP - Reported' },
+              { code: '8462-4', display: 'Diastolic BP - Reported' },
+            ],
+          },
+        ],
       },
     };
     const valueSetRes = await request(app)
@@ -1012,17 +1028,30 @@ describe('Updated implementation', () => {
     const valueSet = valueSetRes.body as ValueSet;
 
     const res = await request(app)
-      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=reported`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    expect(expansion.contains).toEqual([
-      {
-        system: 'http://loinc.org',
-        code: '8867-4',
-        display: 'Heart rate',
-      },
-    ]);
+    expect(expansion.contains).toHaveLength(3);
+    expect(expansion.contains).toEqual(
+      expect.arrayContaining([
+        {
+          system: 'http://loinc.org',
+          code: '86645-9',
+          display: 'Pregnancy intention in the next year - Reported',
+        },
+        {
+          system: 'http://loinc.org',
+          code: '8480-6',
+          display: 'Systolic BP - Reported',
+        },
+        {
+          system: 'http://loinc.org',
+          code: '8462-4',
+          display: 'Diastolic BP - Reported',
+        },
+      ])
+    );
   });
 });
