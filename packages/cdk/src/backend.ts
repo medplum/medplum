@@ -282,9 +282,7 @@ export class BackEnd extends Construct {
 
       const credentials = rds.Credentials.fromGeneratedSecret('clusteradmin');
 
-      const rdsClusterId = getDatabaseClusterId(config.rdsIdsMajorVersionSuffix ? majorVersion : undefined);
-      this.rdsCluster = new rds.DatabaseCluster(this, rdsClusterId, {
-        engine,
+      const defaultClusterProps: Partial<rds.DatabaseClusterProps> = {
         credentials,
         defaultDatabaseName: 'medplum',
         storageEncrypted: true,
@@ -292,15 +290,23 @@ export class BackEnd extends Construct {
         vpcSubnets: {
           subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
         },
-        writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
-        readers,
         backup: {
           retention: Duration.days(7),
         },
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
+        removalPolicy: RemovalPolicy.RETAIN,
+      };
+
+      const rdsClusterId = getDatabaseClusterId(config.rdsIdsMajorVersionSuffix ? majorVersion : undefined);
+      this.rdsCluster = new rds.DatabaseCluster(this, rdsClusterId, {
+        ...defaultClusterProps,
+        engine,
+        writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
+        readers,
         parameterGroup: this.rdsClusterParameterGroup ?? legacyClusterParams,
-        removalPolicy: config.rdsReplaceClusterStep ? RemovalPolicy.RETAIN : undefined,
+        removalPolicy:
+          config.rdsReplaceClusterStep || config.rdsIdsMajorVersionSuffix ? RemovalPolicy.RETAIN : undefined,
       });
 
       if (config.rdsReplaceClusterStep === 2 || config.rdsReplaceClusterStep === 3) {
@@ -335,25 +341,14 @@ export class BackEnd extends Construct {
 
         const rdsNewClusterId = getDatabaseClusterId(newEngineInfo.majorVersion);
         this.rdsNewCluster = new rds.DatabaseCluster(this, rdsNewClusterId, {
+          ...defaultClusterProps,
           engine: newEngineInfo.engine,
-          credentials,
-          storageEncrypted: true,
-          vpc: this.vpc,
-          vpcSubnets: {
-            subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-          },
           writer: ClusterInstance.provisioned('Instance1', {
             ...writerInstanceProps,
             parameterGroup: this.rdsNewWriterParameterGroup,
           }),
           readers: newReaders,
-          backup: {
-            retention: Duration.days(7),
-          },
-          cloudwatchLogsExports: ['postgresql'],
-          instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
           parameterGroup: this.rdsNewClusterParameterGroup,
-          removalPolicy: RemovalPolicy.RETAIN,
         });
 
         if (config.rdsReplaceClusterStep === 3) {
