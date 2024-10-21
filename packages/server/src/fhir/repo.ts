@@ -1178,7 +1178,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
           expressions.push(new Condition('compartments', 'ARRAY_CONTAINS', policyCompartmentId, 'UUID[]'));
-        } else if (policy.criteria) {
+        } else if (policy.criteria?.startsWith(policy.resourceType + '?')) {
           // Add subquery for access policy criteria.
           const searchRequest = parseSearchRequest(policy.criteria);
           const accessPolicyExpression = buildSearchExpression(
