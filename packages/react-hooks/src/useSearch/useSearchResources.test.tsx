@@ -71,16 +71,16 @@ describe('useSearch hooks', () => {
     expect(medplumSearchResources).toHaveBeenCalledTimes(1);
 
     rerender({ name: 'marge' });
-    expect(medplumSearchResources).toHaveBeenCalledTimes(1);
+    expect(medplumSearchResources).toHaveBeenCalledTimes(2);
     rerender({ name: 'home' });
-    expect(medplumSearchResources).toHaveBeenCalledTimes(1);
+    expect(medplumSearchResources).toHaveBeenCalledTimes(2);
     rerender({ name: 'homer' });
-    expect(medplumSearchResources).toHaveBeenCalledTimes(1);
+    expect(medplumSearchResources).toHaveBeenCalledTimes(2);
 
     // Wait for debounce to time out
     await sleep(150);
     expect(medplumSearchResources).toHaveBeenLastCalledWith('Patient', { name: 'homer' });
-    expect(medplumSearchResources).toHaveBeenCalledTimes(2);
+    expect(medplumSearchResources).toHaveBeenCalledTimes(3);
     expect(result.current[0]).toHaveLength(1);
     expect(result.current[0]?.[0]?.resourceType).toEqual('Patient');
     expect(result.current[0]?.[0]?.name).toEqual([{ given: ['Homer'], family: 'Simpson' }]);

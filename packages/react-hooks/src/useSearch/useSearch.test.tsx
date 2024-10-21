@@ -50,7 +50,7 @@ describe('useSearch hooks', () => {
     const medplumSearch = jest.spyOn(medplum, 'search');
 
     const { result, rerender } = renderHook(
-      (props) => useSearch('Patient', { name: props.name }, { debounceMs: 100 }),
+      (props) => useSearch('Patient', { name: props.name }, { debounceMs: 150 }),
       {
         initialProps: { name: 'bart' },
         wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
@@ -69,16 +69,16 @@ describe('useSearch hooks', () => {
     expect(medplumSearch).toHaveBeenCalledTimes(1);
 
     rerender({ name: 'marge' });
-    expect(medplumSearch).toHaveBeenCalledTimes(1);
+    expect(medplumSearch).toHaveBeenCalledTimes(2);
     rerender({ name: 'home' });
-    expect(medplumSearch).toHaveBeenCalledTimes(1);
+    expect(medplumSearch).toHaveBeenCalledTimes(2);
     rerender({ name: 'homer' });
-    expect(medplumSearch).toHaveBeenCalledTimes(1);
+    expect(medplumSearch).toHaveBeenCalledTimes(2);
 
     // Wait for debounce to time out
-    await sleep(150);
+    await sleep(200);
     expect(medplumSearch).toHaveBeenLastCalledWith('Patient', { name: 'homer' });
-    expect(medplumSearch).toHaveBeenCalledTimes(2);
+    expect(medplumSearch).toHaveBeenCalledTimes(3);
     expect(result.current[0]?.resourceType).toEqual('Bundle');
     expect(result.current[0]?.entry).toHaveLength(1);
     expect(result.current[1]).toEqual(false);

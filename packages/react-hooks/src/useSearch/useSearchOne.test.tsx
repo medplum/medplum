@@ -49,7 +49,7 @@ describe('useSearch hooks', () => {
     const medplumSearchOne = jest.spyOn(medplum, 'searchOne');
 
     const { result, rerender } = renderHook(
-      (props) => useSearchOne('Patient', { name: props.name }, { debounceMs: 100 }),
+      (props) => useSearchOne('Patient', { name: props.name }, { debounceMs: 150 }),
       {
         initialProps: { name: 'bart' },
         wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
@@ -68,16 +68,16 @@ describe('useSearch hooks', () => {
     expect(medplumSearchOne).toHaveBeenCalledTimes(1);
 
     rerender({ name: 'marge' });
-    expect(medplumSearchOne).toHaveBeenCalledTimes(1);
+    expect(medplumSearchOne).toHaveBeenCalledTimes(2);
     rerender({ name: 'home' });
-    expect(medplumSearchOne).toHaveBeenCalledTimes(1);
+    expect(medplumSearchOne).toHaveBeenCalledTimes(2);
     rerender({ name: 'homer' });
-    expect(medplumSearchOne).toHaveBeenCalledTimes(1);
+    expect(medplumSearchOne).toHaveBeenCalledTimes(2);
 
     // Wait for debounce to time out
-    await sleep(150);
+    await sleep(200);
     expect(medplumSearchOne).toHaveBeenLastCalledWith('Patient', { name: 'homer' });
-    expect(medplumSearchOne).toHaveBeenCalledTimes(2);
+    expect(medplumSearchOne).toHaveBeenCalledTimes(3);
     expect(result.current[0]?.resourceType).toEqual('Patient');
     expect(result.current[0]?.name).toEqual([{ given: ['Homer'], family: 'Simpson' }]);
     expect(result.current[1]).toEqual(false);

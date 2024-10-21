@@ -76,7 +76,9 @@ function useSearchImpl<K extends ResourceType, SearchReturnType>(
   const [outcome, setOutcome] = useState<OperationOutcome>();
 
   const searchKey = medplum.fhirSearchUrl(resourceType, query).toString();
-  const [debouncedSearchKey] = useDebouncedValue(searchKey, options?.debounceMs ?? DEFAULT_DEBOUNCE_MS);
+  const [debouncedSearchKey] = useDebouncedValue(searchKey, options?.debounceMs ?? DEFAULT_DEBOUNCE_MS, {
+    leading: true,
+  });
 
   useEffect(() => {
     if (debouncedSearchKey !== lastSearchKey) {
