@@ -1178,7 +1178,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
           expressions.push(new Condition('compartments', 'ARRAY_CONTAINS', policyCompartmentId, 'UUID[]'));
-        } else if (policy.criteria) {
+        } else if (policy.criteria?.startsWith(policy.resourceType + '?')) {
           // Add subquery for access policy criteria.
           const searchRequest = parseSearchRequest(policy.criteria);
           const accessPolicyExpression = buildSearchExpression(
@@ -2082,13 +2082,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     callback: (client: PoolClient) => Promise<TResult>,
     options?: { serializable: boolean }
   ): Promise<TResult> {
+    let dbError = true;
     try {
       const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
+
+      dbError = false;
       const result = await callback(client);
+      dbError = true;
+
       await this.commitTransaction();
       return result;
-    } catch (err) {
-      const operationOutcomeError = normalizeDatabaseError(err);
+    } catch (err: any) {
+      const operationOutcomeError = dbError ? normalizeDatabaseError(err) : err;
       await this.rollbackTransaction(operationOutcomeError);
       throw operationOutcomeError;
     } finally {

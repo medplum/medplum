@@ -39,6 +39,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
+import { getLogger } from '../context';
 
 jest.mock('hibp');
 
@@ -1224,5 +1225,19 @@ describe('FHIR Repo', () => {
         project,
       });
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
+    }));
+
+  test('Correctly reports logic error inside transaction', async () =>
+    withTestContext(async () => {
+      const logger = getLogger();
+      const logSpy = jest.spyOn(logger, 'error');
+
+      await expect(
+        systemRepo.withTransaction(() => {
+          throw new Error('Oops!');
+        })
+      ).rejects.toThrow('Oops!');
+
+      expect(logSpy).not.toHaveBeenCalled();
     }));
 });
