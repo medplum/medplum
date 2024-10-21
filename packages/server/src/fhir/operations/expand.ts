@@ -216,15 +216,7 @@ export function filterCodings(codings: Coding[], params: ValueSetExpandParameter
 }
 
 export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandParameters): Promise<ValueSet> {
-  let expandedSet: ValueSetExpansionContains[];
-
-  const expansion = valueSet.expansion;
-  if (expansion?.contains?.length && !expansion.parameter && expansion.total === expansion.contains.length) {
-    // Full expansion is already available, use that
-    expandedSet = filterCodings(expansion.contains, params);
-  } else {
-    expandedSet = await computeExpansion(valueSet, params);
-  }
+  const expandedSet = await computeExpansion(valueSet, params);
   if (expandedSet.length >= MAX_EXPANSION_SIZE) {
     valueSet.expansion = {
       total: MAX_EXPANSION_SIZE + 1,
@@ -246,6 +238,16 @@ async function computeExpansion(
   params: ValueSetExpandParameters,
   terminologyResources: Record<string, CodeSystem | ValueSet> = Object.create(null)
 ): Promise<ValueSetExpansionContains[]> {
+  const preExpansion = valueSet.expansion;
+  if (
+    preExpansion?.contains?.length &&
+    !preExpansion.parameter &&
+    (!preExpansion.total || preExpansion.total === preExpansion.contains.length)
+  ) {
+    // Full expansion is already available, use that
+    return filterCodings(preExpansion.contains, params);
+  }
+
   if (!valueSet.compose?.include.length) {
     throw new OperationOutcomeError(badRequest('Missing ValueSet definition', 'ValueSet.compose.include'));
   }

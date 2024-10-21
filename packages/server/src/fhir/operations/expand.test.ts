@@ -699,9 +699,12 @@ describe('Updated implementation', () => {
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    expect(expansion.contains).toHaveLength(11);
+    expect(expansion.contains).toHaveLength(3);
     expect(expansion.contains).not.toContainEqual<ValueSetExpansionContains>({
       code: '_ActMoodPredicate',
+    });
+    expect(expansion.contains).not.toContainEqual<ValueSetExpansionContains>({
+      code: 'RQO.CRT',
     });
   });
 
@@ -964,5 +967,58 @@ describe('Updated implementation', () => {
       code: 'MT',
       display: 'Meat',
     });
+  });
+
+  test('Include pre-expanded ValueSet', async () => {
+    const preexpanded: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'http://example.com/ValueSet/pre-expanded-' + randomUUID(),
+      expansion: {
+        timestamp: new Date().toISOString(),
+        contains: [
+          {
+            system: 'http://loinc.org',
+            code: '8867-4',
+            display: 'Heart rate',
+          },
+        ],
+      },
+    };
+    const preexpandedRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(preexpanded);
+    expect(preexpandedRes.status).toEqual(201);
+    const preexpandedValueSet = preexpandedRes.body as ValueSet;
+
+    const include: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'http://example.com/ValueSet/include-expanded-' + randomUUID(),
+      compose: {
+        include: [{ valueSet: [preexpandedValueSet.url as string] }],
+      },
+    };
+    const valueSetRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(include);
+    expect(valueSetRes.status).toEqual(201);
+    const valueSet = valueSetRes.body as ValueSet;
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toEqual([
+      {
+        system: 'http://loinc.org',
+        code: '8867-4',
+        display: 'Heart rate',
+      },
+    ]);
   });
 });
