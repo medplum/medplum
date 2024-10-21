@@ -262,14 +262,14 @@ export class BackEnd extends Construct {
       const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: readerInstanceType ? new ec2.InstanceType(readerInstanceType) : undefined,
-        parameterGroup: this.rdsReaderParameterGroup,
+        parameterGroup: config.rdsIdsMajorVersionSuffix ? this.rdsReaderParameterGroup : undefined,
       };
 
       const writerInstanceType = config.rdsInstanceType;
       const writerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
-        parameterGroup: this.rdsWriterParameterGroup,
+        parameterGroup: config.rdsIdsMajorVersionSuffix ? this.rdsWriterParameterGroup : undefined,
       };
 
       let readers: rds.IClusterInstance[] | undefined;
