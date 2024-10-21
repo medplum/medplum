@@ -9,6 +9,7 @@ import {
 } from '@medplum/core';
 import {
   AccessPolicy,
+  AccessPolicyResource,
   ClientApplication,
   Login,
   Observation,
@@ -2512,23 +2513,37 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow();
     }));
 
-  test('Server rejects invalid criteria', () =>
+  test.each<[AccessPolicyResource, string]>([
+    [
+      {
+        resourceType: 'Patient',
+        criteria: 'identifier=123',
+        readonly: true,
+      },
+      'axp-3',
+    ],
+    [
+      {
+        resourceType: 'Patient',
+        criteria: 'Patient',
+      },
+      'axp-3',
+    ],
+    [
+      {
+        resourceType: 'Practitioner',
+        criteria: 'Patient?name=Dave',
+      },
+      'axp-3',
+    ],
+  ])('Server rejects invalid criteria %p', (policy, expectedError) =>
     withTestContext(async () => {
       await expect(
         systemRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
-          resource: [
-            {
-              resourceType: 'Patient',
-              criteria: 'identifier=123',
-              readonly: true,
-            },
-            {
-              resourceType: 'Patient',
-              criteria: 'Patient',
-            },
-          ],
+          resource: [policy],
         })
-      ).rejects.toThrow(/axp-2/);
-    }));
+      ).rejects.toThrow(expectedError);
+    })
+  );
 });
