@@ -1,3 +1,4 @@
+import { badRequest, ContentType } from '@medplum/core';
 import express, { json } from 'express';
 import request from 'supertest';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
@@ -6,7 +7,6 @@ import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
 import { initTestAuth } from './test.setup';
-import { ContentType } from '@medplum/core';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
@@ -131,6 +131,21 @@ describe('App', () => {
     const res = await request(app).get('/throw');
     expect(res.status).toBe(500);
     expect(res.body).toMatchObject({ msg: 'Internal Server Error' });
+    expect(await shutdownApp()).toBeUndefined();
+  });
+
+  test('Stream is not readable', async () => {
+    const app = express();
+    app.get('/throw', () => {
+      const err = new Error('stream.not.readable');
+      (err as any).type = 'stream.not.readable';
+      throw err;
+    });
+    const config = await loadTestConfig();
+    await initApp(app, config);
+    const res = await request(app).get('/throw');
+    expect(res.status).toBe(400);
+    expect(res.body).toMatchObject(badRequest('Stream not readable'));
     expect(await shutdownApp()).toBeUndefined();
   });
 

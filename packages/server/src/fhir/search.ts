@@ -344,16 +344,20 @@ function getBaseSelectQueryForResourceType(
   opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
   const builder = new SelectQuery(resourceType);
-  if (opts?.addColumns ?? true) {
-    builder
-      .column({ tableName: resourceType, columnName: 'id' })
-      .column({ tableName: resourceType, columnName: 'content' });
+  const addColumns = opts?.addColumns !== false;
+  const idColumn = new Column(resourceType, 'id');
+  if (addColumns) {
+    builder.column(idColumn).column(new Column(resourceType, 'content'));
   }
   repo.addDeletedFilter(builder);
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(repo, builder, resourceType, searchRequest);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
+  }
+
+  if (addColumns && builder.joins.length > 0) {
+    builder.distinctOn(idColumn);
   }
   return builder;
 }
@@ -881,14 +885,13 @@ function buildSearchFilterExpression(
   }
 
   // Not any special cases, just a normal search parameter.
-  return buildNormalSearchFilterExpression(repo, resourceType, table, param, filter);
+  return buildNormalSearchFilterExpression(resourceType, table, param, filter);
 }
 
 /**
  * Builds a search filter expression for a normal search parameter.
  *
  * Not any special cases, just a normal search parameter.
- * @param repo - The repository.
  * @param resourceType - The FHIR resource type.
  * @param table - The resource table.
  * @param param - The FHIR search parameter.
@@ -896,7 +899,6 @@ function buildSearchFilterExpression(
  * @returns A SQL "WHERE" clause expression.
  */
 function buildNormalSearchFilterExpression(
-  repo: Repository,
   resourceType: string,
   table: string,
   param: SearchParameter,
@@ -907,26 +909,35 @@ function buildNormalSearchFilterExpression(
     return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '=' : '!=', null);
   } else if (filter.operator === Operator.PRESENT) {
     return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '!=' : '=', null);
-  } else if (param.type === 'string') {
-    return buildStringSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
-  } else if (param.type === 'token' || param.type === 'uri') {
-    return buildTokenSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
-  } else if (param.type === 'reference') {
-    return buildReferenceSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
-  } else if (param.type === 'date') {
-    return buildDateSearchFilter(table, details, filter);
-  } else if (param.type === 'quantity') {
-    return new Condition(
-      new Column(table, details.columnName),
-      fhirOperatorToSqlOperator(filter.operator),
-      filter.value
-    );
-  } else {
-    const values = splitSearchOnComma(filter.value).map(
-      (v) => new Condition(new Column(undefined, details.columnName), fhirOperatorToSqlOperator(filter.operator), v)
-    );
-    const expr = new Disjunction(values);
-    return details.array ? new ArraySubquery(new Column(undefined, details.columnName), expr) : expr;
+  }
+
+  switch (param.type) {
+    case 'string':
+      return buildStringSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
+    case 'token':
+    case 'uri':
+      if (details.type === SearchParameterType.BOOLEAN) {
+        return buildBooleanSearchFilter(table, details, filter.operator, filter.value);
+      } else {
+        return buildTokenSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
+      }
+    case 'reference':
+      return buildReferenceSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
+    case 'date':
+      return buildDateSearchFilter(table, details, filter);
+    case 'quantity':
+      return new Condition(
+        new Column(table, details.columnName),
+        fhirOperatorToSqlOperator(filter.operator),
+        filter.value
+      );
+    default: {
+      const values = splitSearchOnComma(filter.value).map(
+        (v) => new Condition(new Column(undefined, details.columnName), fhirOperatorToSqlOperator(filter.operator), v)
+      );
+      const expr = new Disjunction(values);
+      return details.array ? new ArraySubquery(new Column(undefined, details.columnName), expr) : expr;
+    }
   }
 }
 
@@ -1107,6 +1118,24 @@ function buildTokenSearchFilter(
     return new Negation(condition);
   }
   return condition;
+}
+
+const allowedBooleanValues = ['true', 'false'];
+function buildBooleanSearchFilter(
+  table: string,
+  details: SearchParameterDetails,
+  operator: Operator,
+  value: string
+): Expression {
+  if (!allowedBooleanValues.includes(value)) {
+    throw new OperationOutcomeError(badRequest(`Boolean search value must be 'true' or 'false'`));
+  }
+
+  return new Condition(
+    new Column(table, details.columnName),
+    operator === Operator.NOT_EQUALS || operator === Operator.NOT ? '!=' : '=',
+    value
+  );
 }
 
 /**
@@ -1290,6 +1319,19 @@ function buildChainedSearch(
 ): Expression {
   if (param.chain.length > 3) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
+  }
+
+  // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
+  // Note that this does slightly change the behavior of the search query: true chained search would require the
+  // reference to point to an existing resource, while the rewritten query just matches the reference string
+  if (param.chain.length === 1 && param.chain[0].filter?.code === '_id' && !param.chain[0].reverse) {
+    const { resourceType: targetType, code, filter } = param.chain[0];
+    const targetId = filter.value;
+    return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
+      code,
+      operator: Operator.EQUALS,
+      value: `${targetType}/${targetId}`,
+    });
   }
 
   if (usesReferenceLookupTable(repo)) {

@@ -99,7 +99,9 @@ describe('CLI Bots', () => {
     await expect(main(['node', 'index.js', 'bot', 'deploy', 'hello-world'])).rejects.toThrow(
       'Process exited with exit code 1'
     );
-    expect(processError).toHaveBeenCalledWith(expect.stringContaining('Error: Not found'));
+    expect(processError).toHaveBeenCalledWith(
+      expect.stringContaining('Error: 1 bot(s) had failures. Bots with failures:')
+    );
   });
 
   test('Save bot success', async () => {
@@ -390,7 +392,9 @@ describe('CLI Bots', () => {
     await expect(main(['node', 'index.js', 'deploy-bot', 'hello-world'])).rejects.toThrow(
       'Process exited with exit code 1'
     );
-    expect(processError).toHaveBeenCalledWith(expect.stringMatching('Error: Not found'));
+    expect(processError).toHaveBeenCalledWith(
+      expect.stringContaining('Error: 1 bot(s) had failures. Bots with failures:')
+    );
   });
 
   test('Deprecate Save bot success', async () => {

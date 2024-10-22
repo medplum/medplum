@@ -44,8 +44,12 @@ import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
+import { authenticateRequest } from './oauth/middleware';
+import { asyncBatchHandler } from './async-batch';
 
 let server: http.Server | undefined = undefined;
+
+export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
 
 /**
  * Sets standard headers for all requests.
@@ -125,11 +129,18 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
+  if (err.type === 'stream.not.readable') {
+    // This is a common error when the client disconnects
+    // See: https://expressjs.com/en/resources/middleware/body-parser.html
+    // It is commonly associated with an AWS ALB disconnect status code 460
+    // See: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-troubleshooting.html#http-460-issues
+    getLogger().warn('Stream not readable', err);
+    sendOutcome(res, badRequest('Stream not readable'));
+    return;
+  }
   getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
-
-export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
   await initAppServices(config);
@@ -145,6 +156,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(attachRequestContext);
   app.use(getRateLimiter(config));
   app.use('/fhir/R4/Binary', binaryRouter);
+
+  // Handle async batch by enqueueing job
+  app.post('/fhir/R4', authenticateRequest, asyncWrap(asyncBatchHandler(config)));
+
   app.use(
     urlencoded({
       extended: false,
@@ -255,3 +270,13 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
 
   next();
 };
+
+export async function runMiddleware(
+  req: Request,
+  res: Response,
+  handler: (req: Request, res: Response, next: (err?: any) => void) => void
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    handler(req, res, (err) => (err ? reject(err) : resolve()));
+  });
+}

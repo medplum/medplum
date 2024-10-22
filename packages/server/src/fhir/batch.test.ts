@@ -1,7 +1,7 @@
 import express from 'express';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { initTestAuth } from '../test.setup';
+import { initTestAuth, waitForAsyncJob } from '../test.setup';
 import request from 'supertest';
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import {
@@ -10,12 +10,17 @@ import {
   BundleEntryResponse,
   CareTeam,
   Observation,
+  OperationOutcome,
+  OperationOutcomeIssue,
+  Parameters,
   Patient,
   Practitioner,
   RelatedPerson,
   Task,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { BatchJobData, execBatchJob, getBatchQueue } from '../workers/batch';
+import { Job } from 'bullmq';
 
 describe('Batch and Transaction processing', () => {
   const app = express();
@@ -892,29 +897,120 @@ describe('Batch and Transaction processing', () => {
     expect(bundle.entry?.[0]?.response?.status).toEqual('400');
   });
 
-  test('Process batch create missing required properties', async () => {
+  test('Async batch', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Observation',
+          },
+          resource: {
+            resourceType: 'Observation',
+          } as Observation,
+        },
+      ],
+    };
+
     const res = await await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Bundle',
-        type: 'batch',
-        entry: [
-          {
-            request: {
-              method: 'POST',
-              url: 'Observation',
-            },
-            resource: {
-              resourceType: 'Observation',
-            } as Observation,
-          },
-        ],
-      });
-    expect(res.status).toEqual(200);
-    const bundle = res.body as Bundle;
-    expect(bundle.entry).toHaveLength(1);
-    expect(bundle.entry?.[0]?.response?.status).toEqual('400');
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res.status).toEqual(202);
+    const outcome = res.body as OperationOutcome;
+    expect(outcome.issue[0].diagnostics).toMatch('http://');
+
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'BatchJobData',
+      expect.objectContaining<Partial<BatchJobData>>({
+        bundle,
+      })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    await expect(execBatchJob(job)).resolves.toBe(undefined);
+
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    expect(asyncJob.output).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'results', valueReference: { reference: expect.stringMatching(/^Binary\//) } }],
+    });
+
+    const resultsReference = asyncJob.output?.parameter?.find((p) => p.name === 'results')?.valueReference?.reference;
+    const res2 = await request(app)
+      .get(`/fhir/R4/${resultsReference}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2.status).toEqual(200);
+    expect(res2.body).toMatchObject<Partial<Bundle>>({
+      resourceType: 'Bundle',
+      type: 'batch-response',
+    });
+  });
+
+  test('Async batch does not retry on failure', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'pergola' as Bundle['type'], // Invalid batch type, with no entries -> error
+    };
+
+    const res = await await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res.status).toEqual(202);
+    const outcome = res.body as OperationOutcome;
+    expect(outcome.issue[0].diagnostics).toMatch('http://');
+
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'BatchJobData',
+      expect.objectContaining<Partial<BatchJobData>>({
+        bundle,
+      })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    await expect(execBatchJob(job)).resolves.toBe(undefined);
+
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    expect(asyncJob.output).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        {
+          name: 'outcome',
+          resource: expect.objectContaining({
+            issue: [
+              expect.objectContaining<OperationOutcomeIssue>({
+                code: 'invalid',
+                severity: 'error',
+                details: { text: expect.stringContaining('pergola') },
+              }),
+            ],
+          }),
+        },
+      ],
+    });
+
+    expect(queue.add).not.toHaveBeenCalled();
   });
 });

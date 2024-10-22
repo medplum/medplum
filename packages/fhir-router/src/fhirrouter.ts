@@ -1,5 +1,6 @@
 import {
   EventTarget,
+  OperationOutcomeError,
   allOk,
   badRequest,
   created,
@@ -24,10 +25,11 @@ import { HttpMethod, RouteResult, Router } from './urlrouter';
 
 export type FhirRequest = {
   method: HttpMethod;
+  url: string;
   pathname: string;
   body: any;
   params: Record<string, string>;
-  query: Record<string, string>;
+  query: Record<string, string | string[] | undefined>;
   headers?: IncomingHttpHeaders;
   config?: FhirRequestConfig;
 };
@@ -71,15 +73,13 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
 // Search
 async function search(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType } = req.params;
-  const query = req.query as Record<string, string[] | string | undefined>;
-  const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
+  const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, req.query));
   return [allOk, bundle];
 }
 
 // Search multiple types
 async function searchMultipleTypes(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  const query = req.query as Record<string, string[] | string | undefined>;
-  const searchRequest = parseSearchRequest('MultipleTypes' as ResourceType, query);
+  const searchRequest = parseSearchRequest('MultipleTypes' as ResourceType, req.query);
   if (!searchRequest.types || searchRequest.types.length === 0) {
     return [badRequest('No types specified')];
   }
@@ -105,6 +105,13 @@ async function createResource(
   const { resourceType } = req.params;
   const resource = req.body as Resource;
   const assignedId = Boolean(options?.batch);
+
+  if (req.query?._account && typeof req.query._account === 'string') {
+    // Some FHIR clients do not allow custom meta fields, so we use a query parameter instead
+    // See: https://github.com/medplum/medplum/issues/5145
+    resource.meta = resource.meta || {};
+    resource.meta.account = { reference: req.query._account };
+  }
 
   if (req.headers?.['if-none-exist']) {
     const ifNoneExist = singularize(req.headers['if-none-exist']);
@@ -188,10 +195,9 @@ async function conditionalUpdate(
   options?: FhirRouteOptions
 ): Promise<FhirResponse> {
   const { resourceType } = req.params;
-  const params = req.query;
   const resource = req.body;
 
-  const search = parseSearchRequest(resourceType as ResourceType, params);
+  const search = parseSearchRequest(resourceType as ResourceType, req.query);
   const result = await repo.conditionalUpdate(resource, search, { assignedId: options?.batch });
   return [result.outcome, result.resource];
 }
@@ -206,9 +212,8 @@ async function deleteResource(req: FhirRequest, repo: FhirRepository): Promise<F
 // Conditional delete
 async function conditionalDelete(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
   const { resourceType } = req.params;
-  const params = req.query;
 
-  const search = parseSearchRequest(resourceType as ResourceType, params);
+  const search = parseSearchRequest(resourceType as ResourceType, req.query);
   await repo.conditionalDelete(search);
   return [allOk];
 }
@@ -265,17 +270,28 @@ export class FhirRouter extends EventTarget {
     this.router.add(method, path, handler, { interaction: interaction ?? 'operation' });
   }
 
-  find(method: HttpMethod, path: string): RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined {
-    return this.router.find(method, path);
+  find(method: HttpMethod, url: string): RouteResult<FhirRouteHandler, FhirRouteMetadata> | undefined {
+    return this.router.find(method, url);
   }
 
   async handleRequest(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-    const result = this.router.find(req.method, req.pathname);
+    const url = req.url;
+    // User-specified URL is parsed into component parts, which are populated back onto the request
+    if (req.pathname) {
+      throw new OperationOutcomeError(badRequest('FhirRequest must specify url instead of pathname'));
+    }
+    const result = this.find(req.method, url);
     if (!result) {
       return [notFound];
     }
-    const { handler, params } = result;
+    const { handler, path, params, query } = result;
+
+    // Populate request object with parsed URL components from router
     req.params = params;
+    req.pathname = path;
+    if (query) {
+      req.query = query;
+    }
     try {
       return await handler(req, repo, this);
     } catch (err) {
@@ -295,4 +311,15 @@ function parseIfMatchHeader(ifMatch: string | undefined): string | undefined {
   }
   const match = /"([^"]+)"/.exec(ifMatch);
   return match ? match[1] : undefined;
+}
+
+export function makeSimpleRequest(method: HttpMethod, path: string, body?: any): FhirRequest {
+  return {
+    method,
+    url: path,
+    pathname: '',
+    query: {},
+    params: {},
+    body,
+  };
 }

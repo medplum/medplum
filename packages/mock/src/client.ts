@@ -86,7 +86,7 @@ import {
 import { MockSubscriptionManager } from './subscription-manager';
 
 export interface MockClientOptions
-  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime'> {
+  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime' | 'fetch'> {
   readonly debug?: boolean;
   /**
    * Override currently logged in user. Specifying null results in
@@ -154,9 +154,11 @@ export class MockClient extends MedplumClient {
         tableLayouts?: { [name: string]: CustomTableLayout },
         fonts?: TFontDictionary
       ) => client.mockCreatePdf(docDefinition, tableLayouts, fonts),
-      fetch: (url: string, options: any) => {
-        return client.mockFetch(url, options);
-      },
+      fetch: clientOptions?.fetch
+        ? clientOptions.fetch
+        : (url: string, options: any) => {
+            return client.mockFetch(url, options);
+          },
     });
 
     this.router = router;
@@ -718,11 +720,8 @@ export class MockFetchClient {
       return exampleValueSet;
     }
 
-    const parsedUrl = new URL(url, 'https://example.com');
-
-    let pathname = parsedUrl.pathname;
-    if (pathname.includes('fhir/R4')) {
-      pathname = pathname.substring(pathname.indexOf('fhir/R4') + 7);
+    if (url.includes('fhir/R4')) {
+      url = url.substring(url.indexOf('fhir/R4') + 7);
     }
 
     let body = undefined;
@@ -736,10 +735,11 @@ export class MockFetchClient {
 
     const request: FhirRequest = {
       method,
-      pathname,
+      url,
+      pathname: '',
       body,
       params: Object.create(null),
-      query: Object.fromEntries(parsedUrl.searchParams),
+      query: Object.create(null),
       headers: toIncomingHttpHeaders(options.headers),
     };
 

@@ -302,9 +302,10 @@ protectedRoutes.use(
 
     const request: FhirRequest = {
       method: req.method as HttpMethod,
-      pathname: req.originalUrl.replace('/fhir/R4', '').split('?').shift() as string,
+      url: req.originalUrl.replace('/fhir/R4', ''),
+      pathname: '',
       params: req.params,
-      query: req.query as Record<string, string>,
+      query: Object.create(null), // Defer query param parsing to router for consistency
       body: req.body,
       headers: req.headers,
       config: {
@@ -317,7 +318,7 @@ protectedRoutes.use(
       },
     };
 
-    if (request.pathname.includes('$graphql')) {
+    if (request.url.includes('$graphql')) {
       // If this is a GraphQL request, mark the repository as eligible for "reader" mode.
       // Inside the GraphQL handler, the repository will be set to "writer" mode if needed.
       // At the time of this writing, the GraphQL handler is the only place where we consider "reader" mode.

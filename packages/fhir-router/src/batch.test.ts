@@ -33,7 +33,8 @@ const router: FhirRouter = new FhirRouter();
 const repo: FhirRepository = new MemoryRepository();
 const req: FhirRequest = {
   method: 'POST',
-  pathname: '/',
+  url: '/',
+  pathname: '',
   params: {},
   query: {},
   body: '',
@@ -569,9 +570,79 @@ describe('Batch', () => {
     expect(results.length).toEqual(3);
     expect(results[0].response?.status).toEqual('200');
     expect(results[1].response?.status).toEqual('400');
-    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch body must be an array');
+    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
     expect(results[2].response?.status).toEqual('400');
-    expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toEqual('Patch body must be an array');
+    expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
+  });
+
+  test('Process batch patch Parameters', async () => {
+    const patient = await repo.createResource<Patient>({
+      resourceType: 'Patient',
+      gender: 'unknown',
+    });
+
+    const bundle = await processBatch(req, repo, router, {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          // Entry 1: Simple patch (success)
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+          },
+          resource: {
+            resourceType: 'Parameters',
+            parameter: [
+              {
+                name: 'operation',
+                part: [
+                  { name: 'op', valueCode: 'add' },
+                  { name: 'path', valueString: '/name' },
+                  { name: 'value', valueString: '[{"given":["Dave"],"family":"Smith"}]' },
+                ],
+              },
+              {
+                name: 'operation',
+                part: [
+                  { name: 'op', valueCode: 'copy' },
+                  { name: 'from', valueString: '/name/0/family' },
+                  { name: 'path', valueString: '/name/0/given/-' },
+                ],
+              },
+              {
+                name: 'operation',
+                part: [
+                  { name: 'op', valueCode: 'remove' },
+                  { name: 'path', valueString: '/gender' },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          // Entry 2: Empty body (error)
+          request: {
+            method: 'PATCH',
+            url: 'Patient/' + patient.id,
+          },
+          resource: {
+            resourceType: 'Parameters',
+          },
+        },
+      ],
+    });
+    expect(bundle).toBeDefined();
+    expect(bundle.entry).toBeDefined();
+
+    const results = bundle.entry as BundleEntry[];
+    expect(results.length).toEqual(2);
+    expect(results[0].response?.status).toEqual('200');
+    const updatedPatient = results[0].resource as Patient;
+    expect(updatedPatient.name?.[0]?.given).toEqual(['Dave', 'Smith']);
+    expect(updatedPatient.gender).toBeUndefined();
+    expect(results[1].response?.status).toEqual('400');
+    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
   });
 
   test('JSONPath error messages', async () => {
@@ -692,7 +763,7 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Patch entry must include a Binary resource'
+      'Patch entry must include a Binary or Parameters resource'
     );
   });
 
@@ -719,7 +790,7 @@ describe('Batch', () => {
     expect(results.length).toEqual(1);
     expect(results[0].response?.status).toEqual('400');
     expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
-      'Patch entry must include a Binary resource'
+      'Patch entry must include a Binary or Parameters resource'
     );
   });
 
@@ -1024,6 +1095,68 @@ describe('Batch', () => {
               status: 'active',
               reason: 'Test',
               criteria: 'QuestionnaireResponse?questionnaire=urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+              channel: {
+                type: 'rest-hook',
+                endpoint: 'urn:uuid:32178250-67a4-4ec9-89bc-d16f1d619403',
+                payload: ContentType.FHIR_JSON,
+              },
+            },
+          },
+        ],
+      });
+      expect(bundle).toBeDefined();
+      expect(bundle.type).toEqual('transaction-response');
+      expect(bundle.entry).toBeDefined();
+
+      const results = bundle.entry as BundleEntry[];
+      expect(results.length).toEqual(2);
+      expect(results[0].response?.status).toEqual('201');
+      expect(results[1].response?.status).toEqual('201');
+
+      const subscription = await repo.readReference<Subscription>({
+        reference: results[1].response?.location as string,
+      });
+      expect(subscription.criteria).toMatch(
+        /QuestionnaireResponse\?questionnaire=Questionnaire\/\w{8}-\w{4}-\w{4}-\w{4}-\w{12}/
+      );
+    });
+
+    test('Encoded urn:uuid', async () => {
+      const bundle = await processBatch(req, repo, router, {
+        resourceType: 'Bundle',
+        type: 'transaction',
+        entry: [
+          {
+            fullUrl: 'urn:uuid:e95d01cf-60ae-43f7-a8fc-0500a8b045bb',
+            request: {
+              method: 'POST',
+              url: 'Questionnaire',
+            },
+            resource: {
+              resourceType: 'Questionnaire',
+              status: 'active',
+              name: 'Example Questionnaire',
+              title: 'Example Questionnaire',
+              item: [
+                {
+                  linkId: 'q1',
+                  type: 'string',
+                  text: 'Question',
+                },
+              ],
+            },
+          },
+          {
+            fullUrl: 'urn:uuid:14b4f91f-1119-40b8-b10e-3db77cf1c191',
+            request: {
+              method: 'POST',
+              url: 'Subscription',
+            },
+            resource: {
+              resourceType: 'Subscription',
+              status: 'active',
+              reason: 'Test',
+              criteria: 'QuestionnaireResponse?questionnaire=urn%3Auuid%3Ae95d01cf-60ae-43f7-a8fc-0500a8b045bb',
               channel: {
                 type: 'rest-hook',
                 endpoint: 'urn:uuid:32178250-67a4-4ec9-89bc-d16f1d619403',

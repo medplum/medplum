@@ -30,7 +30,7 @@ import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
-import { getLogger, getRequestContext } from '../context';
+import { getLogger } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
 import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
@@ -734,7 +734,7 @@ export async function getExternalUserInfo(
   idp: IdentityProvider,
   externalAccessToken: string
 ): Promise<Record<string, unknown>> {
-  const ctx = getRequestContext();
+  const log = getLogger();
   let response;
   try {
     response = await fetch(idp.userInfoUrl as string, {
@@ -745,17 +745,17 @@ export async function getExternalUserInfo(
       },
     });
   } catch (err: any) {
-    ctx.logger.warn('Error while verifying external auth code', err);
+    log.warn('Error while verifying external auth code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   if (response.status === 429) {
-    ctx.logger.warn('Auth rate limit exceeded', { url: idp.userInfoUrl, clientId: idp.clientId });
+    log.warn('Auth rate limit exceeded', { url: idp.userInfoUrl, clientId: idp.clientId });
     throw new OperationOutcomeError(tooManyRequests);
   }
 
   if (response.status !== 200) {
-    ctx.logger.warn('Failed to verify external authorization code', { status: response.status });
+    log.warn('Failed to verify external authorization code', { status: response.status });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
@@ -765,16 +765,16 @@ export async function getExternalUserInfo(
     try {
       text = await response.text();
     } catch (err: any) {
-      ctx.logger.debug('Failed to get response text', err);
+      log.debug('Failed to get response text', err);
     }
-    ctx.logger.warn('Failed to verify external authorization code, non-JSON response', { text });
+    log.warn('Failed to verify external authorization code, non-JSON response', { text });
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 
   try {
     return await response.json();
   } catch (err: any) {
-    ctx.logger.warn('Failed to verify external authorization code', err);
+    log.warn('Failed to verify external authorization code', err);
     throw new OperationOutcomeError(badRequest('Failed to verify code - check your identity provider configuration'));
   }
 }

@@ -9,7 +9,14 @@ import {
   normalizeOperationOutcome,
   notFound,
 } from '@medplum/core';
-import { Bundle, BundleEntry, BundleEntryRequest, OperationOutcome, Resource } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  BundleEntry,
+  BundleEntryRequest,
+  OperationOutcome,
+  ParametersParameter,
+  Resource,
+} from '@medplum/fhirtypes';
 import { FhirRequest, FhirRouteHandler, FhirRouteMetadata, FhirRouter, RestInteraction } from './fhirrouter';
 import { FhirRepository } from './repo';
 import { HttpMethod, RouteResult } from './urlrouter';
@@ -18,7 +25,7 @@ import { IncomingHttpHeaders } from 'node:http';
 const maxUpdates = 50;
 const maxSerializableTransactionEntries = 8;
 
-const localBundleReference = /urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
+const localBundleReference = /urn(:|%3A)uuid(:|%3A)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/;
 const uuidUriPrefix = 'urn:uuid';
 
 type BundleEntryIdentity = { placeholder: string; reference: string };
@@ -408,7 +415,7 @@ class BatchProcessor {
       throw new OperationOutcomeError(notFound);
     }
 
-    const request = this.parseBatchRequest(entry, route?.params);
+    const request = this.parseBatchRequest(entry, route);
     const [outcome, resource] = await route.handler(request, this.repo, this.router, { batch: true });
 
     if (!isOk(outcome) && this.isTransaction()) {
@@ -420,10 +427,10 @@ class BatchProcessor {
   /**
    * Constructs the equivalent HTTP request for a Bundle entry, based on its `request` field.
    * @param entry - The Bundle entry to parse.
-   * @param params - Route path parameters
+   * @param route - The route associated with the request.
    * @returns The HTTP request to perform the operation specified by the given batch entry.
    */
-  private parseBatchRequest(entry: BundleEntry, params?: Record<string, string>): FhirRequest {
+  private parseBatchRequest(entry: BundleEntry, route?: RouteResult<FhirRouteHandler, FhirRouteMetadata>): FhirRequest {
     const request = entry.request as BundleEntryRequest;
     const headers = Object.create(null) as IncomingHttpHeaders;
     if (request.ifNoneExist) {
@@ -446,12 +453,12 @@ class BatchProcessor {
       body = entry.resource;
     }
 
-    const url = new URL(request.url as string, 'https://example.com/');
     return {
       method: request.method as HttpMethod,
-      pathname: url.pathname,
-      params: params ?? Object.create(null),
-      query: Object.fromEntries(url.searchParams),
+      url: route?.query ? request.url.slice(0, request.url.indexOf('?')) : request.url,
+      pathname: '',
+      params: route?.params ?? Object.create(null),
+      query: route?.query ?? Object.create(null),
       body,
       headers,
     };
@@ -459,19 +466,72 @@ class BatchProcessor {
 
   private parsePatchBody(entry: BundleEntry): any {
     const patchResource = entry.resource;
-    if (patchResource?.resourceType !== 'Binary') {
-      throw new OperationOutcomeError(badRequest('Patch entry must include a Binary resource'));
-    }
-    if (!patchResource.data) {
-      throw new OperationOutcomeError(badRequest('Missing entry.resource.data'));
+    let body: any[] | undefined;
+    if (patchResource?.resourceType === 'Binary') {
+      if (!patchResource.data) {
+        throw new OperationOutcomeError(badRequest('Missing entry.resource.data'));
+      }
+
+      body = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
+    } else if (patchResource?.resourceType === 'Parameters') {
+      if (patchResource.parameter) {
+        body = [];
+        for (const param of patchResource.parameter) {
+          if (param.name === 'operation') {
+            const op = this.parsePatchParameter(param);
+            body.push(op);
+          }
+        }
+      }
+    } else {
+      throw new OperationOutcomeError(badRequest('Patch entry must include a Binary or Parameters resource'));
     }
 
-    const body = JSON.parse(Buffer.from(patchResource.data, 'base64').toString('utf8'));
     if (!Array.isArray(body)) {
-      throw new OperationOutcomeError(badRequest('Patch body must be an array'));
+      throw new OperationOutcomeError(badRequest('Decoded PATCH body must be an array'));
     }
 
     return this.rewriteIdsInArray(body);
+  }
+
+  private parsePatchParameter(param: ParametersParameter): Record<string, any> {
+    const operation = param.part?.find((p) => p.name === 'op')?.valueCode;
+    if (!operation) {
+      // FHIRPatch will also use Parameters; however, it uses `name = 'type'`
+      // We can use this to disambiguate the two in the future
+      throw new OperationOutcomeError(badRequest('PATCH Parameters missing op'));
+    }
+
+    const op: Record<string, any> = { op: operation };
+    switch (operation) {
+      case 'add':
+      case 'replace':
+      case 'test':
+        // part is guaranteed to be defined, since that's where operation was found
+        for (const part of param.part as ParametersParameter[]) {
+          if (part.name === 'path') {
+            op.path = part.valueString;
+          } else if (part.name === 'value') {
+            op.value = JSON.parse(part.valueString ?? '');
+          }
+        }
+        break;
+      case 'copy':
+      case 'move':
+        for (const part of param.part as ParametersParameter[]) {
+          if (part.name === 'path') {
+            op.path = part.valueString;
+          } else if (part.name === 'from') {
+            op.from = part.valueString;
+          }
+        }
+        break;
+      case 'remove':
+        op.path = param.part?.find((p) => p.name === 'path')?.valueString;
+        break;
+    }
+
+    return op;
   }
 
   private rewriteIds(input: any): any {
@@ -501,7 +561,8 @@ class BatchProcessor {
       return input;
     }
 
-    const referenceString = this.resolvedIdentities[rewritable];
+    const urn = rewritable.replaceAll('%3A', ':'); // Handle specific URL encoding for the URN format
+    const referenceString = this.resolvedIdentities[urn];
     return referenceString ? input.replaceAll(rewritable, referenceString) : input;
   }
 

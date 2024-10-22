@@ -23,19 +23,23 @@ export async function sendEmailViaSes(options: Mail.Options): Promise<void> {
   }
 
   const sesClient = new SESv2Client({ region: config.awsRegion });
-  await sesClient.send(
-    new SendEmailCommand({
-      FromEmailAddress: fromAddress,
-      Destination: {
-        ToAddresses: toAddresses,
-        CcAddresses: ccAddresses,
-        BccAddresses: bccAddresses,
-      },
-      Content: {
-        Raw: {
-          Data: msg,
+  try {
+    await sesClient.send(
+      new SendEmailCommand({
+        FromEmailAddress: fromAddress,
+        Destination: {
+          ToAddresses: toAddresses,
+          CcAddresses: ccAddresses,
+          BccAddresses: bccAddresses,
         },
-      },
-    })
-  );
+        Content: {
+          Raw: {
+            Data: msg,
+          },
+        },
+      })
+    );
+  } catch (err) {
+    throw new OperationOutcomeError(badRequest('Error sending email: ' + normalizeErrorString(err)), err);
+  }
 }

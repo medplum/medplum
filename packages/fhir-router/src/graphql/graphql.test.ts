@@ -22,7 +22,7 @@ import {
   ServiceRequest,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { FhirRequest, FhirRouter } from '../fhirrouter';
+import { FhirRouter, makeSimpleRequest } from '../fhirrouter';
 import { MemoryRepository } from '../repo';
 import { getRootSchema, graphqlHandler } from './graphql';
 
@@ -108,32 +108,14 @@ describe('GraphQL', () => {
 
   test('Missing query', async () => {
     const fhirRouter = new FhirRouter();
-    const [outcome] = await graphqlHandler(
-      {
-        method: 'POST',
-        pathname: '/fhir/R4/$graphql',
-        query: {},
-        params: {},
-        body: {},
-      },
-      repo,
-      fhirRouter
-    );
+    const [outcome] = await graphqlHandler(makeSimpleRequest('POST', '/fhir/R4/$graphql', {}), repo, fhirRouter);
     expect(outcome).toMatchObject(badRequest('Must provide query.'));
   });
 
   test('Syntax error', async () => {
     const fhirRouter = new FhirRouter();
     const [outcome] = await graphqlHandler(
-      {
-        method: 'POST',
-        pathname: '/fhir/R4/$graphql',
-        query: {},
-        params: {},
-        body: {
-          query: 'This is not valid GraphQL.',
-        },
-      },
+      makeSimpleRequest('POST', '/fhir/R4/$graphql', { query: 'This is not valid GraphQL.' }),
       repo,
       fhirRouter
     );
@@ -144,21 +126,15 @@ describe('GraphQL', () => {
     // https://graphql.org/learn/introspection/
     const fhirRouter = new FhirRouter({ introspectionEnabled: false });
     const [outcome] = await graphqlHandler(
-      {
-        method: 'POST',
-        pathname: '/fhir/R4/$graphql',
-        query: {},
-        params: {},
-        body: {
-          query: `{
-            __schema {
-              types {
-                name
-              }
+      makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+        query: `{
+          __schema {
+            types {
+              name
             }
-          }`,
-        },
-      },
+          }
+        }`,
+      }),
       repo,
       fhirRouter
     );
@@ -167,21 +143,15 @@ describe('GraphQL', () => {
 
   test('Introspection allowed', async () => {
     // https://graphql.org/learn/introspection/
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `{
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
           __schema {
             types {
               name
             }
           }
         }`,
-      },
-    };
+    });
     const fhirRouter = new FhirRouter({ introspectionEnabled: true });
     const res = await graphqlHandler(request, repo, fhirRouter);
 
@@ -189,23 +159,15 @@ describe('GraphQL', () => {
   });
 
   test('Read by ID', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         Patient(id: "${patient.id}") {
           id
           name { given }
           photo { url }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const result = await graphqlHandler(request, repo, fhirRouter);
     expect(result).toBeDefined();
@@ -219,22 +181,14 @@ describe('GraphQL', () => {
   });
 
   test('Read by ID not found', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         Patient(id: "${randomUUID()}") {
           id
           name { given }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -248,22 +202,14 @@ describe('GraphQL', () => {
   });
 
   test('Search', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         PatientList(name: "Smith") {
           id
           name { given }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -274,21 +220,13 @@ describe('GraphQL', () => {
   });
 
   test('Search with _id', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         PatientList(_id: "${patient.id}") {
           id
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -300,21 +238,13 @@ describe('GraphQL', () => {
   });
 
   test('Search with _count', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         EncounterList(_count: 1) {
           id
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -326,21 +256,13 @@ describe('GraphQL', () => {
   });
 
   test('Search with based-on', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         EncounterList(based_on: "${getReferenceString(serviceRequest)}") {
           id
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -352,22 +274,14 @@ describe('GraphQL', () => {
   });
 
   test('Sort by _lastUpdated asc', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         EncounterList(_sort: "_lastUpdated") {
           id
           meta { lastUpdated }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -383,22 +297,14 @@ describe('GraphQL', () => {
   });
 
   test('Sort by _lastUpdated desc', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         EncounterList(_sort: "-_lastUpdated") {
           id
           meta { lastUpdated }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -414,36 +320,28 @@ describe('GraphQL', () => {
   });
 
   test('Read resource by reference', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-        {
-          Encounter(id: "${encounter1.id}") {
-            id
-            meta {
-              lastUpdated
-            }
-            subject {
-              reference
-              resource {
-                ... on Patient {
-                  id
-                  name {
-                    given
-                    family
-                  }
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        Encounter(id: "${encounter1.id}") {
+          id
+          meta {
+            lastUpdated
+          }
+          subject {
+            reference
+            resource {
+              ... on Patient {
+                id
+                name {
+                  given
+                  family
                 }
               }
             }
           }
         }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const result = await graphqlHandler(request, repo, fhirRouter);
@@ -459,36 +357,28 @@ describe('GraphQL', () => {
   });
 
   test('Read resource by reference not found', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-        {
-          Encounter(id: "${encounter2.id}") {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        Encounter(id: "${encounter2.id}") {
+          id
+          meta {
+            lastUpdated
+          }
+          subject {
             id
-            meta {
-              lastUpdated
-            }
-            subject {
-              id
-              reference
-              resource {
-                ... on Patient {
-                  name {
-                    given
-                    family
-                  }
+            reference
+            resource {
+              ... on Patient {
+                name {
+                  given
+                  family
                 }
               }
             }
           }
         }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -524,14 +414,8 @@ describe('GraphQL', () => {
         text: 'Heart rate',
       },
     });
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         PatientList(_count: 2) {
           id
           ObservationList(_reference: subject, _sort: "_lastUpdated") {
@@ -542,10 +426,8 @@ describe('GraphQL', () => {
             }
           }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -557,14 +439,8 @@ describe('GraphQL', () => {
   });
 
   test('Reverse lookup without _reference', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         PatientList(_count: 1) {
           id
           ObservationList(subject: "xyz") {
@@ -575,10 +451,8 @@ describe('GraphQL', () => {
             }
           }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0].issue?.[0]?.details?.text).toEqual(
@@ -591,14 +465,8 @@ describe('GraphQL', () => {
     // We use field depth, where fragment expansion does not contribute to depth
 
     // 8 levels of depth is ok
-    const request1: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-        {
+    const request1 = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
           ServiceRequestList {
             id
             basedOn {
@@ -624,77 +492,63 @@ describe('GraphQL', () => {
             }
           }
         }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res1 = await graphqlHandler(request1, repo, fhirRouter);
     expect(res1[0]).toMatchObject(allOk);
 
     // 14 levels of nesting is too much
-    const request2: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-        {
-          CareTeamList {
+    const request2 = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        CareTeamList {
+          participant { member { resource { ... on CareTeam {
             participant { member { resource { ... on CareTeam {
               participant { member { resource { ... on CareTeam {
                 participant { member { resource { ... on CareTeam {
-                  participant { member { resource { ... on CareTeam {
-                    identifier {system value}
-                  }}}}
+                  identifier {system value}
                 }}}}
               }}}}
             }}}}
-          }
+          }}}}
         }
-    `,
-      },
-    };
+      }
+      }`,
+    });
 
     const res2 = await graphqlHandler(request2, repo, fhirRouter);
     expect(res2[0].issue?.[0]?.details?.text).toEqual('Field "system" exceeds max depth (depth=14, max=12)');
 
     // Customer request for patients and children via RelatedPerson links
-    const request3: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `{
-          PatientList {
-            resourceType
-            id
-            name {
-              given
-              family
-            }
-            link {
-              other {
-                reference
-                resource {
-                  ... on RelatedPerson {
-                    id
-                    resourceType
-                    relationship {
-                      coding {
-                        code
-                      }
+    const request3 = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        PatientList {
+          resourceType
+          id
+          name {
+            given
+            family
+          }
+          link {
+            other {
+              reference
+              resource {
+                ... on RelatedPerson {
+                  id
+                  resourceType
+                  relationship {
+                    coding {
+                      code
                     }
-                    patient {
-                      reference
-                      resource {
-                        ... on Patient {
-                          name {
-                            given
-                            family
-                          }
+                  }
+                  patient {
+                    reference
+                    resource {
+                      ... on Patient {
+                        name {
+                          given
+                          family
                         }
                       }
                     }
@@ -703,21 +557,16 @@ describe('GraphQL', () => {
               }
             }
           }
-        }`,
-      },
-    };
+        }
+      }`,
+    });
 
     const res3 = await graphqlHandler(request3, repo, fhirRouter);
     expect(res3[0]).toMatchObject(allOk);
 
     // Fragment depth is included
-    const request4: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
+    const request4 = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `
         {
           CareTeamList {
             ...CareTeamFields
@@ -736,8 +585,7 @@ describe('GraphQL', () => {
           }
         }
     `,
-      },
-    };
+    });
 
     const res4 = await graphqlHandler(request4, repo, fhirRouter);
     expect(res4[0].issue?.[0]?.details?.text).toEqual('Field "system" exceeds max depth (depth=14, max=12)');
@@ -750,15 +598,8 @@ describe('GraphQL', () => {
     };
 
     // 4 levels of depth is ok
-    const request1: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      config,
-      body: {
-        query: `
-        {
+    const request1 = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
           ServiceRequestList {
             id
             basedOn {
@@ -770,23 +611,17 @@ describe('GraphQL', () => {
             }
           }
         }
-    `,
-      },
-    };
+      }`,
+    });
+    request1.config = config;
 
     const fhirRouter = new FhirRouter();
     const res1 = await graphqlHandler(request1, repo, fhirRouter);
     expect(res1[0]).toMatchObject(allOk);
 
     // 8 levels of depth is too much
-    const request2: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      config,
-      body: {
-        query: `
+    const request2 = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `
         {
           ServiceRequestList {
             id
@@ -813,52 +648,46 @@ describe('GraphQL', () => {
             }
           }
         }
-    `,
-      },
-    };
+      }`,
+    });
+    request2.config = config;
 
     const res2 = await graphqlHandler(request2, repo, fhirRouter);
     expect(res2[0].issue?.[0]?.details?.text).toEqual('Field "url" exceeds max depth (depth=8, max=6)');
   });
 
   test('StructureDefinition query', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `{
-          StructureDefinitionList(name: "Patient") {
-            name
-            description
-            snapshot {
-              element {
-                id
-                path
-                min
-                max
-                type {
-                  code
-                  targetProfile
-                }
-                binding {
-                  valueSet
-                }
-                definition
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        StructureDefinitionList(name: "Patient") {
+          name
+          description
+          snapshot {
+            element {
+              id
+              path
+              min
+              max
+              type {
+                code
+                targetProfile
               }
+              binding {
+                valueSet
+              }
+              definition
             }
           }
-          SearchParameterList(base: "Patient", _count: 100) {
-            base
-            code
-            type
-            expression
-            target
-          }
-        }`,
-      },
-    };
+        }
+        SearchParameterList(base: "Patient", _count: 100) {
+          base
+          code
+          type
+          expression
+          target
+        }
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const [outcome, result] = (await graphqlHandler(request, repo, fhirRouter)) as [OperationOutcome, any];
     expect(outcome).toMatchObject(allOk);
@@ -876,14 +705,8 @@ describe('GraphQL', () => {
       ],
     });
 
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         Patient(id: "${patient.id}") {
           id
           name(_offset: 1) {
@@ -891,10 +714,8 @@ describe('GraphQL', () => {
             family
           }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -917,14 +738,8 @@ describe('GraphQL', () => {
       ],
     });
 
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         Patient(id: "${patient.id}") {
           id
           name(_count: 1) {
@@ -932,10 +747,8 @@ describe('GraphQL', () => {
             family
           }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -957,14 +770,8 @@ describe('GraphQL', () => {
       ],
     });
 
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         Patient(id: "${patient.id}") {
           id
           name(fhirpath: "family.exists()") {
@@ -972,10 +779,8 @@ describe('GraphQL', () => {
             family
           }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -998,14 +803,8 @@ describe('GraphQL', () => {
       ],
     });
 
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         Patient(id: "${patient.id}") {
           id
           name(use: "maiden") {
@@ -1014,10 +813,8 @@ describe('GraphQL', () => {
             family
           }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -1039,14 +836,8 @@ describe('GraphQL', () => {
       ],
     });
 
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         Patient(id: "${patient.id}") {
           id
           extension(url: "https://example.com/2") {
@@ -1054,10 +845,8 @@ describe('GraphQL', () => {
             valueString
           }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -1084,14 +873,8 @@ describe('GraphQL', () => {
       ],
     });
 
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         PatientList(name: "${family}") {
           id
           extension(url: "https://example.com/2") {
@@ -1099,10 +882,8 @@ describe('GraphQL', () => {
             valueString
           }
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -1127,14 +908,8 @@ describe('GraphQL', () => {
   });
 
   test('Connection API', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         PatientConnection(name: "Smith") {
           count offset pageSize
           edges {
@@ -1142,10 +917,8 @@ describe('GraphQL', () => {
           }
           first previous next last
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -1162,14 +935,8 @@ describe('GraphQL', () => {
   });
 
   test('Connection API without count field', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
         PatientConnection(name: "Smith") {
           offset pageSize
           edges {
@@ -1177,10 +944,8 @@ describe('GraphQL', () => {
           }
           first previous next last
         }
-      }
-    `,
-      },
-    };
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -1196,21 +961,11 @@ describe('GraphQL', () => {
   });
 
   test('Connection API without edges field', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      {
-        PatientConnection(name: "Smith") {
-          count
-        }
-      }
-    `,
-      },
-    };
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        PatientConnection(name: "Smith") { count }
+      }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
@@ -1223,14 +978,8 @@ describe('GraphQL', () => {
   });
 
   test('Create Patient Record', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      mutation {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
         PatientCreate(
           res: {
             resourceType: "Patient"
@@ -1244,14 +993,10 @@ describe('GraphQL', () => {
         ) {
           id
           gender
-          name {
-            given
-          }
+          name { given }
         }
-      }
-      `,
-      },
-    };
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
@@ -1266,19 +1011,11 @@ describe('GraphQL', () => {
   });
 
   test('Create wrong resourceType error', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      mutation {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
         PatientCreate(res: { resourceType: "ServiceRequest" }) { id }
-      }
-      `,
-      },
-    };
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res).toMatchObject([
@@ -1297,7 +1034,7 @@ describe('GraphQL', () => {
         errors: [
           {
             message: 'Invalid resourceType',
-            locations: [{ line: 3, column: 9 }],
+            locations: [{ line: 2, column: 9 }],
             path: ['PatientCreate'],
           },
         ],
@@ -1314,14 +1051,8 @@ describe('GraphQL', () => {
       gender: 'female',
       name: [{ given: ['Alice'] }],
     });
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      mutation {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
         PatientUpdate(
           id: "${patient.id}"
           res: {
@@ -1329,12 +1060,8 @@ describe('GraphQL', () => {
             resourceType: "Patient"
             gender: "male"
             name: [
-              {
-                given: "Bob"
-              },
-              {
-                family: "Smith"
-              }
+              { given: "Bob" },
+              { family: "Smith" }
             ]
           }
         ) {
@@ -1344,10 +1071,8 @@ describe('GraphQL', () => {
             given
           }
         }
-      }
-      `,
-      },
-    };
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
@@ -1363,14 +1088,8 @@ describe('GraphQL', () => {
       gender: 'female',
       name: [{ given: ['Alice'] }],
     });
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      mutation {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
         PatientUpdate(
           id: "${patient.id}"
         ) {
@@ -1380,10 +1099,8 @@ describe('GraphQL', () => {
             given
           }
         }
-      }
-      `,
-      },
-    };
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]?.issue?.[0]?.details?.text).toEqual(
@@ -1393,27 +1110,17 @@ describe('GraphQL', () => {
 
   test('Update wrong resourceType error', async () => {
     const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      mutation {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
         PatientUpdate(
           id: "${patient.id}"
           res: {
             resourceType: "ServiceRequest"
             id: "${patient.id}"
           }
-        ) {
-          id
-        }
-      }
-      `,
-      },
-    };
+        ) { id }
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res).toMatchObject([
@@ -1432,7 +1139,7 @@ describe('GraphQL', () => {
         errors: [
           {
             message: 'Invalid resourceType',
-            locations: [{ line: 3, column: 9 }],
+            locations: [{ line: 2, column: 9 }],
             path: ['PatientUpdate'],
           },
         ],
@@ -1445,27 +1152,17 @@ describe('GraphQL', () => {
 
   test('Update wrong ID error', async () => {
     const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      mutation {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
         PatientUpdate(
           id: "${patient.id}"
           res: {
             resourceType: "Patient"
             id: "${randomUUID()}"
           }
-        ) {
-          id
-        }
-      }
-      `,
-      },
-    };
+        ) { id }
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res).toMatchObject([
@@ -1484,7 +1181,7 @@ describe('GraphQL', () => {
         errors: [
           {
             message: 'Invalid ID',
-            locations: [{ line: 3, column: 9 }],
+            locations: [{ line: 2, column: 9 }],
             path: ['PatientUpdate'],
           },
         ],
@@ -1501,23 +1198,13 @@ describe('GraphQL', () => {
       gender: 'female',
       name: [{ given: ['Alice'] }],
     });
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-      mutation {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `mutation {
         PatientDelete(
           id: "${patient.id}"
-        ) {
-          id
-        }
-      }
-      `,
-      },
-    };
+        ) { id }
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
@@ -1536,29 +1223,21 @@ describe('GraphQL', () => {
         display: 'test',
       },
     } as ExplanationOfBenefit);
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-        {
-          ExplanationOfBenefit(id: "${eob.id}") {
-            facility {
-              display
-              resource {
-                ... on Organization {
-                  resourceType
-                  name
-                }
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `{
+        ExplanationOfBenefit(id: "${eob.id}") {
+          facility {
+            display
+            resource {
+              ... on Organization {
+                resourceType
+                name
               }
             }
           }
         }
-      `,
-      },
-    };
+      }`,
+    });
     const fhirRouter = new FhirRouter();
     const res = await graphqlHandler(request, repo, fhirRouter);
     expect(res[0]).toMatchObject(allOk);
@@ -1566,14 +1245,8 @@ describe('GraphQL', () => {
   });
 
   test('Fragment inclusion', async () => {
-    const request: FhirRequest = {
-      method: 'POST',
-      pathname: '/fhir/R4/$graphql',
-      query: {},
-      params: {},
-      body: {
-        query: `
-        query Visit {
+    const request = makeSimpleRequest('POST', '/fhir/R4/$graphql', {
+      query: `query Visit {
           Encounter(id: "${encounter1.id}") {
             id
             meta {
@@ -1591,10 +1264,8 @@ describe('GraphQL', () => {
 
         fragment PatientInfo on Patient {
           id name { given family }
-        }
-    `,
-      },
-    };
+        }`,
+    });
 
     const fhirRouter = new FhirRouter();
     const result = await graphqlHandler(request, repo, fhirRouter);
