@@ -7,8 +7,9 @@ module "service_accounts" {
   project_roles = [
     "medplum-zencore=>roles/redis.admin",
     "medplum-zencore=>roles/cloudsql.admin",
-    "medplum-zencore=>roles/secretmanager.secretAccessor",
-    "medplum-zencore=>roles/artifactregistry.reader"
+    "medplum-zencore=>roles/secretmanager.admin",
+    "medplum-zencore=>roles/artifactregistry.reader",
+    "medplum-zencore=>roles/storage.admin"
   ]
 
   depends_on = [
@@ -20,7 +21,13 @@ module "service_accounts" {
 resource "google_service_account_iam_member" "ksa_external_secrets_workload_identity" {
   service_account_id = module.service_accounts.service_accounts[0].name
   role               = "roles/iam.workloadIdentityUser"
-  member             = "serviceAccount:${var.project_id}.svc.id.goog[external-secrets/external-secrets]"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[default/external-secrets]"
+}
+
+resource "google_service_account_iam_member" "ksa_token_creator" {
+  service_account_id = module.service_accounts.service_accounts[0].name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[default/external-secrets]"
 }
 
 # Workload Identity for external secrets Service Account
