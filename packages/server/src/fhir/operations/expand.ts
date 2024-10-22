@@ -5,6 +5,7 @@ import {
   Coding,
   ValueSet,
   ValueSetComposeInclude,
+  ValueSetComposeIncludeConcept,
   ValueSetComposeIncludeFilter,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
@@ -207,24 +208,50 @@ function processExpansion(systemExpressions: Expression[], expansionContains: Va
 
 const MAX_EXPANSION_SIZE = 1000;
 
-export function filterCodings(codings: Coding[], params: ValueSetExpandParameters): Coding[] {
+export function filterIncludedConcepts(
+  concepts: ValueSetComposeIncludeConcept[] | ValueSetExpansionContains[] | Coding[],
+  params: ValueSetExpandParameters,
+  system?: string
+): ValueSetExpansionContains[] {
   const filter = params.filter?.trim().toLowerCase();
+  const codings: Coding[] = flattenConcepts(concepts, { filter, system });
   if (!filter) {
     return codings;
   }
   return codings.filter((c) => c.display?.toLowerCase().includes(filter));
 }
 
-export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandParameters): Promise<ValueSet> {
-  let expandedSet: ValueSetExpansionContains[];
-
-  const expansion = valueSet.expansion;
-  if (expansion?.contains?.length && !expansion.parameter && expansion.total === expansion.contains.length) {
-    // Full expansion is already available, use that
-    expandedSet = filterCodings(expansion.contains, params);
-  } else {
-    expandedSet = await computeExpansion(valueSet, params);
+function flattenConcepts(
+  concepts: ValueSetComposeIncludeConcept[] | ValueSetExpansionContains[] | Coding[],
+  options?: {
+    filter?: string;
+    system?: string;
   }
+): Coding[] {
+  const result: Coding[] = [];
+  for (const concept of concepts) {
+    const system = (concept as Coding).system ?? options?.system;
+    if (!system) {
+      throw new Error('Missing system for Coding');
+    }
+
+    // Flatten contained codings recursively
+    const contained = (concept as ValueSetExpansionContains).contains;
+    if (contained) {
+      result.push(...flattenConcepts(contained, options));
+    }
+
+    const filter = options?.filter;
+    if (!filter || concept.display?.toLowerCase().includes(filter)) {
+      result.push({ system, code: concept.code, display: concept.display });
+    }
+  }
+
+  return result;
+}
+
+export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandParameters): Promise<ValueSet> {
+  const expandedSet = await computeExpansion(valueSet, params);
   if (expandedSet.length >= MAX_EXPANSION_SIZE) {
     valueSet.expansion = {
       total: MAX_EXPANSION_SIZE + 1,
@@ -246,6 +273,16 @@ async function computeExpansion(
   params: ValueSetExpandParameters,
   terminologyResources: Record<string, CodeSystem | ValueSet> = Object.create(null)
 ): Promise<ValueSetExpansionContains[]> {
+  const preExpansion = valueSet.expansion;
+  if (
+    preExpansion?.contains?.length &&
+    !preExpansion.parameter &&
+    (!preExpansion.total || preExpansion.total === preExpansion.contains.length)
+  ) {
+    // Full expansion is already available, use that
+    return filterIncludedConcepts(preExpansion.contains, params);
+  }
+
   if (!valueSet.compose?.include.length) {
     throw new OperationOutcomeError(badRequest('Missing ValueSet definition', 'ValueSet.compose.include'));
   }
@@ -292,7 +329,7 @@ async function computeExpansion(
     terminologyResources[include.system] = codeSystem;
 
     if (include.concept) {
-      const filteredCodings = filterCodings(include.concept, params);
+      const filteredCodings = filterIncludedConcepts(include.concept, params, include.system);
       const validCodings = await validateCodings(codeSystem, filteredCodings);
       for (const c of validCodings) {
         if (c) {

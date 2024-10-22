@@ -698,11 +698,18 @@ describe('Updated implementation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
+    const system = 'http://terminology.hl7.org/CodeSystem/v3-ActMood';
 
-    expect(expansion.contains).toHaveLength(11);
-    expect(expansion.contains).not.toContainEqual<ValueSetExpansionContains>({
-      code: '_ActMoodPredicate',
-    });
+    expect(expansion.contains).toHaveLength(5);
+    expect(expansion.contains).toEqual(
+      expect.arrayContaining([
+        { system, code: 'CRT', display: 'criterion' },
+        { system, code: 'GOL', display: 'goal' },
+        { system, code: 'RSK', display: 'risk' },
+        { system, code: 'EXPEC', display: 'expectation' },
+        { system, code: 'OPT', display: 'option' },
+      ])
+    );
   });
 
   test('Recursive subsumption', async () => {
@@ -964,5 +971,87 @@ describe('Updated implementation', () => {
       code: 'MT',
       display: 'Meat',
     });
+  });
+
+  test('Include pre-expanded ValueSet', async () => {
+    const preexpanded: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'http://example.com/ValueSet/pre-expanded-' + randomUUID(),
+      expansion: {
+        timestamp: new Date().toISOString(),
+        contains: [
+          {
+            system: 'http://loinc.org',
+            code: '82810-3',
+            display: 'Pregnancy status',
+            contains: [
+              {
+                system: 'http://loinc.org',
+                code: '86645-9',
+                display: 'Pregnancy intention in the next year - Reported',
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const preexpandedRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(preexpanded);
+    expect(preexpandedRes.status).toEqual(201);
+    const preexpandedValueSet = preexpandedRes.body as ValueSet;
+
+    const include: ValueSet = {
+      resourceType: 'ValueSet',
+      status: 'draft',
+      url: 'http://example.com/ValueSet/include-expanded-' + randomUUID(),
+      compose: {
+        include: [
+          { valueSet: [preexpandedValueSet.url as string] },
+          {
+            system: 'http://loinc.org',
+            concept: [
+              { code: '8480-6', display: 'Systolic BP - Reported' },
+              { code: '8462-4', display: 'Diastolic BP - Reported' },
+            ],
+          },
+        ],
+      },
+    };
+    const valueSetRes = await request(app)
+      .post('/fhir/R4/ValueSet')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(include);
+    expect(valueSetRes.status).toEqual(201);
+    const valueSet = valueSetRes.body as ValueSet;
+
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=reported`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+
+    expect(expansion.contains).toHaveLength(3);
+    expect(expansion.contains).toEqual(
+      expect.arrayContaining([
+        {
+          system: 'http://loinc.org',
+          code: '86645-9',
+          display: 'Pregnancy intention in the next year - Reported',
+        },
+        {
+          system: 'http://loinc.org',
+          code: '8480-6',
+          display: 'Systolic BP - Reported',
+        },
+        {
+          system: 'http://loinc.org',
+          code: '8462-4',
+          display: 'Diastolic BP - Reported',
+        },
+      ])
+    );
   });
 });
