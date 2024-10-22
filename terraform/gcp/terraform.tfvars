@@ -1,8 +1,9 @@
 
 # GCP project configuration - Change these values to use your own project, region, and zone
-project_id = "medplum-zencore" # "your-project-id"
-region     = "us-west1"        # "your-region"
-zone       = "us-west1-a"      # "your-zone"
+project_id     = "medplum-zencore" # "your-project-id"
+project_number = "491458215350"    # "your-project-number"
+region         = "us-west1"        # "your-region"
+zone           = "us-west1-a"      # "your-zone"
 
 # Common enforced labels - Change these values to use your own labels
 labels = {
