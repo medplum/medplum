@@ -1327,11 +1327,13 @@ function buildChainedSearch(
   if (param.chain.length === 1 && param.chain[0].filter?.code === '_id' && !param.chain[0].reverse) {
     const { resourceType: targetType, code, filter } = param.chain[0];
     const targetId = filter.value;
-    return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
-      code,
-      operator: Operator.EQUALS,
-      value: `${targetType}/${targetId}`,
-    });
+    if (resourceType === targetType) {
+      return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
+        code,
+        operator: Operator.EQUALS,
+        value: `${targetType}/${targetId}`,
+      });
+    }
   }
 
   if (usesReferenceLookupTable(repo)) {
