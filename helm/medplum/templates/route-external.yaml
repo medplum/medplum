@@ -1,0 +1,72 @@
+{{ if .Values.externalGateway }}
+kind: HTTPRoute
+apiVersion: gateway.networking.k8s.io/v1beta1
+metadata:
+  name: {{ .Release.Name }}-external
+spec:
+  parentRefs:
+    - kind: Gateway
+      name: {{ .Values.externalGateway.name }}
+      namespace: {{ .Values.externalGateway.namespace }}
+  hostnames: {{ toYaml .Values.externalGateway.hostnames | nindent 4 }}
+  rules:
+    - matches:
+        - path:
+            value: {{ .Values.externalGateway.path }}
+      backendRefs:
+        - name: {{ .Release.Name }}-external
+          port: {{ .Values.service.port }}
+{{ end }}
+---
+{{ if .Values.externalGateway }}
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: {{ .Release.Name }}-external
+spec:
+  default:
+    checkIntervalSec: 15
+    timeoutSec: 10
+    healthyThreshold: 5
+    unhealthyThreshold: 2
+    config:
+      type: HTTP
+      httpHealthCheck:
+        port: {{ .Values.externalGateway.healthcheck.port }}
+        requestPath: {{ .Values.externalGateway.healthcheck.path }}
+  targetRef:
+    group: ""
+    kind: Service
+    name: {{ .Release.Name }}-external
+{{ end }}
+---
+{{ if .Values.externalGateway}}
+{{ if or .Values.externalGateway.stickySessions .Values.externalGateway.timeout .Values.externalGateway.iap }}
+apiVersion: networking.gke.io/v1
+kind: GCPBackendPolicy
+metadata:
+  name: {{ .Release.Name }}-external
+spec:
+  default:
+    {{ if .Values.externalGateway.iap }}
+    iap:
+      enabled: true
+      oauth2ClientSecret:
+        name: {{ .Values.externalGateway.iap.secretName }}
+      clientID: {{ .Values.externalGateway.iap.clientID }}
+    {{ end }}
+    {{ if .Values.externalGateway.stickySessions }}
+    sessionAffinity:
+      type: GENERATED_COOKIE
+      cookieTtlSec: {{ .Values.externalGateway.stickySessions.cookieTTL | int }}
+    {{ end }}
+    {{ if .Values.externalGateway.timeout }}
+    timeoutSec: {{ .Values.externalGateway.timeout | int }}
+    {{ end }}
+  targetRef:
+    group: ""
+    kind: Service
+    name: {{ .Release.Name }}-external
+{{ end }}
+{{ end }}
+---

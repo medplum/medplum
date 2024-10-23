@@ -17,7 +17,6 @@ module "sql-db" {
   maintenance_window_day          = 7
   maintenance_window_update_track = "stable"
   deletion_protection             = false
-  database_flags                  = [{ name = "autovacuum", value = "off" }]
   user_labels                     = var.labels
 
   ip_configuration = {
@@ -39,6 +38,12 @@ module "sql-db" {
     retention_unit                 = "COUNT"
   }
 
+  database_flags = [
+    {
+      name  = "autovacuum"
+      value = "off"
+    }
+  ]
   // Additional configurations
   db_name      = var.pg_ha_name
   db_charset   = "UTF8"

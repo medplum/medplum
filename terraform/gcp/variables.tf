@@ -27,7 +27,8 @@ variable "services_api" {
     "logging.googleapis.com",
     "monitoring.googleapis.com",
     "secretmanager.googleapis.com",
-    "artifactregistry.googleapis.com"
+    "artifactregistry.googleapis.com",
+    "certificatemanager.googleapis.com",
   ]
 }
 variable "labels" {

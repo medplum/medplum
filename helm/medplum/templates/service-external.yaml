@@ -1,0 +1,17 @@
+{{ if .Values.externalGateway }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-external
+  labels:
+    {{- include "ui-chart.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - protocol: TCP
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.pod.targetPort }}
+      name: http
+  selector:
+    {{- include "ui-chart.selectorLabels" . | nindent 4 }}
+{{ end }}

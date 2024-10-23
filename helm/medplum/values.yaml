@@ -3,6 +3,7 @@
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
+namespace: medplum
 
 image:
   #repository: your-region-docker.pkg.dev/your-project-id/medplum-repo/medplum-server
@@ -142,3 +143,16 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
+
+externalGateway: {}
+  # hostname: dev-af.copilot.choreograph.com
+  # path: /
+  # healthcheck:
+  #   port: 5000
+  #   path: /metrics
+  # iap:
+  #   enabled: true
+  #   secret-name: iap-secret
+  #   clientID: 319457977074-eut1g8519fhd6kjdaqfp3stiou20u44i.apps.googleusercontent.com
+  # name: external-ingress
+  # namespace: networking

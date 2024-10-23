@@ -19,6 +19,14 @@ module "vpc" {
       subnet_region            = var.region
       private_ip_google_access = true
     },
+    {
+      subnet_name              = "medplum-us-west1-sn-proxy-only-01"
+      subnet_ip                = "10.12.0.0/23"
+      subnet_region            = var.region
+      private_ip_google_access = true
+      purpose                  = "REGIONAL_MANAGED_PROXY"
+      role                     = "ACTIVE"
+    }
   ]
 
   secondary_ranges = {
