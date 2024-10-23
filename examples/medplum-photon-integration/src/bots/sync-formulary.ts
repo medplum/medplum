@@ -1,6 +1,6 @@
 import { BotEvent, getCodeBySystem, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { List, ListEntry, MedicationKnowledge } from '@medplum/fhirtypes';
-import { NEUTRON_HEALTH } from './constants';
+import { NEUTRON_HEALTH, NEUTRON_HEALTH_TREATMENTS } from './constants';
 import { handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 /**
@@ -22,12 +22,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent<List>): Pr
   // Filter out already synced medications to avoid duplication
   const medications = formulary.entry?.filter((entry) => {
     if (entry.flag) {
-      return !entry.flag?.coding?.some((coding) => coding.code === 'synced');
+      const synced = getCodeBySystem(entry.flag, NEUTRON_HEALTH);
+      return !synced;
     }
     return true;
   });
 
-  if (!medications) {
+  if (!medications || medications.length === 0) {
     throw new Error('No medications to sync');
   }
 
@@ -49,15 +50,27 @@ export async function handler(medplum: MedplumClient, event: BotEvent<List>): Pr
       throw new Error('Invalid resource type in formulary');
     }
 
+    if (!medicationKnowledge.code) {
+      throw new Error('Invalid MedicationKnowledge resource. No medication code provided');
+    }
+
     // Get the medication's RXCUI code
-    const rxcui = medicationKnowledge.code?.coding?.[0].code;
+    let medicationCode = getCodeBySystem(medicationKnowledge.code, 'http://www.nlm.nih.gov/research/umls/rxnorm');
+
+    // If we cannot get the RXCUI, get the NDC code
+    if (!medicationCode) {
+      medicationCode = getCodeBySystem(medicationKnowledge.code, 'http://hl7.org/fhir/sid/ndc');
+    }
 
     // Get the medication from photon. If it is not in Photon, store it in the unadded medications array
-    const photonMedicationId = await getPhotonMedication(photonAuthToken, rxcui);
+    const photonMedicationId = await getPhotonMedication(photonAuthToken, medicationCode);
     if (!photonMedicationId) {
       unaddedMedications.push(medicationKnowledge);
       continue;
     }
+
+    // Update the MedicationKnowledge to include the Photon treatment ID
+    await addPhotonIdToMedicationKnowledge(photonMedicationId, medicationKnowledge, medplum);
 
     // If the medication is in Photon, sync it by adding it to your Photon catalog.
     await syncFormulary(catalogId, photonMedicationId, photonAuthToken);
@@ -67,6 +80,35 @@ export async function handler(medplum: MedplumClient, event: BotEvent<List>): Pr
   await updateFormulary(medplum, formulary, unaddedMedications);
   // Return any medications that were not able to be synced
   return unaddedMedications;
+}
+
+/**
+ * Adds the Photon treatment ID to the MedicationKnowledge as part of the medication code. It is added to the code as the
+ * MedicationKnowledge does not have an identifier field.
+ *
+ * @param photonMedicationId - The Treatment ID of the medication in Photon
+ * @param medicationKnowledge - The MedicationKnowledge resource being updated
+ * @param medplum - Medplum Client to persist changes to the server
+ */
+export async function addPhotonIdToMedicationKnowledge(
+  photonMedicationId: string,
+  medicationKnowledge: MedicationKnowledge,
+  medplum: MedplumClient
+): Promise<void> {
+  const medicationKnowledgeId = medicationKnowledge.id as string;
+  const code = medicationKnowledge.code ?? { coding: [] };
+  code?.coding?.push({ system: NEUTRON_HEALTH_TREATMENTS, code: photonMedicationId });
+
+  const ops: PatchOperation[] = [
+    { op: 'test', path: '/meta/versionId', value: medicationKnowledge.meta?.versionId },
+    { op: 'add', path: '/code', value: code },
+  ];
+
+  try {
+    await medplum.patchResource('MedicationKnowledge', medicationKnowledgeId, ops);
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
 }
 
 /**
@@ -192,6 +234,9 @@ async function getCatalogId(authToken: string): Promise<string> {
  * @returns The Photon ID of the medication with the given RXCUI code
  */
 async function getPhotonMedication(authToken: string, code?: string): Promise<string | undefined> {
+  if (!code) {
+    return undefined;
+  }
   const query = `
     query medications(
       $filter: MedicationFilter,
