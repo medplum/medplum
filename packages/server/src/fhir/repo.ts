@@ -200,7 +200,7 @@ export interface InteractionOptions {
 }
 
 export interface ReadResourceOptions extends InteractionOptions {
-  checkCacheOnly?: boolean;
+  allowReadFrom?: ('cache' | 'database')[];
 }
 
 export interface ResendSubscriptionsOptions extends InteractionOptions {
@@ -219,6 +219,8 @@ const lookupTables: LookupTable[] = [
   new ReferenceTable(),
   new CodingTable(),
 ];
+
+const DEFAULT_ALLOW_READ_FROM = ['cache', 'database'] as const;
 
 /**
  * The Repository class manages reading and writing to the FHIR repository.
@@ -312,21 +314,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    const cacheRecord = await this.getCacheEntry<T>(resourceType, id);
-    if (cacheRecord) {
-      // This is an optimization to avoid a database query.
-      // However, it depends on all values in the cache having "meta.compartment"
-      // Old versions of Medplum did not populate "meta.compartment"
-      // So this optimization is blocked until we add a migration.
-      // if (!this.canReadCacheEntry(cacheRecord)) {
-      //   throw new OperationOutcomeError(notFound);
-      // }
-      if (this.canReadCacheEntry(cacheRecord)) {
-        return cacheRecord.resource;
+    const allowReadFrom = options?.allowReadFrom ?? DEFAULT_ALLOW_READ_FROM;
+
+    if (allowReadFrom.includes('cache')) {
+      const cacheRecord = await this.getCacheEntry<T>(resourceType, id);
+      if (cacheRecord) {
+        // This is an optimization to avoid a database query.
+        // However, it depends on all values in the cache having "meta.compartment"
+        // Old versions of Medplum did not populate "meta.compartment"
+        // So this optimization is blocked until we add a migration.
+        // if (!this.canReadCacheEntry(cacheRecord)) {
+        //   throw new OperationOutcomeError(notFound);
+        // }
+        if (this.canReadCacheEntry(cacheRecord)) {
+          return cacheRecord.resource;
+        }
       }
     }
 
-    if (options?.checkCacheOnly) {
+    if (!allowReadFrom.includes('database')) {
       throw new OperationOutcomeError(notFound);
     }
 
@@ -1174,6 +1180,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     for (const policy of accessPolicy.resource) {
       if (policy.resourceType === resourceType) {
+        console.log({ policy });
         const policyCompartmentId = resolveId(policy.compartment);
         if (policyCompartmentId) {
           // Deprecated - to be removed
@@ -1190,6 +1197,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           }
           // Add subquery for access policy criteria.
           const searchRequest = parseSearchRequest(policy.criteria);
+          console.log({ searchRequest });
           const accessPolicyExpression = buildSearchExpression(
             this,
             builder,
