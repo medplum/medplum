@@ -42,6 +42,10 @@ module "sql-db" {
     {
       name  = "autovacuum"
       value = "off"
+    },
+    {
+      name  = "default_transaction_isolation"
+      value = "'repeatable read'"
     }
   ]
   // Additional configurations

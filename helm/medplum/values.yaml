@@ -5,11 +5,13 @@
 replicaCount: 1
 namespace: medplum
 
+global:
+  domain: api.zencore.medplum.dev
+  cloudProvider: gcp
+
 image:
-  #repository: your-region-docker.pkg.dev/your-project-id/medplum-repo/medplum-server
-  repository: us-west1-docker.pkg.dev/medplum-zencore/medplum-repo/medplum-server
+  repository: medplum/medplum-server
   pullPolicy: IfNotPresent
-  # Overrides the image tag whose default is the chart appVersion.
   tag: latest
 
 env:
@@ -51,63 +53,46 @@ ingress:
   enabled: true
   annotations:
     kubernetes.io/ingress.class: "gce"
-  hosts:
-    - host: app.zencore.medplum.dev
-      paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: medplum-app-service
-              port:
-                number: 5000
   tls:
-    - secretName: tls-secret
-      hosts:
-        - app.zencore.medplum.dev
+    secretName: tls-secret
 
 
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
+# imagePullSecrets: []
+# nameOverride: ""
+# fullnameOverride: ""
 
 serviceAccount:
-  # Specifies whether a service account should be created
   create: true
-  # Automatically mount a ServiceAccount's API credentials?
   automount: true
-  # Annotations to add to the service account
   annotations:
     iam.gke.io/gcp-service-account: medplum-server@medplum-zencore.iam.gserviceaccount.com
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
 
-podAnnotations: {}
-podLabels: {}
 
-podSecurityContext: {}
-  # fsGroup: 2000
+# podAnnotations: {}
+# podLabels: {}
 
-securityContext: {}
-  # capabilities:
-  #   drop:
-  #   - ALL
-  # readOnlyRootFilesystem: true
-  # runAsNonRoot: true
-  # runAsUser: 1000
+# podSecurityContext: {}
+#   # fsGroup: 2000
 
-resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
-  # limits:
-  #   cpu: 100m
-  #   memory: 128Mi
-  # requests:
-  #   cpu: 100m
-  #   memory: 128Mi
+# securityContext: {}
+#   # capabilities:
+#   #   drop:
+#   #   - ALL
+#   # readOnlyRootFilesystem: true
+#   # runAsNonRoot: true
+#   # runAsUser: 1000
+
+# resources: {}
+#   # We usually recommend not to specify default resources and to leave this as a conscious
+#   # choice for the user. This also increases chances charts run on environments with little
+#   # resources, such as Minikube. If you do want to specify resources, uncomment the following
+#   # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+#   # limits:
+#   #   cpu: 100m
+#   #   memory: 128Mi
+#   # requests:
+#   #   cpu: 100m
+#   #   memory: 128Mi
 
 livenessProbe:
   httpGet:
@@ -143,16 +128,3 @@ nodeSelector: {}
 tolerations: []
 
 affinity: {}
-
-externalGateway: 
-  hostname: api.zencore.medplum.dev
-  path: /
-  healthcheck:
-    port: 5000
-    path: /metrics
-  # iap:
-  #   enabled: true
-  #   secret-name: iap-secret
-  #   clientID: 319457977074-eut1g8519fhd6kjdaqfp3stiou20u44i.apps.googleusercontent.com
-  name: external-ingress
-  namespace: networking
