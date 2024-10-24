@@ -9,7 +9,7 @@ module "medplum-lb-https" {
   url_map                         = google_compute_url_map.cdn_url_map.self_link
   create_url_map                  = false
   ssl                             = true
-  managed_ssl_certificate_domains = ["storage.medplum.com", "app.medplum.com"]
+  managed_ssl_certificate_domains = ["storage.zencore.medplum.dev", "app.zencore.medplum.dev"]
 
   backends = {
     default = {
@@ -55,7 +55,7 @@ resource "google_compute_url_map" "cdn_url_map" {
   default_service = module.medplum-lb-https.backend_services.default.self_link
 
   host_rule {
-    hosts        = ["storage.medplum.com"]
+    hosts        = ["storage.zencore.medplum.dev"]
     path_matcher = "storage"
   }
 
@@ -69,7 +69,7 @@ resource "google_compute_url_map" "cdn_url_map" {
     }
   }
   host_rule {
-    hosts        = ["app.medplum.com"]
+    hosts        = ["app.zencore.medplum.dev"]
     path_matcher = "app"
   }
 
