@@ -21,7 +21,7 @@ These are usually used for triggering rerenders within the context of React, but
 
 ## Working with the `MedplumClient` Lifecycle in React
 
-When wrapping your app in a `MedplumProvider`, you should be aware of the [lifecycle events](https://todo.real) of `MedplumClient`. Each of the lifecycle events will trigger a rerender at the root of your; 
+When wrapping your app in a `MedplumProvider`, you should be aware of the lifecycle events of `MedplumClient`. Each of the lifecycle events will trigger a rerender at the root of your; 
 so your root component (what we call by convention in our examples `App.tsx`) should resilient to rerenders. This can be accomplished in most cases with the following pattern:
 
 ```tsx
