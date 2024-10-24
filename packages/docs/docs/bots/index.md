@@ -2,7 +2,7 @@
 sidebar_position: 0
 ---
 
-# Intro
+# Bots
 
 If you have never heard of Medplum Bots, we encourage you to read the intro material in the [**Bot Guide**](./bots/bot-basics).
 

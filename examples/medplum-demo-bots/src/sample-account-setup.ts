@@ -162,7 +162,7 @@ async function getPractitioner(medplum: MedplumClient): Promise<Practitioner> {
       photo: [
         {
           contentType: 'image/png',
-          url: 'https://docs.medplum.com/img/cdc-femaledoc.png',
+          url: 'https://www.medplum.com/img/cdc-femaledoc.png',
         },
       ],
     },
