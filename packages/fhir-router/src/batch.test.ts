@@ -615,7 +615,7 @@ describe('Batch', () => {
                 name: 'operation',
                 part: [
                   { name: 'op', valueCode: 'replace' },
-                  { name: 'path', valueString: '/gender', },
+                  { name: 'path', valueString: '/gender' },
                   { name: 'value', valueString: 'female' },
                 ],
               },

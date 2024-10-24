@@ -512,12 +512,12 @@ class BatchProcessor {
           if (part.name === 'path') {
             op.path = part.valueString;
           } else if (part.name === 'value') {
-              try {
-                op.value = JSON.parse(part.valueString ?? '');
-              } catch {
-                op.value = part.valueString ?? '';
-              }
-              break;
+            try {
+              op.value = JSON.parse(part.valueString ?? '');
+            } catch {
+              op.value = part.valueString ?? '';
+            }
+            break;
           }
         }
         break;
