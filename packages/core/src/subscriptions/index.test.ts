@@ -1207,4 +1207,77 @@ describe('resourceMatchesSubscriptionCriteria', () => {
     });
     expect(result2).toBe(true);
   });
+
+  test('should return false when criteria containing invalid search parameter is evaluated', async () => {
+    const originalConsoleError = console.error;
+    console.error = jest.fn();
+
+    const subscription: Subscription = {
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'Test subscription',
+      criteria: 'Communication?invalid=invalid',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'Bot/123',
+      },
+    };
+
+    await expect(
+      resourceMatchesSubscriptionCriteria({
+        resource: {
+          resourceType: 'Communication',
+          status: 'in-progress',
+        },
+        subscription,
+        context: { interaction: 'create' },
+        getPreviousResource: async () => undefined,
+      })
+    ).resolves.toBe(false);
+
+    expect(console.error).toHaveBeenCalledTimes(1);
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining(
+        '[Subscription]: Got error "Unknown search parameter: invalid for resource type Communication" while evaluating resource for Subscription'
+      )
+    );
+    console.error = originalConsoleError;
+  });
+
+  // TODO(ThatOneBro 24 Oct 2024): Consider unskipping if we remove try-catch from `resourceMatchesSubscriptionCriteria`
+  test.skip('should throw when criteria containing invalid search parameter is evaluated', async () => {
+    const subscription: Subscription = {
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'Test subscription',
+      criteria: 'Communication?invalid=invalid',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'Bot/123',
+      },
+    };
+
+    await expect(
+      resourceMatchesSubscriptionCriteria({
+        resource: {
+          resourceType: 'Communication',
+          status: 'in-progress',
+        },
+        subscription,
+        context: { interaction: 'create' },
+        getPreviousResource: async () => undefined,
+      })
+    ).rejects.toThrow(
+      new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Unknown search parameter: invalid for resource type Communication' },
+          },
+        ],
+      })
+    );
+  });
 });
