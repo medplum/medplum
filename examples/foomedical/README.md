@@ -90,7 +90,6 @@ Medplum backend is HIPAA compliant and SOC 2 certified. Getting an account set u
 
 Medplum supports self-hosting and provides a [hosted service](https://app.medplum.com/). [Foo Medical](https://foomedical.com/) uses the hosted service as a backend.
 
-<!-- fix me: -->
 - Read our [documentation](https://www.medplum.com/docs/)
 - Browse our [React component library](https://storybook.medplum.com/)
 - Join our [Discord](https://discord.gg/medplum)
