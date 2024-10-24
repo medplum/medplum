@@ -1,8 +1,8 @@
 # Medplum Demo Bots
 
-This repo contains code for [Medplum Bots](https://docs.medplum.com/app/bots). Bots power many of the integrations you see in Medplum apps. You can view your deployed bots online on the [Medplum App](https://app.medplum.com).
+This repo contains code for [Medplum Bots](https://www.medplum.com/docs/bots). Bots power many of the integrations you see in Medplum apps. You can view your deployed bots online on the [Medplum App](https://app.medplum.com).
 
-Bots make heavy use of the [Medplum JS Client Library](https://docs.medplum.com/typedoc/core/index.html).
+Bots make heavy use of the [Medplum JS Client Library](https://www.medplum.com/docs/sdk/core).
 
 ## Setup
 

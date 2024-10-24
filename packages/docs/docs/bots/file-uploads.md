@@ -58,7 +58,7 @@ const response = await fetch('https://httpbin.org/post', {
 });
 ```
 
-This is what it looks like all put together. You can also see this example in our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/form-data-upload.ts) repo.
+This is what it looks like all put together. You can also see this example in our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/blob/main/src/form-data-upload.ts) repo.
 
 ```ts
 import { BotEvent, MedplumClient } from '@medplum/core';

@@ -46,5 +46,5 @@ Giving patients access to only their data can be enabled via [access controls](/
 
 - Sample app [Foo Medical](https://www.foomedical.com) live for testing
 - [Foo Medical Source Code](https://github.com/medplum/foomedical)
-- [Sample data generation script](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts)
+- [Sample data generation script](https://github.com/medplum/medplum-demo-bots/blob/main/src/sample-account-setup.ts)
 - [UI components on Storybook](https://storybook.medplum.com)
