@@ -332,6 +332,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
+    // Must be able to read from the database beyond this point, else throw a "not found" error
     if (!allowReadFrom.includes('database')) {
       throw new OperationOutcomeError(notFound);
     }
@@ -1180,7 +1181,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     for (const policy of accessPolicy.resource) {
       if (policy.resourceType === resourceType) {
-        console.log({ policy });
         const policyCompartmentId = resolveId(policy.compartment);
         if (policyCompartmentId) {
           // Deprecated - to be removed
@@ -1197,7 +1197,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           }
           // Add subquery for access policy criteria.
           const searchRequest = parseSearchRequest(policy.criteria);
-          console.log({ searchRequest });
           const accessPolicyExpression = buildSearchExpression(
             this,
             builder,
