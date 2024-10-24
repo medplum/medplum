@@ -39,7 +39,7 @@ function App() {
   // This will cause remount on switching profiles
   // Or an unmount whenever token refresh fails and a profile is no longer present
   if (!profile) {
-    // Redirect users back to signin whenever there is no profile and anytime after initial load
+    // Redirect users back to signin whenever there is no profile anytime after initial load
     navigate("/signin");
     return null;
   }
