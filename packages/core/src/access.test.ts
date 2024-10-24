@@ -8,6 +8,7 @@ import {
   matchesAccessPolicy,
   satisfiedAccessPolicy,
 } from './access';
+import { OperationOutcomeError } from './outcomes';
 import { indexSearchParameterBundle } from './types';
 import { indexStructureDefinitionBundle } from './typeschema/types';
 
@@ -43,6 +44,16 @@ const restrictedPolicy: AccessPolicy = {
       resourceType: 'Communication',
       readonly: true,
       criteria: 'Communication?status=completed',
+    },
+  ],
+};
+
+const invalidSearchParamsPolicy: AccessPolicy = {
+  resourceType: 'AccessPolicy',
+  resource: [
+    {
+      resourceType: 'Patient',
+      criteria: 'Patient?invalid=invalid',
     },
   ],
 };
@@ -130,6 +141,72 @@ describe('Access', () => {
     ).toBeUndefined();
   });
 
+  test('Invalid SearchParameter in criteria in AccessPolicy', () => {
+    const originalConsoleError = console.error;
+    console.error = jest.fn();
+
+    expect(
+      matchesAccessPolicy(
+        invalidSearchParamsPolicy,
+        { resourceType: 'Patient', name: [{ given: ['John'], family: 'Doe' }] },
+        false
+      )
+    ).toEqual(false);
+
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'Patient', name: [{ given: ['John'], family: 'Doe' }] },
+        AccessPolicyInteraction.UPDATE,
+        invalidSearchParamsPolicy
+      )
+    ).toEqual(undefined);
+
+    expect(console.error).toHaveBeenCalledTimes(2);
+    expect(console.error).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining(
+        '[Access Policy]: Got error "Unknown search parameter: invalid for resource type Patient" while evaluating resource against AccessPolicy/'
+      )
+    );
+    expect(console.error).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining(
+        '[Access Policy]: Got error "Unknown search parameter: invalid for resource type Patient" while evaluating resource against AccessPolicy/'
+      )
+    );
+    console.error = originalConsoleError;
+  });
+
+  // TODO(ThatOneBro 24 Oct 2024): Maybe unskip this later if we want to throw on invalid access policy
+  test.skip('Invalid SearchParameter in criteria in AccessPolicy', () => {
+    expect(() =>
+      matchesAccessPolicy(
+        invalidSearchParamsPolicy,
+        { resourceType: 'Patient', name: [{ given: ['John'], family: 'Doe' }] },
+        false
+      )
+    ).toThrow(/Unknown search parameter: invalid/);
+
+    expect(() =>
+      satisfiedAccessPolicy(
+        { resourceType: 'Patient', name: [{ given: ['John'], family: 'Doe' }] },
+        AccessPolicyInteraction.UPDATE,
+        invalidSearchParamsPolicy
+      )
+    ).toThrow(
+      new OperationOutcomeError({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            severity: 'error',
+            code: 'invalid',
+            details: { text: 'Unknown search parameter: invalid for resource type Patient' },
+          },
+        ],
+      })
+    );
+  });
+
   test('Legacy compartment case', () => {
     // Once upon a time, the recommended way to restrict access to a resource was AccessPolicy.compartment
     // That is now obsolete, becaues you can always use criteria with "_compartment=x"
@@ -149,21 +226,5 @@ describe('Access', () => {
     expect(
       matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '2' }] } }, false)
     ).toEqual(false);
-  });
-
-  test('Invalid SearchParameter in criteria in AccessPolicy', () => {
-    const ap: AccessPolicy = {
-      resourceType: 'AccessPolicy',
-      resource: [
-        {
-          resourceType: 'Patient',
-          criteria: 'Patient?invalid=invalid',
-        },
-      ],
-    };
-
-    expect(() =>
-      matchesAccessPolicy(ap, { resourceType: 'Patient', name: [{ given: ['John'], family: 'Doe' }] }, false)
-    ).toThrow(/Unknown search parameter: invalid/);
   });
 });

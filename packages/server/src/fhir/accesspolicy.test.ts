@@ -13,6 +13,8 @@ import {
   ClientApplication,
   Login,
   Observation,
+  OperationOutcome,
+  OperationOutcomeIssue,
   Organization,
   Patient,
   Practitioner,
@@ -27,8 +29,10 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import express from 'express';
+import request from 'supertest';
 import { inviteUser } from '../admin/invite';
-import { initAppServices, shutdownApp } from '../app';
+import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { addTestUser, createTestProject, withTestContext } from '../test.setup';
@@ -38,10 +42,11 @@ import { getSystemRepo, Repository } from './repo';
 describe('AccessPolicy', () => {
   let testProject: Project;
   let systemRepo: Repository;
+  const app = express();
 
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initAppServices(config);
+    await initApp(app, config);
   });
 
   beforeEach(async () => {
@@ -2549,34 +2554,53 @@ describe('AccessPolicy', () => {
 
   test('readResource with invalid access policy', async () =>
     withTestContext(async () => {
-      const { repo, membership, client } = await createTestProject({
-        withRepo: true,
-        withClient: true,
-      });
+      const { membership, accessToken } = await createTestProject({ withAccessToken: true, withClient: true });
 
       const accessPolicy = await systemRepo.createResource<AccessPolicy>({
         resourceType: 'AccessPolicy',
         resource: [
           {
             resourceType: 'Patient',
-            // criteria: 'Patient?i=completed',
+            criteria: 'Patient?i=completed',
             readonly: true,
           },
         ],
       });
 
-      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
-      const ship = await systemRepo.updateResource<ProjectMembership>({
+      const res1 = await request(app)
+        .post('/fhir/R4/Patient')
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Patient',
+        });
+
+      expect(res1.status).toBe(201);
+      expect(res1.body).toBeDefined();
+
+      await systemRepo.updateResource<ProjectMembership>({
         ...membership,
         accessPolicy: createReference(accessPolicy),
       });
 
-      const secondRepo = new Repository({
-        accessPolicy,
-      });
+      const res2 = await request(app)
+        .get(`/fhir/R4/Patient/${res1.body.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send({
+          resourceType: 'Patient',
+        });
 
-      await expect(
-        repo.readResource('Patient', patient.id as string, { allowReadFrom: ['database'] })
-      ).rejects.toThrow();
+      expect(res2.status).toBe(400);
+      expect(res2.body).toMatchObject<Partial<OperationOutcome>>({
+        resourceType: 'OperationOutcome',
+        issue: expect.arrayContaining([
+          expect.objectContaining<OperationOutcomeIssue>({
+            severity: 'error',
+            code: 'invalid',
+            // TODO(ThatOneBro 24 Oct 2024): Swap out this line if we want to remove try-catch in `matchesAccessPolicyResourcePolicy`
+            // details: { text: 'Unknown search parameter: i for resource type Patient' },
+            details: { text: 'Unknown search parameter: i' },
+          }),
+        ]),
+      });
     }));
 });

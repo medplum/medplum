@@ -553,7 +553,16 @@ export async function resourceMatchesSubscriptionCriteria({
     return false;
   }
 
-  return matchesSearchRequest(resource, searchRequest);
+  // TODO(ThatOneBro 24 Oct 2024): Consider removing try-catch if we prevent invalid subscription criteria from being written
+  try {
+    const result = matchesSearchRequest(resource, searchRequest);
+    return result;
+  } catch (err: unknown) {
+    console.error(
+      `[Subscription]: Got error "${normalizeErrorString(err)}" while evaluating resource for ${getReferenceString(subscription)}`
+    );
+    return false;
+  }
 }
 
 /**
