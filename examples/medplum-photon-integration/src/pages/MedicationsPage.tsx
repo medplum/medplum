@@ -1,7 +1,7 @@
 import { Button, Flex, Modal, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { createReference, getReferenceString, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { createReference, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Coding, List, MedicationKnowledge, Resource } from '@medplum/fhirtypes';
 import { CodingInput, Container, Document, ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
