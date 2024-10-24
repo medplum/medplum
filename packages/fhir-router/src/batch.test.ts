@@ -578,6 +578,7 @@ describe('Batch', () => {
   test('Process batch patch Parameters', async () => {
     const patient = await repo.createResource<Patient>({
       resourceType: 'Patient',
+      birthDate: '2000-01-01',
       gender: 'unknown',
     });
 
@@ -613,8 +614,16 @@ describe('Batch', () => {
               {
                 name: 'operation',
                 part: [
+                  { name: 'op', valueCode: 'replace' },
+                  { name: 'path', valueString: '/gender', },
+                  { name: 'value', valueString: 'female' },
+                ],
+              },
+              {
+                name: 'operation',
+                part: [
                   { name: 'op', valueCode: 'remove' },
-                  { name: 'path', valueString: '/gender' },
+                  { name: 'path', valueString: '/birthDate' },
                 ],
               },
             ],
@@ -640,7 +649,8 @@ describe('Batch', () => {
     expect(results[0].response?.status).toEqual('200');
     const updatedPatient = results[0].resource as Patient;
     expect(updatedPatient.name?.[0]?.given).toEqual(['Dave', 'Smith']);
-    expect(updatedPatient.gender).toBeUndefined();
+    expect(updatedPatient.gender).toEqual('female');
+    expect(updatedPatient.birthDate).toBeUndefined();
     expect(results[1].response?.status).toEqual('400');
     expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
   });
