@@ -36,10 +36,6 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
   if (!searchParam) {
     throw new Error(`Unknown search parameter: ${filter.code} for resource type ${searchRequest.resourceType}`);
   }
-  if (filter.operator === Operator.MISSING && searchParam) {
-    const values = evalFhirPath(searchParam.expression as string, resource);
-    return filter.value === 'true' ? !values.length : values.length > 0;
-  }
   if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
     return matchesMissingOrPresent(resource, filter, searchParam);
   }
