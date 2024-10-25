@@ -7,7 +7,7 @@ import { useDebouncedValue } from '../useDebouncedValue/useDebouncedValue';
 type SearchFn = 'search' | 'searchOne' | 'searchResources';
 export type SearchOptions = { debounceMs?: number };
 
-const DEFAULT_DEBOUNCE_MS = 500;
+const DEFAULT_DEBOUNCE_MS = 250;
 
 /**
  * React hook for searching FHIR resources.
