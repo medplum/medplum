@@ -1,0 +1,13 @@
+{{- if and .Values.ingress.enabled (eq .Values.global.cloudProvider "gcp") .Values.ingress.frontendConfig }}
+apiVersion: networking.gke.io/v1beta1
+kind: FrontendConfig
+metadata:
+  name: {{ include "medplum.fullname" . }}
+  namespace: {{ include  "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels"  | nindent 4 }}
+{{- with .Values.ingress.frontendConfig }}
+spec:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}

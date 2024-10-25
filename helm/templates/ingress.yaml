@@ -1,20 +1,25 @@
-{{- if and .Values.ingress.enabled (eq .Values.ingress.controller "generic") }}
+{{- if and .Values.ingress.enabled (eq .Values.global.cloudProvider "gcp") }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "medplum.fullname" . }}-external
-  namespace: {{ include "medplum.namespace" . }}
+  name: {{ include "medplum.fullname" . }}
+  namespace: {{ include  "medplum.namespace" . }}
   labels:
-    {{- include "medplum.labels" (dict "context" . "component" .Values.name "name" .Values.name) | nindent 4 }}
+    {{- include "medplum.labels"  | nindent 4 }}
     {{- with .Values.ingress.labels }}
       {{- toYaml . | nindent 4 }}
     {{- end }}
-  {{- with .Values.ingress.annotations }}
   annotations:
-    {{- range $key, $value := . }}
+    ingressClassName: "gce"
+    {{- if .Values.ingress.managedCertificate.create }}
+    networking.gke.io/managed-certificates: {{ include "medplum.fullname" . }}
+    {{- end }}
+    {{- if .Values.ingress.frontendConfig }}
+    networking.gke.io/v1beta1.FrontendConfig: {{ include "medplum.fullname" . }}
+    {{- end }}
+    {{- range $key, $value := .Values.ingress.annotations }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
-  {{- end }}
 spec:
   {{- with .Values.ingress.ingressClassName }}
   ingressClassName: {{ . }}
@@ -27,7 +32,7 @@ spec:
             {{- tpl (toYaml .) $ | nindent 10 }}
           {{- end }}
           - path: {{ .Values.ingress.path }}
-            pathType: {{ $.Values.ingress.pathType }}
+            pathType: {{ .Values.ingress.pathType }}
             backend:
               service:
                 name: {{ include "medplum.fullname" . }}
@@ -53,12 +58,7 @@ spec:
     {{- if .Values.ingress.tls }}
     - hosts:
       - {{ .Values.ingress.hostname | default .Values.global.domain }}
-      {{- range .Values.ingress.extraHosts }}
-        {{- if .name }}
-      -  {{ .name }}
-        {{- end }}
-      {{- end }}
-      secretName: {{ .Values.ingress.tls.secretName }}
+      secretName: argocd-server-tls
     {{- end }}
     {{- with .Values.ingress.extraTls }}
       {{- toYaml . | nindent 4 }}

@@ -1,0 +1,13 @@
+{{- if and .Values.ingress.enabled (eq .Values.global.cloudProvider "gcp") .Values.ingress.backendConfig }}
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: {{ include "medplum.fullname" . }}
+  namespace: {{ include  "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" | nindent 4 }}
+{{- with .Values.ingress.backendConfig }}
+spec:
+  {{- toYaml . | nindent 2 }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,98 @@
+# Default values for medplum.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+namespace: medplum
+
+global:
+  domain: api.zencore.medplum.dev
+  cloudProvider: gcp
+
+image:
+  repository: medplum/medplum-server
+  pullPolicy: IfNotPresent
+  tag: latest
+
+env:
+  - name: POSTGRES_HOST
+    value: "POSTGRES_IP_ADDRESS" # obtain from GCP secret
+  - name: POSTGRES_PORT
+    value: "5432"
+  - name: SHOULD_RUN_SEED_TEST
+    value: "true"
+  - name: REDIS_PASSWORD_DISABLED_IN_TESTS
+    value: "true"
+
+  - name: DATABASE_URL
+    value:
+  - name: REDIS_URL
+    value: "redis://redis-instance-ip:6379"
+  - name: POSTGRES_USER
+    value: "medplum"
+  - name: POSTGRES_PASSWORD
+    value:
+  - name: POSTGRES_DB
+    value: "your-database-name"
+  - name: REDIS_HOST
+    value: "MEMORYSTORE_PRIVATE_IP"
+  - name: REDIS_PORT
+    value: "6379"
+  - name: REDIS_PASSWORD
+    value: "medplum"
+
+serviceAccount:
+  create: true
+  automount: true
+  annotations:
+    iam.gke.io/gcp-service-account: medplum-server@medplum-zencore.iam.gserviceaccount.com
+
+service:
+  type: ClusterIP
+  port: 5000
+  
+extraAnnotations:
+  cloud.google.com/neg: '{"ingress": true}'
+  cloud.google.com/backend-config: '{"ports": {"5000":"medplum-backend-config"}}'
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.global-static-ip-name: ADDRESS_NAME
+  path: /
+  pathType: Prefix
+  tls: false
+
+  backendConfig:
+    healthCheck:
+      checkIntervalSec: 15
+      healthyThreshold: 2
+      port: 5000
+      requestPath: /healthcheck
+      timeoutSec: 15
+      type: HTTP
+      unhealthyThreshold: 2
+
+  frontendConfig: 
+    securityPolicy:
+      policyName: medplum-ssl-policy
+    redirectToHttps:
+      enabled: true
+      responseCodeName: RESPONSE_CODE
+
+livenessProbe:
+  httpGet:
+    path: /healthcheck
+    port: http
+readinessProbe:
+  httpGet:
+    path: /healthcheck
+    port: http
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
