@@ -759,7 +759,7 @@ export class MockFetchClient {
       const issueDetails = outcome.issue[0]?.details;
       const issueText = issueDetails?.text;
       if (!issueText) {
-        return result[0];
+        return outcome;
       }
       // Special case for unknown search parameters and resource types
       // We know it's common to forgot to index all search parameters and structure definitions in MockClient
@@ -777,10 +777,10 @@ export class MockFetchClient {
         console.error(errMsg);
         issueDetails.text = errMsg;
       }
-      return result[0];
+      return outcome;
     }
 
-    return result[1];
+    return resource;
   }
 }
 
