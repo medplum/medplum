@@ -103,8 +103,8 @@ describe('FHIR Repo', () => {
     }
   });
 
-  test('Read invalid resource with `allowReadFrom` only including `cache`', async () => {
-    await expect(systemRepo.readResource('Subscription', randomUUID(), { allowReadFrom: ['cache'] })).rejects.toThrow(
+  test('Read invalid resource with `checkCacheOnly` option', async () => {
+    await expect(systemRepo.readResource('Subscription', randomUUID(), { checkCacheOnly: true })).rejects.toThrow(
       new OperationOutcomeError(notFound)
     );
   });

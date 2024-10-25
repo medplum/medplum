@@ -200,7 +200,7 @@ export interface InteractionOptions {
 }
 
 export interface ReadResourceOptions extends InteractionOptions {
-  allowReadFrom?: ('cache' | 'database')[];
+  checkCacheOnly?: boolean;
 }
 
 export interface ResendSubscriptionsOptions extends InteractionOptions {
@@ -219,8 +219,6 @@ const lookupTables: LookupTable[] = [
   new ReferenceTable(),
   new CodingTable(),
 ];
-
-const DEFAULT_ALLOW_READ_FROM = ['cache', 'database'] as const;
 
 /**
  * The Repository class manages reading and writing to the FHIR repository.
@@ -314,26 +312,22 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    const allowReadFrom = options?.allowReadFrom ?? DEFAULT_ALLOW_READ_FROM;
-
-    if (allowReadFrom.includes('cache')) {
-      const cacheRecord = await this.getCacheEntry<T>(resourceType, id);
-      if (cacheRecord) {
-        // This is an optimization to avoid a database query.
-        // However, it depends on all values in the cache having "meta.compartment"
-        // Old versions of Medplum did not populate "meta.compartment"
-        // So this optimization is blocked until we add a migration.
-        // if (!this.canReadCacheEntry(cacheRecord)) {
-        //   throw new OperationOutcomeError(notFound);
-        // }
-        if (this.canReadCacheEntry(cacheRecord)) {
-          return cacheRecord.resource;
-        }
+    const cacheRecord = await this.getCacheEntry<T>(resourceType, id);
+    if (cacheRecord) {
+      // This is an optimization to avoid a database query.
+      // However, it depends on all values in the cache having "meta.compartment"
+      // Old versions of Medplum did not populate "meta.compartment"
+      // So this optimization is blocked until we add a migration.
+      // if (!this.canReadCacheEntry(cacheRecord)) {
+      //   throw new OperationOutcomeError(notFound);
+      // }
+      if (this.canReadCacheEntry(cacheRecord)) {
+        return cacheRecord.resource;
       }
     }
 
     // Must be able to read from the database beyond this point, else throw a "not found" error
-    if (!allowReadFrom.includes('database')) {
+    if (options?.checkCacheOnly) {
       throw new OperationOutcomeError(notFound);
     }
 

@@ -46,6 +46,11 @@ const MAX_JOB_ATTEMPTS = 18;
  */
 const DEFAULT_RETRIES = 3;
 
+/**
+ * The options to use for calls to `repo.readResource` for WebSocket subscriptions.
+ */
+const WS_SUB_READ_RESOURCE_OPTS = { checkCacheOnly: true } as const;
+
 /*
  * The subscription worker inspects every resource change,
  * and executes FHIR Subscription resources for those changes.
@@ -425,9 +430,11 @@ async function tryGetSubscription(
   channelType: SubscriptionJobData['channelType'] | undefined
 ): Promise<Subscription | undefined> {
   try {
-    return await systemRepo.readResource<Subscription>('Subscription', subscriptionId, {
-      allowReadFrom: channelType === 'websocket' ? ['cache'] : ['cache', 'database'],
-    });
+    return await systemRepo.readResource<Subscription>(
+      'Subscription',
+      subscriptionId,
+      channelType === 'websocket' ? WS_SUB_READ_RESOURCE_OPTS : undefined
+    );
   } catch (err) {
     const outcome = normalizeOperationOutcome(err);
     // If the Subscription was marked as deleted in the database, this will return "gone"
