@@ -720,10 +720,6 @@ export class MockFetchClient {
       return exampleValueSet;
     }
 
-    if (url.startsWith('fhir/R4/Task')) {
-      console.log({ url });
-    }
-
     // Special case for ServiceRequestTimeline and DefaultResourceTimeline Task query
     // Since we don't support _filter yet
     // TODO(ThatOneBro 24 Oct 2024): Remove this once we support _filter in the in-memory search implementation
