@@ -1,9 +1,9 @@
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { evalFhirPathTyped } from '../fhirpath/parse';
+import { isDateTimeString } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import { TypedValue, globalSchema, stringifyTypedValue } from '../types';
 import { append, sortStringArray } from '../utils';
-import { isDateTimeString } from '../fhirpath/utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 export const DEFAULT_MAX_SEARCH_COUNT = 1000;

@@ -720,6 +720,21 @@ export class MockFetchClient {
       return exampleValueSet;
     }
 
+    if (url.startsWith('fhir/R4/Task')) {
+      console.log({ url });
+    }
+
+    // Special case for ServiceRequestTimeline and DefaultResourceTimeline Task query
+    // Since we don't support _filter yet
+    // TODO(ThatOneBro 24 Oct 2024): Remove this once we support _filter in the in-memory search implementation
+    if (
+      /^fhir\/R4\/Task\?_filter=based-on\+eq\+[a-zA-Z]+%2F[0-9a-zA-Z-]+\+or\+focus\+eq\+[a-zA-Z]+%2F[0-9a-zA-Z-]+\+or\+subject\+eq\+[a-zA-Z]+%2F[0-9a-zA-Z-]+/.test(
+        url
+      )
+    ) {
+      return { resourceType: 'Bundle', type: 'searchset', entry: [] };
+    }
+
     if (url.includes('fhir/R4')) {
       url = url.substring(url.indexOf('fhir/R4') + 7);
     }
@@ -745,49 +760,31 @@ export class MockFetchClient {
 
     const result = await this.router.handleRequest(request, this.repo);
     if (result.length === 1) {
-      await this.logStructureDefinitionError(request.params.resourceType);
-      await this.logSearchParameterError(request);
-      return result[0];
-    } else {
-      return result[1];
-    }
-  }
-
-  private async logStructureDefinitionError(resourceType: string): Promise<void> {
-    const structureDefinitions = await this.repo.searchResources<StructureDefinition>({
-      resourceType: 'StructureDefinition',
-    });
-    const isMatch = structureDefinitions.some((sd) => sd.id === resourceType);
-    if (!isMatch) {
-      console.error(
-        `Unknown resource type: ${resourceType}. Please check whether it is defined in structuredefinitions.json.`
-      );
-    }
-  }
-
-  private async logSearchParameterError(request: FhirRequest): Promise<void> {
-    const {
-      method,
-      params: { resourceType },
-      query,
-    } = request;
-    const codes = Object.keys(query);
-    if (method !== 'GET' || codes.length === 0) {
-      return;
-    }
-    const searchParameters = await this.repo.searchResources<SearchParameter>({
-      resourceType: 'SearchParameter',
-    });
-    codes.forEach((code) => {
-      const isMatch = searchParameters.some(
-        (searchParameter) => searchParameter.code === code && searchParameter.base.some((r) => r === resourceType)
-      );
-      if (!isMatch) {
-        console.error(
-          `Unknown search parameter '${code}' for resource type '${resourceType}'. Please check whether it is defined in searchparameters.json.`
-        );
+      const issueDetails = result[0].issue[0]?.details;
+      const issueText = issueDetails?.text;
+      if (!issueText) {
+        return result[0];
       }
-    });
+      // Special case for unknown search parameters and resource types
+      // We know it's common to forgot to index all search parameters and structure definitions in MockClient
+      // Here we try to let the user know before they have to go deep into debugging why their searches don't work properly in MockClient
+      if (issueText.startsWith('Unknown search parameter: _filter')) {
+        const errMsg = `${issueText}\n\nThe '_filter' search parameter is currently unsupported in MockClient`;
+        console.error(errMsg);
+        issueDetails.text = errMsg;
+      } else if (issueText.startsWith('Unknown search parameter:')) {
+        const errMsg = `${issueText}\n\nHave you tried calling 'indexSearchParameterBundle' for all search parameters?`;
+        console.error(errMsg);
+        issueDetails.text = errMsg;
+      } else if (issueText.startsWith('Unknown resource type')) {
+        const errMsg = `${issueText}\n\nHave you tried calling 'indexStructureDefinitionBundle' for all structure definitions?`;
+        console.error(errMsg);
+        issueDetails.text = errMsg;
+      }
+      return result[0];
+    }
+
+    return result[1];
   }
 }
 
