@@ -21,7 +21,8 @@ git checkout -b "$BRANCH_NAME"
 # react - version 18.3+ incompatible with react-native, waiting for fix
 # rimraf - version 6+ requires Node 20+, holding back until Medplum v4
 # supertest - version 7+ incompatible with superwstest, waiting for fix
-EXCLUDE="@types/express eslint node-fetch react react-dom rimraf supertest"
+# @tabler/icons-react - to avoid bad interaction with vite https://github.com/tabler/tabler-icons/issues/1233
+EXCLUDE="@types/express eslint node-fetch react react-dom rimraf supertest @tabler/icons-react"
 
 # First, only upgrade patch and minor versions
 # --workspaces - Run on all workspaces
