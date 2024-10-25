@@ -1,5 +1,5 @@
 /*
-  This hook was forked from: https://github.com/mantinedev/mantine/blob/master/packages/%40mantine/hooks/src/use-debounced-value/use-debounced-value.ts
+  This hook was forked from: https://github.com/mantinedev/mantine/blob/fbcee929e0b11782092f48c1e7af2a1d1c878823/packages/%40mantine/hooks/src/use-debounced-value/use-debounced-value.ts
   and has the following license:
 
   MIT License
@@ -27,8 +27,30 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export function useDebouncedValue<T = any>(value: T, waitMs: number, options = { leading: false }): [T, () => void] {
-  const [internalValue, setValue] = useState(value);
+export type UseDebouncedValueOptions = {
+  /** Whether the first update to `value` should be immediate or not */
+  leading?: boolean;
+};
+
+/**
+ * This hook allows users to debounce an incoming value by a specified number of milliseconds.
+ *
+ * Users can also specify whether the first update to `value` in a sequence of rapid updates should be immediate, by specifying `leading: true` in the options.
+ * The default value for `leading` is `false`.
+ *
+ * The return value is a tuple containing the debounced value at `arr[0]` and a function to cancel the pending debounced value change at `arr[1]`.
+ *
+ * @param value - The value to debounce.
+ * @param waitMs - How long in milliseconds should.
+ * @param options - Optional options for configuring the debounce.
+ * @returns An array tuple of `[debouncedValue, cancelFn]`.
+ */
+export function useDebouncedValue<T = any>(
+  value: T,
+  waitMs: number,
+  options: UseDebouncedValueOptions = { leading: false }
+): [T, () => void] {
+  const [debouncedValue, setDebouncedValue] = useState(value);
   const mountedRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const cooldownRef = useRef(false);
@@ -39,12 +61,12 @@ export function useDebouncedValue<T = any>(value: T, waitMs: number, options = {
     if (mountedRef.current) {
       if (!cooldownRef.current && options.leading) {
         cooldownRef.current = true;
-        setValue(value);
+        setDebouncedValue(value);
       } else {
         cancel();
         timeoutRef.current = setTimeout(() => {
           cooldownRef.current = false;
-          setValue(value);
+          setDebouncedValue(value);
         }, waitMs);
       }
     }
@@ -55,5 +77,5 @@ export function useDebouncedValue<T = any>(value: T, waitMs: number, options = {
     return cancel;
   }, [cancel]);
 
-  return [internalValue, cancel] as const;
+  return [debouncedValue, cancel] as const;
 }
