@@ -754,9 +754,9 @@ export class MockFetchClient {
       headers: toIncomingHttpHeaders(options.headers),
     };
 
-    const result = await this.router.handleRequest(request, this.repo);
-    if (result.length === 1) {
-      const issueDetails = result[0].issue[0]?.details;
+    const [outcome, resource] = await this.router.handleRequest(request, this.repo);
+    if (!resource) {
+      const issueDetails = outcome.issue[0]?.details;
       const issueText = issueDetails?.text;
       if (!issueText) {
         return result[0];
