@@ -4,7 +4,9 @@ kind: ManagedCertificate
 metadata:
   name: {{ include "medplum.fullname" . }}
   namespace: {{ include "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}  
 spec:
   domains:
-    - {{ .Values.ingress.hostname | default .Values.global.domain }}
+    - {{ .Values.global.domain }}
 {{- end }}

@@ -5,7 +5,7 @@ metadata:
   name: {{ include "medplum.fullname" . }}
   namespace: {{ include  "medplum.namespace" . }}
   labels:
-    {{- include "medplum.labels" | nindent 4 }}
+    {{- include "medplum.labels" . | nindent 4 }}
 {{- with .Values.ingress.backendConfig }}
 spec:
   {{- toYaml . | nindent 2 }}

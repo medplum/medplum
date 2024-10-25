@@ -71,3 +71,9 @@ module "cloud-nat" {
   create_router = true
   router        = "${var.region}-medplum-gke-outbound-gateway"
 }
+
+resource "google_compute_global_address" "external_ip" {
+  name         = "medplum-external-ip"
+  project      = var.project_id
+  address_type = "EXTERNAL"
+}

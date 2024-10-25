@@ -52,14 +52,13 @@ service:
   port: 5000
   
 extraAnnotations:
-  cloud.google.com/neg: '{"ingress": true}'
-  cloud.google.com/backend-config: '{"ports": {"5000":"medplum-backend-config"}}'
+  # cloud.google.com/neg: '{"ingress": true}'
+  # cloud.google.com/backend-config: '{"ports": {"5000":"medplum-backend-config"}}'
 
 ingress:
   enabled: true
   annotations:
-    kubernetes.io/ingress.class: "gce"
-    kubernetes.io/ingress.global-static-ip-name: ADDRESS_NAME
+    kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
   path: /
   pathType: Prefix
   tls: false
@@ -75,11 +74,12 @@ ingress:
       unhealthyThreshold: 2
 
   frontendConfig: 
-    securityPolicy:
-      policyName: medplum-ssl-policy
     redirectToHttps:
       enabled: true
       responseCodeName: RESPONSE_CODE
+  
+  managedCertificate:
+    create: true
 
 livenessProbe:
   httpGet:
