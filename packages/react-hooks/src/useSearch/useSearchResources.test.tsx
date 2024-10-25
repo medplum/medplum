@@ -51,7 +51,7 @@ describe('useSearch hooks', () => {
     const medplumSearchResources = jest.spyOn(medplum, 'searchResources');
 
     const { result, rerender } = renderHook(
-      (props) => useSearchResources('Patient', { name: props.name }, { debounceMs: 100 }),
+      (props) => useSearchResources('Patient', { name: props.name }, { debounceMs: 150 }),
       {
         initialProps: { name: 'bart' },
         wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
@@ -78,7 +78,7 @@ describe('useSearch hooks', () => {
     expect(medplumSearchResources).toHaveBeenCalledTimes(2);
 
     // Wait for debounce to time out
-    await sleep(150);
+    await sleep(300);
     expect(medplumSearchResources).toHaveBeenLastCalledWith('Patient', { name: 'homer' });
     expect(medplumSearchResources).toHaveBeenCalledTimes(3);
     expect(result.current[0]).toHaveLength(1);

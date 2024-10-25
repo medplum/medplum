@@ -75,7 +75,7 @@ describe('useSearch hooks', () => {
     expect(medplumSearchOne).toHaveBeenCalledTimes(2);
 
     // Wait for debounce to time out
-    await sleep(200);
+    await sleep(300);
     expect(medplumSearchOne).toHaveBeenLastCalledWith('Patient', { name: 'homer' });
     expect(medplumSearchOne).toHaveBeenCalledTimes(3);
     expect(result.current[0]?.resourceType).toEqual('Patient');
