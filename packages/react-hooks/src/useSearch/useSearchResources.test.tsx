@@ -1,7 +1,7 @@
-import { operationOutcomeToString } from '@medplum/core';
+import { allOk, operationOutcomeToString, sleep } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, renderHook, screen } from '@testing-library/react';
 import { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { MedplumProvider } from '../MedplumProvider/MedplumProvider';
@@ -44,5 +44,47 @@ describe('useSearch hooks', () => {
     const resources = JSON.parse(el.innerHTML);
     expect(Array.isArray(resources)).toBe(true);
     expect(resources as Patient[]).toHaveLength(1);
+  });
+
+  test('Debounced search', async () => {
+    const medplum = new MockClient();
+    const medplumSearchResources = jest.spyOn(medplum, 'searchResources');
+
+    const { result, rerender } = renderHook(
+      (props) => useSearchResources('Patient', { name: props.name }, { debounceMs: 150 }),
+      {
+        initialProps: { name: 'bart' },
+        wrapper: ({ children }) => <MedplumProvider medplum={medplum}>{children}</MedplumProvider>,
+      }
+    );
+
+    // Check until useSearch is no longer loading
+    while (result.current[1]) {
+      await sleep(0);
+    }
+
+    expect(result.current[0]).toHaveLength(1);
+    expect(result.current[0]?.[0]?.resourceType).toEqual('Patient');
+    expect(result.current[0]?.[0]?.name).toEqual([{ given: ['Bart'], family: 'Simpson' }]);
+    expect(result.current[1]).toEqual(false);
+    expect(result.current[2]).toEqual(allOk);
+    expect(medplumSearchResources).toHaveBeenCalledTimes(1);
+
+    rerender({ name: 'marge' });
+    expect(medplumSearchResources).toHaveBeenCalledTimes(2);
+    rerender({ name: 'home' });
+    expect(medplumSearchResources).toHaveBeenCalledTimes(2);
+    rerender({ name: 'homer' });
+    expect(medplumSearchResources).toHaveBeenCalledTimes(2);
+
+    // Wait for debounce to time out
+    await sleep(300);
+    expect(medplumSearchResources).toHaveBeenLastCalledWith('Patient', { name: 'homer' });
+    expect(medplumSearchResources).toHaveBeenCalledTimes(3);
+    expect(result.current[0]).toHaveLength(1);
+    expect(result.current[0]?.[0]?.resourceType).toEqual('Patient');
+    expect(result.current[0]?.[0]?.name).toEqual([{ given: ['Homer'], family: 'Simpson' }]);
+    expect(result.current[1]).toEqual(false);
+    expect(result.current[2]).toEqual(allOk);
   });
 });
