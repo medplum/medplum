@@ -16,7 +16,7 @@ import internal from 'stream';
 import request from 'supertest';
 import { ServerInviteResponse, inviteUser } from './admin/invite';
 import { AuthenticatedRequestContext, requestContextStore } from './context';
-import { Repository, getSystemRepo } from './fhir/repo';
+import { Repository, RepositoryContext, getSystemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
 
@@ -27,7 +27,7 @@ export interface TestProjectOptions {
   superAdmin?: boolean;
   withClient?: boolean;
   withAccessToken?: boolean;
-  withRepo?: boolean;
+  withRepo?: boolean | Partial<RepositoryContext>;
 }
 
 type Exact<T, U extends T> = T & Record<Exclude<keyof U, keyof T>, never>;
@@ -40,7 +40,7 @@ export type TestProjectResult<T extends TestProjectOptions> = {
   membership: T['withClient'] extends true ? ProjectMembership : undefined;
   login: T['withAccessToken'] extends true ? Login : undefined;
   accessToken: T['withAccessToken'] extends true ? string : undefined;
-  repo: T['withRepo'] extends true ? Repository : undefined;
+  repo: T['withRepo'] extends true | Partial<RepositoryContext> ? Repository : undefined;
 };
 
 export async function createTestProject<T extends StrictTestProjectOptions<T> = TestProjectOptions>(
@@ -126,7 +126,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
       }
 
       if (options?.withRepo) {
-        repo = new Repository({
+        const repoContext = {
           projects: [project.id as string],
           currentProject: project,
           author: createReference(client),
@@ -136,7 +136,12 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
           strictMode: project.strictMode,
           extendedMode: true,
           checkReferencesOnWrite: project.checkReferencesOnWrite,
-        });
+        };
+
+        if (typeof options.withRepo === 'object') {
+          Object.assign(repoContext, options.withRepo);
+        }
+        repo = new Repository(repoContext);
       }
     }
 

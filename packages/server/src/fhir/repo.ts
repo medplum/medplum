@@ -15,11 +15,13 @@ import {
   canReadResourceType,
   canWriteResourceType,
   createReference,
+  deepClone,
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
   forbidden,
   formatSearchQuery,
+  getReferenceString,
   getSearchParameterDetails,
   getSearchParameters,
   getStatus,
@@ -360,6 +362,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.isSuperAdmin()) {
       return true;
     }
+    console.log(
+      'Reading cache entry',
+      getReferenceString(cacheEntry.resource),
+      'for project',
+      cacheEntry.projectId,
+      cacheEntry.resource.meta
+    );
     if (!this.context.projects?.includes(cacheEntry.projectId)) {
       return false;
     }
@@ -2234,7 +2243,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async setCacheEntry(resource: Resource): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
-      await this.postCommit(() => this.setCacheEntry(resource));
+      const cachedResource = deepClone(resource);
+      await this.postCommit(() => {
+        return this.setCacheEntry(cachedResource);
+      });
       return;
     }
 
