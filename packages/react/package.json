@@ -84,7 +84,7 @@
     "@storybook/builder-vite": "8.3.6",
     "@storybook/react": "8.3.6",
     "@storybook/react-vite": "8.3.6",
-    "@tabler/icons-react": "3.19.0",
+    "@tabler/icons-react": "3.17.0",
     "@testing-library/dom": "10.4.0",
     "@testing-library/jest-dom": "6.6.2",
     "@testing-library/react": "16.0.1",

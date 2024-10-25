@@ -27,7 +27,7 @@ One way to think of a Care Plan protocol is an "order-able service" off of a ser
 Once care plans are designed, the next step is to create all the relevant resources when a care plan is instantiated for a specific patient. The FHIR [CarePlan](https://app.medplum.com/CarePlan) object serves as a high level object that refers to related resources. Items that belong to that instantiation of the CarePlan are linked in a [RequestGroup](https://app.medplum.com/RequestGroup). The care plan should refer to a specific patient, and the appropriate responsible party such as practitioner or care team should be appropriately tracked. The correct creation of the CarePlan and RequestGroup is referred to in FHIR terms as the **apply** operation.
 
 - **Simple Care Plans**: are relatively straightforward to create, and we have provided sample implementations for your convenience. [RequestGroup sample in storybook](https://storybook.medplum.com/?path=/docs/medplum-requestgroupdisplay--simple).
-- **Linking objects**: a CarePlan should have a RequestGroup, and the RequestGroup can have one or more actions in an implementation. Commonly, each of the actions in the RequestGroup can drive automations or integrations. Sample code for [creating care plans](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts).
+- **Linking objects**: a CarePlan should have a RequestGroup, and the RequestGroup can have one or more actions in an implementation. Commonly, each of the actions in the RequestGroup can drive automations or integrations. Sample code for [creating care plans](https://github.com/medplum/medplum-demo-bots/blob/main/src/sample-account-setup.ts).
 
 ## Care Plans and Care Teams
 
@@ -60,6 +60,6 @@ These are a common subset of objects that can be linked to CarePlans. Complex Ca
 
 - [Foo Medical Care Plan](https://foomedical.com/care-plan): sample patient portal with sample patient care plan.
 - [Provider Demo Care Plans](https://provider.medplum.com/): sample simple EHR with a menu of available care plans.
-- [Sample Code from for creating care plans](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts).
+- [Sample Code from for creating care plans](https://github.com/medplum/medplum-demo-bots/blob/main/src/sample-account-setup.ts).
 - [Care Plan sample React Component](https://storybook.medplum.com/?path=/docs/medplum-requestgroupdisplay--simple) is one example of a care plan visualization.
 - [PlanDefinition Apply documentation](https://hl7.org/fhir/plandefinition-operation-apply.html), this is the process by which a PlanDefinition is converted to a CarePlan.

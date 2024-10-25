@@ -1,11 +1,4 @@
-import {
-  BotEvent,
-  formatHumanName,
-  getReferenceString,
-  MedplumClient,
-  normalizeErrorString,
-  PatchOperation,
-} from '@medplum/core';
+import { BotEvent, createReference, MedplumClient, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { CodeableConcept, Coding, MedicationKnowledge, MedicationRequest, Practitioner } from '@medplum/fhirtypes';
 import {
   PhotonEvent,
@@ -17,10 +10,10 @@ import { NEUTRON_HEALTH, NEUTRON_HEALTH_WEBHOOKS } from './constants';
 import {
   checkForDuplicateEvent,
   getExistingMedicationRequest,
+  getMedicationKnowledge,
+  getPatient,
   handlePhotonAuth,
   photonGraphqlFetch,
-  getPatient,
-  getMedicationKnowledge,
 } from './utils';
 
 interface MedicationDetails {
@@ -160,10 +153,8 @@ export async function handleCreatePrescription(
   if (!patient) {
     throw new Error('No patient to link prescription to.');
   }
-  const patientName = patient?.name?.[0];
-  const subject = patientName
-    ? { reference: getReferenceString(patient), display: formatHumanName(patientName) }
-    : { reference: getReferenceString(patient) };
+
+  const subject = createReference(patient);
 
   const medicationElement = await getMedicationElement(medplum, medicationCode, medicationName);
 
@@ -191,6 +182,7 @@ export async function handleCreatePrescription(
     substitution: { allowedBoolean: !data.dispenseAsWritten },
     dosageInstruction: [{ patientInstruction: data.instructions }],
     medicationCodeableConcept: medicationElement,
+    authoredOn: new Date().toISOString(),
   };
 
   if (data.notes) {
@@ -198,7 +190,7 @@ export async function handleCreatePrescription(
   }
 
   if (prescriber) {
-    medicationRequest.requester = { reference: getReferenceString(prescriber) };
+    medicationRequest.requester = createReference(prescriber);
   }
 
   try {
