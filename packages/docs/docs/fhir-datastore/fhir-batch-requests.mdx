@@ -171,7 +171,17 @@ and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
 ```
 
 Additionally, Medplum supports passing JSON Patch formatted as a [Parameters](/docs/api/fhir/resources/parameters)
-resource, making it easier to see what operations are happening in the batch:
+resource, making it easier to see what operations are happening in the batch.
+
+:::note Value Formatting
+
+To avoid parsing ambiguity and simplify the format of the `Parameters`, all values are passed as
+JSON strings, via the `valueString` field on each corresponding `Parameter.parameter.part` with `"name": "value"`.
+
+All types of values, including booleans, strings, objects, and arrays, should be passed to `JSON.stringify()`
+or equivalent rather than being included directly in the `Parameters`.
+
+:::
 
 ```js
 {
