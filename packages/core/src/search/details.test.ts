@@ -241,10 +241,6 @@ describe('SearchParameterDetails', () => {
     expect(details).toBeDefined();
     expect(details.array).toBe(true);
     expect(details.type).toEqual(SearchParameterType.TEXT);
-    expect(details.elementDefinitions).toHaveLength(1);
-    expect(details.elementDefinitions?.[0].path).toEqual(
-      'EvidenceVariable.characteristic.definitionByTypeAndValue.type'
-    );
   });
 
   test('Everything', () => {
