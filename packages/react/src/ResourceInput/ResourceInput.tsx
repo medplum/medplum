@@ -67,6 +67,7 @@ const NAME_RESOURCE_TYPES = [
   'RelatedPerson',
   'ResearchDefinition',
   'ResearchElementDefinition',
+  'ResearchStudy',
   'RiskEvidenceSynthesis',
   'SearchParameter',
   'StructureDefinition',
