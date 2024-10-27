@@ -235,6 +235,14 @@ describe('SearchParameterDetails', () => {
     expect(details.elementDefinitions).toEqual([]);
   });
 
+  test('EvidenceVariable-characteristic-type', () => {
+    const searchParam = searchParams.find((e) => e.id === 'EvidenceVariable-characteristic-type') as SearchParameter;
+    const details = getSearchParameterDetails('EvidenceVariable', searchParam);
+    expect(details).toBeDefined();
+    expect(details.array).toBe(true);
+    expect(details.type).toEqual(SearchParameterType.TEXT);
+  });
+
   test('Everything', () => {
     // Make sure that getSearchParameterDetails returns successfully for all known parameters.
     for (const resourceType of Object.keys(globalSchema.types)) {

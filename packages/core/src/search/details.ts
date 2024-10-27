@@ -188,6 +188,11 @@ function handleFunctionAtom(builder: SearchParameterDetailsBuilder, functionAtom
     return;
   }
 
+  if (functionAtom.name === 'ofType') {
+    builder.propertyTypes.add(functionAtom.args[0].toString());
+    return;
+  }
+
   if (functionAtom.name === 'resolve') {
     // Handle .resolve().resourceType
     builder.propertyTypes.add('string');
