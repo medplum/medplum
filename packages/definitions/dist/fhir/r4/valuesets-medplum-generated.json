@@ -2790,6 +2790,12 @@
               }
             ]
           }
+        ],
+        "property": [
+          {
+            "code": "class",
+            "type": "code"
+          }
         ]
       }
     },

@@ -16,7 +16,13 @@ const valueSets = new Map<string, CodeSystem | ValueSet>();
 
 export function getValueSetValues(url: string): string[] {
   if (valueSets.size === 0) {
-    const files = ['valuesets.json', 'v2-tables.json', 'v3-codesystems.json', 'valuesets-medplum.json'];
+    const files = [
+      'valuesets.json',
+      'v2-tables.json',
+      'v3-codesystems.json',
+      'valuesets-medplum.json',
+      'valuesets-medplum-generated.json',
+    ];
     for (const file of files) {
       loadValueSets('fhir/r4/' + file);
     }
@@ -155,6 +161,7 @@ async function generateCountryCodes(): Promise<CodeSystem[]> {
             url: 'http://unstats.un.org/unsd/methods/m49/m49.htm',
             content: 'complete',
             concept: Object.values(m49Codes),
+            property: [{ code: 'class', type: 'code' }],
           },
           {
             resourceType: 'CodeSystem',
