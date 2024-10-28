@@ -1,6 +1,6 @@
 {
   "name": "@medplum/react",
-  "version": "3.2.17",
+  "version": "3.2.18",
   "description": "Medplum React Component Library",
   "keywords": [
     "medplum",
@@ -71,11 +71,11 @@
     "@mantine/core": "7.13.4",
     "@mantine/hooks": "7.13.4",
     "@mantine/notifications": "7.13.4",
-    "@medplum/core": "3.2.17",
-    "@medplum/definitions": "3.2.17",
-    "@medplum/fhirtypes": "3.2.17",
-    "@medplum/mock": "3.2.17",
-    "@medplum/react-hooks": "3.2.17",
+    "@medplum/core": "3.2.18",
+    "@medplum/definitions": "3.2.18",
+    "@medplum/fhirtypes": "3.2.18",
+    "@medplum/mock": "3.2.18",
+    "@medplum/react-hooks": "3.2.18",
     "@storybook/addon-actions": "8.3.6",
     "@storybook/addon-essentials": "8.3.6",
     "@storybook/addon-links": "8.3.6",
@@ -113,7 +113,7 @@
     "@mantine/core": "^7.0.0",
     "@mantine/hooks": "^7.0.0",
     "@mantine/notifications": "^7.0.0",
-    "@medplum/core": "3.2.17",
+    "@medplum/core": "3.2.18",
     "react": "^17.0.2 || ^18.0.0",
     "react-dom": "^17.0.2 || ^18.0.0",
     "rfc6902": "^5.0.1"
