@@ -28,6 +28,7 @@ import {
   StructureDefinition,
   StructureDefinitionSnapshot,
   SubstanceProtein,
+  Timing,
   ValueSet,
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
@@ -1663,6 +1664,39 @@ describe('FHIR resource validation', () => {
     expect(() => validateTypedValue(typedValue2)).toThrow(
       'Invalid dateTime format (SubstanceAdministration.effectiveTime[0])'
     );
+  });
+
+  test('Multiple codes in Timing.repeat.when', () => {
+    // Timing constraint "tim-9" had a bug in R4 that prevents multiple codes in "when"
+    // We are fixing by backporting the R5 constraint to R4
+    // R4 constraint: offset.empty() or (when.exists() and ((when in ('C' | 'CM' | 'CD' | 'CV')).not()))
+    // R5 constraint: offset.empty() or (when.exists() and when.select($this in ('C' | 'CM' | 'CD' | 'CV')).allFalse())
+
+    // As submitted by user
+    // See: https://github.com/medplum/medplum/issues/5378
+    const timing1: Timing = {
+      repeat: {
+        frequency: 3,
+        period: 1,
+        periodUnit: 'd',
+        when: ['MORN', 'NOON', 'NIGHT'],
+        dayOfWeek: ['mon', 'wed', 'fri'],
+      },
+    };
+    expect(() => validateTypedValue({ type: 'Timing', value: timing1 })).not.toThrow();
+
+    // Make sure that a bad code throws
+    const timing2: Timing = {
+      repeat: {
+        offset: 1,
+        frequency: 3,
+        period: 1,
+        periodUnit: 'd',
+        when: ['C'],
+        dayOfWeek: ['mon', 'wed', 'fri'],
+      },
+    };
+    expect(() => validateTypedValue({ type: 'Timing', value: timing2 })).toThrow('Constraint tim-9 not met');
   });
 });
 
