@@ -2317,7 +2317,7 @@
         "url": "urn:iso:std:iso:3166:-2",
         "status": "active",
         "content": "not-present",
-        "description": "Stub CodeSystem for erronous subsection of ISO 3166; this does not exist separately from the main code system"
+        "description": "Stub CodeSystem for ISO 3166-2"
       }
     }
   ]
