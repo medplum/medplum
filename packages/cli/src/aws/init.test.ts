@@ -41,6 +41,7 @@ describe('init command', () => {
     for (const file of configFiles.values()) {
       cleanupConfigFile(file);
     }
+    // We add a special case for `medplum.foo.config.server.json` since that is the output config file from these tests
     cleanupConfigFile('medplum.foo.config.server.json');
   });
 
