@@ -1,0 +1,249 @@
+﻿Global Code;Global Name;Region Code;Region Name;Sub-region Code;Sub-region Name;Intermediate Region Code;Intermediate Region Name;Country or Area;M49 Code;ISO-alpha2 Code;ISO-alpha3 Code;Least Developed Countries (LDC);Land Locked Developing Countries (LLDC);Small Island Developing States (SIDS)
+001;World;002;Africa;015;Northern Africa;;;Algeria;012;DZ;DZA;;;
+001;World;002;Africa;015;Northern Africa;;;Egypt;818;EG;EGY;;;
+001;World;002;Africa;015;Northern Africa;;;Libya;434;LY;LBY;;;
+001;World;002;Africa;015;Northern Africa;;;Morocco;504;MA;MAR;;;
+001;World;002;Africa;015;Northern Africa;;;Sudan;729;SD;SDN;x;;
+001;World;002;Africa;015;Northern Africa;;;Tunisia;788;TN;TUN;;;
+001;World;002;Africa;015;Northern Africa;;;Western Sahara;732;EH;ESH;;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;British Indian Ocean Territory;086;IO;IOT;;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Burundi;108;BI;BDI;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Comoros;174;KM;COM;x;;x
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Djibouti;262;DJ;DJI;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Eritrea;232;ER;ERI;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Ethiopia;231;ET;ETH;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;French Southern Territories;260;TF;ATF;;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Kenya;404;KE;KEN;;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Madagascar;450;MG;MDG;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Malawi;454;MW;MWI;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Mauritius;480;MU;MUS;;;x
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Mayotte;175;YT;MYT;;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Mozambique;508;MZ;MOZ;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Réunion;638;RE;REU;;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Rwanda;646;RW;RWA;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Seychelles;690;SC;SYC;;;x
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Somalia;706;SO;SOM;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;South Sudan;728;SS;SSD;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Uganda;800;UG;UGA;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;United Republic of Tanzania;834;TZ;TZA;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Zambia;894;ZM;ZMB;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;014;Eastern Africa;Zimbabwe;716;ZW;ZWE;;x;
+001;World;002;Africa;202;Sub-Saharan Africa;017;Middle Africa;Angola;024;AO;AGO;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;017;Middle Africa;Cameroon;120;CM;CMR;;;
+001;World;002;Africa;202;Sub-Saharan Africa;017;Middle Africa;Central African Republic;140;CF;CAF;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;017;Middle Africa;Chad;148;TD;TCD;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;017;Middle Africa;Congo;178;CG;COG;;;
+001;World;002;Africa;202;Sub-Saharan Africa;017;Middle Africa;Democratic Republic of the Congo;180;CD;COD;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;017;Middle Africa;Equatorial Guinea;226;GQ;GNQ;;;
+001;World;002;Africa;202;Sub-Saharan Africa;017;Middle Africa;Gabon;266;GA;GAB;;;
+001;World;002;Africa;202;Sub-Saharan Africa;017;Middle Africa;Sao Tome and Principe;678;ST;STP;x;;x
+001;World;002;Africa;202;Sub-Saharan Africa;018;Southern Africa;Botswana;072;BW;BWA;;x;
+001;World;002;Africa;202;Sub-Saharan Africa;018;Southern Africa;Eswatini;748;SZ;SWZ;;x;
+001;World;002;Africa;202;Sub-Saharan Africa;018;Southern Africa;Lesotho;426;LS;LSO;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;018;Southern Africa;Namibia;516;NA;NAM;;;
+001;World;002;Africa;202;Sub-Saharan Africa;018;Southern Africa;South Africa;710;ZA;ZAF;;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Benin;204;BJ;BEN;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Burkina Faso;854;BF;BFA;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Cabo Verde;132;CV;CPV;;;x
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Côte d’Ivoire;384;CI;CIV;;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Gambia;270;GM;GMB;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Ghana;288;GH;GHA;;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Guinea;324;GN;GIN;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Guinea-Bissau;624;GW;GNB;x;;x
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Liberia;430;LR;LBR;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Mali;466;ML;MLI;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Mauritania;478;MR;MRT;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Niger;562;NE;NER;x;x;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Nigeria;566;NG;NGA;;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Saint Helena;654;SH;SHN;;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Senegal;686;SN;SEN;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Sierra Leone;694;SL;SLE;x;;
+001;World;002;Africa;202;Sub-Saharan Africa;011;Western Africa;Togo;768;TG;TGO;x;;
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Anguilla;660;AI;AIA;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Antigua and Barbuda;028;AG;ATG;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Aruba;533;AW;ABW;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Bahamas;044;BS;BHS;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Barbados;052;BB;BRB;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Bonaire, Sint Eustatius and Saba;535;BQ;BES;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;British Virgin Islands;092;VG;VGB;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Cayman Islands;136;KY;CYM;;;
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Cuba;192;CU;CUB;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Curaçao;531;CW;CUW;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Dominica;212;DM;DMA;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Dominican Republic;214;DO;DOM;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Grenada;308;GD;GRD;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Guadeloupe;312;GP;GLP;;;
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Haiti;332;HT;HTI;x;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Jamaica;388;JM;JAM;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Martinique;474;MQ;MTQ;;;
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Montserrat;500;MS;MSR;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Puerto Rico;630;PR;PRI;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Saint Barthélemy;652;BL;BLM;;;
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Saint Kitts and Nevis;659;KN;KNA;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Saint Lucia;662;LC;LCA;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Saint Martin (French Part);663;MF;MAF;;;
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Saint Vincent and the Grenadines;670;VC;VCT;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Sint Maarten (Dutch part);534;SX;SXM;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Trinidad and Tobago;780;TT;TTO;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;Turks and Caicos Islands;796;TC;TCA;;;
+001;World;019;Americas;419;Latin America and the Caribbean;029;Caribbean;United States Virgin Islands;850;VI;VIR;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;013;Central America;Belize;084;BZ;BLZ;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;013;Central America;Costa Rica;188;CR;CRI;;;
+001;World;019;Americas;419;Latin America and the Caribbean;013;Central America;El Salvador;222;SV;SLV;;;
+001;World;019;Americas;419;Latin America and the Caribbean;013;Central America;Guatemala;320;GT;GTM;;;
+001;World;019;Americas;419;Latin America and the Caribbean;013;Central America;Honduras;340;HN;HND;;;
+001;World;019;Americas;419;Latin America and the Caribbean;013;Central America;Mexico;484;MX;MEX;;;
+001;World;019;Americas;419;Latin America and the Caribbean;013;Central America;Nicaragua;558;NI;NIC;;;
+001;World;019;Americas;419;Latin America and the Caribbean;013;Central America;Panama;591;PA;PAN;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Argentina;032;AR;ARG;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Bolivia (Plurinational State of);068;BO;BOL;;x;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Bouvet Island;074;BV;BVT;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Brazil;076;BR;BRA;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Chile;152;CL;CHL;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Colombia;170;CO;COL;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Ecuador;218;EC;ECU;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Falkland Islands (Malvinas);238;FK;FLK;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;French Guiana;254;GF;GUF;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Guyana;328;GY;GUY;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Paraguay;600;PY;PRY;;x;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Peru;604;PE;PER;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;South Georgia and the South Sandwich Islands;239;GS;SGS;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Suriname;740;SR;SUR;;;x
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Uruguay;858;UY;URY;;;
+001;World;019;Americas;419;Latin America and the Caribbean;005;South America;Venezuela (Bolivarian Republic of);862;VE;VEN;;;
+001;World;019;Americas;021;Northern America;;;Bermuda;060;BM;BMU;;;
+001;World;019;Americas;021;Northern America;;;Canada;124;CA;CAN;;;
+001;World;019;Americas;021;Northern America;;;Greenland;304;GL;GRL;;;
+001;World;019;Americas;021;Northern America;;;Saint Pierre and Miquelon;666;PM;SPM;;;
+001;World;019;Americas;021;Northern America;;;United States of America;840;US;USA;;;
+001;World;;;;;;;Antarctica;010;AQ;ATA;;;
+001;World;142;Asia;143;Central Asia;;;Kazakhstan;398;KZ;KAZ;;x;
+001;World;142;Asia;143;Central Asia;;;Kyrgyzstan;417;KG;KGZ;;x;
+001;World;142;Asia;143;Central Asia;;;Tajikistan;762;TJ;TJK;;x;
+001;World;142;Asia;143;Central Asia;;;Turkmenistan;795;TM;TKM;;x;
+001;World;142;Asia;143;Central Asia;;;Uzbekistan;860;UZ;UZB;;x;
+001;World;142;Asia;030;Eastern Asia;;;China;156;CN;CHN;;;
+001;World;142;Asia;030;Eastern Asia;;;China, Hong Kong Special Administrative Region;344;HK;HKG;;;
+001;World;142;Asia;030;Eastern Asia;;;China, Macao Special Administrative Region;446;MO;MAC;;;
+001;World;142;Asia;030;Eastern Asia;;;Democratic People's Republic of Korea;408;KP;PRK;;;
+001;World;142;Asia;030;Eastern Asia;;;Japan;392;JP;JPN;;;
+001;World;142;Asia;030;Eastern Asia;;;Mongolia;496;MN;MNG;;x;
+001;World;142;Asia;030;Eastern Asia;;;Republic of Korea;410;KR;KOR;;;
+001;World;142;Asia;035;South-eastern Asia;;;Brunei Darussalam;096;BN;BRN;;;
+001;World;142;Asia;035;South-eastern Asia;;;Cambodia;116;KH;KHM;x;;
+001;World;142;Asia;035;South-eastern Asia;;;Indonesia;360;ID;IDN;;;
+001;World;142;Asia;035;South-eastern Asia;;;Lao People's Democratic Republic;418;LA;LAO;x;x;
+001;World;142;Asia;035;South-eastern Asia;;;Malaysia;458;MY;MYS;;;
+001;World;142;Asia;035;South-eastern Asia;;;Myanmar;104;MM;MMR;x;;
+001;World;142;Asia;035;South-eastern Asia;;;Philippines;608;PH;PHL;;;
+001;World;142;Asia;035;South-eastern Asia;;;Singapore;702;SG;SGP;;;x
+001;World;142;Asia;035;South-eastern Asia;;;Thailand;764;TH;THA;;;
+001;World;142;Asia;035;South-eastern Asia;;;Timor-Leste;626;TL;TLS;x;;x
+001;World;142;Asia;035;South-eastern Asia;;;Viet Nam;704;VN;VNM;;;
+001;World;142;Asia;034;Southern Asia;;;Afghanistan;004;AF;AFG;x;x;
+001;World;142;Asia;034;Southern Asia;;;Bangladesh;050;BD;BGD;x;;
+001;World;142;Asia;034;Southern Asia;;;Bhutan;064;BT;BTN;;x;
+001;World;142;Asia;034;Southern Asia;;;India;356;IN;IND;;;
+001;World;142;Asia;034;Southern Asia;;;Iran (Islamic Republic of);364;IR;IRN;;;
+001;World;142;Asia;034;Southern Asia;;;Maldives;462;MV;MDV;;;x
+001;World;142;Asia;034;Southern Asia;;;Nepal;524;NP;NPL;x;x;
+001;World;142;Asia;034;Southern Asia;;;Pakistan;586;PK;PAK;;;
+001;World;142;Asia;034;Southern Asia;;;Sri Lanka;144;LK;LKA;;;
+001;World;142;Asia;145;Western Asia;;;Armenia;051;AM;ARM;;x;
+001;World;142;Asia;145;Western Asia;;;Azerbaijan;031;AZ;AZE;;x;
+001;World;142;Asia;145;Western Asia;;;Bahrain;048;BH;BHR;;;
+001;World;142;Asia;145;Western Asia;;;Cyprus;196;CY;CYP;;;
+001;World;142;Asia;145;Western Asia;;;Georgia;268;GE;GEO;;;
+001;World;142;Asia;145;Western Asia;;;Iraq;368;IQ;IRQ;;;
+001;World;142;Asia;145;Western Asia;;;Israel;376;IL;ISR;;;
+001;World;142;Asia;145;Western Asia;;;Jordan;400;JO;JOR;;;
+001;World;142;Asia;145;Western Asia;;;Kuwait;414;KW;KWT;;;
+001;World;142;Asia;145;Western Asia;;;Lebanon;422;LB;LBN;;;
+001;World;142;Asia;145;Western Asia;;;Oman;512;OM;OMN;;;
+001;World;142;Asia;145;Western Asia;;;Qatar;634;QA;QAT;;;
+001;World;142;Asia;145;Western Asia;;;Saudi Arabia;682;SA;SAU;;;
+001;World;142;Asia;145;Western Asia;;;State of Palestine;275;PS;PSE;;;
+001;World;142;Asia;145;Western Asia;;;Syrian Arab Republic;760;SY;SYR;;;
+001;World;142;Asia;145;Western Asia;;;Türkiye;792;TR;TUR;;;
+001;World;142;Asia;145;Western Asia;;;United Arab Emirates;784;AE;ARE;;;
+001;World;142;Asia;145;Western Asia;;;Yemen;887;YE;YEM;x;;
+001;World;150;Europe;151;Eastern Europe;;;Belarus;112;BY;BLR;;;
+001;World;150;Europe;151;Eastern Europe;;;Bulgaria;100;BG;BGR;;;
+001;World;150;Europe;151;Eastern Europe;;;Czechia;203;CZ;CZE;;;
+001;World;150;Europe;151;Eastern Europe;;;Hungary;348;HU;HUN;;;
+001;World;150;Europe;151;Eastern Europe;;;Poland;616;PL;POL;;;
+001;World;150;Europe;151;Eastern Europe;;;Republic of Moldova;498;MD;MDA;;x;
+001;World;150;Europe;151;Eastern Europe;;;Romania;642;RO;ROU;;;
+001;World;150;Europe;151;Eastern Europe;;;Russian Federation;643;RU;RUS;;;
+001;World;150;Europe;151;Eastern Europe;;;Slovakia;703;SK;SVK;;;
+001;World;150;Europe;151;Eastern Europe;;;Ukraine;804;UA;UKR;;;
+001;World;150;Europe;154;Northern Europe;;;Åland Islands;248;AX;ALA;;;
+001;World;150;Europe;154;Northern Europe;;;Denmark;208;DK;DNK;;;
+001;World;150;Europe;154;Northern Europe;;;Estonia;233;EE;EST;;;
+001;World;150;Europe;154;Northern Europe;;;Faroe Islands;234;FO;FRO;;;
+001;World;150;Europe;154;Northern Europe;;;Finland;246;FI;FIN;;;
+001;World;150;Europe;154;Northern Europe;;;Guernsey;831;GG;GGY;;;
+001;World;150;Europe;154;Northern Europe;;;Iceland;352;IS;ISL;;;
+001;World;150;Europe;154;Northern Europe;;;Ireland;372;IE;IRL;;;
+001;World;150;Europe;154;Northern Europe;;;Isle of Man;833;IM;IMN;;;
+001;World;150;Europe;154;Northern Europe;;;Jersey;832;JE;JEY;;;
+001;World;150;Europe;154;Northern Europe;;;Latvia;428;LV;LVA;;;
+001;World;150;Europe;154;Northern Europe;;;Lithuania;440;LT;LTU;;;
+001;World;150;Europe;154;Northern Europe;;;Norway;578;NO;NOR;;;
+001;World;150;Europe;154;Northern Europe;;;Svalbard and Jan Mayen Islands;744;SJ;SJM;;;
+001;World;150;Europe;154;Northern Europe;;;Sweden;752;SE;SWE;;;
+001;World;150;Europe;154;Northern Europe;;;United Kingdom of Great Britain and Northern Ireland;826;GB;GBR;;;
+001;World;150;Europe;039;Southern Europe;;;Albania;008;AL;ALB;;;
+001;World;150;Europe;039;Southern Europe;;;Andorra;020;AD;AND;;;
+001;World;150;Europe;039;Southern Europe;;;Bosnia and Herzegovina;070;BA;BIH;;;
+001;World;150;Europe;039;Southern Europe;;;Croatia;191;HR;HRV;;;
+001;World;150;Europe;039;Southern Europe;;;Gibraltar;292;GI;GIB;;;
+001;World;150;Europe;039;Southern Europe;;;Greece;300;GR;GRC;;;
+001;World;150;Europe;039;Southern Europe;;;Holy See;336;VA;VAT;;;
+001;World;150;Europe;039;Southern Europe;;;Italy;380;IT;ITA;;;
+001;World;150;Europe;039;Southern Europe;;;Malta;470;MT;MLT;;;
+001;World;150;Europe;039;Southern Europe;;;Montenegro;499;ME;MNE;;;
+001;World;150;Europe;039;Southern Europe;;;North Macedonia;807;MK;MKD;;x;
+001;World;150;Europe;039;Southern Europe;;;Portugal;620;PT;PRT;;;
+001;World;150;Europe;039;Southern Europe;;;San Marino;674;SM;SMR;;;
+001;World;150;Europe;039;Southern Europe;;;Serbia;688;RS;SRB;;;
+001;World;150;Europe;039;Southern Europe;;;Slovenia;705;SI;SVN;;;
+001;World;150;Europe;039;Southern Europe;;;Spain;724;ES;ESP;;;
+001;World;150;Europe;155;Western Europe;;;Austria;040;AT;AUT;;;
+001;World;150;Europe;155;Western Europe;;;Belgium;056;BE;BEL;;;
+001;World;150;Europe;155;Western Europe;;;France;250;FR;FRA;;;
+001;World;150;Europe;155;Western Europe;;;Germany;276;DE;DEU;;;
+001;World;150;Europe;155;Western Europe;;;Liechtenstein;438;LI;LIE;;;
+001;World;150;Europe;155;Western Europe;;;Luxembourg;442;LU;LUX;;;
+001;World;150;Europe;155;Western Europe;;;Monaco;492;MC;MCO;;;
+001;World;150;Europe;155;Western Europe;;;Netherlands (Kingdom of the);528;NL;NLD;;;
+001;World;150;Europe;155;Western Europe;;;Switzerland;756;CH;CHE;;;
+001;World;009;Oceania;053;Australia and New Zealand;;;Australia;036;AU;AUS;;;
+001;World;009;Oceania;053;Australia and New Zealand;;;Christmas Island;162;CX;CXR;;;
+001;World;009;Oceania;053;Australia and New Zealand;;;Cocos (Keeling) Islands;166;CC;CCK;;;
+001;World;009;Oceania;053;Australia and New Zealand;;;Heard Island and McDonald Islands;334;HM;HMD;;;
+001;World;009;Oceania;053;Australia and New Zealand;;;New Zealand;554;NZ;NZL;;;
+001;World;009;Oceania;053;Australia and New Zealand;;;Norfolk Island;574;NF;NFK;;;
+001;World;009;Oceania;054;Melanesia;;;Fiji;242;FJ;FJI;;;x
+001;World;009;Oceania;054;Melanesia;;;New Caledonia;540;NC;NCL;;;x
+001;World;009;Oceania;054;Melanesia;;;Papua New Guinea;598;PG;PNG;;;x
+001;World;009;Oceania;054;Melanesia;;;Solomon Islands;090;SB;SLB;x;;x
+001;World;009;Oceania;054;Melanesia;;;Vanuatu;548;VU;VUT;;;x
+001;World;009;Oceania;057;Micronesia;;;Guam;316;GU;GUM;;;x
+001;World;009;Oceania;057;Micronesia;;;Kiribati;296;KI;KIR;x;;x
+001;World;009;Oceania;057;Micronesia;;;Marshall Islands;584;MH;MHL;;;x
+001;World;009;Oceania;057;Micronesia;;;Micronesia (Federated States of);583;FM;FSM;;;x
+001;World;009;Oceania;057;Micronesia;;;Nauru;520;NR;NRU;;;x
+001;World;009;Oceania;057;Micronesia;;;Northern Mariana Islands;580;MP;MNP;;;x
+001;World;009;Oceania;057;Micronesia;;;Palau;585;PW;PLW;;;x
+001;World;009;Oceania;057;Micronesia;;;United States Minor Outlying Islands;581;UM;UMI;;;
+001;World;009;Oceania;061;Polynesia;;;American Samoa;016;AS;ASM;;;x
+001;World;009;Oceania;061;Polynesia;;;Cook Islands;184;CK;COK;;;x
+001;World;009;Oceania;061;Polynesia;;;French Polynesia;258;PF;PYF;;;x
+001;World;009;Oceania;061;Polynesia;;;Niue;570;NU;NIU;;;x
+001;World;009;Oceania;061;Polynesia;;;Pitcairn;612;PN;PCN;;;
+001;World;009;Oceania;061;Polynesia;;;Samoa;882;WS;WSM;;;x
+001;World;009;Oceania;061;Polynesia;;;Tokelau;772;TK;TKL;;;
+001;World;009;Oceania;061;Polynesia;;;Tonga;776;TO;TON;;;x
+001;World;009;Oceania;061;Polynesia;;;Tuvalu;798;TV;TUV;x;;x
+001;World;009;Oceania;061;Polynesia;;;Wallis and Futuna Islands;876;WF;WLF;;;

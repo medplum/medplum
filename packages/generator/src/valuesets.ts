@@ -8,6 +8,9 @@ import {
   ValueSet,
   ValueSetCompose,
 } from '@medplum/fhirtypes';
+import csv from 'csv-parser';
+import { createReadStream, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const valueSets = new Map<string, CodeSystem | ValueSet>();
 
@@ -83,4 +86,107 @@ function buildCodeSystemConceptValues(concepts: CodeSystemConcept[] | undefined,
     }
     buildCodeSystemConceptValues(concept.concept, result);
   }
+}
+
+export async function generateValueSets(): Promise<(CodeSystem | ValueSet)[]> {
+  const valueSets: (CodeSystem | ValueSet)[] = [];
+
+  valueSets.push(...(await generateCountryCodes()));
+
+  return valueSets;
+}
+
+async function generateCountryCodes(): Promise<CodeSystem[]> {
+  const m49Codes: Record<string, CodeSystemConcept> = Object.create(null);
+  const isoCodes: Record<string, CodeSystemConcept> = Object.create(null);
+
+  const path = resolve(__dirname, 'data/unsd-methodology.csv');
+  return new Promise((resolve, reject) => {
+    createReadStream(path)
+      .pipe(csv({ separator: ';' }))
+      .on('data', (row) => {
+        const worldKey = Object.keys(row)[0]; // Not sure why this is necessary, maybe weird encoding in the CSV?
+        const world = row[worldKey] as string;
+        const region = row['Region Code'] as string;
+        const subRegion = row['Sub-region Code'] as string;
+        const intRegion = row['Intermediate Region Code'] as string;
+        const country = row['Country or Area'] as string;
+        const m49 = row['M49 Code'] as string;
+        const iso2 = row['ISO-alpha2 Code'] as string;
+        const iso3 = row['ISO-alpha3 Code'] as string;
+
+        if (world) {
+          m49Codes[world] = {
+            code: world,
+            display: row['Global Name'],
+            property: [{ code: 'class', valueCode: 'world' }],
+          };
+        }
+        if (region) {
+          m49Codes[region] = {
+            code: region,
+            display: row['Region Name'],
+            property: [{ code: 'class', valueCode: 'region' }],
+          };
+        }
+        if (subRegion) {
+          m49Codes[subRegion] = {
+            code: subRegion,
+            display: row['Sub-region Name'],
+            property: [{ code: 'class', valueCode: 'sub-region' }],
+          };
+        }
+        if (intRegion) {
+          m49Codes[intRegion] = {
+            code: intRegion,
+            display: row['Intermediate Region Name'],
+            property: [{ code: 'class', valueCode: 'intermediate-region' }],
+          };
+        }
+        m49Codes[m49] = { code: m49, display: country, property: [{ code: 'class', valueCode: 'country' }] };
+        isoCodes[iso2] = { code: iso2, display: country };
+        isoCodes[iso3] = { code: iso3, display: country };
+      })
+      .on('end', () => {
+        resolve([
+          {
+            resourceType: 'CodeSystem',
+            status: 'active',
+            url: 'http://unstats.un.org/unsd/methods/m49/m49.htm',
+            content: 'complete',
+            concept: Object.values(m49Codes),
+          },
+          {
+            resourceType: 'CodeSystem',
+            status: 'active',
+            url: 'urn:iso:std:iso:3166',
+            content: 'complete',
+            concept: Object.values(isoCodes),
+          },
+        ]);
+      })
+      .on('error', reject);
+  });
+}
+
+async function main(): Promise<void> {
+  const valueSets = await generateValueSets();
+
+  const bundle: Bundle<CodeSystem | ValueSet> = {
+    resourceType: 'Bundle',
+    type: 'collection',
+    entry: valueSets.map((resource) => ({ fullUrl: resource.url, resource })),
+  };
+
+  const json = JSON.stringify(bundle, undefined, 2)
+    .replaceAll("'", '\\u0027')
+    .replaceAll('<', '\\u003c')
+    .replaceAll('=', '\\u003d')
+    .replaceAll('>', '\\u003e');
+
+  writeFileSync(resolve(__dirname, '../../definitions/dist/fhir/r4/valuesets-medplum-generated.json'), json, 'utf8');
+}
+
+if (require.main === module) {
+  main().catch(console.error);
 }
