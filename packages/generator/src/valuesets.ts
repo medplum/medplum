@@ -128,6 +128,14 @@ async function generateCountryCodes(): Promise<CodeSystem[]> {
             url: 'urn:iso:std:iso:3166',
             content: 'complete',
             concept: Object.values(isoCodes),
+            property: [
+              {
+                code: 'synonym',
+                type: 'code',
+                uri: 'http://hl7.org/fhir/concept-properties#synonym',
+                description: 'Equivalent code',
+              },
+            ],
           },
         ])
       )
@@ -179,8 +187,8 @@ function parseCountryCodeRow(
     };
   }
   m49Codes[m49] = { code: m49, display: country, property: [{ code: 'class', valueCode: 'country' }] };
-  isoCodes[iso2] = { code: iso2, display: country };
-  isoCodes[iso3] = { code: iso3, display: country };
+  isoCodes[iso2] = { code: iso2, display: country, property: [{ code: 'synonym', valueCode: iso3 }] };
+  isoCodes[iso3] = { code: iso3, display: country, property: [{ code: 'synonym', valueCode: iso2 }] };
 }
 
 async function generateCurrencyCodes(): Promise<CodeSystem> {
