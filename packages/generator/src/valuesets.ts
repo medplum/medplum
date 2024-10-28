@@ -208,10 +208,10 @@ async function generateCurrencyCodes(): Promise<CodeSystem> {
           concept: isoCodes,
           property: [
             {
-              code: 'synonym',
+              code: 'numeric',
               type: 'code',
               uri: 'http://hl7.org/fhir/concept-properties#synonym',
-              description: 'Equivalent alphabetic or numeric code',
+              description: 'Equivalent numeric code',
             },
           ],
         });
@@ -225,10 +225,7 @@ function parseCurrencyCodeRow(row: any, isoCodes: CodeSystemConcept[]): void {
   const alpha = row['Alphabetic Code'];
   const num = row['Numeric Code'];
 
-  isoCodes.push(
-    { code: alpha, display: currency, property: [{ code: 'synonym', valueCode: num }] },
-    { code: num, display: currency, property: [{ code: 'synonym', valueCode: alpha }] }
-  );
+  isoCodes.push({ code: alpha, display: currency, property: [{ code: 'numeric', valueCode: num }] });
 }
 
 async function main(): Promise<void> {

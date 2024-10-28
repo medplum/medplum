@@ -50,7 +50,7 @@ export function MoneyInput(props: MoneyInputProps): JSX.Element {
     (e: ChangeEvent<HTMLSelectElement>) => {
       setValueWrapper({
         ...value,
-        currency: e.currentTarget.value,
+        currency: e.currentTarget.value as Money['currency'],
       });
     },
     [value, setValueWrapper]
