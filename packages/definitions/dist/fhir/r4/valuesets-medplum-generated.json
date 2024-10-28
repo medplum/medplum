@@ -4793,6 +4793,5625 @@
           }
         ]
       }
+    },
+    {
+      "fullUrl": "urn:iso:std:iso:4217",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "status": "active",
+        "url": "urn:iso:std:iso:4217",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "AFN",
+            "display": "Afghani",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "971"
+              }
+            ]
+          },
+          {
+            "code": "971",
+            "display": "Afghani",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AFN"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "ALL",
+            "display": "Lek",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "008"
+              }
+            ]
+          },
+          {
+            "code": "008",
+            "display": "Lek",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ALL"
+              }
+            ]
+          },
+          {
+            "code": "DZD",
+            "display": "Algerian Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "012"
+              }
+            ]
+          },
+          {
+            "code": "012",
+            "display": "Algerian Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "DZD"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "AOA",
+            "display": "Kwanza",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "973"
+              }
+            ]
+          },
+          {
+            "code": "973",
+            "display": "Kwanza",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AOA"
+              }
+            ]
+          },
+          {
+            "code": "XCD",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "951"
+              }
+            ]
+          },
+          {
+            "code": "951",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XCD"
+              }
+            ]
+          },
+          {
+            "code": "",
+            "display": "No universal currency",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": ""
+              }
+            ]
+          },
+          {
+            "code": "",
+            "display": "No universal currency",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": ""
+              }
+            ]
+          },
+          {
+            "code": "XCD",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "951"
+              }
+            ]
+          },
+          {
+            "code": "951",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XCD"
+              }
+            ]
+          },
+          {
+            "code": "ARS",
+            "display": "Argentine Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "032"
+              }
+            ]
+          },
+          {
+            "code": "032",
+            "display": "Argentine Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ARS"
+              }
+            ]
+          },
+          {
+            "code": "AMD",
+            "display": "Armenian Dram",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "051"
+              }
+            ]
+          },
+          {
+            "code": "051",
+            "display": "Armenian Dram",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AMD"
+              }
+            ]
+          },
+          {
+            "code": "AWG",
+            "display": "Aruban Florin",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "533"
+              }
+            ]
+          },
+          {
+            "code": "533",
+            "display": "Aruban Florin",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AWG"
+              }
+            ]
+          },
+          {
+            "code": "AUD",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "036"
+              }
+            ]
+          },
+          {
+            "code": "036",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AUD"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "AZN",
+            "display": "Azerbaijan Manat",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "944"
+              }
+            ]
+          },
+          {
+            "code": "944",
+            "display": "Azerbaijan Manat",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AZN"
+              }
+            ]
+          },
+          {
+            "code": "BSD",
+            "display": "Bahamian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "044"
+              }
+            ]
+          },
+          {
+            "code": "044",
+            "display": "Bahamian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BSD"
+              }
+            ]
+          },
+          {
+            "code": "BHD",
+            "display": "Bahraini Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "048"
+              }
+            ]
+          },
+          {
+            "code": "048",
+            "display": "Bahraini Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BHD"
+              }
+            ]
+          },
+          {
+            "code": "BDT",
+            "display": "Taka",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "050"
+              }
+            ]
+          },
+          {
+            "code": "050",
+            "display": "Taka",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BDT"
+              }
+            ]
+          },
+          {
+            "code": "BBD",
+            "display": "Barbados Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "052"
+              }
+            ]
+          },
+          {
+            "code": "052",
+            "display": "Barbados Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BBD"
+              }
+            ]
+          },
+          {
+            "code": "BYN",
+            "display": "Belarusian Ruble",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "933"
+              }
+            ]
+          },
+          {
+            "code": "933",
+            "display": "Belarusian Ruble",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BYN"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "BZD",
+            "display": "Belize Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "084"
+              }
+            ]
+          },
+          {
+            "code": "084",
+            "display": "Belize Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BZD"
+              }
+            ]
+          },
+          {
+            "code": "XOF",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "952"
+              }
+            ]
+          },
+          {
+            "code": "952",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XOF"
+              }
+            ]
+          },
+          {
+            "code": "BMD",
+            "display": "Bermudian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "060"
+              }
+            ]
+          },
+          {
+            "code": "060",
+            "display": "Bermudian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BMD"
+              }
+            ]
+          },
+          {
+            "code": "INR",
+            "display": "Indian Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "356"
+              }
+            ]
+          },
+          {
+            "code": "356",
+            "display": "Indian Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "INR"
+              }
+            ]
+          },
+          {
+            "code": "BTN",
+            "display": "Ngultrum",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "064"
+              }
+            ]
+          },
+          {
+            "code": "064",
+            "display": "Ngultrum",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BTN"
+              }
+            ]
+          },
+          {
+            "code": "BOB",
+            "display": "Boliviano",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "068"
+              }
+            ]
+          },
+          {
+            "code": "068",
+            "display": "Boliviano",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BOB"
+              }
+            ]
+          },
+          {
+            "code": "BOV",
+            "display": "Mvdol",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "984"
+              }
+            ]
+          },
+          {
+            "code": "984",
+            "display": "Mvdol",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BOV"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "BAM",
+            "display": "Convertible Mark",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "977"
+              }
+            ]
+          },
+          {
+            "code": "977",
+            "display": "Convertible Mark",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BAM"
+              }
+            ]
+          },
+          {
+            "code": "BWP",
+            "display": "Pula",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "072"
+              }
+            ]
+          },
+          {
+            "code": "072",
+            "display": "Pula",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BWP"
+              }
+            ]
+          },
+          {
+            "code": "NOK",
+            "display": "Norwegian Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "578"
+              }
+            ]
+          },
+          {
+            "code": "578",
+            "display": "Norwegian Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NOK"
+              }
+            ]
+          },
+          {
+            "code": "BRL",
+            "display": "Brazilian Real",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "986"
+              }
+            ]
+          },
+          {
+            "code": "986",
+            "display": "Brazilian Real",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BRL"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "BND",
+            "display": "Brunei Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "096"
+              }
+            ]
+          },
+          {
+            "code": "096",
+            "display": "Brunei Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BND"
+              }
+            ]
+          },
+          {
+            "code": "BGN",
+            "display": "Bulgarian Lev",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "975"
+              }
+            ]
+          },
+          {
+            "code": "975",
+            "display": "Bulgarian Lev",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BGN"
+              }
+            ]
+          },
+          {
+            "code": "XOF",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "952"
+              }
+            ]
+          },
+          {
+            "code": "952",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XOF"
+              }
+            ]
+          },
+          {
+            "code": "BIF",
+            "display": "Burundi Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "108"
+              }
+            ]
+          },
+          {
+            "code": "108",
+            "display": "Burundi Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "BIF"
+              }
+            ]
+          },
+          {
+            "code": "CVE",
+            "display": "Cabo Verde Escudo",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "132"
+              }
+            ]
+          },
+          {
+            "code": "132",
+            "display": "Cabo Verde Escudo",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CVE"
+              }
+            ]
+          },
+          {
+            "code": "KHR",
+            "display": "Riel",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "116"
+              }
+            ]
+          },
+          {
+            "code": "116",
+            "display": "Riel",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "KHR"
+              }
+            ]
+          },
+          {
+            "code": "XAF",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "950"
+              }
+            ]
+          },
+          {
+            "code": "950",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XAF"
+              }
+            ]
+          },
+          {
+            "code": "CAD",
+            "display": "Canadian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "124"
+              }
+            ]
+          },
+          {
+            "code": "124",
+            "display": "Canadian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CAD"
+              }
+            ]
+          },
+          {
+            "code": "KYD",
+            "display": "Cayman Islands Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "136"
+              }
+            ]
+          },
+          {
+            "code": "136",
+            "display": "Cayman Islands Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "KYD"
+              }
+            ]
+          },
+          {
+            "code": "XAF",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "950"
+              }
+            ]
+          },
+          {
+            "code": "950",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XAF"
+              }
+            ]
+          },
+          {
+            "code": "XAF",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "950"
+              }
+            ]
+          },
+          {
+            "code": "950",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XAF"
+              }
+            ]
+          },
+          {
+            "code": "CLP",
+            "display": "Chilean Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "152"
+              }
+            ]
+          },
+          {
+            "code": "152",
+            "display": "Chilean Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CLP"
+              }
+            ]
+          },
+          {
+            "code": "CLF",
+            "display": "Unidad de Fomento",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "990"
+              }
+            ]
+          },
+          {
+            "code": "990",
+            "display": "Unidad de Fomento",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CLF"
+              }
+            ]
+          },
+          {
+            "code": "CNY",
+            "display": "Yuan Renminbi",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "156"
+              }
+            ]
+          },
+          {
+            "code": "156",
+            "display": "Yuan Renminbi",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CNY"
+              }
+            ]
+          },
+          {
+            "code": "AUD",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "036"
+              }
+            ]
+          },
+          {
+            "code": "036",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AUD"
+              }
+            ]
+          },
+          {
+            "code": "AUD",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "036"
+              }
+            ]
+          },
+          {
+            "code": "036",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AUD"
+              }
+            ]
+          },
+          {
+            "code": "COP",
+            "display": "Colombian Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "170"
+              }
+            ]
+          },
+          {
+            "code": "170",
+            "display": "Colombian Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "COP"
+              }
+            ]
+          },
+          {
+            "code": "COU",
+            "display": "Unidad de Valor Real",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "970"
+              }
+            ]
+          },
+          {
+            "code": "970",
+            "display": "Unidad de Valor Real",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "COU"
+              }
+            ]
+          },
+          {
+            "code": "KMF",
+            "display": "Comorian Franc ",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "174"
+              }
+            ]
+          },
+          {
+            "code": "174",
+            "display": "Comorian Franc ",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "KMF"
+              }
+            ]
+          },
+          {
+            "code": "CDF",
+            "display": "Congolese Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "976"
+              }
+            ]
+          },
+          {
+            "code": "976",
+            "display": "Congolese Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CDF"
+              }
+            ]
+          },
+          {
+            "code": "XAF",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "950"
+              }
+            ]
+          },
+          {
+            "code": "950",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XAF"
+              }
+            ]
+          },
+          {
+            "code": "NZD",
+            "display": "New Zealand Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "554"
+              }
+            ]
+          },
+          {
+            "code": "554",
+            "display": "New Zealand Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NZD"
+              }
+            ]
+          },
+          {
+            "code": "CRC",
+            "display": "Costa Rican Colon",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "188"
+              }
+            ]
+          },
+          {
+            "code": "188",
+            "display": "Costa Rican Colon",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CRC"
+              }
+            ]
+          },
+          {
+            "code": "XOF",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "952"
+              }
+            ]
+          },
+          {
+            "code": "952",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XOF"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "CUP",
+            "display": "Cuban Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "192"
+              }
+            ]
+          },
+          {
+            "code": "192",
+            "display": "Cuban Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CUP"
+              }
+            ]
+          },
+          {
+            "code": "CUC",
+            "display": "Peso Convertible",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "931"
+              }
+            ]
+          },
+          {
+            "code": "931",
+            "display": "Peso Convertible",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CUC"
+              }
+            ]
+          },
+          {
+            "code": "ANG",
+            "display": "Netherlands Antillean Guilder",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "532"
+              }
+            ]
+          },
+          {
+            "code": "532",
+            "display": "Netherlands Antillean Guilder",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ANG"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "CZK",
+            "display": "Czech Koruna",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "203"
+              }
+            ]
+          },
+          {
+            "code": "203",
+            "display": "Czech Koruna",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CZK"
+              }
+            ]
+          },
+          {
+            "code": "DKK",
+            "display": "Danish Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "208"
+              }
+            ]
+          },
+          {
+            "code": "208",
+            "display": "Danish Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "DKK"
+              }
+            ]
+          },
+          {
+            "code": "DJF",
+            "display": "Djibouti Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "262"
+              }
+            ]
+          },
+          {
+            "code": "262",
+            "display": "Djibouti Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "DJF"
+              }
+            ]
+          },
+          {
+            "code": "XCD",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "951"
+              }
+            ]
+          },
+          {
+            "code": "951",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XCD"
+              }
+            ]
+          },
+          {
+            "code": "DOP",
+            "display": "Dominican Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "214"
+              }
+            ]
+          },
+          {
+            "code": "214",
+            "display": "Dominican Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "DOP"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "EGP",
+            "display": "Egyptian Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "818"
+              }
+            ]
+          },
+          {
+            "code": "818",
+            "display": "Egyptian Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EGP"
+              }
+            ]
+          },
+          {
+            "code": "SVC",
+            "display": "El Salvador Colon",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "222"
+              }
+            ]
+          },
+          {
+            "code": "222",
+            "display": "El Salvador Colon",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SVC"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "XAF",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "950"
+              }
+            ]
+          },
+          {
+            "code": "950",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XAF"
+              }
+            ]
+          },
+          {
+            "code": "ERN",
+            "display": "Nakfa",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "232"
+              }
+            ]
+          },
+          {
+            "code": "232",
+            "display": "Nakfa",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ERN"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "SZL",
+            "display": "Lilangeni",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "748"
+              }
+            ]
+          },
+          {
+            "code": "748",
+            "display": "Lilangeni",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SZL"
+              }
+            ]
+          },
+          {
+            "code": "ETB",
+            "display": "Ethiopian Birr",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "230"
+              }
+            ]
+          },
+          {
+            "code": "230",
+            "display": "Ethiopian Birr",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ETB"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "FKP",
+            "display": "Falkland Islands Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "238"
+              }
+            ]
+          },
+          {
+            "code": "238",
+            "display": "Falkland Islands Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "FKP"
+              }
+            ]
+          },
+          {
+            "code": "DKK",
+            "display": "Danish Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "208"
+              }
+            ]
+          },
+          {
+            "code": "208",
+            "display": "Danish Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "DKK"
+              }
+            ]
+          },
+          {
+            "code": "FJD",
+            "display": "Fiji Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "242"
+              }
+            ]
+          },
+          {
+            "code": "242",
+            "display": "Fiji Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "FJD"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "XPF",
+            "display": "CFP Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "953"
+              }
+            ]
+          },
+          {
+            "code": "953",
+            "display": "CFP Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XPF"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "XAF",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "950"
+              }
+            ]
+          },
+          {
+            "code": "950",
+            "display": "CFA Franc BEAC",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XAF"
+              }
+            ]
+          },
+          {
+            "code": "GMD",
+            "display": "Dalasi",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "270"
+              }
+            ]
+          },
+          {
+            "code": "270",
+            "display": "Dalasi",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GMD"
+              }
+            ]
+          },
+          {
+            "code": "GEL",
+            "display": "Lari",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "981"
+              }
+            ]
+          },
+          {
+            "code": "981",
+            "display": "Lari",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GEL"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "GHS",
+            "display": "Ghana Cedi",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "936"
+              }
+            ]
+          },
+          {
+            "code": "936",
+            "display": "Ghana Cedi",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GHS"
+              }
+            ]
+          },
+          {
+            "code": "GIP",
+            "display": "Gibraltar Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "292"
+              }
+            ]
+          },
+          {
+            "code": "292",
+            "display": "Gibraltar Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GIP"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "DKK",
+            "display": "Danish Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "208"
+              }
+            ]
+          },
+          {
+            "code": "208",
+            "display": "Danish Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "DKK"
+              }
+            ]
+          },
+          {
+            "code": "XCD",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "951"
+              }
+            ]
+          },
+          {
+            "code": "951",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XCD"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "GTQ",
+            "display": "Quetzal",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "320"
+              }
+            ]
+          },
+          {
+            "code": "320",
+            "display": "Quetzal",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GTQ"
+              }
+            ]
+          },
+          {
+            "code": "GBP",
+            "display": "Pound Sterling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "826"
+              }
+            ]
+          },
+          {
+            "code": "826",
+            "display": "Pound Sterling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GBP"
+              }
+            ]
+          },
+          {
+            "code": "GNF",
+            "display": "Guinean Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "324"
+              }
+            ]
+          },
+          {
+            "code": "324",
+            "display": "Guinean Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GNF"
+              }
+            ]
+          },
+          {
+            "code": "XOF",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "952"
+              }
+            ]
+          },
+          {
+            "code": "952",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XOF"
+              }
+            ]
+          },
+          {
+            "code": "GYD",
+            "display": "Guyana Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "328"
+              }
+            ]
+          },
+          {
+            "code": "328",
+            "display": "Guyana Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GYD"
+              }
+            ]
+          },
+          {
+            "code": "HTG",
+            "display": "Gourde",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "332"
+              }
+            ]
+          },
+          {
+            "code": "332",
+            "display": "Gourde",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "HTG"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "AUD",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "036"
+              }
+            ]
+          },
+          {
+            "code": "036",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AUD"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "HNL",
+            "display": "Lempira",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "340"
+              }
+            ]
+          },
+          {
+            "code": "340",
+            "display": "Lempira",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "HNL"
+              }
+            ]
+          },
+          {
+            "code": "HKD",
+            "display": "Hong Kong Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "344"
+              }
+            ]
+          },
+          {
+            "code": "344",
+            "display": "Hong Kong Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "HKD"
+              }
+            ]
+          },
+          {
+            "code": "HUF",
+            "display": "Forint",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "348"
+              }
+            ]
+          },
+          {
+            "code": "348",
+            "display": "Forint",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "HUF"
+              }
+            ]
+          },
+          {
+            "code": "ISK",
+            "display": "Iceland Krona",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "352"
+              }
+            ]
+          },
+          {
+            "code": "352",
+            "display": "Iceland Krona",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ISK"
+              }
+            ]
+          },
+          {
+            "code": "INR",
+            "display": "Indian Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "356"
+              }
+            ]
+          },
+          {
+            "code": "356",
+            "display": "Indian Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "INR"
+              }
+            ]
+          },
+          {
+            "code": "IDR",
+            "display": "Rupiah",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "360"
+              }
+            ]
+          },
+          {
+            "code": "360",
+            "display": "Rupiah",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "IDR"
+              }
+            ]
+          },
+          {
+            "code": "XDR",
+            "display": "SDR (Special Drawing Right)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "960"
+              }
+            ]
+          },
+          {
+            "code": "960",
+            "display": "SDR (Special Drawing Right)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XDR"
+              }
+            ]
+          },
+          {
+            "code": "IRR",
+            "display": "Iranian Rial",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "364"
+              }
+            ]
+          },
+          {
+            "code": "364",
+            "display": "Iranian Rial",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "IRR"
+              }
+            ]
+          },
+          {
+            "code": "IQD",
+            "display": "Iraqi Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "368"
+              }
+            ]
+          },
+          {
+            "code": "368",
+            "display": "Iraqi Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "IQD"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "GBP",
+            "display": "Pound Sterling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "826"
+              }
+            ]
+          },
+          {
+            "code": "826",
+            "display": "Pound Sterling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GBP"
+              }
+            ]
+          },
+          {
+            "code": "ILS",
+            "display": "New Israeli Sheqel",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "376"
+              }
+            ]
+          },
+          {
+            "code": "376",
+            "display": "New Israeli Sheqel",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ILS"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "JMD",
+            "display": "Jamaican Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "388"
+              }
+            ]
+          },
+          {
+            "code": "388",
+            "display": "Jamaican Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "JMD"
+              }
+            ]
+          },
+          {
+            "code": "JPY",
+            "display": "Yen",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "392"
+              }
+            ]
+          },
+          {
+            "code": "392",
+            "display": "Yen",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "JPY"
+              }
+            ]
+          },
+          {
+            "code": "GBP",
+            "display": "Pound Sterling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "826"
+              }
+            ]
+          },
+          {
+            "code": "826",
+            "display": "Pound Sterling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GBP"
+              }
+            ]
+          },
+          {
+            "code": "JOD",
+            "display": "Jordanian Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "400"
+              }
+            ]
+          },
+          {
+            "code": "400",
+            "display": "Jordanian Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "JOD"
+              }
+            ]
+          },
+          {
+            "code": "KZT",
+            "display": "Tenge",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "398"
+              }
+            ]
+          },
+          {
+            "code": "398",
+            "display": "Tenge",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "KZT"
+              }
+            ]
+          },
+          {
+            "code": "KES",
+            "display": "Kenyan Shilling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "404"
+              }
+            ]
+          },
+          {
+            "code": "404",
+            "display": "Kenyan Shilling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "KES"
+              }
+            ]
+          },
+          {
+            "code": "AUD",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "036"
+              }
+            ]
+          },
+          {
+            "code": "036",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AUD"
+              }
+            ]
+          },
+          {
+            "code": "KPW",
+            "display": "North Korean Won",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "408"
+              }
+            ]
+          },
+          {
+            "code": "408",
+            "display": "North Korean Won",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "KPW"
+              }
+            ]
+          },
+          {
+            "code": "KRW",
+            "display": "Won",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "410"
+              }
+            ]
+          },
+          {
+            "code": "410",
+            "display": "Won",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "KRW"
+              }
+            ]
+          },
+          {
+            "code": "KWD",
+            "display": "Kuwaiti Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "414"
+              }
+            ]
+          },
+          {
+            "code": "414",
+            "display": "Kuwaiti Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "KWD"
+              }
+            ]
+          },
+          {
+            "code": "KGS",
+            "display": "Som",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "417"
+              }
+            ]
+          },
+          {
+            "code": "417",
+            "display": "Som",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "KGS"
+              }
+            ]
+          },
+          {
+            "code": "LAK",
+            "display": "Lao Kip",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "418"
+              }
+            ]
+          },
+          {
+            "code": "418",
+            "display": "Lao Kip",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "LAK"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "LBP",
+            "display": "Lebanese Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "422"
+              }
+            ]
+          },
+          {
+            "code": "422",
+            "display": "Lebanese Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "LBP"
+              }
+            ]
+          },
+          {
+            "code": "LSL",
+            "display": "Loti",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "426"
+              }
+            ]
+          },
+          {
+            "code": "426",
+            "display": "Loti",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "LSL"
+              }
+            ]
+          },
+          {
+            "code": "ZAR",
+            "display": "Rand",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "710"
+              }
+            ]
+          },
+          {
+            "code": "710",
+            "display": "Rand",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ZAR"
+              }
+            ]
+          },
+          {
+            "code": "LRD",
+            "display": "Liberian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "430"
+              }
+            ]
+          },
+          {
+            "code": "430",
+            "display": "Liberian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "LRD"
+              }
+            ]
+          },
+          {
+            "code": "LYD",
+            "display": "Libyan Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "434"
+              }
+            ]
+          },
+          {
+            "code": "434",
+            "display": "Libyan Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "LYD"
+              }
+            ]
+          },
+          {
+            "code": "CHF",
+            "display": "Swiss Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "756"
+              }
+            ]
+          },
+          {
+            "code": "756",
+            "display": "Swiss Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CHF"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "MOP",
+            "display": "Pataca",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "446"
+              }
+            ]
+          },
+          {
+            "code": "446",
+            "display": "Pataca",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MOP"
+              }
+            ]
+          },
+          {
+            "code": "MKD",
+            "display": "Denar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "807"
+              }
+            ]
+          },
+          {
+            "code": "807",
+            "display": "Denar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MKD"
+              }
+            ]
+          },
+          {
+            "code": "MGA",
+            "display": "Malagasy Ariary",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "969"
+              }
+            ]
+          },
+          {
+            "code": "969",
+            "display": "Malagasy Ariary",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MGA"
+              }
+            ]
+          },
+          {
+            "code": "MWK",
+            "display": "Malawi Kwacha",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "454"
+              }
+            ]
+          },
+          {
+            "code": "454",
+            "display": "Malawi Kwacha",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MWK"
+              }
+            ]
+          },
+          {
+            "code": "MYR",
+            "display": "Malaysian Ringgit",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "458"
+              }
+            ]
+          },
+          {
+            "code": "458",
+            "display": "Malaysian Ringgit",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MYR"
+              }
+            ]
+          },
+          {
+            "code": "MVR",
+            "display": "Rufiyaa",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "462"
+              }
+            ]
+          },
+          {
+            "code": "462",
+            "display": "Rufiyaa",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MVR"
+              }
+            ]
+          },
+          {
+            "code": "XOF",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "952"
+              }
+            ]
+          },
+          {
+            "code": "952",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XOF"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "MRU",
+            "display": "Ouguiya",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "929"
+              }
+            ]
+          },
+          {
+            "code": "929",
+            "display": "Ouguiya",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MRU"
+              }
+            ]
+          },
+          {
+            "code": "MUR",
+            "display": "Mauritius Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "480"
+              }
+            ]
+          },
+          {
+            "code": "480",
+            "display": "Mauritius Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MUR"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "XUA",
+            "display": "ADB Unit of Account",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "965"
+              }
+            ]
+          },
+          {
+            "code": "965",
+            "display": "ADB Unit of Account",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XUA"
+              }
+            ]
+          },
+          {
+            "code": "MXN",
+            "display": "Mexican Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "484"
+              }
+            ]
+          },
+          {
+            "code": "484",
+            "display": "Mexican Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MXN"
+              }
+            ]
+          },
+          {
+            "code": "MXV",
+            "display": "Mexican Unidad de Inversion (UDI)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "979"
+              }
+            ]
+          },
+          {
+            "code": "979",
+            "display": "Mexican Unidad de Inversion (UDI)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MXV"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "MDL",
+            "display": "Moldovan Leu",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "498"
+              }
+            ]
+          },
+          {
+            "code": "498",
+            "display": "Moldovan Leu",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MDL"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "MNT",
+            "display": "Tugrik",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "496"
+              }
+            ]
+          },
+          {
+            "code": "496",
+            "display": "Tugrik",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MNT"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "XCD",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "951"
+              }
+            ]
+          },
+          {
+            "code": "951",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XCD"
+              }
+            ]
+          },
+          {
+            "code": "MAD",
+            "display": "Moroccan Dirham",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "504"
+              }
+            ]
+          },
+          {
+            "code": "504",
+            "display": "Moroccan Dirham",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MAD"
+              }
+            ]
+          },
+          {
+            "code": "MZN",
+            "display": "Mozambique Metical",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "943"
+              }
+            ]
+          },
+          {
+            "code": "943",
+            "display": "Mozambique Metical",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MZN"
+              }
+            ]
+          },
+          {
+            "code": "MMK",
+            "display": "Kyat",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "104"
+              }
+            ]
+          },
+          {
+            "code": "104",
+            "display": "Kyat",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MMK"
+              }
+            ]
+          },
+          {
+            "code": "NAD",
+            "display": "Namibia Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "516"
+              }
+            ]
+          },
+          {
+            "code": "516",
+            "display": "Namibia Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NAD"
+              }
+            ]
+          },
+          {
+            "code": "ZAR",
+            "display": "Rand",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "710"
+              }
+            ]
+          },
+          {
+            "code": "710",
+            "display": "Rand",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ZAR"
+              }
+            ]
+          },
+          {
+            "code": "AUD",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "036"
+              }
+            ]
+          },
+          {
+            "code": "036",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AUD"
+              }
+            ]
+          },
+          {
+            "code": "NPR",
+            "display": "Nepalese Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "524"
+              }
+            ]
+          },
+          {
+            "code": "524",
+            "display": "Nepalese Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NPR"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "XPF",
+            "display": "CFP Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "953"
+              }
+            ]
+          },
+          {
+            "code": "953",
+            "display": "CFP Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XPF"
+              }
+            ]
+          },
+          {
+            "code": "NZD",
+            "display": "New Zealand Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "554"
+              }
+            ]
+          },
+          {
+            "code": "554",
+            "display": "New Zealand Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NZD"
+              }
+            ]
+          },
+          {
+            "code": "NIO",
+            "display": "Cordoba Oro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "558"
+              }
+            ]
+          },
+          {
+            "code": "558",
+            "display": "Cordoba Oro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NIO"
+              }
+            ]
+          },
+          {
+            "code": "XOF",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "952"
+              }
+            ]
+          },
+          {
+            "code": "952",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XOF"
+              }
+            ]
+          },
+          {
+            "code": "NGN",
+            "display": "Naira",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "566"
+              }
+            ]
+          },
+          {
+            "code": "566",
+            "display": "Naira",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NGN"
+              }
+            ]
+          },
+          {
+            "code": "NZD",
+            "display": "New Zealand Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "554"
+              }
+            ]
+          },
+          {
+            "code": "554",
+            "display": "New Zealand Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NZD"
+              }
+            ]
+          },
+          {
+            "code": "AUD",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "036"
+              }
+            ]
+          },
+          {
+            "code": "036",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AUD"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "NOK",
+            "display": "Norwegian Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "578"
+              }
+            ]
+          },
+          {
+            "code": "578",
+            "display": "Norwegian Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NOK"
+              }
+            ]
+          },
+          {
+            "code": "OMR",
+            "display": "Rial Omani",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "512"
+              }
+            ]
+          },
+          {
+            "code": "512",
+            "display": "Rial Omani",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "OMR"
+              }
+            ]
+          },
+          {
+            "code": "PKR",
+            "display": "Pakistan Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "586"
+              }
+            ]
+          },
+          {
+            "code": "586",
+            "display": "Pakistan Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "PKR"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "",
+            "display": "No universal currency",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": ""
+              }
+            ]
+          },
+          {
+            "code": "",
+            "display": "No universal currency",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": ""
+              }
+            ]
+          },
+          {
+            "code": "PAB",
+            "display": "Balboa",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "590"
+              }
+            ]
+          },
+          {
+            "code": "590",
+            "display": "Balboa",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "PAB"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "PGK",
+            "display": "Kina",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "598"
+              }
+            ]
+          },
+          {
+            "code": "598",
+            "display": "Kina",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "PGK"
+              }
+            ]
+          },
+          {
+            "code": "PYG",
+            "display": "Guarani",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "600"
+              }
+            ]
+          },
+          {
+            "code": "600",
+            "display": "Guarani",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "PYG"
+              }
+            ]
+          },
+          {
+            "code": "PEN",
+            "display": "Sol",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "604"
+              }
+            ]
+          },
+          {
+            "code": "604",
+            "display": "Sol",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "PEN"
+              }
+            ]
+          },
+          {
+            "code": "PHP",
+            "display": "Philippine Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "608"
+              }
+            ]
+          },
+          {
+            "code": "608",
+            "display": "Philippine Peso",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "PHP"
+              }
+            ]
+          },
+          {
+            "code": "NZD",
+            "display": "New Zealand Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "554"
+              }
+            ]
+          },
+          {
+            "code": "554",
+            "display": "New Zealand Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NZD"
+              }
+            ]
+          },
+          {
+            "code": "PLN",
+            "display": "Zloty",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "985"
+              }
+            ]
+          },
+          {
+            "code": "985",
+            "display": "Zloty",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "PLN"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "QAR",
+            "display": "Qatari Rial",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "634"
+              }
+            ]
+          },
+          {
+            "code": "634",
+            "display": "Qatari Rial",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "QAR"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "RON",
+            "display": "Romanian Leu",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "946"
+              }
+            ]
+          },
+          {
+            "code": "946",
+            "display": "Romanian Leu",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "RON"
+              }
+            ]
+          },
+          {
+            "code": "RUB",
+            "display": "Russian Ruble",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "643"
+              }
+            ]
+          },
+          {
+            "code": "643",
+            "display": "Russian Ruble",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "RUB"
+              }
+            ]
+          },
+          {
+            "code": "RWF",
+            "display": "Rwanda Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "646"
+              }
+            ]
+          },
+          {
+            "code": "646",
+            "display": "Rwanda Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "RWF"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "SHP",
+            "display": "Saint Helena Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "654"
+              }
+            ]
+          },
+          {
+            "code": "654",
+            "display": "Saint Helena Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SHP"
+              }
+            ]
+          },
+          {
+            "code": "XCD",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "951"
+              }
+            ]
+          },
+          {
+            "code": "951",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XCD"
+              }
+            ]
+          },
+          {
+            "code": "XCD",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "951"
+              }
+            ]
+          },
+          {
+            "code": "951",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XCD"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "XCD",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "951"
+              }
+            ]
+          },
+          {
+            "code": "951",
+            "display": "East Caribbean Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XCD"
+              }
+            ]
+          },
+          {
+            "code": "WST",
+            "display": "Tala",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "882"
+              }
+            ]
+          },
+          {
+            "code": "882",
+            "display": "Tala",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "WST"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "STN",
+            "display": "Dobra",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "930"
+              }
+            ]
+          },
+          {
+            "code": "930",
+            "display": "Dobra",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "STN"
+              }
+            ]
+          },
+          {
+            "code": "SAR",
+            "display": "Saudi Riyal",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "682"
+              }
+            ]
+          },
+          {
+            "code": "682",
+            "display": "Saudi Riyal",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SAR"
+              }
+            ]
+          },
+          {
+            "code": "XOF",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "952"
+              }
+            ]
+          },
+          {
+            "code": "952",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XOF"
+              }
+            ]
+          },
+          {
+            "code": "RSD",
+            "display": "Serbian Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "941"
+              }
+            ]
+          },
+          {
+            "code": "941",
+            "display": "Serbian Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "RSD"
+              }
+            ]
+          },
+          {
+            "code": "SCR",
+            "display": "Seychelles Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "690"
+              }
+            ]
+          },
+          {
+            "code": "690",
+            "display": "Seychelles Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SCR"
+              }
+            ]
+          },
+          {
+            "code": "SLE",
+            "display": "Leone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "925"
+              }
+            ]
+          },
+          {
+            "code": "925",
+            "display": "Leone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SLE"
+              }
+            ]
+          },
+          {
+            "code": "SGD",
+            "display": "Singapore Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "702"
+              }
+            ]
+          },
+          {
+            "code": "702",
+            "display": "Singapore Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SGD"
+              }
+            ]
+          },
+          {
+            "code": "ANG",
+            "display": "Netherlands Antillean Guilder",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "532"
+              }
+            ]
+          },
+          {
+            "code": "532",
+            "display": "Netherlands Antillean Guilder",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ANG"
+              }
+            ]
+          },
+          {
+            "code": "XSU",
+            "display": "Sucre",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "994"
+              }
+            ]
+          },
+          {
+            "code": "994",
+            "display": "Sucre",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XSU"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "SBD",
+            "display": "Solomon Islands Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "090"
+              }
+            ]
+          },
+          {
+            "code": "090",
+            "display": "Solomon Islands Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SBD"
+              }
+            ]
+          },
+          {
+            "code": "SOS",
+            "display": "Somali Shilling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "706"
+              }
+            ]
+          },
+          {
+            "code": "706",
+            "display": "Somali Shilling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SOS"
+              }
+            ]
+          },
+          {
+            "code": "ZAR",
+            "display": "Rand",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "710"
+              }
+            ]
+          },
+          {
+            "code": "710",
+            "display": "Rand",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ZAR"
+              }
+            ]
+          },
+          {
+            "code": "",
+            "display": "No universal currency",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": ""
+              }
+            ]
+          },
+          {
+            "code": "",
+            "display": "No universal currency",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": ""
+              }
+            ]
+          },
+          {
+            "code": "SSP",
+            "display": "South Sudanese Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "728"
+              }
+            ]
+          },
+          {
+            "code": "728",
+            "display": "South Sudanese Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SSP"
+              }
+            ]
+          },
+          {
+            "code": "EUR",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "978"
+              }
+            ]
+          },
+          {
+            "code": "978",
+            "display": "Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "EUR"
+              }
+            ]
+          },
+          {
+            "code": "LKR",
+            "display": "Sri Lanka Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "144"
+              }
+            ]
+          },
+          {
+            "code": "144",
+            "display": "Sri Lanka Rupee",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "LKR"
+              }
+            ]
+          },
+          {
+            "code": "SDG",
+            "display": "Sudanese Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "938"
+              }
+            ]
+          },
+          {
+            "code": "938",
+            "display": "Sudanese Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SDG"
+              }
+            ]
+          },
+          {
+            "code": "SRD",
+            "display": "Surinam Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "968"
+              }
+            ]
+          },
+          {
+            "code": "968",
+            "display": "Surinam Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SRD"
+              }
+            ]
+          },
+          {
+            "code": "NOK",
+            "display": "Norwegian Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "578"
+              }
+            ]
+          },
+          {
+            "code": "578",
+            "display": "Norwegian Krone",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NOK"
+              }
+            ]
+          },
+          {
+            "code": "SEK",
+            "display": "Swedish Krona",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "752"
+              }
+            ]
+          },
+          {
+            "code": "752",
+            "display": "Swedish Krona",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SEK"
+              }
+            ]
+          },
+          {
+            "code": "CHF",
+            "display": "Swiss Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "756"
+              }
+            ]
+          },
+          {
+            "code": "756",
+            "display": "Swiss Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CHF"
+              }
+            ]
+          },
+          {
+            "code": "CHE",
+            "display": "WIR Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "947"
+              }
+            ]
+          },
+          {
+            "code": "947",
+            "display": "WIR Euro",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CHE"
+              }
+            ]
+          },
+          {
+            "code": "CHW",
+            "display": "WIR Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "948"
+              }
+            ]
+          },
+          {
+            "code": "948",
+            "display": "WIR Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "CHW"
+              }
+            ]
+          },
+          {
+            "code": "SYP",
+            "display": "Syrian Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "760"
+              }
+            ]
+          },
+          {
+            "code": "760",
+            "display": "Syrian Pound",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "SYP"
+              }
+            ]
+          },
+          {
+            "code": "TWD",
+            "display": "New Taiwan Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "901"
+              }
+            ]
+          },
+          {
+            "code": "901",
+            "display": "New Taiwan Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "TWD"
+              }
+            ]
+          },
+          {
+            "code": "TJS",
+            "display": "Somoni",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "972"
+              }
+            ]
+          },
+          {
+            "code": "972",
+            "display": "Somoni",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "TJS"
+              }
+            ]
+          },
+          {
+            "code": "TZS",
+            "display": "Tanzanian Shilling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "834"
+              }
+            ]
+          },
+          {
+            "code": "834",
+            "display": "Tanzanian Shilling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "TZS"
+              }
+            ]
+          },
+          {
+            "code": "THB",
+            "display": "Baht",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "764"
+              }
+            ]
+          },
+          {
+            "code": "764",
+            "display": "Baht",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "THB"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "XOF",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "952"
+              }
+            ]
+          },
+          {
+            "code": "952",
+            "display": "CFA Franc BCEAO",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XOF"
+              }
+            ]
+          },
+          {
+            "code": "NZD",
+            "display": "New Zealand Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "554"
+              }
+            ]
+          },
+          {
+            "code": "554",
+            "display": "New Zealand Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "NZD"
+              }
+            ]
+          },
+          {
+            "code": "TOP",
+            "display": "Pa’anga",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "776"
+              }
+            ]
+          },
+          {
+            "code": "776",
+            "display": "Pa’anga",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "TOP"
+              }
+            ]
+          },
+          {
+            "code": "TTD",
+            "display": "Trinidad and Tobago Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "780"
+              }
+            ]
+          },
+          {
+            "code": "780",
+            "display": "Trinidad and Tobago Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "TTD"
+              }
+            ]
+          },
+          {
+            "code": "TND",
+            "display": "Tunisian Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "788"
+              }
+            ]
+          },
+          {
+            "code": "788",
+            "display": "Tunisian Dinar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "TND"
+              }
+            ]
+          },
+          {
+            "code": "TRY",
+            "display": "Turkish Lira",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "949"
+              }
+            ]
+          },
+          {
+            "code": "949",
+            "display": "Turkish Lira",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "TRY"
+              }
+            ]
+          },
+          {
+            "code": "TMT",
+            "display": "Turkmenistan New Manat",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "934"
+              }
+            ]
+          },
+          {
+            "code": "934",
+            "display": "Turkmenistan New Manat",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "TMT"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "AUD",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "036"
+              }
+            ]
+          },
+          {
+            "code": "036",
+            "display": "Australian Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AUD"
+              }
+            ]
+          },
+          {
+            "code": "UGX",
+            "display": "Uganda Shilling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "800"
+              }
+            ]
+          },
+          {
+            "code": "800",
+            "display": "Uganda Shilling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "UGX"
+              }
+            ]
+          },
+          {
+            "code": "UAH",
+            "display": "Hryvnia",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "980"
+              }
+            ]
+          },
+          {
+            "code": "980",
+            "display": "Hryvnia",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "UAH"
+              }
+            ]
+          },
+          {
+            "code": "AED",
+            "display": "UAE Dirham",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "784"
+              }
+            ]
+          },
+          {
+            "code": "784",
+            "display": "UAE Dirham",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "AED"
+              }
+            ]
+          },
+          {
+            "code": "GBP",
+            "display": "Pound Sterling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "826"
+              }
+            ]
+          },
+          {
+            "code": "826",
+            "display": "Pound Sterling",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "GBP"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "USN",
+            "display": "US Dollar (Next day)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "997"
+              }
+            ]
+          },
+          {
+            "code": "997",
+            "display": "US Dollar (Next day)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USN"
+              }
+            ]
+          },
+          {
+            "code": "UYU",
+            "display": "Peso Uruguayo",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "858"
+              }
+            ]
+          },
+          {
+            "code": "858",
+            "display": "Peso Uruguayo",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "UYU"
+              }
+            ]
+          },
+          {
+            "code": "UYI",
+            "display": "Uruguay Peso en Unidades Indexadas (UI)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "940"
+              }
+            ]
+          },
+          {
+            "code": "940",
+            "display": "Uruguay Peso en Unidades Indexadas (UI)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "UYI"
+              }
+            ]
+          },
+          {
+            "code": "UYW",
+            "display": "Unidad Previsional",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "927"
+              }
+            ]
+          },
+          {
+            "code": "927",
+            "display": "Unidad Previsional",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "UYW"
+              }
+            ]
+          },
+          {
+            "code": "UZS",
+            "display": "Uzbekistan Sum",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "860"
+              }
+            ]
+          },
+          {
+            "code": "860",
+            "display": "Uzbekistan Sum",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "UZS"
+              }
+            ]
+          },
+          {
+            "code": "VUV",
+            "display": "Vatu",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "548"
+              }
+            ]
+          },
+          {
+            "code": "548",
+            "display": "Vatu",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "VUV"
+              }
+            ]
+          },
+          {
+            "code": "VES",
+            "display": "Bolívar Soberano",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "928"
+              }
+            ]
+          },
+          {
+            "code": "928",
+            "display": "Bolívar Soberano",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "VES"
+              }
+            ]
+          },
+          {
+            "code": "VED",
+            "display": "Bolívar Soberano",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "926"
+              }
+            ]
+          },
+          {
+            "code": "926",
+            "display": "Bolívar Soberano",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "VED"
+              }
+            ]
+          },
+          {
+            "code": "VND",
+            "display": "Dong",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "704"
+              }
+            ]
+          },
+          {
+            "code": "704",
+            "display": "Dong",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "VND"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "USD",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "840"
+              }
+            ]
+          },
+          {
+            "code": "840",
+            "display": "US Dollar",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "USD"
+              }
+            ]
+          },
+          {
+            "code": "XPF",
+            "display": "CFP Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "953"
+              }
+            ]
+          },
+          {
+            "code": "953",
+            "display": "CFP Franc",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XPF"
+              }
+            ]
+          },
+          {
+            "code": "MAD",
+            "display": "Moroccan Dirham",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "504"
+              }
+            ]
+          },
+          {
+            "code": "504",
+            "display": "Moroccan Dirham",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "MAD"
+              }
+            ]
+          },
+          {
+            "code": "YER",
+            "display": "Yemeni Rial",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "886"
+              }
+            ]
+          },
+          {
+            "code": "886",
+            "display": "Yemeni Rial",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "YER"
+              }
+            ]
+          },
+          {
+            "code": "ZMW",
+            "display": "Zambian Kwacha",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "967"
+              }
+            ]
+          },
+          {
+            "code": "967",
+            "display": "Zambian Kwacha",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ZMW"
+              }
+            ]
+          },
+          {
+            "code": "ZWG",
+            "display": "Zimbabwe Gold",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "924"
+              }
+            ]
+          },
+          {
+            "code": "924",
+            "display": "Zimbabwe Gold",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "ZWG"
+              }
+            ]
+          },
+          {
+            "code": "XBA",
+            "display": "Bond Markets Unit European Composite Unit (EURCO)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "955"
+              }
+            ]
+          },
+          {
+            "code": "955",
+            "display": "Bond Markets Unit European Composite Unit (EURCO)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XBA"
+              }
+            ]
+          },
+          {
+            "code": "XBB",
+            "display": "Bond Markets Unit European Monetary Unit (E.M.U.-6)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "956"
+              }
+            ]
+          },
+          {
+            "code": "956",
+            "display": "Bond Markets Unit European Monetary Unit (E.M.U.-6)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XBB"
+              }
+            ]
+          },
+          {
+            "code": "XBC",
+            "display": "Bond Markets Unit European Unit of Account 9 (E.U.A.-9)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "957"
+              }
+            ]
+          },
+          {
+            "code": "957",
+            "display": "Bond Markets Unit European Unit of Account 9 (E.U.A.-9)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XBC"
+              }
+            ]
+          },
+          {
+            "code": "XBD",
+            "display": "Bond Markets Unit European Unit of Account 17 (E.U.A.-17)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "958"
+              }
+            ]
+          },
+          {
+            "code": "958",
+            "display": "Bond Markets Unit European Unit of Account 17 (E.U.A.-17)",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XBD"
+              }
+            ]
+          },
+          {
+            "code": "XTS",
+            "display": "Codes specifically reserved for testing purposes",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "963"
+              }
+            ]
+          },
+          {
+            "code": "963",
+            "display": "Codes specifically reserved for testing purposes",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XTS"
+              }
+            ]
+          },
+          {
+            "code": "XXX",
+            "display": "The codes assigned for transactions where no currency is involved",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "999"
+              }
+            ]
+          },
+          {
+            "code": "999",
+            "display": "The codes assigned for transactions where no currency is involved",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XXX"
+              }
+            ]
+          },
+          {
+            "code": "XAU",
+            "display": "Gold",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "959"
+              }
+            ]
+          },
+          {
+            "code": "959",
+            "display": "Gold",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XAU"
+              }
+            ]
+          },
+          {
+            "code": "XPD",
+            "display": "Palladium",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "964"
+              }
+            ]
+          },
+          {
+            "code": "964",
+            "display": "Palladium",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XPD"
+              }
+            ]
+          },
+          {
+            "code": "XPT",
+            "display": "Platinum",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "962"
+              }
+            ]
+          },
+          {
+            "code": "962",
+            "display": "Platinum",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XPT"
+              }
+            ]
+          },
+          {
+            "code": "XAG",
+            "display": "Silver",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "961"
+              }
+            ]
+          },
+          {
+            "code": "961",
+            "display": "Silver",
+            "property": [
+              {
+                "code": "synonym",
+                "valueCode": "XAG"
+              }
+            ]
+          }
+        ],
+        "property": [
+          {
+            "code": "synonym",
+            "type": "code",
+            "uri": "http://hl7.org/fhir/concept-properties#synonym",
+            "description": "Equivalent alphabetic or numeric code"
+          }
+        ]
+      }
     }
   ]
 }

@@ -94,10 +94,11 @@ function buildCodeSystemConceptValues(concepts: CodeSystemConcept[] | undefined,
   }
 }
 
-export async function generateValueSets(): Promise<(CodeSystem | ValueSet)[]> {
+export async function generateCodeSystems(): Promise<(CodeSystem | ValueSet)[]> {
   const valueSets: (CodeSystem | ValueSet)[] = [];
 
   valueSets.push(...(await generateCountryCodes()));
+  valueSets.push(await generateCurrencyCodes());
 
   return valueSets;
 }
@@ -110,50 +111,8 @@ async function generateCountryCodes(): Promise<CodeSystem[]> {
   return new Promise((resolve, reject) => {
     createReadStream(path)
       .pipe(csv({ separator: ';' }))
-      .on('data', (row) => {
-        const worldKey = Object.keys(row)[0]; // Not sure why this is necessary, maybe weird encoding in the CSV?
-        const world = row[worldKey] as string;
-        const region = row['Region Code'] as string;
-        const subRegion = row['Sub-region Code'] as string;
-        const intRegion = row['Intermediate Region Code'] as string;
-        const country = row['Country or Area'] as string;
-        const m49 = row['M49 Code'] as string;
-        const iso2 = row['ISO-alpha2 Code'] as string;
-        const iso3 = row['ISO-alpha3 Code'] as string;
-
-        if (world) {
-          m49Codes[world] = {
-            code: world,
-            display: row['Global Name'],
-            property: [{ code: 'class', valueCode: 'world' }],
-          };
-        }
-        if (region) {
-          m49Codes[region] = {
-            code: region,
-            display: row['Region Name'],
-            property: [{ code: 'class', valueCode: 'region' }],
-          };
-        }
-        if (subRegion) {
-          m49Codes[subRegion] = {
-            code: subRegion,
-            display: row['Sub-region Name'],
-            property: [{ code: 'class', valueCode: 'sub-region' }],
-          };
-        }
-        if (intRegion) {
-          m49Codes[intRegion] = {
-            code: intRegion,
-            display: row['Intermediate Region Name'],
-            property: [{ code: 'class', valueCode: 'intermediate-region' }],
-          };
-        }
-        m49Codes[m49] = { code: m49, display: country, property: [{ code: 'class', valueCode: 'country' }] };
-        isoCodes[iso2] = { code: iso2, display: country };
-        isoCodes[iso3] = { code: iso3, display: country };
-      })
-      .on('end', () => {
+      .on('data', (row) => parseCountryCodeRow(row, m49Codes, isoCodes))
+      .on('end', () =>
         resolve([
           {
             resourceType: 'CodeSystem',
@@ -170,19 +129,107 @@ async function generateCountryCodes(): Promise<CodeSystem[]> {
             content: 'complete',
             concept: Object.values(isoCodes),
           },
-        ]);
+        ])
+      )
+      .on('error', reject);
+  });
+}
+
+function parseCountryCodeRow(
+  row: any,
+  m49Codes: Record<string, CodeSystemConcept>,
+  isoCodes: Record<string, CodeSystemConcept>
+): void {
+  const worldKey = Object.keys(row)[0]; // Not sure why this is necessary, maybe weird encoding in the CSV?
+  const world = row[worldKey] as string;
+  const region = row['Region Code'] as string;
+  const subRegion = row['Sub-region Code'] as string;
+  const intRegion = row['Intermediate Region Code'] as string;
+  const country = row['Country or Area'] as string;
+  const m49 = row['M49 Code'] as string;
+  const iso2 = row['ISO-alpha2 Code'] as string;
+  const iso3 = row['ISO-alpha3 Code'] as string;
+
+  if (world) {
+    m49Codes[world] = {
+      code: world,
+      display: row['Global Name'],
+      property: [{ code: 'class', valueCode: 'world' }],
+    };
+  }
+  if (region) {
+    m49Codes[region] = {
+      code: region,
+      display: row['Region Name'],
+      property: [{ code: 'class', valueCode: 'region' }],
+    };
+  }
+  if (subRegion) {
+    m49Codes[subRegion] = {
+      code: subRegion,
+      display: row['Sub-region Name'],
+      property: [{ code: 'class', valueCode: 'sub-region' }],
+    };
+  }
+  if (intRegion) {
+    m49Codes[intRegion] = {
+      code: intRegion,
+      display: row['Intermediate Region Name'],
+      property: [{ code: 'class', valueCode: 'intermediate-region' }],
+    };
+  }
+  m49Codes[m49] = { code: m49, display: country, property: [{ code: 'class', valueCode: 'country' }] };
+  isoCodes[iso2] = { code: iso2, display: country };
+  isoCodes[iso3] = { code: iso3, display: country };
+}
+
+async function generateCurrencyCodes(): Promise<CodeSystem> {
+  const isoCodes: CodeSystemConcept[] = [];
+
+  const path = resolve(__dirname, 'data/iso-4217-list-one.csv');
+  return new Promise((resolve, reject) => {
+    createReadStream(path)
+      .pipe(csv())
+      .on('data', (row) => parseCurrencyCodeRow(row, isoCodes))
+      .on('end', () => {
+        resolve({
+          resourceType: 'CodeSystem',
+          status: 'active',
+          url: 'urn:iso:std:iso:4217',
+          content: 'complete',
+          concept: isoCodes,
+          property: [
+            {
+              code: 'synonym',
+              type: 'code',
+              uri: 'http://hl7.org/fhir/concept-properties#synonym',
+              description: 'Equivalent alphabetic or numeric code',
+            },
+          ],
+        });
       })
       .on('error', reject);
   });
 }
 
+function parseCurrencyCodeRow(row: any, isoCodes: CodeSystemConcept[]): void {
+  const currency = row['Currency'];
+  const alpha = row['Alphabetic Code'];
+  const num = row['Numeric Code'];
+
+  isoCodes.push(
+    { code: alpha, display: currency, property: [{ code: 'synonym', valueCode: num }] },
+    { code: num, display: currency, property: [{ code: 'synonym', valueCode: alpha }] }
+  );
+}
+
 async function main(): Promise<void> {
-  const valueSets = await generateValueSets();
+  const codeSystems = await generateCodeSystems();
 
   const bundle: Bundle<CodeSystem | ValueSet> = {
     resourceType: 'Bundle',
     type: 'collection',
-    entry: valueSets.map((resource) => ({ fullUrl: resource.url, resource })),
+    entry: codeSystems.map((resource) => ({ fullUrl: resource.url, resource })),
   };
 
   const json = JSON.stringify(bundle, undefined, 2)
