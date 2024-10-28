@@ -44,7 +44,7 @@ export function validateResourceType(resourceType: string): void {
     throw new OperationOutcomeError(validationError('Resource type is null'));
   }
   if (!isResourceType(resourceType)) {
-    throw new OperationOutcomeError(validationError('Unknown resource type'));
+    throw new OperationOutcomeError(validationError(`Unknown resource type: ${resourceType}`));
   }
 }
 

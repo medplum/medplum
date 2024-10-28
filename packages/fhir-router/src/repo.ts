@@ -456,6 +456,12 @@ export class MemoryRepository extends FhirRepository<undefined> {
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
     const { resourceType } = searchRequest;
     const resources = this.resources.get(resourceType) ?? new Map();
+    if (resources.size === 0) {
+      // If there are no resources for this resource type,
+      // We still want to validate the search request and throw on any potentially invalid search params
+      // Instead of silently failing and returning an empty search set as if it was a valid search
+      matchesSearchRequest({ resourceType } as T, searchRequest);
+    }
     const result = [];
     for (const resource of resources.values()) {
       if (matchesSearchRequest(resource, searchRequest)) {

@@ -873,6 +873,82 @@ describe('MockClient', () => {
     medplum.unsubscribeFromCriteria('Communication');
     expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
   });
+
+  test('Special case for ServiceRequestTimeline and DefaultResourceTimeline Task query', async () => {
+    const medplum = new MockClient();
+    await expect(
+      medplum.search('Task', {
+        _filter: 'based-on eq ServiceRequest/123 or focus eq ServiceRequest/123 or subject eq ServiceRequest/123',
+        _count: 10,
+      })
+    ).resolves.toEqual({ resourceType: 'Bundle', type: 'searchset', total: 0, entry: [] });
+  });
+
+  test('Other _filter searches should fail and log error', async () => {
+    const originalConsoleError = console.error;
+    console.error = jest.fn();
+
+    const medplum = new MockClient();
+    await expect(
+      medplum.search('Task', {
+        _filter: 'based-on eq ServiceRequest/123',
+        _count: 10,
+      })
+    ).rejects.toThrow();
+
+    expect(console.error).toHaveBeenLastCalledWith(
+      expect.stringContaining("The '_filter' search parameter is currently unsupported in MockClient")
+    );
+    console.error = originalConsoleError;
+  });
+
+  test('Other _filter searches should throw and log error', async () => {
+    const originalConsoleError = console.error;
+    console.error = jest.fn();
+
+    const medplum = new MockClient();
+    await expect(
+      medplum.search('Task', {
+        _filter: 'based-on eq ServiceRequest/123',
+        _count: 10,
+      })
+    ).rejects.toThrow();
+
+    expect(console.error).toHaveBeenLastCalledWith(
+      expect.stringContaining("The '_filter' search parameter is currently unsupported in MockClient")
+    );
+    console.error = originalConsoleError;
+  });
+
+  test('Unknown search parameters should throw and log error', async () => {
+    const originalConsoleError = console.error;
+    console.error = jest.fn();
+
+    const medplum = new MockClient();
+    await expect(medplum.search('FamilyMemberHistory', 'condition=foo')).rejects.toThrow();
+
+    expect(console.error).toHaveBeenLastCalledWith(
+      expect.stringContaining(
+        "Unknown search parameter: condition for resource type FamilyMemberHistory\n\nHave you tried calling 'indexSearchParameterBundle' for all search parameters?"
+      )
+    );
+    console.error = originalConsoleError;
+  });
+
+  test('Unknown resource type should throw and log error', async () => {
+    const originalConsoleError = console.error;
+    console.error = jest.fn();
+
+    const medplum = new MockClient();
+    await expect(medplum.search('Agent', 'name=New+Agent')).rejects.toThrow();
+
+    expect(console.error).toHaveBeenLastCalledWith(
+      expect.stringContaining(
+        "Unknown resource type: Agent\n\nHave you tried calling 'indexStructureDefinitionBundle' for all structure definitions?"
+      )
+    );
+    console.error = originalConsoleError;
+  });
 });
 
 describe('MockAsyncClientStorage', () => {

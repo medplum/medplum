@@ -728,7 +728,7 @@ export class MockFetchClient {
         url
       )
     ) {
-      return { resourceType: 'Bundle', type: 'searchset', entry: [] };
+      return { resourceType: 'Bundle', type: 'searchset', total: 0, entry: [] };
     }
 
     if (url.includes('fhir/R4')) {
