@@ -2794,7 +2794,14 @@
         "property": [
           {
             "code": "class",
-            "type": "code"
+            "type": "code",
+            "description": "Size category of region described by the code"
+          },
+          {
+            "code": "numeric",
+            "type": "code",
+            "uri": "http://hl7.org/fhir/concept-properties#synonym",
+            "description": "Equivalent numeric code"
           }
         ]
       }
@@ -2814,6 +2821,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DZA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "012"
               }
             ]
           },
@@ -2824,6 +2835,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "012"
               }
             ]
           },
@@ -2834,6 +2849,10 @@
               {
                 "code": "synonym",
                 "valueCode": "EGY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "818"
               }
             ]
           },
@@ -2844,6 +2863,10 @@
               {
                 "code": "synonym",
                 "valueCode": "EG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "818"
               }
             ]
           },
@@ -2854,6 +2877,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LBY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "434"
               }
             ]
           },
@@ -2864,6 +2891,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "434"
               }
             ]
           },
@@ -2874,6 +2905,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MAR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "504"
               }
             ]
           },
@@ -2884,6 +2919,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "504"
               }
             ]
           },
@@ -2894,6 +2933,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SDN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "729"
               }
             ]
           },
@@ -2904,6 +2947,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "729"
               }
             ]
           },
@@ -2914,6 +2961,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TUN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "788"
               }
             ]
           },
@@ -2924,6 +2975,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "788"
               }
             ]
           },
@@ -2934,6 +2989,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ESH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "732"
               }
             ]
           },
@@ -2944,6 +3003,10 @@
               {
                 "code": "synonym",
                 "valueCode": "EH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "732"
               }
             ]
           },
@@ -2954,6 +3017,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IOT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "086"
               }
             ]
           },
@@ -2964,6 +3031,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "086"
               }
             ]
           },
@@ -2974,6 +3045,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BDI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "108"
               }
             ]
           },
@@ -2984,6 +3059,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "108"
               }
             ]
           },
@@ -2994,6 +3073,10 @@
               {
                 "code": "synonym",
                 "valueCode": "COM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "174"
               }
             ]
           },
@@ -3004,6 +3087,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "174"
               }
             ]
           },
@@ -3014,6 +3101,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DJI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "262"
               }
             ]
           },
@@ -3024,6 +3115,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DJ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "262"
               }
             ]
           },
@@ -3034,6 +3129,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ERI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "232"
               }
             ]
           },
@@ -3044,6 +3143,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ER"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "232"
               }
             ]
           },
@@ -3054,6 +3157,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ETH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "231"
               }
             ]
           },
@@ -3064,6 +3171,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ET"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "231"
               }
             ]
           },
@@ -3074,6 +3185,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ATF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "260"
               }
             ]
           },
@@ -3084,6 +3199,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "260"
               }
             ]
           },
@@ -3094,6 +3213,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KEN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "404"
               }
             ]
           },
@@ -3104,6 +3227,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "404"
               }
             ]
           },
@@ -3114,6 +3241,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MDG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "450"
               }
             ]
           },
@@ -3124,6 +3255,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "450"
               }
             ]
           },
@@ -3134,6 +3269,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MWI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "454"
               }
             ]
           },
@@ -3144,6 +3283,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "454"
               }
             ]
           },
@@ -3154,6 +3297,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MUS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "480"
               }
             ]
           },
@@ -3164,6 +3311,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "480"
               }
             ]
           },
@@ -3174,6 +3325,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MYT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "175"
               }
             ]
           },
@@ -3184,6 +3339,10 @@
               {
                 "code": "synonym",
                 "valueCode": "YT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "175"
               }
             ]
           },
@@ -3194,6 +3353,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MOZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "508"
               }
             ]
           },
@@ -3204,6 +3367,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "508"
               }
             ]
           },
@@ -3214,6 +3381,10 @@
               {
                 "code": "synonym",
                 "valueCode": "REU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "638"
               }
             ]
           },
@@ -3224,6 +3395,10 @@
               {
                 "code": "synonym",
                 "valueCode": "RE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "638"
               }
             ]
           },
@@ -3234,6 +3409,10 @@
               {
                 "code": "synonym",
                 "valueCode": "RWA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "646"
               }
             ]
           },
@@ -3244,6 +3423,10 @@
               {
                 "code": "synonym",
                 "valueCode": "RW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "646"
               }
             ]
           },
@@ -3254,6 +3437,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SYC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "690"
               }
             ]
           },
@@ -3264,6 +3451,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "690"
               }
             ]
           },
@@ -3274,6 +3465,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SOM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "706"
               }
             ]
           },
@@ -3284,6 +3479,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "706"
               }
             ]
           },
@@ -3294,6 +3493,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SSD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "728"
               }
             ]
           },
@@ -3304,6 +3507,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "728"
               }
             ]
           },
@@ -3314,6 +3521,10 @@
               {
                 "code": "synonym",
                 "valueCode": "UGA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "800"
               }
             ]
           },
@@ -3324,6 +3535,10 @@
               {
                 "code": "synonym",
                 "valueCode": "UG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "800"
               }
             ]
           },
@@ -3334,6 +3549,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TZA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "834"
               }
             ]
           },
@@ -3344,6 +3563,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "834"
               }
             ]
           },
@@ -3354,6 +3577,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ZMB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "894"
               }
             ]
           },
@@ -3364,6 +3591,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ZM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "894"
               }
             ]
           },
@@ -3374,6 +3605,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ZWE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "716"
               }
             ]
           },
@@ -3384,6 +3619,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ZW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "716"
               }
             ]
           },
@@ -3394,6 +3633,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AGO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "024"
               }
             ]
           },
@@ -3404,6 +3647,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "024"
               }
             ]
           },
@@ -3414,6 +3661,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CMR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "120"
               }
             ]
           },
@@ -3424,6 +3675,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "120"
               }
             ]
           },
@@ -3434,6 +3689,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CAF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "140"
               }
             ]
           },
@@ -3444,6 +3703,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "140"
               }
             ]
           },
@@ -3454,6 +3717,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TCD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "148"
               }
             ]
           },
@@ -3464,6 +3731,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "148"
               }
             ]
           },
@@ -3474,6 +3745,10 @@
               {
                 "code": "synonym",
                 "valueCode": "COG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "178"
               }
             ]
           },
@@ -3484,6 +3759,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "178"
               }
             ]
           },
@@ -3494,6 +3773,10 @@
               {
                 "code": "synonym",
                 "valueCode": "COD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "180"
               }
             ]
           },
@@ -3504,6 +3787,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "180"
               }
             ]
           },
@@ -3514,6 +3801,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GNQ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "226"
               }
             ]
           },
@@ -3524,6 +3815,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GQ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "226"
               }
             ]
           },
@@ -3534,6 +3829,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GAB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "266"
               }
             ]
           },
@@ -3544,6 +3843,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "266"
               }
             ]
           },
@@ -3554,6 +3857,10 @@
               {
                 "code": "synonym",
                 "valueCode": "STP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "678"
               }
             ]
           },
@@ -3564,6 +3871,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ST"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "678"
               }
             ]
           },
@@ -3574,6 +3885,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BWA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "072"
               }
             ]
           },
@@ -3584,6 +3899,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "072"
               }
             ]
           },
@@ -3594,6 +3913,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SWZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "748"
               }
             ]
           },
@@ -3604,6 +3927,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "748"
               }
             ]
           },
@@ -3614,6 +3941,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LSO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "426"
               }
             ]
           },
@@ -3624,6 +3955,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "426"
               }
             ]
           },
@@ -3634,6 +3969,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NAM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "516"
               }
             ]
           },
@@ -3644,6 +3983,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "516"
               }
             ]
           },
@@ -3654,6 +3997,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ZAF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "710"
               }
             ]
           },
@@ -3664,6 +4011,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ZA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "710"
               }
             ]
           },
@@ -3674,6 +4025,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BEN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "204"
               }
             ]
           },
@@ -3684,6 +4039,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BJ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "204"
               }
             ]
           },
@@ -3694,6 +4053,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BFA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "854"
               }
             ]
           },
@@ -3704,6 +4067,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "854"
               }
             ]
           },
@@ -3714,6 +4081,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CPV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "132"
               }
             ]
           },
@@ -3724,6 +4095,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "132"
               }
             ]
           },
@@ -3734,6 +4109,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CIV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "384"
               }
             ]
           },
@@ -3744,6 +4123,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "384"
               }
             ]
           },
@@ -3754,6 +4137,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GMB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "270"
               }
             ]
           },
@@ -3764,6 +4151,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "270"
               }
             ]
           },
@@ -3774,6 +4165,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GHA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "288"
               }
             ]
           },
@@ -3784,6 +4179,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "288"
               }
             ]
           },
@@ -3794,6 +4193,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GIN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "324"
               }
             ]
           },
@@ -3804,6 +4207,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "324"
               }
             ]
           },
@@ -3814,6 +4221,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GNB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "624"
               }
             ]
           },
@@ -3824,6 +4235,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "624"
               }
             ]
           },
@@ -3834,6 +4249,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LBR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "430"
               }
             ]
           },
@@ -3844,6 +4263,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "430"
               }
             ]
           },
@@ -3854,6 +4277,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MLI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "466"
               }
             ]
           },
@@ -3864,6 +4291,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ML"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "466"
               }
             ]
           },
@@ -3874,6 +4305,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MRT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "478"
               }
             ]
           },
@@ -3884,6 +4319,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "478"
               }
             ]
           },
@@ -3894,6 +4333,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NER"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "562"
               }
             ]
           },
@@ -3904,6 +4347,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "562"
               }
             ]
           },
@@ -3914,6 +4361,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NGA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "566"
               }
             ]
           },
@@ -3924,6 +4375,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "566"
               }
             ]
           },
@@ -3934,6 +4389,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SHN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "654"
               }
             ]
           },
@@ -3944,6 +4403,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "654"
               }
             ]
           },
@@ -3954,6 +4417,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SEN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "686"
               }
             ]
           },
@@ -3964,6 +4431,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "686"
               }
             ]
           },
@@ -3974,6 +4445,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SLE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "694"
               }
             ]
           },
@@ -3984,6 +4459,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "694"
               }
             ]
           },
@@ -3994,6 +4473,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TGO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "768"
               }
             ]
           },
@@ -4004,6 +4487,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "768"
               }
             ]
           },
@@ -4014,6 +4501,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AIA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "660"
               }
             ]
           },
@@ -4024,6 +4515,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "660"
               }
             ]
           },
@@ -4034,6 +4529,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ATG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "028"
               }
             ]
           },
@@ -4044,6 +4543,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "028"
               }
             ]
           },
@@ -4054,6 +4557,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ABW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "533"
               }
             ]
           },
@@ -4064,6 +4571,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "533"
               }
             ]
           },
@@ -4074,6 +4585,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BHS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "044"
               }
             ]
           },
@@ -4084,6 +4599,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "044"
               }
             ]
           },
@@ -4094,6 +4613,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BRB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "052"
               }
             ]
           },
@@ -4104,6 +4627,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "052"
               }
             ]
           },
@@ -4114,6 +4641,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BES"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "535"
               }
             ]
           },
@@ -4124,6 +4655,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BQ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "535"
               }
             ]
           },
@@ -4134,6 +4669,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VGB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "092"
               }
             ]
           },
@@ -4144,6 +4683,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "092"
               }
             ]
           },
@@ -4154,6 +4697,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CYM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "136"
               }
             ]
           },
@@ -4164,6 +4711,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "136"
               }
             ]
           },
@@ -4174,6 +4725,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CUB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "192"
               }
             ]
           },
@@ -4184,6 +4739,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "192"
               }
             ]
           },
@@ -4194,6 +4753,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CUW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "531"
               }
             ]
           },
@@ -4204,6 +4767,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "531"
               }
             ]
           },
@@ -4214,6 +4781,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DMA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "212"
               }
             ]
           },
@@ -4224,6 +4795,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "212"
               }
             ]
           },
@@ -4234,6 +4809,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DOM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "214"
               }
             ]
           },
@@ -4244,6 +4823,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "214"
               }
             ]
           },
@@ -4254,6 +4837,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GRD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "308"
               }
             ]
           },
@@ -4264,6 +4851,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "308"
               }
             ]
           },
@@ -4274,6 +4865,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GLP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "312"
               }
             ]
           },
@@ -4284,6 +4879,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "312"
               }
             ]
           },
@@ -4294,6 +4893,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HTI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "332"
               }
             ]
           },
@@ -4304,6 +4907,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "332"
               }
             ]
           },
@@ -4314,6 +4921,10 @@
               {
                 "code": "synonym",
                 "valueCode": "JAM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "388"
               }
             ]
           },
@@ -4324,6 +4935,10 @@
               {
                 "code": "synonym",
                 "valueCode": "JM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "388"
               }
             ]
           },
@@ -4334,6 +4949,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MTQ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "474"
               }
             ]
           },
@@ -4344,6 +4963,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MQ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "474"
               }
             ]
           },
@@ -4354,6 +4977,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MSR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "500"
               }
             ]
           },
@@ -4364,6 +4991,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "500"
               }
             ]
           },
@@ -4374,6 +5005,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PRI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "630"
               }
             ]
           },
@@ -4384,6 +5019,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "630"
               }
             ]
           },
@@ -4394,6 +5033,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BLM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "652"
               }
             ]
           },
@@ -4404,6 +5047,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "652"
               }
             ]
           },
@@ -4414,6 +5061,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KNA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "659"
               }
             ]
           },
@@ -4424,6 +5075,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "659"
               }
             ]
           },
@@ -4434,6 +5089,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LCA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "662"
               }
             ]
           },
@@ -4444,6 +5103,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "662"
               }
             ]
           },
@@ -4454,6 +5117,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MAF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "663"
               }
             ]
           },
@@ -4464,6 +5131,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "663"
               }
             ]
           },
@@ -4474,6 +5145,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VCT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "670"
               }
             ]
           },
@@ -4484,6 +5159,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "670"
               }
             ]
           },
@@ -4494,6 +5173,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SXM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "534"
               }
             ]
           },
@@ -4504,6 +5187,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SX"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "534"
               }
             ]
           },
@@ -4514,6 +5201,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TTO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "780"
               }
             ]
           },
@@ -4524,6 +5215,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "780"
               }
             ]
           },
@@ -4534,6 +5229,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TCA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "796"
               }
             ]
           },
@@ -4544,6 +5243,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "796"
               }
             ]
           },
@@ -4554,6 +5257,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VIR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "850"
               }
             ]
           },
@@ -4564,6 +5271,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "850"
               }
             ]
           },
@@ -4574,6 +5285,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BLZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "084"
               }
             ]
           },
@@ -4584,6 +5299,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "084"
               }
             ]
           },
@@ -4594,6 +5313,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CRI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "188"
               }
             ]
           },
@@ -4604,6 +5327,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "188"
               }
             ]
           },
@@ -4614,6 +5341,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SLV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "222"
               }
             ]
           },
@@ -4624,6 +5355,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "222"
               }
             ]
           },
@@ -4634,6 +5369,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GTM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "320"
               }
             ]
           },
@@ -4644,6 +5383,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "320"
               }
             ]
           },
@@ -4654,6 +5397,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HND"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "340"
               }
             ]
           },
@@ -4664,6 +5411,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "340"
               }
             ]
           },
@@ -4674,6 +5425,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MEX"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "484"
               }
             ]
           },
@@ -4684,6 +5439,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MX"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "484"
               }
             ]
           },
@@ -4694,6 +5453,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NIC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "558"
               }
             ]
           },
@@ -4704,6 +5467,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "558"
               }
             ]
           },
@@ -4714,6 +5481,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PAN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "591"
               }
             ]
           },
@@ -4724,6 +5495,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "591"
               }
             ]
           },
@@ -4734,6 +5509,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ARG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "032"
               }
             ]
           },
@@ -4744,6 +5523,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "032"
               }
             ]
           },
@@ -4754,6 +5537,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BOL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "068"
               }
             ]
           },
@@ -4764,6 +5551,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "068"
               }
             ]
           },
@@ -4774,6 +5565,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BVT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "074"
               }
             ]
           },
@@ -4784,6 +5579,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "074"
               }
             ]
           },
@@ -4794,6 +5593,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BRA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "076"
               }
             ]
           },
@@ -4804,6 +5607,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "076"
               }
             ]
           },
@@ -4814,6 +5621,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CHL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "152"
               }
             ]
           },
@@ -4824,6 +5635,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "152"
               }
             ]
           },
@@ -4834,6 +5649,10 @@
               {
                 "code": "synonym",
                 "valueCode": "COL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "170"
               }
             ]
           },
@@ -4844,6 +5663,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "170"
               }
             ]
           },
@@ -4854,6 +5677,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ECU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "218"
               }
             ]
           },
@@ -4864,6 +5691,10 @@
               {
                 "code": "synonym",
                 "valueCode": "EC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "218"
               }
             ]
           },
@@ -4874,6 +5705,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FLK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "238"
               }
             ]
           },
@@ -4884,6 +5719,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "238"
               }
             ]
           },
@@ -4894,6 +5733,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GUF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "254"
               }
             ]
           },
@@ -4904,6 +5747,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "254"
               }
             ]
           },
@@ -4914,6 +5761,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GUY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "328"
               }
             ]
           },
@@ -4924,6 +5775,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "328"
               }
             ]
           },
@@ -4934,6 +5789,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PRY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "600"
               }
             ]
           },
@@ -4944,6 +5803,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "600"
               }
             ]
           },
@@ -4954,6 +5817,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PER"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "604"
               }
             ]
           },
@@ -4964,6 +5831,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "604"
               }
             ]
           },
@@ -4974,6 +5845,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SGS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "239"
               }
             ]
           },
@@ -4984,6 +5859,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "239"
               }
             ]
           },
@@ -4994,6 +5873,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SUR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "740"
               }
             ]
           },
@@ -5004,6 +5887,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "740"
               }
             ]
           },
@@ -5014,6 +5901,10 @@
               {
                 "code": "synonym",
                 "valueCode": "URY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "858"
               }
             ]
           },
@@ -5024,6 +5915,10 @@
               {
                 "code": "synonym",
                 "valueCode": "UY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "858"
               }
             ]
           },
@@ -5034,6 +5929,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VEN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "862"
               }
             ]
           },
@@ -5044,6 +5943,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "862"
               }
             ]
           },
@@ -5054,6 +5957,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BMU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "060"
               }
             ]
           },
@@ -5064,6 +5971,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "060"
               }
             ]
           },
@@ -5074,6 +5985,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CAN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "124"
               }
             ]
           },
@@ -5084,6 +5999,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "124"
               }
             ]
           },
@@ -5094,6 +6013,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GRL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "304"
               }
             ]
           },
@@ -5104,6 +6027,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "304"
               }
             ]
           },
@@ -5114,6 +6041,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SPM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "666"
               }
             ]
           },
@@ -5124,6 +6055,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "666"
               }
             ]
           },
@@ -5134,6 +6069,10 @@
               {
                 "code": "synonym",
                 "valueCode": "USA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "840"
               }
             ]
           },
@@ -5144,6 +6083,10 @@
               {
                 "code": "synonym",
                 "valueCode": "US"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "840"
               }
             ]
           },
@@ -5154,6 +6097,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ATA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "010"
               }
             ]
           },
@@ -5164,6 +6111,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AQ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "010"
               }
             ]
           },
@@ -5174,6 +6125,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KAZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "398"
               }
             ]
           },
@@ -5184,6 +6139,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "398"
               }
             ]
           },
@@ -5194,6 +6153,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KGZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "417"
               }
             ]
           },
@@ -5204,6 +6167,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "417"
               }
             ]
           },
@@ -5214,6 +6181,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TJK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "762"
               }
             ]
           },
@@ -5224,6 +6195,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TJ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "762"
               }
             ]
           },
@@ -5234,6 +6209,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TKM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "795"
               }
             ]
           },
@@ -5244,6 +6223,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "795"
               }
             ]
           },
@@ -5254,6 +6237,10 @@
               {
                 "code": "synonym",
                 "valueCode": "UZB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "860"
               }
             ]
           },
@@ -5264,6 +6251,10 @@
               {
                 "code": "synonym",
                 "valueCode": "UZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "860"
               }
             ]
           },
@@ -5274,6 +6265,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CHN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "156"
               }
             ]
           },
@@ -5284,6 +6279,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "156"
               }
             ]
           },
@@ -5294,6 +6293,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HKG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "344"
               }
             ]
           },
@@ -5304,6 +6307,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "344"
               }
             ]
           },
@@ -5314,6 +6321,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MAC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "446"
               }
             ]
           },
@@ -5324,6 +6335,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "446"
               }
             ]
           },
@@ -5334,6 +6349,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PRK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "408"
               }
             ]
           },
@@ -5344,6 +6363,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "408"
               }
             ]
           },
@@ -5354,6 +6377,10 @@
               {
                 "code": "synonym",
                 "valueCode": "JPN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "392"
               }
             ]
           },
@@ -5364,6 +6391,10 @@
               {
                 "code": "synonym",
                 "valueCode": "JP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "392"
               }
             ]
           },
@@ -5374,6 +6405,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MNG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "496"
               }
             ]
           },
@@ -5384,6 +6419,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "496"
               }
             ]
           },
@@ -5394,6 +6433,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KOR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "410"
               }
             ]
           },
@@ -5404,6 +6447,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "410"
               }
             ]
           },
@@ -5414,6 +6461,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BRN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "096"
               }
             ]
           },
@@ -5424,6 +6475,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "096"
               }
             ]
           },
@@ -5434,6 +6489,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KHM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "116"
               }
             ]
           },
@@ -5444,6 +6503,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "116"
               }
             ]
           },
@@ -5454,6 +6517,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IDN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "360"
               }
             ]
           },
@@ -5464,6 +6531,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ID"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "360"
               }
             ]
           },
@@ -5474,6 +6545,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LAO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "418"
               }
             ]
           },
@@ -5484,6 +6559,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "418"
               }
             ]
           },
@@ -5494,6 +6573,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MYS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "458"
               }
             ]
           },
@@ -5504,6 +6587,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "458"
               }
             ]
           },
@@ -5514,6 +6601,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MMR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "104"
               }
             ]
           },
@@ -5524,6 +6615,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "104"
               }
             ]
           },
@@ -5534,6 +6629,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PHL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "608"
               }
             ]
           },
@@ -5544,6 +6643,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "608"
               }
             ]
           },
@@ -5554,6 +6657,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SGP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "702"
               }
             ]
           },
@@ -5564,6 +6671,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "702"
               }
             ]
           },
@@ -5574,6 +6685,10 @@
               {
                 "code": "synonym",
                 "valueCode": "THA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "764"
               }
             ]
           },
@@ -5584,6 +6699,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "764"
               }
             ]
           },
@@ -5594,6 +6713,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TLS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "626"
               }
             ]
           },
@@ -5604,6 +6727,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "626"
               }
             ]
           },
@@ -5614,6 +6741,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VNM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "704"
               }
             ]
           },
@@ -5624,6 +6755,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "704"
               }
             ]
           },
@@ -5634,6 +6769,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AFG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "004"
               }
             ]
           },
@@ -5644,6 +6783,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "004"
               }
             ]
           },
@@ -5654,6 +6797,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BGD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "050"
               }
             ]
           },
@@ -5664,6 +6811,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "050"
               }
             ]
           },
@@ -5674,6 +6825,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BTN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "064"
               }
             ]
           },
@@ -5684,6 +6839,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "064"
               }
             ]
           },
@@ -5694,6 +6853,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IND"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "356"
               }
             ]
           },
@@ -5704,6 +6867,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "356"
               }
             ]
           },
@@ -5714,6 +6881,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IRN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "364"
               }
             ]
           },
@@ -5724,6 +6895,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "364"
               }
             ]
           },
@@ -5734,6 +6909,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MDV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "462"
               }
             ]
           },
@@ -5744,6 +6923,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "462"
               }
             ]
           },
@@ -5754,6 +6937,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NPL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "524"
               }
             ]
           },
@@ -5764,6 +6951,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "524"
               }
             ]
           },
@@ -5774,6 +6965,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PAK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "586"
               }
             ]
           },
@@ -5784,6 +6979,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "586"
               }
             ]
           },
@@ -5794,6 +6993,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LKA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "144"
               }
             ]
           },
@@ -5804,6 +7007,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "144"
               }
             ]
           },
@@ -5814,6 +7021,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ARM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "051"
               }
             ]
           },
@@ -5824,6 +7035,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "051"
               }
             ]
           },
@@ -5834,6 +7049,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AZE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "031"
               }
             ]
           },
@@ -5844,6 +7063,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "031"
               }
             ]
           },
@@ -5854,6 +7077,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BHR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "048"
               }
             ]
           },
@@ -5864,6 +7091,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "048"
               }
             ]
           },
@@ -5874,6 +7105,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CYP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "196"
               }
             ]
           },
@@ -5884,6 +7119,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "196"
               }
             ]
           },
@@ -5894,6 +7133,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GEO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "268"
               }
             ]
           },
@@ -5904,6 +7147,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "268"
               }
             ]
           },
@@ -5914,6 +7161,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IRQ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "368"
               }
             ]
           },
@@ -5924,6 +7175,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IQ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "368"
               }
             ]
           },
@@ -5934,6 +7189,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ISR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "376"
               }
             ]
           },
@@ -5944,6 +7203,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "376"
               }
             ]
           },
@@ -5954,6 +7217,10 @@
               {
                 "code": "synonym",
                 "valueCode": "JOR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "400"
               }
             ]
           },
@@ -5964,6 +7231,10 @@
               {
                 "code": "synonym",
                 "valueCode": "JO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "400"
               }
             ]
           },
@@ -5974,6 +7245,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KWT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "414"
               }
             ]
           },
@@ -5984,6 +7259,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "414"
               }
             ]
           },
@@ -5994,6 +7273,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LBN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "422"
               }
             ]
           },
@@ -6004,6 +7287,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "422"
               }
             ]
           },
@@ -6014,6 +7301,10 @@
               {
                 "code": "synonym",
                 "valueCode": "OMN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "512"
               }
             ]
           },
@@ -6024,6 +7315,10 @@
               {
                 "code": "synonym",
                 "valueCode": "OM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "512"
               }
             ]
           },
@@ -6034,6 +7329,10 @@
               {
                 "code": "synonym",
                 "valueCode": "QAT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "634"
               }
             ]
           },
@@ -6044,6 +7343,10 @@
               {
                 "code": "synonym",
                 "valueCode": "QA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "634"
               }
             ]
           },
@@ -6054,6 +7357,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SAU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "682"
               }
             ]
           },
@@ -6064,6 +7371,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "682"
               }
             ]
           },
@@ -6074,6 +7385,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PSE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "275"
               }
             ]
           },
@@ -6084,6 +7399,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "275"
               }
             ]
           },
@@ -6094,6 +7413,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SYR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "760"
               }
             ]
           },
@@ -6104,6 +7427,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "760"
               }
             ]
           },
@@ -6114,6 +7441,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TUR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "792"
               }
             ]
           },
@@ -6124,6 +7455,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "792"
               }
             ]
           },
@@ -6134,6 +7469,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ARE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "784"
               }
             ]
           },
@@ -6144,6 +7483,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "784"
               }
             ]
           },
@@ -6154,6 +7497,10 @@
               {
                 "code": "synonym",
                 "valueCode": "YEM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "887"
               }
             ]
           },
@@ -6164,6 +7511,10 @@
               {
                 "code": "synonym",
                 "valueCode": "YE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "887"
               }
             ]
           },
@@ -6174,6 +7525,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BLR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "112"
               }
             ]
           },
@@ -6184,6 +7539,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "112"
               }
             ]
           },
@@ -6194,6 +7553,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BGR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "100"
               }
             ]
           },
@@ -6204,6 +7567,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "100"
               }
             ]
           },
@@ -6214,6 +7581,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CZE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "203"
               }
             ]
           },
@@ -6224,6 +7595,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "203"
               }
             ]
           },
@@ -6234,6 +7609,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HUN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "348"
               }
             ]
           },
@@ -6244,6 +7623,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "348"
               }
             ]
           },
@@ -6254,6 +7637,10 @@
               {
                 "code": "synonym",
                 "valueCode": "POL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "616"
               }
             ]
           },
@@ -6264,6 +7651,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "616"
               }
             ]
           },
@@ -6274,6 +7665,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MDA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "498"
               }
             ]
           },
@@ -6284,6 +7679,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "498"
               }
             ]
           },
@@ -6294,6 +7693,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ROU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "642"
               }
             ]
           },
@@ -6304,6 +7707,10 @@
               {
                 "code": "synonym",
                 "valueCode": "RO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "642"
               }
             ]
           },
@@ -6314,6 +7721,10 @@
               {
                 "code": "synonym",
                 "valueCode": "RUS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "643"
               }
             ]
           },
@@ -6324,6 +7735,10 @@
               {
                 "code": "synonym",
                 "valueCode": "RU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "643"
               }
             ]
           },
@@ -6334,6 +7749,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SVK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "703"
               }
             ]
           },
@@ -6344,6 +7763,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "703"
               }
             ]
           },
@@ -6354,6 +7777,10 @@
               {
                 "code": "synonym",
                 "valueCode": "UKR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "804"
               }
             ]
           },
@@ -6364,6 +7791,10 @@
               {
                 "code": "synonym",
                 "valueCode": "UA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "804"
               }
             ]
           },
@@ -6374,6 +7805,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ALA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "248"
               }
             ]
           },
@@ -6384,6 +7819,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AX"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "248"
               }
             ]
           },
@@ -6394,6 +7833,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DNK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "208"
               }
             ]
           },
@@ -6404,6 +7847,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "208"
               }
             ]
           },
@@ -6414,6 +7861,10 @@
               {
                 "code": "synonym",
                 "valueCode": "EST"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "233"
               }
             ]
           },
@@ -6424,6 +7875,10 @@
               {
                 "code": "synonym",
                 "valueCode": "EE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "233"
               }
             ]
           },
@@ -6434,6 +7889,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FRO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "234"
               }
             ]
           },
@@ -6444,6 +7903,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "234"
               }
             ]
           },
@@ -6454,6 +7917,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FIN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "246"
               }
             ]
           },
@@ -6464,6 +7931,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "246"
               }
             ]
           },
@@ -6474,6 +7945,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GGY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "831"
               }
             ]
           },
@@ -6484,6 +7959,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "831"
               }
             ]
           },
@@ -6494,6 +7973,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ISL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "352"
               }
             ]
           },
@@ -6504,6 +7987,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "352"
               }
             ]
           },
@@ -6514,6 +8001,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IRL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "372"
               }
             ]
           },
@@ -6524,6 +8015,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "372"
               }
             ]
           },
@@ -6534,6 +8029,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IMN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "833"
               }
             ]
           },
@@ -6544,6 +8043,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "833"
               }
             ]
           },
@@ -6554,6 +8057,10 @@
               {
                 "code": "synonym",
                 "valueCode": "JEY"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "832"
               }
             ]
           },
@@ -6564,6 +8071,10 @@
               {
                 "code": "synonym",
                 "valueCode": "JE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "832"
               }
             ]
           },
@@ -6574,6 +8085,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LVA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "428"
               }
             ]
           },
@@ -6584,6 +8099,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "428"
               }
             ]
           },
@@ -6594,6 +8113,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LTU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "440"
               }
             ]
           },
@@ -6604,6 +8127,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "440"
               }
             ]
           },
@@ -6614,6 +8141,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NOR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "578"
               }
             ]
           },
@@ -6624,6 +8155,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "578"
               }
             ]
           },
@@ -6634,6 +8169,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SJM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "744"
               }
             ]
           },
@@ -6644,6 +8183,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SJ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "744"
               }
             ]
           },
@@ -6654,6 +8197,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SWE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "752"
               }
             ]
           },
@@ -6664,6 +8211,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "752"
               }
             ]
           },
@@ -6674,6 +8225,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GBR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "826"
               }
             ]
           },
@@ -6684,6 +8239,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "826"
               }
             ]
           },
@@ -6694,6 +8253,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ALB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "008"
               }
             ]
           },
@@ -6704,6 +8267,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "008"
               }
             ]
           },
@@ -6714,6 +8281,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AND"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "020"
               }
             ]
           },
@@ -6724,6 +8295,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "020"
               }
             ]
           },
@@ -6734,6 +8309,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BIH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "070"
               }
             ]
           },
@@ -6744,6 +8323,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "070"
               }
             ]
           },
@@ -6754,6 +8337,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HRV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "191"
               }
             ]
           },
@@ -6764,6 +8351,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "191"
               }
             ]
           },
@@ -6774,6 +8365,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GIB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "292"
               }
             ]
           },
@@ -6784,6 +8379,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "292"
               }
             ]
           },
@@ -6794,6 +8393,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GRC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "300"
               }
             ]
           },
@@ -6804,6 +8407,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "300"
               }
             ]
           },
@@ -6814,6 +8421,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VAT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "336"
               }
             ]
           },
@@ -6824,6 +8435,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "336"
               }
             ]
           },
@@ -6834,6 +8449,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ITA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "380"
               }
             ]
           },
@@ -6844,6 +8463,10 @@
               {
                 "code": "synonym",
                 "valueCode": "IT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "380"
               }
             ]
           },
@@ -6854,6 +8477,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MLT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "470"
               }
             ]
           },
@@ -6864,6 +8491,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "470"
               }
             ]
           },
@@ -6874,6 +8505,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MNE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "499"
               }
             ]
           },
@@ -6884,6 +8519,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ME"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "499"
               }
             ]
           },
@@ -6894,6 +8533,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MKD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "807"
               }
             ]
           },
@@ -6904,6 +8547,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "807"
               }
             ]
           },
@@ -6914,6 +8561,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PRT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "620"
               }
             ]
           },
@@ -6924,6 +8575,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "620"
               }
             ]
           },
@@ -6934,6 +8589,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SMR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "674"
               }
             ]
           },
@@ -6944,6 +8603,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "674"
               }
             ]
           },
@@ -6954,6 +8617,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SRB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "688"
               }
             ]
           },
@@ -6964,6 +8631,10 @@
               {
                 "code": "synonym",
                 "valueCode": "RS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "688"
               }
             ]
           },
@@ -6974,6 +8645,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SVN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "705"
               }
             ]
           },
@@ -6984,6 +8659,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "705"
               }
             ]
           },
@@ -6994,6 +8673,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ESP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "724"
               }
             ]
           },
@@ -7004,6 +8687,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ES"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "724"
               }
             ]
           },
@@ -7014,6 +8701,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AUT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "040"
               }
             ]
           },
@@ -7024,6 +8715,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "040"
               }
             ]
           },
@@ -7034,6 +8729,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BEL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "056"
               }
             ]
           },
@@ -7044,6 +8743,10 @@
               {
                 "code": "synonym",
                 "valueCode": "BE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "056"
               }
             ]
           },
@@ -7054,6 +8757,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FRA"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "250"
               }
             ]
           },
@@ -7064,6 +8771,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "250"
               }
             ]
           },
@@ -7074,6 +8785,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DEU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "276"
               }
             ]
           },
@@ -7084,6 +8799,10 @@
               {
                 "code": "synonym",
                 "valueCode": "DE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "276"
               }
             ]
           },
@@ -7094,6 +8813,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LIE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "438"
               }
             ]
           },
@@ -7104,6 +8827,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "438"
               }
             ]
           },
@@ -7114,6 +8841,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LUX"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "442"
               }
             ]
           },
@@ -7124,6 +8855,10 @@
               {
                 "code": "synonym",
                 "valueCode": "LU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "442"
               }
             ]
           },
@@ -7134,6 +8869,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MCO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "492"
               }
             ]
           },
@@ -7144,6 +8883,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "492"
               }
             ]
           },
@@ -7154,6 +8897,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NLD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "528"
               }
             ]
           },
@@ -7164,6 +8911,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "528"
               }
             ]
           },
@@ -7174,6 +8925,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CHE"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "756"
               }
             ]
           },
@@ -7184,6 +8939,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "756"
               }
             ]
           },
@@ -7194,6 +8953,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AUS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "036"
               }
             ]
           },
@@ -7204,6 +8967,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "036"
               }
             ]
           },
@@ -7214,6 +8981,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CXR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "162"
               }
             ]
           },
@@ -7224,6 +8995,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CX"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "162"
               }
             ]
           },
@@ -7234,6 +9009,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CCK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "166"
               }
             ]
           },
@@ -7244,6 +9023,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "166"
               }
             ]
           },
@@ -7254,6 +9037,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HMD"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "334"
               }
             ]
           },
@@ -7264,6 +9051,10 @@
               {
                 "code": "synonym",
                 "valueCode": "HM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "334"
               }
             ]
           },
@@ -7274,6 +9065,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NZL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "554"
               }
             ]
           },
@@ -7284,6 +9079,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NZ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "554"
               }
             ]
           },
@@ -7294,6 +9093,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NFK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "574"
               }
             ]
           },
@@ -7304,6 +9107,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "574"
               }
             ]
           },
@@ -7314,6 +9121,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FJI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "242"
               }
             ]
           },
@@ -7324,6 +9135,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FJ"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "242"
               }
             ]
           },
@@ -7334,6 +9149,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NCL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "540"
               }
             ]
           },
@@ -7344,6 +9163,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NC"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "540"
               }
             ]
           },
@@ -7354,6 +9177,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PNG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "598"
               }
             ]
           },
@@ -7364,6 +9191,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PG"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "598"
               }
             ]
           },
@@ -7374,6 +9205,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SLB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "090"
               }
             ]
           },
@@ -7384,6 +9219,10 @@
               {
                 "code": "synonym",
                 "valueCode": "SB"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "090"
               }
             ]
           },
@@ -7394,6 +9233,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VUT"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "548"
               }
             ]
           },
@@ -7404,6 +9247,10 @@
               {
                 "code": "synonym",
                 "valueCode": "VU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "548"
               }
             ]
           },
@@ -7414,6 +9261,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GUM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "316"
               }
             ]
           },
@@ -7424,6 +9275,10 @@
               {
                 "code": "synonym",
                 "valueCode": "GU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "316"
               }
             ]
           },
@@ -7434,6 +9289,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KIR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "296"
               }
             ]
           },
@@ -7444,6 +9303,10 @@
               {
                 "code": "synonym",
                 "valueCode": "KI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "296"
               }
             ]
           },
@@ -7454,6 +9317,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MHL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "584"
               }
             ]
           },
@@ -7464,6 +9331,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MH"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "584"
               }
             ]
           },
@@ -7474,6 +9345,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FSM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "583"
               }
             ]
           },
@@ -7484,6 +9359,10 @@
               {
                 "code": "synonym",
                 "valueCode": "FM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "583"
               }
             ]
           },
@@ -7494,6 +9373,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NRU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "520"
               }
             ]
           },
@@ -7504,6 +9387,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NR"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "520"
               }
             ]
           },
@@ -7514,6 +9401,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MNP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "580"
               }
             ]
           },
@@ -7524,6 +9415,10 @@
               {
                 "code": "synonym",
                 "valueCode": "MP"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "580"
               }
             ]
           },
@@ -7534,6 +9429,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PLW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "585"
               }
             ]
           },
@@ -7544,6 +9443,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PW"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "585"
               }
             ]
           },
@@ -7554,6 +9457,10 @@
               {
                 "code": "synonym",
                 "valueCode": "UMI"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "581"
               }
             ]
           },
@@ -7564,6 +9471,10 @@
               {
                 "code": "synonym",
                 "valueCode": "UM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "581"
               }
             ]
           },
@@ -7574,6 +9485,10 @@
               {
                 "code": "synonym",
                 "valueCode": "ASM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "016"
               }
             ]
           },
@@ -7584,6 +9499,10 @@
               {
                 "code": "synonym",
                 "valueCode": "AS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "016"
               }
             ]
           },
@@ -7594,6 +9513,10 @@
               {
                 "code": "synonym",
                 "valueCode": "COK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "184"
               }
             ]
           },
@@ -7604,6 +9527,10 @@
               {
                 "code": "synonym",
                 "valueCode": "CK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "184"
               }
             ]
           },
@@ -7614,6 +9541,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PYF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "258"
               }
             ]
           },
@@ -7624,6 +9555,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "258"
               }
             ]
           },
@@ -7634,6 +9569,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NIU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "570"
               }
             ]
           },
@@ -7644,6 +9583,10 @@
               {
                 "code": "synonym",
                 "valueCode": "NU"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "570"
               }
             ]
           },
@@ -7654,6 +9597,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PCN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "612"
               }
             ]
           },
@@ -7664,6 +9611,10 @@
               {
                 "code": "synonym",
                 "valueCode": "PN"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "612"
               }
             ]
           },
@@ -7674,6 +9625,10 @@
               {
                 "code": "synonym",
                 "valueCode": "WSM"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "882"
               }
             ]
           },
@@ -7684,6 +9639,10 @@
               {
                 "code": "synonym",
                 "valueCode": "WS"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "882"
               }
             ]
           },
@@ -7694,6 +9653,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TKL"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "772"
               }
             ]
           },
@@ -7704,6 +9667,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TK"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "772"
               }
             ]
           },
@@ -7714,6 +9681,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TON"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "776"
               }
             ]
           },
@@ -7724,6 +9695,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TO"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "776"
               }
             ]
           },
@@ -7734,6 +9709,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TUV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "798"
               }
             ]
           },
@@ -7744,6 +9723,10 @@
               {
                 "code": "synonym",
                 "valueCode": "TV"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "798"
               }
             ]
           },
@@ -7754,6 +9737,10 @@
               {
                 "code": "synonym",
                 "valueCode": "WLF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "876"
               }
             ]
           },
@@ -7764,6 +9751,10 @@
               {
                 "code": "synonym",
                 "valueCode": "WF"
+              },
+              {
+                "code": "numeric",
+                "valueCode": "876"
               }
             ]
           }

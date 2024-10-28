@@ -120,7 +120,19 @@ async function generateCountryCodes(): Promise<CodeSystem[]> {
             url: 'http://unstats.un.org/unsd/methods/m49/m49.htm',
             content: 'complete',
             concept: Object.values(m49Codes),
-            property: [{ code: 'class', type: 'code' }],
+            property: [
+              {
+                code: 'class',
+                type: 'code',
+                description: 'Size category of region described by the code',
+              },
+              {
+                code: 'numeric',
+                type: 'code',
+                uri: 'http://hl7.org/fhir/concept-properties#synonym',
+                description: 'Equivalent numeric code',
+              },
+            ],
           },
           {
             resourceType: 'CodeSystem',
@@ -187,8 +199,22 @@ function parseCountryCodeRow(
     };
   }
   m49Codes[m49] = { code: m49, display: country, property: [{ code: 'class', valueCode: 'country' }] };
-  isoCodes[iso2] = { code: iso2, display: country, property: [{ code: 'synonym', valueCode: iso3 }] };
-  isoCodes[iso3] = { code: iso3, display: country, property: [{ code: 'synonym', valueCode: iso2 }] };
+  isoCodes[iso2] = {
+    code: iso2,
+    display: country,
+    property: [
+      { code: 'synonym', valueCode: iso3 },
+      { code: 'numeric', valueCode: m49 },
+    ],
+  };
+  isoCodes[iso3] = {
+    code: iso3,
+    display: country,
+    property: [
+      { code: 'synonym', valueCode: iso2 },
+      { code: 'numeric', valueCode: m49 },
+    ],
+  };
 }
 
 async function generateCurrencyCodes(): Promise<CodeSystem> {
