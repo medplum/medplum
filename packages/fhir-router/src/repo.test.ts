@@ -114,17 +114,6 @@ describe('MemoryRepository', () => {
     expect(emptyResource).toBeUndefined();
   });
 
-  test('Sort unknown search parameter', async () => {
-    for (let i = 0; i < 10; i++) {
-      await repo.createResource<Patient>({ resourceType: 'Patient' });
-    }
-
-    // Mock repository silently ignores unknown search parameters
-    // This is different than the real server environment, which will throw an error
-    const bundle = await repo.search({ resourceType: 'Patient', sortRules: [{ code: 'xyz' }] });
-    expect(bundle.entry).toBeDefined();
-  });
-
   test('clears all resources', async () => {
     repo.clear();
 
@@ -151,6 +140,26 @@ describe('MemoryRepository', () => {
     const resourcesListAfter = await Promise.all(resourceTypes.map((rt) => repo.searchResources({ resourceType: rt })));
     const actualResourceCountAfter = resourcesListAfter.reduce((count, resources) => (count += resources.length), 0);
     expect(actualResourceCountAfter).toBe(0);
+  });
+
+  test('Searching with unknown search parameters', async () => {
+    await expect(repo.search(parseSearchRequest('Patient?condition=bugbite'))).rejects.toThrow(
+      new OperationOutcomeError(validationError('Unknown search parameter: condition for resource type Patient'))
+    );
+
+    const originalConsoleError = console.error;
+    console.error = jest.fn();
+    const noStrict = new MemoryRepository({ strictMode: false });
+    await expect(noStrict.search(parseSearchRequest('Patient?condition=bugbite'))).resolves.toEqual({
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [],
+      total: 0,
+    });
+    expect(console.error).toHaveBeenLastCalledWith(
+      new OperationOutcomeError(validationError('Unknown search parameter: condition for resource type Patient'))
+    );
+    console.error = originalConsoleError;
   });
 
   describe('searchByReference', () => {
