@@ -71,7 +71,23 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
       res.contentType(ContentType.FHIR_JSON);
     }
 
-    return res.send(stringify(data, req.query._pretty === 'true'));
+    let legacyFhirJsonResponseFormat: boolean | undefined;
+    try {
+      const ctx = getAuthenticatedContext();
+      legacyFhirJsonResponseFormat = ctx.project.systemSetting?.find(
+        (s) => s.name === 'legacyFhirJsonResponseFormat'
+      )?.valueBoolean;
+    } catch (_err) {
+      // Ignore errors
+    }
+
+    const pretty = req.query._pretty === 'true';
+
+    if (legacyFhirJsonResponseFormat) {
+      return res.send(JSON.stringify(data, undefined, pretty ? 2 : undefined));
+    } else {
+      return res.send(stringify(data, pretty));
+    }
   };
   next();
 });
