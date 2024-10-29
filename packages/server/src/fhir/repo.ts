@@ -1306,7 +1306,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (resource.meta?.accounts) {
       for (const account of resource.meta.accounts) {
-        const id = resolveId(resource.meta.account);
+        const id = resolveId(account);
         if (!account.reference?.startsWith('Project/') && id && validator.isUUID(id)) {
           compartments.add(account.reference as string);
         }
