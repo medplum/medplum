@@ -10,9 +10,10 @@ global:
   cloudProvider: gcp
 
 image:
-  repository: medplum/medplum-server
+  # repository: medplum/medplum-server
+  repository: us-west1-docker.pkg.dev/medplum-zencore/medplum-repo/medplum-server
   pullPolicy: IfNotPresent
-  tag: latest
+  tag: test3
 
 env:
   - name: POSTGRES_HOST
@@ -49,29 +50,22 @@ serviceAccount:
 
 service:
   type: ClusterIP
-  port: 5000
-  
-extraAnnotations:
-  # cloud.google.com/neg: '{"ingress": true}'
-  # cloud.google.com/backend-config: '{"ports": {"5000":"medplum-backend-config"}}'
+  port: 8103
 
 ingress:
   enabled: true
   annotations:
     kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"ports": {"8103":"medplum-backend-config"}}'
   path: /
   pathType: Prefix
   tls: false
 
   backendConfig:
     healthCheck:
-      checkIntervalSec: 15
-      healthyThreshold: 2
-      port: 5000
+      port: 8103
       requestPath: /healthcheck
-      timeoutSec: 15
-      type: HTTP
-      unhealthyThreshold: 2
 
   frontendConfig: 
     redirectToHttps:
@@ -84,11 +78,16 @@ ingress:
 livenessProbe:
   httpGet:
     path: /healthcheck
-    port: http
+    port: 8103
 readinessProbe:
   httpGet:
     path: /healthcheck
-    port: http
+    port: 8103
+resources:
+  limits:
+    memory: "512Mi"
+  requests:
+    memory: "256Mi"
 
 autoscaling:
   enabled: false

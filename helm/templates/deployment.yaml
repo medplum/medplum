@@ -37,6 +37,12 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - "node"
+            - "--require"
+            - "./packages/server/dist/otel/instrumentation.js"
+            - "packages/server/dist/index.js"
+            - "gcp"
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
