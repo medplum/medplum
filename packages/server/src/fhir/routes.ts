@@ -78,7 +78,7 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
         (s) => s.name === 'legacyFhirJsonResponseFormat'
       )?.valueBoolean;
     } catch (_err) {
-      // Ignore errors
+      // Ignore errors since unauthenticated requests also use this middleware
     }
 
     const pretty = req.query._pretty === 'true';
