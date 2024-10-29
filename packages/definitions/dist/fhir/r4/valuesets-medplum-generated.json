@@ -9828,42 +9828,12 @@
             ]
           },
           {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
             "code": "AOA",
             "display": "Kwanza",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "973"
-              }
-            ]
-          },
-          {
-            "code": "XCD",
-            "display": "East Caribbean Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "951"
-              }
-            ]
-          },
-          {
-            "code": "",
-            "display": "No universal currency",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": ""
               }
             ]
           },
@@ -9914,16 +9884,6 @@
               {
                 "code": "numeric",
                 "valueCode": "036"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -9984,16 +9944,6 @@
               {
                 "code": "numeric",
                 "valueCode": "933"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -10068,16 +10018,6 @@
             ]
           },
           {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
             "code": "BAM",
             "display": "Convertible Mark",
             "property": [
@@ -10118,16 +10058,6 @@
             ]
           },
           {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
             "code": "BND",
             "display": "Brunei Dollar",
             "property": [
@@ -10144,16 +10074,6 @@
               {
                 "code": "numeric",
                 "valueCode": "975"
-              }
-            ]
-          },
-          {
-            "code": "XOF",
-            "display": "CFA Franc BCEAO",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "952"
               }
             ]
           },
@@ -10218,26 +10138,6 @@
             ]
           },
           {
-            "code": "XAF",
-            "display": "CFA Franc BEAC",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "950"
-              }
-            ]
-          },
-          {
-            "code": "XAF",
-            "display": "CFA Franc BEAC",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "950"
-              }
-            ]
-          },
-          {
             "code": "CLP",
             "display": "Chilean Peso",
             "property": [
@@ -10264,26 +10164,6 @@
               {
                 "code": "numeric",
                 "valueCode": "156"
-              }
-            ]
-          },
-          {
-            "code": "AUD",
-            "display": "Australian Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "036"
-              }
-            ]
-          },
-          {
-            "code": "AUD",
-            "display": "Australian Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "036"
               }
             ]
           },
@@ -10328,16 +10208,6 @@
             ]
           },
           {
-            "code": "XAF",
-            "display": "CFA Franc BEAC",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "950"
-              }
-            ]
-          },
-          {
             "code": "NZD",
             "display": "New Zealand Dollar",
             "property": [
@@ -10354,26 +10224,6 @@
               {
                 "code": "numeric",
                 "valueCode": "188"
-              }
-            ]
-          },
-          {
-            "code": "XOF",
-            "display": "CFA Franc BCEAO",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "952"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -10408,16 +10258,6 @@
             ]
           },
           {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
             "code": "CZK",
             "display": "Czech Koruna",
             "property": [
@@ -10448,32 +10288,12 @@
             ]
           },
           {
-            "code": "XCD",
-            "display": "East Caribbean Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "951"
-              }
-            ]
-          },
-          {
             "code": "DOP",
             "display": "Dominican Peso",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "214"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
               }
             ]
           },
@@ -10498,42 +10318,12 @@
             ]
           },
           {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
-            "code": "XAF",
-            "display": "CFA Franc BEAC",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "950"
-              }
-            ]
-          },
-          {
             "code": "ERN",
             "display": "Nakfa",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "232"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -10558,32 +10348,12 @@
             ]
           },
           {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
             "code": "FKP",
             "display": "Falkland Islands Pound",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "238"
-              }
-            ]
-          },
-          {
-            "code": "DKK",
-            "display": "Danish Krone",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "208"
               }
             ]
           },
@@ -10598,62 +10368,12 @@
             ]
           },
           {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
             "code": "XPF",
             "display": "CFP Franc",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "953"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "XAF",
-            "display": "CFA Franc BEAC",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "950"
               }
             ]
           },
@@ -10678,16 +10398,6 @@
             ]
           },
           {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
             "code": "GHS",
             "display": "Ghana Cedi",
             "property": [
@@ -10704,56 +10414,6 @@
               {
                 "code": "numeric",
                 "valueCode": "292"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "DKK",
-            "display": "Danish Krone",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "208"
-              }
-            ]
-          },
-          {
-            "code": "XCD",
-            "display": "East Caribbean Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "951"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
               }
             ]
           },
@@ -10788,16 +10448,6 @@
             ]
           },
           {
-            "code": "XOF",
-            "display": "CFA Franc BCEAO",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "952"
-              }
-            ]
-          },
-          {
             "code": "GYD",
             "display": "Guyana Dollar",
             "property": [
@@ -10814,36 +10464,6 @@
               {
                 "code": "numeric",
                 "valueCode": "332"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
-            "code": "AUD",
-            "display": "Australian Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "036"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -10888,16 +10508,6 @@
             ]
           },
           {
-            "code": "INR",
-            "display": "Indian Rupee",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "356"
-              }
-            ]
-          },
-          {
             "code": "IDR",
             "display": "Rupiah",
             "property": [
@@ -10938,42 +10548,12 @@
             ]
           },
           {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "GBP",
-            "display": "Pound Sterling",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "826"
-              }
-            ]
-          },
-          {
             "code": "ILS",
             "display": "New Israeli Sheqel",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "376"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -10994,16 +10574,6 @@
               {
                 "code": "numeric",
                 "valueCode": "392"
-              }
-            ]
-          },
-          {
-            "code": "GBP",
-            "display": "Pound Sterling",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "826"
               }
             ]
           },
@@ -11034,16 +10604,6 @@
               {
                 "code": "numeric",
                 "valueCode": "404"
-              }
-            ]
-          },
-          {
-            "code": "AUD",
-            "display": "Australian Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "036"
               }
             ]
           },
@@ -11094,16 +10654,6 @@
               {
                 "code": "numeric",
                 "valueCode": "418"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -11168,26 +10718,6 @@
             ]
           },
           {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
             "code": "MOP",
             "display": "Pataca",
             "property": [
@@ -11248,46 +10778,6 @@
             ]
           },
           {
-            "code": "XOF",
-            "display": "CFA Franc BCEAO",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "952"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
             "code": "MRU",
             "display": "Ouguiya",
             "property": [
@@ -11304,16 +10794,6 @@
               {
                 "code": "numeric",
                 "valueCode": "480"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -11348,16 +10828,6 @@
             ]
           },
           {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
             "code": "MDL",
             "display": "Moldovan Leu",
             "property": [
@@ -11368,42 +10838,12 @@
             ]
           },
           {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
             "code": "MNT",
             "display": "Tugrik",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "496"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "XCD",
-            "display": "East Caribbean Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "951"
               }
             ]
           },
@@ -11448,62 +10888,12 @@
             ]
           },
           {
-            "code": "ZAR",
-            "display": "Rand",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "710"
-              }
-            ]
-          },
-          {
-            "code": "AUD",
-            "display": "Australian Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "036"
-              }
-            ]
-          },
-          {
             "code": "NPR",
             "display": "Nepalese Rupee",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "524"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "XPF",
-            "display": "CFP Franc",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "953"
-              }
-            ]
-          },
-          {
-            "code": "NZD",
-            "display": "New Zealand Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "554"
               }
             ]
           },
@@ -11518,62 +10908,12 @@
             ]
           },
           {
-            "code": "XOF",
-            "display": "CFA Franc BCEAO",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "952"
-              }
-            ]
-          },
-          {
             "code": "NGN",
             "display": "Naira",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "566"
-              }
-            ]
-          },
-          {
-            "code": "NZD",
-            "display": "New Zealand Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "554"
-              }
-            ]
-          },
-          {
-            "code": "AUD",
-            "display": "Australian Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "036"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
-            "code": "NOK",
-            "display": "Norwegian Krone",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "578"
               }
             ]
           },
@@ -11598,42 +10938,12 @@
             ]
           },
           {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
-            "code": "",
-            "display": "No universal currency",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": ""
-              }
-            ]
-          },
-          {
             "code": "PAB",
             "display": "Balboa",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "590"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
               }
             ]
           },
@@ -11678,16 +10988,6 @@
             ]
           },
           {
-            "code": "NZD",
-            "display": "New Zealand Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "554"
-              }
-            ]
-          },
-          {
             "code": "PLN",
             "display": "Zloty",
             "property": [
@@ -11698,42 +10998,12 @@
             ]
           },
           {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
             "code": "QAR",
             "display": "Qatari Rial",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "634"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -11768,16 +11038,6 @@
             ]
           },
           {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
             "code": "SHP",
             "display": "Saint Helena Pound",
             "property": [
@@ -11788,72 +11048,12 @@
             ]
           },
           {
-            "code": "XCD",
-            "display": "East Caribbean Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "951"
-              }
-            ]
-          },
-          {
-            "code": "XCD",
-            "display": "East Caribbean Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "951"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "XCD",
-            "display": "East Caribbean Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "951"
-              }
-            ]
-          },
-          {
             "code": "WST",
             "display": "Tala",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "882"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -11874,16 +11074,6 @@
               {
                 "code": "numeric",
                 "valueCode": "682"
-              }
-            ]
-          },
-          {
-            "code": "XOF",
-            "display": "CFA Franc BCEAO",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "952"
               }
             ]
           },
@@ -11928,42 +11118,12 @@
             ]
           },
           {
-            "code": "ANG",
-            "display": "Netherlands Antillean Guilder",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "532"
-              }
-            ]
-          },
-          {
             "code": "XSU",
             "display": "Sucre",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "994"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -11988,42 +11148,12 @@
             ]
           },
           {
-            "code": "ZAR",
-            "display": "Rand",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "710"
-              }
-            ]
-          },
-          {
-            "code": "",
-            "display": "No universal currency",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": ""
-              }
-            ]
-          },
-          {
             "code": "SSP",
             "display": "South Sudanese Pound",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "728"
-              }
-            ]
-          },
-          {
-            "code": "EUR",
-            "display": "Euro",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "978"
               }
             ]
           },
@@ -12058,32 +11188,12 @@
             ]
           },
           {
-            "code": "NOK",
-            "display": "Norwegian Krone",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "578"
-              }
-            ]
-          },
-          {
             "code": "SEK",
             "display": "Swedish Krona",
             "property": [
               {
                 "code": "numeric",
                 "valueCode": "752"
-              }
-            ]
-          },
-          {
-            "code": "CHF",
-            "display": "Swiss Franc",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "756"
               }
             ]
           },
@@ -12158,36 +11268,6 @@
             ]
           },
           {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
-            "code": "XOF",
-            "display": "CFA Franc BCEAO",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "952"
-              }
-            ]
-          },
-          {
-            "code": "NZD",
-            "display": "New Zealand Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "554"
-              }
-            ]
-          },
-          {
             "code": "TOP",
             "display": "Pa’anga",
             "property": [
@@ -12238,26 +11318,6 @@
             ]
           },
           {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
-            "code": "AUD",
-            "display": "Australian Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "036"
-              }
-            ]
-          },
-          {
             "code": "UGX",
             "display": "Uganda Shilling",
             "property": [
@@ -12284,36 +11344,6 @@
               {
                 "code": "numeric",
                 "valueCode": "784"
-              }
-            ]
-          },
-          {
-            "code": "GBP",
-            "display": "Pound Sterling",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "826"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
               }
             ]
           },
@@ -12404,46 +11434,6 @@
               {
                 "code": "numeric",
                 "valueCode": "704"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
-            "code": "USD",
-            "display": "US Dollar",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "840"
-              }
-            ]
-          },
-          {
-            "code": "XPF",
-            "display": "CFP Franc",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "953"
-              }
-            ]
-          },
-          {
-            "code": "MAD",
-            "display": "Moroccan Dirham",
-            "property": [
-              {
-                "code": "numeric",
-                "valueCode": "504"
               }
             ]
           },

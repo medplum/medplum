@@ -218,7 +218,7 @@ function parseCountryCodeRow(
 }
 
 async function generateCurrencyCodes(): Promise<CodeSystem> {
-  const isoCodes: CodeSystemConcept[] = [];
+  const isoCodes: Record<string, CodeSystemConcept> = Object.create(null);
 
   const path = resolve(__dirname, 'data/iso-4217-list-one.csv');
   return new Promise((resolve, reject) => {
@@ -231,7 +231,7 @@ async function generateCurrencyCodes(): Promise<CodeSystem> {
           status: 'active',
           url: 'urn:iso:std:iso:4217',
           content: 'complete',
-          concept: isoCodes,
+          concept: Object.values(isoCodes),
           property: [
             {
               code: 'numeric',
@@ -246,12 +246,14 @@ async function generateCurrencyCodes(): Promise<CodeSystem> {
   });
 }
 
-function parseCurrencyCodeRow(row: any, isoCodes: CodeSystemConcept[]): void {
+function parseCurrencyCodeRow(row: any, isoCodes: Record<string, CodeSystemConcept>): void {
   const currency = row['Currency'];
   const alpha = row['Alphabetic Code'];
   const num = row['Numeric Code'];
 
-  isoCodes.push({ code: alpha, display: currency, property: [{ code: 'numeric', valueCode: num }] });
+  if (alpha) {
+    isoCodes[alpha] = { code: alpha, display: currency, property: [{ code: 'numeric', valueCode: num }] };
+  }
 }
 
 async function main(): Promise<void> {

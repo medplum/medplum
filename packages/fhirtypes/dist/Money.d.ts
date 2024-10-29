@@ -34,24 +34,17 @@ export interface Money {
   /**
    * ISO 4217 Currency Code.
    */
-  currency?: 'AFN' | 'EUR' | 'ALL' | 'DZD' | 'USD' | 'EUR' | 'AOA' | 'XCD' | 'XCD' | 'ARS' | 'AMD' | 'AWG' | 'AUD' |
-      'EUR' | 'AZN' | 'BSD' | 'BHD' | 'BDT' | 'BBD' | 'BYN' | 'EUR' | 'BZD' | 'XOF' | 'BMD' | 'INR' | 'BTN' | 'BOB' | 'BOV'
-      | 'USD' | 'BAM' | 'BWP' | 'NOK' | 'BRL' | 'USD' | 'BND' | 'BGN' | 'XOF' | 'BIF' | 'CVE' | 'KHR' | 'XAF' | 'CAD' |
-      'KYD' | 'XAF' | 'XAF' | 'CLP' | 'CLF' | 'CNY' | 'AUD' | 'AUD' | 'COP' | 'COU' | 'KMF' | 'CDF' | 'XAF' | 'NZD' | 'CRC'
-      | 'XOF' | 'EUR' | 'CUP' | 'CUC' | 'ANG' | 'EUR' | 'CZK' | 'DKK' | 'DJF' | 'XCD' | 'DOP' | 'USD' | 'EGP' | 'SVC' |
-      'USD' | 'XAF' | 'ERN' | 'EUR' | 'SZL' | 'ETB' | 'EUR' | 'FKP' | 'DKK' | 'FJD' | 'EUR' | 'EUR' | 'EUR' | 'XPF' | 'EUR'
-      | 'XAF' | 'GMD' | 'GEL' | 'EUR' | 'GHS' | 'GIP' | 'EUR' | 'DKK' | 'XCD' | 'EUR' | 'USD' | 'GTQ' | 'GBP' | 'GNF' |
-      'XOF' | 'GYD' | 'HTG' | 'USD' | 'AUD' | 'EUR' | 'HNL' | 'HKD' | 'HUF' | 'ISK' | 'INR' | 'IDR' | 'XDR' | 'IRR' | 'IQD'
-      | 'EUR' | 'GBP' | 'ILS' | 'EUR' | 'JMD' | 'JPY' | 'GBP' | 'JOD' | 'KZT' | 'KES' | 'AUD' | 'KPW' | 'KRW' | 'KWD' |
-      'KGS' | 'LAK' | 'EUR' | 'LBP' | 'LSL' | 'ZAR' | 'LRD' | 'LYD' | 'CHF' | 'EUR' | 'EUR' | 'MOP' | 'MKD' | 'MGA' | 'MWK'
-      | 'MYR' | 'MVR' | 'XOF' | 'EUR' | 'USD' | 'EUR' | 'MRU' | 'MUR' | 'EUR' | 'XUA' | 'MXN' | 'MXV' | 'USD' | 'MDL' |
-      'EUR' | 'MNT' | 'EUR' | 'XCD' | 'MAD' | 'MZN' | 'MMK' | 'NAD' | 'ZAR' | 'AUD' | 'NPR' | 'EUR' | 'XPF' | 'NZD' | 'NIO'
-      | 'XOF' | 'NGN' | 'NZD' | 'AUD' | 'USD' | 'NOK' | 'OMR' | 'PKR' | 'USD' | 'PAB' | 'USD' | 'PGK' | 'PYG' | 'PEN' |
-      'PHP' | 'NZD' | 'PLN' | 'EUR' | 'USD' | 'QAR' | 'EUR' | 'RON' | 'RUB' | 'RWF' | 'EUR' | 'SHP' | 'XCD' | 'XCD' | 'EUR'
-      | 'EUR' | 'XCD' | 'WST' | 'EUR' | 'STN' | 'SAR' | 'XOF' | 'RSD' | 'SCR' | 'SLE' | 'SGD' | 'ANG' | 'XSU' | 'EUR' |
-      'EUR' | 'SBD' | 'SOS' | 'ZAR' | 'SSP' | 'EUR' | 'LKR' | 'SDG' | 'SRD' | 'NOK' | 'SEK' | 'CHF' | 'CHE' | 'CHW' | 'SYP'
-      | 'TWD' | 'TJS' | 'TZS' | 'THB' | 'USD' | 'XOF' | 'NZD' | 'TOP' | 'TTD' | 'TND' | 'TRY' | 'TMT' | 'USD' | 'AUD' |
-      'UGX' | 'UAH' | 'AED' | 'GBP' | 'USD' | 'USD' | 'USN' | 'UYU' | 'UYI' | 'UYW' | 'UZS' | 'VUV' | 'VES' | 'VED' | 'VND'
-      | 'USD' | 'USD' | 'XPF' | 'MAD' | 'YER' | 'ZMW' | 'ZWG' | 'XBA' | 'XBB' | 'XBC' | 'XBD' | 'XTS' | 'XXX' | 'XAU' |
-      'XPD' | 'XPT' | 'XAG';
+  currency?: 'AFN' | 'EUR' | 'ALL' | 'DZD' | 'USD' | 'AOA' | 'XCD' | 'ARS' | 'AMD' | 'AWG' | 'AUD' | 'AZN' | 'BSD' |
+      'BHD' | 'BDT' | 'BBD' | 'BYN' | 'BZD' | 'XOF' | 'BMD' | 'INR' | 'BTN' | 'BOB' | 'BOV' | 'BAM' | 'BWP' | 'NOK' | 'BRL'
+      | 'BND' | 'BGN' | 'BIF' | 'CVE' | 'KHR' | 'XAF' | 'CAD' | 'KYD' | 'CLP' | 'CLF' | 'CNY' | 'COP' | 'COU' | 'KMF' |
+      'CDF' | 'NZD' | 'CRC' | 'CUP' | 'CUC' | 'ANG' | 'CZK' | 'DKK' | 'DJF' | 'DOP' | 'EGP' | 'SVC' | 'ERN' | 'SZL' | 'ETB'
+      | 'FKP' | 'FJD' | 'XPF' | 'GMD' | 'GEL' | 'GHS' | 'GIP' | 'GTQ' | 'GBP' | 'GNF' | 'GYD' | 'HTG' | 'HNL' | 'HKD' |
+      'HUF' | 'ISK' | 'IDR' | 'XDR' | 'IRR' | 'IQD' | 'ILS' | 'JMD' | 'JPY' | 'JOD' | 'KZT' | 'KES' | 'KPW' | 'KRW' | 'KWD'
+      | 'KGS' | 'LAK' | 'LBP' | 'LSL' | 'ZAR' | 'LRD' | 'LYD' | 'CHF' | 'MOP' | 'MKD' | 'MGA' | 'MWK' | 'MYR' | 'MVR' |
+      'MRU' | 'MUR' | 'XUA' | 'MXN' | 'MXV' | 'MDL' | 'MNT' | 'MAD' | 'MZN' | 'MMK' | 'NAD' | 'NPR' | 'NIO' | 'NGN' | 'OMR'
+      | 'PKR' | 'PAB' | 'PGK' | 'PYG' | 'PEN' | 'PHP' | 'PLN' | 'QAR' | 'RON' | 'RUB' | 'RWF' | 'SHP' | 'WST' | 'STN' |
+      'SAR' | 'RSD' | 'SCR' | 'SLE' | 'SGD' | 'XSU' | 'SBD' | 'SOS' | 'SSP' | 'LKR' | 'SDG' | 'SRD' | 'SEK' | 'CHE' | 'CHW'
+      | 'SYP' | 'TWD' | 'TJS' | 'TZS' | 'THB' | 'TOP' | 'TTD' | 'TND' | 'TRY' | 'TMT' | 'UGX' | 'UAH' | 'AED' | 'USN' |
+      'UYU' | 'UYI' | 'UYW' | 'UZS' | 'VUV' | 'VES' | 'VED' | 'VND' | 'YER' | 'ZMW' | 'ZWG' | 'XBA' | 'XBB' | 'XBC' | 'XBD'
+      | 'XTS' | 'XXX' | 'XAU' | 'XPD' | 'XPT' | 'XAG';
 }
