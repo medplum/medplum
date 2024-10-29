@@ -958,6 +958,16 @@ describe('Updated implementation', () => {
     expect(expansion.contains).toHaveLength(12);
   });
 
+  test('Expand with trailing quote', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/task-status|4.0.1&filter=a'`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(0);
+  });
+
   test('Exact code match', async () => {
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=http://terminology.hl7.org/ValueSet/v3-RoleCode&filter=MT`)
