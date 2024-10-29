@@ -2241,7 +2241,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const projectId = resource.meta?.project;
     await getRedis().set(
       getCacheKey(resource.resourceType, resource.id as string),
-      JSON.stringify({ resource, projectId }),
+      stringify({ resource, projectId }),
       'EX',
       REDIS_CACHE_EX_SECONDS
     );
