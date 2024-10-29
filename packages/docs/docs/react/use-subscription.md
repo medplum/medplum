@@ -6,8 +6,8 @@ tags:
 
 # `useSubscription` Hook
 
-`useSubscription` creates an in-memory `Subscription` resource with the given criteria on the Medplum server and calls the 
-given callback when an event notification is triggered by a resource interaction over a WebSocket connection.
+`useSubscription` creates an in-memory `Subscription` resource on the Medplum server with the given criteria and calls the 
+given callback when an event notification is triggered.
 
 Subscriptions created with this hook are lightweight, share a single WebSocket connection per instance of `MedplumClient`, and are automatically 
 untracked and cleaned up when the containing component is no longer mounted.
