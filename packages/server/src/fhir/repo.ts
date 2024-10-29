@@ -1715,7 +1715,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const accounts = new Set<string>();
     if (!existing && this.context.accessPolicy?.compartment?.reference) {
-      // If the user access policy specifies a compartment, then use it as the account.
+      // If the creator's access policy specifies a compartment, then use it as the account.
+      // The writer's access policy is only applied at resource creation: simply editing a
+      // resource does NOT pull it into the user's account.
       accounts.add(this.context.accessPolicy.compartment.reference);
     }
 
