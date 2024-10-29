@@ -34,7 +34,7 @@ export function matchesSearchRequest(resource: Resource, searchRequest: SearchRe
 function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, filter: Filter): boolean {
   const searchParam = globalSchema.types[searchRequest.resourceType]?.searchParams?.[filter.code];
   if (!searchParam) {
-    return false;
+    throw new Error(`Unknown search parameter: ${filter.code} for resource type ${searchRequest.resourceType}`);
   }
   if (filter.operator === Operator.MISSING || filter.operator === Operator.PRESENT) {
     return matchesMissingOrPresent(resource, filter, searchParam);
@@ -50,7 +50,7 @@ function matchesSearchFilter(resource: Resource, searchRequest: SearchRequest, f
     case 'date':
       return matchesDateFilter(resource, filter, searchParam);
     default:
-      // Unknown search parameter or search parameter type
+      // Unknown search parameter type
       // Default fail the check
       return false;
   }

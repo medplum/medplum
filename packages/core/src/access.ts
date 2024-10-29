@@ -1,6 +1,8 @@
 import { AccessPolicy, AccessPolicyResource, Resource, ResourceType } from '@medplum/fhirtypes';
+import { normalizeErrorString } from './outcomes';
 import { matchesSearchRequest } from './search/match';
 import { parseSearchRequest } from './search/search';
+import { getReferenceString } from './utils';
 
 const universalAccessPolicy: AccessPolicyResource = {
   resourceType: '*',
@@ -121,14 +123,21 @@ export function canWriteResource(accessPolicy: AccessPolicy, resource: Resource)
 export function matchesAccessPolicy(accessPolicy: AccessPolicy, resource: Resource, readonlyMode: boolean): boolean {
   if (accessPolicy.resource) {
     for (const resourcePolicy of accessPolicy.resource) {
-      if (
-        matchesAccessPolicyResourcePolicy(
-          resource,
-          readonlyMode ? AccessPolicyInteraction.READ : AccessPolicyInteraction.UPDATE,
-          resourcePolicy
-        )
-      ) {
-        return true;
+      try {
+        if (
+          matchesAccessPolicyResourcePolicy(
+            resource,
+            readonlyMode ? AccessPolicyInteraction.READ : AccessPolicyInteraction.UPDATE,
+            resourcePolicy
+          )
+        ) {
+          return true;
+        }
+      } catch (err: unknown) {
+        // TODO(ThatOneBro 24 Oct 2024): Consider removing try-catch once invalid access policies are not allowed to be created (validating search parameters are valid)
+        console.error(
+          `[Access Policy]: Got error "${normalizeErrorString(err)}" while evaluating resource against ${getReferenceString(accessPolicy)}`
+        );
       }
     }
   }
@@ -152,8 +161,15 @@ export function satisfiedAccessPolicy(
   }
   if (accessPolicy.resource) {
     for (const resourcePolicy of accessPolicy.resource) {
-      if (matchesAccessPolicyResourcePolicy(resource, interaction, resourcePolicy)) {
-        return resourcePolicy;
+      try {
+        if (matchesAccessPolicyResourcePolicy(resource, interaction, resourcePolicy)) {
+          return resourcePolicy;
+        }
+      } catch (err: unknown) {
+        // TODO(ThatOneBro 24 Oct 2024): Consider removing try-catch once invalid access policies are not allowed to be created (validating search parameters are valid)
+        console.error(
+          `[Access Policy]: Got error "${normalizeErrorString(err)}" while evaluating resource against ${getReferenceString(accessPolicy)}`
+        );
       }
     }
   }
@@ -162,6 +178,9 @@ export function satisfiedAccessPolicy(
 
 /**
  * Returns true if the resource satisfies the specified access policy resource policy.
+ *
+ * Throws if the resource policy contains a criteria with invalid search parameters.
+ *
  * @param resource - The resource.
  * @param interaction - The interaction being performed on the resource.
  * @param resourcePolicy - One per-resource policy section from the access policy.

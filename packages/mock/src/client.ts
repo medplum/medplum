@@ -89,6 +89,13 @@ export interface MockClientOptions
   extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime' | 'fetch'> {
   readonly debug?: boolean;
   /**
+   * Determines whether this MockClient should operate in strict mode.
+   * In strict mode, unknown resource types and search parameters will cause searches to throw.
+   *
+   * Defaults to `true`.
+   */
+  readonly strictMode?: boolean;
+  /**
    * Override currently logged in user. Specifying null results in
    * MedplumContext.profile returning undefined as if no one were logged in.
    */
@@ -140,7 +147,7 @@ export class MockClient extends MedplumClient {
       client = clientOptions.mockFetchOverride.client;
     } else {
       router = new FhirRouter();
-      repo = new MemoryRepository();
+      repo = new MemoryRepository({ strictMode: clientOptions?.strictMode });
       client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
     }
 
@@ -720,6 +727,17 @@ export class MockFetchClient {
       return exampleValueSet;
     }
 
+    // Special case for ServiceRequestTimeline and DefaultResourceTimeline Task query
+    // Since we don't support _filter yet
+    // TODO(ThatOneBro 24 Oct 2024): Remove this once we support _filter in the in-memory search implementation
+    if (
+      /^fhir\/R4\/Task\?_filter=based-on\+eq\+[a-zA-Z]+%2F[0-9a-zA-Z-]+\+or\+focus\+eq\+[a-zA-Z]+%2F[0-9a-zA-Z-]+\+or\+subject\+eq\+[a-zA-Z]+%2F[0-9a-zA-Z-]+/.test(
+        url
+      )
+    ) {
+      return { resourceType: 'Bundle', type: 'searchset', total: 0, entry: [] };
+    }
+
     if (url.includes('fhir/R4')) {
       url = url.substring(url.indexOf('fhir/R4') + 7);
     }
@@ -743,12 +761,33 @@ export class MockFetchClient {
       headers: toIncomingHttpHeaders(options.headers),
     };
 
-    const result = await this.router.handleRequest(request, this.repo);
-    if (result.length === 1) {
-      return result[0];
-    } else {
-      return result[1];
+    const [outcome, resource] = await this.router.handleRequest(request, this.repo);
+    if (!resource) {
+      const issueDetails = outcome.issue[0]?.details;
+      const issueText = issueDetails?.text;
+      if (!issueText) {
+        return outcome;
+      }
+      // Special case for unknown search parameters and resource types
+      // We know it's common to forgot to index all search parameters and structure definitions in MockClient
+      // Here we try to let the user know before they have to go deep into debugging why their searches don't work properly in MockClient
+      if (issueText.startsWith('Unknown search parameter: _filter')) {
+        const errMsg = `${issueText}\n\nThe '_filter' search parameter is currently unsupported in MockClient`;
+        console.error(errMsg);
+        issueDetails.text = errMsg;
+      } else if (issueText.startsWith('Unknown search parameter:')) {
+        const errMsg = `${issueText}\n\nHave you tried calling 'indexSearchParameterBundle' for all search parameters?`;
+        console.error(errMsg);
+        issueDetails.text = errMsg;
+      } else if (issueText.startsWith('Unknown resource type')) {
+        const errMsg = `${issueText}\n\nHave you tried calling 'indexStructureDefinitionBundle' for all structure definitions?`;
+        console.error(errMsg);
+        issueDetails.text = errMsg;
+      }
+      return outcome;
     }
+
+    return resource;
   }
 }
 

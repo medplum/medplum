@@ -326,6 +326,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
+    // Must be able to read from the database beyond this point, else throw a "not found" error
     if (options?.checkCacheOnly) {
       throw new OperationOutcomeError(notFound);
     }

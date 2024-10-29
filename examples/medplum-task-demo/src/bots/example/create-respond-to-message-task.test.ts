@@ -1,6 +1,6 @@
 import { indexSearchParameterBundle, indexStructureDefinitionBundle } from '@medplum/core';
-import { SEARCH_PARAMETER_BUNDLE_FILES, readJson } from '@medplum/definitions';
-import { Bundle, SearchParameter } from '@medplum/fhirtypes';
+import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
+import { Bundle, Communication, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { beforeAll, describe, expect, test, vi } from 'vitest';
 import {
@@ -27,9 +27,18 @@ describe('Create Respond to Message Task', async () => {
 
     await medplum.executeBatch(noMessagesInLast30Minutes);
 
+    const searchResourcesSpy = vi.spyOn(medplum, 'searchResources').mockImplementation((async () => {
+      return [] as Communication[];
+    }) as any);
+
     const result = await handler(medplum);
     expect(result).toBe(false);
     expect(console.log).toHaveBeenCalledWith('No messages in the last 30 minutes that require a response.');
+    expect(searchResourcesSpy).toHaveBeenCalledWith('Communication', {
+      sent: expect.stringMatching(/^lt/),
+      'part-of:Communication.status': 'in-progress',
+    });
+    searchResourcesSpy.mockRestore();
   });
 
   test('Messages in the last 30 minutes not sent by patients', async () => {
@@ -38,9 +47,18 @@ describe('Create Respond to Message Task', async () => {
 
     await medplum.executeBatch(messagesNotSentByPatients);
 
+    const searchResourcesSpy = vi.spyOn(medplum, 'searchResources').mockImplementation((async () => {
+      return [] as Communication[];
+    }) as any);
+
     const result = await handler(medplum);
     expect(result).toBe(false);
     expect(console.log).toHaveBeenCalledWith('No messages in the last 30 minutes that require a response.');
+    expect(searchResourcesSpy).toHaveBeenCalledWith('Communication', {
+      sent: expect.stringMatching(/^lt/),
+      'part-of:Communication.status': 'in-progress',
+    });
+    searchResourcesSpy.mockRestore();
   });
 
   // Skipping until chained search is implemented in MockClient

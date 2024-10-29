@@ -463,7 +463,7 @@ export async function addFamilyMemberHistory(
     },
     {
       patient: getReferenceString(patient),
-      condition: `${condition.system}|${condition.code}`,
+      code: `${condition.system}|${condition.code}`,
       relationship: `${relationship.system}|${relationship.code}`,
     }
   );
