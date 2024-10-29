@@ -1,5 +1,5 @@
 import { ContentType, getReferenceString } from '@medplum/core';
-import { Meta, Patient } from '@medplum/fhirtypes';
+import { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -86,33 +86,6 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send('not-json');
-    expect(res.status).toBe(400);
-  });
-
-  test('Create batch', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Bundle', type: 'batch', entry: [] });
-    expect(res.status).toBe(200);
-  });
-
-  test('Create batch wrong content type', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.TEXT)
-      .send('hello');
-    expect(res.status).toBe(400);
-  });
-
-  test('Create batch wrong resource type', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Patient', name: [{ given: ['Homer'] }] });
     expect(res.status).toBe(400);
   });
 
@@ -496,6 +469,9 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .type('form');
     expect(res.status).toBe(200);
+    const result = res.body as Bundle;
+    expect(result.type).toEqual('searchset');
+    expect(result.entry?.length).toBeGreaterThan(0);
   });
 
   test('Validate create success', async () => {
@@ -641,6 +617,59 @@ describe('FHIR Routes', () => {
         .get('/fhir/R4/?_type=Patient,Observation')
         .set('Authorization', 'Bearer ' + accessToken);
       expect(res4.status).toBe(200);
-      expect(res4.body).toEqual(res3.body);
+      const bundle2 = res4.body;
+      expect(bundle2.entry?.length).toBe(2);
+      expect(bundleContains(bundle2, patient)).toBeTruthy();
+      expect(bundleContains(bundle2, obs)).toBeTruthy();
     }));
+
+  test('Set accounts on create', async () => {
+    const { project, accessToken } = await createTestProject({ withAccessToken: true });
+
+    const res1 = await request(app)
+      .post('/fhir/R4/Organization')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Organization' });
+    expect(res1.status).toBe(201);
+
+    const account = res1.body as Organization;
+
+    const res2 = await request(app)
+      .post('/fhir/R4/Questionnaire')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Questionnaire',
+        meta: { accounts: [{ reference: getReferenceString(account) }] },
+        title: 'Questionnaire A.1',
+        status: 'active',
+        item: [
+          {
+            linkId: '1',
+            text: 'How would you rate your overall experience?',
+            type: 'choice',
+            answerOption: [
+              {
+                valueCoding: {
+                  system: 'http://example.org/rating',
+                  code: '5',
+                  display: 'Excellent',
+                },
+              },
+            ],
+          },
+        ],
+      });
+    expect(res2.status).toBe(201);
+    expect(res2.body.meta?.accounts?.length).toBe(1);
+    expect(res2.body.meta?.accounts?.[0].reference).toBe(getReferenceString(account));
+
+    // There should be 2 compartments:
+    // 1: the project
+    // 2: the account organization
+    const compartments = res2.body.meta?.compartment as Reference[];
+    expect(compartments.length).toBe(2);
+    expect(compartments.find((c) => c.reference === getReferenceString(project))).toBeDefined();
+    expect(compartments.find((c) => c.reference === getReferenceString(account))).toBeDefined();
+  });
 });

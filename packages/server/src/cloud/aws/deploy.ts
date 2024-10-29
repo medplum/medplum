@@ -6,6 +6,7 @@ import {
   LambdaClient,
   ListLayerVersionsCommand,
   PackageType,
+  ResourceConflictException,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
@@ -14,7 +15,7 @@ import { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getConfig } from '../../config';
-import { getRequestContext } from '../../context';
+import { getLogger } from '../../context';
 
 const LAMBDA_RUNTIME = 'nodejs18.x';
 
@@ -95,7 +96,7 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 `;
 
 export async function deployLambda(bot: Bot, code: string): Promise<void> {
-  const ctx = getRequestContext();
+  const log = getLogger();
 
   // Create a new AWS Lambda client
   // Use a custom retry strategy to avoid throttling errors
@@ -110,9 +111,9 @@ export async function deployLambda(bot: Bot, code: string): Promise<void> {
   });
 
   const name = `medplum-bot-lambda-${bot.id}`;
-  ctx.logger.info('Deploying lambda function for bot', { name });
+  log.info('Deploying lambda function for bot', { name });
   const zipFile = await createZipFile(code);
-  ctx.logger.debug('Lambda function zip size', { bytes: zipFile.byteLength });
+  log.debug('Lambda function zip size', { bytes: zipFile.byteLength });
 
   const exists = await lambdaExists(client, name);
   if (!exists) {
@@ -183,13 +184,7 @@ async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
   await updateLambdaConfig(client, name);
 
   // Then update the code
-  await client.send(
-    new UpdateFunctionCodeCommand({
-      FunctionName: name,
-      ZipFile: zipFile,
-      Publish: true,
-    })
-  );
+  await updateLambdaCode(client, name, zipFile);
 }
 
 /**
@@ -219,20 +214,6 @@ async function updateLambdaConfig(client: LambdaClient, name: string): Promise<v
       Layers: [layerVersion],
     })
   );
-
-  // Wait for the update to complete before returning
-  // Wait up to 5 seconds
-  // See: https://github.com/aws/aws-toolkit-visual-studio/issues/197
-  // See: https://aws.amazon.com/blogs/compute/coming-soon-expansion-of-aws-lambda-states-to-all-functions/
-  for (let i = 0; i < 5; i++) {
-    const config = await getLambdaConfig(client, name);
-    // Valid Values: Pending | Active | Inactive | Failed
-    // See: https://docs.aws.amazon.com/lambda/latest/dg/API_GetFunctionConfiguration.html
-    if (config.State === 'Active') {
-      return;
-    }
-    await sleep(1000);
-  }
 }
 
 async function getLambdaConfig(client: LambdaClient, name: string): Promise<GetFunctionConfigurationCommandOutput> {
@@ -241,6 +222,37 @@ async function getLambdaConfig(client: LambdaClient, name: string): Promise<GetF
       FunctionName: name,
     })
   );
+}
+
+/**
+ * Updates the AWS lambda code.
+ * This function will retry up to 5 times if the lambda is busy.
+ * @param client - The AWS Lambda client.
+ * @param name - The lambda name.
+ * @param zipFile - The zip file with the bot code.
+ */
+async function updateLambdaCode(client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
+  const maxAttempts = 5;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      await client.send(
+        new UpdateFunctionCodeCommand({
+          FunctionName: name,
+          ZipFile: zipFile,
+          Publish: true,
+        })
+      );
+      return;
+    } catch (err) {
+      const isBusy = err instanceof ResourceConflictException;
+      const isLastAttempt = attempt === maxAttempts - 1;
+      if (isBusy && !isLastAttempt) {
+        await sleep(1000);
+      } else {
+        throw err;
+      }
+    }
+  }
 }
 
 /**

@@ -2,7 +2,7 @@
 sidebar_position: 0
 ---
 
-# Intro
+# Bots
 
 If you have never heard of Medplum Bots, we encourage you to read the intro material in the [**Bot Guide**](./bots/bot-basics).
 
@@ -29,11 +29,11 @@ Super administrators can enable bots via the Medplum App:
 1. [Consuming Webhooks](consuming-webhooks.md)
 2. [Consuming HL7 Feeds and Converting to FHIR](hl7-into-fhir.md)
 3. Coming Soon: Consuming Lab Results from a lab instrument or LIS
-4. [Receive payment and accounts data](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/stripe-bots)
+4. [Receive payment and accounts data](https://github.com/medplum/medplum-demo-bots/tree/main/src/stripe-bots)
 
 ## Export data to other systems
 
-1. [Exporting data to a billing service](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/candid-health)
+1. [Exporting data to a billing service](https://github.com/medplum/medplum-demo-bots/tree/main/src/candid-health)
 2. [Exporting a PDF Report for human consumption](creating-a-pdf.md)
 3. [File Uploads](file-uploads.md)
 

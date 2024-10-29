@@ -65,7 +65,7 @@ You can deploy this application by [clicking here](https://vercel.com/new/clone?
 
 By default, your locally running Foo Medical app is pointing to the hosted Medplum service. Foo Medical registers signups to a test project.
 
-To send patients to your own organization you will need to [register a new Project on Medplum](https://docs.medplum.com/tutorials/app/register) and configure your environment variables to point to your own project (see [config.ts](https://github.com/medplum/foomedical/blob/main/src/config.ts) for an example).
+To send patients to your own organization you will need to [register a new Project on Medplum](https://www.medplum.com/docs/tutorials/register) and configure your environment variables to point to your own project (see [config.ts](https://github.com/medplum/foomedical/blob/main/src/config.ts) for an example).
 
 If you are using the Medplum Hosted service, you can login to your Medplum Instance and add the following identifiers to your [Project Site Settings](https://app.medplum.com/admin/sites)
 
@@ -78,7 +78,7 @@ Contact the medplum team ([support@medplum.com](mailto:support@medplum.com) or [
 
 ### Data Setup
 
-When you log into Foo Medical a set of sample FHIR records is created on your behalf. The ability to run automations is part of the Medplum platform using a framework called [Bots](https://docs.medplum.com/app/bots). For reference, Bot that created the records in Foo Medical can be found [here](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts).
+When you log into Foo Medical a set of sample FHIR records is created on your behalf. The ability to run automations is part of the Medplum platform using a framework called [Bots](https://www.medplum.com/docs/bots). For reference, Bot that created the records in Foo Medical can be found [here](https://github.com/medplum/medplum-demo-bots/blob/main/src/sample-account-setup.ts).
 
 ### Compliance
 
@@ -90,6 +90,6 @@ Medplum backend is HIPAA compliant and SOC 2 certified. Getting an account set u
 
 Medplum supports self-hosting and provides a [hosted service](https://app.medplum.com/). [Foo Medical](https://foomedical.com/) uses the hosted service as a backend.
 
-- Read our [documentation](https://docs.medplum.com/)
-- Browse our [React component library](https://docs.medplum.com/storybook/index.html?)
+- Read our [documentation](https://www.medplum.com/docs/)
+- Browse our [React component library](https://storybook.medplum.com/)
 - Join our [Discord](https://discord.gg/medplum)

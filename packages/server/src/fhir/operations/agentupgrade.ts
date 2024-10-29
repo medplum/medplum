@@ -1,4 +1,4 @@
-import { AgentUpgradeResponse, OperationOutcomeError, badRequest, serverError } from '@medplum/core';
+import { AgentUpgradeResponse, OperationOutcomeError, badRequest, serverError, singularize } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, OperationDefinition } from '@medplum/fhirtypes';
 import { handleBulkAgentOperation, publishAgentRequest } from './utils/agentutils';
@@ -40,7 +40,7 @@ export async function agentUpgradeHandler(req: FhirRequest): Promise<FhirRespons
 
   let timeout: number | undefined;
   if (_timeout) {
-    timeout = Number.parseInt(_timeout, 10);
+    timeout = Number.parseInt(singularize(_timeout) as string, 10);
     if (Number.isNaN(timeout)) {
       throw new OperationOutcomeError(
         badRequest("'timeout' must be an integer representing a duration in milliseconds, if defined")
@@ -48,7 +48,9 @@ export async function agentUpgradeHandler(req: FhirRequest): Promise<FhirRespons
     }
   }
 
-  return handleBulkAgentOperation(req, async (agent: Agent) => upgradeAgent(agent, { version, timeout }));
+  return handleBulkAgentOperation(req, async (agent: Agent) =>
+    upgradeAgent(agent, { version: singularize(version), timeout })
+  );
 }
 
 export type AgentUpgradeOptions = {

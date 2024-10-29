@@ -44,8 +44,12 @@ import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
+import { authenticateRequest } from './oauth/middleware';
+import { asyncBatchHandler } from './async-batch';
 
 let server: http.Server | undefined = undefined;
+
+export const JSON_TYPE = [ContentType.JSON, 'application/*+json'];
 
 /**
  * Sets standard headers for all requests.
@@ -74,7 +78,7 @@ function standardHeaders(_req: Request, res: Response, next: NextFunction): void
 
   // Disable browser features
   res.set(
-    'Permission-Policy',
+    'Permissions-Policy',
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()'
   );
 
@@ -125,6 +129,15 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
     sendOutcome(res, badRequest('File too large'));
     return;
   }
+  if (err.type === 'stream.not.readable') {
+    // This is a common error when the client disconnects
+    // See: https://expressjs.com/en/resources/middleware/body-parser.html
+    // It is commonly associated with an AWS ALB disconnect status code 460
+    // See: https://docs.aws.amazon.com/elasticloadbalancing/latest/application/load-balancer-troubleshooting.html#http-460-issues
+    getLogger().warn('Stream not readable', err);
+    sendOutcome(res, badRequest('Stream not readable'));
+    return;
+  }
   getLogger().error('Unhandled error', err);
   res.status(500).json({ msg: 'Internal Server Error' });
 }
@@ -143,6 +156,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(attachRequestContext);
   app.use(getRateLimiter(config));
   app.use('/fhir/R4/Binary', binaryRouter);
+
+  // Handle async batch by enqueueing job
+  app.post('/fhir/R4', authenticateRequest, asyncWrap(asyncBatchHandler(config)));
+
   app.use(
     urlencoded({
       extended: false,
@@ -153,12 +170,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
       type: [ContentType.TEXT, ContentType.HL7_V2],
     })
   );
-  app.use(
-    json({
-      type: [ContentType.JSON, ContentType.FHIR_JSON, ContentType.JSON_PATCH, ContentType.SCIM_JSON],
-      limit: config.maxJsonSize,
-    })
-  );
+  app.use(json({ type: JSON_TYPE, limit: config.maxJsonSize }));
   app.use(
     hl7BodyParser({
       type: [ContentType.HL7_V2],
@@ -209,17 +221,17 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
 export async function shutdownApp(): Promise<void> {
   cleanupHeartbeat();
   await closeWebSockets();
-  await closeWorkers();
-  await closeDatabase();
-  await closeRedis();
-  closeRateLimiter();
-
   if (server) {
     await new Promise((resolve) => {
       (server as http.Server).close(resolve);
     });
     server = undefined;
   }
+
+  await closeWorkers();
+  await closeDatabase();
+  await closeRedis();
+  closeRateLimiter();
 
   // If binary storage is a temporary directory, delete it
   const binaryStorage = getConfig().binaryStorage;
@@ -258,3 +270,13 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
 
   next();
 };
+
+export async function runMiddleware(
+  req: Request,
+  res: Response,
+  handler: (req: Request, res: Response, next: (err?: any) => void) => void
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    handler(req, res, (err) => (err ? reject(err) : resolve()));
+  });
+}

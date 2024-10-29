@@ -627,6 +627,12 @@
       "type": "reference",
       "description": "Problem resource",
       "expression": "DetectedIssue.implicated"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "The status of the detected issue",
+      "expression": "DetectedIssue.status"
     }
   ]
 }

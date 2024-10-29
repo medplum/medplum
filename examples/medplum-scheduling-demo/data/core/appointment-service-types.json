@@ -1,0 +1,87 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:0ba7daf9-86f9-43ca-8ddf-321a91abe9bc",
+      "request": { "method": "PUT", "url": "ValueSet?name=appointment-service-type-codes" },
+      "resource": {
+        "resourceType": "ValueSet",
+        "status": "active",
+        "url": "http://example.com/appointment-service-types",
+        "name": "appointment-service-type-codes",
+        "title": "Appointment Service Type Codes",
+        "description": "These codes are used to classify the type of service performed during an appointment.",
+        "compose": {
+          "include": [
+            {
+              "system": "http://snomed.info/sct",
+              "concept": [
+                {
+                  "code": "11429006",
+                  "display": "Consultation"
+                },
+                {
+                  "code": "308540004",
+                  "display": "Inpatient stay"
+                },
+                {
+                  "code": "371883000",
+                  "display": "Outpatient procedure"
+                },
+                {
+                  "code": "185317003",
+                  "display": "Telephone encounter"
+                },
+                {
+                  "code": "439708006",
+                  "display": "Home visit"
+                },
+                {
+                  "code": "390906007",
+                  "display": "Follow-up encounter"
+                },
+                {
+                  "code": "50849002",
+                  "display": "Emergency room admission"
+                },
+                {
+                  "code": "255327002",
+                  "display": "Ambulatory"
+                },
+                {
+                  "code": "110466009",
+                  "display": "Pre-operative evaluation"
+                },
+                {
+                  "code": "91251008",
+                  "display": "Physical therapy procedure"
+                },
+                {
+                  "code": "31205005",
+                  "display": "Psychiatric therapy"
+                },
+                {
+                  "code": "163497009",
+                  "display": "Obstetrics"
+                },
+                {
+                  "code": "83607001",
+                  "display": "Gynecology"
+                },
+                {
+                  "code": "225362009",
+                  "display": "Dental care"
+                },
+                {
+                  "code": "304567001",
+                  "display": "Admission for long-term care"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

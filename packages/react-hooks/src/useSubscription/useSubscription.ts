@@ -11,6 +11,7 @@ export type UseSubscriptionOptions = {
   onWebSocketClose?: () => void;
   onSubscriptionConnect?: (subscriptionId: string) => void;
   onSubscriptionDisconnect?: (subscriptionId: string) => void;
+  onError?: (err: Error) => void;
 };
 
 /**
@@ -32,9 +33,10 @@ export type UseSubscriptionOptions = {
  * - `onWebsocketClose` - Called when the WebSocket connection disconnects.
  * - `onSubscriptionConnect` - Called when the corresponding subscription starts to receive updates after the subscription has been initialized and connected to.
  * - `onSubscriptionDisconnect` - Called when the corresponding subscription is destroyed and stops receiving updates from the server.
+ * - `onError` - Called whenever an error occurs during the lifecycle of the managed subscription.
  */
 export function useSubscription(
-  criteria: string,
+  criteria: string | undefined,
   callback: (bundle: Bundle) => void,
   options?: UseSubscriptionOptions
 ): void {
@@ -46,7 +48,7 @@ export function useSubscription(
   const listeningRef = useRef(false);
   const unsubTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const prevCriteriaRef = useRef<string>();
+  const prevCriteriaRef = useRef<string | undefined>();
   const prevMemoizedSubPropsRef = useRef<UseSubscriptionOptions['subscriptionProps']>();
 
   const callbackRef = useRef<typeof callback>();
@@ -63,6 +65,9 @@ export function useSubscription(
 
   const onSubscriptionDisconnectRef = useRef<UseSubscriptionOptions['onSubscriptionDisconnect']>();
   onSubscriptionDisconnectRef.current = options?.onSubscriptionDisconnect;
+
+  const onErrorRef = useRef<UseSubscriptionOptions['onError']>();
+  onErrorRef.current = options?.onError;
 
   useEffect(() => {
     // Deep equals checks referential equality first
@@ -91,14 +96,18 @@ export function useSubscription(
     prevMemoizedSubPropsRef.current = memoizedSubProps;
 
     // We do this after as to not immediately trigger re-render
-    if (shouldSubscribe) {
+    if (shouldSubscribe && criteria) {
       setEmitter(medplum.subscribeToCriteria(criteria, memoizedSubProps));
+    } else if (!criteria) {
+      setEmitter(undefined);
     }
 
     return () => {
       unsubTimerRef.current = setTimeout(() => {
         setEmitter(undefined);
-        medplum.unsubscribeFromCriteria(criteria, memoizedSubProps);
+        if (criteria) {
+          medplum.unsubscribeFromCriteria(criteria, memoizedSubProps);
+        }
       }, SUBSCRIPTION_DEBOUNCE_MS);
     };
   }, [medplum, criteria, memoizedSubProps]);
@@ -123,6 +132,10 @@ export function useSubscription(
     onSubscriptionDisconnectRef.current?.(event.payload.subscriptionId);
   }, []);
 
+  const onError = useCallback((event: SubscriptionEventMap['error']) => {
+    onErrorRef.current?.(event.payload);
+  }, []);
+
   useEffect(() => {
     if (!emitter) {
       return () => undefined;
@@ -133,6 +146,7 @@ export function useSubscription(
       emitter.addEventListener('close', onWebSocketClose);
       emitter.addEventListener('connect', onSubscriptionConnect);
       emitter.addEventListener('disconnect', onSubscriptionDisconnect);
+      emitter.addEventListener('error', onError);
       listeningRef.current = true;
     }
     return () => {
@@ -142,6 +156,15 @@ export function useSubscription(
       emitter.removeEventListener('close', onWebSocketClose);
       emitter.removeEventListener('connect', onSubscriptionConnect);
       emitter.removeEventListener('disconnect', onSubscriptionDisconnect);
+      emitter.removeEventListener('error', onError);
     };
-  }, [emitter, emitterCallback, onWebSocketOpen, onWebSocketClose, onSubscriptionConnect, onSubscriptionDisconnect]);
+  }, [
+    emitter,
+    emitterCallback,
+    onWebSocketOpen,
+    onWebSocketClose,
+    onSubscriptionConnect,
+    onSubscriptionDisconnect,
+    onError,
+  ]);
 }

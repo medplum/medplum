@@ -7,7 +7,9 @@ tags: [interop, fhir-datastore, compliance, case-study]
 
 # Ro Case Study: At Home Lab Diagnostics
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/q-22Y7Ox2jY?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+<iframe src="https://www.youtube.com/embed/q-22Y7Ox2jY?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 <!-- truncate -->
 

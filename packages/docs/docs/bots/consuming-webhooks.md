@@ -9,7 +9,7 @@ Many SaaS products including popular services like Stripe and Okta support Webho
 
 Medplum [bots](/docs/bots) can be used to listen for webhooks and so keep records synchronized between systems. When another application fires a webhook, it can trigger a Medplum bot using the [$execute](/docs/bots/bot-basics#using-the-execute-endpoint) endpoint.
 
-For an example of a Bot that consumes webhooks, see the [Stripe demo bot](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/stripe-bots).
+For an example of a Bot that consumes webhooks, see the [Stripe demo bot](https://github.com/medplum/medplum-demo-bots/tree/main/src/stripe-bots).
 
 ## Planning your integration
 
@@ -25,7 +25,7 @@ We recommend writing some [unit tests](/docs/bots/unit-testing-bots) as well, an
 
 If the SaaS application that sends webhooks publishes a TypeScript SDK, it's straightforward to add it to your bot, to streamline development. Add the package to the `devDependencies` in the `package.json` of your bot repository and install the dependency, and [example from demo bots repo](https://github.com/medplum/medplum-demo-bots/blob/main/package.json) is available. You can then use the TypeScript SDK when developing your bot.
 
-The [Stripe demo bot](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/stripe-bots) uses the Stripe TypeScript SDK.
+The [Stripe demo bot](https://github.com/medplum/medplum-demo-bots/tree/main/src/stripe-bots) uses the Stripe TypeScript SDK.
 
 ## Creating Access Policies
 

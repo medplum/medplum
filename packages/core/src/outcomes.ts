@@ -13,6 +13,7 @@ const PRECONDITION_FAILED_ID = 'precondition-failed';
 const MULTIPLE_MATCHES_ID = 'multiple-matches';
 const TOO_MANY_REQUESTS_ID = 'too-many-requests';
 const ACCEPTED_ID = 'accepted';
+const SERVER_TIMEOUT_ID = 'server-timeout';
 
 export const allOk: OperationOutcome = {
   resourceType: 'OperationOutcome',
@@ -79,6 +80,34 @@ export const unauthorized: OperationOutcome = {
       code: 'login',
       details: {
         text: 'Unauthorized',
+      },
+    },
+  ],
+};
+
+export const unauthorizedTokenExpired: OperationOutcome = {
+  ...unauthorized,
+  issue: [
+    ...unauthorized.issue,
+    {
+      severity: 'error',
+      code: 'expired',
+      details: {
+        text: 'Token expired',
+      },
+    },
+  ],
+};
+
+export const unauthorizedTokenAudience: OperationOutcome = {
+  ...unauthorized,
+  issue: [
+    ...unauthorized.issue,
+    {
+      severity: 'error',
+      code: 'invalid',
+      details: {
+        text: 'Token not issued for this audience',
       },
     },
   ],
@@ -234,6 +263,22 @@ export function serverError(err: Error): OperationOutcome {
   };
 }
 
+export function serverTimeout(msg?: string): OperationOutcome {
+  return {
+    resourceType: 'OperationOutcome',
+    id: SERVER_TIMEOUT_ID,
+    issue: [
+      {
+        severity: 'error',
+        code: 'timeout',
+        details: {
+          text: msg ?? 'Server timeout',
+        },
+      },
+    ],
+  };
+}
+
 export function isOperationOutcome(value: unknown): value is OperationOutcome {
   return typeof value === 'object' && value !== null && (value as any).resourceType === 'OperationOutcome';
 }
@@ -256,8 +301,16 @@ export function isNotFound(outcome: OperationOutcome): boolean {
   return outcome.id === NOT_FOUND_ID;
 }
 
+export function isConflict(outcome: OperationOutcome): boolean {
+  return outcome.id === CONFLICT_ID;
+}
+
 export function isGone(outcome: OperationOutcome): boolean {
   return outcome.id === GONE_ID;
+}
+
+export function isUnauthenticated(outcome: OperationOutcome): boolean {
+  return outcome.id === UNAUTHORIZED_ID;
 }
 
 export function getStatus(outcome: OperationOutcome): number {
@@ -285,6 +338,8 @@ export function getStatus(outcome: OperationOutcome): number {
       return 412;
     case TOO_MANY_REQUESTS_ID:
       return 429;
+    case SERVER_TIMEOUT_ID:
+      return 504;
     default:
       return outcome.issue?.[0]?.code === 'exception' ? 500 : 400;
   }

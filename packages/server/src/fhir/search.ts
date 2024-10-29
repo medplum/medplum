@@ -8,6 +8,7 @@ import {
   FhirFilterExpression,
   FhirFilterNegation,
   Filter,
+  flatMapFilter,
   forbidden,
   formatSearchQuery,
   getDataType,
@@ -24,6 +25,7 @@ import {
   SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
+  serverError,
   SortRule,
   splitN,
   splitSearchOnComma,
@@ -43,7 +45,6 @@ import {
 } from '@medplum/fhirtypes';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { getLogger } from '../context';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getLookupTable, Repository } from './repo';
@@ -62,7 +63,6 @@ import {
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
-  SqlBuilder,
   Union,
   ValuesQuery,
 } from './sql';
@@ -72,6 +72,8 @@ import {
  */
 const maxSearchResults = DEFAULT_MAX_SEARCH_COUNT;
 
+const canonicalReferenceTypes: string[] = [PropertyType.canonical, PropertyType.uri];
+
 type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequest<T> & {
   count: number;
   offset: number;
@@ -79,8 +81,8 @@ type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequ
 
 interface Cursor {
   version: string;
-  lastInstant: string;
-  lastId: string;
+  nextInstant: string;
+  nextId: string;
 }
 
 interface ChainedSearchLink {
@@ -104,10 +106,10 @@ export async function searchImpl<T extends Resource>(
 
   let entry = undefined;
   let rowCount = undefined;
-  let hasMore = false;
+  let nextResource: T | undefined;
   if (searchRequest.count > 0) {
     const builder = getSelectQueryForSearch(repo, searchRequest);
-    ({ entry, rowCount, hasMore } = await getSearchEntries<T>(repo, searchRequest, builder));
+    ({ entry, rowCount, nextResource } = await getSearchEntries<T>(repo, searchRequest, builder));
   }
 
   let total = undefined;
@@ -120,7 +122,7 @@ export async function searchImpl<T extends Resource>(
     type: 'searchset',
     entry,
     total,
-    link: getSearchLinks(searchRequest, entry, hasMore),
+    link: getSearchLinks(searchRequest, entry, nextResource),
   };
 }
 
@@ -255,17 +257,7 @@ function getSelectQueryForSearch<T extends Resource>(
     const cursor = parseCursor(searchRequest.cursor);
     if (cursor) {
       builder.orderBy(new Column(searchRequest.resourceType, 'lastUpdated', false));
-      builder.orderBy(new Column(searchRequest.resourceType, 'id', false));
-      // (lastUpdated=x and id>y) or lastUpdated>x
-      builder.whereExpr(
-        new Disjunction([
-          new Conjunction([
-            new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '=', cursor.lastInstant),
-            new Condition(new Column(searchRequest.resourceType, 'id'), '>', cursor.lastId),
-          ]),
-          new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '>', cursor.lastInstant),
-        ])
-      );
+      builder.whereExpr(new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '>=', cursor.nextInstant));
     }
   }
   return builder;
@@ -282,12 +274,14 @@ async function getSearchEntries<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
-): Promise<{ entry: BundleEntry<T>[]; rowCount: number; hasMore: boolean }> {
-  const startTime = Date.now();
+): Promise<{ entry: BundleEntry<T>[]; rowCount: number; nextResource?: T }> {
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-  const endTime = Date.now();
   const rowCount = rows.length;
-  const resources = rows.slice(0, searchRequest.count).map((row) => JSON.parse(row.content as string)) as T[];
+  const resources = rows.map((row) => JSON.parse(row.content as string)) as T[];
+  let nextResource: T | undefined;
+  if (resources.length > searchRequest.count) {
+    nextResource = resources.pop();
+  }
   const entries = resources.map(
     (resource) =>
       ({
@@ -308,25 +302,10 @@ async function getSearchEntries<T extends Resource>(
     removeResourceFields(entry.resource, repo, searchRequest);
   }
 
-  const duration = endTime - startTime;
-  const config = getConfig();
-  const threshold = config.slowQueryThresholdMilliseconds;
-  const sampleRate = config.slowQuerySampleRate ?? 1;
-  if (threshold !== undefined && duration > threshold && Math.random() < sampleRate) {
-    builder.explain = true;
-    builder.analyzeBuffers = true;
-    const sqlBuilder = new SqlBuilder();
-    builder.buildSql(sqlBuilder);
-    const sql = sqlBuilder.toString();
-    const explainRows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
-    const explain = explainRows.map((row) => row['QUERY PLAN']).join('\n');
-    getLogger().warn('Slow search query', { duration, searchRequest, sql, explain });
-  }
-
   return {
     entry: entries as BundleEntry<T>[],
     rowCount,
-    hasMore: rows.length > searchRequest.count,
+    nextResource,
   };
 }
 
@@ -365,16 +344,20 @@ function getBaseSelectQueryForResourceType(
   opts?: GetBaseSelectQueryOptions
 ): SelectQuery {
   const builder = new SelectQuery(resourceType);
-  if (opts?.addColumns ?? true) {
-    builder
-      .column({ tableName: resourceType, columnName: 'id' })
-      .column({ tableName: resourceType, columnName: 'content' });
+  const addColumns = opts?.addColumns !== false;
+  const idColumn = new Column(resourceType, 'id');
+  if (addColumns) {
+    builder.column(idColumn).column(new Column(resourceType, 'content'));
   }
   repo.addDeletedFilter(builder);
   repo.addSecurityFilters(builder, resourceType);
   addSearchFilters(repo, builder, resourceType, searchRequest);
   if (opts?.resourceTypeQueryCallback) {
     opts.resourceTypeQueryCallback(resourceType, builder);
+  }
+
+  if (addColumns && builder.joins.length > 0) {
+    builder.distinctOn(idColumn);
   }
   return builder;
 }
@@ -415,38 +398,37 @@ async function getExtraEntries<T extends Resource>(
   resources: T[],
   entries: BundleEntry[]
 ): Promise<void> {
-  let base = resources;
+  let base: Resource[] = resources;
   let iterateOnly = false;
-  const seen: Record<string, boolean> = {};
-  resources.forEach((r) => {
-    seen[`${r.resourceType}/${r.id}`] = true;
-  });
+  const seen = new Set<string>(resources.map((r) => `${r.resourceType}/${r.id}`));
   let depth = 0;
+
   while (base.length > 0) {
     // Circuit breaker / load limit
-    if (depth >= 5 || entries.length > 1000) {
+    if (depth >= 5 || entries.length > maxSearchResults) {
       throw new Error(`Search with _(rev)include reached query scope limit: depth=${depth}, results=${entries.length}`);
     }
 
-    const includes =
-      searchRequest.include
-        ?.filter((param) => !iterateOnly || param.modifier === Operator.ITERATE)
-        ?.map((param) => getSearchIncludeEntries(repo, param, base)) || [];
-
-    const revincludes =
-      searchRequest.revInclude
-        ?.filter((param) => !iterateOnly || param.modifier === Operator.ITERATE)
-        ?.map((param) => getSearchRevIncludeEntries(repo, param, base)) || [];
+    const includes = flatMapFilter(searchRequest.include, (p) =>
+      !iterateOnly || p.modifier === Operator.ITERATE ? getSearchIncludeEntries(repo, p, base) : undefined
+    );
+    const revincludes = flatMapFilter(searchRequest.revInclude, (p) =>
+      !iterateOnly || p.modifier === Operator.ITERATE ? getSearchRevIncludeEntries(repo, p, base) : undefined
+    );
 
     const includedResources = (await Promise.all([...includes, ...revincludes])).flat();
-    includedResources.forEach((r) => {
-      const ref = `${r.resource?.resourceType}/${r.resource?.id}`;
-      if (!seen[ref]) {
-        entries.push(r);
+    base = [];
+    for (const entry of includedResources) {
+      const resource = entry.resource as Resource;
+      base.push(resource);
+
+      const ref = `${resource.resourceType}/${resource.id}`;
+      if (!seen.has(ref)) {
+        entries.push(entry);
       }
-      seen[ref] = true;
-    });
-    base = includedResources.map((entry) => entry.resource) as T[];
+      seen.add(ref);
+    }
+
     iterateOnly = true; // Only consider :iterate params on iterations after the first
     depth++;
   }
@@ -466,26 +448,26 @@ async function getSearchIncludeEntries(
   include: IncludeTarget,
   resources: Resource[]
 ): Promise<BundleEntry[]> {
-  const searchParam = getSearchParameter(include.resourceType, include.searchParam);
+  const { resourceType, searchParam: code } = include;
+  const searchParam = getSearchParameter(resourceType, code);
   if (!searchParam) {
-    throw new OperationOutcomeError(
-      badRequest(`Invalid include parameter: ${include.resourceType}:${include.searchParam}`)
-    );
+    throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
 
   const fhirPathResult = evalFhirPathTyped(searchParam.expression as string, resources.map(toTypedValue));
+  const references: Reference[] = [];
+  const canonicalReferences: string[] = [];
+  for (const result of fhirPathResult) {
+    if (result.type === PropertyType.Reference) {
+      references.push(result.value);
+    } else if (canonicalReferenceTypes.includes(result.type)) {
+      canonicalReferences.push(result.value);
+    }
+  }
 
-  const references = fhirPathResult
-    .filter((typedValue) => typedValue.type === PropertyType.Reference)
-    .map((typedValue) => typedValue.value as Reference);
-  const readResult = await repo.readReferences(references);
-  const includedResources = readResult.filter(isResource);
-
-  const canonicalReferences = fhirPathResult
-    .filter((typedValue) => ([PropertyType.canonical, PropertyType.uri] as string[]).includes(typedValue.type))
-    .map((typedValue) => typedValue.value as string);
-  if (canonicalReferences.length > 0) {
-    const canonicalSearches = (searchParam.target || []).map((resourceType) => {
+  const includedResources = (await repo.readReferences(references)).filter(isResource);
+  if (searchParam.target && canonicalReferences.length > 0) {
+    const canonicalSearches = searchParam.target.map((resourceType) => {
       const searchRequest = {
         resourceType: resourceType,
         filters: [
@@ -498,12 +480,16 @@ async function getSearchIncludeEntries(
         count: DEFAULT_MAX_SEARCH_COUNT,
         offset: 0,
       };
-      const builder = getSelectQueryForSearch(repo, searchRequest);
-      return getSearchEntries(repo, searchRequest, builder);
+      const query = getSelectQueryForSearch(repo, searchRequest);
+      return getSearchEntries(repo, searchRequest, query);
     });
-    (await Promise.all(canonicalSearches)).forEach((result) => {
-      includedResources.push(...result.entry.map((e) => e.resource as Resource));
-    });
+
+    const searchResults = await Promise.all(canonicalSearches);
+    for (const result of searchResults) {
+      for (const entry of result.entry) {
+        includedResources.push(entry.resource as Resource);
+      }
+    }
   }
 
   return includedResources.map((resource) => ({
@@ -527,39 +513,25 @@ async function getSearchRevIncludeEntries(
   revInclude: IncludeTarget,
   resources: Resource[]
 ): Promise<BundleEntry[]> {
-  const searchParam = getSearchParameter(revInclude.resourceType, revInclude.searchParam);
+  const { resourceType, searchParam: code } = revInclude;
+  const searchParam = getSearchParameter(resourceType, code);
   if (!searchParam) {
-    throw new OperationOutcomeError(
-      badRequest(`Invalid include parameter: ${revInclude.resourceType}:${revInclude.searchParam}`)
-    );
+    throw new OperationOutcomeError(badRequest(`Invalid include parameter: ${resourceType}:${code}`));
   }
 
-  const paramDetails = getSearchParameterDetails(revInclude.resourceType, searchParam);
-  let value: string;
-  if (paramDetails.type === SearchParameterType.CANONICAL) {
-    value = resources
-      .map((r) => (r as any).url)
-      .filter((u) => u !== undefined)
-      .join(',');
-  } else {
-    value = resources.map(getReferenceString).join(',');
-  }
-
+  const references =
+    getSearchParameterDetails(resourceType, searchParam).type === SearchParameterType.CANONICAL
+      ? flatMapFilter(resources, (r) => getCanonicalUrl(r))
+      : resources.map(getReferenceString);
   const searchRequest = {
-    resourceType: revInclude.resourceType as ResourceType,
-    filters: [
-      {
-        code: revInclude.searchParam,
-        operator: Operator.EQUALS,
-        value: value,
-      },
-    ],
+    resourceType: resourceType as ResourceType,
+    filters: [{ code, operator: Operator.EQUALS, value: references.join(',') }],
     count: DEFAULT_MAX_SEARCH_COUNT,
     offset: 0,
   };
-  const builder = getSelectQueryForSearch(repo, searchRequest);
 
-  const entries = (await getSearchEntries(repo, searchRequest, builder)).entry;
+  const query = getSelectQueryForSearch(repo, searchRequest);
+  const entries = (await getSearchEntries(repo, searchRequest, query)).entry;
   for (const entry of entries) {
     entry.search = { mode: 'include' };
   }
@@ -572,13 +544,13 @@ async function getSearchRevIncludeEntries(
  * If "count" does not equal zero, then 'first', 'next', and 'previous' links will be included.
  * @param searchRequest - The search request.
  * @param entries - The search bundle entries.
- * @param hasMore - True if there are more entries after the current page.
+ * @param nextResource - The next resource in the search results, which fell outside of the current page.
  * @returns The search bundle links.
  */
 function getSearchLinks(
   searchRequest: SearchRequestWithCountAndOffset,
   entries: BundleEntry[] | undefined,
-  hasMore: boolean | undefined
+  nextResource?: Resource
 ): BundleLink[] {
   const result: BundleLink[] = [
     {
@@ -587,11 +559,16 @@ function getSearchLinks(
     },
   ];
 
-  if (searchRequest.count > 0 && entries && entries.length > 0) {
+  if (searchRequest.count > 0 && entries?.length) {
     if (canUseCursorLinks(searchRequest)) {
-      buildSearchLinksWithCursor(searchRequest, entries, hasMore, result);
+      // In order to make progress, the lastUpdated timestamp must change from the first entry of the current page
+      // to the first entry of the next page; otherwise we'd make the exact same request in a loop
+      if (entries[0].resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated) {
+        throw new OperationOutcomeError(serverError(new Error('Cursor fails to make progress')));
+      }
+      buildSearchLinksWithCursor(searchRequest, nextResource, result);
     } else {
-      buildSearchLinksWithOffset(searchRequest, hasMore, result);
+      buildSearchLinksWithOffset(searchRequest, nextResource, result);
     }
   }
 
@@ -604,12 +581,14 @@ function getSearchLinks(
  * A search request can use cursor links if:
  *   1. Not using offset pagination
  *   2. Exactly one sort rule using _lastUpdated ascending
+ *   3. It uses a page size that can accommodate resources with the same lastUpdated
  * @param searchRequest - The candidate search request.
  * @returns True if the search request can use cursor links.
  */
 function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): boolean {
   return (
     searchRequest.offset === 0 &&
+    searchRequest.count >= 20 &&
     searchRequest.sortRules?.length === 1 &&
     searchRequest.sortRules[0].code === '_lastUpdated' &&
     !searchRequest.sortRules[0].descending
@@ -619,14 +598,12 @@ function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): bool
 /**
  * Builds the "first", "next", and "previous" links for a search request using cursor pagination.
  * @param searchRequest - The search request.
- * @param entries - The search bundle entries.
- * @param hasMore - True if there are more entries after the current page.
+ * @param nextResource - The next resource in the search results, which fell outside of the current page.
  * @param result - The search bundle links.
  */
 function buildSearchLinksWithCursor(
   searchRequest: SearchRequestWithCountAndOffset,
-  entries: BundleEntry[],
-  hasMore: boolean | undefined,
+  nextResource: Resource | undefined,
   result: BundleLink[]
 ): void {
   result.push({
@@ -634,16 +611,15 @@ function buildSearchLinksWithCursor(
     url: getSearchUrl({ ...searchRequest, cursor: undefined, offset: undefined }),
   });
 
-  if (hasMore) {
-    const lastResource = entries[entries.length - 1].resource;
+  if (nextResource) {
     result.push({
       relation: 'next',
       url: getSearchUrl({
         ...searchRequest,
         cursor: formatCursor({
           version: '1',
-          lastInstant: lastResource?.meta?.lastUpdated as string,
-          lastId: lastResource?.id as string,
+          nextInstant: nextResource?.meta?.lastUpdated as string,
+          nextId: nextResource?.id as string,
         }),
         offset: undefined,
       }),
@@ -662,7 +638,7 @@ function parseCursor(cursor: string): Cursor | undefined {
     return undefined;
   }
   const date = new Date(parseInt(parts[1], 10));
-  return { version: parts[0], lastInstant: date.toISOString(), lastId: parts[2] };
+  return { version: parts[0], nextInstant: date.toISOString(), nextId: parts[2] };
 }
 
 /**
@@ -671,20 +647,20 @@ function parseCursor(cursor: string): Cursor | undefined {
  * @returns The cursor string.
  */
 function formatCursor(cursor: Cursor): string {
-  const date = new Date(cursor.lastInstant);
-  return `${cursor.version}-${date.getTime()}-${cursor.lastId}`;
+  const date = new Date(cursor.nextInstant);
+  return `${cursor.version}-${date.getTime()}-${cursor.nextId}`;
 }
 
 /**
  * Adds the "first", "next", and "previous" links to the result array using offset pagination.
  * Offset pagination is slow, and should be avoided if possible.
  * @param searchRequest - The search request.
- * @param hasMore - True if there are more entries after the current page.
+ * @param nextResource - The next resource in the search results, which fell outside of the current page.
  * @param result - The search bundle links.
  */
 function buildSearchLinksWithOffset(
   searchRequest: SearchRequestWithCountAndOffset,
-  hasMore: boolean | undefined,
+  nextResource: Resource | undefined,
   result: BundleLink[]
 ): void {
   const count = searchRequest.count;
@@ -695,7 +671,7 @@ function buildSearchLinksWithOffset(
     url: getSearchUrl({ ...searchRequest, offset: 0 }),
   });
 
-  if (hasMore) {
+  if (nextResource) {
     result.push({
       relation: 'next',
       url: getSearchUrl({ ...searchRequest, offset: offset + count }),
@@ -909,14 +885,13 @@ function buildSearchFilterExpression(
   }
 
   // Not any special cases, just a normal search parameter.
-  return buildNormalSearchFilterExpression(repo, resourceType, table, param, filter);
+  return buildNormalSearchFilterExpression(resourceType, table, param, filter);
 }
 
 /**
  * Builds a search filter expression for a normal search parameter.
  *
  * Not any special cases, just a normal search parameter.
- * @param repo - The repository.
  * @param resourceType - The FHIR resource type.
  * @param table - The resource table.
  * @param param - The FHIR search parameter.
@@ -924,7 +899,6 @@ function buildSearchFilterExpression(
  * @returns A SQL "WHERE" clause expression.
  */
 function buildNormalSearchFilterExpression(
-  repo: Repository,
   resourceType: string,
   table: string,
   param: SearchParameter,
@@ -935,26 +909,35 @@ function buildNormalSearchFilterExpression(
     return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '=' : '!=', null);
   } else if (filter.operator === Operator.PRESENT) {
     return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '!=' : '=', null);
-  } else if (param.type === 'string') {
-    return buildStringSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
-  } else if (param.type === 'token' || param.type === 'uri') {
-    return buildTokenSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
-  } else if (param.type === 'reference') {
-    return buildReferenceSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
-  } else if (param.type === 'date') {
-    return buildDateSearchFilter(table, details, filter);
-  } else if (param.type === 'quantity') {
-    return new Condition(
-      new Column(table, details.columnName),
-      fhirOperatorToSqlOperator(filter.operator),
-      filter.value
-    );
-  } else {
-    const values = splitSearchOnComma(filter.value).map(
-      (v) => new Condition(new Column(undefined, details.columnName), fhirOperatorToSqlOperator(filter.operator), v)
-    );
-    const expr = new Disjunction(values);
-    return details.array ? new ArraySubquery(new Column(undefined, details.columnName), expr) : expr;
+  }
+
+  switch (param.type) {
+    case 'string':
+      return buildStringSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
+    case 'token':
+    case 'uri':
+      if (details.type === SearchParameterType.BOOLEAN) {
+        return buildBooleanSearchFilter(table, details, filter.operator, filter.value);
+      } else {
+        return buildTokenSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
+      }
+    case 'reference':
+      return buildReferenceSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
+    case 'date':
+      return buildDateSearchFilter(table, details, filter);
+    case 'quantity':
+      return new Condition(
+        new Column(table, details.columnName),
+        fhirOperatorToSqlOperator(filter.operator),
+        filter.value
+      );
+    default: {
+      const values = splitSearchOnComma(filter.value).map(
+        (v) => new Condition(new Column(undefined, details.columnName), fhirOperatorToSqlOperator(filter.operator), v)
+      );
+      const expr = new Disjunction(values);
+      return details.array ? new ArraySubquery(new Column(undefined, details.columnName), expr) : expr;
+    }
   }
 }
 
@@ -1135,6 +1118,24 @@ function buildTokenSearchFilter(
     return new Negation(condition);
   }
   return condition;
+}
+
+const allowedBooleanValues = ['true', 'false'];
+function buildBooleanSearchFilter(
+  table: string,
+  details: SearchParameterDetails,
+  operator: Operator,
+  value: string
+): Expression {
+  if (!allowedBooleanValues.includes(value)) {
+    throw new OperationOutcomeError(badRequest(`Boolean search value must be 'true' or 'false'`));
+  }
+
+  return new Condition(
+    new Column(table, details.columnName),
+    operator === Operator.NOT_EQUALS || operator === Operator.NOT ? '!=' : '=',
+    value
+  );
 }
 
 /**
@@ -1318,6 +1319,19 @@ function buildChainedSearch(
 ): Expression {
   if (param.chain.length > 3) {
     throw new OperationOutcomeError(badRequest('Search chains longer than three links are not currently supported'));
+  }
+
+  // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
+  // Note that this does slightly change the behavior of the search query: true chained search would require the
+  // reference to point to an existing resource, while the rewritten query just matches the reference string
+  if (param.chain.length === 1 && param.chain[0].filter?.code === '_id' && !param.chain[0].reverse) {
+    const { resourceType: targetType, code, filter } = param.chain[0];
+    const targetId = filter.value;
+    return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
+      code,
+      operator: Operator.EQUALS,
+      value: `${targetType}/${targetId}`,
+    });
   }
 
   if (usesReferenceLookupTable(repo)) {
@@ -1549,4 +1563,8 @@ function splitChainedSearch(chain: string): string[] {
     }
   }
   return params;
+}
+
+function getCanonicalUrl(resource: Resource): string | undefined {
+  return (resource as Resource & { url?: string }).url;
 }

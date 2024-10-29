@@ -20,6 +20,7 @@ import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance, ParameterGroup } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
 import { buildWafConfig } from './waf';
+import hashObject from 'object-hash';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -111,23 +112,29 @@ export class BackEnd extends Construct {
             )
           : rds.AuroraPostgresEngineVersion.VER_12_9,
       });
-      const dbParams = new ParameterGroup(this, 'MedplumDatabaseParams', {
+
+      const defaultPostgresParams = {
+        statement_timeout: '60000',
+        default_transaction_isolation: 'REPEATABLE READ',
+      };
+
+      const postgresSettings = { ...defaultPostgresParams, ...config.rdsClusterParameters };
+      const paramHash = hashObject(postgresSettings, { encoding: 'base64' }).slice(0, 8);
+      const dbParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams' + paramHash, {
         engine,
-        parameters: config.rdsInstanceParameters,
+        parameters: postgresSettings,
       });
 
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
       const readerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: readerInstanceType ? new ec2.InstanceType(readerInstanceType) : undefined,
-        parameterGroup: dbParams,
       };
 
       const writerInstanceType = config.rdsInstanceType;
       const writerInstanceProps: rds.ProvisionedClusterInstanceProps = {
         ...defaultInstanceProps,
         instanceType: writerInstanceType ? new ec2.InstanceType(writerInstanceType) : undefined,
-        parameterGroup: dbParams,
       };
 
       let readers = undefined;
@@ -154,6 +161,7 @@ export class BackEnd extends Construct {
         },
         cloudwatchLogsExports: ['postgresql'],
         instanceUpdateBehaviour: rds.InstanceUpdateBehaviour.ROLLING,
+        parameterGroup: dbParams,
       });
 
       this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;

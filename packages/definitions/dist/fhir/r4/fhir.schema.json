@@ -168,7 +168,29 @@
       "Agent": "#/definitions/Agent",
       "IdentityProvider": "#/definitions/IdentityProvider",
       "UserSecurityRequest": "#/definitions/UserSecurityRequest",
-      "ViewDefinition": "#/definitions/ViewDefinition"
+      "ViewDefinition": "#/definitions/ViewDefinition",
+      "ProjectSetting": "#/definitions/ProjectSetting",
+      "ProjectSite": "#/definitions/ProjectSite",
+      "ProjectLink": "#/definitions/ProjectLink",
+      "ProjectDefaultProfile": "#/definitions/ProjectDefaultProfile",
+      "ProjectMembershipAccessParameter": "#/definitions/ProjectMembershipAccessParameter",
+      "ProjectMembershipAccess": "#/definitions/ProjectMembershipAccess",
+      "AccessPolicyResource": "#/definitions/AccessPolicyResource",
+      "AccessPolicyIpAccessRule": "#/definitions/AccessPolicyIpAccessRule",
+      "UserConfigurationMenuLink": "#/definitions/UserConfigurationMenuLink",
+      "UserConfigurationMenu": "#/definitions/UserConfigurationMenu",
+      "UserConfigurationSearch": "#/definitions/UserConfigurationSearch",
+      "UserConfigurationOption": "#/definitions/UserConfigurationOption",
+      "BulkDataExportOutput": "#/definitions/BulkDataExportOutput",
+      "BulkDataExportDeleted": "#/definitions/BulkDataExportDeleted",
+      "BulkDataExportError": "#/definitions/BulkDataExportError",
+      "AgentSetting": "#/definitions/AgentSetting",
+      "AgentChannel": "#/definitions/AgentChannel",
+      "ViewDefinitionConstant": "#/definitions/ViewDefinitionConstant",
+      "ViewDefinitionSelectColumnTag": "#/definitions/ViewDefinitionSelectColumnTag",
+      "ViewDefinitionSelectColumn": "#/definitions/ViewDefinitionSelectColumn",
+      "ViewDefinitionSelect": "#/definitions/ViewDefinitionSelect",
+      "ViewDefinitionWhere": "#/definitions/ViewDefinitionWhere"
     }
   },
   "oneOf": [
@@ -663,6 +685,72 @@
     },
     {
       "$ref": "#/definitions/ViewDefinition"
+    },
+    {
+      "$ref": "#/definitions/ProjectSetting"
+    },
+    {
+      "$ref": "#/definitions/ProjectSite"
+    },
+    {
+      "$ref": "#/definitions/ProjectLink"
+    },
+    {
+      "$ref": "#/definitions/ProjectDefaultProfile"
+    },
+    {
+      "$ref": "#/definitions/ProjectMembershipAccessParameter"
+    },
+    {
+      "$ref": "#/definitions/ProjectMembershipAccess"
+    },
+    {
+      "$ref": "#/definitions/AccessPolicyResource"
+    },
+    {
+      "$ref": "#/definitions/AccessPolicyIpAccessRule"
+    },
+    {
+      "$ref": "#/definitions/UserConfigurationMenuLink"
+    },
+    {
+      "$ref": "#/definitions/UserConfigurationMenu"
+    },
+    {
+      "$ref": "#/definitions/UserConfigurationSearch"
+    },
+    {
+      "$ref": "#/definitions/UserConfigurationOption"
+    },
+    {
+      "$ref": "#/definitions/BulkDataExportOutput"
+    },
+    {
+      "$ref": "#/definitions/BulkDataExportDeleted"
+    },
+    {
+      "$ref": "#/definitions/BulkDataExportError"
+    },
+    {
+      "$ref": "#/definitions/AgentSetting"
+    },
+    {
+      "$ref": "#/definitions/AgentChannel"
+    },
+    {
+      "$ref": "#/definitions/ViewDefinitionConstant"
+    },
+    {
+      "$ref": "#/definitions/ViewDefinitionSelectColumnTag"
+    },
+    {
+      "$ref": "#/definitions/ViewDefinitionSelectColumn"
+    },
+    {
+      "$ref": "#/definitions/ViewDefinitionSelect"
+    },
+    {
+      "$ref": "#/definitions/ViewDefinitionWhere"
     }
   ],
   "definitions": {
@@ -1159,6 +1247,72 @@
         },
         {
           "$ref": "#/definitions/ViewDefinition"
+        },
+        {
+          "$ref": "#/definitions/ProjectSetting"
+        },
+        {
+          "$ref": "#/definitions/ProjectSite"
+        },
+        {
+          "$ref": "#/definitions/ProjectLink"
+        },
+        {
+          "$ref": "#/definitions/ProjectDefaultProfile"
+        },
+        {
+          "$ref": "#/definitions/ProjectMembershipAccessParameter"
+        },
+        {
+          "$ref": "#/definitions/ProjectMembershipAccess"
+        },
+        {
+          "$ref": "#/definitions/AccessPolicyResource"
+        },
+        {
+          "$ref": "#/definitions/AccessPolicyIpAccessRule"
+        },
+        {
+          "$ref": "#/definitions/UserConfigurationMenuLink"
+        },
+        {
+          "$ref": "#/definitions/UserConfigurationMenu"
+        },
+        {
+          "$ref": "#/definitions/UserConfigurationSearch"
+        },
+        {
+          "$ref": "#/definitions/UserConfigurationOption"
+        },
+        {
+          "$ref": "#/definitions/BulkDataExportOutput"
+        },
+        {
+          "$ref": "#/definitions/BulkDataExportDeleted"
+        },
+        {
+          "$ref": "#/definitions/BulkDataExportError"
+        },
+        {
+          "$ref": "#/definitions/AgentSetting"
+        },
+        {
+          "$ref": "#/definitions/AgentChannel"
+        },
+        {
+          "$ref": "#/definitions/ViewDefinitionConstant"
+        },
+        {
+          "$ref": "#/definitions/ViewDefinitionSelectColumnTag"
+        },
+        {
+          "$ref": "#/definitions/ViewDefinitionSelectColumn"
+        },
+        {
+          "$ref": "#/definitions/ViewDefinitionSelect"
+        },
+        {
+          "$ref": "#/definitions/ViewDefinitionWhere"
         }
       ]
     },
@@ -59348,7 +59502,8 @@
               "google-auth-required",
               "graphql-introspection",
               "websocket-subscriptions",
-              "reference-lookups"
+              "reference-lookups",
+              "transaction-bundles"
             ]
           },
           "type": "array"
@@ -59396,6 +59551,13 @@
           "description": "Linked Projects whose contents are made available to this one",
           "items": {
             "$ref": "#/definitions/ProjectLink"
+          },
+          "type": "array"
+        },
+        "defaultProfile": {
+          "description": "Default profiles to apply to resources in this project that do not individually specify profiles",
+          "items": {
+            "$ref": "#/definitions/ProjectDefaultProfile"
           },
           "type": "array"
         }
@@ -59509,6 +59671,13 @@
           "description": "May be used to represent additional information that is not part of the basic definition of the resource and that modifies the understanding of the element that contains it and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer is allowed to define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
           "items": {
             "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "identifier": {
+          "description": "An identifier for this ProjectMembership.",
+          "items": {
+            "$ref": "#/definitions/Identifier"
           },
           "type": "array"
         },
@@ -60169,6 +60338,10 @@
             "$ref": "#/definitions/CodeableConcept"
           },
           "type": "array"
+        },
+        "system": {
+          "description": "Optional flag to indicate that the bot is a system bot and therefore has access to system secrets.",
+          "$ref": "#/definitions/boolean"
         },
         "runAsUser": {
           "description": "Optional flag to indicate that the bot should be run as the user.",
@@ -61388,6 +61561,795 @@
       },
       "additionalProperties": false,
       "required": ["status", "resource", "select"]
+    },
+    "ProjectSetting": {
+      "description": "Option or parameter that can be adjusted within the Medplum Project to customize its behavior.",
+      "properties": {
+        "name": {
+          "description": "The secret name.",
+          "$ref": "#/definitions/string"
+        },
+        "valueString": {
+          "description": "The secret value.",
+          "$ref": "#/definitions/string"
+        },
+        "valueBoolean": {
+          "description": "The secret value.",
+          "$ref": "#/definitions/boolean"
+        },
+        "valueDecimal": {
+          "description": "The secret value.",
+          "$ref": "#/definitions/decimal"
+        },
+        "valueInteger": {
+          "description": "The secret value.",
+          "$ref": "#/definitions/integer"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name"]
+    },
+    "ProjectSite": {
+      "description": "Web application or web site that is associated with the project.",
+      "properties": {
+        "name": {
+          "description": "Friendly name that will make it easy for you to identify the site in the future.",
+          "$ref": "#/definitions/string"
+        },
+        "domain": {
+          "description": "The list of domain names associated with the site. User authentication will be restricted to the domains you enter here, plus any subdomains. In other words, a registration for example.com also registers subdomain.example.com. A valid domain requires a host and must not include any path, port, query or fragment.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "googleClientId": {
+          "description": "The publicly visible Google Client ID for the site. This is used to authenticate users with Google. This value is available in the Google Developer Console.",
+          "$ref": "#/definitions/string"
+        },
+        "googleClientSecret": {
+          "description": "The private Google Client Secret for the site. This value is available in the Google Developer Console.",
+          "$ref": "#/definitions/string"
+        },
+        "recaptchaSiteKey": {
+          "description": "The publicly visible reCAPTCHA site key. This value is generated when you create a new reCAPTCHA site in the reCAPTCHA admin console. Use this site key in the HTML code your site serves to users.",
+          "$ref": "#/definitions/string"
+        },
+        "recaptchaSecretKey": {
+          "description": "The private reCAPTCHA secret key. This value is generated when you create a new reCAPTCHA site in the reCAPTCHA admin console. Use this secret key for communication between your site and reCAPTCHA.",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name", "domain"]
+    },
+    "ProjectLink": {
+      "description": "Linked Projects whose contents are made available to this one",
+      "properties": {
+        "project": {
+          "description": "A reference to the Project to be linked into this one",
+          "$ref": "#/definitions/Reference"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["project"]
+    },
+    "ProjectDefaultProfile": {
+      "description": "Default profiles to apply to resources in this project that do not individually specify profiles",
+      "properties": {
+        "resourceType": {
+          "description": "The resource type onto which to apply the default profiles",
+          "enum": [
+            "Account",
+            "ActivityDefinition",
+            "AdverseEvent",
+            "AllergyIntolerance",
+            "Appointment",
+            "AppointmentResponse",
+            "AuditEvent",
+            "Basic",
+            "Binary",
+            "BiologicallyDerivedProduct",
+            "BodyStructure",
+            "Bundle",
+            "CapabilityStatement",
+            "CarePlan",
+            "CareTeam",
+            "CatalogEntry",
+            "ChargeItem",
+            "ChargeItemDefinition",
+            "Claim",
+            "ClaimResponse",
+            "ClinicalImpression",
+            "CodeSystem",
+            "Communication",
+            "CommunicationRequest",
+            "CompartmentDefinition",
+            "Composition",
+            "ConceptMap",
+            "Condition",
+            "Consent",
+            "Contract",
+            "Coverage",
+            "CoverageEligibilityRequest",
+            "CoverageEligibilityResponse",
+            "DetectedIssue",
+            "Device",
+            "DeviceDefinition",
+            "DeviceMetric",
+            "DeviceRequest",
+            "DeviceUseStatement",
+            "DiagnosticReport",
+            "DocumentManifest",
+            "DocumentReference",
+            "DomainResource",
+            "EffectEvidenceSynthesis",
+            "Encounter",
+            "Endpoint",
+            "EnrollmentRequest",
+            "EnrollmentResponse",
+            "EpisodeOfCare",
+            "EventDefinition",
+            "Evidence",
+            "EvidenceVariable",
+            "ExampleScenario",
+            "ExplanationOfBenefit",
+            "FamilyMemberHistory",
+            "Flag",
+            "Goal",
+            "GraphDefinition",
+            "Group",
+            "GuidanceResponse",
+            "HealthcareService",
+            "ImagingStudy",
+            "Immunization",
+            "ImmunizationEvaluation",
+            "ImmunizationRecommendation",
+            "ImplementationGuide",
+            "InsurancePlan",
+            "Invoice",
+            "Library",
+            "Linkage",
+            "List",
+            "Location",
+            "Measure",
+            "MeasureReport",
+            "Media",
+            "Medication",
+            "MedicationAdministration",
+            "MedicationDispense",
+            "MedicationKnowledge",
+            "MedicationRequest",
+            "MedicationStatement",
+            "MedicinalProduct",
+            "MedicinalProductAuthorization",
+            "MedicinalProductContraindication",
+            "MedicinalProductIndication",
+            "MedicinalProductIngredient",
+            "MedicinalProductInteraction",
+            "MedicinalProductManufactured",
+            "MedicinalProductPackaged",
+            "MedicinalProductPharmaceutical",
+            "MedicinalProductUndesirableEffect",
+            "MessageDefinition",
+            "MessageHeader",
+            "MolecularSequence",
+            "NamingSystem",
+            "NutritionOrder",
+            "Observation",
+            "ObservationDefinition",
+            "OperationDefinition",
+            "OperationOutcome",
+            "Organization",
+            "OrganizationAffiliation",
+            "Parameters",
+            "Patient",
+            "PaymentNotice",
+            "PaymentReconciliation",
+            "Person",
+            "PlanDefinition",
+            "Practitioner",
+            "PractitionerRole",
+            "Procedure",
+            "Provenance",
+            "Questionnaire",
+            "QuestionnaireResponse",
+            "RelatedPerson",
+            "RequestGroup",
+            "ResearchDefinition",
+            "ResearchElementDefinition",
+            "ResearchStudy",
+            "ResearchSubject",
+            "Resource",
+            "RiskAssessment",
+            "RiskEvidenceSynthesis",
+            "Schedule",
+            "SearchParameter",
+            "ServiceRequest",
+            "Slot",
+            "Specimen",
+            "SpecimenDefinition",
+            "StructureDefinition",
+            "StructureMap",
+            "Subscription",
+            "Substance",
+            "SubstanceNucleicAcid",
+            "SubstancePolymer",
+            "SubstanceProtein",
+            "SubstanceReferenceInformation",
+            "SubstanceSourceMaterial",
+            "SubstanceSpecification",
+            "SupplyDelivery",
+            "SupplyRequest",
+            "Task",
+            "TerminologyCapabilities",
+            "TestReport",
+            "TestScript",
+            "ValueSet",
+            "VerificationResult",
+            "VisionPrescription"
+          ]
+        },
+        "profile": {
+          "description": "The profiles to add by default",
+          "items": {
+            "$ref": "#/definitions/canonical"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["resourceType", "profile"]
+    },
+    "ProjectMembershipAccessParameter": {
+      "description": "User options that control the display of the application.",
+      "properties": {
+        "name": {
+          "description": "The unique name of the parameter.",
+          "$ref": "#/definitions/code"
+        },
+        "valueString": {
+          "description": "Value of the parameter - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/string"
+        },
+        "valueReference": {
+          "description": "Value of the parameter - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/Reference"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name"]
+    },
+    "ProjectMembershipAccess": {
+      "description": "Extended access configuration using parameterized access policies.",
+      "properties": {
+        "policy": {
+          "description": "The base access policy used as a template.  Variables in the template access policy are replaced by the values in the parameter.",
+          "$ref": "#/definitions/Reference"
+        },
+        "parameter": {
+          "description": "User options that control the display of the application.",
+          "items": {
+            "$ref": "#/definitions/ProjectMembershipAccessParameter"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["policy"]
+    },
+    "AccessPolicyResource": {
+      "description": "Access details for a resource type.",
+      "properties": {
+        "resourceType": {
+          "description": "The resource type.",
+          "$ref": "#/definitions/string"
+        },
+        "compartment": {
+          "description": "@deprecated Optional compartment restriction for the resource type.",
+          "$ref": "#/definitions/Reference"
+        },
+        "criteria": {
+          "description": "The rules that the server should use to determine which resources to allow.",
+          "$ref": "#/definitions/string"
+        },
+        "readonly": {
+          "description": "Optional flag to indicate that the resource type is read-only.",
+          "$ref": "#/definitions/boolean"
+        },
+        "hiddenFields": {
+          "description": "Optional list of hidden fields.  Hidden fields are not readable or writeable.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "readonlyFields": {
+          "description": "Optional list of read-only fields.  Read-only fields are readable but not writeable.",
+          "items": {
+            "$ref": "#/definitions/string"
+          },
+          "type": "array"
+        },
+        "writeConstraint": {
+          "description": "Invariants that must be satisfied for the resource to be written.  Can include %before and %after placeholders to refer to the resource before and after the updates are applied.",
+          "items": {
+            "$ref": "#/definitions/Expression"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["resourceType"]
+    },
+    "AccessPolicyIpAccessRule": {
+      "description": "Use IP Access Rules to allowlist, block, and challenge traffic based on the visitor IP address.",
+      "properties": {
+        "name": {
+          "description": "Friendly name that will make it easy for you to identify the IP Access Rule in the future.",
+          "$ref": "#/definitions/string"
+        },
+        "value": {
+          "description": "An IP Access rule will apply a certain action to incoming traffic based on the visitor IP address or IP range.",
+          "$ref": "#/definitions/string"
+        },
+        "action": {
+          "description": "Access rule can perform one of the following actions: \"allow\" | \"block\".",
+          "enum": ["allow", "block"]
+        }
+      },
+      "additionalProperties": false,
+      "required": ["value", "action"]
+    },
+    "UserConfigurationMenuLink": {
+      "description": "Shortcut links to URLs.",
+      "properties": {
+        "name": {
+          "description": "The human friendly name of the link.",
+          "$ref": "#/definitions/string"
+        },
+        "target": {
+          "description": "The URL target of the link.",
+          "$ref": "#/definitions/url"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name", "target"]
+    },
+    "UserConfigurationMenu": {
+      "description": "Optional menu of shortcuts to URLs.",
+      "properties": {
+        "title": {
+          "description": "Title of the menu.",
+          "$ref": "#/definitions/string"
+        },
+        "link": {
+          "description": "Shortcut links to URLs.",
+          "items": {
+            "$ref": "#/definitions/UserConfigurationMenuLink"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["title"]
+    },
+    "UserConfigurationSearch": {
+      "description": "Shortcut links to URLs.",
+      "properties": {
+        "name": {
+          "description": "The human friendly name of the link.",
+          "$ref": "#/definitions/string"
+        },
+        "criteria": {
+          "description": "The rules that the server should use to determine which resources to return.",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name", "criteria"]
+    },
+    "UserConfigurationOption": {
+      "description": "User options that control the display of the application.",
+      "properties": {
+        "id": {
+          "description": "The unique identifier of the option.",
+          "$ref": "#/definitions/code"
+        },
+        "valueBoolean": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/boolean"
+        },
+        "valueCode": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/code"
+        },
+        "valueDecimal": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/decimal"
+        },
+        "valueInteger": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/integer"
+        },
+        "valueString": {
+          "description": "Value of option - must be one of a constrained set of the data types (see [Extensibility](extensibility.html) for a list).",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["id"]
+    },
+    "BulkDataExportOutput": {
+      "description": "An array of file items with one entry for each generated file. If no resources are returned from the kick-off request, the server SHOULD return an empty array.",
+      "properties": {
+        "type": {
+          "description": "The FHIR resource type that is contained in the file.",
+          "$ref": "#/definitions/code"
+        },
+        "url": {
+          "description": "The absolute path to the file. The format of the file SHOULD reflect that requested in the _outputFormat parameter of the initial kick-off request.",
+          "$ref": "#/definitions/uri"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["type", "url"]
+    },
+    "BulkDataExportDeleted": {
+      "description": "An array of deleted file items following the same structure as the output array.",
+      "properties": {
+        "type": {
+          "description": "The FHIR resource type that is contained in the file.",
+          "$ref": "#/definitions/code"
+        },
+        "url": {
+          "description": "The absolute path to the file. The format of the file SHOULD reflect that requested in the _outputFormat parameter of the initial kick-off request.",
+          "$ref": "#/definitions/uri"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["type", "url"]
+    },
+    "BulkDataExportError": {
+      "description": "Array of message file items following the same structure as the output array.",
+      "properties": {
+        "type": {
+          "description": "The FHIR resource type that is contained in the file.",
+          "$ref": "#/definitions/code"
+        },
+        "url": {
+          "description": "The absolute path to the file. The format of the file SHOULD reflect that requested in the _outputFormat parameter of the initial kick-off request.",
+          "$ref": "#/definitions/uri"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["type", "url"]
+    },
+    "AgentSetting": {
+      "description": "The settings for the agent.",
+      "properties": {
+        "name": {
+          "description": "The setting name.",
+          "$ref": "#/definitions/string"
+        },
+        "valueString": {
+          "description": "The setting value.",
+          "$ref": "#/definitions/string"
+        },
+        "valueBoolean": {
+          "description": "The setting value.",
+          "$ref": "#/definitions/boolean"
+        },
+        "valueDecimal": {
+          "description": "The setting value.",
+          "$ref": "#/definitions/decimal"
+        },
+        "valueInteger": {
+          "description": "The setting value.",
+          "$ref": "#/definitions/integer"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name"]
+    },
+    "AgentChannel": {
+      "description": "Details where to send notifications when resources are received that meet the criteria.",
+      "properties": {
+        "name": {
+          "description": "The channel name.",
+          "$ref": "#/definitions/string"
+        },
+        "endpoint": {
+          "description": "The channel endpoint definition including protocol and network binding details.",
+          "$ref": "#/definitions/Reference"
+        },
+        "targetReference": {
+          "description": "The target resource where channel messages will be delivered.",
+          "$ref": "#/definitions/Reference"
+        },
+        "targetUrl": {
+          "description": "The target resource where channel messages will be delivered.",
+          "$ref": "#/definitions/url"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name", "endpoint"]
+    },
+    "ViewDefinitionConstant": {
+      "description": "A constant is a value that is injected into a FHIRPath expression through the use of a FHIRPath\nexternal constant with the same name.",
+      "properties": {
+        "id": {
+          "description": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "$ref": "#/definitions/id"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "Name of constant (referred to in FHIRPath as %[name])",
+          "$ref": "#/definitions/string"
+        },
+        "valueBase64Binary": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/base64Binary"
+        },
+        "valueBoolean": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/boolean"
+        },
+        "valueCanonical": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/canonical"
+        },
+        "valueCode": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/code"
+        },
+        "valueDate": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/date"
+        },
+        "valueDateTime": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/dateTime"
+        },
+        "valueDecimal": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/decimal"
+        },
+        "valueId": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/id"
+        },
+        "valueInstant": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/instant"
+        },
+        "valueInteger": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/integer"
+        },
+        "valueInteger64": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/integer64"
+        },
+        "valueOid": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/oid"
+        },
+        "valueString": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/string"
+        },
+        "valuePositiveInt": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/positiveInt"
+        },
+        "valueTime": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/time"
+        },
+        "valueUnsignedInt": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/unsignedInt"
+        },
+        "valueUri": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/uri"
+        },
+        "valueUrl": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/url"
+        },
+        "valueUuid": {
+          "description": "The value that will be substituted in place of the constant reference. This\nis done by including `%your_constant_name` in a FHIRPath expression, which effectively converts\nthe FHIR literal defined here to a FHIRPath literal used in the path expression.\n\nSupport for additional types may be added in the future.",
+          "$ref": "#/definitions/uuid"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name"]
+    },
+    "ViewDefinitionSelectColumnTag": {
+      "description": "Tags can be used to attach additional metadata to columns, such as implementation-specific \ndirectives or database-specific type hints.",
+      "properties": {
+        "id": {
+          "description": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "$ref": "#/definitions/id"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "A name that identifies the meaning of the tag. A namespace should be used to scope the tag to \na particular context. For example, \u0027ansi/type\u0027 could be used to indicate the type that should \nbe used to represent the value within an ANSI SQL database.",
+          "$ref": "#/definitions/string"
+        },
+        "value": {
+          "description": "Value of tag",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["name", "value"]
+    },
+    "ViewDefinitionSelectColumn": {
+      "description": "A column to be produced in the resulting table. The column is relative to the select structure\nthat contains it.",
+      "properties": {
+        "id": {
+          "description": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "$ref": "#/definitions/id"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "path": {
+          "description": "A FHIRPath expression that evaluates to the value that will be output in the column for each \nresource. The input context is the collection of resources of the type specified in the resource \nelement. Constants defined in Reference({constant}) can be referenced as %[name].",
+          "$ref": "#/definitions/string"
+        },
+        "name": {
+          "description": "Name of the column produced in the output, must be in a database-friendly format. The column \nnames in the output must not have any duplicates.",
+          "$ref": "#/definitions/string"
+        },
+        "description": {
+          "description": "A human-readable description of the column.",
+          "$ref": "#/definitions/markdown"
+        },
+        "collection": {
+          "description": "Indicates whether the column may have multiple values. Defaults to `false` if unset.\n\nViewDefinitions must have this set to `true` if multiple values may be returned. Implementations SHALL\nreport an error if multiple values are produced when that is not the case.",
+          "$ref": "#/definitions/boolean"
+        },
+        "type": {
+          "description": "A FHIR StructureDefinition URI for the column\u0027s type. Relative URIs are implicitly given\nthe \u0027http://hl7.org/fhir/StructureDefinition/\u0027 prefix. The URI may also use FHIR element ID notation to indicate\na backbone element within a structure. For instance, `Observation.referenceRange` may be specified to indicate\nthe returned type is that backbone element.\n\nThis field *must* be provided if a ViewDefinition returns a non-primitive type. Implementations should report an error\nif the returned type does not match the type set here, or if a non-primitive type is returned but this field is unset.",
+          "$ref": "#/definitions/uri"
+        },
+        "tag": {
+          "description": "Tags can be used to attach additional metadata to columns, such as implementation-specific \ndirectives or database-specific type hints.",
+          "items": {
+            "$ref": "#/definitions/ViewDefinitionSelectColumnTag"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["path", "name"]
+    },
+    "ViewDefinitionSelect": {
+      "description": "The select structure defines the columns to be used in the resulting view. These are expressed\nin the `column` structure below, or in nested `select`s for nested resources.",
+      "properties": {
+        "id": {
+          "description": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "$ref": "#/definitions/id"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "column": {
+          "description": "A column to be produced in the resulting table. The column is relative to the select structure\nthat contains it.",
+          "items": {
+            "$ref": "#/definitions/ViewDefinitionSelectColumn"
+          },
+          "type": "array"
+        },
+        "select": {
+          "description": "Nested select relative to a parent expression. If the parent `select` has a `forEach` or `forEachOrNull`, this child select will apply for each item in that expression.",
+          "items": {
+            "$ref": "#/definitions/ViewDefinitionSelect"
+          },
+          "type": "array"
+        },
+        "forEach": {
+          "description": "A FHIRPath expression to retrieve the parent element(s) used in the containing select, relative to the root resource or parent `select`,\nif applicable. `forEach` will produce a row for each element selected in the expression. For example, using forEach on `address` in Patient will\ngenerate a new row for each address, with columns defined in the corresponding `column` structure.",
+          "$ref": "#/definitions/string"
+        },
+        "forEachOrNull": {
+          "description": "Same as forEach, but produces a single row with null values in the nested expression if the collection is empty. For example,\nwith a Patient resource, a `forEachOrNull` on address will produce a row for each patient even if there are no addresses; it will\nsimply set the address columns to `null`.",
+          "$ref": "#/definitions/string"
+        },
+        "unionAll": {
+          "description": "A `unionAll` combines the results of multiple selection structures. Each structure under the `unionAll` must produce the same column names\nand types. The results from each nested selection will then have their own row.",
+          "items": {
+            "$ref": "#/definitions/ViewDefinitionSelect"
+          },
+          "type": "array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ViewDefinitionWhere": {
+      "description": "A series of zero or more FHIRPath constraints to filter resources for the view. Every constraint\nmust evaluate to true for the resource to be included in the view.",
+      "properties": {
+        "id": {
+          "description": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+          "$ref": "#/definitions/id"
+        },
+        "extension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "modifierExtension": {
+          "description": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element\u0027s descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+          "items": {
+            "$ref": "#/definitions/Extension"
+          },
+          "type": "array"
+        },
+        "path": {
+          "description": "A FHIRPath expression that defines a filter that must evaluate to true for a resource to be\nincluded in the output. The input context is the collection of resources of the type specified in\nthe resource element. Constants defined in Reference({constant}) can be referenced as %[name].",
+          "$ref": "#/definitions/string"
+        },
+        "description": {
+          "description": "A human-readable description of the above where constraint.",
+          "$ref": "#/definitions/string"
+        }
+      },
+      "additionalProperties": false,
+      "required": ["path"]
     }
   }
 }

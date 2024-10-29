@@ -5,12 +5,22 @@ import {
   Coding,
   ValueSet,
   ValueSetComposeInclude,
+  ValueSetComposeIncludeConcept,
   ValueSetComposeIncludeFilter,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { DatabaseMode } from '../../database';
-import { Column, Condition, Conjunction, escapeLikeString, Literal, SelectQuery, SqlFunction } from '../sql';
+import {
+  Column,
+  Condition,
+  Conjunction,
+  Disjunction,
+  escapeLikeString,
+  Literal,
+  SelectQuery,
+  SqlFunction,
+} from '../sql';
 import { validateCodings } from './codesystemvalidatecode';
 import { getOperationDefinition } from './definitions';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -72,24 +82,50 @@ export async function expandOperator(req: FhirRequest): Promise<FhirResponse> {
 
 const MAX_EXPANSION_SIZE = 1000;
 
-export function filterCodings(codings: Coding[], params: ValueSetExpandParameters): Coding[] {
+export function filterIncludedConcepts(
+  concepts: ValueSetComposeIncludeConcept[] | ValueSetExpansionContains[] | Coding[],
+  params: ValueSetExpandParameters,
+  system?: string
+): ValueSetExpansionContains[] {
   const filter = params.filter?.trim().toLowerCase();
+  const codings: Coding[] = flattenConcepts(concepts, { filter, system });
   if (!filter) {
     return codings;
   }
   return codings.filter((c) => c.display?.toLowerCase().includes(filter));
 }
 
-export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandParameters): Promise<ValueSet> {
-  let expandedSet: ValueSetExpansionContains[];
-
-  const expansion = valueSet.expansion;
-  if (expansion?.contains?.length && !expansion.parameter && expansion.total === expansion.contains.length) {
-    // Full expansion is already available, use that
-    expandedSet = filterCodings(expansion.contains, params);
-  } else {
-    expandedSet = await computeExpansion(valueSet, params);
+function flattenConcepts(
+  concepts: ValueSetComposeIncludeConcept[] | ValueSetExpansionContains[] | Coding[],
+  options?: {
+    filter?: string;
+    system?: string;
   }
+): Coding[] {
+  const result: Coding[] = [];
+  for (const concept of concepts) {
+    const system = (concept as Coding).system ?? options?.system;
+    if (!system) {
+      throw new Error('Missing system for Coding');
+    }
+
+    // Flatten contained codings recursively
+    const contained = (concept as ValueSetExpansionContains).contains;
+    if (contained) {
+      result.push(...flattenConcepts(contained, options));
+    }
+
+    const filter = options?.filter;
+    if (!filter || concept.display?.toLowerCase().includes(filter)) {
+      result.push({ system, code: concept.code, display: concept.display });
+    }
+  }
+
+  return result;
+}
+
+export async function expandValueSet(valueSet: ValueSet, params: ValueSetExpandParameters): Promise<ValueSet> {
+  const expandedSet = await computeExpansion(valueSet, params);
   if (expandedSet.length >= MAX_EXPANSION_SIZE) {
     valueSet.expansion = {
       total: MAX_EXPANSION_SIZE + 1,
@@ -111,6 +147,16 @@ async function computeExpansion(
   params: ValueSetExpandParameters,
   terminologyResources: Record<string, CodeSystem | ValueSet> = Object.create(null)
 ): Promise<ValueSetExpansionContains[]> {
+  const preExpansion = valueSet.expansion;
+  if (
+    preExpansion?.contains?.length &&
+    !preExpansion.parameter &&
+    (!preExpansion.total || preExpansion.total === preExpansion.contains.length)
+  ) {
+    // Full expansion is already available, use that
+    return filterIncludedConcepts(preExpansion.contains, params);
+  }
+
   if (!valueSet.compose?.include.length) {
     throw new OperationOutcomeError(badRequest('Missing ValueSet definition', 'ValueSet.compose.include'));
   }
@@ -157,7 +203,7 @@ async function computeExpansion(
     terminologyResources[include.system] = codeSystem;
 
     if (include.concept) {
-      const filteredCodings = filterCodings(include.concept, params);
+      const filteredCodings = filterIncludedConcepts(include.concept, params, include.system);
       const validCodings = await validateCodings(codeSystem, filteredCodings);
       for (const c of validCodings) {
         if (c) {
@@ -217,7 +263,6 @@ export function expansionQuery(
   codeSystem: CodeSystem,
   params?: ValueSetExpandParameters
 ): SelectQuery | undefined {
-  const ctx = getRequestContext();
   let query = new SelectQuery('Coding')
     .column('id')
     .column('code')
@@ -230,6 +275,10 @@ export function expansionQuery(
         case 'is-a':
         case 'descendent-of':
           if (params?.filter) {
+            if (params.filter.length < 3) {
+              return undefined; // Must specify minimum filter length to make this expensive query workable
+            }
+
             const base = new SelectQuery('Coding', undefined, 'origin')
               .column('id')
               .column('code')
@@ -252,7 +301,7 @@ export function expansionQuery(
           query = addPropertyFilter(query, condition.property, 'IN', condition.value.split(','));
           break;
         default:
-          ctx.logger.warn('Unknown filter type in ValueSet', { filter: condition });
+          getLogger().warn('Unknown filter type in ValueSet', { filter: condition });
           return undefined; // Unknown filter type, don't make DB query with incorrect filters
       }
     }
@@ -268,9 +317,14 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
   if (params.filter) {
     query
       .whereExpr(
-        new Conjunction(
-          params.filter.split(/\s+/g).map((filter) => new Condition('display', 'LIKE', `%${escapeLikeString(filter)}%`))
-        )
+        new Disjunction([
+          new Condition('code', '=', params.filter),
+          new Conjunction(
+            params.filter
+              .split(/\s+/g)
+              .map((filter) => new Condition('display', 'LIKE', `%${escapeLikeString(filter)}%`))
+          ),
+        ])
       )
       .orderByExpr(
         new SqlFunction('strict_word_similarity', [

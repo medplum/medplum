@@ -51,7 +51,9 @@ Below is a brief interview with the Codex engineering leadership Zane Silver and
 
 Video - 7 mins 51 seconds
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/ZCmGlio07GY?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/ZCmGlio07GY?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 **Background (Zane):** Let me just give you quick refresher of what we're doing here at Codex.
 
@@ -127,7 +129,8 @@ Medplum Client Typescript SDK can be used to connect to the EHR in multiple mode
 
 For example use the MedplumClient to connect to another FHIR server from a Bot or other application that has the Medplum client as follows (client credentials).
 
-```typescript
+---
+```ts
 // External EHR Url and credentials
 const externalEhrBaseUrl = 'https://ehr.externalprovider.org/FHIRProxy/api/FHIR/DSTU2/';
 const externalClientId = '<client_id>';
@@ -142,7 +145,7 @@ await externalEhrClient.startLogin(externalClientId, externalClientSecret);
 // Work with the client as needed, for example search
 await externalEhrClient.searchResources('Patient?identifier:contains=999-47-5984');
 ```
-
+---
 ## Related Resources
 
 - [Medplum SDK Constructor](/docs/sdk/core.medplumclient._constructor_)

@@ -1,16 +1,17 @@
 {
   "name": "medplum-photon-integration",
-  "version": "3.2.7",
+  "version": "3.2.18",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "npm run build:bots && tsc && vite build",
-    "build:bots": "npm run clean && npm run lint && tsc --project tsconfig-bots.json && node --loader ts-node/esm src/scripts/deploy-bots.ts",
+    "build:bots": "npm run clean && tsc --project tsconfig-bots.json && node --no-warnings esbuild-script.mjs && node --loader ts-node/esm src/scripts/deploy-bots.ts",
     "clean": "rimraf dist",
     "dev": "vite",
     "preview": "vite preview",
     "lint": "eslint src/",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "prettier": {
     "printWidth": 120,
@@ -23,25 +24,26 @@
     ]
   },
   "devDependencies": {
-    "@mantine/core": "7.12.0",
-    "@mantine/hooks": "7.12.0",
-    "@mantine/notifications": "7.12.0",
-    "@medplum/core": "3.2.7",
-    "@medplum/eslint-config": "3.2.7",
-    "@medplum/fhirtypes": "3.2.7",
-    "@medplum/react": "3.2.7",
-    "@photonhealth/elements": "0.10.9",
-    "@tabler/icons-react": "3.12.0",
-    "@types/node": "22.2.0",
-    "@types/react": "18.3.3",
-    "@types/react-dom": "18.3.0",
-    "@vitejs/plugin-react": "4.3.1",
-    "postcss": "8.4.41",
+    "@mantine/core": "7.13.4",
+    "@mantine/hooks": "7.13.4",
+    "@mantine/notifications": "7.13.4",
+    "@medplum/core": "3.2.18",
+    "@medplum/eslint-config": "3.2.18",
+    "@medplum/fhirtypes": "3.2.18",
+    "@medplum/react": "3.2.18",
+    "@photonhealth/elements": "0.12.10",
+    "@tabler/icons-react": "3.17.0",
+    "@types/node": "22.8.1",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.3",
+    "postcss": "8.4.47",
+    "esbuild": "0.24.0",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.26.0",
-    "typescript": "5.5.4",
-    "vite": "5.4.0"
+    "react-router-dom": "6.27.0",
+    "typescript": "5.6.3",
+    "vite": "5.4.10"
   }
 }

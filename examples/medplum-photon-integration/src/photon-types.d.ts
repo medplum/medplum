@@ -93,7 +93,7 @@ export type PhotonOrder = {
 export type Fill = {
   id: string;
   treatment: PhotonTreatment;
-  prescription?: PhotonPrescription;
+  prescription?: Partial<PhotonPrescription>;
   state: 'SCHEDULED' | 'NEW' | 'SENT' | 'CANCELED';
   requestedAt: string;
   filledAt?: string;
@@ -209,6 +209,11 @@ export type PhotonMedHistoryInput = {
 };
 
 export interface PhotonWebhook {
+  method: 'POST';
+  path: string;
+  query: Record<string, string>;
+  client_ip: string;
+  url: string;
   headers: Record<string, string>;
   body: PhotonEvent;
 }
@@ -216,7 +221,7 @@ export interface PhotonWebhook {
 type BasePhotonEvent = {
   id: string;
   type: OrderEventType | PrescriptionEventType;
-  specversion: number;
+  specversion: string;
   datacontenttype: string;
   time: string;
   subject: string;
@@ -249,22 +254,16 @@ type OrderData = {
 
 type PrescriptionData = {
   id: string;
-  externalId: string;
+  externalId?: string;
   patient: {
     id: string;
-    externalId: string;
+    externalId?: string;
   };
 };
 
 interface OrderCreatedData extends OrderData {
   pharmacyId: string;
-  fills: {
-    id: string;
-    prescription: {
-      id: string;
-      externalId: string;
-    };
-  }[];
+  fills: Partial<Fill>[];
   createdAt: string;
 }
 
@@ -329,12 +328,13 @@ interface PrescriptionCreatedData extends PrescriptionData {
   dispenseUnit: string;
   dispenseAsWritten: boolean;
   refillsAllowed: number;
+  fillsAllowed?: number;
   daysSupply: number;
   instructions: string;
   effectiveDate: string;
   expirationDate: string;
   prescriberId: string;
-  medicationId: string;
+  treatmentId: string;
   patient: {
     id: string;
     externalId: string;
@@ -347,7 +347,7 @@ interface PrescriptionCreatedEvent extends BasePhotonEvent {
   data: PrescriptionCreatedData;
 }
 
-interface PrescriptionDepletedEvent extends BasePhotonEvent {
+export interface PrescriptionDepletedEvent extends BasePhotonEvent {
   type: 'photon:prescription:depleted';
   data: PrescriptionData;
 }
@@ -357,14 +357,15 @@ interface PrescriptionExpiredEvent extends BasePhotonEvent {
   data: PrescriptionData;
 }
 
-export type PhotonEvent =
+export type OrderEvent =
   | OrderCreatedEvent
   | OrderPlacedEvent
   | OrderFulfillmentEvent
   | OrderCompletedEvent
   | OrderCanceledEvent
   | OrderReroutedEvent
-  | OrderErrorEvent
-  | PrescriptionCreatedEvent
-  | PrescriptionDepletedEvent
-  | PrescriptionExpiredEvent;
+  | OrderErrorEvent;
+
+export type PrescriptionEvent = PrescriptionCreatedEvent | PrescriptionDepletedEvent | PrescriptionExpiredEvent;
+
+export type PhotonEvent = OrderEvent | PrescriptionEvent;

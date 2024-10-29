@@ -226,9 +226,7 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
     ],
     indexes: [
       { columns: ['resourceId'], indexType: 'btree' },
-      { columns: ['code'], indexType: 'btree' },
-      { columns: ['system'], indexType: 'btree' },
-      { columns: ['value'], indexType: 'btree' },
+      // TODO: Add composite indexes and support for `include`
     ],
   });
 
@@ -545,11 +543,11 @@ function buildIndexSql(tableName: string, index: IndexDefinition): string {
     result += 'UNIQUE ';
   }
 
-  result += 'INDEX CONCURRENTLY IF NOT EXISTS ';
+  result += 'INDEX CONCURRENTLY IF NOT EXISTS "';
   result += tableName;
   result += '_';
   result += index.columns.join('_');
-  result += '_idx ON "';
+  result += '_idx" ON "';
   result += tableName;
   result += '" ';
 

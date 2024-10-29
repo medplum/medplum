@@ -86,7 +86,7 @@ import {
 import { MockSubscriptionManager } from './subscription-manager';
 
 export interface MockClientOptions
-  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime'> {
+  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime' | 'fetch'> {
   readonly debug?: boolean;
   /**
    * Override currently logged in user. Specifying null results in
@@ -152,11 +152,13 @@ export class MockClient extends MedplumClient {
       createPdf: (
         docDefinition: TDocumentDefinitions,
         tableLayouts?: { [name: string]: CustomTableLayout },
-        fonts?: TFontDictionary | undefined
+        fonts?: TFontDictionary
       ) => client.mockCreatePdf(docDefinition, tableLayouts, fonts),
-      fetch: (url: string, options: any) => {
-        return client.mockFetch(url, options);
-      },
+      fetch: clientOptions?.fetch
+        ? clientOptions.fetch
+        : (url: string, options: any) => {
+            return client.mockFetch(url, options);
+          },
     });
 
     this.router = router;
@@ -252,9 +254,9 @@ export class MockClient extends MedplumClient {
     agent: Agent | Reference<Agent>,
     destination: Device | Reference<Device> | string,
     body: any,
-    contentType?: string | undefined,
-    _waitForResponse?: boolean | undefined,
-    _options?: MedplumRequestOptions | undefined
+    contentType?: string,
+    _waitForResponse?: boolean,
+    _options?: MedplumRequestOptions
   ): Promise<any> {
     if (contentType === ContentType.PING) {
       if (!this.agentAvailable) {
@@ -373,7 +375,7 @@ export class MockFetchClient {
   mockCreatePdf(
     docDefinition: TDocumentDefinitions,
     tableLayouts?: { [name: string]: CustomTableLayout },
-    fonts?: TFontDictionary | undefined
+    fonts?: TFontDictionary
   ): Promise<any> {
     if (this.debug) {
       console.log(`Mock Client: createPdf(`);
@@ -631,7 +633,15 @@ export class MockFetchClient {
       const formBody = new URLSearchParams(options.body);
       const clientId = formBody.get('client_id') ?? 'my-client-id';
       return {
-        access_token: 'header.' + base64Encode(JSON.stringify({ client_id: clientId })) + '.signature',
+        access_token: createFakeJwt({
+          sub: '1234567890',
+          iat: Math.ceil(Date.now() / 1000),
+          exp: Math.ceil(Date.now() / 1000) + 60 * 60, // adding one hour in seconds
+          client_id: clientId,
+          login_id: '123',
+        }),
+        refresh_token: createFakeJwt({ client_id: 123 }),
+        profile: { reference: 'Practitioner/123' },
       };
     }
 
@@ -710,11 +720,8 @@ export class MockFetchClient {
       return exampleValueSet;
     }
 
-    const parsedUrl = new URL(url, 'https://example.com');
-
-    let pathname = parsedUrl.pathname;
-    if (pathname.includes('fhir/R4')) {
-      pathname = pathname.substring(pathname.indexOf('fhir/R4') + 7);
+    if (url.includes('fhir/R4')) {
+      url = url.substring(url.indexOf('fhir/R4') + 7);
     }
 
     let body = undefined;
@@ -728,10 +735,12 @@ export class MockFetchClient {
 
     const request: FhirRequest = {
       method,
-      pathname,
+      url,
+      pathname: '',
       body,
       params: Object.create(null),
-      query: Object.fromEntries(parsedUrl.searchParams),
+      query: Object.create(null),
+      headers: toIncomingHttpHeaders(options.headers),
     };
 
     const result = await this.router.handleRequest(request, this.repo);
@@ -743,6 +752,40 @@ export class MockFetchClient {
   }
 }
 
+/**
+ * Creates a fake JWT token with the provided claims for testing.
+ *
+ * **NOTE: This function does not create a real signed JWT. Attempting to read the header or signature will fail.**
+ *
+ * @param claims - The claims to encode in the body of the fake JWT.
+ * @returns A stringified fake JWT token.
+ */
+export function createFakeJwt(claims: Record<string, string | number>): string {
+  return 'header.' + base64Encode(JSON.stringify(claims)) + '.signature';
+}
+
 function base64Encode(str: string): string {
   return typeof window !== 'undefined' ? window.btoa(str) : Buffer.from(str).toString('base64');
+}
+
+// even though it's just a type, avoid importing IncomingHttpHeaders from node:http
+// since MockClient needs to work in the browser. Use a reasonable approximation instead
+interface PseudoIncomingHttpHeaders {
+  [key: string]: string | undefined;
+}
+function toIncomingHttpHeaders(headers: HeadersInit | undefined): PseudoIncomingHttpHeaders {
+  const result: PseudoIncomingHttpHeaders = {};
+
+  if (headers) {
+    for (const [key, value] of Object.entries(headers)) {
+      const lowerKey = key.toLowerCase();
+      if (typeof value === 'string') {
+        result[lowerKey] = value;
+      } else {
+        console.warn(`Ignoring non-string value ${value} for header ${lowerKey}`);
+      }
+    }
+  }
+
+  return result;
 }

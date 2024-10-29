@@ -65,6 +65,9 @@ import {
   isOperationOutcome,
   normalizeOperationOutcome,
   notFound,
+  unauthorized,
+  unauthorizedTokenAudience,
+  unauthorizedTokenExpired,
   validationError,
 } from './outcomes';
 import { ReadablePromise } from './readablepromise';
@@ -97,6 +100,7 @@ const DEFAULT_BASE_URL = 'https://api.medplum.com/';
 const DEFAULT_RESOURCE_CACHE_SIZE = 1000;
 const DEFAULT_BROWSER_CACHE_TIME = 60000; // 60 seconds
 const DEFAULT_NODE_CACHE_TIME = 0;
+const DEFAULT_REFRESH_GRACE_PERIOD = 300000; // 5 minutes
 const BINARY_URL_PREFIX = 'Binary/';
 
 const system: Device = {
@@ -165,6 +169,17 @@ export interface MedplumClientOptions {
   logoutUrl?: string;
 
   /**
+   * FHIRcast Hub URL.
+   *
+   * Default value is `fhircast/STU3`.
+   *
+   * Can be specified as absolute URL or relative to `baseUrl`.
+   *
+   * Use this if you want to use a different path when connecting to a FHIRcast hub.
+   */
+  fhircastHubUrl?: string;
+
+  /**
    * The client ID.
    *
    * Client ID can be used for SMART-on-FHIR customization.
@@ -215,6 +230,15 @@ export interface MedplumClientOptions {
    * Default value is 0, which disables auto batching.
    */
   autoBatchTime?: number;
+
+  /**
+   * The refresh grace period in milliseconds.
+   *
+   * This is the amount of time before the access token expires that the client will attempt to refresh the token.
+   *
+   * Default value is 300000 (5 minutes).
+   */
+  refreshGracePeriod?: number;
 
   /**
    * Fetch implementation.
@@ -338,8 +362,8 @@ export type ResourceArray<T extends Resource = Resource> = T[] & { bundle: Bundl
 export interface CreatePdfFunction {
   (
     docDefinition: TDocumentDefinitions,
-    tableLayouts?: Record<string, CustomTableLayout> | undefined,
-    fonts?: TFontDictionary | undefined
+    tableLayouts?: Record<string, CustomTableLayout>,
+    fonts?: TFontDictionary
   ): Promise<any>;
 }
 
@@ -547,7 +571,7 @@ export type MailDestination = string | MailAddress | string[] | MailAddress[];
  * Compatible with nodemailer Mail.Options.
  */
 export interface MailAttachment {
-  /** String, Buffer or a Stream contents for the attachmentent */
+  /** String, Buffer or a Stream contents for the attachment */
   readonly content?: string;
   /** path to a file or an URL (data uris are allowed as well) if you want to stream the file instead of including it (better for larger attachments) */
   readonly path?: string;
@@ -767,9 +791,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly authorizeUrl: string;
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
+  private readonly fhircastHubUrl: string;
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
+  private readonly refreshGracePeriod: number;
   private subscriptionManager?: SubscriptionManager;
   private medplumServer?: boolean;
   private clientId?: string;
@@ -804,9 +830,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.authorizeUrl = concatUrls(this.baseUrl, options?.authorizeUrl ?? 'oauth2/authorize');
     this.tokenUrl = concatUrls(this.baseUrl, options?.tokenUrl ?? 'oauth2/token');
     this.logoutUrl = concatUrls(this.baseUrl, options?.logoutUrl ?? 'oauth2/logout');
+    this.fhircastHubUrl = concatUrls(this.baseUrl, options?.fhircastHubUrl ?? 'fhircast/STU3');
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
     this.onUnauthenticated = options?.onUnauthenticated;
+    this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
 
     this.cacheTime =
       options?.cacheTime ?? (typeof window === 'undefined' ? DEFAULT_NODE_CACHE_TIME : DEFAULT_BROWSER_CACHE_TIME);
@@ -921,6 +949,17 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   getLogoutUrl(): string {
     return this.logoutUrl;
+  }
+
+  /**
+   * Returns the current FHIRcast Hub URL.
+   * By default, this is set to `https://api.medplum.com/fhircast/STU3`.
+   * This can be overridden by setting the `logoutUrl` option when creating the client.
+   * @category HTTP
+   * @returns The current FHIRcast Hub URL.
+   */
+  getFhircastHubUrl(): string {
+    return this.fhircastHubUrl;
   }
 
   /**
@@ -1041,7 +1080,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
-  post(url: URL | string, body: any, contentType?: string, options: MedplumRequestOptions = {}): Promise<any> {
+  post(url: URL | string, body?: any, contentType?: string, options: MedplumRequestOptions = {}): Promise<any> {
     url = url.toString();
     this.setRequestBody(options, body);
     if (contentType) {
@@ -1543,7 +1582,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Creates an
    * [async generator](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/AsyncGenerator)
    * over a series of FHIR search requests for paginated search results. Each iteration of the generator yields
-   * the array of resources on each page.
+   * the array of resources on each page. Searches using _offset based pagination are limited to 10,000 records.
+   * For larger result sets, _cursor based pagination should be used instead.
+   * See: https://www.medplum.com/docs/search/paginated-search#cursor-based-pagination
    *
    * @example
    *
@@ -2175,7 +2216,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       };
 
       xhr.responseType = 'json';
-      xhr.onabort = () => sendResult(new Error('Request aborted'));
+      xhr.onabort = () => sendResult(new DOMException('Request aborted', 'AbortError'));
       xhr.onerror = () => sendResult(new Error('Request error'));
 
       if (onProgress) {
@@ -2270,7 +2311,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   /**
    * Creates a FHIR `Communication` resource with the provided data content.
    *
-   * This is a convenience method to handle commmon cases where a `Communication` resource is created with a `payload`.
+   * This is a convenience method to handle common cases where a `Communication` resource is created with a `payload`.
    * @category Create
    * @param resource - The FHIR resource to comment on.
    * @param text - The text of the comment.
@@ -2736,9 +2777,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (!this.medplumServer) {
       return Promise.resolve(undefined);
     }
+
     this.profilePromise = new Promise((resolve, reject) => {
-      this.dispatchEvent({ type: 'profileRefreshing' });
-      this.get('auth/me')
+      this.get('auth/me', { cache: 'no-cache' })
         .then((result: SessionDetails) => {
           this.profilePromise = undefined;
           const profileChanged = this.sessionDetails?.profile?.id !== result.profile.id;
@@ -2746,22 +2787,23 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           if (profileChanged) {
             this.dispatchEvent({ type: 'change' });
           }
-          this.dispatchEvent({ type: 'profileRefreshed' });
           resolve(result.profile);
+          this.dispatchEvent({ type: 'profileRefreshed' });
         })
         .catch(reject);
     });
 
+    this.dispatchEvent({ type: 'profileRefreshing' });
     return this.profilePromise;
   }
 
   /**
-   * Returns true if the client is waiting for authentication.
-   * @returns True if the client is waiting for authentication.
+   * Returns true if the client is waiting for initial authentication.
+   * @returns True if the client is waiting for initial authentication.
    * @category Authentication
    */
   isLoading(): boolean {
-    return !this.isInitialized || !!this.profilePromise;
+    return !this.isInitialized || (Boolean(this.profilePromise) && !this.sessionDetails?.profile);
   }
 
   /**
@@ -3331,9 +3373,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private setRequestBody(options: MedplumRequestOptions, data: any): void {
     if (
       typeof data === 'string' ||
-      (typeof Blob !== 'undefined' && (data instanceof Blob || data.constructor.name === 'Blob')) ||
-      (typeof File !== 'undefined' && (data instanceof File || data.constructor.name === 'File')) ||
-      (typeof Uint8Array !== 'undefined' && (data instanceof Uint8Array || data.constructor.name === 'Uint8Array'))
+      (typeof Blob !== 'undefined' && (data instanceof Blob || data?.constructor.name === 'Blob')) ||
+      (typeof File !== 'undefined' && (data instanceof File || data?.constructor.name === 'File')) ||
+      (typeof Uint8Array !== 'undefined' && (data instanceof Uint8Array || data?.constructor.name === 'Uint8Array'))
     ) {
       options.body = data;
     } else if (data) {
@@ -3358,7 +3400,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (this.onUnauthenticated) {
       this.onUnauthenticated();
     }
-    return Promise.reject(new Error('Unauthenticated'));
+    return Promise.reject(new OperationOutcomeError(unauthorized));
   }
 
   /**
@@ -3371,7 +3413,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     const pkceState = getRandomString();
     sessionStorage.setItem('pkceState', pkceState);
 
-    const codeVerifier = getRandomString();
+    const codeVerifier = getRandomString().slice(0, 128);
     sessionStorage.setItem('codeVerifier', codeVerifier);
 
     const arrayHash = await encryptSHA256(codeVerifier);
@@ -3427,12 +3469,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   /**
    * Refreshes the access token using the refresh token if available.
+   * @param gracePeriod - Optional grace period in milliseconds. If not specified, uses the client configured grace period (default 5 minutes).
    * @returns Promise to refresh the access token.
    */
-  refreshIfExpired(): Promise<void> {
+  refreshIfExpired(gracePeriod?: number): Promise<void> {
+    if (gracePeriod === undefined) {
+      gracePeriod = this.refreshGracePeriod;
+    }
     // If (1) not already refreshing, (2) we have an access token, and (3) the access token is expired,
     // then start a refresh.
-    if (!this.refreshPromise && this.accessTokenExpires !== undefined && this.accessTokenExpires < Date.now()) {
+    if (
+      !this.refreshPromise &&
+      this.accessTokenExpires !== undefined &&
+      Date.now() > this.accessTokenExpires - gracePeriod
+    ) {
       // The result of the `refresh()` function is cached in `this.refreshPromise`,
       // so we can safely ignore the return value here.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
@@ -3592,7 +3642,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     } as PendingSubscriptionRequest;
 
     const body = (await this.post(
-      '/fhircast/STU3',
+      this.fhircastHubUrl,
       serializeFhircastSubscriptionRequest(subRequest),
       ContentType.FORM_URL_ENCODED
     )) as { 'hub.channel.endpoint': string };
@@ -3629,7 +3679,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     // Turn subRequest -> unsubRequest
     subRequest.mode = 'unsubscribe';
     // Send unsub request
-    await this.post('/fhircast/STU3', serializeFhircastSubscriptionRequest(subRequest), ContentType.FORM_URL_ENCODED);
+    await this.post(
+      this.fhircastHubUrl,
+      serializeFhircastSubscriptionRequest(subRequest),
+      ContentType.FORM_URL_ENCODED
+    );
   }
 
   /**
@@ -3671,18 +3725,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     topic: string,
     event: EventName,
     context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
-    versionId?: string | undefined
+    versionId?: string
   ): Promise<Record<string, any>> {
     if (isContextVersionRequired(event)) {
       return this.post(
-        `/fhircast/STU3/${topic}`,
+        this.fhircastHubUrl,
         createFhircastMessagePayload<typeof event>(topic, event, context, versionId as string),
         ContentType.JSON
       );
     }
     assertContextVersionOptional(event);
     return this.post(
-      `/fhircast/STU3/${topic}`,
+      this.fhircastHubUrl,
       createFhircastMessagePayload<typeof event>(topic, event, context),
       ContentType.JSON
     );
@@ -3696,7 +3750,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns A Promise which resolves to the `CurrentContext` for the given topic.
    */
   async fhircastGetContext(topic: string): Promise<CurrentContext> {
-    return this.get(`/fhircast/STU3/${topic}`);
+    return this.get(`${this.fhircastHubUrl}/${topic}`);
   }
 
   /**
@@ -3766,18 +3820,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
       if (Date.now() >= (tokenPayload.exp as number) * 1000) {
         this.clearActiveLogin();
-        throw new Error('Token expired');
+        throw new OperationOutcomeError(unauthorizedTokenExpired);
       }
 
       // Verify app_client_id
       if (tokenPayload.cid) {
         if (tokenPayload.cid !== this.clientId) {
           this.clearActiveLogin();
-          throw new Error('Token was not issued for this audience');
+          throw new OperationOutcomeError(unauthorizedTokenAudience);
         }
       } else if (this.clientId && tokenPayload.client_id !== this.clientId) {
         this.clearActiveLogin();
-        throw new Error('Token was not issued for this audience');
+        throw new OperationOutcomeError(unauthorizedTokenAudience);
       }
     }
 
@@ -3789,6 +3843,16 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     });
   }
 
+  private checkSessionDetailsMatchLogin(login?: LoginState): boolean {
+    // We only need to validate if we already have session details
+    if (!(this.sessionDetails && login)) {
+      return true;
+    }
+    // Make sure sessionDetails.profile.id matches the ID in the profile reference we are checking against
+    // Otherwise return false if no profile reference in login
+    return login.profile?.reference?.endsWith(this.sessionDetails.profile.id as string) ?? false;
+  }
+
   /**
    * Sets up a listener for window storage events.
    * This synchronizes state across browser windows and browser tabs.
@@ -3796,11 +3860,25 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private setupStorageListener(): void {
     try {
       window.addEventListener('storage', (e: StorageEvent) => {
-        if (e.key === null || e.key === 'activeLogin') {
-          // Storage events fire when different tabs make changes.
-          // On storage clear (key === null) or activeLogin change (key === 'activeLogin')
-          // Refresh the page to ensure the active login is up to date.
+        // Storage events fire when different tabs make changes.
+        // On storage clear (key === null) or profile change (key === 'activeLogin', and profile in 'activeLogin' is different)
+        // Refresh the page to ensure the active login is up to date.
+        if (e.key === null) {
           window.location.reload();
+        } else if (e.key === 'activeLogin') {
+          const oldState = (e.oldValue ? JSON.parse(e.oldValue) : undefined) as LoginState | undefined;
+          const newState = (e.newValue ? JSON.parse(e.newValue) : undefined) as LoginState | undefined;
+          if (
+            oldState?.profile.reference !== newState?.profile.reference ||
+            !this.checkSessionDetailsMatchLogin(newState)
+          ) {
+            window.location.reload();
+          } else if (newState) {
+            this.setAccessToken(newState.accessToken, newState.refreshToken);
+          } else {
+            // Theoretically this should never be called, but we might want to keep it here just in case
+            this.clear();
+          }
         }
       });
     } catch (_err) {

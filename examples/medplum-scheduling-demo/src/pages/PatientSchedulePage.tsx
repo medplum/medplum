@@ -9,8 +9,14 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useParams } from 'react-router-dom';
 import { ScheduleContext } from '../Schedule.context';
 import { Title } from '@mantine/core';
-import { CreateAppointment } from '../components/CreateAppointment';
+import { CreateAppointment } from '../components/actions/CreateAppointment';
 
+/**
+ * PatientSchedulePage component that displays the practitioner's schedule as part of the
+ * appointment creation flow for a patient.
+ * Allows the practitioner to select a slot to create an appointment for a patient.
+ * @returns A React component that displays the patient schedule page.
+ */
 export function PatientSchedulePage(): JSX.Element {
   const { patientId } = useParams();
 
@@ -19,7 +25,7 @@ export function PatientSchedulePage(): JSX.Element {
   const { schedule } = useContext(ScheduleContext);
 
   const medplum = useMedplum();
-  const [slots] = useSearchResources('Slot', { schedule: getReferenceString(schedule as Schedule) });
+  const [slots] = useSearchResources('Slot', { schedule: getReferenceString(schedule as Schedule), _count: '100' });
   const patient = patientId ? medplum.readResource('Patient', patientId).read() : undefined;
 
   // Converts Slot resources to big-calendar Event objects
@@ -33,7 +39,10 @@ export function PatientSchedulePage(): JSX.Element {
       resource: slot,
     }));
 
-  // When an exiting event (slot) is selected, set the event object and open the modal
+  /**
+   * When an exiting event (slot) is selected, set the event object and open the create appointment
+   * modal.
+   */
   const handleSelectEvent = useCallback(
     (event: Event) => {
       setSelectedEvent(event);
@@ -52,20 +61,21 @@ export function PatientSchedulePage(): JSX.Element {
         Select a slot for the appointment
       </Title>
 
-      <CreateAppointment
-        patient={patient}
-        slot={selectedEvent?.resource}
-        opened={createAppointmentOpened}
-        handlers={createAppointmentHandlers}
-      />
-
       <Calendar
         defaultView="week"
         views={['week', 'day']}
         localizer={dayjsLocalizer(dayjs)}
         backgroundEvents={slotEvents} // Background events don't show in the month view
         onSelectEvent={handleSelectEvent}
+        scrollToTime={new Date()} // Default scroll to current time
         style={{ height: 600 }}
+      />
+
+      <CreateAppointment
+        patient={patient}
+        event={selectedEvent}
+        opened={createAppointmentOpened}
+        handlers={createAppointmentHandlers}
       />
     </Document>
   );

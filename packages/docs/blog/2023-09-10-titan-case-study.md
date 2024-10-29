@@ -11,7 +11,9 @@ Those who have experienced the wait and shuffle of a specialist referral will ap
 
 <!-- truncate -->
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/sy3YKRFyPII?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<div className="responsive-iframe-wrapper">
+  <iframe src="https://www.youtube.com/embed/sy3YKRFyPII?start=0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+</div>
 
 _(5 minute demo)_
 

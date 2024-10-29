@@ -18,7 +18,7 @@ Setup your external authentication provider (Auth0, AWS Cognito, Okta, etc).  Us
 
 Setup your Medplum account:
 
-- [Register for a Medplum account](https://docs.medplum.com/tutorials/app/register)
+- [Register for a Medplum account](https://www.medplum.com/docs/tutorials/register)
 - Create a `ClientApplication`
 - Set the "Redirect URI" to "http://localhost:8000/"
 - Add an external identity provider with the details from above

@@ -1,17 +1,17 @@
 import {
-  ContentType,
-  Hl7Message,
-  MedplumClient,
-  OperationOutcomeError,
-  Operator,
   allOk,
   badRequest,
+  ContentType,
   createReference,
   getStatus,
+  Hl7Message,
   isOk,
   isOperationOutcome,
   isResource,
+  MedplumClient,
   normalizeErrorString,
+  OperationOutcomeError,
+  Operator,
   resolveId,
   serverError,
 } from '@medplum/core';
@@ -34,7 +34,6 @@ import {
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
-import { Readable } from 'node:stream';
 import vm from 'node:vm';
 import { asyncWrap } from '../../async';
 import { runInLambda } from '../../cloud/aws/execute';
@@ -44,9 +43,10 @@ import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
+import { readStreamToString } from '../../util/streams';
 import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
-import { getSystemRepo } from '../repo';
+import { getSystemRepo, Repository } from '../repo';
 import { sendResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
@@ -202,7 +202,7 @@ export async function executeBot(request: BotExecutionRequest): Promise<BotExecu
     const context: BotExecutionContext = {
       ...request,
       accessToken: await getBotAccessToken(runAs),
-      secrets: await getBotSecrets(bot),
+      secrets: await getBotSecrets(bot, runAs),
     };
 
     if (bot.runtimeVersion === 'awslambda') {
@@ -487,11 +487,51 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
   return accessToken;
 }
 
-async function getBotSecrets(bot: Bot): Promise<Record<string, ProjectSetting>> {
+/**
+ * Returns a collection of secrets for the bot.
+ *
+ * Secrets can come from 1-4 different sources. Order is important. The operating principles are:
+ *
+ *   1. Most specific beats more general - the runAs project secrets override the bot project secrets
+ *   2. Defer to local control" - project admin secrets override system secrets
+ *
+ * In order of precedence:
+ *
+ *   1. Bot project secrets
+ *   2. Bot project system secrets (if bot.system is true)
+ *   3. RunAs project secrets (if running in a different linked project)
+ *   4. RunAs project system secrets (if bot.system is true and running in a different linked project)
+ *
+ * @param bot - The bot to get secrets for.
+ * @param runAs - The project membership to get secrets for.
+ * @returns The collection of secrets.
+ */
+async function getBotSecrets(bot: Bot, runAs: ProjectMembership): Promise<Record<string, ProjectSetting>> {
   const systemRepo = getSystemRepo();
-  const project = await systemRepo.readResource<Project>('Project', bot.meta?.project as string);
-  const secrets = Object.fromEntries(project.secret?.map((secret) => [secret.name, secret]) || []);
-  return secrets;
+  const botProjectId = bot.meta?.project as string;
+  const runAsProjectId = resolveId(runAs.project) as string;
+  const system = !!bot.system;
+  const secrets: ProjectSetting[] = [];
+  if (botProjectId !== runAsProjectId) {
+    await addBotSecrets(systemRepo, botProjectId, system, secrets);
+  }
+  await addBotSecrets(systemRepo, runAsProjectId, system, secrets);
+  return Object.fromEntries(secrets.map((s) => [s.name, s]));
+}
+
+async function addBotSecrets(
+  systemRepo: Repository,
+  projectId: string,
+  system: boolean,
+  out: ProjectSetting[]
+): Promise<void> {
+  const project = await systemRepo.readResource<Project>('Project', projectId);
+  if (system && project.systemSecret) {
+    out.push(...project.systemSecret);
+  }
+  if (project.secret) {
+    out.push(...project.secret);
+  }
 }
 
 function getResponseContentType(req: Request): string {
@@ -517,7 +557,7 @@ async function createAuditEvent(
   outcome: AuditEventOutcome,
   outcomeDesc: string
 ): Promise<void> {
-  const { bot } = request;
+  const { bot, runAs } = request;
   const trigger = bot.auditEventTrigger ?? 'always';
   if (
     trigger === 'never' ||
@@ -530,7 +570,7 @@ async function createAuditEvent(
   const auditEvent: AuditEvent = {
     resourceType: 'AuditEvent',
     meta: {
-      project: bot.meta?.project,
+      project: resolveId(runAs.project) as string,
       account: bot.meta?.account,
     },
     period: {
@@ -574,12 +614,4 @@ async function createAuditEvent(
       outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
     });
   }
-}
-
-async function readStreamToString(stream: Readable): Promise<string> {
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of stream) {
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks).toString('utf8');
 }

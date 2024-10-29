@@ -28,6 +28,7 @@ import {
   StructureDefinition,
   StructureDefinitionSnapshot,
   SubstanceProtein,
+  Timing,
   ValueSet,
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
@@ -1499,7 +1500,7 @@ describe('FHIR resource validation', () => {
     const issues = validateResource(docRef);
     expect(issues).toHaveLength(1);
     expect(issues[0].severity).toBe('warning');
-    expect(issues[0].details?.text).toContain('Invalid reference for');
+    expect(issues[0].details?.text).toContain('Invalid reference');
   });
 
   test('Nested recursive properties', () => {
@@ -1613,7 +1614,7 @@ describe('FHIR resource validation', () => {
       value: { realmCode: [{ foo: 'bar' }] },
     };
     expect(() => validateTypedValue(typedValue2)).toThrow(
-      'Invalid additional property "foo" (ClinicalDocument.realmCode.foo)'
+      'Invalid additional property "foo" (ClinicalDocument.realmCode[0].foo)'
     );
   });
 
@@ -1661,8 +1662,41 @@ describe('FHIR resource validation', () => {
       value: { effectiveTime: ['foo'] },
     };
     expect(() => validateTypedValue(typedValue2)).toThrow(
-      'Invalid dateTime format (SubstanceAdministration.effectiveTime)'
+      'Invalid dateTime format (SubstanceAdministration.effectiveTime[0])'
     );
+  });
+
+  test('Multiple codes in Timing.repeat.when', () => {
+    // Timing constraint "tim-9" had a bug in R4 that prevents multiple codes in "when"
+    // We are fixing by backporting the R5 constraint to R4
+    // R4 constraint: offset.empty() or (when.exists() and ((when in ('C' | 'CM' | 'CD' | 'CV')).not()))
+    // R5 constraint: offset.empty() or (when.exists() and when.select($this in ('C' | 'CM' | 'CD' | 'CV')).allFalse())
+
+    // As submitted by user
+    // See: https://github.com/medplum/medplum/issues/5378
+    const timing1: Timing = {
+      repeat: {
+        frequency: 3,
+        period: 1,
+        periodUnit: 'd',
+        when: ['MORN', 'NOON', 'NIGHT'],
+        dayOfWeek: ['mon', 'wed', 'fri'],
+      },
+    };
+    expect(() => validateTypedValue({ type: 'Timing', value: timing1 })).not.toThrow();
+
+    // Make sure that a bad code throws
+    const timing2: Timing = {
+      repeat: {
+        offset: 1,
+        frequency: 3,
+        period: 1,
+        periodUnit: 'd',
+        when: ['C'],
+        dayOfWeek: ['mon', 'wed', 'fri'],
+      },
+    };
+    expect(() => validateTypedValue({ type: 'Timing', value: timing2 })).toThrow('Constraint tim-9 not met');
   });
 });
 

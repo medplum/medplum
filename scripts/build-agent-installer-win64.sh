@@ -92,16 +92,16 @@ if [ ! SKIP_SIGNING ]; then
 fi
 
 # Download Shawl exe
-rm -f shawl-v1.4.0-win64.zip
-wget https://github.com/mtkennerly/shawl/releases/download/v1.4.0/shawl-v1.4.0-win64.zip
-unzip shawl-v1.4.0-win64.zip
-mv shawl.exe dist/shawl-v1.4.0-win64.exe
+rm -f shawl-v1.5.0-win64.zip
+wget https://github.com/mtkennerly/shawl/releases/download/v1.5.0/shawl-v1.5.0-win64.zip
+unzip shawl-v1.5.0-win64.zip
+mv shawl.exe dist/shawl-v1.5.0-win64.exe
 
 # Download Shawl legal
-rm -f shawl-v1.4.0-legal.zip
-wget https://github.com/mtkennerly/shawl/releases/download/v1.4.0/shawl-v1.4.0-legal.zip
-unzip shawl-v1.4.0-legal.zip
-mv shawl-v1.4.0-legal.txt dist
+rm -f shawl-v1.5.0-legal.zip
+wget https://github.com/mtkennerly/shawl/releases/download/v1.5.0/shawl-v1.5.0-legal.zip
+unzip shawl-v1.5.0-legal.zip
+mv shawl-v1.5.0-legal.txt dist
 
 if [ ! SKIP_SIGNING ]; then
   # Sign the Shawl executable
@@ -109,7 +109,7 @@ if [ ! SKIP_SIGNING ]; then
     --storetype DIGICERTONE \
     --storepass "$SM_API_KEY|$SM_CLIENT_CERT_FILE|$SM_CLIENT_CERT_PASSWORD" \
     --alias "$SM_CERT_ALIAS" \
-    dist/shawl-v1.4.0-win64.exe
+    dist/shawl-v1.5.0-win64.exe
 fi
 
 # Build the installer

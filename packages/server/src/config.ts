@@ -37,6 +37,7 @@ export interface MedplumServerConfig {
   recaptchaSiteKey?: string;
   recaptchaSecretKey?: string;
   maxJsonSize: string;
+  maxBatchSize: string;
   allowedOrigins?: string;
   awsRegion: string;
   botLambdaRoleArn: string;
@@ -54,8 +55,6 @@ export interface MedplumServerConfig {
   heartbeatMilliseconds?: number;
   heartbeatEnabled?: boolean;
   accurateCountThreshold: number;
-  slowQueryThresholdMilliseconds?: number;
-  slowQuerySampleRate?: number;
   maxSearchOffset?: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
   defaultProjectFeatures?:
@@ -105,6 +104,7 @@ export interface MedplumDatabaseConfig {
   queryTimeout?: number;
   runMigrations?: boolean;
   maxConnections?: number;
+  disableConnectionConfiguration?: boolean;
 }
 
 export interface MedplumRedisConfig {
@@ -268,6 +268,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.userInfoUrl = config.userInfoUrl || config.baseUrl + '/userinfo';
   config.storageBaseUrl = config.storageBaseUrl || config.baseUrl + '/storage';
   config.maxJsonSize = config.maxJsonSize || '1mb';
+  config.maxBatchSize = config.maxBatchSize || '50mb';
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
@@ -280,27 +281,33 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   return config;
 }
 
-function isIntegerConfig(key: string): boolean {
-  return key === 'port' || key === 'accurateCountThreshold' || key === 'slowQueryThresholdMilliseconds';
+const integerKeys = ['port', 'accurateCountThreshold'];
+export function isIntegerConfig(key: string): boolean {
+  return integerKeys.includes(key);
 }
 
-function isFloatConfig(key: string): boolean {
-  return key === 'slowQuerySampleRate';
+function isFloatConfig(_key: string): boolean {
+  return false;
 }
 
-function isBooleanConfig(key: string): boolean {
-  return (
-    key === 'botCustomFunctionsEnabled' ||
-    key === 'database.ssl.rejectUnauthorized' ||
-    key === 'database.ssl.require' ||
-    key === 'logRequests' ||
-    key === 'logAuditEvents' ||
-    key === 'registerEnabled' ||
-    key === 'require' ||
-    key === 'rejectUnauthorized'
-  );
+const booleanKeys = [
+  'botCustomFunctionsEnabled',
+  'database.ssl.rejectUnauthorized',
+  'database.ssl.require',
+  'database.disableConnectionConfiguration',
+  'readonlyDatabase.ssl.rejectUnauthorized',
+  'readonlyDatabase.ssl.require',
+  'readonlyDatabase.disableConnectionConfiguration',
+  'logRequests',
+  'logAuditEvents',
+  'registerEnabled',
+  'require',
+  'rejectUnauthorized',
+];
+export function isBooleanConfig(key: string): boolean {
+  return booleanKeys.includes(key);
 }
 
-function isObjectConfig(key: string): boolean {
+export function isObjectConfig(key: string): boolean {
   return key === 'tls' || key === 'ssl';
 }

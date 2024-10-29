@@ -526,6 +526,52 @@
               "min": 1,
               "max": "1"
             }
+          },
+          {
+            "id": "Project.defaultProfile",
+            "path": "Project.defaultProfile",
+            "definition": "Default profiles to apply to resources in this project that do not individually specify profiles",
+            "min": 0,
+            "max": "*",
+            "type": [{"code": "BackboneElement"}],
+            "base": {
+              "path": "Project.defaultProfile",
+              "min": 0,
+              "max": "*"
+            }
+          },
+          {
+            "id": "Project.defaultProfile.resourceType",
+            "path": "Project.defaultProfile.resourceType",
+            "definition": "The resource type onto which to apply the default profiles",
+            "min": 1,
+            "max": "1",
+            "type": [{"code": "code"}],
+            "base": {
+              "path": "Project.defaultProfile.resourceType",
+              "min": 1,
+              "max": "1"
+            },
+            "binding": {
+              "strength": "required",
+              "valueSet": "http://hl7.org/fhir/ValueSet/resource-types"
+            }
+          },
+          {
+            "id": "Project.defaultProfile.profile",
+            "path": "Project.defaultProfile.profile",
+            "definition": "The profiles to add by default",
+            "min": 1,
+            "max": "*",
+            "type": [{
+              "code" : "canonical",
+              "targetProfile" : ["http://hl7.org/fhir/StructureDefinition/StructureDefinition"]
+            }],
+            "base": {
+              "path": "Project.defaultProfile.profile",
+              "min": 1,
+              "max": "*"
+            }
           }
         ]
       }
@@ -1328,6 +1374,22 @@
             }]
           },
           {
+            "id" : "ProjectMembership.identifier",
+            "path" : "ProjectMembership.identifier",
+            "short" : "An identifier for this ProjectMembership",
+            "definition" : "An identifier for this ProjectMembership.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "ProjectMembership.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "ProjectMembership.project",
             "path" : "ProjectMembership.project",
             "definition" : "Project where the memberships are available.",
@@ -1827,6 +1889,21 @@
               "path" : "Bot.category",
               "min" : 0,
               "max" : "*"
+            }
+          },
+          {
+            "id" : "Bot.system",
+            "path" : "Bot.system",
+            "definition" : "Optional flag to indicate that the bot is a system bot and therefore has access to system secrets.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "base" : {
+              "path" : "Bot.system",
+              "min" : 0,
+              "max" : "1"
             }
           },
           {
@@ -3552,7 +3629,15 @@
               "path" : "AccessPolicy.resource",
               "min" : 0,
               "max" : "*"
-            }
+            },
+            "constraint": [
+              {
+                "key": "axp-3",
+                "severity": "error",
+                "human": "Criteria must be a valid FHIR search string on the correct resource type, e.g. Patient?identifier=123",
+                "expression": "criteria.exists() implies criteria.startsWith(%context.resourceType & '?')"
+              }
+            ]
           },
           {
             "id" : "AccessPolicy.resource.resourceType",

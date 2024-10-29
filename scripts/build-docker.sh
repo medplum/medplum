@@ -5,6 +5,11 @@ if [[ -z "${DOCKERHUB_REPOSITORY}" ]]; then
   exit 1
 fi
 
+if [[ -z "${GITHUB_SHA}" ]]; then
+  echo "GITHUB_SHA is missing"
+  exit 1
+fi
+
 # Fail on error
 set -e
 
@@ -13,6 +18,7 @@ set -x
 
 # Build server tarball
 tar \
+  --no-xattrs \
   --exclude='*.ts' \
   --exclude='*.tsbuildinfo' \
   -czf medplum-server.tar.gz \
@@ -26,6 +32,10 @@ tar \
   packages/fhir-router/dist \
   packages/server/package.json \
   packages/server/dist
+
+# Supply chain attestations
+# See: https://docs.docker.com/scout/policy/#supply-chain-attestations
+ATTESTATIONS="--provenance=true --sbom=true"
 
 # Target platforms
 PLATFORMS="--platform linux/amd64,linux/arm64,linux/arm/v7"
@@ -44,4 +54,4 @@ for arg in "$@"; do
 done
 
 # Build and push Docker images
-docker buildx build $PLATFORMS $TAGS --push .
+docker buildx build $ATTESTATIONS $PLATFORMS $TAGS --push .

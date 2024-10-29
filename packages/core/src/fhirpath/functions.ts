@@ -311,7 +311,7 @@ export const functions: Record<string, FhirPathFunction> = {
    * @returns A collection containing only those elements in the input collection for which the stated criteria expression evaluates to true.
    */
   select: (context: AtomContext, input: TypedValue[], criteria: Atom): TypedValue[] => {
-    return input.map((e) => criteria.eval(context, [e])).flat();
+    return input.map((e) => criteria.eval({ parent: context, variables: { $this: e } }, [e])).flat();
   },
 
   /**

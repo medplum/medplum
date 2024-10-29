@@ -753,6 +753,12 @@
       "type": "reference",
       "description": "The subject of the report",
       "expression": "DiagnosticReport.subject"
+    },
+    {
+      "name": "study",
+      "type": "reference",
+      "description": "Studies associated with the diagnostic report",
+      "expression": "DiagnosticReport.imagingStudy"
     }
   ]
 }

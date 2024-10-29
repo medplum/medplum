@@ -31,7 +31,7 @@ export function AppointmentsPage(): JSX.Element {
   // Start the SearchRequest with the appropriate filter depending on the active tab
   const [search, setSearch] = useState<SearchRequest>({
     resourceType: 'Appointment',
-    fields: ['patient', 'start', 'end', 'serviceType', '_lastUpdated'],
+    fields: ['patient', 'start', 'end', 'status', 'appointmentType', 'serviceType'],
     filters: [
       { code: 'actor', operator: Operator.EQUALS, value: getReferenceString(profile as Practitioner) },
       tab === 'upcoming' ? upcomingFilter : pastFilter,

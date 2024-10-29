@@ -1,4 +1,5 @@
 /* global console */
+/* global process */
 /* eslint no-console: "off" */
 
 import { execSync } from 'child_process';
@@ -9,7 +10,7 @@ import packageJson from './package.json' with { type: 'json' };
 let gitHash;
 try {
   gitHash = execSync('git rev-parse --short HEAD').toString().trim();
-} catch (error) {
+} catch (_error) {
   gitHash = 'unknown'; // Default value when not in a git repository
 }
 
@@ -38,7 +39,10 @@ esbuild
     outfile: './dist/cjs/index.cjs',
   })
   .then(() => writeFileSync('./dist/cjs/package.json', '{"type": "commonjs"}'))
-  .catch(console.error);
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
 
 esbuild
   .build({
@@ -47,4 +51,7 @@ esbuild
     outfile: './dist/esm/index.mjs',
   })
   .then(() => writeFileSync('./dist/esm/package.json', '{"type": "module"}'))
-  .catch(console.error);
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

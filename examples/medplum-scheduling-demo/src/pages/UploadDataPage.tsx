@@ -1,11 +1,12 @@
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { capitalize, getReferenceString, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString } from '@medplum/core';
 import { Bot, Bundle, BundleEntry, Practitioner, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import coreData from '../../data/core/appointment-service-types.json';
 import exampleBotData from '../../data/core/example-bots.json';
 
 type UploadFunction = (medplum: MedplumClient, profile: Practitioner) => Promise<void>;
@@ -28,8 +29,14 @@ export function UploadDataPage(): JSX.Element {
     setPageDisabled(true);
     let uploadFunction: UploadFunction;
     switch (dataType) {
+      case 'core':
+        uploadFunction = uploadCoreData;
+        break;
       case 'bots':
         uploadFunction = uploadExampleBots;
+        break;
+      case 'example':
+        uploadFunction = uploadExampleData;
         break;
       default:
         throw new Error(`Invalid upload type: ${dataType}`);
@@ -56,6 +63,26 @@ export function UploadDataPage(): JSX.Element {
       </Button>
     </Document>
   );
+}
+
+async function uploadCoreData(medplum: MedplumClient): Promise<void> {
+  const batch = coreData as Bundle;
+
+  const result = await medplum.executeBatch(batch);
+
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+    await setTimeout(
+      () =>
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Uploaded Core Data',
+        }),
+      1000
+    );
+  } else {
+    throw new Error('Error uploading core data');
+  }
 }
 
 async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner): Promise<void> {
@@ -106,10 +133,39 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
 }
 
 function checkBotsUploaded(medplum: MedplumClient): boolean {
-  const exampleBots = medplum.searchResources('Bot', { name: 'appointments' }).read();
+  const bots = medplum.searchResources('Bot').read();
 
-  if (exampleBots.length === 1) {
+  const exampleBots = bots.filter(
+    (bot) =>
+      bot.name &&
+      ['book-appointment', 'cancel-appointment', 'set-availability', 'block-availability', 'example-data'].includes(
+        bot.name
+      )
+  );
+
+  if (exampleBots.length === 5) {
     return true;
   }
   return false;
+}
+
+async function uploadExampleData(medplum: MedplumClient, profile: Practitioner): Promise<void> {
+  // Unlike the other bundles, which source data from JSON files, this example data bundle is
+  // provided by a bot to handle dynamic content.
+  const batch: Bundle = await medplum.executeBot({ system: 'http://example.com', value: 'example-data' }, profile);
+  const result = await medplum.executeBatch(batch);
+
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+    setTimeout(
+      () =>
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Uploaded Example Data',
+        }),
+      1000
+    );
+  } else {
+    throw new Error('Error uploading example data');
+  }
 }

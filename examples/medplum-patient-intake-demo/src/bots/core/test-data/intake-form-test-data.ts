@@ -14,6 +14,12 @@ export const payorOrganization2: Organization = {
   name: 'Second Insurance Provider',
 };
 
+export const pharmacyOrganization: Organization = {
+  resourceType: 'Organization',
+  id: 'org-id-3',
+  name: 'Pharmacy',
+};
+
 export const intakeQuestionnaire: Questionnaire = coreBundle.entry[0].resource as Questionnaire;
 intakeQuestionnaire.id = 'intake-questionnaire-id';
 
@@ -556,6 +562,68 @@ export const intakeResponse: QuestionnaireResponse = {
       ],
     },
     {
+      id: 'id-133',
+      linkId: 'vaccination-history',
+      text: 'Vaccination History',
+      item: [
+        {
+          id: 'id-134',
+          linkId: 'immunization-vaccine',
+          text: 'Vaccine',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://hl7.org/fhir/sid/cvx',
+                code: '197',
+                display: 'influenza, high-dose seasonal, quadrivalent, 0.7mL dose, preservative free',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-135',
+          linkId: 'immunization-date',
+          text: 'Administration Date',
+          answer: [
+            {
+              valueDateTime: '2024-02-01T14:00:00-07:00',
+            },
+          ],
+        },
+      ],
+    },
+    {
+      id: 'id-136',
+      linkId: 'vaccination-history',
+      text: 'Vaccination History',
+      item: [
+        {
+          id: 'id-137',
+          linkId: 'immunization-vaccine',
+          text: 'Vaccine',
+          answer: [
+            {
+              valueCoding: {
+                system: 'http://hl7.org/fhir/sid/cvx',
+                code: '115',
+                display: 'tetanus toxoid, reduced diphtheria toxoid, and acellular pertussis vaccine, adsorbed',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id-138',
+          linkId: 'immunization-date',
+          text: 'Administration Date',
+          answer: [
+            {
+              valueDateTime: '2015-08-01T15:00:00-07:00',
+            },
+          ],
+        },
+      ],
+    },
+    {
       id: 'id-50',
       linkId: 'coverage-information',
       text: 'Coverage Information',
@@ -589,9 +657,9 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
-                code: 'BP',
-                display: 'Billing contact person',
+                system: 'http://terminology.hl7.org/CodeSystem/subscriber-relationship',
+                code: 'self',
+                display: 'Self',
               },
             },
           ],
@@ -632,10 +700,66 @@ export const intakeResponse: QuestionnaireResponse = {
           answer: [
             {
               valueCoding: {
-                system: 'http://terminology.hl7.org/CodeSystem/v2-0131',
-                code: 'BP',
-                display: 'Billing contact person',
+                system: 'http://terminology.hl7.org/CodeSystem/subscriber-relationship',
+                code: 'child',
+                display: 'Child',
               },
+            },
+          ],
+        },
+        {
+          id: 'id-108',
+          linkId: 'related-person',
+          text: 'Subscriber Information',
+          item: [
+            {
+              id: 'id-109',
+              linkId: 'related-person-first-name',
+              text: 'First Name',
+              answer: [
+                {
+                  valueString: 'Marge',
+                },
+              ],
+            },
+            {
+              id: 'id-110',
+              linkId: 'related-person-middle-name',
+              text: 'Middle Name',
+            },
+            {
+              id: 'id-111',
+              linkId: 'related-person-last-name',
+              text: 'Last Name',
+              answer: [
+                {
+                  valueString: 'Simpson',
+                },
+              ],
+            },
+            {
+              id: 'id-112',
+              linkId: 'related-person-dob',
+              text: 'Date of Birth',
+              answer: [
+                {
+                  valueDate: '1958-03-19',
+                },
+              ],
+            },
+            {
+              id: 'id-113',
+              linkId: 'related-person-gender-identity',
+              text: 'Gender Identity',
+              answer: [
+                {
+                  valueCoding: {
+                    system: 'http://snomed.info/sct',
+                    code: '446141000124107',
+                    display: 'Identifies as female gender (finding)',
+                  },
+                },
+              ],
             },
           ],
         },
@@ -749,6 +873,23 @@ export const intakeResponse: QuestionnaireResponse = {
             code: 'en',
             display: 'English',
           },
+        },
+      ],
+    },
+    {
+      linkId: 'preferred-pharmacy',
+      text: 'Preferred Pharmacy',
+      item: [
+        {
+          linkId: 'preferred-pharmacy-reference',
+          text: 'Pharmacy',
+          answer: [
+            {
+              valueReference: {
+                reference: getReferenceString(pharmacyOrganization),
+              },
+            },
+          ],
         },
       ],
     },

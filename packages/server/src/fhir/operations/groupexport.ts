@@ -1,4 +1,4 @@
-import { accepted, concatUrls, parseReference } from '@medplum/core';
+import { accepted, concatUrls, parseReference, singularize } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Group, Patient, Project } from '@medplum/fhirtypes';
 import { getConfig } from '../../config';
@@ -22,8 +22,8 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
   const ctx = getAuthenticatedContext();
   const { baseUrl } = getConfig();
   const { id } = req.params;
-  const since = req.query._since;
-  const types = req.query._type?.split(',');
+  const since = singularize(req.query._since);
+  const types = singularize(req.query._type)?.split(',');
 
   // First read the group as the user to verify access
   const group = await ctx.repo.readResource<Group>('Group', id);

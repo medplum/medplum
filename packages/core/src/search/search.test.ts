@@ -21,22 +21,53 @@ describe('Search Utils', () => {
     }
   });
 
-  test('parseSearchRequest', () => {
-    expect(() => parseSearchRequest(null as unknown as string)).toThrow('Invalid search URL');
-    expect(() => parseSearchRequest(undefined as unknown as string)).toThrow('Invalid search URL');
-    expect(() => parseSearchRequest('')).toThrow('Invalid search URL');
+  test.each<[string, Partial<SearchRequest> | Error]>([
+    ['Patient', { resourceType: 'Patient' }],
+    [
+      'Patient?name=alice',
+      {
+        resourceType: 'Patient',
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
+      },
+    ],
+    [
+      'Patient?_fields=id,name,birthDate',
+      {
+        resourceType: 'Patient',
+        fields: ['id', 'name', 'birthDate'],
+      },
+    ],
+    [
+      // Should ignore _ query parameter in query string
+      `Patient?name=Alice&_=${new Date().getTime()}`,
+      {
+        resourceType: 'Patient',
+        filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Alice' }],
+      },
+    ],
+    [
+      'Observation?date=gt2024-10',
+      {
+        resourceType: 'Observation',
+        filters: [{ code: 'date', operator: Operator.GREATER_THAN, value: '2024-10' }],
+      },
+    ],
 
-    expect(parseSearchRequest('Patient')).toMatchObject({ resourceType: 'Patient' });
-    expect(parseSearchRequest('Patient?name=alice')).toMatchObject({
-      resourceType: 'Patient',
-      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
-    });
-    expect(parseSearchRequest('Patient?_fields=id,name,birthDate')).toMatchObject({
-      resourceType: 'Patient',
-      fields: ['id', 'name', 'birthDate'],
-    });
+    [null as unknown as string, new Error('Invalid search URL')],
+    [undefined as unknown as string, new Error('Invalid search URL')],
+    ['', new Error('Invalid search URL')],
+    ['Observation?date=12/17', new Error('Invalid format for date search parameter: 12/17')],
+    ['Observation?date=012522', new Error('Invalid format for date search parameter: 012522')],
+  ])('parseSearchRequest(%p) => %p', (url, expected) => {
+    if (expected instanceof Error) {
+      expect(() => parseSearchRequest(url)).toThrow(expected);
+    } else {
+      expect(parseSearchRequest(url)).toMatchObject(expected);
+      expect(parseSearchRequest(new URL('http://example.com/' + url))).toMatchObject(expected);
+    }
+  });
 
-    expect(parseSearchRequest('Patient')).toMatchObject({ resourceType: 'Patient' });
+  test('parseSearchRequest with query dictionary', () => {
     expect(parseSearchRequest('Patient', { name: 'alice' })).toMatchObject({
       resourceType: 'Patient',
       filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
@@ -48,22 +79,6 @@ describe('Search Utils', () => {
     expect(parseSearchRequest('Patient', { _fields: 'id,name,birthDate' })).toMatchObject({
       resourceType: 'Patient',
       fields: ['id', 'name', 'birthDate'],
-    });
-
-    expect(parseSearchRequest(new URL('https://example.com/Patient'))).toMatchObject({ resourceType: 'Patient' });
-    expect(parseSearchRequest(new URL('https://example.com/Patient?name=alice'))).toMatchObject({
-      resourceType: 'Patient',
-      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'alice' }],
-    });
-    expect(parseSearchRequest(new URL('https://example.com/Patient?_fields=id,name,birthDate'))).toMatchObject({
-      resourceType: 'Patient',
-      fields: ['id', 'name', 'birthDate'],
-    });
-
-    // Ignores _ query parameter in query string
-    expect(parseSearchRequest(`Patient?name=Alice&_=${new Date().getTime()}`)).toMatchObject({
-      resourceType: 'Patient',
-      filters: [{ code: 'name', operator: Operator.EQUALS, value: 'Alice' }],
     });
   });
 

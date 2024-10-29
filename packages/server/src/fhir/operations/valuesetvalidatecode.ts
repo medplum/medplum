@@ -118,7 +118,7 @@ async function satisfies(
   filter: ValueSetComposeIncludeFilter,
   codeSystem: CodeSystem
 ): Promise<boolean> {
-  const ctx = getAuthenticatedContext();
+  const { logger, repo } = getAuthenticatedContext();
   let query = new SelectQuery('Coding')
     .column('id')
     .column('code')
@@ -143,10 +143,10 @@ async function satisfies(
       query = findAncestor(query, codeSystem, filter.value);
       break;
     default:
-      ctx.logger.warn('Unknown filter type in ValueSet', { filter: filter.op });
+      logger.warn('Unknown filter type in ValueSet', { filter: filter.op });
       return false; // Unknown filter type, don't make DB query with incorrect filters
   }
 
-  const results = await query.execute(ctx.repo.getDatabaseClient(DatabaseMode.READER));
+  const results = await query.execute(repo.getDatabaseClient(DatabaseMode.READER));
   return results.length > 0;
 }
