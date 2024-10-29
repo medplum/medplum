@@ -376,6 +376,7 @@ describe('AccessPolicy', () => {
         resource: [
           {
             resourceType: 'Observation',
+            criteria: 'Observation?_compartment=Organization/' + overrideId,
           },
           {
             resourceType: 'Patient',
@@ -400,11 +401,15 @@ describe('AccessPolicy', () => {
       expect(observation.meta?.account?.reference).toEqual('Organization/' + overrideId);
       expect(observation.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
       expect(observation.meta?.accounts).toHaveLength(1);
+      expect(observation.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(observation.meta?.compartment).toHaveLength(1);
 
       const readObservation = await repo.readResource('Observation', observation.id as string);
       expect(readObservation.meta?.account?.reference).toEqual('Organization/' + overrideId);
       expect(readObservation.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
       expect(readObservation.meta?.accounts).toHaveLength(1);
+      expect(readObservation.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(readObservation.meta?.compartment).toHaveLength(1);
 
       const adminRepo = new Repository({
         extendedMode: true,
@@ -424,17 +429,23 @@ describe('AccessPolicy', () => {
         subject: patientRef,
       });
       expect(observation2.meta?.account?.reference).toEqual('Organization/' + overrideId);
-      expect(observation2.meta?.accounts).toContainEqual(orgReference);
       expect(observation2.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
-      expect(observation2.meta?.accounts).toContainEqual(patientRef);
+      expect(observation2.meta?.accounts).toContainEqual(orgReference);
       expect(observation2.meta?.accounts).toHaveLength(2);
+      expect(observation2.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(observation2.meta?.compartment).toContainEqual(patientRef);
+      expect(observation2.meta?.compartment).toContainEqual(orgReference);
+      expect(observation2.meta?.compartment).toHaveLength(3);
 
       const readObservation2 = await repo.readResource('Observation', observation2.id as string);
       expect(readObservation2.meta?.account?.reference).toEqual('Organization/' + overrideId);
-      expect(observation2.meta?.accounts).toContainEqual(orgReference);
       expect(readObservation2.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
-      expect(readObservation2.meta?.accounts).toContainEqual(patientRef);
+      expect(readObservation2.meta?.accounts).toContainEqual(orgReference);
       expect(readObservation2.meta?.accounts).toHaveLength(2);
+      expect(readObservation2.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(readObservation2.meta?.compartment).toContainEqual(patientRef);
+      expect(readObservation2.meta?.compartment).toContainEqual(orgReference);
+      expect(readObservation2.meta?.compartment).toHaveLength(3);
     }));
 
   test('Access policy restrict compartment', () =>
