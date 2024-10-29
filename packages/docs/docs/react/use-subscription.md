@@ -21,7 +21,7 @@ Some examples include:
 - Notification badges for tasks
 - Realtime analytics dashboards
 
-The semantics of the hook make it extremely simple to subscribe to events for resource interactions that satisfy a specified criteria and act
+The hook makes it extremely simple to listen for resource interactions that satisfy a specified criteria and act
 on them reactively, rather than having to poll via expensive search requests on a timer.
 
 ## Usage
