@@ -71,16 +71,13 @@ interface MedplumContext {
 ```
 
 ### Using `loading` to know when `MedplumClient` initialization is done
+
 You can use the `loading` property from `useMedplumContext()` to know when `MedplumClient` has finished initialization successfully. `loading` is updated asynchronously so it will usually start as `false` and change to `true` once the client has finished its initialization.
 
 ```tsx
 function MyComponent(): JSX.Element {
   const { loading } = useMedplumContext();
-  return loading ? (
-    <Spinner />
-  ) : (
-    <div>Loaded!</div>
-  );
+  return loading ? <Spinner /> : <div>Loaded!</div>;
 }
 ```
 
@@ -94,114 +91,17 @@ Subscriptions created with this hook are lightweight, share a single WebSocket c
 function MyComponent(): JSX.Element {
   const [notificationCount, setNotificationCount] = useState(0);
 
-  useSubscription(
-    'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456', 
-    (bundle: Bundle) => {
-      console.log('Received a message from Practitioner/abc-123!');
-      handleNotificationBundle(bundle); // Do something with the bundle
-      setNotificationCount(s => s + 1);
-    }
-  );
+  useSubscription('Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456', (bundle: Bundle) => {
+    console.log('Received a message from Practitioner/abc-123!');
+    handleNotificationBundle(bundle); // Do something with the bundle
+    setNotificationCount((s) => s + 1);
+  });
 
   return <div>Notifications received: {notificationCount}</div>;
 }
 ```
 
-### Subscription Extensions
-
-Any [Subscription extension](https://www.medplum.com/docs/subscriptions/subscription-extensions) supported by Medplum can be attached to a `Subscription` created by the `useSubscription` hook via a 3rd optional parameter to the hook, `options`, which takes an optional `subscriptionProps`.
-
-```tsx
-type UseSubscriptionOptions = {
-  subscriptionProps?: Partial<Subscription>;
-}
-```
-
-Here's how you would subscribe to only `create` interactions for a criteria:
-
-```tsx
-const createOnlyOptions = {
-  subscriptionProps: {
-    extension: [
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
-        valueCode: 'create',
-      },
-    ],
-  }
-};
-
-function MyComponent(): JSX.Element {
-  const [createCount, setCreateCount] = useState(0);
-
-  useSubscription(
-    'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456',
-    (_bundle) => {
-      console.log('Received a new message from Practitioner/abc-123!');
-      setCreateCount(s => s + 1);
-    },
-    createOnlyOptions,
-  );
-
-  return <div>Create notifications received: {createCount}</div>;
-}
-```
-
-Subscriptions with the same criteria are tracked separately if they have differing `subscriptionProps`. This means you can create one `Subscription` to listen for `create` interactions and another for `update` interactions and they will not interfere with each other.
-
-```tsx
-const createOnlyOptions = {
-  subscriptionProps: {
-    extension: [
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
-        valueCode: 'create',
-      },
-    ],
-  }
-};
-
-const updateOnlyOptions = {
-  subscriptionProps: {
-    extension: [
-      {
-        url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
-        valueCode: 'update',
-      },
-    ],
-  }
-};
-
-function MyComponent(): JSX.Element {
-  const [createCount, setCreateCount] = useState(0);
-  const [updateCount, setUpdateCount] = useState(0);
-
-  useSubscription(
-    'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456',
-    (_bundle) => {
-      console.log('Received a new message from Practitioner/abc-123!');
-      setCreateCount(s => s + 1);
-    },
-    createOnlyOptions,
-  );
-
-  useSubscription(
-    'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456',
-    (_bundle) => {
-      console.log('Received an update to message from Practitioner/abc-123!');
-      setUpdateCount(s => s + 1);
-    },
-    updateOnlyOptions,
-  );
-
-  return (
-    <>
-      <div>Create notifications received: {createCount}</div>
-      <div>Update notifications received: {updateCount}</div>
-    </>
-  );
-}
-```
+See also: [`useSubscription` docs](https://www.medplum.com/docs/react/use-subscription)
 
 ### Usage within `Expo` app
 
