@@ -126,12 +126,6 @@ async function generateCountryCodes(): Promise<CodeSystem[]> {
                 type: 'code',
                 description: 'Size category of region described by the code',
               },
-              {
-                code: 'numeric',
-                type: 'code',
-                uri: 'http://hl7.org/fhir/concept-properties#synonym',
-                description: 'Equivalent numeric code',
-              },
             ],
           },
           {
@@ -146,6 +140,12 @@ async function generateCountryCodes(): Promise<CodeSystem[]> {
                 type: 'code',
                 uri: 'http://hl7.org/fhir/concept-properties#synonym',
                 description: 'Equivalent code',
+              },
+              {
+                code: 'numeric',
+                type: 'code',
+                uri: 'http://hl7.org/fhir/concept-properties#synonym',
+                description: 'Equivalent numeric code',
               },
             ],
           },
