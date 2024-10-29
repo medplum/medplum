@@ -1,4 +1,4 @@
-import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
+import { allOk, ContentType, isOk, OperationOutcomeError, stringify } from '@medplum/core';
 import { BatchEvent, FhirRequest, FhirRouter, HttpMethod, RepositoryMode } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
@@ -71,7 +71,7 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
       res.contentType(ContentType.FHIR_JSON);
     }
 
-    return res.json(data);
+    return res.send(stringify(data, req.query._pretty === 'true'));
   };
   next();
 });
