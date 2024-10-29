@@ -169,6 +169,10 @@ function formatTsquery(filter: string | undefined): string | undefined {
   return noPunctuation.replace(/\s+/g, ':* & ') + ':*';
 }
 
+export interface Expression {
+  buildSql(builder: SqlBuilder): void;
+}
+
 export class Column implements Expression {
   constructor(
     readonly tableName: string | undefined,
@@ -190,8 +194,12 @@ export class Literal implements Expression {
   }
 }
 
-export interface Expression {
-  buildSql(builder: SqlBuilder): void;
+export class Parameter implements Expression {
+  constructor(readonly value: string) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.param(this.value);
+  }
 }
 
 export class Negation implements Expression {
