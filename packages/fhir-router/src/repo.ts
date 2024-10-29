@@ -8,6 +8,7 @@ import {
   created,
   deepClone,
   evalFhirPath,
+  forbidden,
   generateId,
   globalSchema,
   matchesSearchRequest,
@@ -15,8 +16,10 @@ import {
   normalizeOperationOutcome,
   notFound,
   preconditionFailed,
+  protectedResourceTypes,
+  validateResourceType,
 } from '@medplum/core';
-import { Bundle, BundleEntry, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
+import { Bundle, BundleEntry, OperationOutcome, Reference, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Operation, applyPatch } from 'rfc6902';
 
 export type CreateResourceOptions = {
@@ -175,6 +178,13 @@ export abstract class FhirRepository<TClient = unknown> {
   ): Promise<TResult>;
 
   /**
+   * Checks if this Repository can read a given resource type.
+   *
+   * @param resourceType - The resource type to check if it can be read.
+   */
+  abstract canReadResourceType(resourceType: string): boolean;
+
+  /**
    * Searches for a single FHIR resource.
    *
    * This is a convenience method for `search()` that returns the first resource rather than a `Bundle`.
@@ -303,14 +313,21 @@ export abstract class FhirRepository<TClient = unknown> {
   }
 }
 
+export interface MemoryRepositoryOptions {
+  superAdmin?: boolean;
+  strictMode?: boolean;
+}
+
 export class MemoryRepository extends FhirRepository<undefined> {
   private readonly resources: Map<string, Map<string, Resource>>;
   private readonly history: Map<string, Map<string, Resource[]>>;
+  private readonly strictMode: boolean;
 
-  constructor() {
+  constructor(options?: MemoryRepositoryOptions) {
     super();
     this.resources = new Map();
     this.history = new Map();
+    this.strictMode = options?.strictMode ?? true;
   }
 
   clear(): void {
@@ -456,17 +473,25 @@ export class MemoryRepository extends FhirRepository<undefined> {
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
     const { resourceType } = searchRequest;
     const resources = this.resources.get(resourceType) ?? new Map();
-    if (resources.size === 0) {
-      // If there are no resources for this resource type,
-      // We still want to validate the search request and throw on any potentially invalid search params
-      // Instead of silently failing and returning an empty search set as if it was a valid search
-      matchesSearchRequest({ resourceType } as T, searchRequest);
-    }
     const result = [];
-    for (const resource of resources.values()) {
-      if (matchesSearchRequest(resource, searchRequest)) {
-        result.push(resource);
+    try {
+      validateSearchResourceTypes(this, searchRequest);
+      if (resources.size === 0) {
+        // If there are no resources for this resource type,
+        // We still want to validate the search request and throw on any potentially invalid search params
+        // Instead of silently failing and returning an empty search set as if it was a valid search
+        matchesSearchRequest({ resourceType } as T, searchRequest);
       }
+      for (const resource of resources.values()) {
+        if (matchesSearchRequest(resource, searchRequest)) {
+          result.push(resource);
+        }
+      }
+    } catch (err) {
+      if (this.strictMode) {
+        throw err;
+      }
+      console.error(err);
     }
     let entry = result.map((resource) => ({ resource: deepClone(resource) })) as BundleEntry<T>[];
     if (searchRequest.sortRules) {
@@ -520,6 +545,50 @@ export class MemoryRepository extends FhirRepository<undefined> {
     // MockRepository currently does not support transactions
     console.debug('WARN: MockRepository does not support transactions');
     return callback(undefined);
+  }
+
+  /**
+   * Determines if the current user can read the specified resource type.
+   * @param resourceType - The resource type.
+   * @returns True if the current user can read the specified resource type.
+   */
+  canReadResourceType(resourceType: string): boolean {
+    if (protectedResourceTypes.includes(resourceType)) {
+      return false;
+    }
+    return true;
+  }
+}
+
+/**
+ * Validates that the resource type(s) are valid and that the user has permission to read them.
+ * @param repo - The user's repository.
+ * @param searchRequest - The incoming search request.
+ */
+export function validateSearchResourceTypes(repo: FhirRepository, searchRequest: SearchRequest): void {
+  if (searchRequest.types) {
+    for (const resourceType of searchRequest.types) {
+      validateSearchResourceType(repo, resourceType);
+    }
+  } else {
+    validateSearchResourceType(repo, searchRequest.resourceType);
+  }
+}
+
+/**
+ * Validates that the resource type is valid and that the user has permission to read it.
+ * @param repo - The user's repository.
+ * @param resourceType - The resource type to validate.
+ */
+export function validateSearchResourceType(repo: FhirRepository, resourceType: ResourceType): void {
+  validateResourceType(resourceType);
+
+  if (resourceType === 'Binary') {
+    throw new OperationOutcomeError(badRequest('Cannot search on Binary resource type'));
+  }
+
+  if (!repo.canReadResourceType(resourceType)) {
+    throw new OperationOutcomeError(forbidden);
   }
 }
 

@@ -1,26 +1,29 @@
 import {
   badRequest,
   createReference,
+  forbidden,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   notFound,
   OperationOutcomeError,
   parseSearchRequest,
+  validationError,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, Observation, Patient, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { randomInt, randomUUID } from 'crypto';
-import { MemoryRepository } from './repo';
+import { randomInt, randomUUID } from 'node:crypto';
+import { MemoryRepository, validateSearchResourceType, validateSearchResourceTypes } from './repo';
 
-const repo = new MemoryRepository();
+beforeAll(async () => {
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
+  indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
+  indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
+});
 
 describe('MemoryRepository', () => {
-  beforeAll(async () => {
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
-    indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
-    indexSearchParameterBundle(readJson('fhir/r4/search-parameters.json') as Bundle<SearchParameter>);
-  });
+  const repo = new MemoryRepository();
 
   test('Create resource', async () => {
     const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
@@ -82,6 +85,14 @@ describe('MemoryRepository', () => {
     expect(bundle.entry).toHaveLength(1);
   });
 
+  test('canReadResourceType', () => {
+    expect(repo.canReadResourceType('Patient')).toEqual(true);
+    expect(repo.canReadResourceType('Observation')).toEqual(true);
+    expect(repo.canReadResourceType('Agent')).toEqual(true);
+    expect(repo.canReadResourceType('Login')).toEqual(false);
+    expect(repo.canReadResourceType('JsonWebKey')).toEqual(false);
+  });
+
   test('searchResources helper', async () => {
     const family = randomUUID();
     const patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ family }] });
@@ -117,7 +128,7 @@ describe('MemoryRepository', () => {
   test('clears all resources', async () => {
     repo.clear();
 
-    const resourceTypes: ResourceType[] = ['Patient', 'Observation', 'AccessPolicy', 'Account', 'Binary', 'Bot'];
+    const resourceTypes: ResourceType[] = ['Patient', 'Observation', 'AccessPolicy', 'Account', 'Bot'];
     let expectedTotalResourceCount = 0;
     await Promise.all(
       resourceTypes.map(async (rt) => {
@@ -238,5 +249,58 @@ describe('MemoryRepository', () => {
       expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toEqual(['0', '1', '2']);
       expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toEqual(['0', '1']);
     });
+  });
+});
+
+describe('validateSearchResourceType', () => {
+  let repo: MemoryRepository;
+
+  beforeEach(() => {
+    repo = new MemoryRepository();
+  });
+
+  test('Validate valid resource type', () => {
+    expect(validateSearchResourceType(repo, 'Patient'));
+  });
+
+  test('Search for unknown resource type', () => {
+    expect(() => validateSearchResourceType(repo, 'Doctor' as ResourceType)).toThrow(
+      new OperationOutcomeError(validationError('Unknown resource type: Doctor'))
+    );
+  });
+
+  test('Search for Binary', () => {
+    expect(() => validateSearchResourceType(repo, 'Binary')).toThrow(
+      new OperationOutcomeError(badRequest('Cannot search on Binary resource type'))
+    );
+  });
+
+  test('Search for protected resource type', () => {
+    expect(() => validateSearchResourceType(repo, 'Login')).toThrow(new OperationOutcomeError(forbidden));
+  });
+});
+
+describe('validateSearchResourceTypes', () => {
+  let repo: MemoryRepository;
+
+  beforeEach(() => {
+    repo = new MemoryRepository();
+  });
+
+  test('Validate search request with multiple valid types', () => {
+    expect(() =>
+      validateSearchResourceTypes(repo, {
+        resourceType: 'MultipleTypes' as ResourceType,
+        types: ['Patient', 'Practitioner'],
+      })
+    ).not.toThrow();
+  });
+
+  test('Validate search request with one type', () => {
+    expect(() =>
+      validateSearchResourceTypes(repo, {
+        resourceType: 'Patient',
+      })
+    ).not.toThrow();
   });
 });

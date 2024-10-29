@@ -89,6 +89,13 @@ export interface MockClientOptions
   extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime' | 'fetch'> {
   readonly debug?: boolean;
   /**
+   * Determines whether this MockClient should operate in strict mode.
+   * In strict mode, unknown resource types and search parameters will cause searches to throw.
+   *
+   * Defaults to `true`.
+   */
+  readonly strictMode?: boolean;
+  /**
    * Override currently logged in user. Specifying null results in
    * MedplumContext.profile returning undefined as if no one were logged in.
    */
@@ -140,7 +147,7 @@ export class MockClient extends MedplumClient {
       client = clientOptions.mockFetchOverride.client;
     } else {
       router = new FhirRouter();
-      repo = new MemoryRepository();
+      repo = new MemoryRepository({ strictMode: clientOptions?.strictMode });
       client = new MockFetchClient(router, repo, baseUrl, clientOptions?.debug);
     }
 

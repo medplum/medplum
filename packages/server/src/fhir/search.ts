@@ -9,7 +9,6 @@ import {
   FhirFilterNegation,
   Filter,
   flatMapFilter,
-  forbidden,
   formatSearchQuery,
   getDataType,
   getReferenceString,
@@ -32,8 +31,8 @@ import {
   subsetResource,
   toPeriod,
   toTypedValue,
-  validateResourceType,
 } from '@medplum/core';
+import { validateSearchResourceTypes } from '@medplum/fhir-router';
 import {
   Bundle,
   BundleEntry,
@@ -200,38 +199,6 @@ function applyCountAndOffsetLimits<T extends Resource>(
         badRequest(`Search offset exceeds maximum (got ${searchRequest.offset}, max ${maxOffset})`)
       );
     }
-  }
-}
-
-/**
- * Validates that the resource type(s) are valid and that the user has permission to read them.
- * @param repo - The user's repository.
- * @param searchRequest - The incoming search request.
- */
-function validateSearchResourceTypes(repo: Repository, searchRequest: SearchRequest): void {
-  if (searchRequest.types) {
-    for (const resourceType of searchRequest.types) {
-      validateSearchResourceType(repo, resourceType);
-    }
-  } else {
-    validateSearchResourceType(repo, searchRequest.resourceType);
-  }
-}
-
-/**
- * Validates that the resource type is valid and that the user has permission to read it.
- * @param repo - The user's repository.
- * @param resourceType - The resource type to validate.
- */
-function validateSearchResourceType(repo: Repository, resourceType: ResourceType): void {
-  validateResourceType(resourceType);
-
-  if (resourceType === 'Binary') {
-    throw new OperationOutcomeError(badRequest('Cannot search on Binary resource type'));
-  }
-
-  if (!repo.canReadResourceType(resourceType)) {
-    throw new OperationOutcomeError(forbidden);
   }
 }
 

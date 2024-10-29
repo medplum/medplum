@@ -12,7 +12,7 @@ const universalAccessPolicy: AccessPolicyResource = {
  * Protected resource types are in the "medplum" project.
  * Reading and writing is limited to the system account.
  */
-export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login'];
+export const protectedResourceTypes = ['DomainConfiguration', 'JsonWebKey', 'Login'] as const;
 
 /**
  * Project admin resource types are special resources that are only
