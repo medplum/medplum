@@ -1,5 +1,5 @@
 import { ContentType, getReferenceString } from '@medplum/core';
-import { Bundle, Meta, Patient } from '@medplum/fhirtypes';
+import { Bundle, Meta, Organization, Patient, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -622,4 +622,54 @@ describe('FHIR Routes', () => {
       expect(bundleContains(bundle2, patient)).toBeTruthy();
       expect(bundleContains(bundle2, obs)).toBeTruthy();
     }));
+
+  test('Set accounts on create', async () => {
+    const { project, accessToken } = await createTestProject({ withAccessToken: true });
+
+    const res1 = await request(app)
+      .post('/fhir/R4/Organization')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({ resourceType: 'Organization' });
+    expect(res1.status).toBe(201);
+
+    const account = res1.body as Organization;
+
+    const res2 = await request(app)
+      .post('/fhir/R4/Questionnaire')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Questionnaire',
+        meta: { accounts: [{ reference: getReferenceString(account) }] },
+        title: 'Questionnaire A.1',
+        status: 'active',
+        item: [
+          {
+            linkId: '1',
+            text: 'How would you rate your overall experience?',
+            type: 'choice',
+            answerOption: [
+              {
+                valueCoding: {
+                  system: 'http://example.org/rating',
+                  code: '5',
+                  display: 'Excellent',
+                },
+              },
+            ],
+          },
+        ],
+      });
+    expect(res2.status).toBe(201);
+    expect(res2.body.meta?.accounts?.length).toBe(1);
+    expect(res2.body.meta?.accounts?.[0].reference).toBe(getReferenceString(account));
+
+    // There should be 2 compartments:
+    // 1: the project
+    // 2: the account organization
+    const compartments = res2.body.meta?.compartment as Reference[];
+    expect(compartments.length).toBe(2);
+    expect(compartments.find((c) => c.reference === getReferenceString(project))).toBeDefined();
+    expect(compartments.find((c) => c.reference === getReferenceString(account))).toBeDefined();
+  });
 });
