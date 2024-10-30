@@ -6,10 +6,10 @@ tags:
 
 # `useSubscription` Hook
 
-`useSubscription` creates an in-memory `Subscription` resource on the Medplum server with the given criteria and calls the 
+`useSubscription` creates an in-memory `Subscription` resource on the Medplum server with the given criteria and calls the
 given callback when an event notification is triggered.
 
-Subscriptions created with this hook are lightweight, share a single WebSocket connection per instance of `MedplumClient`, and are automatically 
+Subscriptions created with this hook are lightweight, share a single WebSocket connection per instance of `MedplumClient`, and are automatically
 untracked and cleaned up when the containing component is no longer mounted.
 
 ## Use Cases
@@ -17,6 +17,7 @@ untracked and cleaned up when the containing component is no longer mounted.
 The `useSubscription` hook is a powerful tool for creating applications that require the client to wait for events asynchronously from the server.
 
 Some examples include:
+
 - Live chat
 - Notification badges for tasks
 - Realtime analytics dashboards
@@ -26,21 +27,18 @@ on them reactively, rather than having to poll via expensive search requests on 
 
 ## Usage
 
-The `useSubscription` hook takes a [FHIR search criteria](https://hl7.org/fhir/R4/search.html) and a callback function to call when a resource interaction
+The `useSubscription` hook takes a [FHIR search criteria](../search/basic-search.mdx) and a callback function to call when a resource interaction
 that satisfies the Subscription occurs.
 
 ```tsx
 function MyComponent(): JSX.Element {
   const [notificationCount, setNotificationCount] = useState(0);
 
-  useSubscription(
-    'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456', 
-    (bundle: Bundle) => {
-      console.log('Received a message from Practitioner/abc-123!');
-      handleNotificationBundle(bundle); // Do something with the bundle
-      setNotificationCount(s => s + 1);
-    }
-  );
+  useSubscription('Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456', (bundle: Bundle) => {
+    console.log('Received a message from Practitioner/abc-123!');
+    handleNotificationBundle(bundle); // Do something with the bundle
+    setNotificationCount((s) => s + 1);
+  });
 
   return <div>Notifications received: {notificationCount}</div>;
 }
@@ -48,8 +46,53 @@ function MyComponent(): JSX.Element {
 
 ### Parsing the Subscription `Bundle`
 
-The callback receives a `Bundle` which contains a `SubscriptionStatus` as its first entry (`bundle.entry[0].resource`) 
-and the resource for which the `Subscription` fired for in its second entry (`bundle.entry[1].resource`).
+The callback receives a `Bundle` which contains a `SubscriptionStatus` as its first entry (`bundle.entry[0].resource`)
+and the resource for which the `Subscription` fired for in its second entry (`bundle.entry[1].resource`):
+
+```js
+{
+  "id": "90154e8b-e283-4973-a562-1b0e08611260",
+  "resourceType": "Bundle",
+  "type": "history",
+  "timestamp": "2024-10-29T23:52:53.282Z",
+  "entry": [
+    // The `SubscriptionStatus` resource, which tells us which `Subscription` this event notification is for
+    {
+      "resource": {
+        "id": "d5c532d0-cc4c-4c5b-8212-e22dcea22c73",
+        "resourceType": "SubscriptionStatus",
+        "status": "active",
+        "type": "event-notification",
+        "subscription": {
+          "reference": "Subscription/90ab8fc7-d8cf-447b-9451-9259846f71e4" // Here is the Subscription reference
+        },
+        "notificationEvent": [
+          {
+            "eventNumber": "0",
+            "timestamp": "2024-10-29T23:52:53.282Z",
+            "focus": {
+              "reference": "Communication/54d902bb-a8e6-4f60-a671-64591169aa5b" // Here is a reference to the resource below
+            }
+          }
+        ]
+      }
+    },
+    // The actual `Communication` resource this event fired for
+    {
+      "resource": {
+        "resourceType": "Communication",
+        "status": "in-progress",
+        "payload": [{ "contentString": "Hello, Medplum!" }],
+        "sent": "2024-10-29T23:52:53.240Z",
+        "id": "54d902bb-a8e6-4f60-a671-64591169aa5b"
+      },
+      "fullUrl": "https://api.medplum.com/fhir/R4/Communication/54d902bb-a8e6-4f60-a671-64591169aa5b"
+    }
+  ]
+}
+```
+
+So you can parse the status and the resource from the `Bundle` like this:
 
 ```tsx
 function handleNotificationBundle(bundle: Bundle): void {
@@ -65,7 +108,7 @@ function handleNotificationBundle(bundle: Bundle): void {
 
 ### Dynamic Criteria
 
-Changing the criteria string will automatically decrease the reference count for the current `Subscription` resource and create a new `Subscription` 
+Changing the criteria string will automatically decrease the reference count for the current `Subscription` resource and create a new `Subscription`
 with the new criteria.
 
 ```tsx
@@ -76,14 +119,11 @@ function MyComponent(): JSX.Element {
   // We can track the communications for the current user only
   const profileStr = useMemo<string>(() => getReferenceString(profile), [profile]);
 
-  useSubscription(
-    `Communication?sender=Practitioner/abc-123&recipient=${profileStr}`, 
-    (bundle: Bundle) => {
-      console.log('Received a message from Practitioner/abc-123!');
-      handleNotificationBundle(bundle); // Do something with the bundle
-      setNotificationCount(s => s + 1);
-    }
-  );
+  useSubscription(`Communication?sender=Practitioner/abc-123&recipient=${profileStr}`, (bundle: Bundle) => {
+    console.log('Received a message from Practitioner/abc-123!');
+    handleNotificationBundle(bundle); // Do something with the bundle
+    setNotificationCount((s) => s + 1);
+  });
 
   return <div>Notifications received: {notificationCount}</div>;
 }
@@ -91,8 +131,8 @@ function MyComponent(): JSX.Element {
 
 ### Temporarily Unsubscribing
 
-In the case of wanting to temporarily unsubscribe from the current criteria until some condition has been met (for example, waiting for a search to return or a profile to refresh), 
-you can pass an empty string as the criteria string and the previous `Subscription` will be cleaned up without creating a new `Subscription` 
+In the case of wanting to temporarily unsubscribe from the current criteria until some condition has been met (for example, waiting for a search to return or a profile to refresh),
+you can pass an empty string as the criteria string and the previous `Subscription` will be cleaned up without creating a new `Subscription`
 until the criteria string has been changed again.
 
 ```tsx
@@ -101,15 +141,15 @@ function MyComponent(): JSX.Element {
   const [notificationCount, setNotificationCount] = useState(0);
 
   // We can track the communications for the current user only
-  const profileStr = useMemo<string>(() => profile ? getReferenceString(profile) : '', [profile]);
+  const profileStr = useMemo<string>(() => (profile ? getReferenceString(profile) : ''), [profile]);
 
   useSubscription(
     // When profileStr is `undefined` we can pass an empty string to temporarily unsubscribe from any criteria
-    profileStr ? `Communication?sender=Practitioner/abc-123&recipient=${profileStr}` : '', 
+    profileStr ? `Communication?sender=Practitioner/abc-123&recipient=${profileStr}` : '',
     (bundle: Bundle) => {
       console.log('Received a message from Practitioner/abc-123!');
       handleNotificationBundle(bundle); // Do something with the bundle
-      setNotificationCount(s => s + 1);
+      setNotificationCount((s) => s + 1);
     }
   );
 
@@ -128,13 +168,13 @@ Usage within `Expo` / `React Native` has some special considerations. See: [@med
 
 ## Subscription Extensions
 
-Any [Subscription extension](../subscriptions/subscription-extensions.md) supported by Medplum can be attached to a `Subscription` 
+Any [Subscription extension](../subscriptions/subscription-extensions.md) supported by Medplum can be attached to a `Subscription`
 created by the `useSubscription` hook via a 3rd optional parameter to the hook, `options`, which takes an optional `subscriptionProps`.
 
 ```tsx
 type UseSubscriptionOptions = {
   subscriptionProps?: Partial<Subscription>;
-}
+};
 ```
 
 Here's how you would subscribe to only `create` interactions for a criteria:
@@ -148,7 +188,7 @@ const createOnlyOptions = {
         valueCode: 'create',
       },
     ],
-  }
+  },
 };
 
 function MyComponent(): JSX.Element {
@@ -158,16 +198,16 @@ function MyComponent(): JSX.Element {
     'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456',
     (_bundle) => {
       console.log('Received a new message from Practitioner/abc-123!');
-      setCreateCount(s => s + 1);
+      setCreateCount((s) => s + 1);
     },
-    createOnlyOptions,
+    createOnlyOptions
   );
 
   return <div>Create notifications received: {createCount}</div>;
 }
 ```
 
-Subscriptions with the same criteria are tracked separately if they have differing `subscriptionProps`. This means you can create one `Subscription` 
+Subscriptions with the same criteria are tracked separately if they have differing `subscriptionProps`. This means you can create one `Subscription`
 to listen for `create` interactions and another for `update` interactions and they will not interfere with each other.
 
 ```tsx
@@ -179,7 +219,7 @@ const createOnlyOptions = {
         valueCode: 'create',
       },
     ],
-  }
+  },
 };
 
 const updateOnlyOptions = {
@@ -190,7 +230,7 @@ const updateOnlyOptions = {
         valueCode: 'update',
       },
     ],
-  }
+  },
 };
 
 function MyComponent(): JSX.Element {
@@ -201,18 +241,18 @@ function MyComponent(): JSX.Element {
     'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456',
     (_bundle) => {
       console.log('Received a new message from Practitioner/abc-123!');
-      setCreateCount(s => s + 1);
+      setCreateCount((s) => s + 1);
     },
-    createOnlyOptions,
+    createOnlyOptions
   );
 
   useSubscription(
     'Communication?sender=Practitioner/abc-123&recipient=Practitioner/me-456',
     (_bundle) => {
       console.log('Received an update to message from Practitioner/abc-123!');
-      setUpdateCount(s => s + 1);
+      setUpdateCount((s) => s + 1);
     },
-    updateOnlyOptions,
+    updateOnlyOptions
   );
 
   return (
@@ -228,8 +268,8 @@ function MyComponent(): JSX.Element {
 
 ### `Error: WebSocket subscriptions not enabled for current project`
 
-Currently the WebSocket `Subscription` feature which is required to use the `useSubscription` hook is behind a feature flag. 
-Locally, you can enable this feature flag by logging in as a [super admin](../self-hosting/super-admin-guide.md) 
+Currently the WebSocket `Subscription` feature which is required to use the `useSubscription` hook is behind a feature flag.
+Locally, you can enable this feature flag by logging in as a [super admin](../self-hosting/super-admin-guide.md)
 and enabling the `websocket-subscriptions` feature on your `Project` resource from `@medplum/app`.
 
 To get this feature enabled for your project on hosted Medplum (`app.medplum.com`), send an email to hello@medplum.com.
