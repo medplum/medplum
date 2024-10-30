@@ -9,38 +9,19 @@ global:
   domain: api.zencore.medplum.dev
   cloudProvider: gcp
 
+gcp:
+  projectId: medplum-zencore
+  secretId: config-diego-test
+
+# aws:
+#   region: us-west-2
+
+
 image:
   # repository: medplum/medplum-server
   repository: us-west1-docker.pkg.dev/medplum-zencore/medplum-repo/medplum-server
   pullPolicy: IfNotPresent
   tag: test3
-
-env:
-  - name: POSTGRES_HOST
-    value: "POSTGRES_IP_ADDRESS" # obtain from GCP secret
-  - name: POSTGRES_PORT
-    value: "5432"
-  - name: SHOULD_RUN_SEED_TEST
-    value: "true"
-  - name: REDIS_PASSWORD_DISABLED_IN_TESTS
-    value: "true"
-
-  - name: DATABASE_URL
-    value:
-  - name: REDIS_URL
-    value: "redis://redis-instance-ip:6379"
-  - name: POSTGRES_USER
-    value: "medplum"
-  - name: POSTGRES_PASSWORD
-    value:
-  - name: POSTGRES_DB
-    value: "your-database-name"
-  - name: REDIS_HOST
-    value: "MEMORYSTORE_PRIVATE_IP"
-  - name: REDIS_PORT
-    value: "6379"
-  - name: REDIS_PASSWORD
-    value: "medplum"
 
 serviceAccount:
   create: true

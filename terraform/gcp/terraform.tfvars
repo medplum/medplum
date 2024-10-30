@@ -16,6 +16,7 @@ labels = {
 gcs_buckets = {
   medplum-user-content = {
     project_id = "medplum-zencore"
+    location   = "US"
     versioning = true
     lifecycle_rules = [{
       action = {

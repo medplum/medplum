@@ -23,7 +23,7 @@ module "sql-db" {
     ipv4_enabled                                  = false
     ssl_mode                                      = "ALLOW_UNENCRYPTED_AND_ENCRYPTED"
     private_network                               = module.vpc.network_self_link
-    allocated_ip_range                            = var.psa_range_name
+    allocated_ip_range                            = google_compute_global_address.psa_reserved_ip.name
     authorized_networks                           = []
     enable_private_path_for_google_cloud_services = true
   }

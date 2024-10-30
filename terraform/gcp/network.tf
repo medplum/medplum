@@ -44,11 +44,18 @@ module "vpc" {
   depends_on = [google_project_service.project]
 }
 
-### Attach Ranges to Private Service Access for VPC
+## Private Service Access for VPC
+resource "google_compute_global_address" "psa_reserved_ip" {
+  name          = "medplum-psa-reserved-ip"
+  purpose       = "VPC_PEERING"
+  address_type  = "INTERNAL"
+  prefix_length = 20
+  network       = module.vpc.network_self_link
+}
 resource "google_service_networking_connection" "private_service_access" {
   network                 = module.vpc.network_name
   service                 = "servicenetworking.googleapis.com"
-  reserved_peering_ranges = [var.psa_range_name]
+  reserved_peering_ranges = [google_compute_global_address.psa_reserved_ip.name]
 }
 
 resource "google_compute_network_peering_routes_config" "peering_routes" {
@@ -72,6 +79,7 @@ module "cloud-nat" {
   router        = "${var.region}-medplum-gke-outbound-gateway"
 }
 
+##  Ingress ip for external load balancer
 resource "google_compute_global_address" "external_ip" {
   name         = "medplum-external-ip"
   project      = var.project_id

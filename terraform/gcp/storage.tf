@@ -6,7 +6,7 @@ module "buckets" {
 
   name                     = each.key
   project_id               = each.value.project_id
-  location                 = var.region
+  location                 = each.value.location
   custom_placement_config  = each.value.custom_placement_config
   force_destroy            = each.value.force_destroy
   bucket_policy_only       = each.value.bucket_policy_only
