@@ -79,10 +79,17 @@ livenessProbe:
   httpGet:
     path: /healthcheck
     port: 8103
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 30
 readinessProbe:
   httpGet:
     path: /healthcheck
     port: 8103
+  initialDelaySeconds: 15
+  periodSeconds: 10
+  timeoutSeconds: 30
+
 resources:
   limits:
     memory: "512Mi"
@@ -94,4 +101,3 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80

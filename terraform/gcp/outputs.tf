@@ -4,6 +4,7 @@ output "sql_db_generated_user_password" {
   sensitive   = true
 }
 
-output "redis_ip_address" {
-  value = module.redis_cluster.redis_cluster.discovery_endpoints[0].address
+output "output_auth_string" {
+  value     = module.memorystore.auth_string
+  sensitive = true
 }
