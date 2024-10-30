@@ -87,7 +87,7 @@ resource "google_secret_manager_secret_version" "redis_ip_address" {
 
 resource "google_secret_manager_secret" "redis_auth_string" {
   project   = var.project_id
-  secret_id = "redis_auth_string"
+  secret_id = "redis-auth-string"
 
   labels = var.labels
 
@@ -100,7 +100,7 @@ resource "google_secret_manager_secret" "redis_auth_string" {
 
 resource "google_secret_manager_secret_version" "redis_auth_string" {
   secret      = google_secret_manager_secret.redis_auth_string.id
-  secret_data = tostring(module.memorystore.host)
+  secret_data = tostring(module.memorystore.auth_string)
 
   depends_on = [google_project_service.project]
 }
