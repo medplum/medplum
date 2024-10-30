@@ -160,8 +160,7 @@ function parseCountryCodeRow(
   m49Codes: Record<string, CodeSystemConcept>,
   isoCodes: Record<string, CodeSystemConcept>
 ): void {
-  const worldKey = Object.keys(row)[0]; // Not sure why this is necessary, maybe weird encoding in the CSV?
-  const world = row[worldKey] as string;
+  const world = row['Global Code'] as string;
   const region = row['Region Code'] as string;
   const subRegion = row['Sub-region Code'] as string;
   const intRegion = row['Intermediate Region Code'] as string;
