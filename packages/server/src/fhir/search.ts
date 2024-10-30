@@ -880,7 +880,7 @@ function buildSearchFilterExpression(
 
   const lookupTable = getLookupTable(resourceType, param);
   if (lookupTable) {
-    return lookupTable.buildWhere(selectQuery, resourceType, table, filter);
+    return lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
   }
 
   // Not any special cases, just a normal search parameter.
