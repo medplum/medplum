@@ -85,3 +85,37 @@ resource "google_compute_global_address" "external_ip" {
   project      = var.project_id
   address_type = "EXTERNAL"
 }
+
+# firewall rules
+module "firewall_rules" {
+  source       = "terraform-google-modules/network/google//modules/firewall-rules"
+  version      = "~> 9.3.0"
+  project_id   = var.project_id
+  network_name = module.vpc.network_name
+
+  rules = [
+    {
+      name               = "allow-health-checks-ingress"
+      description        = "Allow ingress traffic from Google health checks"
+      direction          = "INGRESS"
+      priority           = 1000
+      destination_ranges = ["10.0.0.0/20", "10.12.0.0/23", "192.168.32.0/20", "10.3.1.0/28"] # Ajusta al rango de tu red si es diferente
+      source_ranges = [
+        "35.191.0.0/16",
+        "130.211.0.0/22"
+      ]
+      source_tags             = null
+      source_service_accounts = null
+      target_tags             = ["allow-health-checks"]
+      target_service_accounts = null
+      allow = [{
+        protocol = "tcp"
+        ports    = ["80", "443"]
+      }]
+      deny = []
+      log_config = {
+        metadata = "INCLUDE_ALL_METADATA"
+      }
+    }
+  ]
+}
