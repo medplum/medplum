@@ -58,8 +58,8 @@ import {
   Disjunction,
   escapeLikeString,
   Expression,
-  Literal,
   Negation,
+  Parameter,
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
@@ -161,7 +161,7 @@ export async function searchByReferenceImpl<T extends Resource>(
       referenceValues.map((r) => [r])
     )
   );
-  builder.join('INNER JOIN LATERAL', searchQuery, 'results', new Literal('true'));
+  builder.join('INNER JOIN LATERAL', searchQuery, 'results', new Parameter('true'));
   builder.column(new Column('results', 'id')).column(new Column('results', 'content')).column(referenceColumn);
 
   const rows: {
