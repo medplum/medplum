@@ -24,6 +24,7 @@ import {
   Condition,
   DiagnosticReport,
   Encounter,
+  EvidenceVariable,
   Goal,
   HealthcareService,
   Location,
@@ -1865,6 +1866,33 @@ describe('FHIR Search', () => {
         );
         expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
       }));
+
+    test.each([true, false])('Chained search on canonical reference', (ff) =>
+      withTestContext(async () => {
+        config.chainedSearchWithReferenceTables = ff;
+
+        const identifier = randomUUID();
+        const url = 'http://example.com/' + randomUUID();
+        // Create linked resources
+        const questionnaire = await repo.createResource<Questionnaire>({
+          resourceType: 'Questionnaire',
+          status: 'unknown',
+          url,
+        });
+        await repo.createResource<EvidenceVariable>({
+          resourceType: 'EvidenceVariable',
+          status: 'unknown',
+          relatedArtifact: [{ type: 'derived-from', resource: url }],
+          identifier: [{ value: identifier }],
+        });
+
+        const result = await repo.search(
+          parseSearchRequest(`Questionnaire?_has:EvidenceVariable:derived-from:identifier=${identifier}`)
+        );
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toEqual(questionnaire.id);
+      })
+    );
 
     // TODO: To be removed when reference table migration is complete
     test('Chained search on array columns using reference strings', () =>

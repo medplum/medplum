@@ -1367,53 +1367,84 @@ function buildChainedSearchUsingReferenceTable(
   let currentResourceType = resourceType;
   let currentTable = resourceType;
   for (const link of param.chain) {
-    let referenceTableName: string;
-    let currentColumnName: string;
-    let nextColumnName;
-
-    if (link.reverse) {
-      referenceTableName = `${link.resourceType}_References`;
-      currentColumnName = 'targetId';
-      nextColumnName = 'resourceId';
+    if (link.details.type === SearchParameterType.CANONICAL) {
+      currentTable = linkCanonicalReference(selectQuery, currentTable, link);
     } else {
-      referenceTableName = `${currentResourceType}_References`;
-      currentColumnName = 'resourceId';
-      nextColumnName = 'targetId';
+      currentTable = linkLiteralReference(selectQuery, currentTable, link, currentResourceType);
     }
-
-    const referenceTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.join(
-      'LEFT JOIN',
-      referenceTableName,
-      referenceTableAlias,
-      new Conjunction([
-        new Condition(new Column(referenceTableAlias, currentColumnName), '=', new Column(currentTable, 'id')),
-        new Condition(new Column(referenceTableAlias, 'code'), '=', link.code),
-      ])
-    );
-
-    const nextTableAlias = selectQuery.getNextJoinAlias();
-    selectQuery.join(
-      'LEFT JOIN',
-      link.resourceType,
-      nextTableAlias,
-      new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
-    );
-
-    currentTable = nextTableAlias;
     currentResourceType = link.resourceType;
 
     if (link.filter) {
       return buildSearchFilterExpression(
         repo,
         selectQuery,
-        link.resourceType as ResourceType,
-        nextTableAlias,
+        currentResourceType as ResourceType,
+        currentTable,
         link.filter
       );
     }
   }
   throw new OperationOutcomeError(badRequest('Unterminated chained search'));
+}
+
+function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, link: ChainedSearchLink): string {
+  const nextTableAlias = selectQuery.getNextJoinAlias();
+  selectQuery.join(
+    'INNER JOIN',
+    link.resourceType,
+    nextTableAlias,
+    link.reverse
+      ? new Condition(
+          new Column(currentTable, 'url'),
+          link.details.array ? 'IN_SUBQUERY' : '=',
+          new Column(nextTableAlias, link.details.columnName)
+        )
+      : new Condition(new Column(currentTable, link.details.columnName), '=', new Column(nextTableAlias, 'url'))
+  );
+
+  return nextTableAlias;
+}
+
+function linkLiteralReference(
+  selectQuery: SelectQuery,
+  currentTable: string,
+  link: ChainedSearchLink,
+  currentResourceType: string
+): string {
+  let referenceTableName: string;
+  let currentColumnName: string;
+  let nextColumnName;
+
+  if (link.reverse) {
+    referenceTableName = `${link.resourceType}_References`;
+    currentColumnName = 'targetId';
+    nextColumnName = 'resourceId';
+  } else {
+    referenceTableName = `${currentResourceType}_References`;
+    currentColumnName = 'resourceId';
+    nextColumnName = 'targetId';
+  }
+
+  const referenceTableAlias = selectQuery.getNextJoinAlias();
+  selectQuery.join(
+    'INNER JOIN',
+    referenceTableName,
+    referenceTableAlias,
+    new Conjunction([
+      new Condition(new Column(referenceTableAlias, currentColumnName), '=', new Column(currentTable, 'id')),
+      new Condition(new Column(referenceTableAlias, 'code'), '=', link.code),
+    ])
+  );
+
+  const nextTableAlias = selectQuery.getNextJoinAlias();
+  selectQuery.join(
+    'INNER JOIN',
+    link.resourceType,
+    nextTableAlias,
+    new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
+  );
+
+  return nextTableAlias;
 }
 
 /**
@@ -1437,15 +1468,26 @@ function buildChainedSearchUsingReferenceStrings(
   let currentResourceType = resourceType;
   let currentTable = resourceType;
   for (const link of param.chain) {
-    const nextTable = selectQuery.getNextJoinAlias();
-    const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
-    selectQuery.join('LEFT JOIN', link.resourceType, nextTable, joinCondition);
+    if (link.details.type === SearchParameterType.CANONICAL) {
+      currentTable = linkCanonicalReference(selectQuery, currentTable, link);
+    } else {
+      const nextTable = selectQuery.getNextJoinAlias();
+      const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
+      selectQuery.join('LEFT JOIN', link.resourceType, nextTable, joinCondition);
 
-    currentTable = nextTable;
+      currentTable = nextTable;
+    }
+
     currentResourceType = link.resourceType;
 
     if (link.filter) {
-      return buildSearchFilterExpression(repo, selectQuery, link.resourceType as ResourceType, nextTable, link.filter);
+      return buildSearchFilterExpression(
+        repo,
+        selectQuery,
+        link.resourceType as ResourceType,
+        currentTable,
+        link.filter
+      );
     }
   }
   throw new OperationOutcomeError(badRequest('Unterminated chained search'));
