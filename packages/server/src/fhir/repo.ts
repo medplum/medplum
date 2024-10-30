@@ -1173,7 +1173,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const expressions: Expression[] = [];
 
     for (const policy of accessPolicy.resource) {
-      if (policy.resourceType === resourceType) {
+      if (policy.resourceType === resourceType || policy.resourceType === '*') {
         const policyCompartmentId = resolveId(policy.compartment);
         if (policyCompartmentId) {
           // Deprecated - to be removed
@@ -1188,8 +1188,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
             });
             return; // Ignore invalid access policy criteria
           }
+
           // Add subquery for access policy criteria.
-          const searchRequest = parseSearchRequest(policy.criteria);
+          let criteria = policy.criteria;
+          if (policy.resourceType === '*') {
+            const queryIndex = criteria.indexOf('?');
+            criteria = resourceType + '?' + criteria.slice(queryIndex + 1);
+          }
+          const searchRequest = parseSearchRequest(criteria);
           const accessPolicyExpression = buildSearchExpression(
             this,
             builder,

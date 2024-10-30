@@ -98,7 +98,7 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
         user: createReference(client),
         profile: createReference(client),
         project: createReference(project),
-        accessPolicy: accessPolicy && createReference(accessPolicy),
+        accessPolicy: accessPolicy ? createReference(accessPolicy) : undefined,
         ...options?.membership,
       });
 
