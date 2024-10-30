@@ -1230,6 +1230,7 @@
         "code": "outcome-measure-reference",
         "base": ["ResearchStudy"],
         "type": "reference",
+        "target": ["EvidenceVariable"],
         "expression": "ResearchStudy.outcomeMeasure.reference"
       }
     },
