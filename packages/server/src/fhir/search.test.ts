@@ -3436,6 +3436,27 @@ describe('FHIR Search', () => {
         expect(result.entry?.length).toBe(0);
       }));
 
+    test('Practitioner by email case insensitive', () =>
+      withTestContext(async () => {
+        const email = 'UPPER@EXAMPLE.COM';
+        const practitioner = await repo.createResource<Practitioner>({
+          resourceType: 'Practitioner',
+          telecom: [{ system: 'email', value: email }],
+        });
+        const result = await repo.search({
+          resourceType: 'Practitioner',
+          filters: [
+            {
+              code: 'telecom',
+              operator: Operator.EQUALS,
+              value: 'uPpeR@ExAmPlE.CoM',
+            },
+          ],
+        });
+        expect(result.entry?.length).toBe(1);
+        expect(bundleContains(result, practitioner)).toBeDefined();
+      }));
+
     test('Patient by name with stop word', () =>
       withTestContext(async () => {
         const seed = randomUUID();
