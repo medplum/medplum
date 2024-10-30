@@ -95,22 +95,24 @@ module "firewall_rules" {
 
   rules = [
     {
-      name               = "allow-health-checks-ingress"
-      description        = "Allow ingress traffic from Google health checks"
-      direction          = "INGRESS"
-      priority           = 1000
-      destination_ranges = ["10.0.0.0/20", "10.4.0.0/14", "10.8.0.0/20", "10.3.1.0/28"]
+      name        = "allow-health-checks-ingress"
+      description = "Allow ingress traffic from Google health checks"
+      direction   = "INGRESS"
+      priority    = 150
+      # destination_ranges = ["10.0.0.0/20", "10.4.0.0/14", "10.8.0.0/20", "10.3.1.0/28"]
       source_ranges = [
         "35.191.0.0/16",
-        "130.211.0.0/22"
+        "130.211.0.0/22",
+        "209.85.204.0/22",
+        "209.85.152.0/22"
       ]
       source_tags             = null
       source_service_accounts = null
-      target_tags             = ["allow-health-checks"]
       target_service_accounts = null
+      target_tags             = ["lb-healthcheck"]
       allow = [{
         protocol = "tcp"
-        ports    = ["80", "443", "8103"]
+        ports    = ["1-65535"]
       }]
       deny = []
       log_config = {
