@@ -99,7 +99,7 @@ module "firewall_rules" {
       description        = "Allow ingress traffic from Google health checks"
       direction          = "INGRESS"
       priority           = 1000
-      destination_ranges = ["10.0.0.0/20", "10.12.0.0/23", "192.168.32.0/20", "10.3.1.0/28"] # Ajusta al rango de tu red si es diferente
+      destination_ranges = ["10.0.0.0/20", "10.4.0.0/14", "10.8.0.0/20", "10.3.1.0/28"]
       source_ranges = [
         "35.191.0.0/16",
         "130.211.0.0/22"
@@ -110,7 +110,7 @@ module "firewall_rules" {
       target_service_accounts = null
       allow = [{
         protocol = "tcp"
-        ports    = ["80", "443"]
+        ports    = ["80", "443", "8103"]
       }]
       deny = []
       log_config = {
