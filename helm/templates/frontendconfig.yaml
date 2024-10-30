@@ -1,4 +1,4 @@
-{{- if and .Values.ingress.enabled (eq .Values.global.cloudProvider "gcp") .Values.ingress.frontendConfig }}
+{{- if eq .Values.global.cloudProvider "gcp" }}
 apiVersion: networking.gke.io/v1beta1
 kind: FrontendConfig
 metadata:
@@ -6,8 +6,9 @@ metadata:
   namespace: {{ include  "medplum.namespace" . }}
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
-{{- with .Values.ingress.frontendConfig }}
 spec:
-  {{- toYaml . | nindent 2 }}
-{{- end }}
+  sslPolicy: "medplum-ssl-policy"
+  redirectToHttps:
+    enabled: true
+    responseCodeName: MOVED_PERMANENTLY_DEFAULT
 {{- end }}

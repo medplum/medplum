@@ -1,4 +1,4 @@
-{{- if and .Values.ingress.enabled (eq .Values.global.cloudProvider "gcp") }}
+{{- if eq .Values.global.cloudProvider "gcp" }}
 apiVersion: networking.gke.io/v1
 kind: ManagedCertificate
 metadata:

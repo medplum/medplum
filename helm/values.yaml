@@ -33,43 +33,16 @@ service:
   type: ClusterIP
   port: 8103
 
-ingress:
-  enabled: true
-  annotations:
-    kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
-    cloud.google.com/neg: '{"ingress": true}'
-    cloud.google.com/backend-config: '{"ports": {"8103":"medplum-backend-config"}}'
-  path: /
-  pathType: Prefix
-  tls: false
-
-  backendConfig:
-    healthCheck:
-      port: 8103
-      requestPath: /healthcheck
-
-  frontendConfig: 
-    redirectToHttps:
-      enabled: true
-      responseCodeName: RESPONSE_CODE
-  
-  managedCertificate:
-    create: true
-
 livenessProbe:
   httpGet:
     path: /healthcheck
     port: 8103
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 30
+
 readinessProbe:
   httpGet:
     path: /healthcheck
     port: 8103
-  initialDelaySeconds: 15
-  periodSeconds: 10
-  timeoutSeconds: 30
+
 
 resources:
   limits:
