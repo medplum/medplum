@@ -34,6 +34,10 @@ gcs_buckets = {
     location                 = "US"
     versioning               = true
     public_access_prevention = "inherited"
+    website = {
+      main_page_suffix = "index.html"
+      not_found_page   = "404.html"
+    }
     cors = [{
       origin          = ["*"]
       method          = ["GET", "HEAD", "PUT", "POST", "DELETE"]

@@ -43,7 +43,7 @@ spec:
             - "./packages/server/dist/otel/instrumentation.js"
             - "packages/server/dist/index.js"
             {{- if (eq .Values.global.cloudProvider "gcp") }}
-            - "gcp:{{ .Values.gcp.projectId }}:{{ .Values.gcp.secretId }}" # projectId gcp:projectId:secretId
+            - "gcp:{{ .Values.gcp.projectId }}:{{ .Values.gcp.secretId }}"
             {{- end }}
           ports:
             - name: http
