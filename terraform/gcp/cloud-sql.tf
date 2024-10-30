@@ -53,6 +53,17 @@ module "sql-db" {
   db_charset   = "UTF8"
   db_collation = "en_US.UTF8"
 
+  additional_databases = [
+    {
+      name      = "medplum"
+      charset   = "UTF8"
+      collation = "en_US.UTF8"
+    },
+  ]
+
+  user_name     = "medplum"
+  user_password = "medplum"
+
   depends_on = [
     google_service_networking_connection.private_service_access,
     google_project_service.project
