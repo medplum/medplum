@@ -6,21 +6,15 @@ metadata:
   namespace: {{ include  "medplum.namespace" . }}
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
-    {{- with .Values.ingress.labels }}
-      {{- toYaml . | nindent 4 }}
-    {{- end }}
   annotations:
     ingressClassName: "gce"
     kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
     networking.gke.io/managed-certificates: {{ include "medplum.fullname" . }}
     networking.gke.io/v1beta1.FrontendConfig: {{ include "medplum.fullname" . }}
     cloud.google.com/backend-config: '{"ports": { "8103":"medplum-server" }}'
-    {{- range $key, $value := .Values.ingress.annotations }}
-    {{ $key }}: {{ $value | quote }}
-    {{- end }}
 spec:
   rules:
-    - host: {{ .Values.ingress.hostname | default .Values.global.domain }}
+    - host: {{ .Values.global.domain }}
       http:
         paths:
           - path: /*
