@@ -11,7 +11,7 @@ metadata:
     kubernetes.io/ingress.global-static-ip-name: medplum-external-ip
     networking.gke.io/managed-certificates: {{ include "medplum.fullname" . }}
     networking.gke.io/v1beta1.FrontendConfig: {{ include "medplum.fullname" . }}
-    cloud.google.com/backend-config: '{"ports": { "8103":"medplum-server" }}'
+    cloud.google.com/backend-config: '{"ports": { "8103":"medplum-backendconfig" }}'
 spec:
   rules:
     - host: {{ .Values.global.domain }}

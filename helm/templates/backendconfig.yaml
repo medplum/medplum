@@ -2,7 +2,7 @@
 apiVersion: cloud.google.com/v1
 kind: BackendConfig
 metadata:
-  name: {{ include "medplum.fullname" . }}
+  name: medplum-backendconfig
   namespace: {{ include  "medplum.namespace" . }}
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
@@ -11,4 +11,11 @@ spec:
     enabled: true
     cachePolicy:
       includeHost: true
+  healthCheck:
+    checkIntervalSec: 30
+    timeoutSec: 10
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    type: HTTP
+    requestPath: /healthcheck 
 {{- end }}

@@ -5,13 +5,14 @@ metadata:
   namespace: {{ include "medplum.namespace" . }}
   annotations:
     cloud.google.com/neg: '{"ingress": true}'
-    cloud.google.com/backend-config: '{"ports": {"8103":"medplum-server" }}'
+    cloud.google.com/backend-config: '{"ports": {"8103":"medplum-backendconfig"}}'
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
 spec:
   type: ClusterIP
   ports:
-    - protocol: TCP
+    - name: http-port
+      protocol: TCP
       port: {{ .Values.service.port }}
       targetPort: {{ .Values.service.port }}
   selector:
