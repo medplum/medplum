@@ -964,7 +964,7 @@ describe('Updated implementation', () => {
 
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
-    expect(expansion.contains).toHaveLength(0);
+    expect(expansion.contains).toBeUndefined();
   });
 
   test('Exact code match', async () => {
