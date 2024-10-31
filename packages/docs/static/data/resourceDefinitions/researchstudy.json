@@ -543,6 +543,23 @@
       "inherited": false
     },
     {
+      "name": "region",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.region",
+      "min": 0,
+      "max": "*",
+      "short": "Geographic area for the study",
+      "definition": "A country, state or other area where the study is taking place rather than its precise geographic location or address.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "descriptionSummary",
       "depth": 1,
       "types": [
@@ -1865,6 +1882,150 @@
       "type": "string",
       "description": "Name for this study",
       "expression": "ResearchStudy.title"
+    },
+    {
+      "name": "classifier",
+      "type": "token",
+      "description": "Classification for the study",
+      "expression": "ResearchStudy.classifier"
+    },
+    {
+      "name": "condition",
+      "type": "token",
+      "description": "Condition being studied",
+      "expression": "ResearchStudy.condition"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "description": "When the study began and ended",
+      "expression": "ResearchStudy.period"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "Detailed narrative of the study",
+      "expression": "ResearchStudy.description"
+    },
+    {
+      "name": "eligibility",
+      "type": "reference",
+      "description": "Inclusion and exclusion criteria",
+      "expression": "ResearchStudy.recruitment.eligibility"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "Business Identifier for study",
+      "expression": "ResearchStudy.identifier"
+    },
+    {
+      "name": "keyword",
+      "type": "token",
+      "description": "Used to search for the study",
+      "expression": "ResearchStudy.keyword"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Name for this study",
+      "expression": "ResearchStudy.name"
+    },
+    {
+      "name": "objective-description",
+      "type": "string",
+      "description": "Free text description of the objective of the study",
+      "expression": "ResearchStudy.objective.description"
+    },
+    {
+      "name": "objective-type",
+      "type": "token",
+      "description": "The kind of study objective",
+      "expression": "ResearchStudy.objective.type"
+    },
+    {
+      "name": "part-of",
+      "type": "reference",
+      "description": "Part of larger study",
+      "expression": "ResearchStudy.partOf"
+    },
+    {
+      "name": "phase",
+      "type": "token",
+      "description": "The stage in the progression of a study",
+      "expression": "ResearchStudy.phase"
+    },
+    {
+      "name": "protocol",
+      "type": "reference",
+      "description": "Steps followed in executing study",
+      "expression": "ResearchStudy.protocol"
+    },
+    {
+      "name": "recruitment-actual",
+      "type": "number",
+      "description": "Actual number of participants enrolled in study across all groups",
+      "expression": "ResearchStudy.recruitment.actualNumber"
+    },
+    {
+      "name": "recruitment-target",
+      "type": "number",
+      "description": "Target number of participants enrolled in study across all groups",
+      "expression": "ResearchStudy.recruitment.targetNumber"
+    },
+    {
+      "name": "region",
+      "type": "token",
+      "description": "Geographic area for the study",
+      "expression": "ResearchStudy.region"
+    },
+    {
+      "name": "site",
+      "type": "reference",
+      "description": "Facility where study activities are conducted",
+      "expression": "ResearchStudy.site"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "active | active-but-not-recruiting | administratively-completed | approved | closed-to-accrual | closed-to-accrual-and-intervention | completed | disapproved | enrolling-by-invitation | in-review | not-yet-recruiting | recruiting | temporarily-closed-to-accrual | temporarily-closed-to-accrual-and-intervention | terminated | withdrawn",
+      "expression": "ResearchStudy.status"
+    },
+    {
+      "name": "study-design",
+      "type": "token",
+      "description": "Classifications of the study design characteristics",
+      "expression": "ResearchStudy.studyDesign"
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "description": "The human readable name of the research study",
+      "expression": "ResearchStudy.title"
+    },
+    {
+      "name": "progress-status-state-actual",
+      "type": "composite",
+      "description": "Status of study by state and actual",
+      "expression": "ResearchStudy.progressStatus"
+    },
+    {
+      "name": "progress-status-state-period",
+      "type": "composite",
+      "description": "Status of study by state and period",
+      "expression": "ResearchStudy.progressStatus"
+    },
+    {
+      "name": "progress-status-state-period-actual",
+      "type": "composite",
+      "description": "Status of study by state, period and actual",
+      "expression": "ResearchStudy.progressStatus"
+    },
+    {
+      "name": "outcome-measure-reference",
+      "type": "reference",
+      "description": "The research study outcome measure reference",
+      "expression": "ResearchStudy.outcomeMeasure.reference"
     }
   ]
 }

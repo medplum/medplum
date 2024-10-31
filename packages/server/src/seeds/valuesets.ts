@@ -9,7 +9,13 @@ import { r4ProjectId } from '../seed';
  */
 export async function rebuildR4ValueSets(): Promise<void> {
   const systemRepo = getSystemRepo();
-  const files = ['v2-tables.json', 'v3-codesystems.json', 'valuesets.json', 'valuesets-medplum.json'];
+  const files = [
+    'v2-tables.json',
+    'v3-codesystems.json',
+    'valuesets.json',
+    'valuesets-medplum.json',
+    'valuesets-medplum-generated.json',
+  ];
   for (const file of files) {
     const bundle = readJson('fhir/r4/' + file) as Bundle<CodeSystem | ValueSet>;
     for (const entry of bundle.entry as BundleEntry<CodeSystem | ValueSet>[]) {
