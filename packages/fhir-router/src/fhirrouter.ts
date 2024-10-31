@@ -104,7 +104,6 @@ async function searchByPost(req: FhirRequest, repo: FhirRepository): Promise<Fhi
 
 function setSearchRepositoryMode(req: FhirRequest, repo: FhirRepository): void {
   if (req.config?.searchOnReader) {
-    console.log('Setting search mode to READER');
     repo.setMode(RepositoryMode.READER);
   }
 }
