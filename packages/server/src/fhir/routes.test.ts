@@ -467,7 +467,7 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(200);
   });
 
-  test.only.each<['writer' | 'reader']>([['writer'], ['reader']])('Search on %s', async (repoMode) => {
+  test.each<['writer' | 'reader']>([['writer'], ['reader']])('Search on %s', async (repoMode) => {
     const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
     const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
     const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
@@ -501,7 +501,7 @@ describe('FHIR Routes', () => {
     expect(res.body.issue[0].details.text).toEqual('Unknown search parameter: basedOn');
   });
 
-  test.only.each<['writer' | 'reader']>([['writer'], ['reader']])('Search by POST on %s', async (repoMode) => {
+  test.each<['writer' | 'reader']>([['writer'], ['reader']])('Search by POST on %s', async (repoMode) => {
     const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
     const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
     const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
@@ -628,7 +628,7 @@ describe('FHIR Routes', () => {
       expect(res3.status).toBe(403);
     }));
 
-  test.only.each<['writer' | 'reader']>([['writer'], ['reader']])(
+  test.each<['writer' | 'reader']>([['writer'], ['reader']])(
     'Search multiple resource types with _type on %s',
     async (repoMode) =>
       withTestContext(async () => {
