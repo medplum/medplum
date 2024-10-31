@@ -44,9 +44,11 @@ describe('FHIR Routes', () => {
           ],
         });
       expect(res.status).toBe(201);
-      testPatient = res.body as Patient;
-      patientId = testPatient.id as string;
-      patientVersionId = (testPatient.meta as Meta).versionId as string;
+      if (token === accessToken) {
+        testPatient = res.body as Patient;
+        patientId = testPatient.id as string;
+        patientVersionId = (testPatient.meta as Meta).versionId as string;
+      }
     }
   });
 
