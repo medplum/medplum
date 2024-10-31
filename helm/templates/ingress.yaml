@@ -3,7 +3,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "medplum.fullname" . }}
-  namespace: {{ include  "medplum.namespace" . }}
+  namespace: {{ include "medplum.namespace" . }}
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
   annotations:
@@ -17,8 +17,8 @@ spec:
     - host: {{ .Values.global.domain }}
       http:
         paths:
-          - path: /*
-            pathType: ImplementationSpecific
+          - path: /
+            pathType: Prefix
             backend:
               service:
                 name: {{ include "medplum.fullname" . }}-service
