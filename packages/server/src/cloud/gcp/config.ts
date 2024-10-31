@@ -2,11 +2,6 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { splitN } from '@medplum/core';
 import { isBooleanConfig, isIntegerConfig, isObjectConfig, MedplumServerConfig } from '../../config';
 
-// const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || '491458215350'; 
-// const GCP_CONFIG_SECRET_NAME = process.env.GCP_CONFIG_SECRET_NAME || 'config-diego-test';
-
-//  projects/491458215350/secrets/config-diego-test
-
  /**
  * Gets the latest secret value from Google Secret Manager.
  * Uses DEFAULT_APPLICATION_CREDENTIALS for authentication.
