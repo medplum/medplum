@@ -469,23 +469,108 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(200);
   });
 
-  test.each<['writer' | 'reader']>([['writer'], ['reader']])('Search on %s', async (repoMode) => {
-    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
-    const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
+  describe.each<['writer' | 'reader']>([['writer'], ['reader']])('On %s', (repoMode) => {
+    test('Search', async () => {
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
 
-    const res = await request(app)
-      .get(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + token);
-    expect(res.status).toBe(200);
+      const res = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + token);
+      expect(res.status).toBe(200);
 
-    if (repoMode === 'writer') {
-      expect(writerSpy).toHaveBeenCalledTimes(1);
-      expect(readerSpy).toHaveBeenCalledTimes(0);
-    } else {
-      expect(writerSpy).toHaveBeenCalledTimes(0);
-      expect(readerSpy).toHaveBeenCalledTimes(1);
-    }
+      if (repoMode === 'writer') {
+        expect(writerSpy).toHaveBeenCalledTimes(1);
+        expect(readerSpy).toHaveBeenCalledTimes(0);
+      } else {
+        expect(writerSpy).toHaveBeenCalledTimes(0);
+        expect(readerSpy).toHaveBeenCalledTimes(1);
+      }
+    });
+
+    test('Search by POST', async () => {
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
+
+      const res = await request(app)
+        .post(`/fhir/R4/Patient/_search`)
+        .set('Authorization', 'Bearer ' + token)
+        .type('form');
+      expect(res.status).toBe(200);
+      const result = res.body as Bundle;
+      expect(result.type).toEqual('searchset');
+      expect(result.entry?.length).toBeGreaterThan(0);
+
+      if (repoMode === 'writer') {
+        expect(writerSpy).toHaveBeenCalledTimes(1);
+        expect(readerSpy).toHaveBeenCalledTimes(0);
+      } else {
+        expect(writerSpy).toHaveBeenCalledTimes(0);
+        expect(readerSpy).toHaveBeenCalledTimes(1);
+      }
+    });
+
+    test('Search multiple resource types with _type', async () =>
+      withTestContext(async () => {
+        const { accessToken } = await createTestProject({
+          withAccessToken: true,
+          project:
+            repoMode === 'reader' ? { systemSetting: [{ name: 'searchOnReader', valueBoolean: true }] } : undefined,
+        });
+
+        const res1 = await request(app)
+          .post('/fhir/R4/Patient')
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({ resourceType: 'Patient' });
+        expect(res1.status).toBe(201);
+
+        const res2 = await request(app)
+          .post('/fhir/R4/Observation')
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({
+            resourceType: 'Observation',
+            status: 'final',
+            code: { text: 'test' },
+            subject: { reference: `Patient/${res1.body.id}` },
+          });
+        expect(res2.status).toBe(201);
+
+        const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+        const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+
+        const res3 = await request(app)
+          .get('/fhir/R4?_type=Patient,Observation')
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res3.status).toBe(200);
+
+        const patient = res1.body;
+        const obs = res2.body;
+        const bundle = res3.body;
+
+        expect(bundle.entry?.length).toBe(2);
+        expect(bundleContains(bundle, patient)).toBeTruthy();
+        expect(bundleContains(bundle, obs)).toBeTruthy();
+
+        if (repoMode === 'writer') {
+          expect(writerSpy).toHaveBeenCalledTimes(1);
+          expect(readerSpy).toHaveBeenCalledTimes(0);
+        } else {
+          expect(writerSpy).toHaveBeenCalledTimes(0);
+          expect(readerSpy).toHaveBeenCalledTimes(1);
+        }
+
+        // Also verify that trailing slash works
+        const res4 = await request(app)
+          .get('/fhir/R4/?_type=Patient,Observation')
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res4.status).toBe(200);
+        const bundle2 = res4.body;
+        expect(bundle2.entry?.length).toBe(2);
+        expect(bundleContains(bundle2, patient)).toBeTruthy();
+        expect(bundleContains(bundle2, obs)).toBeTruthy();
+      }));
   });
 
   test('Search invalid resource', async () => {
@@ -501,29 +586,6 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Unknown search parameter: basedOn');
-  });
-
-  test.each<['writer' | 'reader']>([['writer'], ['reader']])('Search by POST on %s', async (repoMode) => {
-    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
-    const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
-
-    const res = await request(app)
-      .post(`/fhir/R4/Patient/_search`)
-      .set('Authorization', 'Bearer ' + token)
-      .type('form');
-    expect(res.status).toBe(200);
-    const result = res.body as Bundle;
-    expect(result.type).toEqual('searchset');
-    expect(result.entry?.length).toBeGreaterThan(0);
-
-    if (repoMode === 'writer') {
-      expect(writerSpy).toHaveBeenCalledTimes(1);
-      expect(readerSpy).toHaveBeenCalledTimes(0);
-    } else {
-      expect(writerSpy).toHaveBeenCalledTimes(0);
-      expect(readerSpy).toHaveBeenCalledTimes(1);
-    }
   });
 
   test('Validate create success', async () => {
@@ -629,69 +691,6 @@ describe('FHIR Routes', () => {
         .send({ ...membership, accessPolicy: undefined });
       expect(res3.status).toBe(403);
     }));
-
-  test.each<['writer' | 'reader']>([['writer'], ['reader']])(
-    'Search multiple resource types with _type on %s',
-    async (repoMode) =>
-      withTestContext(async () => {
-        const { accessToken } = await createTestProject({
-          withAccessToken: true,
-          project:
-            repoMode === 'reader' ? { systemSetting: [{ name: 'searchOnReader', valueBoolean: true }] } : undefined,
-        });
-
-        const res1 = await request(app)
-          .post('/fhir/R4/Patient')
-          .set('Authorization', 'Bearer ' + accessToken)
-          .send({ resourceType: 'Patient' });
-        expect(res1.status).toBe(201);
-
-        const res2 = await request(app)
-          .post('/fhir/R4/Observation')
-          .set('Authorization', 'Bearer ' + accessToken)
-          .send({
-            resourceType: 'Observation',
-            status: 'final',
-            code: { text: 'test' },
-            subject: { reference: `Patient/${res1.body.id}` },
-          });
-        expect(res2.status).toBe(201);
-
-        const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
-        const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
-
-        const res3 = await request(app)
-          .get('/fhir/R4?_type=Patient,Observation')
-          .set('Authorization', 'Bearer ' + accessToken);
-        expect(res3.status).toBe(200);
-
-        const patient = res1.body;
-        const obs = res2.body;
-        const bundle = res3.body;
-
-        expect(bundle.entry?.length).toBe(2);
-        expect(bundleContains(bundle, patient)).toBeTruthy();
-        expect(bundleContains(bundle, obs)).toBeTruthy();
-
-        if (repoMode === 'writer') {
-          expect(writerSpy).toHaveBeenCalledTimes(1);
-          expect(readerSpy).toHaveBeenCalledTimes(0);
-        } else {
-          expect(writerSpy).toHaveBeenCalledTimes(0);
-          expect(readerSpy).toHaveBeenCalledTimes(1);
-        }
-
-        // Also verify that trailing slash works
-        const res4 = await request(app)
-          .get('/fhir/R4/?_type=Patient,Observation')
-          .set('Authorization', 'Bearer ' + accessToken);
-        expect(res4.status).toBe(200);
-        const bundle2 = res4.body;
-        expect(bundle2.entry?.length).toBe(2);
-        expect(bundleContains(bundle2, patient)).toBeTruthy();
-        expect(bundleContains(bundle2, obs)).toBeTruthy();
-      })
-  );
 
   test('Set accounts on create', async () => {
     const { project, accessToken } = await createTestProject({ withAccessToken: true });
