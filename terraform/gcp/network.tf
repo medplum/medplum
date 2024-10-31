@@ -99,17 +99,20 @@ module "firewall_rules" {
       description = "Allow ingress traffic from Google health checks"
       direction   = "INGRESS"
       priority    = 150
-      # destination_ranges = ["10.0.0.0/20", "10.4.0.0/14", "10.8.0.0/20", "10.3.1.0/28"]
-      source_ranges = [
+      ranges = [
         "35.191.0.0/16",
         "130.211.0.0/22",
         "209.85.204.0/22",
-        "209.85.152.0/22"
+        "209.85.152.0/22",
+        "10.0.0.0/20",
+        "10.4.0.0/14",
+        "10.8.0.0/20",
+        "10.3.1.0/28"
       ]
       source_tags             = null
       source_service_accounts = null
       target_service_accounts = null
-      target_tags             = ["lb-healthcheck"]
+      target_tags             = ["gke-medplum-gke"]
       allow = [{
         protocol = "tcp"
         ports    = ["1-65535"]

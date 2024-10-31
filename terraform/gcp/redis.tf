@@ -8,10 +8,8 @@ module "memorystore" {
   memory_size_gb     = "1"
   enable_apis        = "true"
   authorized_network = module.vpc.network_self_link
-  # auth_enabled            = true
-  transit_encryption_mode = "SERVER_AUTHENTICATION"
-  connect_mode            = "PRIVATE_SERVICE_ACCESS"
-  reserved_ip_range       = google_compute_global_address.psa_reserved_ip.name
+  connect_mode       = "PRIVATE_SERVICE_ACCESS"
+  reserved_ip_range  = google_compute_global_address.psa_reserved_ip.name
   persistence_config = {
     persistence_mode    = "RDB"
     rdb_snapshot_period = "ONE_HOUR"

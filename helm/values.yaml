@@ -21,7 +21,7 @@ image:
   # repository: medplum/medplum-server
   repository: us-west1-docker.pkg.dev/medplum-zencore/medplum-repo/medplum-server
   pullPolicy: IfNotPresent
-  tag: test3
+  tag: test4
 
 serviceAccount:
   create: true
