@@ -7,7 +7,7 @@ import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
 
 describe('ResourcePage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
@@ -187,7 +187,8 @@ describe('ResourcePage', () => {
     });
   });
 
-  test.only('Questionnaire bots -- all interactions', async () => {
+  test('Questionnaire bots -- all interactions', async () => {
+    const user = userEvent.setup();
     const medplum = new MockClient();
     const bot = await medplum.createResource<Bot>({
       resourceType: 'Bot',
@@ -227,19 +228,19 @@ describe('ResourcePage', () => {
       fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
     });
 
-    const interactionDropdown = screen.getByRole('combobox', {
-      name: 'Subscription Trigger Event',
-    }) as HTMLInputElement;
-
-    // Find the dropdown for interaction trigger
-    await act(async () => {
-      fireEvent.change(interactionDropdown, { value: 'All Interactions' });
+    const interactionDropdown = screen.getByRole<HTMLSelectElement>('combobox', {
+      name: /subscription trigger event/i,
     });
 
-    // Wait for the drop down
+    // We have to disable fake timers for the `selectOptions` to work
+    jest.useRealTimers();
+
     await act(async () => {
-      jest.advanceTimersByTime(1000);
+      // Find the dropdown for interaction trigger
+      await user.selectOptions(interactionDropdown, ['All Interactions']);
     });
+
+    jest.useFakeTimers();
 
     // Click on "Connect"
     await act(async () => {
