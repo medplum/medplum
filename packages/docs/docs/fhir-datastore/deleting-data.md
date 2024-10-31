@@ -29,7 +29,7 @@ However, the original content of the resource is not destroyed. It can still be 
 
 :::caution Referential Integrity on Deletes
 
-Referential integrity is **not** supported for deletes at this time as it would require checking every resource in a project for inbound references to the deleted resource. Unfortunately, performance tradeoffs forbid Medplum from implementing this.
+Referential integrity is **not** supported for deletes at this time.
 
 :::
 
