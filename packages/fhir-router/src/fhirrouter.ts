@@ -20,7 +20,7 @@ import type { IncomingHttpHeaders } from 'node:http';
 import { Operation } from 'rfc6902';
 import { LogEvent, processBatch } from './batch';
 import { graphqlHandler } from './graphql';
-import { CreateResourceOptions, FhirRepository, UpdateResourceOptions } from './repo';
+import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from './repo';
 import { HttpMethod, RouteResult, Router } from './urlrouter';
 
 export type FhirRequest = {
@@ -39,6 +39,7 @@ export type FhirRequestConfig = {
   graphqlMaxDepth?: number;
   graphqlMaxPageSize?: number;
   graphqlMaxSearches?: number;
+  searchOnReader?: boolean;
   transactions?: boolean;
 };
 
@@ -72,6 +73,8 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
 
 // Search
 async function search(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+  setSearchRepositoryMode(req, repo);
+
   const { resourceType } = req.params;
   const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, req.query));
   return [allOk, bundle];
@@ -79,6 +82,8 @@ async function search(req: FhirRequest, repo: FhirRepository): Promise<FhirRespo
 
 // Search multiple types
 async function searchMultipleTypes(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+  setSearchRepositoryMode(req, repo);
+
   const searchRequest = parseSearchRequest('MultipleTypes' as ResourceType, req.query);
   if (!searchRequest.types || searchRequest.types.length === 0) {
     return [badRequest('No types specified')];
@@ -89,10 +94,19 @@ async function searchMultipleTypes(req: FhirRequest, repo: FhirRepository): Prom
 
 // Search by POST
 async function searchByPost(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+  setSearchRepositoryMode(req, repo);
+
   const { resourceType } = req.params;
   const query = req.body as Record<string, string[] | string | undefined>;
   const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
   return [allOk, bundle];
+}
+
+function setSearchRepositoryMode(req: FhirRequest, repo: FhirRepository): void {
+  if (req.config?.searchOnReader) {
+    console.log('Setting search mode to READER');
+    repo.setMode(RepositoryMode.READER);
+  }
 }
 
 // Create resource

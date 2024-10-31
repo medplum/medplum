@@ -1,5 +1,5 @@
 import { allOk, ContentType, isOk, OperationOutcomeError, stringify } from '@medplum/core';
-import { BatchEvent, FhirRequest, FhirRouter, HttpMethod, RepositoryMode } from '@medplum/fhir-router';
+import { BatchEvent, FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -330,16 +330,10 @@ protectedRoutes.use(
         graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
         graphqlMaxPageSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxPageSize')?.valueInteger,
         graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
+        searchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'searchOnReader')?.valueBoolean,
         transactions: ctx.project.features?.includes('transaction-bundles'),
       },
     };
-
-    if (request.url.includes('$graphql')) {
-      // If this is a GraphQL request, mark the repository as eligible for "reader" mode.
-      // Inside the GraphQL handler, the repository will be set to "writer" mode if needed.
-      // At the time of this writing, the GraphQL handler is the only place where we consider "reader" mode.
-      ctx.repo.setMode(RepositoryMode.READER);
-    }
 
     const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
     if (result.length === 1) {

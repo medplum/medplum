@@ -123,6 +123,10 @@ describe('GraphQL', () => {
     })
   );
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   afterAll(async () => {
     await shutdownApp();
   });

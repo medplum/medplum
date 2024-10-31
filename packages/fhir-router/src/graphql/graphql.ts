@@ -117,6 +117,8 @@ export async function graphqlHandler(
 
   if (includesMutations(query)) {
     repo.setMode(RepositoryMode.WRITER);
+  } else {
+    repo.setMode(RepositoryMode.READER);
   }
 
   const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
