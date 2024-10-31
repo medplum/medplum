@@ -10,6 +10,7 @@ import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestC
 
 const app = express();
 let accessToken: string;
+let legacyJsonResponseAccessToken: string;
 let testPatient: Patient;
 let patientId: string;
 let patientVersionId: string;
@@ -19,6 +20,9 @@ describe('FHIR Routes', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     accessToken = await initTestAuth();
+    legacyJsonResponseAccessToken = await initTestAuth({
+      project: { systemSetting: [{ name: 'legacyFhirJsonResponseFormat', valueBoolean: true }] },
+    });
 
     const res = await request(app)
       .post(`/fhir/R4/Patient`)
@@ -89,22 +93,33 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Create resource success', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
-    expect(res.body.resourceType).toEqual('Patient');
-    expect(res.headers.location).toContain('Patient');
-    expect(res.headers.location).toContain(res.body.id);
-    const patient = res.body;
-    const res2 = await request(app)
-      .get(`/fhir/R4/Patient/` + patient.id)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
-  });
+  test.each<['standard' | 'legacy']>([['standard'], ['legacy']])(
+    'Create resource success with %s FHIR JSON response format',
+    async (jsonFormat) => {
+      const patientToCreate: Patient = { resourceType: 'Patient', identifier: [] };
+      const token = jsonFormat === 'standard' ? accessToken : legacyJsonResponseAccessToken;
+
+      const res = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + token)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(patientToCreate);
+      expect(res.status).toBe(201);
+      expect(res.body.resourceType).toEqual('Patient');
+      expect(res.headers.location).toContain('Patient');
+      expect(res.headers.location).toContain(res.body.id);
+      const patient = res.body;
+      const res2 = await request(app)
+        .get(`/fhir/R4/Patient/` + patient.id)
+        .set('Authorization', 'Bearer ' + token);
+      expect(res2.status).toBe(200);
+      if (jsonFormat === 'standard') {
+        expect(patient.identifier).toBeUndefined();
+      } else {
+        expect(patient.identifier).toEqual([]);
+      }
+    }
+  );
 
   test('Create resource invalid resource type', async () => {
     const res = await request(app)

@@ -1,4 +1,4 @@
-import { ContentType, concatUrls, getStatus, isCreated } from '@medplum/core';
+import { ContentType, concatUrls, getStatus, isCreated, isResource } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config';
@@ -34,31 +34,37 @@ export async function sendResponse(
   outcome: OperationOutcome,
   body: Resource
 ): Promise<void> {
-  sendResponseHeaders(req, res, outcome, body);
+  const isBodyResource = isResource(body);
 
-  const acceptHeader = req.get('Accept');
-  if (body.resourceType === 'Binary' && req.method === 'GET' && !acceptHeader?.startsWith(ContentType.FHIR_JSON)) {
-    // When the read request has some other type in the Accept header,
-    // then the content should be returned with the content type stated in the resource in the Content-Type header.
-    // E.g. if the content type in the resource is "application/pdf", then the content should be returned as a PDF directly.
-    res.contentType(body.contentType as string);
-    if (body.data) {
-      res.send(Buffer.from(body.data, 'base64'));
-    } else {
-      const stream = await getBinaryStorage().readBinary(body);
-      stream.pipe(res);
+  if (isBodyResource) {
+    sendResponseHeaders(req, res, outcome, body);
+    const acceptHeader = req.get('Accept');
+    if (body.resourceType === 'Binary' && req.method === 'GET' && !acceptHeader?.startsWith(ContentType.FHIR_JSON)) {
+      // When the read request has some other type in the Accept header,
+      // then the content should be returned with the content type stated in the resource in the Content-Type header.
+      // E.g. if the content type in the resource is "application/pdf", then the content should be returned as a PDF directly.
+      res.contentType(body.contentType as string);
+      if (body.data) {
+        res.send(Buffer.from(body.data, 'base64'));
+      } else {
+        const stream = await getBinaryStorage().readBinary(body);
+        stream.pipe(res);
+      }
+      return;
     }
-    return;
+    res.set('Content-Type', ContentType.FHIR_JSON);
   }
 
-  res.set('Content-Type', ContentType.FHIR_JSON);
-
+  // Even if the body is not a resource, we still rewriteAttachments to ensure attachment URLs are correct
+  // e.g. within a graphql response
   const ctx = getAuthenticatedContext();
   const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body);
 
-  if (req.query._pretty === 'true') {
-    res.send(JSON.stringify(result, undefined, 2));
-  } else {
-    res.json(result);
+  if (!isBodyResource) {
+    res.set('Content-Type', ContentType.JSON);
+    res.send(JSON.stringify(result));
+    return;
   }
+
+  res.json(result);
 }

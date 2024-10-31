@@ -276,6 +276,7 @@ describe('GraphQL', () => {
         }`,
       });
     expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.headers['cache-control']).toBe('no-store, no-cache, must-revalidate');
   });
 

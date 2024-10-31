@@ -1,4 +1,4 @@
-import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
+import { allOk, ContentType, isOk, OperationOutcomeError, stringify } from '@medplum/core';
 import { BatchEvent, FhirRequest, FhirRouter, HttpMethod, RepositoryMode } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
@@ -71,7 +71,23 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
       res.contentType(ContentType.FHIR_JSON);
     }
 
-    return res.json(data);
+    let legacyFhirJsonResponseFormat: boolean | undefined;
+    try {
+      const ctx = getAuthenticatedContext();
+      legacyFhirJsonResponseFormat = ctx.project.systemSetting?.find(
+        (s) => s.name === 'legacyFhirJsonResponseFormat'
+      )?.valueBoolean;
+    } catch (_err) {
+      // Ignore errors since unauthenticated requests also use this middleware
+    }
+
+    const pretty = req.query._pretty === 'true';
+
+    if (legacyFhirJsonResponseFormat) {
+      return res.send(JSON.stringify(data, undefined, pretty ? 2 : undefined));
+    } else {
+      return res.send(stringify(data, pretty));
+    }
   };
   next();
 });
