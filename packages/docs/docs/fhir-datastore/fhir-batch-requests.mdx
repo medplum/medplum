@@ -160,7 +160,7 @@ resource itself, not its server-assigned ID.
 <details>
 <summary>Example</summary>
 
-❌ Incorrect
+❌ **Incorrect**
 
 ```js
 {
@@ -194,7 +194,7 @@ resource itself, not its server-assigned ID.
 }
 ```
 
-✅ Correct
+✅ **Correct**
 
 ```js
 {
@@ -216,7 +216,8 @@ resource itself, not its server-assigned ID.
       "fullUrl": "urn:uuid:b122a53c-9c0d-4654-9260-c0b67b7bc5d4",
       "request": {
         "method": "PUT",
-        // Correct: Refer to subject via chained search, using same identifier as its own upsert URL
+        // Correct: Refer to subject via chained search,
+        // using same identifier as its own upsert URL
         "url": "CareTeam?subject.identifier=http://example.com/mrn|1234567"
       },
       "resource": {
