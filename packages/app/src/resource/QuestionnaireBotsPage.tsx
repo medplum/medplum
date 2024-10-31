@@ -89,7 +89,7 @@ export function QuestionnaireBotsPage(): JSX.Element {
         <Group>
           <NativeSelect
             name="subscription-trigger-event"
-            defaultValue={'Create Only'}
+            defaultValue="Create Only"
             label="Subscription Trigger Event"
             data={SUBSCRIPTION_INTERACTION_KEYS}
             onChange={(event) =>
