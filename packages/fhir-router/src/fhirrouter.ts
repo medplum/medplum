@@ -72,8 +72,13 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
 }
 
 // Search
-async function search(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  setSearchRepositoryMode(req, repo);
+async function search(
+  req: FhirRequest,
+  repo: FhirRepository,
+  _router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
+  setSearchRepositoryMode(req, repo, options);
 
   const { resourceType } = req.params;
   const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, req.query));
@@ -81,8 +86,13 @@ async function search(req: FhirRequest, repo: FhirRepository): Promise<FhirRespo
 }
 
 // Search multiple types
-async function searchMultipleTypes(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  setSearchRepositoryMode(req, repo);
+async function searchMultipleTypes(
+  req: FhirRequest,
+  repo: FhirRepository,
+  _router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
+  setSearchRepositoryMode(req, repo, options);
 
   const searchRequest = parseSearchRequest('MultipleTypes' as ResourceType, req.query);
   if (!searchRequest.types || searchRequest.types.length === 0) {
@@ -93,8 +103,13 @@ async function searchMultipleTypes(req: FhirRequest, repo: FhirRepository): Prom
 }
 
 // Search by POST
-async function searchByPost(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
-  setSearchRepositoryMode(req, repo);
+async function searchByPost(
+  req: FhirRequest,
+  repo: FhirRepository,
+  _router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
+  setSearchRepositoryMode(req, repo, options);
 
   const { resourceType } = req.params;
   const query = req.body as Record<string, string[] | string | undefined>;
@@ -102,8 +117,8 @@ async function searchByPost(req: FhirRequest, repo: FhirRepository): Promise<Fhi
   return [allOk, bundle];
 }
 
-function setSearchRepositoryMode(req: FhirRequest, repo: FhirRepository): void {
-  if (req.config?.searchOnReader) {
+function setSearchRepositoryMode(req: FhirRequest, repo: FhirRepository, options?: FhirRouteOptions): void {
+  if (!options?.batch && req.config?.searchOnReader) {
     repo.setMode(RepositoryMode.READER);
   }
 }
