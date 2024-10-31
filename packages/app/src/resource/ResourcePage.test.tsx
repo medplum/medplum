@@ -7,7 +7,7 @@ import { ErrorBoundary, Loading, MedplumProvider } from '@medplum/react';
 import { Suspense } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
-import { act, fireEvent, render, screen } from '../test-utils/render';
+import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
 
 describe('ResourcePage', () => {
   async function setup(url: string, medplum = new MockClient()): Promise<void> {
@@ -113,7 +113,7 @@ describe('ResourcePage', () => {
     expect(window.alert).toHaveBeenCalledWith('You submitted the preview');
   });
 
-  test('Questionnaire bots', async () => {
+  test('Questionnaire bots -- create only (default)', async () => {
     const medplum = new MockClient();
     const bot = await medplum.createResource<Bot>({
       resourceType: 'Bot',
@@ -121,14 +121,16 @@ describe('ResourcePage', () => {
     });
     expect(bot.id).toBeDefined();
 
-    await setup('/Questionnaire/123/bots');
+    await setup('/Questionnaire/123/bots', medplum);
     expect(await screen.findByText('Connect to bot')).toBeInTheDocument();
+
+    const createResourceSpy = jest.spyOn(medplum, 'createResource');
 
     // Select "Test Bot" in the bot input field
 
     const input = screen.getByRole('searchbox') as HTMLInputElement;
 
-    // Enter "Simpson"
+    // Enter "Test"
     await act(async () => {
       fireEvent.change(input, { target: { value: 'Test' } });
     });
@@ -155,6 +157,110 @@ describe('ResourcePage', () => {
 
     // Bot subscription should now be listed
     expect(screen.getByText('Criteria: QuestionnaireResponse?questionnaire=Questionnaire/123')).toBeInTheDocument();
+
+    // Should have created a subscription with the `subscription-supported-interaction` extension value of `create`
+    expect(createResourceSpy).toHaveBeenLastCalledWith({
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'Connect bot Test Bot to questionnaire responses',
+      criteria: 'QuestionnaireResponse?questionnaire=Questionnaire/123',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'Bot/123',
+      },
+      extension: [
+        {
+          url: 'https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction',
+          valueCode: 'create',
+        },
+      ],
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+  });
+
+  test('Questionnaire bots -- all interactions', async () => {
+    const user = userEvent.setup();
+    const medplum = new MockClient();
+    const bot = await medplum.createResource<Bot>({
+      resourceType: 'Bot',
+      name: 'Test Bot',
+    });
+    expect(bot.id).toBeDefined();
+
+    await setup('/Questionnaire/123/bots', medplum);
+    expect(await screen.findByText('Connect to bot')).toBeInTheDocument();
+
+    const createResourceSpy = jest.spyOn(medplum, 'createResource');
+
+    // Select "Test Bot" in the bot input field
+
+    const input = screen.getByRole('searchbox') as HTMLInputElement;
+
+    // Now let's create a subscription without any extension (fires for all interactions)
+    // Select "Test Bot" in the bot input field
+
+    // Enter "Test"
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Test' } });
+    });
+
+    // Wait for the drop down
+    await act(async () => {
+      jest.advanceTimersByTime(1000);
+    });
+
+    // Press the down arrow
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'ArrowDown', code: 'ArrowDown' });
+    });
+
+    // Press "Enter"
+    await act(async () => {
+      fireEvent.keyDown(input, { key: 'Enter', code: 'Enter' });
+    });
+
+    const interactionDropdown = screen.getByRole<HTMLSelectElement>('combobox', {
+      name: /subscription trigger event/i,
+    });
+
+    // We have to disable fake timers for the `selectOptions` to work
+    jest.useRealTimers();
+
+    await act(async () => {
+      // Find the dropdown for interaction trigger
+      await user.selectOptions(interactionDropdown, ['All Interactions']);
+    });
+
+    jest.useFakeTimers();
+
+    // Click on "Connect"
+    await act(async () => {
+      fireEvent.click(screen.getByText('Connect'));
+    });
+
+    // Bot subscription should now be listed, #2 in the list
+    expect(screen.getByText('Criteria: QuestionnaireResponse?questionnaire=Questionnaire/123')).toBeInTheDocument();
+
+    // Should have created a subscription with the `subscription-supported-interaction` extension value of `create`
+    expect(createResourceSpy).toHaveBeenLastCalledWith({
+      resourceType: 'Subscription',
+      status: 'active',
+      reason: 'Connect bot Test Bot to questionnaire responses',
+      criteria: 'QuestionnaireResponse?questionnaire=Questionnaire/123',
+      channel: {
+        type: 'rest-hook',
+        endpoint: 'Bot/123',
+      },
+    });
   });
 
   test('Bot editor', async () => {
