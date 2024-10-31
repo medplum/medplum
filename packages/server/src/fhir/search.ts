@@ -1389,22 +1389,16 @@ function buildChainedSearchUsingReferenceTable(
 
 function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, link: ChainedSearchLink): string {
   const nextTableAlias = selectQuery.getNextJoinAlias();
-  let joinCondition: Condition;
+  const eq = link.details.array ? 'IN_SUBQUERY' : '=';
+
+  let join: Condition;
   if (link.reverse) {
-    joinCondition = new Condition(
-      new Column(currentTable, 'url'),
-      link.details.array ? 'IN_SUBQUERY' : '=',
-      new Column(nextTableAlias, link.details.columnName)
-    );
+    join = new Condition(new Column(currentTable, 'url'), eq, new Column(nextTableAlias, link.details.columnName));
   } else {
-    joinCondition = new Condition(
-      new Column(nextTableAlias, 'url'),
-      link.details.array ? 'IN_SUBQUERY' : '=',
-      new Column(currentTable, link.details.columnName)
-    );
+    join = new Condition(new Column(nextTableAlias, 'url'), eq, new Column(currentTable, link.details.columnName));
   }
 
-  selectQuery.join('INNER JOIN', link.resourceType, nextTableAlias, joinCondition);
+  selectQuery.join('INNER JOIN', link.resourceType, nextTableAlias, join);
   return nextTableAlias;
 }
 
