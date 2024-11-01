@@ -28,7 +28,7 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
     medplum
       .search('ServiceRequest', 'subject=' + patientRefStr)
       .then((bundle) => {
-        const entries = bundle.entry as BundleEntry<ServiceRequest>[];
+        const entries = (bundle.entry ?? []) as BundleEntry<ServiceRequest>[];
         const resources = entries.map((e) => e.resource as ServiceRequest);
         sortByDateAndPriority(resources);
         resources.reverse();

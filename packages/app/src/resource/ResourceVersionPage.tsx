@@ -1,5 +1,5 @@
 import { Paper, Tabs, Text, Title } from '@mantine/core';
-import { Bundle, BundleEntry, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
+import { Bundle, OperationOutcome, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Container, Document, Loading, MedplumLink, ResourceDiff, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -43,7 +43,7 @@ export function ResourceVersionPage(): JSX.Element {
     );
   }
 
-  const entries = historyBundle.entry as BundleEntry[];
+  const entries = historyBundle.entry ?? [];
   const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === versionId);
   if (index === -1) {
     return (
