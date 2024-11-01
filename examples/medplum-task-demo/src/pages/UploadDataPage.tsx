@@ -98,8 +98,8 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
   const batch: Bundle = {
     resourceType: 'Bundle',
     type: 'transaction',
-    entry: valueSets.flatMap((valueSet) => {
-      const tempId = valueSet.id;
+    entry: valueSets.flatMap((valueSet): BundleEntry[] => {
+      const tempId = valueSet.id as string;
       return [
         {
           fullUrl: tempId,
@@ -110,7 +110,7 @@ async function uploadCoreData(medplum: MedplumClient): Promise<void> {
           request: { method: 'PUT', url: tempId },
           resource: { id: tempId, ...valueSet },
         },
-      ] as BundleEntry[];
+      ];
     }),
   };
   console.log(batch);

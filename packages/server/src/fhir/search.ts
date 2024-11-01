@@ -283,12 +283,11 @@ async function getSearchEntries<T extends Resource>(
     nextResource = resources.pop();
   }
   const entries = resources.map(
-    (resource) =>
-      ({
-        fullUrl: getFullUrl(resource.resourceType, resource.id as string),
-        search: { mode: 'match' },
-        resource,
-      }) as BundleEntry
+    (resource): BundleEntry<T> => ({
+      fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+      search: { mode: 'match' },
+      resource,
+    })
   );
 
   if (searchRequest.include || searchRequest.revInclude) {
@@ -303,7 +302,7 @@ async function getSearchEntries<T extends Resource>(
   }
 
   return {
-    entry: entries as BundleEntry<T>[],
+    entry: entries,
     rowCount,
     nextResource,
   };

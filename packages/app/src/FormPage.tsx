@@ -1,13 +1,6 @@
 import { Box, Paper, Text, Title } from '@mantine/core';
 import { createReference, getDisplayString, getReferenceString } from '@medplum/core';
-import {
-  Bundle,
-  BundleEntry,
-  OperationOutcome,
-  Questionnaire,
-  QuestionnaireResponse,
-  Resource,
-} from '@medplum/fhirtypes';
+import { Bundle, OperationOutcome, Questionnaire, QuestionnaireResponse, Resource } from '@medplum/fhirtypes';
 import { Document, Loading, MedplumLink, QuestionnaireForm, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useParams } from 'react-router-dom';
@@ -29,7 +22,7 @@ export function FormPage(): JSX.Element {
   const [result, setResult] = useState<QuestionnaireResponse[] | undefined>();
 
   useEffect(() => {
-    const requestBundle: Bundle = {
+    const requestBundle: Bundle & { entry: NonNullable<Bundle['entry']> } = {
       resourceType: 'Bundle',
       type: 'batch',
       entry: [
@@ -45,7 +38,7 @@ export function FormPage(): JSX.Element {
     if (subjectParam) {
       const subjectIds = subjectParam.split(',').filter((e) => !!e);
       if (subjectIds.length === 1) {
-        (requestBundle.entry as BundleEntry[]).push({
+        requestBundle.entry.push({
           request: {
             method: 'GET',
             url: subjectIds[0],
@@ -57,7 +50,7 @@ export function FormPage(): JSX.Element {
 
     medplum
       .executeBatch(requestBundle)
-      .then((bundle: Bundle) => {
+      .then((bundle) => {
         if (bundle.entry?.[0]?.response?.status !== '200') {
           setError(bundle.entry?.[0]?.response?.outcome as OperationOutcome);
         } else {
