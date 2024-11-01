@@ -12,6 +12,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 const app = express();
 let accessToken: string;
 let legacyJsonResponseAccessToken: string;
+let standardJsonResponseAccessToken: string;
 let searchOnReaderAccessToken: string;
 let testPatient: Patient;
 let patientId: string;
@@ -24,6 +25,9 @@ describe('FHIR Routes', () => {
     accessToken = await initTestAuth();
     legacyJsonResponseAccessToken = await initTestAuth({
       project: { systemSetting: [{ name: 'legacyFhirJsonResponseFormat', valueBoolean: true }] },
+    });
+    standardJsonResponseAccessToken = await initTestAuth({
+      project: { systemSetting: [{ name: 'legacyFhirJsonResponseFormat', valueBoolean: false }] },
     });
     searchOnReaderAccessToken = await initTestAuth({
       project: { systemSetting: [{ name: 'searchOnReader', valueBoolean: true }] },
@@ -110,7 +114,7 @@ describe('FHIR Routes', () => {
     'Create resource success with %s FHIR JSON response format',
     async (jsonFormat) => {
       const patientToCreate: Patient = { resourceType: 'Patient', identifier: [] };
-      const token = jsonFormat === 'standard' ? accessToken : legacyJsonResponseAccessToken;
+      const token = jsonFormat === 'standard' ? standardJsonResponseAccessToken : legacyJsonResponseAccessToken;
 
       const res = await request(app)
         .post(`/fhir/R4/Patient`)

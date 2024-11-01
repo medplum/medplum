@@ -137,7 +137,7 @@ describe('Batch and Transaction processing', () => {
       resourceType: 'Bundle',
       type: 'searchset',
     });
-    expect((results.entry?.[1]?.resource as Partial<Bundle>).entry).toBeUndefined();
+    expect((results.entry?.[1]?.resource as Partial<Bundle>).entry).toEqual([]);
 
     expect(results.entry?.[2]?.response?.status).toEqual('201');
     expect(results.entry?.[2]?.resource).toMatchObject<Partial<Patient>>({
@@ -280,7 +280,7 @@ describe('Batch and Transaction processing', () => {
       resourceType: 'Bundle',
       type: 'searchset',
     });
-    expect((results.entry?.[1]?.resource as Partial<Bundle>).entry).toBeUndefined();
+    expect((results.entry?.[1]?.resource as Partial<Bundle>).entry).toEqual([]);
 
     expect(results.entry?.[2]?.response?.status).toEqual('201');
     expect(results.entry?.[2]?.resource).toMatchObject<Patient>({
@@ -819,7 +819,7 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send();
     expect(res2.status).toBe(200);
-    expect(res2.body.entry).toBeUndefined();
+    expect(res2.body.entry).toEqual([]);
   });
 
   test('Conditional reference resolution', async () => {

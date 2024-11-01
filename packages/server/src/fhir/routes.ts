@@ -81,6 +81,8 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
       // Ignore errors since unauthenticated requests also use this middleware
     }
 
+    legacyFhirJsonResponseFormat ??= true;
+
     const pretty = req.query._pretty === 'true';
 
     if (legacyFhirJsonResponseFormat) {

@@ -944,7 +944,7 @@ describe('Updated implementation', () => {
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    expect(expansion.contains).toBeUndefined();
+    expect(expansion.contains).toEqual([]);
   });
 
   test('Expand with empty filter', async () => {
@@ -964,7 +964,7 @@ describe('Updated implementation', () => {
 
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
-    expect(expansion.contains).toBeUndefined();
+    expect(expansion.contains).toEqual([]);
   });
 
   test('Exact code match', async () => {
