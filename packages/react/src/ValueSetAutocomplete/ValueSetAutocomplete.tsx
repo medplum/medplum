@@ -71,7 +71,7 @@ export function ValueSetAutocomplete(props: ValueSetAutocompleteProps): JSX.Elem
         },
         { signal }
       );
-      const valueSetElements = valueSet.expansion?.contains as ValueSetExpansionContains[];
+      const valueSetElements = valueSet.expansion?.contains ?? [];
       const newData: ValueSetExpansionContains[] = [];
       for (const valueSetElement of valueSetElements) {
         if (valueSetElement.code && !newData.some((item) => item.code === valueSetElement.code)) {
