@@ -336,7 +336,7 @@ function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
 function getPrevious(history: Bundle, version: Resource): Resource | undefined {
   const entries = history.entry ?? [];
   const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === version.meta?.versionId);
-  // If not found this is -1, -1 === 0 -1 so this returns undefined
+  // If not found index is -1, -1 === 0 - 1 so this returns undefined
   if (index >= entries.length - 1) {
     return undefined;
   }
