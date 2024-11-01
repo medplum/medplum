@@ -2077,7 +2077,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     );
 
     if (options?.durationMs) {
-      const duration = options.durationMs / 1e6; // Report duration in whole seconds
+      const duration = options.durationMs / 1000; // Report duration in whole seconds
       recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
         attributes: {
           resourceType: resource?.resourceType,
