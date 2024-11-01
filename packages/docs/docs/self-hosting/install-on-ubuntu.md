@@ -132,7 +132,7 @@ Build the server, app, and necessary dependencies
 npm run build:fast
 ```
 
-## Start Medplum
+## Start Medplum server
 
 :::info
 
@@ -140,12 +140,27 @@ These are abbreviated instructions. For full details, see [Run the stack](/docs/
 
 :::
 
-In one terminal, start the `server` in development mode:
+Start the `server` in development mode:
 
 ```bash
 cd packages/server
 npm run dev
 ```
+
+You should now be able to access the Medplum server at [http://localhost:8103/healthcheck](http://localhost:8103/healthcheck).
+
+## Start Medplum app
+
+:::warning[Important: Development Server vs Production Setup]
+
+This command runs Medplum app using the Vite Dev server. While this is convenient for development and testing, it has two significant limitations:
+
+1. The Vite dev server is designed for development, not production use. It serves files inefficiently and will provide an inferior experience for end users.
+2. The Medplum app requires several modern browser features that are only available in a 'secure context' (HTTPS), including essential cryptography features. These features will not be available when accessing the app via plain HTTP.
+
+If you plan to access the app and API from other devices on your network, we recommend proceeding to the optional SSL/nginx setup instructions below. This will provide the secure context required for all Medplum features to function correctly.
+
+:::
 
 In another terminal, start the `app` in development mode:
 
@@ -156,15 +171,81 @@ npm run dev
 
 You should now be able to access the Medplum app at [http://localhost:3000](http://localhost:3000).
 
-## Optional: Add nginx as a reverse proxy
+## Optional: Nginx
+
+:::info
+
+While these instructions demonstrate a basic nginx setup, our primary recommendation is deploying Medplum to AWS using CDK or other infrastructure-as-code tools for production environments. This guide serves as an educational example of how the components work together and could be a viable solution for some deployments.
+
+While this configuration is not officially supported at present, we welcome community interest - if you would like to sponsor work on publishing an official deb image and APT repository, we would love to work with you!
+
+:::
+
+### Overview
 
 To run Medplum securely, you should use SSL/TLS via reverse proxy such as nginx.
+
+To do this, you will need to:
+
+- Install Nginx
+- Install Certbot
+- Setup SSL
+- Add Nginx sites
+
+Before you begin, please identify the domain names you will use for the app and api. For this example, we will use `app.example.com` and `api.example.com`.
+
+### Update Medplum server settings
+
+Navigate to your `server` directory:
+
+```bash
+cd medplum/packages/server
+```
+
+Update the `medplum.config.json` file with your new domain:
+
+```js
+{
+  "baseUrl": "https://api.example.com"
+  // ...
+}
+```
+
+Restart the server. If you intend to run the server continuously and survive SSH disconnects, you may consider using `nohup`:
+
+```bash
+nohup npm run dev > server.log 2>&1 &
+```
+
+### Update Medplum app settings
+
+In the terminal that is running `app`, you now must update the `.env` file with your new domain:
+
+```bash
+echo "MEDPLUM_BASE_URL=https://api.example.com" > .env
+```
+
+Build the app. This will generate a new version of the app in the `dist` directory:
+
+```bash
+npm run build
+```
+
+Start the "preview" server:
+
+```bash
+nohup npx vite preview > app.log 2>&1 &
+```
+
+### Install Nginx and Certbot
 
 Install nginx and Certbot:
 
 ```bash
 sudo apt-get install nginx certbot python3-certbot-nginx
 ```
+
+### Setup SSL
 
 Before setting up SSL, make sure your domains point to your server and Nginx is running:
 
@@ -179,6 +260,10 @@ Get SSL certificates from Let's Encrypt for both domains:
 sudo certbot --nginx -d app.example.com
 sudo certbot --nginx -d api.example.com
 ```
+
+### Add Nginx site for `app`
+
+For the app, we will proxy requests to the Vite preview server running on port 4173.
 
 Create an `app` config file such as `/etc/nginx/sites-available/app.example.com`:
 
@@ -202,9 +287,11 @@ server {
 
     ssl_certificate /etc/letsencrypt/live/app.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/app.example.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:4173;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -216,6 +303,10 @@ server {
     }
 }
 ```
+
+### Add Nginx site for `api`
+
+For the API server, we will proxy requests to the Node.js server running on port 8103.
 
 Create a `api` config file such as `/etc/nginx/sites-available/api.example.com`:
 
@@ -239,6 +330,8 @@ server {
 
     ssl_certificate /etc/letsencrypt/live/api.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/api.example.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
         proxy_pass http://localhost:8103;
@@ -253,6 +346,8 @@ server {
     }
 }
 ```
+
+### Enable the sites
 
 Enable the site:
 
@@ -279,14 +374,8 @@ If the test is successful, reload Nginx:
 sudo systemctl reload nginx
 ```
 
-In the terminal that is running `app`, you now must update the `.env` file with your new domain:
+### Verify the setup
 
-```bash
-echo "MEDPLUM_BASE_URL=https://api.example.com" > .env
-```
+You should now be able to view the API server healthcheck at [https://api.example.com/healthcheck](https://api.example.com/healthcheck)
 
-Then restart the dev server:
-
-```bash
-npm run dev
-```
+And the app at [https://app.example.com](https://app.example.com)
