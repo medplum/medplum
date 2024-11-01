@@ -15,6 +15,7 @@ import {
   normalizeOperationOutcome,
   notFound,
   preconditionFailed,
+  stringify,
 } from '@medplum/core';
 import { Bundle, BundleEntry, OperationOutcome, Reference, Resource } from '@medplum/fhirtypes';
 import { Operation, applyPatch } from 'rfc6902';
@@ -323,7 +324,7 @@ export class MemoryRepository extends FhirRepository<undefined> {
   }
 
   async createResource<T extends Resource>(resource: T): Promise<T> {
-    const result = deepClone(resource);
+    const result = JSON.parse(stringify(resource));
 
     if (!result.id) {
       result.id = this.generateId();
@@ -432,12 +433,13 @@ export class MemoryRepository extends FhirRepository<undefined> {
 
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
     await this.readResource(resourceType, id);
+    const history = ((this.history.get(resourceType)?.get(id) ?? []) as T[])
+      .reverse()
+      .map((version) => ({ resource: deepClone(version) }));
     return {
       resourceType: 'Bundle',
       type: 'history',
-      entry: ((this.history.get(resourceType)?.get(id) ?? []) as T[])
-        .reverse()
-        .map((version) => ({ resource: deepClone(version) })),
+      ...(history.length ? { history } : undefined),
     };
   }
 
@@ -477,7 +479,7 @@ export class MemoryRepository extends FhirRepository<undefined> {
     return {
       resourceType: 'Bundle',
       type: 'searchset',
-      entry,
+      ...(entry.length ? { entry } : undefined),
       total: result.length,
     };
   }
