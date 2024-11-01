@@ -89,8 +89,9 @@ function cloneEvent(e: Event): Event {
   return new (e as any).constructor(e.type, e);
 }
 
-export type Options = {
+export type Options<BType extends string = BinaryType> = {
   WebSocket?: any;
+  binaryType?: BType;
   maxReconnectionDelay?: number;
   minReconnectionDelay?: number;
   reconnectionDelayGrowFactor?: number;
@@ -121,14 +122,17 @@ export type Message = string | ArrayBuffer | Blob | ArrayBufferView;
 
 let didWarnAboutMissingWebSocket = false;
 
-export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> implements IReconnectingWebSocket {
+export class ReconnectingWebSocket<BType extends string = BinaryType>
+  extends TypedEventTarget<WebSocketEventMap>
+  implements IReconnectingWebSocket
+{
   private _ws: WebSocket | undefined;
   private _retryCount = -1;
   private _uptimeTimeout: ReturnType<typeof setTimeout> | undefined;
   private _connectTimeout: ReturnType<typeof setTimeout> | undefined;
   private _shouldReconnect = true;
   private _connectLock = false;
-  private _binaryType: BinaryType = 'blob';
+  private _binaryType: BType;
   private _closeCalled = false;
   private _messageQueue: Message[] = [];
 
@@ -136,9 +140,9 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
 
   protected _url: string;
   protected _protocols?: ProtocolsProvider;
-  protected _options: Options;
+  protected _options: Options<BType>;
 
-  constructor(url: string, protocols?: ProtocolsProvider, options: Options = {}) {
+  constructor(url: string, protocols?: ProtocolsProvider, options: Options<BType> = {}) {
     // Initialize all events if they haven't been created yet
     if (!eventsInitialized) {
       lazyInitEvents();
@@ -151,6 +155,11 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     this._options = options;
     if (this._options.startClosed) {
       this._shouldReconnect = false;
+    }
+    if (this._options.binaryType) {
+      this._binaryType = this._options.binaryType as BType;
+    } else {
+      this._binaryType = 'blob' as BType;
     }
     if (this._options.debugLogger) {
       this._debugLogger = this._options.debugLogger;
@@ -184,14 +193,14 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
     return ReconnectingWebSocket.CLOSED;
   }
 
-  get binaryType(): 'arraybuffer' | 'blob' {
-    return this._ws ? this._ws.binaryType : this._binaryType;
+  get binaryType(): BType {
+    return this._ws ? (this._ws.binaryType as BType) : this._binaryType;
   }
 
-  set binaryType(value: BinaryType) {
+  set binaryType(value: BType) {
     this._binaryType = value;
     if (this._ws) {
-      this._ws.binaryType = value;
+      this._ws.binaryType = value as BinaryType;
     }
   }
 
@@ -404,7 +413,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
         this._debug('connect', { url: this._url, protocols: this._protocols });
         this._ws = this._protocols ? new WS(this._url, this._protocols) : new WS(this._url);
 
-        this._ws.binaryType = this._binaryType;
+        this._ws.binaryType = this._binaryType as BinaryType;
         this._connectLock = false;
         this._addListeners();
 
@@ -451,7 +460,7 @@ export class ReconnectingWebSocket extends TypedEventTarget<WebSocketEventMap> i
 
     assert(this._ws, 'WebSocket is not defined');
 
-    this._ws.binaryType = this._binaryType;
+    this._ws.binaryType = this._binaryType as BinaryType;
 
     // send enqueued messages (messages sent before websocket open event)
     this._messageQueue.forEach((message) => this._ws?.send(message));

@@ -12,6 +12,7 @@ import {
   Logger,
   MEDPLUM_VERSION,
   MedplumClient,
+  ReconnectingWebSocket,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
   isValidHostname,
@@ -54,8 +55,7 @@ export class App {
   readonly hl7Clients = new Map<string, Hl7Client>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
-  private reconnectTimer?: NodeJS.Timeout;
-  private webSocket?: WebSocket;
+  private webSocket?: ReconnectingWebSocket<WebSocket['binaryType']>;
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
@@ -132,30 +132,27 @@ export class App {
   }
 
   private async heartbeat(): Promise<void> {
-    if (!(this.webSocket || this.reconnectTimer)) {
+    if (!this.webSocket) {
       this.log.warn('WebSocket not connected');
       this.connectWebSocket().catch(this.log.error);
       return;
     }
 
-    if (this.webSocket && this.live) {
+    if (this.live) {
       await this.sendToWebSocket({ type: 'agent:heartbeat:request' });
     }
   }
 
   private async connectWebSocket(): Promise<void> {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = undefined;
-    }
-
     const webSocketUrl = new URL(this.medplum.getBaseUrl());
     webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     webSocketUrl.pathname = '/ws/agent';
     this.log.info(`Connecting to WebSocket: ${webSocketUrl.href}`);
 
-    this.webSocket = new WebSocket(webSocketUrl);
-    this.webSocket.binaryType = 'nodebuffer';
+    this.webSocket = new ReconnectingWebSocket<WebSocket['binaryType']>(webSocketUrl.toString(), undefined, {
+      WebSocket,
+      binaryType: 'nodebuffer',
+    });
 
     this.webSocket.addEventListener('error', (err) => {
       if (!this.shutdown) {
@@ -175,10 +172,8 @@ export class App {
 
     this.webSocket.addEventListener('close', () => {
       if (!this.shutdown) {
-        this.webSocket = undefined;
         this.live = false;
         this.log.info('WebSocket closed');
-        this.reconnectTimer = setTimeout(() => this.connectWebSocket(), 1000);
       }
     });
 
@@ -430,11 +425,6 @@ export class App {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = undefined;
-    }
-
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = undefined;
     }
 
     if (this.webSocket) {
