@@ -375,7 +375,7 @@ class BatchProcessor {
     let errors = 0;
 
     for (const entryIndex of bundleInfo.ordering) {
-      const entry = this.bundle.entry?.[entryIndex] as BundleEntry;
+      const entry = entries[entryIndex];
       const rewritten = this.rewriteIdsInObject(entry);
       try {
         resultEntries[entryIndex] = await this.processBatchEntry(rewritten);

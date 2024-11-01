@@ -67,7 +67,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
   );
 
   function buildBatchRequest(request: RequestGroup): Bundle {
-    const batchEntries = [] as BundleEntry[];
+    const batchEntries: BundleEntry[] = [];
     if (request.action) {
       for (const action of request.action) {
         if (action.resource?.reference) {

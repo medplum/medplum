@@ -462,7 +462,7 @@ export class MemoryRepository extends FhirRepository<undefined> {
         result.push(resource);
       }
     }
-    let entry = result.map((resource) => ({ resource: deepClone(resource) })) as BundleEntry<T>[];
+    let entry = result.map((resource): BundleEntry<T> => ({ resource: deepClone(resource) }));
     if (searchRequest.sortRules) {
       for (const sortRule of searchRequest.sortRules) {
         entry = entry.sort((a, b) => sortComparator(a.resource as T, b.resource as T, sortRule));

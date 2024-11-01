@@ -11,7 +11,6 @@ import {
 import {
   Agent,
   Bundle,
-  BundleEntry,
   OperationOutcome,
   OperationOutcomeIssue,
   Parameters,
@@ -139,7 +138,7 @@ export function expectBundleToContainOutcome(
   agent: Agent,
   outcome: Partial<OperationOutcome> & { issue: OperationOutcomeIssue[] }
 ): void {
-  const entries = bundle.entry as BundleEntry<Parameters>[];
+  const entries = bundle.entry;
   expect(entries).toContainEqual({
     resource: expect.objectContaining<Parameters>({
       resourceType: 'Parameters',
