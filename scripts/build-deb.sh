@@ -22,6 +22,7 @@ ETC_DIR="$TMP_DIR/etc/$SERVICE_NAME"
 VAR_DIR="$TMP_DIR/var/lib/$SERVICE_NAME"
 SYSTEM_DIR="$TMP_DIR/lib/systemd/system"
 DEBIAN_DIR="$TMP_DIR/DEBIAN"
+NGINX_SITES_AVAILABLE_DIR="$TMP_DIR/etc/nginx/sites-available"
 
 # Placeholder values for app build
 # These are same placeholder values used in `.github/build.yml`
@@ -68,8 +69,11 @@ npm i --omit=dev --omit=optional --omit=peer
 
 # Move back to the original directory
 popd
+
 # Create the systemd service definition
 mkdir -p "$SYSTEM_DIR"
+
+# Create the service file
 cat > "$SYSTEM_DIR/$SERVICE_NAME.service" <<EOF
 [Unit]
 Description=Medplum
@@ -88,6 +92,79 @@ WorkingDirectory=/usr/lib/$SERVICE_NAME
 WantedBy=multi-user.target
 EOF
 
+# Create the nginx sites-available directory
+mkdir -p "$NGINX_SITES_AVAILABLE_DIR"
+
+# Create the app site configuration
+cat > "$NGINX_SITES_AVAILABLE_DIR/medplum-app" <<EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name app.example.com;
+
+    # Redirect HTTP to HTTPS
+    location / {
+        return 301 https://\$server_name\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name app.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/app.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/app.example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+
+# Create the server site configuration
+cat > "$NGINX_SITES_AVAILABLE_DIR/medplum-server" <<EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name api.example.com;
+
+    # Redirect HTTP to HTTPS
+    location / {
+        return 301 https://\$server_name\$request_uri;
+    }
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+    server_name api.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/api.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.example.com/privkey.pem;
+
+    location / {
+        proxy_pass http://localhost:8103;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+    }
+}
+EOF
+
 # Create Debian files
 mkdir -p "$DEBIAN_DIR"
 
@@ -96,26 +173,26 @@ cat > "$DEBIAN_DIR/templates" <<EOF
 Template: medplum/server_url
 Type: string
 Default: https://api.example.com
-Description: API Server URL
+Description: Medplum API Server URL
  Enter the public URL where the Medplum API server will be accessible.
 
 Template: medplum/app_url
 Type: string
 Default: https://app.example.com
-Description: Web Application URL
+Description: Medplum Web Application URL
  Enter the public URL where the Medplum web application will be accessible.
 
-Template: medplum/postgres_host
+Template: medplum/db_host
 Type: string
 Default: localhost
-Description: PostgreSQL Host
+Description: Database Host
  Enter the PostgreSQL server hostname.
- Leave as localhost for local database installation.
+ Leave as localhost if the database is on this machine.
 
-Template: medplum/postgres_password
-Type: medplum
-Description: PostgreSQL Password
- Enter the password for the Medplum PostgreSQL user.
+Template: medplum/db_password
+Type: password
+Description: Database Password
+ Choose a password for the Medplum database user.
  This will be used to create the initial database user.
 EOF
 
@@ -128,12 +205,14 @@ set -e
 # Source debconf library
 . /usr/share/debconf/confmodule
 
-# Ask questions
+# Ask the questions
 db_input high medplum/server_url || true
 db_input high medplum/app_url || true
-db_input medium medplum/postgres_host || true
-[ "$medplum/postgres_host" != "localhost" ] && db_input high medplum/postgres_password || true
-db_go
+db_input medium medplum/db_host || true
+if db_get medplum/db_host && [ "\$RET" != "localhost" ]; then
+    db_input high medplum/db_password || true
+fi
+db_go || true
 EOF
 
 # Create the Debian control file
@@ -161,22 +240,45 @@ set -e
 # Source debconf library
 . /usr/share/debconf/confmodule
 
-# Get answers
+# Get the configured values
 db_get medplum/server_url
-SERVER_URL="$RET"
+SERVER_URL="\$RET"
 db_get medplum/app_url
-APP_URL="$RET"
-db_get medplum/postgres_host
-PG_HOST="$RET"
+APP_URL="\$RET"
+db_get medplum/db_host
+DB_HOST="\$RET"
+db_get medplum/db_password
+DB_PASSWORD="\$RET"
 
 # Use answers to configure the application
-sed -i "s|SERVER_URL=.*|SERVER_URL=$SERVER_URL|" /etc/medplum/server.env
-sed -i "s|APP_URL=.*|APP_URL=$APP_URL|" /etc/medplum/server.env
-sed -i "s|PG_HOST=.*|PG_HOST=$PG_HOST|" /etc/medplum/server.env
+sed -i "s|SERVER_URL=.*|SERVER_URL=\$SERVER_URL|" /etc/medplum/server.env
+sed -i "s|APP_URL=.*|APP_URL=\$APP_URL|" /etc/medplum/server.env
+sed -i "s|PG_HOST=.*|PG_HOST=\$PG_HOST|" /etc/medplum/server.env
 
-# Update nginx configs
-sed -i "s|server_name .*;|server_name ${SERVER_URL#https://};|" /etc/nginx/sites-available/medplum-server
-sed -i "s|server_name .*;|server_name ${APP_URL#https://};|" /etc/nginx/sites-available/medplum-app
+# Use these values to configure the application
+# (ensuring we escape any special characters in the values)
+escaped_server_url=$(printf '%s\n' "\$SERVER_URL" | sed 's:[][\/.^$*]:\\&:g')
+escaped_app_url=$(printf '%s\n' "\$APP_URL" | sed 's:[][\/.^$*]:\\&:g')
+
+if [ -f /etc/medplum/server.env ]; then
+    sed -i "s|^SERVER_URL=.*|SERVER_URL=\$escaped_server_url|" /etc/medplum/server.env
+    sed -i "s|^APP_URL=.*|APP_URL=\$escaped_app_url|" /etc/medplum/server.env
+    sed -i "s|^DB_HOST=.*|DB_HOST=\$DB_HOST|" /etc/medplum/server.env
+    if [ -n "\$DB_PASSWORD" ]; then
+        sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=\$DB_PASSWORD|" /etc/medplum/server.env
+    fi
+fi
+
+# Update nginx configurations if they exist
+if [ -f /etc/nginx/sites-available/medplum-server ]; then
+    server_domain=$(echo "\$SERVER_URL" | sed 's|^https://||')
+    sed -i "s|server_name .*;|server_name \$server_domain;|" /etc/nginx/sites-available/medplum-server
+fi
+
+if [ -f /etc/nginx/sites-available/medplum-app ]; then
+    app_domain=$(echo "\$APP_URL" | sed 's|^https://||')
+    sed -i "s|server_name .*;|server_name \$app_domain;|" /etc/nginx/sites-available/medplum-app
+fi
 
 # Create the Medplum user
 addgroup --system $SERVICE_NAME
