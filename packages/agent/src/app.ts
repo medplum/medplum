@@ -45,6 +45,7 @@ async function execAsync(command: string, options: ExecOptions): Promise<{ stdou
 }
 
 export const DEFAULT_PING_TIMEOUT = 3600;
+export const MAX_MISSED_HEARTBEATS = 1;
 
 export class App {
   static instance: App;
@@ -55,6 +56,7 @@ export class App {
   readonly hl7Clients = new Map<string, Hl7Client>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
+  private outstandingHeartbeats = 0;
   private webSocket?: ReconnectingWebSocket<WebSocket['binaryType']>;
   private webSocketWorker?: Promise<void>;
   private live = false;
@@ -139,6 +141,13 @@ export class App {
     }
 
     if (this.live) {
+      if (this.outstandingHeartbeats > MAX_MISSED_HEARTBEATS) {
+        this.outstandingHeartbeats = 0;
+        this.webSocket.reconnect();
+        this.log.info('Disconnected from Medplum server. Attempting to reconnect...');
+        return;
+      }
+      this.outstandingHeartbeats += 1;
       await this.sendToWebSocket({ type: 'agent:heartbeat:request' });
     }
   }
@@ -154,11 +163,12 @@ export class App {
       binaryType: 'nodebuffer',
     });
 
-    this.webSocket.addEventListener('error', (err) => {
+    this.webSocket.addEventListener('error', () => {
       if (!this.shutdown) {
         // This event is only fired when WebSocket closes due to some kind of error
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
-        this.log.error(`WebSocket closed due to an error: ${normalizeErrorString(err)}`);
+        // The error event seems to never contain an actual error though
+        this.log.error('WebSocket closed due to an error');
       }
     });
 
@@ -171,7 +181,7 @@ export class App {
     });
 
     this.webSocket.addEventListener('close', () => {
-      if (!this.shutdown) {
+      if (!this.shutdown && this.live) {
         this.live = false;
         this.log.info('WebSocket closed');
       }
@@ -189,12 +199,14 @@ export class App {
           case 'agent:connect:response':
             this.live = true;
             this.startWebSocketWorker();
+            this.log.info('Successfully connected to Medplum server');
             break;
           case 'agent:heartbeat:request':
+            this.outstandingHeartbeats = 0;
             await this.sendToWebSocket({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION });
             break;
           case 'agent:heartbeat:response':
-            // Do nothing
+            this.outstandingHeartbeats = 0;
             break;
           // @ts-expect-error - Deprecated message type
           case 'transmit':
