@@ -13,6 +13,8 @@ if ! command -v dpkg-deb >/dev/null 2>&1; then
   exit 1
 fi
 
+# Service variables
+# These represent the required directories and files for the service
 SERVICE_NAME="medplum"
 TMP_DIR="medplum-deb"
 LIB_DIR="$TMP_DIR/usr/lib/$SERVICE_NAME"
@@ -20,6 +22,14 @@ ETC_DIR="$TMP_DIR/etc/$SERVICE_NAME"
 VAR_DIR="$TMP_DIR/var/lib/$SERVICE_NAME"
 SYSTEM_DIR="$TMP_DIR/lib/systemd/system"
 DEBIAN_DIR="$TMP_DIR/DEBIAN"
+
+# Placeholder values for app build
+# These are same placeholder values used in `.github/build.yml`
+MEDPLUM_BASE_URL="__MEDPLUM_BASE_URL__"
+MEDPLUM_CLIENT_ID="__MEDPLUM_CLIENT_ID__"
+MEDPLUM_REGISTER_ENABLED="__MEDPLUM_REGISTER_ENABLED__"
+GOOGLE_CLIENT_ID="__GOOGLE_CLIENT_ID__"
+RECAPTCHA_SITE_KEY="__RECAPTCHA_SITE_KEY__"
 
 # Get version
 VERSION=$(node -p "require('./package.json').version")
@@ -30,7 +40,7 @@ rm -rf "$TMP_DIR"
 rm -rf "$SERVICE_NAME-$VERSION.deb"
 
 # Copy package files
-PACKAGES=("core" "definitions" "fhir-router" "server")
+PACKAGES=("app" "core" "definitions" "fhir-router" "server")
 for package in ${PACKAGES[@]}; do
   echo "Copy $package"
   mkdir -p "$LIB_DIR/packages/$package"
@@ -82,7 +92,7 @@ EOF
 mkdir -p "$DEBIAN_DIR"
 
 # Create the Debian template variables
-cat > "$DEBIAN_DIR/control" <<EOF
+cat > "$DEBIAN_DIR/templates" <<EOF
 Template: medplum/server_url
 Type: string
 Default: https://api.example.com
@@ -146,16 +156,6 @@ EOF
 # Create the Debian post-install script
 cat > "$DEBIAN_DIR/postinst" <<EOF
 #!/bin/sh
-addgroup --system $SERVICE_NAME
-adduser --system --ingroup $SERVICE_NAME $SERVICE_NAME
-chown $SERVICE_NAME:$SERVICE_NAME "/var/lib/$SERVICE_NAME"
-systemctl daemon-reload
-systemctl enable $SERVICE_NAME.service
-EOF
-
-# Create the Debian post-install script
-cat > "$DEBIAN_DIR/postinst" <<EOF
-#!/bin/sh
 set -e
 
 # Source debconf library
@@ -177,6 +177,15 @@ sed -i "s|PG_HOST=.*|PG_HOST=$PG_HOST|" /etc/medplum/server.env
 # Update nginx configs
 sed -i "s|server_name .*;|server_name ${SERVER_URL#https://};|" /etc/nginx/sites-available/medplum-server
 sed -i "s|server_name .*;|server_name ${APP_URL#https://};|" /etc/nginx/sites-available/medplum-app
+
+# Create the Medplum user
+addgroup --system $SERVICE_NAME
+adduser --system --ingroup $SERVICE_NAME $SERVICE_NAME
+chown $SERVICE_NAME:$SERVICE_NAME "/var/lib/$SERVICE_NAME"
+
+# Start the service
+systemctl daemon-reload
+systemctl enable $SERVICE_NAME.service
 EOF
 
 # Create the Debian pre-remove script
@@ -187,6 +196,7 @@ systemctl disable $SERVICE_NAME.service
 EOF
 
 # Set permissions
+chmod 755 "$DEBIAN_DIR/config"
 chmod 755 "$DEBIAN_DIR/postinst"
 chmod 755 "$DEBIAN_DIR/prerm"
 
