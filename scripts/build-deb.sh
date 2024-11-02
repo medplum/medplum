@@ -119,7 +119,7 @@ server {
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     # React app built files location
-    root /var/www/app.nginx.medplum.dev;
+    root /usr/lib/medplum/packages/app/dist;
     index index.html;
 
     # Enable sub_filter for JavaScript files
@@ -134,18 +134,18 @@ server {
     # Main location block
     location / {
         try_files $uri $uri/ /index.html;
+    }
 
-        # HTML files should not be cached (for SPA routing)
-        location ~* \.html$ {
-            add_header Cache-Control "no-cache, no-store, must-revalidate";
-            expires 0;
-        }
+    # HTML files should not be cached (for SPA routing)
+    location ~* \.html$ {
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        expires 0;
+    }
 
-        # All other files can be cached (they have content-based hashes)
-        location ~* \.(?!html$) {
-            expires 1y;
-            add_header Cache-Control "public, no-transform";
-        }
+    # All other files can be cached (they have content-based hashes)
+    location ~* \.(?!html$) {
+        expires 1y;
+        add_header Cache-Control "public, no-transform";
     }
 }
 EOF
