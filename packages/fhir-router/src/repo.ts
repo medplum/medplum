@@ -433,13 +433,13 @@ export class MemoryRepository extends FhirRepository<undefined> {
 
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
     await this.readResource(resourceType, id);
-    const history = ((this.history.get(resourceType)?.get(id) ?? []) as T[])
+    const entry = ((this.history.get(resourceType)?.get(id) ?? []) as T[])
       .reverse()
       .map((version) => ({ resource: deepClone(version) }));
     return {
       resourceType: 'Bundle',
       type: 'history',
-      ...(history.length ? { history } : undefined),
+      ...(entry.length ? { entry } : undefined),
     };
   }
 
