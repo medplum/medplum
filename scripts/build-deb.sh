@@ -13,8 +13,8 @@ if ! command -v dpkg-deb >/dev/null 2>&1; then
   exit 1
 fi
 
-SERVICE_NAME="medplum-server"
-TMP_DIR="medplum-server-deb"
+SERVICE_NAME="medplum"
+TMP_DIR="medplum-deb"
 LIB_DIR="$TMP_DIR/usr/lib/$SERVICE_NAME"
 ETC_DIR="$TMP_DIR/etc/$SERVICE_NAME"
 VAR_DIR="$TMP_DIR/var/lib/$SERVICE_NAME"
@@ -58,12 +58,11 @@ npm i --omit=dev --omit=optional --omit=peer
 
 # Move back to the original directory
 popd
-
 # Create the systemd service definition
 mkdir -p "$SYSTEM_DIR"
 cat > "$SYSTEM_DIR/$SERVICE_NAME.service" <<EOF
 [Unit]
-Description=Medplum Server
+Description=Medplum
 After=network.target
 
 [Service]
@@ -82,7 +81,55 @@ EOF
 # Create Debian files
 mkdir -p "$DEBIAN_DIR"
 
+# Create the Debian template variables
+cat > "$DEBIAN_DIR/control" <<EOF
+Template: medplum/server_url
+Type: string
+Default: https://api.example.com
+Description: API Server URL
+ Enter the public URL where the Medplum API server will be accessible.
+
+Template: medplum/app_url
+Type: string
+Default: https://app.example.com
+Description: Web Application URL
+ Enter the public URL where the Medplum web application will be accessible.
+
+Template: medplum/postgres_host
+Type: string
+Default: localhost
+Description: PostgreSQL Host
+ Enter the PostgreSQL server hostname.
+ Leave as localhost for local database installation.
+
+Template: medplum/postgres_password
+Type: medplum
+Description: PostgreSQL Password
+ Enter the password for the Medplum PostgreSQL user.
+ This will be used to create the initial database user.
+EOF
+
+# Create the Debian config script
+# This file will be executed by debconf to ask the user for configuration values
+cat > "$DEBIAN_DIR/config" <<EOF
+#!/bin/sh
+set -e
+
+# Source debconf library
+. /usr/share/debconf/confmodule
+
+# Ask questions
+db_input high medplum/server_url || true
+db_input high medplum/app_url || true
+db_input medium medplum/postgres_host || true
+[ "$medplum/postgres_host" != "localhost" ] && db_input high medplum/postgres_password || true
+db_go
+EOF
+
 # Create the Debian control file
+# "Depends" is a list of packages that must be installed
+# "Recommends" is a list of packages that are recommended, and will be installed by default
+# "Suggests" is a list of packages that are suggested, but not installed by default
 cat > "$DEBIAN_DIR/control" <<EOF
 Package: $SERVICE_NAME
 Version: $VERSION
@@ -90,6 +137,8 @@ Section: base
 Priority: optional
 Architecture: all
 Depends: nodejs
+Recommends: nginx, postgresql-16, redis-server
+Suggests: certbot
 Maintainer: Medplum <hello@medplum.com>
 Description: Medplum FHIR Server
 EOF
@@ -102,6 +151,32 @@ adduser --system --ingroup $SERVICE_NAME $SERVICE_NAME
 chown $SERVICE_NAME:$SERVICE_NAME "/var/lib/$SERVICE_NAME"
 systemctl daemon-reload
 systemctl enable $SERVICE_NAME.service
+EOF
+
+# Create the Debian post-install script
+cat > "$DEBIAN_DIR/postinst" <<EOF
+#!/bin/sh
+set -e
+
+# Source debconf library
+. /usr/share/debconf/confmodule
+
+# Get answers
+db_get medplum/server_url
+SERVER_URL="$RET"
+db_get medplum/app_url
+APP_URL="$RET"
+db_get medplum/postgres_host
+PG_HOST="$RET"
+
+# Use answers to configure the application
+sed -i "s|SERVER_URL=.*|SERVER_URL=$SERVER_URL|" /etc/medplum/server.env
+sed -i "s|APP_URL=.*|APP_URL=$APP_URL|" /etc/medplum/server.env
+sed -i "s|PG_HOST=.*|PG_HOST=$PG_HOST|" /etc/medplum/server.env
+
+# Update nginx configs
+sed -i "s|server_name .*;|server_name ${SERVER_URL#https://};|" /etc/nginx/sites-available/medplum-server
+sed -i "s|server_name .*;|server_name ${APP_URL#https://};|" /etc/nginx/sites-available/medplum-app
 EOF
 
 # Create the Debian pre-remove script
