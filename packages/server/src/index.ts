@@ -21,14 +21,8 @@ export async function main(configName: string): Promise<void> {
     }
 
     if (err.message && typeof err.message === 'string' && err.message.includes('Unexpected end of input')) {
-      // The otel library can throw this error on bad connections (?)
-      // ParseError: Unexpected end of input
-      // at parse (/usr/src/medplum/node_modules/forwarded-parse/index.js:146:11)
-      // at getServerAddress (/usr/src/medplum/node_modules/@opentelemetry/instrumentation-http/build/src/utils.js:419:29)
-      // at getIncomingRequestAttributes (/usr/src/medplum/node_modules/@opentelemetry/instrumentation-http/build/src/utils.js:497:27)
-      // at Server.incomingRequest (/usr/src/medplum/node_modules/@opentelemetry/instrumentation-http/build/src/http.js:363:77)
-      // at parserOnIncoming (node:_http_server:1141:12)
-      // at HTTPParser.parserOnHeadersComplete (node:_http_common:118:17)
+      // Workaround for OpenTelemetry bug: https://github.com/open-telemetry/opentelemetry-js/issues/5095
+      // The otel library can throw this error on malformed X-Forwarded-For headers.
       // We do *not* want to exit the process in this case.
       return;
     }
