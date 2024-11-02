@@ -1,16 +1,17 @@
-import { Operator } from '@medplum/core';
-import { Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
+import { createReference, Operator } from '@medplum/core';
+import { Condition, Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
-import { bundleContains, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { loadTestConfig, MedplumServerConfig } from '../../config';
+import { bundleContains, createTestProject, withTestContext } from '../../test.setup';
+import { getSystemRepo, Repository } from '../repo';
 
 describe('Identifier Lookup Table', () => {
+  let config: MedplumServerConfig;
   const systemRepo = getSystemRepo();
 
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    config = await loadTestConfig();
     await initAppServices(config);
   });
 
@@ -557,4 +558,275 @@ describe('Identifier Lookup Table', () => {
       expect(r4.entry?.length).toStrictEqual(1);
       expect(r4.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
     }));
+
+  describe('Nitty gritty tests', () => {
+    let repo: Repository;
+
+    let patient: Patient;
+
+    const conditionNames = [
+      'noCodeNoCat',
+      'noCodeCatOne',
+      'codeOneNoCat',
+      'codeOneCatOne',
+      'codeOneCatTwo',
+      'codeOneWithoutSystemNoCat',
+      'codeTwoWithoutSystemCatTwo',
+    ] as const;
+    type Conditions = (typeof conditionNames)[number];
+    const cond: Record<Conditions, Condition & { id: string }> = {} as Record<Conditions, Condition & { id: string }>;
+
+    const sys1 = 'http://sys.one';
+    const sys2 = 'http://sys.two';
+
+    const val1 = 'ABCDEFGHIJ';
+    const val2 = '0123456789';
+
+    const disp1 = 'The Quick Brown Fox';
+
+    beforeAll(async () => {
+      const { project } = await createTestProject();
+      repo = new Repository({
+        strictMode: true,
+        projects: [project.id as string],
+        author: { reference: 'User/' + randomUUID() },
+      });
+
+      patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Henry'] }] });
+      const subject = createReference(patient);
+
+      const partial = cond as Record<string, Condition>;
+      partial.noCodeNoCat = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'noCodeNoCat' }],
+      });
+      partial.noCodeCatOne = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'noCodeCatOne' }],
+        category: [{ coding: [{ system: sys1, code: val1, display: disp1 }] }],
+      });
+      partial.codeOneNoCat = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'codeOneNoCat' }],
+        code: { coding: [{ system: sys1, code: val1, display: disp1 }] },
+      });
+      partial.codeOneCatOne = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'codeOneCatOne' }],
+        code: { coding: [{ system: sys1, code: val1 }] },
+        category: [{ coding: [{ system: sys1, code: val1 }] }],
+      });
+      partial.codeOneCatTwo = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'codeOneCatTwo' }],
+        code: { coding: [{ system: sys1, code: val1 }] },
+        category: [{ coding: [{ system: sys2, code: val2 }] }],
+      });
+      partial.codeOneWithoutSystemNoCat = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'codeOneWithoutSystemNoCat' }],
+        code: { coding: [{ code: val1 }] },
+      });
+      partial.codeTwoWithoutSystemCatTwo = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'codeTwoWithoutSystemCatTwo' }],
+        code: { coding: [{ code: val2 }] },
+        category: [{ coding: [{ system: sys2, code: val2 }] }],
+      });
+
+      for (const name of conditionNames) {
+        if (!cond[name]?.id) {
+          throw new Error('Condition "' + name + '" not created');
+        }
+        expect(cond[name].identifier?.[0].value).toEqual(name);
+      }
+      expect(Object.keys(cond)).toHaveLength(conditionNames.length);
+    });
+
+    test.each<[string, Conditions[]]>([
+      [sys1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo']],
+      [sys2, []],
+      [val1, []], // incorrectly passing val as a system
+      // ['', []],
+    ])('code by system %s', async (value, expected) => {
+      const res = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: value + '|',
+          },
+        ],
+      });
+      expect(res.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+    });
+
+    test.each<[string, Conditions[]]>([
+      [sys1, []], // incorrectly passing sys as a value
+      [val1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
+      [val2, ['codeTwoWithoutSystemCatTwo']],
+    ])('code by value %s', async (value, expected) => {
+      const resEquals = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value,
+          },
+        ],
+      });
+      expect(resEquals.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+
+      const resContains = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.CONTAINS,
+            value,
+          },
+        ],
+      });
+      expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+    });
+
+    test.each<[string, string, Conditions[]]>([
+      [sys1, val1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo']],
+      [sys1, val2, []],
+      [sys2, val1, []],
+      [sys2, val2, []],
+    ])('code by system and value %s|%s', async (system, value, expected) => {
+      const res = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: system + '|' + value,
+          },
+        ],
+      });
+      expect(res.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+    });
+
+    test.each<[string, Conditions[]]>([
+      [val1, ['codeOneWithoutSystemNoCat']],
+      // [val2, ['codeTwoWithoutSystemCatTwo']],
+    ])('code by missing system and value %s', async (value, expected) => {
+      const res = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: '|' + value,
+          },
+        ],
+      });
+      expect(res.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+    });
+
+    test.each<[string, string, Conditions[]]>([
+      [val1, val1, ['codeOneCatOne']],
+      [val1, val2, ['codeOneCatTwo']],
+      [val2, val1, []],
+      [sys1 + '|', val2, ['codeOneCatTwo']],
+      ['|' + val1, val1, []],
+      ['|' + val2, sys2 + '|' + val2, ['codeTwoWithoutSystemCatTwo']],
+    ])('code and category by code=%s category=%s', async (codeValue, categoryValue, expected) => {
+      const res = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: codeValue,
+          },
+          {
+            code: 'category',
+            operator: Operator.EQUALS,
+            value: categoryValue,
+          },
+        ],
+      });
+      expect(res.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+    });
+
+    test.each<[string, Conditions[]]>([
+      [val1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
+      [val1.slice(0, 3), ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
+    ])('code :contains beginning of value %s', async (value, expected) => {
+      const resContains = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.CONTAINS,
+            value,
+          },
+        ],
+      });
+      expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+    });
+
+    test.each<[string, Conditions[]]>([
+      [val1.slice(1, 3), ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
+      [val2.slice(1, 3), ['codeTwoWithoutSystemCatTwo']],
+    ])('code :contains middle of value %s', async (value, expected) => {
+      const resContains = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.CONTAINS,
+            value,
+          },
+        ],
+      });
+      expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+    });
+
+    test.each<[string, Conditions[]]>([
+      [disp1, ['codeOneNoCat']],
+      [disp1.split(' ').slice(0, 2).join(' '), ['codeOneNoCat']],
+      [disp1.split(' ').slice(1, 3).join(' '), ['codeOneNoCat']],
+      [disp1.split(' ').slice(-2).join(' '), ['codeOneNoCat']],
+    ])('code :text %s', async (value, expected) => {
+      const resContains = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.TEXT,
+            value,
+          },
+        ],
+      });
+      expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+    });
+
+    // test.failing.each<[string, Conditions[]]>([
+    // ])('FAILING code :text %s', async (value, expected) => {
+    // const resContains = await repo.search<Condition>({
+    // resourceType: 'Condition',
+    // filters: [
+    // {
+    // code: 'code',
+    // operator: Operator.TEXT,
+    // value,
+    // },
+    // ],
+    // });
+    // expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+    // });
+  });
 });
