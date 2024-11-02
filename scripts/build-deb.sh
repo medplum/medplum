@@ -317,7 +317,13 @@ chmod 755 "$DEBIAN_DIR/prerm"
 # Build the package
 dpkg-deb --build --root-owner-group -Zgzip "$TMP_DIR" "$SERVICE_NAME-$VERSION.deb"
 
-# Cleanup
+# Generate the checksum
+sha256sum "$SERVICE_NAME-$VERSION.deb" > "$SERVICE_NAME-$VERSION.deb.sha256"
+
+# Check the checksum
+sha256sum --check "$SERVICE_NAME-$VERSION.deb.sha256"
+
+# Cleanup temp files
 rm -rf "$TMP_DIR"
 
 # Done
