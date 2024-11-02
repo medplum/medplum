@@ -91,7 +91,7 @@ import { CodingTable } from './lookups/coding';
 import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { ReferenceTable } from './lookups/reference';
-import { TokenTable } from './lookups/token';
+import { getTokens, TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
@@ -1268,6 +1268,41 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       compartments,
       content,
     };
+
+    const tokens = getTokens(resource);
+    const rowTokens = new Set<string>();
+    for (const t of tokens) {
+      const code = t.code;
+      const system = t.system?.trim();
+      const value = t.value?.trim();
+      if (!code) {
+        console.log('no code', JSON.stringify(t));
+        continue;
+      }
+      // is this necessary?
+      rowTokens.add(code + DELIM);
+
+      if (system) {
+        // [parameter]=[system]|
+        rowTokens.add(code + DELIM + system);
+
+        if (value) {
+          // [parameter]=[system]|[code]
+          rowTokens.add(code + DELIM + system + DELIM + value);
+        }
+      }
+
+      if (value) {
+        // [parameter]=[code]
+        rowTokens.add(code + DELIM + DELIM + value);
+
+        if (!system) {
+          // [parameter]=|[code]
+          rowTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
+        }
+      }
+    }
+    row.token = Array.from(rowTokens);
 
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
@@ -2558,3 +2593,6 @@ function patchObject(obj: any, patch: Operation[]): void {
     throw new OperationOutcomeError(normalizeOperationOutcome(err));
   }
 }
+
+const DELIM = '\x01';
+const NULL_SYSTEM = '\x02';

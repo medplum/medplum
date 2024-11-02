@@ -68,6 +68,47 @@ export const Operator = {
     }
     sql.append(')');
   },
+  '&&': (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+    sql.append('(');
+    sql.appendColumn(column);
+    sql.append(' && ARRAY[(');
+    sql.appendExpression(parameter); // appendExpression is critical here to handle subqueries
+    sql.append(')]');
+    if (paramType) {
+      sql.append('::' + paramType);
+    }
+    sql.append(')');
+  },
+  // '&&': (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+  //   sql.appendColumn(column);
+  //   sql.append(' && (');
+  //   sql.appendExpression(parameter);
+  //   if (paramType) {
+  //     sql.append('::' + paramType);
+  //   }
+  //   sql.append(')');
+  // },
+  ANY_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('TEXT(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' LIKE ');
+    sql.appendParameters(parameter, false);
+  },
+  ARRAY_REGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('a2t(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~ ');
+    sql.appendParameters(parameter, false);
+  },
+  ARRAY_IREGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('a2t(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~* ');
+    sql.appendParameters(parameter, false);
+  },
   TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     const query = formatTsquery(parameter);
     if (!query) {
