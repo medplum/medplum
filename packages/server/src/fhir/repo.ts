@@ -62,6 +62,7 @@ import {
 import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
+import { v7 } from 'uuid';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
@@ -88,6 +89,7 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { getTokens } from './lookups/token';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
@@ -106,7 +108,6 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
-import { v7 } from 'uuid';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -1278,6 +1279,41 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       compartments,
       content,
     };
+
+    const tokens = getTokens(resource);
+    const rowTokens = new Set<string>();
+    for (const t of tokens) {
+      const code = t.code;
+      const system = t.system?.trim();
+      const value = t.value?.trim();
+      if (!code) {
+        console.log('no code', JSON.stringify(t));
+        continue;
+      }
+      // is this necessary?
+      rowTokens.add(code + DELIM);
+
+      if (system) {
+        // [parameter]=[system]|
+        rowTokens.add(code + DELIM + system);
+
+        if (value) {
+          // [parameter]=[system]|[code]
+          rowTokens.add(code + DELIM + system + DELIM + value);
+        }
+      }
+
+      if (value) {
+        // [parameter]=[code]
+        rowTokens.add(code + DELIM + DELIM + value);
+
+        if (!system) {
+          // [parameter]=|[code]
+          rowTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
+        }
+      }
+    }
+    row.token = Array.from(rowTokens);
 
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
@@ -2579,3 +2615,6 @@ function truncateTextColumn(value: string): string {
 
   return Array.from(value).slice(0, 675).join('');
 }
+
+const DELIM = '\x01';
+const NULL_SYSTEM = '\x02';
