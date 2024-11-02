@@ -115,17 +115,37 @@ server {
 
     ssl_certificate /etc/letsencrypt/live/app.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/app.example.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
+    # React app built files location
+    root /var/www/app.nginx.medplum.dev;
+    index index.html;
+
+    # Enable sub_filter for JavaScript files
+    sub_filter_types application/javascript;  # Enable for JS files
+    sub_filter '__MEDPLUM_BASE_URL__' 'https://api.nginx.medplum.dev';  # Replace with actual URL
+    sub_filter_once off;  # Replace all occurrences, not just the first
+
+    # Gzip compression
+    gzip on;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+    # Main location block
     location / {
-        proxy_pass http://localhost:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade \$http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host \$host;
-        proxy_cache_bypass \$http_upgrade;
-        proxy_set_header X-Real-IP \$remote_addr;
-        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto \$scheme;
+        try_files $uri $uri/ /index.html;
+
+        # HTML files should not be cached (for SPA routing)
+        location ~* \.html$ {
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+            expires 0;
+        }
+
+        # All other files can be cached (they have content-based hashes)
+        location ~* \.(?!html$) {
+            expires 1y;
+            add_header Cache-Control "public, no-transform";
+        }
     }
 }
 EOF
@@ -150,6 +170,8 @@ server {
 
     ssl_certificate /etc/letsencrypt/live/api.example.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/api.example.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
     location / {
         proxy_pass http://localhost:8103;
@@ -170,17 +192,17 @@ mkdir -p "$DEBIAN_DIR"
 
 # Create the Debian template variables
 cat > "$DEBIAN_DIR/templates" <<EOF
-Template: medplum/server_url
+Template: medplum/server_hostname
 Type: string
-Default: https://api.example.com
-Description: Medplum API Server URL
- Enter the public URL where the Medplum API server will be accessible.
+Default: api.example.com
+Description: API Server Hostname
+ Enter the hostname where the Medplum API server will be accessible.
 
-Template: medplum/app_url
+Template: medplum/app_hostname
 Type: string
-Default: https://app.example.com
-Description: Medplum Web Application URL
- Enter the public URL where the Medplum web application will be accessible.
+Default: app.example.com
+Description: Web Application Hostname
+ Enter the hostname where the Medplum web application will be accessible.
 
 Template: medplum/db_host
 Type: string
@@ -206,8 +228,8 @@ set -e
 . /usr/share/debconf/confmodule
 
 # Ask the questions
-db_input high medplum/server_url || true
-db_input high medplum/app_url || true
+db_input high medplum/server_hostname || true
+db_input high medplum/app_hostname || true
 db_input medium medplum/db_host || true
 if db_get medplum/db_host && [ "\$RET" != "localhost" ]; then
     db_input high medplum/db_password || true
@@ -225,11 +247,11 @@ Version: $VERSION
 Section: base
 Priority: optional
 Architecture: all
-Depends: nodejs
+Depends: debconf, nodejs
 Recommends: nginx, postgresql-16, redis-server
 Suggests: certbot
 Maintainer: Medplum <hello@medplum.com>
-Description: Medplum FHIR Server
+Description: Medplum Server
 EOF
 
 # Create the Debian post-install script
@@ -241,43 +263,33 @@ set -e
 . /usr/share/debconf/confmodule
 
 # Get the configured values
-db_get medplum/server_url
-SERVER_URL="\$RET"
-db_get medplum/app_url
-APP_URL="\$RET"
+db_get medplum/server_hostname
+SERVER_HOSTNAME="\$RET"
+db_get medplum/app_hostname
+APP_HOSTNAME="\$RET"
 db_get medplum/db_host
 DB_HOST="\$RET"
 db_get medplum/db_password
 DB_PASSWORD="\$RET"
 
-# Use answers to configure the application
-sed -i "s|SERVER_URL=.*|SERVER_URL=\$SERVER_URL|" /etc/medplum/server.env
-sed -i "s|APP_URL=.*|APP_URL=\$APP_URL|" /etc/medplum/server.env
-sed -i "s|PG_HOST=.*|PG_HOST=\$PG_HOST|" /etc/medplum/server.env
+# Update the server config
+if [ -f /etc/medplum/medplum.config.json ]; then
+    # Update baseUrl
+    sed -i "s|\"baseUrl\":[[:space:]]*\"[^\"]*\"|\"baseUrl\": \"https://$SERVER_HOSTNAME/\"|" /etc/medplum/medplum.config.json
 
-# Use these values to configure the application
-# (ensuring we escape any special characters in the values)
-escaped_server_url=$(printf '%s\n' "\$SERVER_URL" | sed 's:[][\/.^$*]:\\&:g')
-escaped_app_url=$(printf '%s\n' "\$APP_URL" | sed 's:[][\/.^$*]:\\&:g')
-
-if [ -f /etc/medplum/server.env ]; then
-    sed -i "s|^SERVER_URL=.*|SERVER_URL=\$escaped_server_url|" /etc/medplum/server.env
-    sed -i "s|^APP_URL=.*|APP_URL=\$escaped_app_url|" /etc/medplum/server.env
-    sed -i "s|^DB_HOST=.*|DB_HOST=\$DB_HOST|" /etc/medplum/server.env
-    if [ -n "\$DB_PASSWORD" ]; then
-        sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=\$DB_PASSWORD|" /etc/medplum/server.env
-    fi
+    # Update appBaseUrl
+    sed -i "s|\"appBaseUrl\":[[:space:]]*\"[^\"]*\"|\"appBaseUrl\": \"https://$APP_HOSTNAME/\"|" /etc/medplum/medplum.config.json
 fi
 
 # Update nginx configurations if they exist
 if [ -f /etc/nginx/sites-available/medplum-server ]; then
-    server_domain=$(echo "\$SERVER_URL" | sed 's|^https://||')
-    sed -i "s|server_name .*;|server_name \$server_domain;|" /etc/nginx/sites-available/medplum-server
+    sed -i "s|api\.example\.com|$SERVER_HOSTNAME|g" /etc/nginx/sites-available/medplum-server
+    sed -i "s|app\.example\.com|$APP_HOSTNAME|g" /etc/nginx/sites-available/medplum-server
 fi
 
 if [ -f /etc/nginx/sites-available/medplum-app ]; then
-    app_domain=$(echo "\$APP_URL" | sed 's|^https://||')
-    sed -i "s|server_name .*;|server_name \$app_domain;|" /etc/nginx/sites-available/medplum-app
+    sed -i "s|api\.example\.com|$SERVER_HOSTNAME|g" /etc/nginx/sites-available/medplum-app
+    sed -i "s|app\.example\.com|$APP_HOSTNAME|g" /etc/nginx/sites-available/medplum-app
 fi
 
 # Create the Medplum user
