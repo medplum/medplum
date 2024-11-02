@@ -275,21 +275,21 @@ DB_PASSWORD="\$RET"
 # Update the server config
 if [ -f /etc/medplum/medplum.config.json ]; then
     # Update baseUrl
-    sed -i "s|\"baseUrl\":[[:space:]]*\"[^\"]*\"|\"baseUrl\": \"https://$SERVER_HOSTNAME/\"|" /etc/medplum/medplum.config.json
+    sed -i "s|\"baseUrl\":[[:space:]]*\"[^\"]*\"|\"baseUrl\": \"https://\$SERVER_HOSTNAME/\"|" /etc/medplum/medplum.config.json
 
     # Update appBaseUrl
-    sed -i "s|\"appBaseUrl\":[[:space:]]*\"[^\"]*\"|\"appBaseUrl\": \"https://$APP_HOSTNAME/\"|" /etc/medplum/medplum.config.json
+    sed -i "s|\"appBaseUrl\":[[:space:]]*\"[^\"]*\"|\"appBaseUrl\": \"https://\$APP_HOSTNAME/\"|" /etc/medplum/medplum.config.json
 fi
 
 # Update nginx configurations if they exist
 if [ -f /etc/nginx/sites-available/medplum-server ]; then
-    sed -i "s|api\.example\.com|$SERVER_HOSTNAME|g" /etc/nginx/sites-available/medplum-server
-    sed -i "s|app\.example\.com|$APP_HOSTNAME|g" /etc/nginx/sites-available/medplum-server
+    sed -i "s|api\.example\.com|\$SERVER_HOSTNAME|g" /etc/nginx/sites-available/medplum-server
+    sed -i "s|app\.example\.com|\$APP_HOSTNAME|g" /etc/nginx/sites-available/medplum-server
 fi
 
 if [ -f /etc/nginx/sites-available/medplum-app ]; then
-    sed -i "s|api\.example\.com|$SERVER_HOSTNAME|g" /etc/nginx/sites-available/medplum-app
-    sed -i "s|app\.example\.com|$APP_HOSTNAME|g" /etc/nginx/sites-available/medplum-app
+    sed -i "s|api\.example\.com|\$SERVER_HOSTNAME|g" /etc/nginx/sites-available/medplum-app
+    sed -i "s|app\.example\.com|\$APP_HOSTNAME|g" /etc/nginx/sites-available/medplum-app
 fi
 
 # Create the Medplum user
