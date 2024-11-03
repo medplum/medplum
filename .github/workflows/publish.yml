@@ -273,3 +273,55 @@ jobs:
               name: "medplum-agent-" + packageJson.version + "-linux.sha256",
               data: await fs.readFileSync("packages/agent/medplum-agent-" + packageJson.version + "-linux.sha256")
             });
+
+  build_deb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Build Deb
+        shell: bash
+        run: ./scripts/build-deb.sh
+
+      - name: Upload Deb
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const packageJson = require('./packages/agent/package.json');
+            const fs = require('fs');
+            const tag = context.ref.replace("refs/tags/", "");
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-" + packageJson.version + ".deb",
+              data: await fs.readFileSync("medplum-" + packageJson.version + ".deb")
+            });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: "medplum-" + packageJson.version + ".deb.sha256",
+              data: await fs.readFileSync("medplum-" + packageJson.version + ".deb.sha256")
+            });

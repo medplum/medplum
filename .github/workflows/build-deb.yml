@@ -1,0 +1,45 @@
+name: Build deb
+
+concurrency:
+  group: ci-build-deb-${{ github.sha }}
+  cancel-in-progress: true
+
+on: workflow_dispatch
+
+jobs:
+  build_deb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Build Deb
+        shell: bash
+        run: ./scripts/build-deb.sh
+
+      - name: Upload Deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: medplum-${{ env.MEDPLUM_VERSION }}.deb
+          path: medplum-${{ env.MEDPLUM_VERSION }}.deb
+
+      - name: Upload Deb SHA256
+        uses: actions/upload-artifact@v4
+        with:
+          name: medplum-${{ env.MEDPLUM_VERSION }}.deb.sha256
+          path: medplum-${{ env.MEDPLUM_VERSION }}.deb.sha256
