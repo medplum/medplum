@@ -170,7 +170,7 @@ jobs:
                 if(fileName == '') {
                     throw new Error('Unable to find signtool.exe in ' + windowsKitsFolder);
                 }
-                
+
                 console.log(fileName);
                 return fileName;
             }
@@ -321,13 +321,45 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-" + packageJson.version + ".deb",
-              data: await fs.readFileSync("medplum-" + packageJson.version + ".deb")
+              name: "medplum_" + packageJson.version + "_all.deb",
+              data: await fs.readFileSync("medplum_" + packageJson.version + "_all.deb")
             });
             await github.rest.repos.uploadReleaseAsset({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: release.data.id,
-              name: "medplum-" + packageJson.version + ".deb.sha256",
-              data: await fs.readFileSync("medplum-" + packageJson.version + ".deb.sha256")
+              name: "medplum_" + packageJson.version + "_all.deb.sha256",
+              data: await fs.readFileSync("medplum_" + packageJson.version + "_all.deb.sha256")
             });
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+
+      - name: Install deb-s3
+        run: gem install deb-s3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.MEDPLUM_GPG_KEY }}" | gpg --import
+          echo "${{ secrets.MEDPLUM_GPG_PASSPHRASE }}" | gpg --passphrase-fd 0 --pinentry-mode loopback -u ${{ secrets.MEDPLUM_GPG_KEY_ID }} --yes --sign test.txt
+
+      - name: Upload to APT repository
+        run: |
+          deb-s3 upload \
+            --bucket apt.medplum.com \
+            --prefix ubuntu \
+            --codename jammy \
+            --sign=${{ secrets.MEDPLUM_GPG_KEY_ID }} \
+            --gpg-options="--passphrase-fd 0 --pinentry-mode loopback" \
+            --preserve-versions \
+            medplum_*.deb \
+            < <(echo "${{ secrets.MEDPLUM_GPG_PASSPHRASE }}")

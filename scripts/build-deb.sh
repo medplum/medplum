@@ -315,10 +315,12 @@ chmod 755 "$DEBIAN_DIR/postinst"
 chmod 755 "$DEBIAN_DIR/prerm"
 
 # Build the package
-dpkg-deb --build --root-owner-group -Zgzip "$TMP_DIR" "$SERVICE_NAME-$VERSION.deb"
+# Use the standard Debian package naming convention: <name>_<version>_<architecture>.deb
+# We can use architecture "all" because we are not building a binary package
+dpkg-deb --build --root-owner-group -Zgzip "$TMP_DIR" "$SERVICE_NAME\_$VERSION\_all.deb"
 
 # Generate the checksum
-sha256sum "$SERVICE_NAME-$VERSION.deb" > "$SERVICE_NAME-$VERSION.deb.sha256"
+sha256sum "$SERVICE_NAME-$VERSION.deb" > "$SERVICE_NAME\_$VERSION\_all.deb.sha256"
 
 # Check the checksum
 sha256sum --check "$SERVICE_NAME-$VERSION.deb.sha256"
