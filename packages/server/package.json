@@ -46,7 +46,7 @@
     "@opentelemetry/instrumentation-express": "0.44.0",
     "@opentelemetry/instrumentation-fs": "0.16.0",
     "@opentelemetry/instrumentation-graphql": "0.44.0",
-    "@opentelemetry/instrumentation-http": "0.54.0",
+    "@opentelemetry/instrumentation-http": "0.53.0",
     "@opentelemetry/instrumentation-ioredis": "0.44.0",
     "@opentelemetry/instrumentation-net": "0.40.0",
     "@opentelemetry/instrumentation-pg": "0.47.0",
