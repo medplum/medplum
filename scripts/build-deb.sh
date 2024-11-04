@@ -317,13 +317,15 @@ chmod 755 "$DEBIAN_DIR/prerm"
 # Build the package
 # Use the standard Debian package naming convention: <name>_<version>_<architecture>.deb
 # We can use architecture "all" because we are not building a binary package
-dpkg-deb --build --root-owner-group -Zgzip "$TMP_DIR" "$SERVICE_NAME\_$VERSION\_all.deb"
+DEB_FILENAME="${SERVICE_NAME}_${VERSION}_all.deb"
+dpkg-deb --build --root-owner-group -Zgzip "$TMP_DIR" "$DEB_FILENAME"
 
 # Generate the checksum
-sha256sum "$SERVICE_NAME-$VERSION.deb" > "$SERVICE_NAME\_$VERSION\_all.deb.sha256"
+CHECKSUM_FILENAME="$DEB_FILENAME.sha256"
+sha256sum "$DEB_FILENAME" > "$CHECKSUM_FILENAME"
 
 # Check the checksum
-sha256sum --check "$SERVICE_NAME\_$VERSION\_all.deb.sha256"
+sha256sum --check "$CHECKSUM_FILENAME"
 
 # Cleanup temp files
 rm -rf "$TMP_DIR"
