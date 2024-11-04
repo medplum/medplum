@@ -323,7 +323,7 @@ dpkg-deb --build --root-owner-group -Zgzip "$TMP_DIR" "$SERVICE_NAME\_$VERSION\_
 sha256sum "$SERVICE_NAME-$VERSION.deb" > "$SERVICE_NAME\_$VERSION\_all.deb.sha256"
 
 # Check the checksum
-sha256sum --check "$SERVICE_NAME-$VERSION.deb.sha256"
+sha256sum --check "$SERVICE_NAME\_$VERSION\_all.deb.sha256"
 
 # Cleanup temp files
 rm -rf "$TMP_DIR"
