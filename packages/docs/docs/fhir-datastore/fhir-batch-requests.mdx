@@ -148,6 +148,91 @@ Previously, performing an "upsert" (i.e. either creating or updating a resource 
 required using a batch operation. This functionality is now implemented directly as a [conditional update](/docs/fhir-datastore/create-fhir-data#upsert)
 to provide strong transactional guarantees around the operation in a single, simple `PUT` request.
 
+:::note Upsert URLs
+
+Because resolving the search request in the upsert URL is a prerequisite to determine which ID should be assigned as
+part of handling [internal references](#internal-references), the `urn:uuid:` syntax for internal references **cannot**
+be used in the `Bundle.entry.request.url` for a conditional update within a batch.
+
+Instead, upsert URLs should link to other resources within the Bundle consistently through conditions on the target
+resource itself, not its server-assigned ID.
+
+<details>
+<summary>Example</summary>
+
+❌ **Incorrect**
+
+```js
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc",
+      "request": {
+        "method": "PUT",
+        "url": "Patient?identifier=http://example.com/mrn|1234567"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [{ "system": "http://example.com/mrn", "value": "1234567" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b122a53c-9c0d-4654-9260-c0b67b7bc5d4",
+      "request": {
+        "method": "PUT",
+        // Incorrect: Upsert URL cannot use replaced urn:uuid: syntax
+        "url": "CareTeam?subject=urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc"
+      },
+      "resource": {
+        "resourceType": "CareTeam",
+        "subject": { "reference": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc" }
+      }
+    }
+  ]
+}
+```
+
+✅ **Correct**
+
+```js
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc",
+      "request": {
+        "method": "PUT",
+        "url": "Patient?identifier=http://example.com/mrn|1234567"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [{ "system": "http://example.com/mrn", "value": "1234567" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b122a53c-9c0d-4654-9260-c0b67b7bc5d4",
+      "request": {
+        "method": "PUT",
+        // Correct: Refer to subject via chained search,
+        // using same identifier as its own upsert URL
+        "url": "CareTeam?subject.identifier=http://example.com/mrn|1234567"
+      },
+      "resource": {
+        "resourceType": "CareTeam",
+        "subject": { "reference": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc" }
+      }
+    }
+  ]
+}
+```
+
+</details>
+
+:::
+
 ## PATCH actions in a Batch
 
 Because the request body of a PATCH request is an array of [JSON Patch](https://jsonpatch.com/) operations, not a resource,

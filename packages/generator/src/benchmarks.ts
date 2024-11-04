@@ -22,8 +22,8 @@ async function runBenchmarks(...benchmarks: Benchmark[]): Promise<void> {
     const b = new Bench({
       iterations: 100,
     });
-    b.addEventListener('error', (evt: BenchEvent) => {
-      throw evt.error;
+    b.addEventListener('error', (_evt: BenchEvent) => {
+      throw new Error('Benchmark error');
     });
     await bench.fn(b);
     printBenchmarkResults(b, bench.title);

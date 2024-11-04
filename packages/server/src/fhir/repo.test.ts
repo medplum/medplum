@@ -310,9 +310,14 @@ describe('FHIR Repo', () => {
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
+        identifier: [],
       });
 
       expect(patient.meta?.author?.reference).toEqual(getReferenceString(client));
+
+      // empty identifier array should removed when read from cache
+      const readPatient = await repo.readResource<Patient>('Patient', patient.id as string, { checkCacheOnly: true });
+      expect(readPatient.identifier).toBeUndefined();
     }));
 
   test('Create Patient as Practitioner with no author', () =>

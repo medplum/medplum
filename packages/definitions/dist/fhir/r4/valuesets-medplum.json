@@ -2304,6 +2304,16 @@
         "status": "active",
         "content": "not-present"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/iso-3166-2",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "url": "urn:iso:std:iso:3166:-2",
+        "status": "active",
+        "content": "not-present",
+        "description": "Stub CodeSystem for ISO 3166-2"
+      }
     }
   ]
 }

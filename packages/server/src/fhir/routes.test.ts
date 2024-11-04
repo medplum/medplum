@@ -7,9 +7,12 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
+import { DatabaseMode, getDatabasePool } from '../database';
 
 const app = express();
 let accessToken: string;
+let legacyJsonResponseAccessToken: string;
+let searchOnReaderAccessToken: string;
 let testPatient: Patient;
 let patientId: string;
 let patientVersionId: string;
@@ -19,24 +22,38 @@ describe('FHIR Routes', () => {
     const config = await loadTestConfig();
     await initApp(app, config);
     accessToken = await initTestAuth();
+    legacyJsonResponseAccessToken = await initTestAuth({
+      project: { systemSetting: [{ name: 'legacyFhirJsonResponseFormat', valueBoolean: true }] },
+    });
+    searchOnReaderAccessToken = await initTestAuth({
+      project: { systemSetting: [{ name: 'searchOnReader', valueBoolean: true }] },
+    });
 
-    const res = await request(app)
-      .post(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Patient',
-        name: [
-          {
-            given: ['Alice'],
-            family: 'Smith',
-          },
-        ],
-      });
-    expect(res.status).toBe(201);
-    testPatient = res.body as Patient;
-    patientId = testPatient.id as string;
-    patientVersionId = (testPatient.meta as Meta).versionId as string;
+    for (const token of [accessToken, searchOnReaderAccessToken]) {
+      const res = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + token)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send({
+          resourceType: 'Patient',
+          name: [
+            {
+              given: ['Alice'],
+              family: 'Smith',
+            },
+          ],
+        });
+      expect(res.status).toBe(201);
+      if (token === accessToken) {
+        testPatient = res.body as Patient;
+        patientId = testPatient.id as string;
+        patientVersionId = (testPatient.meta as Meta).versionId as string;
+      }
+    }
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   afterAll(async () => {
@@ -89,22 +106,33 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Create resource success', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .set('Content-Type', ContentType.FHIR_JSON)
-      .send({ resourceType: 'Patient' });
-    expect(res.status).toBe(201);
-    expect(res.body.resourceType).toEqual('Patient');
-    expect(res.headers.location).toContain('Patient');
-    expect(res.headers.location).toContain(res.body.id);
-    const patient = res.body;
-    const res2 = await request(app)
-      .get(`/fhir/R4/Patient/` + patient.id)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toBe(200);
-  });
+  test.each<['standard' | 'legacy']>([['standard'], ['legacy']])(
+    'Create resource success with %s FHIR JSON response format',
+    async (jsonFormat) => {
+      const patientToCreate: Patient = { resourceType: 'Patient', identifier: [] };
+      const token = jsonFormat === 'standard' ? accessToken : legacyJsonResponseAccessToken;
+
+      const res = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + token)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(patientToCreate);
+      expect(res.status).toBe(201);
+      expect(res.body.resourceType).toEqual('Patient');
+      expect(res.headers.location).toContain('Patient');
+      expect(res.headers.location).toContain(res.body.id);
+      const patient = res.body;
+      const res2 = await request(app)
+        .get(`/fhir/R4/Patient/` + patient.id)
+        .set('Authorization', 'Bearer ' + token);
+      expect(res2.status).toBe(200);
+      if (jsonFormat === 'standard') {
+        expect(patient.identifier).toBeUndefined();
+      } else {
+        expect(patient.identifier).toEqual([]);
+      }
+    }
+  );
 
   test('Create resource invalid resource type', async () => {
     const res = await request(app)
@@ -441,11 +469,108 @@ describe('FHIR Routes', () => {
     expect(res.status).toBe(200);
   });
 
-  test('Search', async () => {
-    const res = await request(app)
-      .get(`/fhir/R4/Patient`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(200);
+  describe.each<['writer' | 'reader']>([['writer'], ['reader']])('On %s', (repoMode) => {
+    test('Search', async () => {
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
+
+      const res = await request(app)
+        .get(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + token);
+      expect(res.status).toBe(200);
+
+      if (repoMode === 'writer') {
+        expect(writerSpy).toHaveBeenCalledTimes(1);
+        expect(readerSpy).toHaveBeenCalledTimes(0);
+      } else {
+        expect(writerSpy).toHaveBeenCalledTimes(0);
+        expect(readerSpy).toHaveBeenCalledTimes(1);
+      }
+    });
+
+    test('Search by POST', async () => {
+      const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+      const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+      const token = repoMode === 'writer' ? accessToken : searchOnReaderAccessToken;
+
+      const res = await request(app)
+        .post(`/fhir/R4/Patient/_search`)
+        .set('Authorization', 'Bearer ' + token)
+        .type('form');
+      expect(res.status).toBe(200);
+      const result = res.body as Bundle;
+      expect(result.type).toEqual('searchset');
+      expect(result.entry?.length).toBeGreaterThan(0);
+
+      if (repoMode === 'writer') {
+        expect(writerSpy).toHaveBeenCalledTimes(1);
+        expect(readerSpy).toHaveBeenCalledTimes(0);
+      } else {
+        expect(writerSpy).toHaveBeenCalledTimes(0);
+        expect(readerSpy).toHaveBeenCalledTimes(1);
+      }
+    });
+
+    test('Search multiple resource types with _type', async () =>
+      withTestContext(async () => {
+        const { accessToken } = await createTestProject({
+          withAccessToken: true,
+          project:
+            repoMode === 'reader' ? { systemSetting: [{ name: 'searchOnReader', valueBoolean: true }] } : undefined,
+        });
+
+        const res1 = await request(app)
+          .post('/fhir/R4/Patient')
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({ resourceType: 'Patient' });
+        expect(res1.status).toBe(201);
+
+        const res2 = await request(app)
+          .post('/fhir/R4/Observation')
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send({
+            resourceType: 'Observation',
+            status: 'final',
+            code: { text: 'test' },
+            subject: { reference: `Patient/${res1.body.id}` },
+          });
+        expect(res2.status).toBe(201);
+
+        const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+        const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+
+        const res3 = await request(app)
+          .get('/fhir/R4?_type=Patient,Observation')
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res3.status).toBe(200);
+
+        const patient = res1.body;
+        const obs = res2.body;
+        const bundle = res3.body;
+
+        expect(bundle.entry?.length).toBe(2);
+        expect(bundleContains(bundle, patient)).toBeTruthy();
+        expect(bundleContains(bundle, obs)).toBeTruthy();
+
+        if (repoMode === 'writer') {
+          expect(writerSpy).toHaveBeenCalledTimes(1);
+          expect(readerSpy).toHaveBeenCalledTimes(0);
+        } else {
+          expect(writerSpy).toHaveBeenCalledTimes(0);
+          expect(readerSpy).toHaveBeenCalledTimes(1);
+        }
+
+        // Also verify that trailing slash works
+        const res4 = await request(app)
+          .get('/fhir/R4/?_type=Patient,Observation')
+          .set('Authorization', 'Bearer ' + accessToken);
+        expect(res4.status).toBe(200);
+        const bundle2 = res4.body;
+        expect(bundle2.entry?.length).toBe(2);
+        expect(bundleContains(bundle2, patient)).toBeTruthy();
+        expect(bundleContains(bundle2, obs)).toBeTruthy();
+      }));
   });
 
   test('Search invalid resource', async () => {
@@ -461,17 +586,6 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
     expect(res.body.issue[0].details.text).toEqual('Unknown search parameter: basedOn');
-  });
-
-  test('Search by POST', async () => {
-    const res = await request(app)
-      .post(`/fhir/R4/Patient/_search`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .type('form');
-    expect(res.status).toBe(200);
-    const result = res.body as Bundle;
-    expect(result.type).toEqual('searchset');
-    expect(result.entry?.length).toBeGreaterThan(0);
   });
 
   test('Validate create success', async () => {
@@ -576,51 +690,6 @@ describe('FHIR Routes', () => {
         .set('Authorization', 'Bearer ' + normalRegistration.accessToken)
         .send({ ...membership, accessPolicy: undefined });
       expect(res3.status).toBe(403);
-    }));
-
-  test('Search multiple resource types with _type', async () =>
-    withTestContext(async () => {
-      const { accessToken } = await createTestProject({ withAccessToken: true });
-
-      const res1 = await request(app)
-        .post('/fhir/R4/Patient')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send({ resourceType: 'Patient' });
-      expect(res1.status).toBe(201);
-
-      const res2 = await request(app)
-        .post('/fhir/R4/Observation')
-        .set('Authorization', 'Bearer ' + accessToken)
-        .send({
-          resourceType: 'Observation',
-          status: 'final',
-          code: { text: 'test' },
-          subject: { reference: `Patient/${res1.body.id}` },
-        });
-      expect(res2.status).toBe(201);
-
-      const res3 = await request(app)
-        .get('/fhir/R4?_type=Patient,Observation')
-        .set('Authorization', 'Bearer ' + accessToken);
-      expect(res3.status).toBe(200);
-
-      const patient = res1.body;
-      const obs = res2.body;
-      const bundle = res3.body;
-
-      expect(bundle.entry?.length).toBe(2);
-      expect(bundleContains(bundle, patient)).toBeTruthy();
-      expect(bundleContains(bundle, obs)).toBeTruthy();
-
-      // Also verify that trailing slash works
-      const res4 = await request(app)
-        .get('/fhir/R4/?_type=Patient,Observation')
-        .set('Authorization', 'Bearer ' + accessToken);
-      expect(res4.status).toBe(200);
-      const bundle2 = res4.body;
-      expect(bundle2.entry?.length).toBe(2);
-      expect(bundleContains(bundle2, patient)).toBeTruthy();
-      expect(bundleContains(bundle2, obs)).toBeTruthy();
     }));
 
   test('Set accounts on create', async () => {

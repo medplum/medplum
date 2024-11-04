@@ -136,8 +136,8 @@ describe('Batch and Transaction processing', () => {
     expect(results.entry?.[1]?.resource).toMatchObject<Partial<Bundle>>({
       resourceType: 'Bundle',
       type: 'searchset',
-      entry: [],
     });
+    expect((results.entry?.[1]?.resource as Partial<Bundle>).entry).toBeUndefined();
 
     expect(results.entry?.[2]?.response?.status).toEqual('201');
     expect(results.entry?.[2]?.resource).toMatchObject<Partial<Patient>>({
@@ -279,8 +279,8 @@ describe('Batch and Transaction processing', () => {
     expect(results.entry?.[1]?.resource).toMatchObject<Partial<Bundle>>({
       resourceType: 'Bundle',
       type: 'searchset',
-      entry: [],
     });
+    expect((results.entry?.[1]?.resource as Partial<Bundle>).entry).toBeUndefined();
 
     expect(results.entry?.[2]?.response?.status).toEqual('201');
     expect(results.entry?.[2]?.resource).toMatchObject<Patient>({
@@ -819,7 +819,7 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send();
     expect(res2.status).toBe(200);
-    expect(res2.body.entry).toHaveLength(0);
+    expect(res2.body.entry).toBeUndefined();
   });
 
   test('Conditional reference resolution', async () => {
@@ -895,6 +895,96 @@ describe('Batch and Transaction processing', () => {
     const bundle = res.body as Bundle;
     expect(bundle.entry).toHaveLength(1);
     expect(bundle.entry?.[0]?.response?.status).toEqual('400');
+  });
+
+  test('Repeated batch of related upserts', async () => {
+    const bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:889474c7-551f-49cb-88d9-548ab1fcdcac',
+          request: { method: 'PUT', url: 'Patient?identifier=126229' },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{ value: '126229' }],
+            active: true,
+            meta: {
+              profile: [
+                'https://medplum.com/profiles/integrations/health-gorilla/StructureDefinition/MedplumHealthGorillaPatient',
+              ],
+            },
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:726c6c4f-4ca8-425e-870e-e43e569d0c4e',
+          request: {
+            method: 'PUT',
+            url: 'RelatedPerson?patient.identifier=126229',
+          },
+          resource: {
+            resourceType: 'RelatedPerson',
+            relationship: [
+              {
+                coding: [
+                  {
+                    system: 'http://terminology.hl7.org/CodeSystem/subscriber-relationship',
+                    code: 'spouse',
+                    display: 'Spouse',
+                  },
+                ],
+              },
+            ],
+            patient: { reference: 'urn:uuid:889474c7-551f-49cb-88d9-548ab1fcdcac' },
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:f65055bc-5de2-45f5-9f59-ed6adbe77ae0',
+          request: {
+            method: 'PUT',
+            url: 'Coverage?beneficiary.identifier=126229',
+          },
+          resource: {
+            resourceType: 'Coverage',
+            status: 'active',
+            identifier: [{ value: '1' }],
+            subscriberId: '1',
+            subscriber: { reference: 'urn:uuid:726c6c4f-4ca8-425e-870e-e43e569d0c4e' },
+            relationship: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/subscriber-relationship',
+                  code: 'spouse',
+                  display: 'Spouse',
+                },
+              ],
+            },
+            beneficiary: { reference: 'urn:uuid:889474c7-551f-49cb-88d9-548ab1fcdcac' },
+            payor: [{ reference: 'Organization/091065a4-070b-4482-a863-76507b61e23a' }],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(bundle);
+    expect(res.status).toEqual(200);
+    const result = res.body as Bundle;
+    expect(result.entry).toHaveLength(3);
+    expect(result.entry?.map((e) => e.response?.status)).toEqual(['201', '201', '201']);
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(bundle);
+    expect(res.status).toEqual(200);
+    const result2 = res2.body as Bundle;
+    expect(result2.entry).toHaveLength(3);
+    expect(result2.entry?.map((e) => e.response?.status)).toEqual(['200', '200', '200']);
   });
 
   test('Async batch', async () => {

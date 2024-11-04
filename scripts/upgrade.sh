@@ -22,7 +22,8 @@ git checkout -b "$BRANCH_NAME"
 # rimraf - version 6+ requires Node 20+, holding back until Medplum v4
 # supertest - version 7+ incompatible with superwstest, waiting for fix
 # @tabler/icons-react - to avoid bad interaction with vite https://github.com/tabler/tabler-icons/issues/1233
-EXCLUDE="@types/express eslint node-fetch react react-dom rimraf supertest @tabler/icons-react"
+# react-native - 0.76.x is broken with an error caused by flow parser breaking when using `expo-crypto`: `SyntaxError: {..}/react-native/Libraries/vendor/emitter/EventEmitter.js: Unexpected token, expected "]" (39:5)`
+EXCLUDE="@types/express eslint node-fetch react react-dom rimraf supertest @tabler/icons-react react-native"
 
 # First, only upgrade patch and minor versions
 # --workspaces - Run on all workspaces

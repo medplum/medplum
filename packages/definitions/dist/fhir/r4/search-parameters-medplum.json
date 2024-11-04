@@ -1230,6 +1230,7 @@
         "code": "outcome-measure-reference",
         "base": ["ResearchStudy"],
         "type": "reference",
+        "target": ["EvidenceVariable"],
         "expression": "ResearchStudy.outcomeMeasure.reference"
       }
     },
@@ -1265,6 +1266,23 @@
         "base": ["Group"],
         "type": "quantity",
         "expression": "Group.characteristic.value.ofType(Range)"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Flag-category",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Flag-category",
+        "url": "https://medplum.com/fhir/SearchParameter/Flag-category",
+        "version": "4.0.1",
+        "name": "category",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The category of the flag, such as clinical, administrative, etc.",
+        "code": "category",
+        "base": ["Flag"],
+        "type": "token",
+        "expression": "Flag.category"
       }
     }
   ]

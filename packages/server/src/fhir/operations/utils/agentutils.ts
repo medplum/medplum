@@ -116,7 +116,7 @@ export async function handleBulkAgentOperation(
 
   const promises = agents.map((agent: Agent) => handler(agent));
   const results = await Promise.allSettled(promises);
-  const entries = [] as BundleEntry<Parameters>[];
+  const entries: BundleEntry<Parameters>[] = [];
 
   for (let i = 0; i < results.length; i++) {
     const result = results[i];

@@ -27,6 +27,12 @@ However, the original content of the resource is not destroyed. It can still be 
 - Reading resource history: `GET Patient/123/_history`
 - Reading a resource version: `GET Patient/123/_history/1`
 
+:::caution Referential Integrity on Deletes
+
+Referential integrity is **not** supported for deletes at this time.
+
+:::
+
 ## Expunge Operation
 
 The Medplum `$expunge` operation performs a "hard" or "physical" delete. This means that the data is permanently removed from the database, including all resource history.

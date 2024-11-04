@@ -1,6 +1,5 @@
 import {
   Bundle,
-  BundleEntry,
   CodeableConcept,
   Coding,
   ElementDefinition,
@@ -144,7 +143,7 @@ export interface TypeInfo {
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): void {
-  for (const entry of bundle.entry as BundleEntry[]) {
+  for (const entry of bundle.entry ?? []) {
     const resource = entry.resource as SearchParameter;
     if (resource.resourceType === 'SearchParameter') {
       indexSearchParameter(resource);

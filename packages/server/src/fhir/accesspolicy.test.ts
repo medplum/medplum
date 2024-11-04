@@ -2546,4 +2546,36 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow(expectedError);
     })
   );
+
+  test('Wildcard policy with criteria', async () =>
+    withTestContext(async () => {
+      const compartment = 'Patient/' + randomUUID();
+      const { repo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: '*',
+              criteria: `*?_compartment=${compartment}`,
+            },
+          ],
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        link: [{ type: 'refer', other: { reference: compartment } }], // In the correct compartment
+      });
+      const readPatient = await repo.readResource('Patient', patient.id as string);
+      expect(readPatient.meta?.compartment).toContainEqual({ reference: compartment });
+
+      const patient2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        // Not in the compartment; should not be accessible per the access policy
+      });
+      await expect(repo.readResource('Patient', patient2.id as string)).rejects.toThrow('Not found');
+    }));
 });

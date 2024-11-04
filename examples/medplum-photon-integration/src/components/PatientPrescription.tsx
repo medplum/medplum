@@ -96,6 +96,7 @@ export function PatientPrescription({ patient }: PatientPrescriptionProps): JSX.
             enable-order="true"
             hide-patient-card="true"
             enable-med-history="true"
+            enable-send-to-patient="true"
           />
         </div>
       ) : (
