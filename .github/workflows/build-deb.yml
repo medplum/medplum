@@ -72,11 +72,13 @@ jobs:
         run: |
           deb-s3 upload \
             --bucket apt.medplum.com \
-            --prefix ubuntu \
-            --codename jammy \
+            --prefix debian \
+            --codename "noble,jammy" \
+            --component main \
+            --visibility nil \
+            --preserve-versions \
             --sign=${{ secrets.MEDPLUM_GPG_KEY_ID }} \
             --gpg-options="--passphrase-fd 0 --pinentry-mode loopback" \
-            --preserve-versions \
-            --acl-disabled \
+            --cache-control="max-age=300" \
             medplum_*.deb \
             < <(echo "${{ secrets.MEDPLUM_GPG_PASSPHRASE }}")
