@@ -162,7 +162,6 @@ function buildTargetDefinition(): SchemaDefinition {
   buildContactPointTable(result);
   buildIdentifierTable(result);
   buildHumanNameTable(result);
-  buildValueSetElementTable(result);
 
   return result;
 }
@@ -407,23 +406,6 @@ function buildLookupTable(result: SchemaDefinition, tableName: string, columns: 
   }
 
   result.tables.push(tableDefinition);
-}
-
-function buildValueSetElementTable(result: SchemaDefinition): void {
-  result.tables.push({
-    name: 'ValueSetElement',
-    columns: [
-      { name: 'resourceId', type: 'UUID NOT NULL' },
-      { name: 'system', type: 'TEXT' },
-      { name: 'code', type: 'TEXT' },
-      { name: 'display', type: 'TEXT' },
-    ],
-    indexes: [
-      { columns: ['system'], indexType: 'btree' },
-      { columns: ['code'], indexType: 'btree' },
-      { columns: ['display'], indexType: 'btree' },
-    ],
-  });
 }
 
 function writeMigrations(b: FileBuilder, startDefinition: SchemaDefinition, targetDefinition: SchemaDefinition): void {
