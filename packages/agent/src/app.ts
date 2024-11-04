@@ -57,7 +57,7 @@ export class App {
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
   private outstandingHeartbeats = 0;
-  private webSocket?: ReconnectingWebSocket<WebSocket['binaryType']>;
+  private webSocket?: ReconnectingWebSocket<WebSocket>;
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
@@ -158,7 +158,7 @@ export class App {
     webSocketUrl.pathname = '/ws/agent';
     this.log.info(`Connecting to WebSocket: ${webSocketUrl.href}`);
 
-    this.webSocket = new ReconnectingWebSocket<WebSocket['binaryType']>(webSocketUrl.toString(), undefined, {
+    this.webSocket = new ReconnectingWebSocket<WebSocket>(webSocketUrl.toString(), undefined, {
       WebSocket,
       binaryType: 'nodebuffer',
     });

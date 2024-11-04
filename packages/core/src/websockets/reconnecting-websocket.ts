@@ -39,6 +39,58 @@ export type WebSocketEventMap = {
   open: Event;
 };
 
+export type IWebSocketEventMap = {
+  close: globalThis.CloseEvent;
+  error: globalThis.ErrorEvent;
+  message: globalThis.MessageEvent;
+  open: Event;
+};
+
+export interface IWebSocket {
+  binaryType: string;
+
+  readonly bufferedAmount: number;
+  readonly extensions: string;
+
+  onclose: ((...args: any[]) => any) | null;
+  onerror: ((...args: any[]) => any) | null;
+  onmessage: ((...args: any[]) => any) | null;
+  onopen: ((...args: any[]) => any) | null;
+
+  readonly protocol: string;
+  readonly readyState: number;
+  readonly url: string;
+
+  close(code?: number, reason?: string): void;
+  send(data: any): void;
+
+  readonly CLOSED: number;
+  readonly CLOSING: number;
+  readonly CONNECTING: number;
+  readonly OPEN: number;
+
+  addEventListener<K extends keyof WebSocketEventMap>(
+    type: K,
+    listener: (ev: WebSocketEventMap[K]) => any,
+    options?: boolean | AddEventListenerOptions
+  ): void;
+  addEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions
+  ): void;
+  removeEventListener<K extends keyof WebSocketEventMap>(
+    type: K,
+    listener: (ev: WebSocketEventMap[K]) => any,
+    options?: boolean | EventListenerOptions
+  ): void;
+  removeEventListener(
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | EventListenerOptions
+  ): void;
+}
+
 const Events = {
   Event: (typeof globalThis.Event !== 'undefined' ? globalThis.Event : undefined) as
     | typeof globalThis.Event
@@ -89,9 +141,9 @@ function cloneEvent(e: Event): Event {
   return new (e as any).constructor(e.type, e);
 }
 
-export type Options<BType extends string = BinaryType> = {
+export type Options<WS extends IWebSocket = WebSocket> = {
   WebSocket?: any;
-  binaryType?: BType;
+  binaryType?: WS['binaryType'];
   maxReconnectionDelay?: number;
   minReconnectionDelay?: number;
   reconnectionDelayGrowFactor?: number;
@@ -122,17 +174,17 @@ export type Message = string | ArrayBuffer | Blob | ArrayBufferView;
 
 let didWarnAboutMissingWebSocket = false;
 
-export class ReconnectingWebSocket<BType extends string = BinaryType>
+export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
   extends TypedEventTarget<WebSocketEventMap>
   implements IReconnectingWebSocket
 {
-  private _ws: WebSocket | undefined;
+  private _ws: IWebSocket | undefined;
   private _retryCount = -1;
   private _uptimeTimeout: ReturnType<typeof setTimeout> | undefined;
   private _connectTimeout: ReturnType<typeof setTimeout> | undefined;
   private _shouldReconnect = true;
   private _connectLock = false;
-  private _binaryType: BType;
+  private _binaryType: WS['binaryType'];
   private _closeCalled = false;
   private _messageQueue: Message[] = [];
 
@@ -140,9 +192,9 @@ export class ReconnectingWebSocket<BType extends string = BinaryType>
 
   protected _url: string;
   protected _protocols?: ProtocolsProvider;
-  protected _options: Options<BType>;
+  protected _options: Options<WS>;
 
-  constructor(url: string, protocols?: ProtocolsProvider, options: Options<BType> = {}) {
+  constructor(url: string, protocols?: ProtocolsProvider, options: Options<WS> = {}) {
     // Initialize all events if they haven't been created yet
     if (!eventsInitialized) {
       lazyInitEvents();
@@ -157,9 +209,9 @@ export class ReconnectingWebSocket<BType extends string = BinaryType>
       this._shouldReconnect = false;
     }
     if (this._options.binaryType) {
-      this._binaryType = this._options.binaryType as BType;
+      this._binaryType = this._options.binaryType;
     } else {
-      this._binaryType = 'blob' as BType;
+      this._binaryType = 'blob';
     }
     if (this._options.debugLogger) {
       this._debugLogger = this._options.debugLogger;
@@ -193,14 +245,14 @@ export class ReconnectingWebSocket<BType extends string = BinaryType>
     return ReconnectingWebSocket.CLOSED;
   }
 
-  get binaryType(): BType {
-    return this._ws ? (this._ws.binaryType as BType) : this._binaryType;
+  get binaryType(): WS['binaryType'] {
+    return this._ws ? this._ws.binaryType : this._binaryType;
   }
 
-  set binaryType(value: BType) {
+  set binaryType(value: WS['binaryType']) {
     this._binaryType = value;
     if (this._ws) {
-      this._ws.binaryType = value as BinaryType;
+      this._ws.binaryType = value;
     }
   }
 
@@ -516,7 +568,6 @@ export class ReconnectingWebSocket<BType extends string = BinaryType>
     this._ws.removeEventListener('open', this._handleOpen);
     this._ws.removeEventListener('close', this._handleClose);
     this._ws.removeEventListener('message', this._handleMessage);
-    // @ts-expect-error we need to fix event/listener types
     this._ws.removeEventListener('error', this._handleError);
   }
 
@@ -528,7 +579,6 @@ export class ReconnectingWebSocket<BType extends string = BinaryType>
     this._ws.addEventListener('open', this._handleOpen);
     this._ws.addEventListener('close', this._handleClose);
     this._ws.addEventListener('message', this._handleMessage);
-    // @ts-expect-error we need to fix event/listener types
     this._ws.addEventListener('error', this._handleError);
   }
 
