@@ -477,7 +477,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
         this._debug('connect', { url: this._url, protocols: this._protocols });
         this._ws = this._protocols ? new WS(this._url, this._protocols) : new WS(this._url);
 
-        this._ws.binaryType = this._binaryType as BinaryType;
+        this._ws.binaryType = this._binaryType;
         this._connectLock = false;
         this._addListeners();
 
@@ -524,7 +524,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
 
     assert(this._ws, 'WebSocket is not defined');
 
-    this._ws.binaryType = this._binaryType as BinaryType;
+    this._ws.binaryType = this._binaryType;
 
     // send enqueued messages (messages sent before websocket open event)
     this._messageQueue.forEach((message) => this._ws?.send(message));
