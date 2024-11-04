@@ -77,5 +77,6 @@ jobs:
             --sign=${{ secrets.MEDPLUM_GPG_KEY_ID }} \
             --gpg-options="--passphrase-fd 0 --pinentry-mode loopback" \
             --preserve-versions \
+            --acl-disabled \
             medplum_*.deb \
             < <(echo "${{ secrets.MEDPLUM_GPG_PASSPHRASE }}")
