@@ -39,6 +39,11 @@ export type WebSocketEventMap = {
   open: Event;
 };
 
+/**
+ * This map exists separately from `WebSocketEventMap`, which is the actual event map used for the `ReconnectingWebSocket` class itself,
+ * due to slight difference in the type between the events as we use them, and the events as they exist as global interfaces. We need the global interfaces
+ * to be generic enough to satisfy conformant implementations that don't exactly match the events we export and use in `ReconnectingWebSocket` itself.
+ */
 export type IWebSocketEventMap = {
   close: globalThis.CloseEvent;
   error: globalThis.ErrorEvent;
@@ -46,6 +51,13 @@ export type IWebSocketEventMap = {
   open: Event;
 };
 
+/**
+ * Generic interface that an implementation of `WebSocket` must satisfy to be used with `ReconnectingWebSocket`.
+ * This is a slightly modified fork of the `WebSocket` global type used in Node.
+ *
+ * The main key difference is making all the `onclose`, `onerror`, etc. functions have `any[]` args, making `data` in `send()` of type `any`, and making `binaryType` of type string,
+ * though the particular implementation should narrow each of these implementation-specific types.
+ */
 export interface IWebSocket {
   binaryType: string;
 
