@@ -3226,8 +3226,10 @@ describe('FHIR Search', () => {
         expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
       }));
 
-    test('_filter with chained search', () =>
+    test.each([true, false])('_filter with chained search', (ff) =>
       withTestContext(async () => {
+        config.chainedSearchWithReferenceTables = ff;
+
         const mrn = randomUUID();
         const npi = randomUUID();
         const patient = await repo.createResource<Patient>({
@@ -3275,7 +3277,8 @@ describe('FHIR Search', () => {
         expect(result.entry?.map((e) => e.resource?.id)).toEqual(
           expect.arrayContaining([observation1.id, observation2.id])
         );
-      }));
+      })
+    );
 
     test('Lookup table exact match with comma disjunction', () =>
       withTestContext(async () => {

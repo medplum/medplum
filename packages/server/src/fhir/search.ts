@@ -1397,7 +1397,7 @@ function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, 
     join = new Condition(new Column(nextTableAlias, 'url'), eq, new Column(currentTable, link.details.columnName));
   }
 
-  selectQuery.join('INNER JOIN', link.resourceType, nextTableAlias, join);
+  selectQuery.join('LEFT JOIN', link.resourceType, nextTableAlias, join);
   return nextTableAlias;
 }
 
@@ -1423,7 +1423,7 @@ function linkLiteralReference(
 
   const referenceTableAlias = selectQuery.getNextJoinAlias();
   selectQuery.join(
-    'INNER JOIN',
+    'LEFT JOIN',
     referenceTableName,
     referenceTableAlias,
     new Conjunction([
@@ -1434,7 +1434,7 @@ function linkLiteralReference(
 
   const nextTableAlias = selectQuery.getNextJoinAlias();
   selectQuery.join(
-    'INNER JOIN',
+    'LEFT JOIN',
     link.resourceType,
     nextTableAlias,
     new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
