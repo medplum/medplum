@@ -66,9 +66,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Import GPG key
-        run: |
-          echo "${{ secrets.MEDPLUM_GPG_KEY }}" | gpg --import
-          echo "${{ secrets.MEDPLUM_GPG_PASSPHRASE }}" | gpg --passphrase-fd 0 --pinentry-mode loopback -u ${{ secrets.MEDPLUM_GPG_KEY_ID }} --yes --sign test.txt
+        run: echo "${{ secrets.MEDPLUM_GPG_KEY }}" | gpg --batch --no-tty --import
 
       - name: Upload to APT repository
         run: |
