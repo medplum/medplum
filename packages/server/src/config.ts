@@ -77,9 +77,6 @@ export interface MedplumServerConfig {
   /** Max length of Bot AuditEvent.outcomeDesc when logging to logger */
   maxBotLogLengthForLogs?: number;
 
-  /** Temporary feature flag, to be removed */
-  chainedSearchWithReferenceTables?: boolean;
-
   /** @deprecated */
   auditEventLogGroup?: string;
 

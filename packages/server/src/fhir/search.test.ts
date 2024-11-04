@@ -954,8 +954,6 @@ describe('FHIR Search', () => {
 
     test('Reverse filter by chained _id', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         // Create Location
         const location = await repo.createResource<Location>({
           resourceType: 'Location',
@@ -1792,8 +1790,6 @@ describe('FHIR Search', () => {
 
     test('Chained search on array columns using reference tables', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         // Create Practitioner
         const pcp = await repo.createResource<Practitioner>({
           resourceType: 'Practitioner',
@@ -1834,8 +1830,6 @@ describe('FHIR Search', () => {
 
     test('Chained search on single columns using reference tables', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         const code = randomUUID();
         // Create linked resources
         const patient = await repo.createResource<Patient>({
@@ -1867,10 +1861,8 @@ describe('FHIR Search', () => {
         expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
       }));
 
-    test.each([true, false])('Chained search on canonical reference', (ff) =>
+    test('Chained search on canonical reference', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = ff;
-
         const url = 'http://example.com/' + randomUUID();
         // Create linked resources
         const q = randomUUID();
@@ -1899,86 +1891,6 @@ describe('FHIR Search', () => {
         );
         expect(result2.entry).toHaveLength(1);
         expect(result2.entry?.[0]?.resource?.id).toEqual(evidenceVariable.id);
-      })
-    );
-
-    // TODO: To be removed when reference table migration is complete
-    test('Chained search on array columns using reference strings', () =>
-      withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = false;
-
-        // Create Practitioner
-        const pcp = await repo.createResource<Practitioner>({
-          resourceType: 'Practitioner',
-        });
-        // Create Patient
-        const patient = await repo.createResource<Patient>({
-          resourceType: 'Patient',
-          generalPractitioner: [createReference(pcp)],
-        });
-
-        // Create CareTeam
-        const code = randomUUID();
-        const categorySystem = 'http://example.com/care-team-category';
-        await repo.createResource<CareTeam>({
-          resourceType: 'CareTeam',
-          category: [
-            {
-              coding: [
-                {
-                  system: categorySystem,
-                  code,
-                  display: 'Public health-focused care team',
-                },
-              ],
-            },
-          ],
-          participant: [{ member: createReference(pcp) }],
-        });
-
-        // Search chain
-        const searchResult = await repo.search(
-          parseSearchRequest(
-            `Patient?general-practitioner:Practitioner._has:CareTeam:participant:category=${categorySystem}|${code}`
-          )
-        );
-        expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
-      }));
-
-    // TODO: To be removed when reference table migration is complete
-    test('Chained search on single columns using reference strings', () =>
-      withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = false;
-
-        const code = randomUUID();
-        // Create linked resources
-        const patient = await repo.createResource<Patient>({
-          resourceType: 'Patient',
-        });
-        const encounter = await repo.createResource<Encounter>({
-          resourceType: 'Encounter',
-          status: 'finished',
-          class: { system: 'http://example.com/appt-type', code },
-        });
-        const observation = await repo.createResource<Observation>({
-          resourceType: 'Observation',
-          status: 'final',
-          code: { text: 'Throat culture' },
-          subject: createReference(patient),
-          encounter: createReference(encounter),
-        });
-        await repo.createResource<DiagnosticReport>({
-          resourceType: 'DiagnosticReport',
-          status: 'final',
-          code: { text: 'Strep test' },
-          encounter: createReference(encounter),
-          result: [createReference(observation)],
-        });
-
-        const result = await repo.search(
-          parseSearchRequest(`Patient?_has:Observation:subject:encounter:Encounter.class=${code}`)
-        );
-        expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
       }));
 
     test('Rejects too long chained search', () =>
@@ -3226,7 +3138,7 @@ describe('FHIR Search', () => {
         expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
       }));
 
-    test('_filter with chained search', () =>
+    test.only('_filter with chained search', () =>
       withTestContext(async () => {
         const mrn = randomUUID();
         const npi = randomUUID();

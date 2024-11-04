@@ -36,5 +36,4 @@ are:
 | `graphql-introspection`   | Allows potentially-expensive [GraphQL schema introspection](/docs/graphql/basic-queries#overview) queries                        |
 | `terminology`             | Enable full standards-compliant implementation for the [`ValueSet/$expand` operation](/docs/api/fhir/operations/valueset-expand) |
 | `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                          |
-| `reference-lookups`       | Uses dedicated lookup tables for faster [chained search](/docs/search/chained-search)                                            |
 | `transaction-bundles`     | Use strong database transaction isolation for `transaction` Bundles                                                              |

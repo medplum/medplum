@@ -59503,7 +59503,6 @@
               "graphql-introspection",
               "terminology",
               "websocket-subscriptions",
-              "reference-lookups",
               "transaction-bundles"
             ]
           },
