@@ -354,6 +354,12 @@ describe('MockClient', () => {
     expect(result.entry).toHaveLength(2);
   });
 
+  test('Search returning no results', async () => {
+    const client = new MockClient();
+    const result = await client.search('Patient', 'name=Simperson');
+    expect(result.entry).toBeUndefined();
+  });
+
   test('Create binary success', async () => {
     const client = new MockClient();
     const result = await client.createBinary('test', 'test.txt', ContentType.TEXT);

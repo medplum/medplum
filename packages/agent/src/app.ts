@@ -377,7 +377,7 @@ export class App {
       const channel = channels[i];
       const endpoint = endpoints[i];
 
-      if (endpoint.address === '') {
+      if (!endpoint.address) {
         throw new Error(`Invalid empty endpoint address for channel '${channel.name}'`);
       }
 
