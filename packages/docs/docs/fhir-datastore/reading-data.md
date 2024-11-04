@@ -12,7 +12,9 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/read
 
 # Reading Data
 
-A very common operation is reading the data of a specified resource. The FHIR `read` operation is used by sending an HTTP `GET` command. Medplum also provides the `readResource` helper function as a part of the `MedplumClient`. This function takes a `resourceType` and `id` of the resource you would like to read.
+A very common operation is reading the data of a specified resource. The FHIR `read` operation is used by sending an HTTP `GET` command.
+
+Medplum also provides the `readResource` helper function as a part of the `MedplumClient`. This function takes a `resourceType` and `id` of the resource you would like to read.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">

@@ -26,7 +26,7 @@ Using the `update` operation performs a `PUT` command, which will create an enti
 
 Medplum provides the `updateResource` method on the `MedplumClient` which implements the `update` operation. The function takes the updated resource as an argument.
 
-The below example updates a [`Patient`](/docs/api/fhir/resources/patient) resource to include a `name`.
+The below example updates a [`Patient`](/docs/api/fhir/resources/patient) resource.
 
 <details>
 <summary>Example: Updating a Resource</summary>
@@ -51,9 +51,13 @@ The below example updates a [`Patient`](/docs/api/fhir/resources/patient) resour
 
 ## Upsert Operation
 
-The `upsert` operation also performs a `PUT` command, to update your entire resource. However, instead of taking the `id`, it allows you to use [FHIR Search Parameters](/docs/search/basic-search#search-parameters) to find the resource you want to update. Additionally, if it cannot find a match, it will create the resource sent to the server.
+The `upsert` operation also performs a `PUT` command, updating your entire resource. However, instead of taking the `id`, it allows you to use a search query with [FHIR search parameters](/docs/search/basic-search#search-parameters) to find the resource you want to update. If it cannot find a match, it will create the resource sent to the server.
 
-Medplum provides the `upsertResource` method on the `MedplumClient`, which implements the `upsert` operation. The function takes a `resource` and a search query to find the resource to be updated.
+Medplum provides the `upsertResource` method on the `MedplumClient`, which implements the `upsert` operation. The function takes a `resource` and a FHIR search query to find the resource to be updated.
+
+- If the search query resolves to a single resource, that resource will be updated.
+- If it does not find a matching resource, one will be created from the given data.
+- If multiple matches are found, an error will be returned. In this case, more specific search criteria are required to unambiguously identify the resource to be updated or created.
 
 The below operation searches for a patient to add a name to, and creates it if it cannot be found.
 
@@ -108,5 +112,9 @@ The `PatchOperation` below sends an `add` operation to the `name` of the [`Patie
 </details>
 
 :::note Preventing Race Conditions
-In the TypeScript patch example, a second `PatchOperation` is included: `{ op: 'test', path: '/meta/versionId', value: existingPatient.meta?.versionId }`. This is a test to prevent race conditions. This will cause the `patch` to fail if the resource on the server has a different `versionId` than the one you are sending. **It is strongly recommended to include this test on all `patch` operations.**
+In the TypeScript patch example, a second `PatchOperation` is included:
+
+`{ op: 'test', path: '/meta/versionId', value: patient.meta?.versionId }`
+
+This is a test to prevent race conditions. This will cause the `patch` to fail if the resource on the server has a different `versionId` than the one you are sending. **It is strongly recommended to include this test on all `patch` operations.**
 :::

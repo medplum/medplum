@@ -10,7 +10,7 @@ import TabItem from '@theme/TabItem';
 
 # Working with FHIR Data
 
-Now that we have gone through all CRUD operations, we can put them all together to effectively work with FHIR data. This guide will go through a common healthcare workflow, creating an order for lab tests (a.k.a. [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) in FHIR) for patients and when the lab test is complete, creating results (a.k.a. [`Observation`](/docs/api/fhir/resources/observation) and [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) in FHIR) that correspond to the original [`ServiceRequest`](/docs/api/fhir/resources/servicerequest).
+Now that we have gone through all CRUD operations, we can put them together to effectively work with FHIR data. This guide will go through a common healthcare workflow, creating an order for lab tests (a.k.a. [`ServiceRequest`](/docs/api/fhir/resources/servicerequest) in FHIR) for patients and when the lab test is complete, creating results (a.k.a. [`Observation`](/docs/api/fhir/resources/observation) and [`DiagnosticReport`](/docs/api/fhir/resources/diagnosticreport) in FHIR) that correspond to the original [`ServiceRequest`](/docs/api/fhir/resources/servicerequest).
 
 This example will illustrate how to create FHIR objects, how to update them, how to link them, and then how to read them back in bulk. Here is a breakdown of the workflow at a high level:
 
@@ -27,7 +27,7 @@ Creating a [`Patient`](../api/fhir/resources/patient) and a [`ServiceRequest`](.
 
 ### Creating Patient
 
-Creating a [`Patient`](/docs/api/fhir/resources/patient) if one does not exist uses the **conditional create** logic in FHIR. In this example, a patient has an Medical Record Number or MRN. If that MRN exists, then a new patient should not be created. In a lab workflow, it is common for a lab to serve patients repeatedly. In this case where there is already a patient in the system, it would be incorrect (and confusing) to make a new patient record.
+Creating a [`Patient`](/docs/api/fhir/resources/patient) if one does not exist uses the **conditional create** logic in FHIR. In this example, a patient has a Medical Record Number or MRN. If that MRN exists, then a new patient should not be created. In a lab workflow, it is common for a lab to serve patients repeatedly. In this case where there is already a patient in the system, it would be incorrect (and confusing) to make a new patient record.
 
 <MedplumCodeBlock language="ts" selectBlocks="patient-imports, create-patient" showLineNumbers>
   {ExampleCode}
@@ -43,11 +43,6 @@ In some cases, you may want to update the resource in place if it already exists
 it if it doesn't exist yet. This is accomplished via a combined "update" and "insert" operation: an "upsert".
 
 Provide the current version of the resource and a search query, similar to `createResourceIfNoneExists()`.
-
-- If the search query resolves to a single resource, that resource will be updated.
-- If it does not find a matching resource, one will be created from the given data.
-- If multiple matches are found, an error will be returned. In this case, more
-  specific search criteria are required to unambiguously identify the resource to be updated or created.
 
 <Tabs groupId="language">
   <TabItem value="ts" label="Typescript">
