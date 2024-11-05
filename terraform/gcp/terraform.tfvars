@@ -1,10 +1,10 @@
 
 # GCP project configuration - Change these values to use your own project, region, and zone
-project_id          = "medplum-zencore"     # "your-project-id"
-region              = "us-west1"            # "your-region"
-zone                = "us-west1-a"          # "your-zone"
-static_asset_domain = "app.medplum.com"     # "your-static-asset-domain
-user_content_domain = "storage.medplum.com" # "your-user-content-domain"
+project_id          = "medplum-zencore"             # "your-project-id"
+region              = "us-west1"                    # "your-region"
+zone                = "us-west1-a"                  # "your-zone"
+static_asset_domain = "app.zencore.medplum.dev"     # "your-static-asset-domain
+user_content_domain = "storage.zencore.medplum.dev" # "your-user-content-domain"
 
 # Common enforced labels - Change these values to use your own labels
 labels = {
