@@ -31,16 +31,13 @@ async function getSecretValue(projectId: string, secretId: string): Promise<stri
  */
 export async function loadGcpConfig(configPath: string): Promise<MedplumServerConfig> {
   const config: Record<string, any> = {};
-  let [projectId, secretId] = splitN(configPath, ':', 2);
+  const [projectId, secretId] = splitN(configPath, ':', 2);
 
   const secret = await getSecretValue(projectId, secretId);
-  const secretData = JSON.parse(secret);
+  const secretData = JSON.parse(secret) as Record<string, string>;
 
-  // Then load other parameters, which may override the secrets
-  for (const key in secretData) {
-    if (secretData.hasOwnProperty(key)) {
-      setValue(config, key, secretData[key]);
-    }
+  for (const [key, value] of Object.entries(secretData)) {
+    setValue(config, key, value);
   }
 
   return config as MedplumServerConfig;
