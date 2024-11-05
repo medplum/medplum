@@ -75,7 +75,7 @@ export class TokenTable extends LookupTable {
    * @returns True if the search parameter is an "token" parameter.
    */
   isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
-    return isIndexed(searchParam, resourceType);
+    return Boolean(getTokenIndexType(searchParam, resourceType));
   }
 
   /**
@@ -175,38 +175,64 @@ export class TokenTable extends LookupTable {
  * @param resourceType - The resource type.
  * @returns True if the search parameter is an "token" parameter.
  */
-function isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
+function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
   if (searchParam.type !== 'token') {
-    return false;
+    return undefined;
   }
 
   if (searchParam.code?.endsWith(':identifier')) {
-    return true;
+    return TokenIndexTypes.CASE_SENSITIVE;
   }
 
   const details = getSearchParameterDetails(resourceType, searchParam);
 
-  // Check for any "Identifier", "CodeableConcept", or "Coding"
+  if (!details.elementDefinitions?.length) {
+    return undefined;
+  }
+
+  // Check for any "ContactPoint", "Identifier", "CodeableConcept", "Coding"
   // Any of those value types require the "Token" table for full system|value search semantics.
   // The common case is that the "type" property only has one value,
   // but we need to support arrays of types for the choice-of-type properties such as "value[x]".
-  for (const elementDefinition of details.elementDefinitions ?? []) {
+
+  // Check for case-insensitive types first, as they are more specific than case-sensitive types
+  for (const elementDefinition of details.elementDefinitions) {
+    for (const type of elementDefinition.type ?? []) {
+      if (type.code === PropertyType.ContactPoint) {
+        return TokenIndexTypes.CASE_INSENSITIVE;
+      }
+    }
+  }
+
+  // In practice, search parameters covering an element definition with type  "ContactPoint"
+  // are mutually exclusive from those covering "Identifier", "CodeableConcept", or "Coding" types,
+  // but could technically be possible. A second set of nested for-loops with an early return should
+  // be more efficient in the common case than always exhaustively looping through every
+  // detail.elementDefinitions.type to see if "ContactPoint" is still to come.
+  for (const elementDefinition of details.elementDefinitions) {
     for (const type of elementDefinition.type ?? []) {
       if (
         type.code === PropertyType.Identifier ||
         type.code === PropertyType.CodeableConcept ||
-        type.code === PropertyType.Coding ||
-        type.code === PropertyType.ContactPoint
+        type.code === PropertyType.Coding
       ) {
-        return true;
+        return TokenIndexTypes.CASE_SENSITIVE;
       }
     }
   }
 
   // This is a "token" search parameter, but it is only "code", "string", or "boolean"
   // So we can use a simple column on the resource type table.
-  return false;
+  return undefined;
 }
+
+const TokenIndexTypes = {
+  // NOT_INDEXED: 'NOT_INDEXED',
+  CASE_SENSITIVE: 'CASE_SENSITIVE',
+  CASE_INSENSITIVE: 'CASE_INSENSITIVE',
+} as const;
+
+type TokenIndexType = (typeof TokenIndexTypes)[keyof typeof TokenIndexTypes];
 
 /**
  * Returns true if the filter value should be compared to the "value" column.
@@ -283,7 +309,7 @@ function getTokens(resource: Resource): Token[] {
   const result: Token[] = [];
   if (searchParams) {
     for (const searchParam of Object.values(searchParams)) {
-      if (isIndexed(searchParam, resource.resourceType)) {
+      if (getTokenIndexType(searchParam, resource.resourceType)) {
         buildTokensForSearchParameter(result, resource, searchParam);
       }
       if (searchParam.type === 'reference') {
@@ -626,7 +652,5 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
  * @returns True if the search parameter should be considered case-sensitive when searching for tokens.
  */
 function isCaseSensitiveSearchParameter(param: SearchParameter, resourceType: ResourceType): boolean {
-  const details = getSearchParameterDetails(resourceType, param);
-  // The param is case-sensitive unless it covers an ElementDefinition that can be of type "ContactPoint"
-  return !details.elementDefinitions?.some((ed) => ed.type?.some((t) => t.code === PropertyType.ContactPoint));
+  return getTokenIndexType(param, resourceType) === TokenIndexTypes.CASE_SENSITIVE;
 }
