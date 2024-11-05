@@ -24,9 +24,9 @@ service:
 
 ingress:
   deploy: true
-  domain: api.zencore.medplum.dev
+  domain: api.example.com
   
 serviceAccount: 
   annotations:
-    iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.i: medplum-server@medplum.iam.gserviceaccount.com
+    iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.i: medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com
   

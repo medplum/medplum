@@ -1,3 +1,9 @@
+# This module creates Google Cloud Storage buckets based on the configuration provided in the `gcs_buckets` variable.
+# Each bucket is configured with properties such as location, storage class, and lifecycle rules.
+# To use this module, define the desired bucket configurations in the `gcs_buckets` variable in `variables.tf`.
+# Ensure that the `project_id` and other required properties are specified for each bucket.
+# Apply the Terraform configuration to create and manage the specified GCS buckets.
+
 module "buckets" {
   for_each = var.gcs_buckets
 

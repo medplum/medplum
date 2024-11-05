@@ -1,3 +1,22 @@
+# This module configures a PostgreSQL database instance on Google Cloud SQL.
+# It uses the terraform-google-modules/sql-db module to set up a highly available
+# PostgreSQL instance with specific configurations for the project.
+# 
+# Key configurations include:
+# - Random instance name generation for uniqueness.
+# - Zonal availability type for the master instance.
+# - Disk size and auto-resize settings.
+# - Maintenance window settings for updates.
+# - IP configuration with private network and SSL mode settings.
+# - Backup configuration with point-in-time recovery and retention settings.
+# - Custom database flags for specific PostgreSQL settings.
+#
+# Usage:
+# - Ensure that the required variables such as `pg_ha_name`, `project_id`, `region`, `zone`, and `labels` are defined.
+# - The module requires a VPC network and a reserved IP address for private services access.
+# - Adjust the configurations as needed to fit the specific requirements of your environment.
+# - Apply the Terraform configuration to create and manage the Cloud SQL instance.
+
 module "sql-db" {
   source  = "terraform-google-modules/sql-db/google//modules/postgresql"
   version = "~> 21.0.0"

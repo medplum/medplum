@@ -1,3 +1,14 @@
+# This Terraform configuration sets up a Google Kubernetes Engine (GKE) cluster using the Google Cloud Platform.
+# It uses the terraform-google-modules/kubernetes-engine module to create a private autopilot cluster.
+# 
+# Usage:
+# - Ensure that the required variables such as `project_id`, `region`, and VPC network details are defined.
+# - The module requires a VPC network and subnetwork to be configured.
+# - Adjust the cluster configurations, such as node settings and network policies, to fit the specific requirements of your application.
+# - Apply the Terraform configuration to create and manage the GKE cluster.
+# - Monitor the cluster's performance and adjust settings as needed to optimize resource usage and security.
+
+
 # google_client_config and kubernetes provider must be explicitly specified like the following.
 data "google_client_config" "default" {}
 

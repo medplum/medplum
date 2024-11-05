@@ -1,3 +1,12 @@
+# This module sets up a Virtual Private Cloud (VPC) network on Google Cloud Platform.
+# It defines multiple subnets with specific IP ranges and enables private IP access for Google services.
+# The VPC is configured with secondary IP ranges for GKE pods and services, allowing for efficient IP management.
+# Usage:
+# - Ensure that the required variables such as `project_id`, `vpc_name`, and `region` are defined.
+# - Adjust the subnet configurations as needed to fit the specific requirements of your environment.
+# - Apply the Terraform configuration to create and manage the VPC network.
+
+
 ## VPC
 module "vpc" {
   source  = "terraform-google-modules/network/google"

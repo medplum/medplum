@@ -1,3 +1,5 @@
+#  This file is used to define variable values for the Terraform configuration, 
+# allowing customization of the infrastructure setup without modifying the main configuration files.
 
 # GCP project configuration - Change these values to use your own project, region, and zone
 project_id          = "medplum-zencore"             # "your-project-id"

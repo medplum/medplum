@@ -1,3 +1,21 @@
+# This module sets up a CDN-enabled external HTTP(S) load balancer on Google Cloud Platform.
+# It is designed to distribute incoming HTTP(S) traffic across multiple backend services,
+# providing high availability and scalability for web applications.
+#
+# Key Features:
+# - Utilizes Google Cloud's global load balancing capabilities to route traffic efficiently.
+# - Supports SSL termination with managed SSL certificates for secure connections.
+# - Configurable CDN policy to cache static content and reduce latency.
+# - Health checks to ensure backend services are available and responsive.
+# - Logging configuration to monitor and analyze traffic patterns.
+#
+# Usage:
+# - Ensure that the required variables such as `project_id`, `user_content_domain`, and `static_asset_domain` are defined.
+# - The module requires a VPC network and a URL map resource to be configured.
+# - Adjust the backend configurations, such as protocol, port, and CDN policy, to fit the specific requirements of your application.
+# - Apply the Terraform configuration to create and manage the external load balancer.
+# - Monitor the load balancer's performance and adjust settings as needed to optimize traffic distribution and caching.
+
 ## CDN external load balancer
 module "medplum-lb-https" {
   source                          = "GoogleCloudPlatform/lb-http/google"
@@ -20,7 +38,7 @@ module "medplum-lb-https" {
       enable_cdn  = true
 
       cdn_policy = {
-        cache_mode  = "CACHE_ALL_STATIC"
+        cache_mode  = "USE_ORIGIN_HEADERS"
         default_ttl = 3600
         client_ttl  = 7200
         max_ttl     = 10800
@@ -55,7 +73,7 @@ resource "google_compute_url_map" "cdn_url_map" {
   default_service = module.medplum-lb-https.backend_services.default.self_link
 
   host_rule {
-    hosts        = ["storage.zencore.medplum.dev"]
+    hosts        = ["${var.user_content_domain}"]
     path_matcher = "storage"
   }
 
@@ -69,7 +87,7 @@ resource "google_compute_url_map" "cdn_url_map" {
     }
   }
   host_rule {
-    hosts        = ["app.zencore.medplum.dev"]
+    hosts        = ["${var.static_asset_domain}"]
     path_matcher = "app"
   }
 
