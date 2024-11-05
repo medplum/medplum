@@ -9,7 +9,7 @@ module "medplum-lb-https" {
   url_map                         = google_compute_url_map.cdn_url_map.self_link
   create_url_map                  = false
   ssl                             = true
-  managed_ssl_certificate_domains = ["storage.zencore.medplum.dev", "app.zencore.medplum.dev"]
+  managed_ssl_certificate_domains = ["${var.user_content_domain}", "${var.static_asset_domain}"]
 
   backends = {
     default = {

@@ -12,8 +12,13 @@ variable "project_id" {
   type        = string
 }
 
-variable "project_number" {
-  description = "The GCP project number"
+variable "static_asset_domain" {
+  description = "value for the static asset domain"
+  type        = string
+}
+
+variable "user_content_domain" {
+  description = "value for the user content domain"
   type        = string
 }
 variable "services_api" {
