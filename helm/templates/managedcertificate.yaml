@@ -1,4 +1,4 @@
-{{- if eq .Values.global.cloudProvider "gcp" }}
+{{- if and (eq .Values.global.cloudProvider "gcp") (eq .Values.ingress.deploy true) }}
 apiVersion: networking.gke.io/v1
 kind: ManagedCertificate
 metadata:
@@ -8,5 +8,5 @@ metadata:
     {{- include "medplum.labels" . | nindent 4 }}  
 spec:
   domains:
-    - {{ .Values.global.domain }}
+    - {{ .Values.ingress.domain }}
 {{- end }}

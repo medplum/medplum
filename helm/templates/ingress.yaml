@@ -1,4 +1,4 @@
-{{- if eq .Values.global.cloudProvider "gcp" }}
+{{- if and (eq .Values.global.cloudProvider "gcp") (eq .Values.ingress.deploy true) }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -14,7 +14,7 @@ metadata:
     cloud.google.com/backend-config: '{"ports": { "8103":"medplum-backendconfig" }}'
 spec:
   rules:
-    - host: {{ .Values.global.domain }}
+    - host: {{ .Values.ingress.domain }}
       http:
         paths:
           - path: /
@@ -23,5 +23,5 @@ spec:
               service:
                 name: {{ include "medplum.fullname" . }}-service
                 port:
-                  number: {{ .Values.global.service.port }}
+                  number: {{ .Values.service.port }}
 {{- end }}

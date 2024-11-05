@@ -6,7 +6,7 @@ metadata:
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.gcp.autoscaling.enabled }}
+  {{- if not .Values.deployment.autoscaling.enabled }}
   replicas: {{ default 1 .Values.replicaCount }}
   {{- end }}
   selector:
@@ -24,7 +24,7 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
-      {{- with .Values.imagePullSecrets }}
+      {{- with .Values.deployment.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -35,28 +35,28 @@ spec:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.deployment.image.repository }}:{{ .Values.deployment.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: IfNotPresent
           command:
             - "node"
             - "--require"
             - "./packages/server/dist/otel/instrumentation.js"
             - "packages/server/dist/index.js"
             {{- if (eq .Values.global.cloudProvider "gcp") }}
-            - "gcp:{{ .Values.gcp.projectId }}:{{ .Values.gcp.secretId }}"
+            - "gcp:{{ .Values.global.gcp.projectId }}:{{ .Values.global.gcp.secretId }}"
             {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.global.service.port }}
+              containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
             httpGet:
               path: /healthcheck
-              port: {{ .Values.global.service.port }}
+              port: {{ .Values.service.port }}
           readinessProbe:
             httpGet:
               path: /healthcheck
-              port: {{ .Values.global.service.port }}
+              port: {{ .Values.service.port }}
           resources:
             resources:
               limits:

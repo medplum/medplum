@@ -1,4 +1,4 @@
-{{- if eq .Values.global.cloudProvider "gcp" }}
+{{- if and (eq .Values.global.cloudProvider "gcp") (eq .Values.ingress.deploy true) }}
 apiVersion: networking.gke.io/v1beta1
 kind: FrontendConfig
 metadata:
