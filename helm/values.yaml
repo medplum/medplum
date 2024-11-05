@@ -9,25 +9,23 @@ global:
   domain: api.zencore.medplum.dev
   cloudProvider: gcp
 
-gcp:
-  projectId: medplum-zencore
-  secretId: config-diego-test
-
-# aws:
-#   region: us-west-2
-
-
 image:
   # repository: medplum/medplum-server
   repository: us-west1-docker.pkg.dev/medplum-zencore/medplum-repo/medplum-server
   pullPolicy: IfNotPresent
   tag: test4
 
-serviceAccount:
-  create: true
-  automount: true
-  annotations:
-    iam.gke.io/gcp-service-account: medplum-server@medplum-zencore.iam.gserviceaccount.com
+gcp:
+  projectId: medplum-zencore
+  secretId: config-diego-test
+  serviceAccount: 
+    annotations:
+      iam.gke.io/gcp-service-account: medplum-server@medplum-zencore.iam.gserviceaccount.com
+
+# aws:
+#   serviceAccount: 
+#     annotations:
+      # eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/medplum-server-role
 
 service:
   type: ClusterIP
