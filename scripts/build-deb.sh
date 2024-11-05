@@ -41,7 +41,7 @@ rm -rf "$TMP_DIR"
 rm -rf "$SERVICE_NAME-$VERSION.deb"
 
 # Copy package files
-PACKAGES=("app" "core" "definitions" "fhir-router" "server")
+PACKAGES=("app" "core" "definitions" "fhir-router" "react" "react-hooks" "server")
 for package in ${PACKAGES[@]}; do
   echo "Copy $package"
   mkdir -p "$LIB_DIR/packages/$package"
@@ -65,7 +65,7 @@ echo "Medplum data files" > "$VAR_DIR/README.txt"
 pushd "$LIB_DIR"
 
 # Install dependencies
-npm i --omit=dev --omit=optional --omit=peer
+npm i --omit=dev --omit=optional --omit=peer --maxsockets 1
 
 # Move back to the original directory
 popd
