@@ -8,6 +8,8 @@ namespace: medplum
 global:
   domain: api.zencore.medplum.dev
   cloudProvider: gcp
+  service:
+    port: 8103
 
 image:
   # repository: medplum/medplum-server
@@ -21,35 +23,10 @@ gcp:
   serviceAccount: 
     annotations:
       iam.gke.io/gcp-service-account: medplum-server@medplum-zencore.iam.gserviceaccount.com
+  autoscaling:
+    enabled: true
 
 # aws:
 #   serviceAccount: 
 #     annotations:
       # eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/medplum-server-role
-
-service:
-  type: ClusterIP
-  port: 8103
-
-livenessProbe:
-  httpGet:
-    path: /healthcheck
-    port: 8103
-
-readinessProbe:
-  httpGet:
-    path: /healthcheck
-    port: 8103
-
-
-resources:
-  limits:
-    memory: "512Mi"
-  requests:
-    memory: "256Mi"
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 100
-  targetCPUUtilizationPercentage: 80

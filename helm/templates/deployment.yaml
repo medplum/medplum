@@ -6,8 +6,8 @@ metadata:
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
 spec:
-  {{- if not .Values.autoscaling.enabled }}
-  replicas: {{ .Values.replicaCount }}
+  {{- if not .Values.gcp.autoscaling.enabled }}
+  replicas: {{ default 1 .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -47,14 +47,22 @@ spec:
             {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ .Values.global.service.port }}
               protocol: TCP
           livenessProbe:
-            {{- toYaml .Values.livenessProbe | nindent 12 }}
+            httpGet:
+              path: /healthcheck
+              port: {{ .Values.global.service.port }}
           readinessProbe:
-            {{- toYaml .Values.readinessProbe | nindent 12 }}
+            httpGet:
+              path: /healthcheck
+              port: {{ .Values.global.service.port }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }}
+            resources:
+              limits:
+                memory: "512Mi"
+              requests:
+                memory: "256Mi"
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}

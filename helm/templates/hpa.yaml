@@ -1,4 +1,4 @@
-{{- if .Values.autoscaling.enabled }}
+{{- if .Values.gcp.autoscaling.enabled }}
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -11,23 +11,23 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: {{ include "medplum.fullname" . }}
-  minReplicas: {{ .Values.autoscaling.minReplicas }}
-  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  minReplicas: {{ .Values.gcp.autoscaling.minReplicas | default 1 }}
+  maxReplicas: {{ .Values.gcp.autoscaling.maxReplicas | default 10 }}
   metrics:
-    {{- if .Values.autoscaling.targetCPUUtilizationPercentage }}
+    {{- if .Values.gcp.autoscaling.targetCPUUtilizationPercentage }}
     - type: Resource
       resource:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+          averageUtilization: {{ .Values.gcp.autoscaling.targetCPUUtilizationPercentage | default 80 }}
     {{- end }}
-    {{- if .Values.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- if .Values.gcp.autoscaling.targetMemoryUtilizationPercentage }}
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
+          averageUtilization: {{ .Values.gcp.autoscaling.targetMemoryUtilizationPercentage | default 80 }}
     {{- end }}
 {{- end }}

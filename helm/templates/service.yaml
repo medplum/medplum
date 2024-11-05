@@ -13,7 +13,7 @@ spec:
   ports:
     - name: http-port
       protocol: TCP
-      port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.port }}
+      port: {{ .Values.global.service.port }}
+      targetPort: {{ .Values.global.service.port }}
   selector:
     {{- include "medplum.selectorLabels" . | nindent 4 }}
