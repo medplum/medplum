@@ -227,7 +227,6 @@ function getTokenIndexType(searchParam: SearchParameter, resourceType: string): 
 }
 
 const TokenIndexTypes = {
-  // NOT_INDEXED: 'NOT_INDEXED',
   CASE_SENSITIVE: 'CASE_SENSITIVE',
   CASE_INSENSITIVE: 'CASE_INSENSITIVE',
 } as const;
