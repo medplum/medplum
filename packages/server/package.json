@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "3.2.18",
+  "version": "3.2.19",
   "description": "Medplum Server",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -34,9 +34,10 @@
     "@aws-sdk/cloudfront-signer": "3.679.0",
     "@aws-sdk/lib-storage": "3.685.0",
     "@aws-sdk/types": "3.679.0",
-    "@medplum/core": "3.2.18",
-    "@medplum/definitions": "3.2.18",
-    "@medplum/fhir-router": "3.2.18",
+    "@google-cloud/secret-manager": "5.6.0",
+    "@medplum/core": "3.2.19",
+    "@medplum/definitions": "3.2.19",
+    "@medplum/fhir-router": "3.2.19",
     "@opentelemetry/exporter-metrics-otlp-proto": "0.54.0",
     "@opentelemetry/exporter-trace-otlp-proto": "0.54.0",
     "@opentelemetry/instrumentation-aws-lambda": "0.46.0",
@@ -89,7 +90,7 @@
   },
   "devDependencies": {
     "@jest/test-sequencer": "29.7.0",
-    "@medplum/fhirtypes": "3.2.18",
+    "@medplum/fhirtypes": "3.2.19",
     "@types/bcryptjs": "2.4.6",
     "@types/body-parser": "1.19.5",
     "@types/bytes": "3.1.4",
