@@ -7,15 +7,15 @@ namespace: medplum
 global:
   cloudProvider: gcp
   gcp:
-    projectId: medplum-zencore
-    secretId: config-diego-test
+    projectId: [MY_PROJECT_ID] # Your Google Cloud Platform project ID
+    secretId: [MY_CONFIG_SECRET_ID] # The secret ID for configuration in Google Cloud Platform
  
 deployment:
   replicaCount: 1
   image:
-    # repository: medplum/medplum-server
-    repository: us-west1-docker.pkg.dev/medplum-zencore/medplum-repo/medplum-server
-    tag: test4
+    repository: medplum/medplum-server
+    tag: latest
+
   autoscaling:
     enabled: true
 
@@ -28,5 +28,5 @@ ingress:
   
 serviceAccount: 
   annotations:
-    iam.gke.io/gcp-service-account: medplum-server@medplum-zencore.iam.gserviceaccount.com
+    iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.i: medplum-server@medplum.iam.gserviceaccount.com
   

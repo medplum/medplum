@@ -14,6 +14,6 @@ spec:
     - name: http-port
       protocol: TCP
       port: {{ .Values.service.port | default 80 }}
-      targetPort: 8103
+      targetPort: {{ .Values.service.targetPort | default 8103 }}
   selector:
     {{- include "medplum.selectorLabels" . | nindent 4 }}
