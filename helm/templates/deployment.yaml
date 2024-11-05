@@ -47,16 +47,16 @@ spec:
             {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: {{ .Values.service.port | default 80 }}
               protocol: TCP
           livenessProbe:
             httpGet:
               path: /healthcheck
-              port: {{ .Values.service.port }}
+              port: {{ .Values.service.port | default 80 }}
           readinessProbe:
             httpGet:
               path: /healthcheck
-              port: {{ .Values.service.port }}
+              port: {{ .Values.service.port | default 80 }}
           resources:
             resources:
               limits:

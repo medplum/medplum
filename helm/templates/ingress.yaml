@@ -23,5 +23,5 @@ spec:
               service:
                 name: {{ include "medplum.fullname" . }}-service
                 port:
-                  number: {{ .Values.service.port }}
+                  number: {{ .Values.service.port | default 80 }}
 {{- end }}

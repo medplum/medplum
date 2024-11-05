@@ -19,6 +19,9 @@ deployment:
   autoscaling:
     enabled: true
 
+service:
+  port: 80
+
 ingress:
   deploy: true
   domain: api.zencore.medplum.dev
