@@ -13,7 +13,6 @@
 # - The `locals` block defines the roles to be assigned to the Kubernetes service account.
 # - Ensure that the Kubernetes service account exists in the specified namespace before applying the configuration.
 
-
 module "service_accounts" {
   source     = "terraform-google-modules/service-accounts/google"
   version    = "~> 4.4.0"
