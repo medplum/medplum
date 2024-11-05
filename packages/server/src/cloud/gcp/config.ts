@@ -2,7 +2,7 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { splitN } from '@medplum/core';
 import { isBooleanConfig, isIntegerConfig, isObjectConfig, MedplumServerConfig } from '../../config';
 
- /**
+/**
  * Gets the latest secret value from Google Secret Manager.
  * Uses DEFAULT_APPLICATION_CREDENTIALS for authentication.
  * @param projectId - The GCP project ID
@@ -22,7 +22,7 @@ async function getSecretValue(projectId: string, secretId: string): Promise<stri
   }
 
   return payload;
-};
+}
 
 /**
  * Loads configuration settings from GCP Secrets Manager.
@@ -30,7 +30,6 @@ async function getSecretValue(projectId: string, secretId: string): Promise<stri
  * @returns The loaded configuration.
  */
 export async function loadGcpConfig(configPath: string): Promise<MedplumServerConfig> {
-
   const config: Record<string, any> = {};
   let [projectId, secretId] = splitN(configPath, ':', 2);
 
