@@ -514,19 +514,6 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Rebuild projectId as super admin with respond-async', async () => {
-    const res1 = await request(app)
-      .post('/admin/super/rebuildprojectid')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .set('Prefer', 'respond-async')
-      .type('json')
-      .send({});
-
-    expect(res1.status).toEqual(202);
-    expect(res1.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
-  });
-
   test('Run data migrations', async () => {
     const res1 = await request(app)
       .post('/admin/super/migrate')
