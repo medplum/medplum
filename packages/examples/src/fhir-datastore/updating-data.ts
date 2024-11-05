@@ -30,17 +30,17 @@ curl -X PUT 'https://api.medplum.com/fhir/R4/Patient/homer-simpson' \
 // start-block upsertTs
 await medplum.upsertResource(
   { resourceType: 'Patient', id: 'homer-simpson', name: [{ family: 'Simpson', given: ['Homer'] }] },
-  'Patient?family="Simpson"'
+  'Patient?family="Simpson"&given="Homer"'
 );
 // end-block upsertTs
 
 /*
 // start-block upsertCli
-medplum put Patient?family="Simpson" '{"resourceType":"Patient","id":"homer-simpson","name":[{"family":"Simpson","given":["Homer"]}]}'
+medplum put Patient?family="Simpson"&given="Homer" '{"resourceType":"Patient","id":"homer-simpson","name":[{"family":"Simpson","given":["Homer"]}]}'
 // end-block upsertCli
 
 // start-block upsertCurl
-curl -X PUT 'https://api.medplum.com/fhir/R4/Patient?family="Simpson"' \
+curl -X PUT 'https://api.medplum.com/fhir/R4/Patient?family="Simpson"&given="Homer' \
   -H 'authorization: Bearer $ACCESS_TOKEN' \
   -H 'content-type: application/fhir+json' \
   -d {"resourceType":"Patient","id":"homer-simpson","name":[{"family":"Simpson","given":["Homer"]}]}

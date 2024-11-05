@@ -14,15 +14,13 @@ import ExampleCode from '!!raw-loader!@site/..//examples/src/fhir-datastore/upda
 
 Medplum offers three FHIR operations that can be used to update data:
 
-- `update`
-- `upsert`
-- `patch`
-
-While all of these will update your data, they do so in different ways. The `update` operation replaces the entire resource, an `upsert` replaces the entire resource but creates it if it is not found, and the `patch` operation updates only the specific element(s) you requested.
+- `update`: Replaces the entire resource
+- `upsert`: Replaces the entire resource and creates a new one if the specified resource is not found
+- `patch`: Updates only the specific element(s) that are requested.
 
 ## Update Operation
 
-Using the `update` operation performs a `PUT` command, which will create an entirely new version of your resource, rewriting every element. When sending an update request you must include the `resourceType` and the `id` of the resource you are updating, as well as the updated resource itself in the body of the request.
+Using the `update` operation is performed by sending a `PUT` request, which will create an entirely new version of your resource, rewriting every element. When sending an update request you must include the `resourceType` and the `id` of the resource you are updating, as well as the updated resource itself in the body of the request.
 
 Medplum provides the `updateResource` method on the `MedplumClient` which implements the `update` operation. The function takes the updated resource as an argument.
 
@@ -51,13 +49,13 @@ The below example updates a [`Patient`](/docs/api/fhir/resources/patient) resour
 
 ## Upsert Operation
 
-The `upsert` operation also performs a `PUT` command, updating your entire resource. However, instead of taking the `id`, it allows you to use a search query with [FHIR search parameters](/docs/search/basic-search#search-parameters) to find the resource you want to update. If it cannot find a match, it will create the resource sent to the server.
-
-Medplum provides the `upsertResource` method on the `MedplumClient`, which implements the `upsert` operation. The function takes a `resource` and a FHIR search query to find the resource to be updated.
+The `upsert` operation also sends a `PUT` request, updating your entire resource. However, instead of taking the `id`, it allows you to use a search query with [FHIR search parameters](/docs/search/basic-search#search-parameters) to find the resource you want to update.
 
 - If the search query resolves to a single resource, that resource will be updated.
 - If it does not find a matching resource, one will be created from the given data.
 - If multiple matches are found, an error will be returned. In this case, more specific search criteria are required to unambiguously identify the resource to be updated or created.
+
+Medplum provides the `upsertResource` method on the `MedplumClient`, which implements the `upsert` operation. The function takes a `resource` and a FHIR search query to find the resource to be updated.
 
 The below operation searches for a patient to add a name to, and creates it if it cannot be found.
 
@@ -84,7 +82,7 @@ The below operation searches for a patient to add a name to, and creates it if i
 
 ## Patch Operation
 
-The `patch` operation performs a `PATCH` command, which updates only the specified elements in your resource. When sending a `patch` operation, you must include the `resourceType` and the `id` of the resource, as well as the patch body, containing the operation, path, and value.
+The `patch` operation performs a `PATCH` request, which updates only the specified elements in your resource. When sending a `patch` operation, you must include the `resourceType` and the `id` of the resource, as well as the patch body, containing the operation, path, and value.
 
 Medplum provides the `patchResource` method on the `MedplumClient` which implements the `patch` operation. The function takes the `resourceType`, `id`, and an array of `PatchOperations`. A `PatchOperation` details the updates that will be made to your resource, and has three required fields: `op`, `path`, and `value`. The `op` is the actual operation that will be performed, the `path` is the path to the element on the resource that is being updated, and the `value` is the new value for the element at the given path.
 
