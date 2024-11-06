@@ -5,8 +5,8 @@
 project_id          = "your-project-id"             # e.g. "medplum-project"
 region              = "your-region"                 # e.g. "us-west1"
 zone                = "your-zone"                   # e.g. "us-west1-a"
-static_asset_domain = "your-static-asset-domain"    # e.g. "app.zencore.medplum.dev"
-user_content_domain = "your-user-content-domain"    # e.g. "storage.zencore.medplum.dev"
+static_asset_domain = "your-static-asset-domain"    # e.g. "app.medplum.dev"
+user_content_domain = "your-user-content-domain"    # e.g. "storage.medplum.dev"
 
 
 master_authorized_networks = [
