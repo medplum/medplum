@@ -46,6 +46,15 @@ variable "labels" {
   }
 }
 
+# GKE Cluster variables
+variable "master_authorized_networks" {
+  description = "A list of networks authorized to access the GKE master"
+  type = list(object({
+    cidr_block   = string
+    display_name = string
+  }))
+}
+
 # VPC
 variable "vpc_name" {
   description = "The name for the VPC"

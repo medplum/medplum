@@ -40,12 +40,7 @@ module "gke" {
   dns_cache                  = false
   deletion_protection        = false
   gateway_api_channel        = "CHANNEL_STANDARD"
-  master_authorized_networks = [
-    {
-      cidr_block   = "190.244.75.217/32"
-      display_name = "Local Network"
-    },
-  ]
+  master_authorized_networks = var.master_authorized_networks
   depends_on = [
     google_project_service.project,
     module.vpc

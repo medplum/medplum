@@ -8,6 +8,14 @@ zone                = "us-west1-a"                  # "your-zone"
 static_asset_domain = "app.zencore.medplum.dev"     # "your-static-asset-domain"
 user_content_domain = "storage.zencore.medplum.dev" # "your-user-content-domain"
 
+
+master_authorized_networks = [
+  {
+    cidr_block   = "190.244.75.217/32"
+    display_name = "Local Network"
+  },
+]
+
 # Common enforced labels - Change these values to use your own labels
 labels = {
   env     = "your-environment" # e.g., "dev", "staging", "prod"

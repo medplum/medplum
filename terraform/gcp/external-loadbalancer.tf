@@ -38,10 +38,7 @@ module "medplum-lb-https" {
       enable_cdn  = true
 
       cdn_policy = {
-        cache_mode  = "USE_ORIGIN_HEADERS"
-        default_ttl = 3600
-        client_ttl  = 7200
-        max_ttl     = 10800
+        cache_mode = "USE_ORIGIN_HEADERS"
         cache_key_policy = {
           include_host         = true
           include_protocol     = true
