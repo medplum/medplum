@@ -21,7 +21,7 @@ import { getConfig } from '../config';
 import { getAuthenticatedContext, getLogger } from '../context';
 import { sendEmail } from '../email/email';
 import { getSystemRepo, Repository } from '../fhir/repo';
-import { sendResponse } from '../fhir/response';
+import { sendFhirResponse } from '../fhir/response';
 import { generateSecret } from '../oauth/keys';
 import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -52,7 +52,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   }
 
   const { membership } = await inviteUser(inviteRequest);
-  return sendResponse(req, res, allOk, membership);
+  return sendFhirResponse(req, res, allOk, membership);
 }
 
 export interface ServerInviteRequest extends InviteRequest {

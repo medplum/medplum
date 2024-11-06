@@ -40,7 +40,7 @@ import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
-import { sendResponse } from './response';
+import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
@@ -342,7 +342,7 @@ protectedRoutes.use(
       }
       sendOutcome(res, result[0]);
     } else {
-      await sendResponse(req, res, result[0], result[1]);
+      await sendFhirResponse(req, res, result[0], result[1]);
     }
   })
 );

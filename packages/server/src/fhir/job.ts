@@ -3,7 +3,7 @@ import { AsyncJob } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { getAuthenticatedContext } from '../context';
-import { sendResponse } from './response';
+import { sendFhirResponse } from './response';
 
 // Asychronous Job Status API
 // https://hl7.org/fhir/async-bundle.html
@@ -24,7 +24,7 @@ jobRouter.get(
       return;
     }
 
-    await sendResponse(req, res, allOk, asyncJob);
+    sendFhirResponse(req, res, allOk, asyncJob);
   })
 );
 

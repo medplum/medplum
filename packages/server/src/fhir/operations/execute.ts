@@ -47,7 +47,7 @@ import { readStreamToString } from '../../util/streams';
 import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo, Repository } from '../repo';
-import { sendResponse } from '../response';
+import { sendFhirResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
@@ -105,7 +105,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     const outcome = result.success ? allOk : badRequest(result.logResult);
 
     if (isResource(responseBody) && responseBody.resourceType === 'Binary') {
-      await sendResponse(req, res, outcome, responseBody);
+      await sendFhirResponse(req, res, outcome, responseBody);
       return;
     }
 

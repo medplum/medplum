@@ -28,7 +28,7 @@ export function sendResponseHeaders(_req: Request, res: Response, outcome: Opera
   res.status(getStatus(outcome));
 }
 
-export async function sendResponse(
+export async function sendFhirResponse(
   req: Request,
   res: Response,
   outcome: OperationOutcome,
