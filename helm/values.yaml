@@ -19,8 +19,9 @@ deployment:
   autoscaling:
     enabled: true
 
-service:
-  port: 80
+# service:
+#   port: 80
+#   targetPort: 8103
 
 ingress:
   deploy: true

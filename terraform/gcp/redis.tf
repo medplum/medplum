@@ -29,6 +29,9 @@ module "memorystore" {
     persistence_mode    = "RDB"
     rdb_snapshot_period = "ONE_HOUR"
   }
+  redis_configs = {
+    maxmemory-policy = "noeviction"
+  }
   depends_on = [
     module.vpc
   ]

@@ -47,22 +47,21 @@ spec:
             {{- end }}
           ports:
             - name: http
-              containerPort: {{ .Values.service.port | default 80 }}
+              containerPort: {{ .Values.service.targetPort | default 8103 }}
               protocol: TCP
           livenessProbe:
             httpGet:
               path: /healthcheck
-              port: {{ .Values.service.port | default 80 }}
+              port: {{ .Values.service.targetPort | default 8103 }}
           readinessProbe:
             httpGet:
               path: /healthcheck
-              port: {{ .Values.service.port | default 80 }}
+              port: {{ .Values.service.targetPort | default 8103 }}
           resources:
-            resources:
-              limits:
-                memory: "512Mi"
-              requests:
-                memory: "256Mi"
+            limits:
+              memory: "512Mi"
+            requests:
+              memory: "256Mi"
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}
