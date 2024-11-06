@@ -80,17 +80,16 @@ variable "psa_range_name" {
 variable "gcs_buckets" {
   description = "GCS buckets to be created"
   type = map(object({
-    project_id = string
-    location   = optional(string)
+    location = optional(string)
     # Configuration of the bucket's custom location in a dual-region bucket setup.
     custom_placement_config = optional(object({
       data_locations = list(string)
     }))
     force_destroy            = optional(bool, false)
     bucket_policy_only       = optional(bool, true)
-    public_access_prevention = optional(string, "enforced")
+    public_access_prevention = optional(string, "inherited")
     storage_class            = optional(string, "STANDARD")
-    versioning               = optional(bool, false)
+    versioning               = optional(bool, true)
     autoclass                = optional(bool, false)
     log_bucket               = optional(string)
 
@@ -103,7 +102,16 @@ variable "gcs_buckets" {
       # See https://github.com/terraform-google-modules/terraform-google-cloud-storage/blob/master/modules/simple_bucket/main.tf#L75-L96
       action    = map(any)
       condition = map(any)
-    })), [])
+      })), [{
+      action = {
+        type = "Delete"
+      }
+      condition = {
+        is_live                    = "false"
+        days_since_noncurrent_time = "7"
+        num_newer_versions         = "2"
+      }
+    }])
 
     retention_policy = optional(object({
       is_locked        = bool

@@ -20,10 +20,10 @@ module "service_accounts" {
   names      = ["medplum-server"]
 
   project_roles = [
-    "medplum-zencore=>roles/redis.admin",
-    "medplum-zencore=>roles/cloudsql.admin",
-    "medplum-zencore=>roles/secretmanager.admin",
-    "medplum-zencore=>roles/storage.admin"
+    "${var.project_id}=>roles/redis.admin",
+    "${var.project_id}=>roles/cloudsql.admin",
+    "${var.project_id}=>roles/secretmanager.admin",
+    "${var.project_id}=>roles/storage.admin"
   ]
 
   depends_on = [

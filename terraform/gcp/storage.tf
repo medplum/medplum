@@ -11,7 +11,7 @@ module "buckets" {
   version = "~> 6.1"
 
   name                     = each.key
-  project_id               = each.value.project_id
+  project_id               = var.project_id
   location                 = each.value.location
   custom_placement_config  = each.value.custom_placement_config
   force_destroy            = each.value.force_destroy

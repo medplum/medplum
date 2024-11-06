@@ -2,16 +2,16 @@
 # allowing customization of the infrastructure setup without modifying the main configuration files.
 
 # GCP project configuration - Change these values to use your own project, region, and zone
-project_id          = "medplum-zencore"             # "your-project-id"
-region              = "us-west1"                    # "your-region"
-zone                = "us-west1-a"                  # "your-zone"
-static_asset_domain = "app.zencore.medplum.dev"     # "your-static-asset-domain"
-user_content_domain = "storage.zencore.medplum.dev" # "your-user-content-domain"
+project_id          = "your-project-id"             # e.g. "medplum-project"
+region              = "your-region"                 # e.g. "us-west1"
+zone                = "your-zone"                   # e.g. "us-west1-a"
+static_asset_domain = "your-static-asset-domain"    # e.g. "app.zencore.medplum.dev"
+user_content_domain = "your-user-content-domain"    # e.g. "storage.zencore.medplum.dev"
 
 
 master_authorized_networks = [
   {
-    cidr_block   = "190.244.75.217/32"
+    cidr_block   = "[Your local network CIDR Block]/32"
     display_name = "Local Network"
   },
 ]
@@ -26,25 +26,11 @@ labels = {
 ## Buckets configuration 
 gcs_buckets = {
   medplum-user-content = {
-    project_id = "medplum-zencore"
-    location   = "US"
-    versioning = true
-    lifecycle_rules = [{
-      action = {
-        type = "Delete"
-      }
-      condition = {
-        is_live                    = "false"
-        days_since_noncurrent_time = "7"
-        num_newer_versions         = "2"
-      }
-    }]
+    location                 = "US"
+    public_access_prevention = "enforced"
   },
   "medplum-static-assets" = {
-    project_id               = "medplum-zencore"
-    location                 = "US"
-    versioning               = true
-    public_access_prevention = "inherited"
+    location = "US"
     website = {
       main_page_suffix = "index.html"
       not_found_page   = "index.html"
@@ -55,20 +41,10 @@ gcs_buckets = {
       response_header = ["*"]
       max_age_seconds = 3600
     }]
-    lifecycle_rules = [{
-      action = {
-        type = "Delete"
-      }
-      condition = {
-        is_live                    = "false"
-        days_since_noncurrent_time = "7"
-        num_newer_versions         = "2"
-      }
-    }]
   }
 }
 
-# Buckets bindings
+# Buckets bindings for public access
 bucket_bindings = {
   "medplum-static-assets" = [ # This is the bucket name
     {
