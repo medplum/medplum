@@ -5,7 +5,6 @@ import {
   Attachment,
   AuditEvent,
   Bundle,
-  BundleEntry,
   Communication,
   DiagnosticReport,
   Media,
@@ -335,8 +334,9 @@ function HistoryTimelineItem(props: HistoryTimelineItemProps): JSX.Element {
 }
 
 function getPrevious(history: Bundle, version: Resource): Resource | undefined {
-  const entries = history.entry as BundleEntry[];
+  const entries = history.entry ?? [];
   const index = entries.findIndex((entry) => entry.resource?.meta?.versionId === version.meta?.versionId);
+  // If not found index is -1, -1 === 0 - 1 so this returns undefined
   if (index >= entries.length - 1) {
     return undefined;
   }

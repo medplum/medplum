@@ -224,6 +224,12 @@ describe('Bundle tests', () => {
             reference: 'Organization/33333333-3333-3333-3333-333333333333',
             display: 'Organization #3',
           },
+          accounts: [
+            {
+              reference: 'Organization/33333333-3333-3333-3333-333333333333',
+              display: 'Organization #3',
+            },
+          ],
           author: {
             reference: 'Practitioner/22222222-2222-2222-2222-222222222222',
             display: 'Doctor',

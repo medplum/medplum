@@ -4,6 +4,7 @@ import { Patient } from '@medplum/fhirtypes';
 import { Document, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { HeadlessPrescription } from '../components/headless-prescription/HeadlessPrescription';
 import { PatientHistory } from '../components/PatientHistory';
 import { PatientOverview } from '../components/PatientOverview';
 import { PatientPrescription } from '../components/PatientPrescription';
@@ -22,7 +23,7 @@ export function PatientPage(): JSX.Element {
     }
   }, [medplum, id]);
 
-  const tabs = ['overview', 'timeline', 'history', 'prescription'];
+  const tabs = ['overview', 'timeline', 'history', 'prescription', 'headless'];
   const tab = window.location.pathname.split('/').pop();
   const currentTab = tab && tabs.includes(tab) ? tab : tabs[0];
 
@@ -56,6 +57,9 @@ export function PatientPage(): JSX.Element {
         </Tabs.Panel>
         <Tabs.Panel value="prescription">
           <PatientPrescription patient={patient} />
+        </Tabs.Panel>
+        <Tabs.Panel value="headless">
+          <HeadlessPrescription patient={patient} />
         </Tabs.Panel>
       </Tabs>
     </Document>

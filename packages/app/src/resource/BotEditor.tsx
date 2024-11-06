@@ -51,10 +51,12 @@ export function BotEditor(): JSX.Element | null {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }, [medplum, id]);
 
+  // Gets the uncompiled TS code
   const getCode = useCallback(() => {
     return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
   }, []);
 
+  // Gets the compiled JS output
   const getCodeOutput = useCallback(() => {
     return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
   }, []);
@@ -74,21 +76,21 @@ export function BotEditor(): JSX.Element | null {
       setLoading(true);
       try {
         const code = await getCode();
+        const codeOutput = await getCodeOutput();
         const sourceCode = await medplum.createAttachment(code, 'index.ts', 'text/typescript');
-        const operations: PatchOperation[] = [];
-        if (bot?.sourceCode) {
-          operations.push({
-            op: 'replace',
-            path: '/sourceCode',
-            value: sourceCode,
-          });
-        } else {
-          operations.push({
+        const executableCode = await medplum.createAttachment(codeOutput, 'index.js', 'text/typescript');
+        const operations: PatchOperation[] = [
+          {
             op: 'add',
             path: '/sourceCode',
             value: sourceCode,
-          });
-        }
+          },
+          {
+            op: 'add',
+            path: '/executableCode',
+            value: executableCode,
+          },
+        ];
         await medplum.patchResource('Bot', id, operations);
         showNotification({ color: 'green', message: 'Saved' });
       } catch (err) {
@@ -97,7 +99,7 @@ export function BotEditor(): JSX.Element | null {
         setLoading(false);
       }
     },
-    [medplum, id, bot, getCode]
+    [medplum, id, getCode, getCodeOutput]
   );
 
   const deployBot = useCallback(
@@ -106,8 +108,7 @@ export function BotEditor(): JSX.Element | null {
       e.stopPropagation();
       setLoading(true);
       try {
-        const code = await getCodeOutput();
-        await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'), { code });
+        await medplum.post(medplum.fhirUrl('Bot', id, '$deploy'));
         showNotification({ color: 'green', message: 'Deployed' });
       } catch (err) {
         showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false });
@@ -115,7 +116,7 @@ export function BotEditor(): JSX.Element | null {
         setLoading(false);
       }
     },
-    [medplum, id, getCodeOutput]
+    [medplum, id]
   );
 
   const executeBot = useCallback(

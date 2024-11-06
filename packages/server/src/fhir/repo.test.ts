@@ -3,7 +3,6 @@ import {
   badRequest,
   created,
   createReference,
-  forbidden,
   getReferenceString,
   isOk,
   notFound,
@@ -26,6 +25,7 @@ import {
   ProjectMembership,
   Questionnaire,
   ResourceType,
+  ServiceRequest,
   StructureDefinition,
   User,
 } from '@medplum/fhirtypes';
@@ -310,9 +310,14 @@ describe('FHIR Repo', () => {
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
+        identifier: [],
       });
 
       expect(patient.meta?.author?.reference).toEqual(getReferenceString(client));
+
+      // empty identifier array should removed when read from cache
+      const readPatient = await repo.readResource<Patient>('Patient', patient.id as string, { checkCacheOnly: true });
+      expect(readPatient.identifier).toBeUndefined();
     }));
 
   test('Create Patient as Practitioner with no author', () =>
@@ -361,61 +366,6 @@ describe('FHIR Repo', () => {
       });
 
       expect(patient.meta?.author?.reference).toEqual(author);
-    }));
-
-  test('Create resource with account', () =>
-    withTestContext(async () => {
-      const author = 'Practitioner/' + randomUUID();
-      const account = 'Organization/' + randomUUID();
-
-      // This user does not have an access policy
-      // So they can optionally set an account
-      const repo = new Repository({
-        extendedMode: true,
-        author: {
-          reference: author,
-        },
-      });
-
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        meta: {
-          account: {
-            reference: account,
-          },
-        },
-      });
-
-      expect(patient.meta?.author?.reference).toEqual(author);
-      expect(patient.meta?.account?.reference).toEqual(account);
-    }));
-
-  test('Create resource with malformed account', () =>
-    withTestContext(async () => {
-      const author = 'Practitioner/' + randomUUID();
-
-      // This user does not have an access policy
-      // So they can optionally set an account
-      const repo = new Repository({
-        extendedMode: true,
-        author: {
-          reference: author,
-        },
-      });
-
-      const patient = await repo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }],
-        meta: {
-          account: {
-            reference: 'example.com/account/1',
-          },
-        },
-      });
-
-      expect(patient.meta?.author?.reference).toEqual(author);
-      expect(patient.meta?.account?.reference).toEqual('example.com/account/1');
     }));
 
   test('Create resource with lastUpdated', () =>
@@ -728,12 +678,7 @@ describe('FHIR Repo', () => {
     });
 
     // Try to expunge as a regular user
-    try {
-      await repo.expungeResource('Patient', new Date().toISOString());
-      fail('Purge should have failed');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
-    }
+    await expect(repo.expungeResource('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
   });
 
   test('expungeResources forbidden', async () => {
@@ -748,12 +693,7 @@ describe('FHIR Repo', () => {
     });
 
     // Try to expunge as a regular user
-    try {
-      await repo.expungeResources('Patient', [new Date().toISOString()]);
-      fail('Purge should have failed');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
-    }
+    await expect(repo.expungeResources('Patient', [new Date().toISOString()])).rejects.toThrow('Forbidden');
   });
 
   test('Purge forbidden', async () => {
@@ -768,12 +708,7 @@ describe('FHIR Repo', () => {
     });
 
     // Try to purge as a regular user
-    try {
-      await repo.purgeResources('Patient', new Date().toISOString());
-      fail('Purge should have failed');
-    } catch (err) {
-      expect((err as OperationOutcomeError).outcome).toMatchObject(forbidden);
-    }
+    await expect(repo.purgeResources('Patient', new Date().toISOString())).rejects.toThrow('Forbidden');
   });
 
   test('Purge Login', () =>
@@ -1045,8 +980,11 @@ describe('FHIR Repo', () => {
         meta: { account: conditionalReference },
         generalPractitioner: [conditionalReference],
       });
-      expect(patient.generalPractitioner?.[0]?.reference).toEqual(getReferenceString(practitioner));
-      expect(patient.meta?.account?.reference).toEqual(getReferenceString(practitioner));
+      const expectedPractitioner = getReferenceString(practitioner);
+      expect(patient.generalPractitioner?.[0]?.reference).toEqual(expectedPractitioner);
+      expect(patient.meta?.account?.reference).toEqual(expectedPractitioner);
+      expect(patient.meta?.accounts).toHaveLength(1);
+      expect(patient.meta?.accounts).toContainEqual({ reference: expectedPractitioner });
     }));
 
   test('Conditional reference resolution failure', async () =>
@@ -1058,7 +996,7 @@ describe('FHIR Repo', () => {
           { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
         ],
       };
-      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow('f');
+      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow(/did not match any resources/);
     }));
 
   test('Conditional reference resolution multiple matches', async () =>
@@ -1080,6 +1018,48 @@ describe('FHIR Repo', () => {
         ],
       };
       await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
+    }));
+
+  test('Conditional reference replaced before validation', async () =>
+    withTestContext(async () => {
+      const mrn = randomUUID();
+      const patient: Patient = {
+        resourceType: 'Patient',
+        identifier: [{ value: mrn }],
+      };
+      await systemRepo.createResource<Patient>(patient);
+
+      const serviceRequest = {
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        code: {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '308471005',
+              display: 'Referral to cardiologist',
+            },
+          ],
+        },
+        // Reference should be replaced and NOT cause a validation error
+        subject: {
+          reference: 'Patient?identifier=' + mrn,
+        },
+        // The performerType field should be a CodeableConcept, not an array
+        performerType: [
+          {
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: '17561000',
+                display: 'Cardiologist',
+              },
+            ],
+          },
+        ],
+      } as unknown as ServiceRequest;
+      await expect(systemRepo.createResource(serviceRequest)).rejects.toThrow(/^Expected single .*?performerType\)$/);
     }));
 
   test('Project default profiles', async () =>

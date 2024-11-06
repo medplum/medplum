@@ -90,9 +90,15 @@ export interface Meta {
   onBehalfOf?: Reference;
 
   /**
-   * @deprecated Use Meta.compartment instead
+   * @deprecated Use Meta.accounts instead
    */
   account?: Reference;
+
+  /**
+   * Optional account references that can be used for sub-project
+   * compartments.
+   */
+  accounts?: Reference[];
 
   /**
    * The list of compartments containing this resource

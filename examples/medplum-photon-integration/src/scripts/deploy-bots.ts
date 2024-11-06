@@ -27,6 +27,10 @@ const Bots: BotDescription[] = [
     src: 'src/bots/handle-order-event.ts',
     dist: 'dist/bots/handle-order-event.js',
   },
+  {
+    src: 'src/bots/sync-formulary.ts',
+    dist: 'dist/bots/sync-formulary.js',
+  },
 ];
 
 async function main(): Promise<void> {

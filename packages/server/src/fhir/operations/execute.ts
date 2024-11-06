@@ -34,7 +34,6 @@ import {
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
-import { Readable } from 'node:stream';
 import vm from 'node:vm';
 import { asyncWrap } from '../../async';
 import { runInLambda } from '../../cloud/aws/execute';
@@ -44,6 +43,7 @@ import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
+import { readStreamToString } from '../../util/streams';
 import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo, Repository } from '../repo';
@@ -614,12 +614,4 @@ async function createAuditEvent(
       outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
     });
   }
-}
-
-async function readStreamToString(stream: Readable): Promise<string> {
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of stream) {
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks).toString('utf8');
 }

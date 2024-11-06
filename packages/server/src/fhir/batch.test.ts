@@ -1,7 +1,7 @@
 import express from 'express';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import { initTestAuth } from '../test.setup';
+import { initTestAuth, waitForAsyncJob } from '../test.setup';
 import request from 'supertest';
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
 import {
@@ -10,12 +10,17 @@ import {
   BundleEntryResponse,
   CareTeam,
   Observation,
+  OperationOutcome,
+  OperationOutcomeIssue,
+  Parameters,
   Patient,
   Practitioner,
   RelatedPerson,
   Task,
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
+import { BatchJobData, execBatchJob, getBatchQueue } from '../workers/batch';
+import { Job } from 'bullmq';
 
 describe('Batch and Transaction processing', () => {
   const app = express();
@@ -131,8 +136,8 @@ describe('Batch and Transaction processing', () => {
     expect(results.entry?.[1]?.resource).toMatchObject<Partial<Bundle>>({
       resourceType: 'Bundle',
       type: 'searchset',
-      entry: [],
     });
+    expect((results.entry?.[1]?.resource as Partial<Bundle>).entry).toBeUndefined();
 
     expect(results.entry?.[2]?.response?.status).toEqual('201');
     expect(results.entry?.[2]?.resource).toMatchObject<Partial<Patient>>({
@@ -274,8 +279,8 @@ describe('Batch and Transaction processing', () => {
     expect(results.entry?.[1]?.resource).toMatchObject<Partial<Bundle>>({
       resourceType: 'Bundle',
       type: 'searchset',
-      entry: [],
     });
+    expect((results.entry?.[1]?.resource as Partial<Bundle>).entry).toBeUndefined();
 
     expect(results.entry?.[2]?.response?.status).toEqual('201');
     expect(results.entry?.[2]?.resource).toMatchObject<Patient>({
@@ -814,7 +819,7 @@ describe('Batch and Transaction processing', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send();
     expect(res2.status).toBe(200);
-    expect(res2.body.entry).toHaveLength(0);
+    expect(res2.body.entry).toBeUndefined();
   });
 
   test('Conditional reference resolution', async () => {
@@ -892,29 +897,210 @@ describe('Batch and Transaction processing', () => {
     expect(bundle.entry?.[0]?.response?.status).toEqual('400');
   });
 
-  test('Process batch create missing required properties', async () => {
+  test('Repeated batch of related upserts', async () => {
+    const bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:889474c7-551f-49cb-88d9-548ab1fcdcac',
+          request: { method: 'PUT', url: 'Patient?identifier=126229' },
+          resource: {
+            resourceType: 'Patient',
+            identifier: [{ value: '126229' }],
+            active: true,
+            meta: {
+              profile: [
+                'https://medplum.com/profiles/integrations/health-gorilla/StructureDefinition/MedplumHealthGorillaPatient',
+              ],
+            },
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:726c6c4f-4ca8-425e-870e-e43e569d0c4e',
+          request: {
+            method: 'PUT',
+            url: 'RelatedPerson?patient.identifier=126229',
+          },
+          resource: {
+            resourceType: 'RelatedPerson',
+            relationship: [
+              {
+                coding: [
+                  {
+                    system: 'http://terminology.hl7.org/CodeSystem/subscriber-relationship',
+                    code: 'spouse',
+                    display: 'Spouse',
+                  },
+                ],
+              },
+            ],
+            patient: { reference: 'urn:uuid:889474c7-551f-49cb-88d9-548ab1fcdcac' },
+          },
+        },
+        {
+          fullUrl: 'urn:uuid:f65055bc-5de2-45f5-9f59-ed6adbe77ae0',
+          request: {
+            method: 'PUT',
+            url: 'Coverage?beneficiary.identifier=126229',
+          },
+          resource: {
+            resourceType: 'Coverage',
+            status: 'active',
+            identifier: [{ value: '1' }],
+            subscriberId: '1',
+            subscriber: { reference: 'urn:uuid:726c6c4f-4ca8-425e-870e-e43e569d0c4e' },
+            relationship: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/subscriber-relationship',
+                  code: 'spouse',
+                  display: 'Spouse',
+                },
+              ],
+            },
+            beneficiary: { reference: 'urn:uuid:889474c7-551f-49cb-88d9-548ab1fcdcac' },
+            payor: [{ reference: 'Organization/091065a4-070b-4482-a863-76507b61e23a' }],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(bundle);
+    expect(res.status).toEqual(200);
+    const result = res.body as Bundle;
+    expect(result.entry).toHaveLength(3);
+    expect(result.entry?.map((e) => e.response?.status)).toEqual(['201', '201', '201']);
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(bundle);
+    expect(res.status).toEqual(200);
+    const result2 = res2.body as Bundle;
+    expect(result2.entry).toHaveLength(3);
+    expect(result2.entry?.map((e) => e.response?.status)).toEqual(['200', '200', '200']);
+  });
+
+  test('Async batch', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: 'Observation',
+          },
+          resource: {
+            resourceType: 'Observation',
+          } as Observation,
+        },
+      ],
+    };
+
     const res = await await request(app)
       .post(`/fhir/R4/`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .send({
-        resourceType: 'Bundle',
-        type: 'batch',
-        entry: [
-          {
-            request: {
-              method: 'POST',
-              url: 'Observation',
-            },
-            resource: {
-              resourceType: 'Observation',
-            } as Observation,
-          },
-        ],
-      });
-    expect(res.status).toEqual(200);
-    const bundle = res.body as Bundle;
-    expect(bundle.entry).toHaveLength(1);
-    expect(bundle.entry?.[0]?.response?.status).toEqual('400');
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res.status).toEqual(202);
+    const outcome = res.body as OperationOutcome;
+    expect(outcome.issue[0].diagnostics).toMatch('http://');
+
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'BatchJobData',
+      expect.objectContaining<Partial<BatchJobData>>({
+        bundle,
+      })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    await expect(execBatchJob(job)).resolves.toBe(undefined);
+
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    expect(asyncJob.output).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [{ name: 'results', valueReference: { reference: expect.stringMatching(/^Binary\//) } }],
+    });
+
+    const resultsReference = asyncJob.output?.parameter?.find((p) => p.name === 'results')?.valueReference?.reference;
+    const res2 = await request(app)
+      .get(`/fhir/R4/${resultsReference}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send();
+    expect(res2.status).toEqual(200);
+    expect(res2.body).toMatchObject<Partial<Bundle>>({
+      resourceType: 'Bundle',
+      type: 'batch-response',
+    });
+  });
+
+  test('Async batch does not retry on failure', async () => {
+    const queue = getBatchQueue() as any;
+    queue.add.mockClear();
+
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'pergola' as Bundle['type'], // Invalid batch type, with no entries -> error
+    };
+
+    const res = await await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Prefer', 'respond-async')
+      .send(bundle);
+    expect(res.status).toEqual(202);
+    const outcome = res.body as OperationOutcome;
+    expect(outcome.issue[0].diagnostics).toMatch('http://');
+
+    // Manually push through BullMQ job
+    expect(queue.add).toHaveBeenCalledWith(
+      'BatchJobData',
+      expect.objectContaining<Partial<BatchJobData>>({
+        bundle,
+      })
+    );
+
+    const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
+    queue.add.mockClear();
+
+    await expect(execBatchJob(job)).resolves.toBe(undefined);
+
+    const jobUrl = outcome.issue[0].diagnostics as string;
+    const asyncJob = await waitForAsyncJob(jobUrl, app, accessToken);
+    expect(asyncJob.output).toMatchObject<Parameters>({
+      resourceType: 'Parameters',
+      parameter: [
+        {
+          name: 'outcome',
+          resource: expect.objectContaining({
+            issue: [
+              expect.objectContaining<OperationOutcomeIssue>({
+                code: 'invalid',
+                severity: 'error',
+                details: { text: expect.stringContaining('pergola') },
+              }),
+            ],
+          }),
+        },
+      ],
+    });
+
+    expect(queue.add).not.toHaveBeenCalled();
   });
 });

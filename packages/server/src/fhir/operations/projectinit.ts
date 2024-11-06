@@ -12,7 +12,7 @@ import { randomUUID } from 'crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
 import { createProfile, createProjectMembership } from '../../auth/utils';
-import { getAuthenticatedContext, getRequestContext } from '../../context';
+import { getAuthenticatedContext, getLogger } from '../../context';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import { getSystemRepo } from '../repo';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
@@ -126,11 +126,11 @@ export async function createProject(
   profile?: ProfileResource;
   membership?: ProjectMembership;
 }> {
-  const ctx = getRequestContext();
+  const log = getLogger();
   const systemRepo = getSystemRepo();
   const config = getConfig();
 
-  ctx.logger.info('Project creation request received', { name: projectName });
+  log.info('Project creation request received', { name: projectName });
   const project = await systemRepo.createResource<Project>({
     resourceType: 'Project',
     name: projectName,
@@ -139,7 +139,7 @@ export async function createProject(
     features: config.defaultProjectFeatures,
   });
 
-  ctx.logger.info('Project created', {
+  log.info('Project created', {
     id: project.id,
     name: projectName,
   });

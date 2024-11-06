@@ -1,6 +1,6 @@
 {
   "name": "medplum-photon-integration",
-  "version": "3.2.16",
+  "version": "3.2.19",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "lint": "eslint src/",
     "test": "vitest run",
-    "test:coverage": "vitest run --coveragex"
+    "test:coverage": "vitest run --coverage"
   },
   "prettier": {
     "printWidth": 120,
@@ -24,26 +24,26 @@
     ]
   },
   "devDependencies": {
-    "@mantine/core": "7.13.1",
-    "@mantine/hooks": "7.13.1",
-    "@mantine/notifications": "7.13.1",
-    "@medplum/core": "3.2.16",
-    "@medplum/eslint-config": "3.2.16",
-    "@medplum/fhirtypes": "3.2.16",
-    "@medplum/react": "3.2.16",
-    "@photonhealth/elements": "0.12.7",
-    "@tabler/icons-react": "3.19.0",
-    "@types/node": "22.7.4",
-    "@types/react": "18.3.11",
-    "@types/react-dom": "18.3.0",
-    "@vitejs/plugin-react": "4.3.2",
+    "@mantine/core": "7.13.4",
+    "@mantine/hooks": "7.13.4",
+    "@mantine/notifications": "7.13.4",
+    "@medplum/core": "3.2.19",
+    "@medplum/eslint-config": "3.2.19",
+    "@medplum/fhirtypes": "3.2.19",
+    "@medplum/react": "3.2.19",
+    "@photonhealth/elements": "0.13.1",
+    "@tabler/icons-react": "3.17.0",
+    "@types/node": "22.8.7",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.3",
     "postcss": "8.4.47",
     "esbuild": "0.24.0",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-router-dom": "6.26.2",
-    "typescript": "5.6.2",
-    "vite": "5.4.8"
+    "react-router-dom": "6.27.0",
+    "typescript": "5.6.3",
+    "vite": "5.4.10"
   }
 }

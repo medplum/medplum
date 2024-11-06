@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { loadAwsConfig } from './cloud/aws/config';
+import { loadGcpConfig } from './cloud/gcp/config';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -37,6 +38,7 @@ export interface MedplumServerConfig {
   recaptchaSiteKey?: string;
   recaptchaSecretKey?: string;
   maxJsonSize: string;
+  maxBatchSize: string;
   allowedOrigins?: string;
   awsRegion: string;
   botLambdaRoleArn: string;
@@ -111,6 +113,7 @@ export interface MedplumDatabaseConfig {
   queryTimeout?: number;
   runMigrations?: boolean;
   maxConnections?: number;
+  disableConnectionConfiguration?: boolean;
 }
 
 export interface MedplumRedisConfig {
@@ -171,6 +174,9 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
       break;
     case 'aws':
       cachedConfig = await loadAwsConfig(configPath);
+      break;
+    case 'gcp':
+      cachedConfig = await loadGcpConfig(configPath);
       break;
     default:
       throw new Error('Unrecognized config type: ' + configType);
@@ -274,6 +280,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.userInfoUrl = config.userInfoUrl || config.baseUrl + '/userinfo';
   config.storageBaseUrl = config.storageBaseUrl || config.baseUrl + '/storage';
   config.maxJsonSize = config.maxJsonSize || '1mb';
+  config.maxBatchSize = config.maxBatchSize || '50mb';
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;
   config.botLambdaLayerName = config.botLambdaLayerName || 'medplum-bot-layer';
   config.bcryptHashSalt = config.bcryptHashSalt || 10;
@@ -287,7 +294,7 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
 }
 
 const integerKeys = ['port', 'accurateCountThreshold'];
-function isIntegerConfig(key: string): boolean {
+export function isIntegerConfig(key: string): boolean {
   return integerKeys.includes(key);
 }
 
@@ -299,16 +306,20 @@ const booleanKeys = [
   'botCustomFunctionsEnabled',
   'database.ssl.rejectUnauthorized',
   'database.ssl.require',
+  'database.disableConnectionConfiguration',
+  'readonlyDatabase.ssl.rejectUnauthorized',
+  'readonlyDatabase.ssl.require',
+  'readonlyDatabase.disableConnectionConfiguration',
   'logRequests',
   'logAuditEvents',
   'registerEnabled',
   'require',
   'rejectUnauthorized',
 ];
-function isBooleanConfig(key: string): boolean {
+export function isBooleanConfig(key: string): boolean {
   return booleanKeys.includes(key);
 }
 
-function isObjectConfig(key: string): boolean {
+export function isObjectConfig(key: string): boolean {
   return key === 'tls' || key === 'ssl';
 }

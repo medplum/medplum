@@ -45,7 +45,7 @@ The Patient Chart has 3 distinct panels
 
 If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
 
-[Fork](https://github.com/medplum/medplum-hello-world/fork) and clone the repo.
+[Fork](https://github.com/medplum/medplum-provider/fork) and clone the repo.
 
 Next, install the dependencies.
 
@@ -68,5 +68,5 @@ This app should run on `http://localhost:3000/`
 Medplum supports self-hosting and provides a [hosted service](https://app.medplum.com/). Medplum Hello World uses the hosted service as a backend.
 
 - Read our [documentation](https://www.medplum.com/docs)
-- Browse our [react component library](https://docs.medplum.com/storybook/index.html?)
+- Browse our [react component library](https://storybook.medplum.com/)
 - Join our [Discord](https://discord.gg/medplum)

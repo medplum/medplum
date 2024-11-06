@@ -3,9 +3,10 @@ import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getConfig } from '../../../config';
-import { getAuthenticatedContext, getRequestContext } from '../../../context';
+import { getAuthenticatedContext } from '../../../context';
 import { sendOutcome } from '../../outcomes';
 import { Repository, getSystemRepo } from '../../repo';
+import { getLogger } from 'nodemailer/lib/shared';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -32,7 +33,7 @@ export class AsyncJobExecutor {
    * @param callback - The callback to execute.
    */
   start(callback: (job: AsyncJob) => Promise<any>): void {
-    const ctx = getRequestContext();
+    const log = getLogger();
     if (!this.resource) {
       throw new Error('AsyncJob missing');
     }
@@ -42,11 +43,11 @@ export class AsyncJobExecutor {
 
     const startTime = Date.now();
     const systemRepo = getSystemRepo();
-    ctx.logger.info('Async job starting', { name: callback.name, asyncJobId: this.resource?.id });
+    log.info('Async job starting', { name: callback.name, asyncJobId: this.resource?.id });
 
     this.run(callback)
       .then(async (output) => {
-        ctx.logger.info('Async job completed', {
+        log.info('Async job completed', {
           name: callback.name,
           asyncJobId: this.resource?.id,
           duration: `${Date.now() - startTime} ms`,
@@ -54,7 +55,7 @@ export class AsyncJobExecutor {
         await this.completeJob(systemRepo, output);
       })
       .catch(async (err) => {
-        ctx.logger.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err });
+        log.error('Async job failed', { name: callback.name, asyncJobId: this.resource?.id, error: err });
         await this.failJob(systemRepo, err);
       })
       .finally(() => {

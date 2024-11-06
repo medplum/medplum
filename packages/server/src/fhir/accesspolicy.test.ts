@@ -3,13 +3,13 @@ import {
   getReferenceString,
   LOINC,
   normalizeErrorString,
-  normalizeOperationOutcome,
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
 } from '@medplum/core';
 import {
   AccessPolicy,
+  AccessPolicyResource,
   ClientApplication,
   Login,
   Observation,
@@ -298,12 +298,14 @@ describe('AccessPolicy', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
       });
-      expect(patient).toBeDefined();
       expect(patient.meta?.account?.reference).toEqual('Organization/' + orgId);
+      expect(patient.meta?.accounts).toHaveLength(1);
+      expect(patient.meta?.accounts).toContainEqual({ reference: 'Organization/' + orgId });
 
       const readPatient = await repo.readResource('Patient', patient.id as string);
-      expect(readPatient).toBeDefined();
       expect(readPatient.meta?.account?.reference).toEqual('Organization/' + orgId);
+      expect(readPatient.meta?.accounts).toHaveLength(1);
+      expect(readPatient.meta?.accounts).toContainEqual({ reference: 'Organization/' + orgId });
     }));
 
   test('Access policy blocks account override', () =>
@@ -348,12 +350,14 @@ describe('AccessPolicy', () => {
           },
         },
       });
-      expect(patient.meta?.account).toBeDefined();
       expect(patient.meta?.account?.reference).toEqual('Organization/' + orgId);
+      expect(patient.meta?.accounts).toHaveLength(1);
+      expect(patient.meta?.accounts).toContainEqual({ reference: 'Organization/' + orgId });
 
       const readPatient = await repo.readResource('Patient', patient.id as string);
-      expect(readPatient.meta?.account).toBeDefined();
       expect(readPatient.meta?.account?.reference).toEqual('Organization/' + orgId);
+      expect(readPatient.meta?.accounts).toHaveLength(1);
+      expect(readPatient.meta?.accounts).toContainEqual({ reference: 'Organization/' + orgId });
     }));
 
   test('Access policy restrict compartment', () =>
@@ -425,13 +429,14 @@ describe('AccessPolicy', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
       });
-      expect(patient2).toBeDefined();
-      expect(patient2.meta?.account).toBeDefined();
       expect(patient2.meta?.account?.reference).toEqual('Organization/' + org2);
+      expect(patient2.meta?.accounts).toHaveLength(1);
+      expect(patient2.meta?.accounts).toContainEqual({ reference: 'Organization/' + org2 });
 
       const readPatient2 = await repo2.readResource('Patient', patient2.id as string);
-      expect(readPatient2).toBeDefined();
-      expect(readPatient2.meta?.account).toBeDefined();
+      expect(readPatient2.meta?.account?.reference).toEqual('Organization/' + org2);
+      expect(readPatient2.meta?.accounts).toHaveLength(1);
+      expect(readPatient2.meta?.accounts).toContainEqual({ reference: 'Organization/' + org2 });
 
       // Try to read patient1 with repo2
       // This should fail
@@ -511,8 +516,9 @@ describe('AccessPolicy', () => {
       patient = await repo2.updateResource(patient);
 
       expect(patient).toBeDefined();
-      expect(patient.meta?.account).toBeDefined();
       expect(patient.meta?.account?.reference).toEqual('Organization/' + org1);
+      expect(patient.meta?.accounts).toHaveLength(1);
+      expect(patient.meta?.accounts).toContainEqual({ reference: 'Organization/' + org1 });
     }));
 
   test('Access policy restrict criteria', () =>
@@ -567,26 +573,28 @@ describe('AccessPolicy', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
       });
-      expect(patient1).toBeDefined();
-      expect(patient1.meta?.account).toBeDefined();
       expect(patient1.meta?.account?.reference).toEqual('Organization/' + org1);
+      expect(patient1.meta?.accounts).toHaveLength(1);
+      expect(patient1.meta?.accounts).toContainEqual({ reference: 'Organization/' + org1 });
 
       const readPatient1 = await repo1.readResource('Patient', patient1.id as string);
-      expect(readPatient1).toBeDefined();
-      expect(readPatient1.meta?.account).toBeDefined();
+      expect(readPatient1.meta?.account?.reference).toEqual('Organization/' + org1);
+      expect(readPatient1.meta?.accounts).toHaveLength(1);
+      expect(readPatient1.meta?.accounts).toContainEqual({ reference: 'Organization/' + org1 });
 
       const patient2 = await repo2.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
       });
-      expect(patient2).toBeDefined();
-      expect(patient2.meta?.account).toBeDefined();
       expect(patient2.meta?.account?.reference).toEqual('Organization/' + org2);
+      expect(patient2.meta?.accounts).toHaveLength(1);
+      expect(patient2.meta?.accounts).toContainEqual({ reference: 'Organization/' + org2 });
 
       const readPatient2 = await repo2.readResource('Patient', patient2.id as string);
-      expect(readPatient2).toBeDefined();
-      expect(readPatient2.meta?.account).toBeDefined();
+      expect(readPatient2.meta?.account?.reference).toEqual('Organization/' + org2);
+      expect(readPatient2.meta?.accounts).toHaveLength(1);
+      expect(readPatient2.meta?.accounts).toContainEqual({ reference: 'Organization/' + org2 });
 
       // Try to read patient1 with repo2
       // This should fail
@@ -728,6 +736,8 @@ describe('AccessPolicy', () => {
       // The Patient should have the account value set
       const patientCheck = await systemRepo.readResource('Patient', patient.id as string);
       expect(patientCheck.meta?.account?.reference).toEqual(account);
+      expect(patientCheck.meta?.accounts).toHaveLength(1);
+      expect(patientCheck.meta?.accounts).toContainEqual({ reference: account });
 
       // Create an Observation using the ClientApplication
       const observation = await clientRepo.createResource<Observation>({
@@ -744,6 +754,8 @@ describe('AccessPolicy', () => {
       // The Observation should have the account value set
       const observationCheck = await systemRepo.readResource('Observation', observation.id as string);
       expect(observationCheck.meta?.account?.reference).toEqual(account);
+      expect(observationCheck.meta?.accounts).toHaveLength(1);
+      expect(observationCheck.meta?.accounts).toContainEqual({ reference: account });
 
       // Create a Patient outside of the account
       const patient2 = await systemRepo.createResource<Patient>({
@@ -1242,13 +1254,12 @@ describe('AccessPolicy', () => {
       });
 
       const readResource = await repo2.readResource<ServiceRequest>('ServiceRequest', serviceRequest.id as string);
-      expect(readResource).toMatchObject({
+      expect(readResource).toMatchObject<Partial<ServiceRequest>>({
         resourceType: 'ServiceRequest',
         code: {
           text: 'test',
         },
       });
-      expect(readResource.subject).toBeDefined();
       expect(readResource.subject?.reference).toBeDefined();
       expect(readResource.subject?.display).toBeUndefined();
 
@@ -1689,12 +1700,7 @@ describe('AccessPolicy', () => {
       const check2 = await repo2.readResource<Patient>('Patient', p2.id as string);
       expect(check2.id).toBe(p2.id);
 
-      try {
-        await repo2.readResource<Patient>('Patient', p3.id as string);
-        throw new Error('Should not be able to read resource');
-      } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Not found');
-      }
+      await expect(repo2.readResource<Patient>('Patient', p3.id as string)).rejects.toThrow('Not found');
     }));
 
   test('String parameters', () =>
@@ -1742,12 +1748,7 @@ describe('AccessPolicy', () => {
       const check1 = await repo2.readResource<Task>('Task', t1.id as string);
       expect(check1.id).toBe(t1.id);
 
-      try {
-        await repo2.readResource<Task>('Task', t2.id as string);
-        throw new Error('Should not be able to read resource');
-      } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Not found');
-      }
+      await expect(repo2.readResource<Task>('Task', t2.id as string)).rejects.toThrow('Not found');
     }));
 
   test('Project admin with access policy', () =>
@@ -1811,15 +1812,9 @@ describe('AccessPolicy', () => {
       expect(check3.id).toEqual(membership.id);
 
       const check4 = await repo2.searchResources<User>({ resourceType: 'User' });
-      expect(check4).toBeDefined();
       expect(check4.find((u) => u.id === inviteResult.user.id)).toBeDefined();
 
-      try {
-        await repo2.readResource<Task>('Task', task.id as string);
-        throw new Error('Should not be able to read resource');
-      } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Forbidden');
-      }
+      await expect(repo2.readResource<Task>('Task', task.id as string)).rejects.toThrow('Forbidden');
 
       // Update the project membership
       const check6 = await repo2.updateResource<ProjectMembership>({ ...check3, externalId: randomUUID() });
@@ -1933,8 +1928,8 @@ describe('AccessPolicy', () => {
         { login: { resourceType: 'Login' } as Login, membership: nonAdminMembership, project },
         true
       );
-      const account1 = randomUUID();
-      const account2 = randomUUID();
+      const account1 = 'Organization/' + randomUUID();
+      const account2 = 'Organization/' + randomUUID();
 
       // Create a patient with account as project admin
       // Project admin should be allowed to set account
@@ -1942,36 +1937,124 @@ describe('AccessPolicy', () => {
         resourceType: 'Patient',
         meta: {
           project: project.id,
-          account: { reference: 'Organization/' + account1 },
+          account: { reference: account1 },
         },
       });
-      expect(patient1).toBeDefined();
-      expect(patient1.meta?.account?.reference).toEqual('Organization/' + account1);
+      expect(patient1.meta?.account?.reference).toEqual(account1);
+      expect(patient1.meta?.accounts).toHaveLength(1);
+      expect(patient1.meta?.accounts).toContainEqual({ reference: account1 });
 
       // Update the patient with account as project admin
       // Project admin should be allowed to set account
       const patient2 = await adminRepo.updateResource<Patient>({
         ...patient1,
         meta: {
-          ...patient1.meta,
-          account: { reference: 'Organization/' + account2 },
+          account: { reference: account2 },
         },
       });
-      expect(patient2).toBeDefined();
-      expect(patient2.meta?.account?.reference).toEqual('Organization/' + account2);
+      expect(patient2.meta?.account?.reference).toEqual(account2);
+      expect(patient2.meta?.accounts).toHaveLength(1);
+      expect(patient2.meta?.accounts).toContainEqual({ reference: account2 });
 
       // Attempt to change the account as non-admin
       // This should be silently ignored
       const patient3 = await nonAdminRepo.updateResource<Patient>({
         ...patient2,
         meta: {
-          ...patient2.meta,
           account: { reference: 'Organization/' + randomUUID() },
         },
       });
-      expect(patient3).toBeDefined();
       expect(patient3.meta?.versionId).toEqual(patient2.meta?.versionId);
-      expect(patient3.meta?.account?.reference).toEqual('Organization/' + account2);
+      expect(patient3.meta?.account?.reference).toEqual(account2);
+      expect(patient3.meta?.accounts).toHaveLength(1);
+      expect(patient3.meta?.accounts).toContainEqual({ reference: account2 });
+    }));
+
+  test('Project admin can set multiple accounts', () =>
+    withTestContext(async () => {
+      const project = await systemRepo.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
+
+      const adminMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: { reference: 'Project/' + project.id },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        admin: true,
+      });
+
+      const nonAdminMembership = await systemRepo.createResource<ProjectMembership>({
+        resourceType: 'ProjectMembership',
+        user: { reference: 'User/' + randomUUID() },
+        project: { reference: 'Project/' + project.id },
+        profile: { reference: 'Practitioner/' + randomUUID() },
+        admin: false,
+      });
+
+      const adminRepo = await getRepoForLogin(
+        { login: { resourceType: 'Login' } as Login, membership: adminMembership, project },
+        true
+      );
+      const nonAdminRepo = await getRepoForLogin(
+        { login: { resourceType: 'Login' } as Login, membership: nonAdminMembership, project },
+        true
+      );
+      const account1 = 'Organization/' + randomUUID();
+      const account2 = 'Organization/' + randomUUID();
+      const account3 = 'Organization/' + randomUUID();
+
+      // Create a patient with multiple accounts as project admin
+      // Project admin should be allowed to set accounts
+      const patient1 = await adminRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: {
+          project: project.id,
+          accounts: [{ reference: account1 }, { reference: account2 }],
+        },
+      });
+      expect(patient1.meta?.account?.reference).toEqual(account1);
+      expect(patient1.meta?.accounts).toHaveLength(2);
+      expect(patient1.meta?.accounts).toContainEqual({ reference: account1 });
+      expect(patient1.meta?.accounts).toContainEqual({ reference: account2 });
+
+      // Update the patient accounts as project admin
+      // Project admin should be allowed to set accounts
+      const patient2 = await adminRepo.updateResource<Patient>({
+        ...patient1,
+        meta: {
+          accounts: [{ reference: account2 }, { reference: account3 }],
+        },
+      });
+      expect(patient2.meta?.account?.reference).toEqual(account2);
+      expect(patient2.meta?.accounts).toHaveLength(2);
+      expect(patient2.meta?.accounts).toContainEqual({ reference: account2 });
+      expect(patient2.meta?.accounts).toContainEqual({ reference: account3 });
+
+      // Update both account and accounts as project admin
+      // Project admin should be allowed to set accounts: server will take the union of both fields
+      const patient3 = await adminRepo.updateResource<Patient>({
+        ...patient2,
+        meta: {
+          ...patient2.meta, // Includes previous meta.account (account2)
+          accounts: [{ reference: account1 }],
+        },
+      });
+      expect(patient3.meta?.account?.reference).toEqual(account2);
+      expect(patient3.meta?.accounts).toHaveLength(2);
+      expect(patient3.meta?.accounts).toContainEqual({ reference: account1 });
+      expect(patient3.meta?.accounts).toContainEqual({ reference: account2 });
+
+      // Attempt to change the account as non-admin
+      // This should be silently ignored
+      const patient4 = await nonAdminRepo.updateResource<Patient>({
+        ...patient3,
+        meta: {
+          accounts: [{ reference: 'Organization/' + randomUUID() }],
+        },
+      });
+      expect(patient4.meta?.account?.reference).toEqual(account2);
+      expect(patient4.meta?.accounts).toHaveLength(2);
+      expect(patient4.meta?.accounts).toContainEqual({ reference: account1 });
+      expect(patient4.meta?.accounts).toContainEqual({ reference: account2 });
     }));
 
   test('Mutex resource type policies with hidden fields', () =>
@@ -2097,12 +2180,9 @@ describe('AccessPolicy', () => {
 
       // Try to create a Patient in Project2 that references a Practitioner in Project1
       const practitioner = await repo1.createResource<Practitioner>({ resourceType: 'Practitioner' });
-      try {
-        await repo2.createResource({ resourceType: 'Patient', generalPractitioner: [createReference(practitioner)] });
-        throw new Error('Should have failed reference check');
-      } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Invalid reference (Not found) (Patient.generalPractitioner[0])');
-      }
+      await expect(
+        repo2.createResource({ resourceType: 'Patient', generalPractitioner: [createReference(practitioner)] })
+      ).rejects.toThrow('Invalid reference (Not found) (Patient.generalPractitioner[0])');
     }));
 
   test('Empty access policy allows reading StructureDefinitions', () =>
@@ -2139,22 +2219,10 @@ describe('AccessPolicy', () => {
       expect(sd.resourceType).toEqual('StructureDefinition');
 
       // Try to update StructureDefinition, should fail
-      try {
-        await repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() });
-        throw new Error('Expected error');
-      } catch (err) {
-        const outcome = normalizeOperationOutcome(err);
-        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
-      }
+      await expect(repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() })).rejects.toThrow('Forbidden');
 
       // Try to delete StructureDefinition, should fail
-      try {
-        await repo.deleteResource('StructureDefinition', sd.id as string);
-        throw new Error('Expected error');
-      } catch (err) {
-        const outcome = normalizeOperationOutcome(err);
-        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
-      }
+      await expect(repo.deleteResource('StructureDefinition', sd.id as string)).rejects.toThrow('Forbidden');
     }));
 
   test('Shared project read only', () =>
@@ -2176,22 +2244,10 @@ describe('AccessPolicy', () => {
       expect(sd.resourceType).toEqual('StructureDefinition');
 
       // Try to update StructureDefinition, should fail
-      try {
-        await repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() });
-        throw new Error('Expected error');
-      } catch (err) {
-        const outcome = normalizeOperationOutcome(err);
-        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
-      }
+      await expect(repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() })).rejects.toThrow('Forbidden');
 
       // Try to delete StructureDefinition, should fail
-      try {
-        await repo.deleteResource('StructureDefinition', sd.id as string);
-        throw new Error('Expected error');
-      } catch (err) {
-        const outcome = normalizeOperationOutcome(err);
-        expect(outcome.issue?.[0]?.code).toEqual('forbidden');
-      }
+      await expect(repo.deleteResource('StructureDefinition', sd.id as string)).rejects.toThrow('Forbidden');
     }));
 
   test('Repo with multiple Projects', async () =>
@@ -2457,23 +2513,69 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow();
     }));
 
-  test('Server rejects invalid criteria', () =>
+  test.each<[AccessPolicyResource, string]>([
+    [
+      {
+        resourceType: 'Patient',
+        criteria: 'identifier=123',
+        readonly: true,
+      },
+      'axp-3',
+    ],
+    [
+      {
+        resourceType: 'Patient',
+        criteria: 'Patient',
+      },
+      'axp-3',
+    ],
+    [
+      {
+        resourceType: 'Practitioner',
+        criteria: 'Patient?name=Dave',
+      },
+      'axp-3',
+    ],
+  ])('Server rejects invalid criteria %p', (policy, expectedError) =>
     withTestContext(async () => {
       await expect(
         systemRepo.createResource<AccessPolicy>({
           resourceType: 'AccessPolicy',
+          resource: [policy],
+        })
+      ).rejects.toThrow(expectedError);
+    })
+  );
+
+  test('Wildcard policy with criteria', async () =>
+    withTestContext(async () => {
+      const compartment = 'Patient/' + randomUUID();
+      const { repo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
           resource: [
             {
-              resourceType: 'Patient',
-              criteria: 'identifier=123',
-              readonly: true,
-            },
-            {
-              resourceType: 'Patient',
-              criteria: 'Patient',
+              resourceType: '*',
+              criteria: `*?_compartment=${compartment}`,
             },
           ],
-        })
-      ).rejects.toThrow(/axp-2/);
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        link: [{ type: 'refer', other: { reference: compartment } }], // In the correct compartment
+      });
+      const readPatient = await repo.readResource('Patient', patient.id as string);
+      expect(readPatient.meta?.compartment).toContainEqual({ reference: compartment });
+
+      const patient2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        // Not in the compartment; should not be accessible per the access policy
+      });
+      await expect(repo.readResource('Patient', patient2.id as string)).rejects.toThrow('Not found');
     }));
 });

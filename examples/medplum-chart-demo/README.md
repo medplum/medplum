@@ -8,7 +8,7 @@
 
 This example app demonstrates the following:
 
-- Managing the lifecylce of an encounter and its corresponding notes.
+- Managing the lifecycle of an encounter and its corresponding notes.
 - Creating and displaying Encounter Notes using the [`ClinicalImpression`](/docs/api/fhir/resources/clinicalimpression) resource.
 - Converting notes into structured data ([`Observations`](/docs/api/fhir/resources/observation) and [`Conditions`](/docs/api/fhir/resources/condition)) for easy retrieval and longitudinal tracking.
 - Using [Medplum React Components](https://storybook.medplum.com/?path=/docs/medplum-introduction--docs) to display a chart that provides visibility on a patient and their medical encounters.
@@ -53,7 +53,7 @@ The Encounter Chart has 3 distinct panels
 
 If you haven't already done so, follow the instructions in [this tutorial](https://www.medplum.com/docs/tutorials/register) to register a Medplum project to store your data.
 
-[Fork](https://github.com/medplum/medplum-hello-world/fork) and clone the repo.
+[Fork](https://github.com/medplum/medplum-chart-demo/fork) and clone the repo.
 
 Next, install the dependencies.
 
@@ -82,5 +82,5 @@ This app should run on `http://localhost:3000/`
 Medplum supports self-hosting and provides a [hosted service](https://app.medplum.com/). Medplum Hello World uses the hosted service as a backend.
 
 - Read our [documentation](https://www.medplum.com/docs)
-- Browse our [react component library](https://docs.medplum.com/storybook/index.html?)
+- Browse our [react component library](https://storybook.medplum.com/)
 - Join our [Discord](https://discord.gg/medplum)

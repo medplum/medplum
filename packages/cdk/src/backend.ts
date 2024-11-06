@@ -19,8 +19,8 @@ import {
 import { Repository } from 'aws-cdk-lib/aws-ecr';
 import { ClusterInstance, ParameterGroup } from 'aws-cdk-lib/aws-rds';
 import { Construct } from 'constructs';
-import { buildWafConfig } from './waf';
 import hashObject from 'object-hash';
+import { buildWafConfig } from './waf';
 
 /**
  * Based on: https://github.com/aws-samples/http-api-aws-fargate-cdk/blob/master/cdk/singleAccount/lib/fargate-vpclink-stack.ts
@@ -424,6 +424,7 @@ export class BackEnd extends Construct {
           command: container.command,
           environment: container.environment,
           logging: this.logDriver,
+          essential: container.essential ?? false, // Default to false
         });
       }
     }

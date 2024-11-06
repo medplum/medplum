@@ -12,6 +12,8 @@ import {
   Logger,
   MEDPLUM_VERSION,
   MedplumClient,
+  checkIfValidMedplumVersion,
+  fetchLatestVersionString,
   isValidHostname,
   normalizeErrorString,
 } from '@medplum/core';
@@ -26,12 +28,7 @@ import WebSocket from 'ws';
 import { Channel, ChannelType, getChannelType, getChannelTypeShortName } from './channel';
 import { AgentDicomChannel } from './dicom';
 import { AgentHl7Channel } from './hl7';
-import {
-  UPGRADER_LOG_PATH,
-  UPGRADE_MANIFEST_PATH,
-  checkIfValidMedplumVersion,
-  fetchLatestVersionString,
-} from './upgrader-utils';
+import { UPGRADER_LOG_PATH, UPGRADE_MANIFEST_PATH } from './upgrader-utils';
 
 async function execAsync(command: string, options: ExecOptions): Promise<{ stdout: string; stderr: string }> {
   return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
@@ -380,7 +377,7 @@ export class App {
       const channel = channels[i];
       const endpoint = endpoints[i];
 
-      if (endpoint.address === '') {
+      if (!endpoint.address) {
         throw new Error(`Invalid empty endpoint address for channel '${channel.name}'`);
       }
 

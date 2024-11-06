@@ -3,6 +3,7 @@ import { evalFhirPathTyped } from '../fhirpath/parse';
 import { OperationOutcomeError, badRequest } from '../outcomes';
 import { TypedValue, globalSchema, stringifyTypedValue } from '../types';
 import { append, sortStringArray } from '../utils';
+import { isDateTimeString } from '../fhirpath/utils';
 
 export const DEFAULT_SEARCH_COUNT = 20;
 export const DEFAULT_MAX_SEARCH_COUNT = 1000;
@@ -356,41 +357,41 @@ function parseSortRule(searchRequest: SearchRequest, value: string): void {
 export function parseParameter(searchParam: SearchParameter, modifier: string, value: string): Filter {
   if (modifier === 'missing') {
     return {
-      code: searchParam.code as string,
+      code: searchParam.code,
       operator: Operator.MISSING,
       value,
     };
   }
+
   switch (searchParam.type) {
+    // Ordered types that can have a prefix modifier on the value
     case 'number':
     case 'date':
-    case 'quantity':
-      return parsePrefixType(searchParam, value);
+    case 'quantity': {
+      const { operator, value: searchValue } = parsePrefix(value);
+      if (!isValidSearchValue(searchParam, searchValue)) {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid format for ${searchParam.type} search parameter: ${searchValue}`)
+        );
+      }
+      return { code: searchParam.code, operator, value: searchValue };
+    }
+
+    // Lookup types that support a variety of modifiers on the search parameter
     case 'reference':
     case 'string':
     case 'token':
     case 'uri':
-      return parseModifierType(searchParam, modifier, value);
+      if (!isValidSearchValue(searchParam, value)) {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid format for ${searchParam.type} search parameter: ${value}`)
+        );
+      }
+      return { code: searchParam.code, operator: parseModifier(modifier), value };
+
     default:
       throw new Error('Unrecognized search parameter type: ' + searchParam.type);
   }
-}
-
-function parsePrefixType(param: SearchParameter, input: string): Filter {
-  const { operator, value } = parsePrefix(input);
-  return {
-    code: param.code as string,
-    operator,
-    value,
-  };
-}
-
-function parseModifierType(param: SearchParameter, modifier: string, value: string): Filter {
-  return {
-    code: param.code as string,
-    operator: parseModifier(modifier),
-    value,
-  };
 }
 
 function parseUnknownParameter(code: string, modifier: string, value: string): Filter {
@@ -447,6 +448,15 @@ function parseIncludeTarget(input: string): IncludeTarget {
     };
   } else {
     throw new OperationOutcomeError(badRequest(`Invalid include value '${input}'`));
+  }
+}
+
+function isValidSearchValue(searchParam: SearchParameter, searchValue: string): boolean {
+  switch (searchParam.type) {
+    case 'date':
+      return isDateTimeString(searchValue);
+    default:
+      return true;
   }
 }
 

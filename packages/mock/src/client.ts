@@ -86,7 +86,7 @@ import {
 import { MockSubscriptionManager } from './subscription-manager';
 
 export interface MockClientOptions
-  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime'> {
+  extends Pick<MedplumClientOptions, 'baseUrl' | 'clientId' | 'storage' | 'cacheTime' | 'fetch'> {
   readonly debug?: boolean;
   /**
    * Override currently logged in user. Specifying null results in
@@ -154,9 +154,11 @@ export class MockClient extends MedplumClient {
         tableLayouts?: { [name: string]: CustomTableLayout },
         fonts?: TFontDictionary
       ) => client.mockCreatePdf(docDefinition, tableLayouts, fonts),
-      fetch: (url: string, options: any) => {
-        return client.mockFetch(url, options);
-      },
+      fetch: clientOptions?.fetch
+        ? clientOptions.fetch
+        : (url: string, options: any) => {
+            return client.mockFetch(url, options);
+          },
     });
 
     this.router = router;

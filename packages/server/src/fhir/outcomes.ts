@@ -1,20 +1,28 @@
 import { getStatus, isAccepted } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
 import { Response } from 'express';
 import { Result, ValidationError } from 'express-validator';
+import { randomUUID } from 'node:crypto';
 import { buildTracingExtension } from '../context';
 
 export function invalidRequest(errors: Result<ValidationError>): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     id: randomUUID(),
-    issue: errors.array().map((error) => ({
-      severity: 'error',
-      code: 'invalid',
-      expression: getValidationErrorExpression(error),
-      details: { text: error.msg },
-    })),
+    issue: errors
+      .array()
+      .flatMap((error) => {
+        if (error.type === 'alternative') {
+          return error.nestedErrors;
+        }
+        return error;
+      })
+      .map((error) => ({
+        severity: 'error',
+        code: 'invalid',
+        expression: getValidationErrorExpression(error),
+        details: { text: error.msg },
+      })),
   };
 }
 

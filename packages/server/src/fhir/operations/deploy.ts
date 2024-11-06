@@ -1,9 +1,10 @@
 import { ContentType, allOk, badRequest, getReferenceString, normalizeOperationOutcome } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Binary, Bot } from '@medplum/fhirtypes';
-import { Readable } from 'stream';
+import { Attachment, Binary, Bot } from '@medplum/fhirtypes';
+import { Readable } from 'node:stream';
 import { deployLambda } from '../../cloud/aws/deploy';
 import { getAuthenticatedContext } from '../../context';
+import { readStreamToString } from '../../util/streams';
 import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 import { isBotEnabled } from './execute';
@@ -12,12 +13,6 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const ctx = getAuthenticatedContext();
   const { id } = req.params;
 
-  // Validate that the request body has a code property
-  const code = req.body.code as string | undefined;
-  if (!code) {
-    return [badRequest('Missing code')];
-  }
-
   // First read the bot as the user to verify access
   await ctx.repo.readResource<Bot>('Bot', id);
 
@@ -25,34 +20,55 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   const systemRepo = getSystemRepo();
   const bot = await systemRepo.readResource<Bot>('Bot', id);
 
+  // Validate that the request body has a code property
+  // Or that the Bot already has executable code attached
+  const code = req.body.code as string | undefined;
+  if (!code && !bot.executableCode?.url) {
+    return [badRequest('Bot missing executable code')];
+  }
+
   if (!(await isBotEnabled(bot))) {
     return [badRequest('Bots not enabled')];
   }
 
   try {
-    const filename = req.body.filename ?? 'index.js';
-    const contentType = ContentType.JAVASCRIPT;
+    const code = req.body.code as string | undefined;
+    let updatedBot: Bot | undefined;
 
-    // Create a Binary for the executable code
-    const binary = await ctx.repo.createResource<Binary>({
-      resourceType: 'Binary',
-      contentType,
-    });
-    await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(code));
+    let codeToDeploy = code;
+    if (code) {
+      const filename = req.body.filename ?? 'index.js';
+      const contentType = ContentType.JAVASCRIPT;
 
-    // Update the bot
-    const updatedBot = await ctx.repo.updateResource<Bot>({
-      ...bot,
-      executableCode: {
+      // Create a Binary for the executable code
+      const binary = await ctx.repo.createResource<Binary>({
+        resourceType: 'Binary',
         contentType,
-        url: getReferenceString(binary),
-        title: filename,
-      },
-    });
+      });
+      await getBinaryStorage().writeBinary(binary, filename, contentType, Readable.from(code));
+
+      // Update the bot
+      updatedBot = await ctx.repo.updateResource<Bot>({
+        ...bot,
+        executableCode: {
+          contentType,
+          url: getReferenceString(binary),
+          title: filename,
+        },
+      });
+    } else {
+      const binary = await systemRepo.readReference<Binary>({
+        reference: (bot.executableCode as Attachment).url as string,
+      });
+      const stream = await getBinaryStorage().readBinary(binary);
+      codeToDeploy = await readStreamToString(stream);
+    }
+
+    const latestBot = updatedBot ?? bot;
 
     // Deploy the bot
-    if (updatedBot.runtimeVersion === 'awslambda') {
-      await deployLambda(updatedBot, code);
+    if (latestBot.runtimeVersion === 'awslambda') {
+      await deployLambda(latestBot, codeToDeploy as string);
     }
 
     return [allOk];

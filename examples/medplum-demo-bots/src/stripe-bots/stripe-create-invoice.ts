@@ -1,5 +1,5 @@
 import { BotEvent, createReference, MedplumClient } from '@medplum/core';
-import { Account, Invoice } from '@medplum/fhirtypes';
+import { Account, Invoice, Money } from '@medplum/fhirtypes';
 import type Stripe from 'stripe';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Record<string, any>>): Promise<any> {
@@ -39,11 +39,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Record<str
         status: getInvoiceStatus(stripeInvoiceStatus),
         totalGross: {
           value: stripeInvoice.amount_due / 100,
-          currency: stripeInvoice.currency.toUpperCase(),
+          currency: stripeInvoice.currency.toUpperCase() as Money['currency'],
         },
         totalNet: {
           value: stripeInvoice.amount_paid / 100,
-          currency: stripeInvoice.currency.toUpperCase(),
+          currency: stripeInvoice.currency.toUpperCase() as Money['currency'],
         },
       },
       'identifier=' + id

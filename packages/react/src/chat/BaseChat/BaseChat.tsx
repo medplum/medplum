@@ -68,6 +68,7 @@ export interface BaseChatProps extends PaperProps {
   readonly query: string;
   readonly sendMessage: (content: string) => void;
   readonly onMessageReceived?: (message: Communication) => void;
+  readonly onMessageUpdated?: (message: Communication) => void;
   readonly inputDisabled?: boolean;
   readonly onError?: (err: Error) => void;
 }
@@ -80,6 +81,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     query,
     sendMessage,
     onMessageReceived,
+    onMessageUpdated,
     inputDisabled,
     onError,
     ...paperProps
@@ -122,9 +124,17 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     (bundle: Bundle) => {
       const communication = bundle.entry?.[1]?.resource as Communication;
       upsertCommunications(communicationsRef.current, [communication], setCommunications);
-      // Call `onMessageReceived` when we are not the sender of a chat message that came in
-      if (onMessageReceived && getReferenceString(communication.sender as Reference) !== profileRefStr) {
-        onMessageReceived(communication);
+      // If we are the sender of this message, then we want to skip calling `onMessageUpdated` or `onMessageReceived`
+      if (getReferenceString(communication.sender as Reference) === profileRefStr) {
+        return;
+      }
+      // If this communication already exists, call `onMessageUpdated`
+      if (communicationsRef.current.find((c) => c.id === communication.id)) {
+        onMessageUpdated?.(communication);
+      } else {
+        // Else a new message was created
+        // Call `onMessageReceived` when we are not the sender of a chat message that came in
+        onMessageReceived?.(communication);
       }
     },
     {

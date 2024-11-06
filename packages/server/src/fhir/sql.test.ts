@@ -1,5 +1,14 @@
 import { Client } from 'pg';
-import { Column, Condition, Negation, SelectQuery, SqlBuilder, ValuesQuery, periodToRangeString } from './sql';
+import {
+  Column,
+  Condition,
+  Negation,
+  Operator,
+  SelectQuery,
+  SqlBuilder,
+  ValuesQuery,
+  periodToRangeString,
+} from './sql';
 
 describe('SqlBuilder', () => {
   beforeEach(() => {
@@ -172,6 +181,18 @@ describe('SqlBuilder', () => {
 
       await sql.execute(conn);
       expect(console.log).toHaveBeenCalledWith('sql', 'SELECT "MyTable"."id" FROM "MyTable"');
+    });
+
+    test.each(['simple', 'english'])('Text search with tsquery', (type) => {
+      const sql = new SqlBuilder();
+      new SelectQuery('MyTable')
+        .column('id')
+        .where('name', ('TSVECTOR_' + type.toUpperCase()) as keyof typeof Operator, 'Jimmy (James) Dean')
+        .buildSql(sql);
+      expect(sql.toString()).toBe(
+        `SELECT "MyTable"."id" FROM "MyTable" WHERE to_tsvector('${type}',"MyTable"."name") @@ to_tsquery('${type}',$1)`
+      );
+      expect(sql.getValues()).toEqual(['Jimmy:* & James:* & Dean:*']);
     });
   });
 

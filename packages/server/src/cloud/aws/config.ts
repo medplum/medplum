@@ -1,7 +1,7 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, Parameter, SSMClient } from '@aws-sdk/client-ssm';
 import { splitN } from '@medplum/core';
-import { MedplumServerConfig } from '../../config';
+import { isBooleanConfig, isIntegerConfig, isObjectConfig, MedplumServerConfig } from '../../config';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -96,25 +96,4 @@ function setValue(config: Record<string, unknown>, key: string, value: string): 
   }
 
   obj[keySegments[0]] = parsedValue;
-}
-
-function isIntegerConfig(key: string): boolean {
-  return key === 'port' || key === 'accurateCountThreshold';
-}
-
-function isBooleanConfig(key: string): boolean {
-  return (
-    key === 'botCustomFunctionsEnabled' ||
-    key === 'database.ssl.rejectUnauthorized' ||
-    key === 'database.ssl.require' ||
-    key === 'logRequests' ||
-    key === 'logAuditEvents' ||
-    key === 'registerEnabled' ||
-    key === 'require' ||
-    key === 'rejectUnauthorized'
-  );
-}
-
-function isObjectConfig(key: string): boolean {
-  return key === 'tls';
 }

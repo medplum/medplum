@@ -1,5 +1,5 @@
 import { createReference, getReferenceString, Operator } from '@medplum/core';
-import { Appointment, DiagnosticReport, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
+import { Appointment, DiagnosticReport, Flag, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
@@ -246,5 +246,53 @@ describe('Medplum Custom Search Parameters', () => {
       expect(results2.entry).toHaveLength(1);
       expect(results2.entry?.[0].resource?.resourceType).toEqual('DiagnosticReport');
       expect((results2.entry?.[0].resource as DiagnosticReport).id).toEqual(report2.id);
+    }));
+
+  test('Search by Flag.category', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource({ resourceType: 'Patient' });
+      expect(patient).toBeDefined();
+
+      const flag1: Flag = await repo.createResource({
+        resourceType: 'Flag',
+        status: 'active',
+        subject: createReference(patient),
+        category: [
+          {
+            coding: [{ system: 'http://terminology.hl7.org/CodeSystem/flag-category', code: 'drug', display: 'Drug' }],
+          },
+        ],
+        code: { coding: [{ system: 'http://snomed.info/sct', code: '3902000' }] },
+      });
+
+      const flag2: Flag = await repo.createResource({
+        resourceType: 'Flag',
+        status: 'active',
+        subject: createReference(patient),
+        category: [
+          {
+            coding: [{ system: 'http://terminology.hl7.org/CodeSystem/flag-category', code: 'lab', display: 'Lab' }],
+          },
+        ],
+        code: { coding: [{ system: 'http://snomed.info/sct', code: '3902000' }] },
+      });
+
+      expect(flag1).toBeDefined();
+      expect(flag2).toBeDefined();
+
+      const results = await repo.search({
+        resourceType: 'Flag',
+        filters: [
+          {
+            code: 'category',
+            operator: Operator.EQUALS,
+            value: 'http://terminology.hl7.org/CodeSystem/flag-category|drug',
+          },
+        ],
+      });
+
+      expect(results.entry).toHaveLength(1);
+      expect(results.entry?.[0].resource?.resourceType).toEqual('Flag');
+      expect(results.entry?.[0].resource?.id as string).toEqual(flag1.id as string);
     }));
 });

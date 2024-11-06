@@ -1,7 +1,8 @@
-import { OperationOutcomeError, append, conflict, normalizeOperationOutcome } from '@medplum/core';
+import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
+import { getLogger } from '../context';
 
 const DEBUG = env['SQL_DEBUG'];
 
@@ -68,19 +69,29 @@ export const Operator = {
     sql.append(')');
   },
   TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    const query = formatTsquery(parameter);
+    if (!query) {
+      sql.append('true');
+      return;
+    }
+
     sql.append(`to_tsvector('simple',`);
     sql.appendColumn(column);
-    sql.append(')');
-    sql.append(` @@ to_tsquery('simple',`);
-    sql.param(parameter);
+    sql.append(`) @@ to_tsquery('simple',`);
+    sql.param(query);
     sql.append(')');
   },
   TSVECTOR_ENGLISH: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    const query = formatTsquery(parameter);
+    if (!query) {
+      sql.append('true');
+      return;
+    }
+
     sql.append(`to_tsvector('english',`);
     sql.appendColumn(column);
-    sql.append(')');
-    sql.append(` @@ to_tsquery('english',`);
-    sql.param(parameter);
+    sql.append(`) @@ to_tsquery('english',`);
+    sql.param(query);
     sql.append(')');
   },
   IN_SUBQUERY: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
@@ -89,7 +100,7 @@ export const Operator = {
     if (paramType) {
       sql.append('(');
     }
-    (parameter as SelectQuery).buildSql(sql);
+    sql.appendExpression(parameter);
     if (paramType) {
       sql.append(')::' + paramType);
     }
@@ -145,25 +156,42 @@ export function escapeLikeString(str: string): string {
   return str.replaceAll(/[\\_%]/g, (c) => '\\' + c);
 }
 
-export class Column {
+function formatTsquery(filter: string | undefined): string | undefined {
+  if (!filter) {
+    return undefined;
+  }
+
+  const noPunctuation = filter.replace(/[^\p{Letter}\p{Number}-]/gu, ' ').trim();
+  if (!noPunctuation) {
+    return undefined;
+  }
+
+  return noPunctuation.replace(/\s+/g, ':* & ') + ':*';
+}
+
+export interface Expression {
+  buildSql(builder: SqlBuilder): void;
+}
+
+export class Column implements Expression {
   constructor(
     readonly tableName: string | undefined,
     readonly columnName: string,
     readonly raw?: boolean,
     readonly alias?: string
   ) {}
-}
-
-export class Literal implements Expression {
-  constructor(readonly value: string) {}
 
   buildSql(sql: SqlBuilder): void {
-    sql.append(this.value);
+    sql.appendColumn(this);
   }
 }
 
-export interface Expression {
-  buildSql(builder: SqlBuilder): void;
+export class Parameter implements Expression {
+  constructor(readonly value: string) {}
+
+  buildSql(sql: SqlBuilder): void {
+    sql.param(this.value);
+  }
 }
 
 export class Negation implements Expression {
@@ -171,7 +199,7 @@ export class Negation implements Expression {
 
   buildSql(sql: SqlBuilder): void {
     sql.append('NOT (');
-    this.expression.buildSql(sql);
+    sql.appendExpression(this.expression);
     sql.append(')');
   }
 }
@@ -221,7 +249,7 @@ export abstract class Connective implements Expression {
       if (!first) {
         builder.append(this.keyword);
       }
-      expr.buildSql(builder);
+      builder.appendExpression(expr);
       first = false;
     }
     if (this.expressions.length > 1) {
@@ -252,11 +280,7 @@ export class SqlFunction implements Expression {
     sql.append(this.name + '(');
     for (let i = 0; i < this.args.length; i++) {
       const arg = this.args[i];
-      if (arg instanceof Column) {
-        sql.appendColumn(arg);
-      } else {
-        arg.buildSql(sql);
-      }
+      sql.appendExpression(arg);
       if (i + 1 < this.args.length) {
         sql.append(', ');
       }
@@ -277,7 +301,7 @@ export class Union implements Expression {
         sql.append(' UNION ');
       }
       sql.append('(');
-      this.queries[i].buildSql(sql);
+      sql.appendExpression(this.queries[i]);
       sql.append(')');
     }
   }
@@ -340,6 +364,11 @@ export class SqlBuilder {
     return this;
   }
 
+  appendExpression(expr: Expression): this {
+    expr.buildSql(this);
+    return this;
+  }
+
   param(value: any): this {
     if (value instanceof Column) {
       this.appendColumn(value);
@@ -391,7 +420,7 @@ export class SqlBuilder {
       if (this.debug) {
         const endTime = Date.now();
         const duration = endTime - startTime;
-        console.log(`result: ${result.rowCount} rows (${duration} ms)`);
+        console.log(`result: ${result.rowCount ?? 0} rows (${duration} ms)`);
       }
 
       return { rowCount: result.rowCount ?? 0, rows: result.rows };
@@ -402,16 +431,27 @@ export class SqlBuilder {
 }
 
 export function normalizeDatabaseError(err: any): OperationOutcomeError {
-  if (err?.code === '23505') {
-    // Catch duplicate key errors and throw a 409 Conflict
-    // See https://github.com/brianc/node-postgres/issues/1602
-    // See https://www.postgresql.org/docs/10/errcodes-appendix.html
-    return new OperationOutcomeError(conflict(err.detail));
+  if (err instanceof OperationOutcomeError) {
+    // Pass through already-normalized errors
+    return err;
   }
-  if (err?.code === '40001') {
-    // Catch transaction serialization errors and throw a 409 Conflict
-    return new OperationOutcomeError(conflict(err.message));
+
+  // Handle known Postgres error codes
+  // @see https://www.postgresql.org/docs/16/errcodes-appendix.html
+  switch (err?.code) {
+    case '23505': // unique_violation
+      // Duplicate key error -> 409 Conflict
+      // @see https://github.com/brianc/node-postgres/issues/1602
+      return new OperationOutcomeError(conflict(err.detail));
+    case '40001': // serialization_failure
+      // Transaction rollback due to serialization error -> 409 Conflict
+      return new OperationOutcomeError(conflict(err.message));
+    case '57014': // query_canceled
+      // Statement timeout -> 504 Gateway Timeout
+      return new OperationOutcomeError(serverTimeout(err.message));
   }
+
+  getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
   return new OperationOutcomeError(normalizeOperationOutcome(err));
 }
 
@@ -441,7 +481,7 @@ export abstract class BaseQuery {
   protected buildConditions(sql: SqlBuilder): void {
     if (this.predicate.expressions.length > 0) {
       sql.append(' WHERE ');
-      this.predicate.buildSql(sql);
+      sql.appendExpression(this.predicate);
     }
   }
 }
@@ -455,7 +495,7 @@ interface CTE {
 export class SelectQuery extends BaseQuery implements Expression {
   readonly innerQuery?: SelectQuery | Union | ValuesQuery;
   readonly distinctOns: Column[];
-  readonly columns: (Column | Literal)[];
+  readonly columns: Column[];
   readonly joins: Join[];
   readonly groupBys: GroupBy[];
   readonly orderBys: OrderBy[];
@@ -491,8 +531,8 @@ export class SelectQuery extends BaseQuery implements Expression {
     return this;
   }
 
-  column(column: Column | string | Literal): this {
-    this.columns.push(column instanceof Literal ? column : getColumn(column, this.tableName));
+  column(column: Column | string): this {
+    this.columns.push(getColumn(column, this.tableName));
     return this;
   }
 
@@ -550,7 +590,7 @@ export class SelectQuery extends BaseQuery implements Expression {
       }
       sql.appendIdentifier(this.with.name);
       sql.append(' AS (');
-      this.with.expr.buildSql(sql);
+      sql.appendExpression(this.with.expr);
       sql.append(') ');
     }
     sql.append('SELECT ');
@@ -574,7 +614,7 @@ export class SelectQuery extends BaseQuery implements Expression {
 
   async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
-    this.buildSql(sql);
+    sql.appendExpression(this);
     return (await sql.execute(conn)).rows;
   }
 
@@ -602,11 +642,7 @@ export class SelectQuery extends BaseQuery implements Expression {
       if (!first) {
         sql.append(', ');
       }
-      if (column instanceof Literal) {
-        sql.appendParameters(column.value, false);
-      } else {
-        sql.appendColumn(column);
-      }
+      sql.appendColumn(column);
       first = false;
     }
   }
@@ -616,7 +652,7 @@ export class SelectQuery extends BaseQuery implements Expression {
 
     if (this.innerQuery) {
       sql.append('(');
-      this.innerQuery.buildSql(sql);
+      sql.appendExpression(this.innerQuery);
       sql.append(') AS ');
     }
 
@@ -631,7 +667,7 @@ export class SelectQuery extends BaseQuery implements Expression {
       sql.append(` ${join.joinType} `);
       if (join.joinItem instanceof SelectQuery) {
         sql.append('(');
-        join.joinItem.buildSql(sql);
+        sql.appendExpression(join.joinItem);
         sql.append(')');
       } else {
         sql.appendIdentifier(join.joinItem);
@@ -639,7 +675,7 @@ export class SelectQuery extends BaseQuery implements Expression {
       sql.append(' AS ');
       sql.appendIdentifier(join.joinAlias);
       sql.append(' ON ');
-      join.onExpression.buildSql(sql);
+      sql.appendExpression(join.onExpression);
     }
   }
 
@@ -663,11 +699,7 @@ export class SelectQuery extends BaseQuery implements Expression {
 
     for (const orderBy of combined) {
       sql.append(first ? ' ORDER BY ' : ', ');
-      if (orderBy.key instanceof Column) {
-        sql.appendColumn(orderBy.key);
-      } else {
-        orderBy.key.buildSql(sql);
-      }
+      sql.appendExpression(orderBy.key);
       if (orderBy.descending) {
         sql.append(' DESC');
       }
@@ -691,7 +723,7 @@ export class ArraySubquery implements Expression {
     sql.append(') AS ');
     sql.appendIdentifier(this.column.columnName);
     sql.append(' WHERE ');
-    this.filter.buildSql(sql);
+    sql.appendExpression(this.filter);
     sql.append(' LIMIT 1');
     sql.append(')');
   }
@@ -779,7 +811,7 @@ export class InsertQuery extends BaseQuery {
       return;
     }
     sql.append(' ');
-    this.query.buildSql(sql);
+    sql.appendExpression(this.query);
   }
 
   private appendValues(sql: SqlBuilder, columnNames: string[], values: Record<string, any>): void {
