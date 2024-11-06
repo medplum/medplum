@@ -1,6 +1,6 @@
 # Terraform GCP Deployment
 
-This repository contains Terraform configurations for deploying a Google Cloud Platform (GCP) infrastructure. The setup includes a Virtual Private Cloud (VPC), Google Kubernetes Engine (GKE) cluster, Cloud SQL, Cloud Storage Buckets, Redis, and more.
+This repository contains Terraform configurations for deploying a Google Cloud Platform (GCP) infrastructure. The setup includes a Virtual Private Cloud (VPC), Cloud SQL, Cloud Storage Buckets, Redis, and more.
 
 ## Prerequisites
 
@@ -61,45 +61,25 @@ This repository contains Terraform configurations for deploying a Google Cloud P
 - **Path**: `terraform/gcp/network.tf`
 - **Description**: Creates a Virtual Private Cloud (VPC) with subnets and secondary IP ranges. It also sets up private service access and network peering.
 
-### Cloud NAT Module
-
-- **Path**: `terraform/gcp/network.tf`
-- **Description**: Configures Cloud NAT for the GKE cluster to allow outbound internet access for private nodes.
-
 ### Cloud SQL Module
 
 - **Path**: `terraform/gcp/cloud-sql.tf`
-- **Description**: Deploys a PostgreSQL instance with high availability settings, private IP configuration, and backup settings.
-
-### GKE Module
-
-- **Path**: `terraform/gcp/gke.tf`
-- **Description**: Sets up a private GKE cluster with autopilot mode, enabling features like horizontal pod autoscaling and HTTP load balancing.
+- **Description**: Configures a PostgreSQL database instance with private IP configuration, backup settings, and custom database flags.
 
 ### Redis Module
 
 - **Path**: `terraform/gcp/redis.tf`
-- **Description**: Deploys a Redis cluster using Memorystore with specified node and shard configurations.
+- **Description**: Sets up a Redis instance using Memorystore with private service access and RDB persistence.
 
 ### Storage Buckets Module
 
-- **Path**: `terraform/gcp/storage.tf`
-- **Description**: Creates Google Cloud Storage buckets with specified configurations, including versioning, lifecycle rules, and IAM bindings.
-
-### External Load Balancer Module
-
-- **Path**: `terraform/gcp/external-loadbalancer.tf`
-- **Description**: Configures an external HTTP(S) load balancer with CDN capabilities for serving static content.
+- **Path**: `terraform/gcp/bucket-iam.tf`
+- **Description**: Manages IAM bindings for Google Cloud Storage buckets to control access permissions.
 
 ### Service Accounts Module
 
 - **Path**: `terraform/gcp/service-accounts.tf`
-- **Description**: Creates service accounts with specific roles for accessing GCP services like Redis and Cloud SQL.
-
-### Project Services Module
-
-- **Path**: `terraform/gcp/project-services.tf`
-- **Description**: Enables necessary GCP APIs for the project, such as Compute Engine, Kubernetes Engine, and more.
+- **Description**: Creates service accounts and assigns specific roles for accessing GCP services like Redis and Cloud SQL.
 
 ## Variables
 
