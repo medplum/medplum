@@ -92,7 +92,7 @@ import { ReferenceTable } from './lookups/reference';
 import { TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
-import { replaceConditionalReferences, validateResourceReferences } from './references';
+import { replaceConditionalReferences, validateReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
@@ -632,7 +632,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.validateResource(result);
     if (this.context.checkReferencesOnWrite) {
       await this.preCommit(async () => {
-        await validateResourceReferences(this, result);
+        await validateReferences(this, result);
       });
     }
 
