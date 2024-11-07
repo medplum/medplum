@@ -51,8 +51,6 @@ import { sendFhirResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
-export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
-
 export interface BotExecutionRequest {
   readonly bot: Bot;
   readonly runAs: ProjectMembership;
@@ -534,14 +532,16 @@ async function addBotSecrets(
   }
 }
 
+const MIRRORED_CONTENT_TYPES: string[] = [ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
+
 function getResponseContentType(req: Request): string {
   const requestContentType = req.get('Content-Type');
-  if (requestContentType && (EXECUTE_CONTENT_TYPES as string[]).includes(requestContentType)) {
+  if (requestContentType && MIRRORED_CONTENT_TYPES.includes(requestContentType)) {
     return requestContentType;
   }
 
-  // Default to FHIR
-  return ContentType.FHIR_JSON;
+  // Default to JSON
+  return ContentType.JSON;
 }
 
 /**

@@ -1,8 +1,10 @@
-import { allOk } from '@medplum/core';
-import { AsyncJob } from '@medplum/fhirtypes';
+import { accepted, allOk } from '@medplum/core';
+import { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
+import { getConfig } from '../config';
 import { getAuthenticatedContext } from '../context';
+import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { sendFhirResponse } from './response';
 
 // Asychronous Job Status API
@@ -19,12 +21,15 @@ jobRouter.get(
     const { id } = req.params;
     const asyncJob = await ctx.repo.readResource<AsyncJob>('AsyncJob', id);
 
+    let outcome: OperationOutcome;
     if (!finalJobStatusCodes.includes(asyncJob.status as string)) {
-      res.status(202).send(asyncJob).end();
-      return;
+      const exec = new AsyncJobExecutor(ctx.repo, asyncJob);
+      outcome = accepted(exec.getContentLocation(getConfig().baseUrl));
+    } else {
+      outcome = allOk;
     }
 
-    sendFhirResponse(req, res, allOk, asyncJob);
+    return sendFhirResponse(req, res, outcome, asyncJob);
   })
 );
 
