@@ -12,12 +12,12 @@ variable "project_id" {
   type        = string
 }
 
-variable "static_asset_domain" {
+variable "app_domain" {
   description = "value for the static asset domain"
   type        = string
 }
 
-variable "user_content_domain" {
+variable "storage_domain" {
   description = "value for the user content domain"
   type        = string
 }

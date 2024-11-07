@@ -10,7 +10,7 @@
 # - Logging configuration to monitor and analyze traffic patterns.
 #
 # Usage:
-# - Ensure that the required variables such as `project_id`, `user_content_domain`, and `static_asset_domain` are defined.
+# - Ensure that the required variables such as `project_id`, `storage_domain`, and `app_domain` are defined.
 # - The module requires a VPC network and a URL map resource to be configured.
 # - Adjust the backend configurations, such as protocol, port, and CDN policy, to fit the specific requirements of your application.
 # - Apply the Terraform configuration to create and manage the external load balancer.
@@ -27,7 +27,7 @@ module "medplum-lb-https" {
   url_map                         = google_compute_url_map.cdn_url_map.self_link
   create_url_map                  = false
   ssl                             = true
-  managed_ssl_certificate_domains = ["${var.user_content_domain}", "${var.static_asset_domain}"]
+  managed_ssl_certificate_domains = ["${var.storage_domain}", "${var.app_domain}"]
 
   backends = {
     default = {
@@ -70,7 +70,7 @@ resource "google_compute_url_map" "cdn_url_map" {
   default_service = module.medplum-lb-https.backend_services.default.self_link
 
   host_rule {
-    hosts        = ["${var.user_content_domain}"]
+    hosts        = ["${var.storage_domain}"]
     path_matcher = "storage"
   }
 
@@ -80,11 +80,11 @@ resource "google_compute_url_map" "cdn_url_map" {
 
     path_rule {
       paths   = ["/*"]
-      service = google_compute_backend_bucket.user_content_bucket.self_link
+      service = google_compute_backend_bucket.storage_bucket.self_link
     }
   }
   host_rule {
-    hosts        = ["${var.static_asset_domain}"]
+    hosts        = ["${var.app_domain}"]
     path_matcher = "app"
   }
 
@@ -94,25 +94,25 @@ resource "google_compute_url_map" "cdn_url_map" {
 
     path_rule {
       paths   = ["/*"]
-      service = google_compute_backend_bucket.static_assets_bucket.self_link
+      service = google_compute_backend_bucket.apps_bucket.self_link
     }
   }
 }
 
-resource "google_compute_backend_bucket" "user_content_bucket" {
-  name             = "medplum-cdn-backend-content-bucket"
+resource "google_compute_backend_bucket" "storage_bucket" {
+  name             = "medplum-cdn-backend-storage-bucket"
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
-  bucket_name      = module.buckets["medplum-user-content"].name
+  bucket_name      = module.buckets["medplum-storage"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
 }
 
-resource "google_compute_backend_bucket" "static_assets_bucket" {
-  name             = "medplum-cdn-backend-assets-bucket"
+resource "google_compute_backend_bucket" "apps_bucket" {
+  name             = "medplum-cdn-backend-app-bucket"
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
-  bucket_name      = module.buckets["medplum-static-assets"].name
+  bucket_name      = module.buckets["medplum-app"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
 }

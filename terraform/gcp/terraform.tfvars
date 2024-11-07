@@ -2,16 +2,22 @@
 # allowing customization of the infrastructure setup without modifying the main configuration files.
 
 # GCP project configuration - Change these values to use your own project, region, and zone
-project_id          = "your-project-id"          # e.g. "medplum-project"
-region              = "your-region"              # e.g. "us-west1"
-zone                = "your-zone"                # e.g. "us-west1-a"
-static_asset_domain = "your-static-asset-domain" # e.g. "app.medplum.dev"
-user_content_domain = "your-user-content-domain" # e.g. "storage.medplum.dev"
+project_id     = "medplum-zencore"             # e.g. "medplum-project"
+region         = "us-west1"                    # e.g. "us-west1"
+zone           = "us-west1-a"                  # e.g. "us-west1-a"
+app_domain     = "app.zencore.medplum.dev"     # e.g. "app.medplum.dev"
+storage_domain = "storage.zencore.medplum.dev" # e.g. "storage.medplum.dev"
 
+# project_id     = "your-project-id"          # e.g. "medplum-project"
+# region         = "your-region"              # e.g. "us-west1"
+# zone           = "your-zone"                # e.g. "us-west1-a"
+# app_domain     = "your-static-asset-domain" # e.g. "app.medplum.dev"
+# storage_domain = "your-user-content-domain" # e.g. "storage.medplum.dev"
 
 master_authorized_networks = [
   {
-    cidr_block   = "[Your local network CIDR Block]/32"
+    # cidr_block   = "[Your local network CIDR Block]/32"
+    cidr_block   = "190.244.75.217/32"
     display_name = "Local Network"
   },
 ]
@@ -25,11 +31,11 @@ labels = {
 
 ## Buckets configuration 
 gcs_buckets = {
-  medplum-user-content = {
+  medplum-storage = {
     location                 = "US"
     public_access_prevention = "enforced"
   },
-  "medplum-static-assets" = {
+  medplum-app = {
     location = "US"
     website = {
       main_page_suffix = "index.html"
@@ -46,7 +52,7 @@ gcs_buckets = {
 
 # Buckets bindings for public access
 bucket_bindings = {
-  "medplum-static-assets" = [ # This is the bucket name
+  "medplum-app" = [ # This is the bucket name
     {
       roles = [
         "roles/storage.objectViewer",
