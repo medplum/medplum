@@ -405,7 +405,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     cacheEntry: CacheEntry | undefined
   ): Promise<Resource | Error> {
     try {
-      const [resourceType, id] = reference.reference?.split('/') as [ResourceType, string];
+      const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);
 
       if (!this.canReadResourceType(resourceType)) {

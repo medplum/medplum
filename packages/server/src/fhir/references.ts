@@ -66,13 +66,14 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
         if (Array.isArray(propertyValue)) {
           for (let i = 0; i < propertyValue.length; i++) {
             const reference = propertyValue[i].value as Reference;
+
             if (SYSTEM_REFERENCE_PATHS.includes(path)) {
               systemReferences[path + '[' + i + ']'] = reference;
             } else {
               references[path + '[' + i + ']'] = reference;
             }
           }
-        } else {
+        } else if (propertyValue.value.reference) {
           const reference = propertyValue.value as Reference;
           if (SYSTEM_REFERENCE_PATHS.includes(path)) {
             systemReferences[path] = reference;
