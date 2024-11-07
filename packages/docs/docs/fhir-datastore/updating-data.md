@@ -20,7 +20,7 @@ Medplum offers three FHIR operations that can be used to update data:
 
 ## Update Operation
 
-Using the `update` operation is performed by sending a `PUT` request, which will create an entirely new version of your resource, rewriting every element. When sending an update request you must include the `resourceType` and the `id` of the resource you are updating, as well as the updated resource itself in the body of the request.
+The `update` operation is performed by sending a `PUT` request, which will create an entirely new version of your resource, rewriting every element. When sending an update request you must include the `resourceType` and the `id` of the resource you are updating, as well as the updated resource itself in the body of the request.
 
 Medplum provides the `updateResource` method on the `MedplumClient` which implements the `update` operation. The function takes the updated resource as an argument.
 
@@ -82,7 +82,7 @@ The below operation searches for a patient to add a name to, and creates it if i
 
 ## Patch Operation
 
-The `patch` operation performs a `PATCH` request, which updates only the specified elements in your resource. When sending a `patch` operation, you must include the `resourceType` and the `id` of the resource, as well as the patch body, containing the operation, path, and value.
+The `patch` operation is performed by sending an HTTP `PATCH` request, which updates only the specified elements in your resource. When sending a `patch` operation, you must include the `resourceType` and the `id` of the resource, as well as the patch body, containing the operation, path, and value.
 
 Medplum provides the `patchResource` method on the `MedplumClient` which implements the `patch` operation. The function takes the `resourceType`, `id`, and an array of `PatchOperations`. A `PatchOperation` details the updates that will be made to your resource, and has three required fields: `op`, `path`, and `value`. The `op` is the actual operation that will be performed, the `path` is the path to the element on the resource that is being updated, and the `value` is the new value for the element at the given path.
 

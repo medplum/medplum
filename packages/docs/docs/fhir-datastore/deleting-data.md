@@ -12,7 +12,7 @@ The management of healthcare information relies heavily on the effective and sec
 
 The FHIR [`delete`](https://hl7.org/fhir/http.html#delete) operation performs a "soft" or "logical" delete. This means that data is not permanently removed from the database.
 
-The delete interaction removes an existing resource. The interaction is performed by an HTTP `DELETE` command as shown:
+The delete interaction removes an existing resource. The interaction is performed by an HTTP `DELETE` request as shown:
 
 ```
 DELETE [base]/[resourceType]/[id]
