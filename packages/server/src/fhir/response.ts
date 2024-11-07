@@ -34,37 +34,25 @@ export async function sendFhirResponse(
   outcome: OperationOutcome,
   body: Resource
 ): Promise<void> {
-  const isBodyResource = isResource(body);
+  sendResponseHeaders(req, res, outcome, body);
 
-  if (isBodyResource) {
-    sendResponseHeaders(req, res, outcome, body);
-    const acceptHeader = req.get('Accept');
-    if (body.resourceType === 'Binary' && req.method === 'GET' && !acceptHeader?.startsWith(ContentType.FHIR_JSON)) {
-      // When the read request has some other type in the Accept header,
-      // then the content should be returned with the content type stated in the resource in the Content-Type header.
-      // E.g. if the content type in the resource is "application/pdf", then the content should be returned as a PDF directly.
-      res.contentType(body.contentType as string);
-      if (body.data) {
-        res.send(Buffer.from(body.data, 'base64'));
-      } else {
-        const stream = await getBinaryStorage().readBinary(body);
-        stream.pipe(res);
-      }
-      return;
+  if (body.resourceType === 'Binary' && req.method === 'GET' && !req.get('Accept')?.startsWith(ContentType.FHIR_JSON)) {
+    // When the read request has some other type in the Accept header,
+    // then the content should be returned with the content type stated in the resource in the Content-Type header.
+    // E.g. if the content type in the resource is "application/pdf", then the content should be returned as a PDF directly.
+    res.contentType(body.contentType as string);
+    if (body.data) {
+      res.send(Buffer.from(body.data, 'base64'));
+    } else {
+      const stream = await getBinaryStorage().readBinary(body);
+      stream.pipe(res);
     }
-    res.set('Content-Type', ContentType.FHIR_JSON);
-  }
-
-  // Even if the body is not a resource, we still rewriteAttachments to ensure attachment URLs are correct
-  // e.g. within a graphql response
-  const ctx = getAuthenticatedContext();
-  const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body);
-
-  if (!isBodyResource) {
-    res.set('Content-Type', ContentType.JSON);
-    res.send(JSON.stringify(result));
     return;
   }
 
+  const ctx = getAuthenticatedContext();
+  const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body);
+
+  res.set('Content-Type', ContentType.FHIR_JSON);
   res.json(result);
 }
