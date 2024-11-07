@@ -177,7 +177,7 @@ describe('GraphQL', () => {
     expect(data.Patient).toBeDefined();
     expect(data.Patient.id).toEqual(patient.id);
     expect(data.Patient.photo[0].url).toBeDefined();
-    expect(result[2]).toBe('application/json; charset=utf-8');
+    expect(result[2]).toBe('application/json');
   });
 
   test('Read by ID not found', async () => {
@@ -345,8 +345,7 @@ describe('GraphQL', () => {
 
     const fhirRouter = new FhirRouter();
     const result = await graphqlHandler(request, repo, fhirRouter);
-    expect(result).toBeDefined();
-    expect(result.length).toBe(2);
+    expect(result?.length).toBe(3);
     expect(result[0]).toMatchObject(allOk);
 
     const data = (result[1] as any).data;
@@ -354,6 +353,8 @@ describe('GraphQL', () => {
     expect(data.Encounter.subject.resource).toBeDefined();
     expect(data.Encounter.subject.resource.id).toEqual(patient.id);
     expect(data.Encounter.subject.resource.name[0].given[0]).toEqual('Alice');
+
+    expect(result[2]).toBe('application/json');
   });
 
   test('Read resource by reference not found', async () => {
@@ -1042,6 +1043,7 @@ describe('GraphQL', () => {
           PatientCreate: null,
         },
       },
+      'application/json',
     ]);
   });
 
@@ -1147,6 +1149,7 @@ describe('GraphQL', () => {
           PatientUpdate: null,
         },
       },
+      'application/json',
     ]);
   });
 
@@ -1189,6 +1192,7 @@ describe('GraphQL', () => {
           PatientUpdate: null,
         },
       },
+      'application/json',
     ]);
   });
 
@@ -1270,7 +1274,7 @@ describe('GraphQL', () => {
     const fhirRouter = new FhirRouter();
     const result = await graphqlHandler(request, repo, fhirRouter);
     expect(result).toBeDefined();
-    expect(result.length).toBe(2);
+    expect(result.length).toBe(3);
     expect(result[0]).toMatchObject(allOk);
 
     const data = (result[1] as any).data;
@@ -1278,5 +1282,7 @@ describe('GraphQL', () => {
     expect(data.Encounter.subject.resource).toBeDefined();
     expect(data.Encounter.subject.resource.id).toEqual(patient.id);
     expect(data.Encounter.subject.resource.name[0].given[0]).toEqual('Alice');
+
+    expect(result[2]).toBe('application/json');
   });
 });
