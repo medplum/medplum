@@ -170,14 +170,14 @@ describe('GraphQL', () => {
     });
     const fhirRouter = new FhirRouter();
     const result = await graphqlHandler(request, repo, fhirRouter);
-    expect(result).toBeDefined();
-    expect(result.length).toBe(2);
+    expect(result?.length).toBe(3);
     expect(result[0]).toMatchObject(allOk);
 
     const data = (result[1] as any).data;
     expect(data.Patient).toBeDefined();
     expect(data.Patient.id).toEqual(patient.id);
     expect(data.Patient.photo[0].url).toBeDefined();
+    expect(result[2]).toBe('application/json; charset=utf-8');
   });
 
   test('Read by ID not found', async () => {

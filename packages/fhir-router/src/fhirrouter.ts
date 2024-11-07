@@ -43,7 +43,13 @@ export type FhirRequestConfig = {
   transactions?: boolean;
 };
 
-export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
+export type ContentTypeOverride = string;
+
+// For v4, consider changing FhirResponse from an Array of variable length to an object with optional fields
+export type FhirResponse =
+  | [OperationOutcome]
+  | [OperationOutcome, Resource]
+  | [OperationOutcome, Resource, ContentTypeOverride];
 
 export type FhirRouteOptions = {
   batch?: boolean;

@@ -1,10 +1,11 @@
-import { ContentType, concatUrls, getStatus, isCreated, isResource } from '@medplum/core';
+import { ContentType, concatUrls, getStatus, isCreated } from '@medplum/core';
 import { OperationOutcome, Resource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config';
 import { getAuthenticatedContext } from '../context';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { getBinaryStorage } from './storage';
+import { ContentTypeOverride } from '@medplum/fhir-router';
 
 export function isFhirJsonContentType(req: Request): boolean {
   return !!(req.is(ContentType.JSON) || req.is(ContentType.FHIR_JSON));
@@ -32,7 +33,8 @@ export async function sendFhirResponse(
   req: Request,
   res: Response,
   outcome: OperationOutcome,
-  body: Resource
+  body: Resource,
+  contentTypeOverride?: ContentTypeOverride
 ): Promise<void> {
   sendResponseHeaders(req, res, outcome, body);
 
@@ -53,6 +55,6 @@ export async function sendFhirResponse(
   const ctx = getAuthenticatedContext();
   const result = await rewriteAttachments(RewriteMode.PRESIGNED_URL, ctx.repo, body);
 
-  res.set('Content-Type', ContentType.FHIR_JSON);
+  res.set('Content-Type', contentTypeOverride ?? ContentType.FHIR_JSON);
   res.json(result);
 }
