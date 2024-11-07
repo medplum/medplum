@@ -1,3 +1,7 @@
+---
+sidebar_position: 7
+---
+
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import TabItem from '@theme/TabItem';
 import Tabs from '@theme/Tabs';
@@ -145,7 +149,7 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
 ## Performing Upserts
 
 Previously, performing an "upsert" (i.e. either creating or updating a resource based on whether it already exists)
-required using a batch operation. This functionality is now implemented directly as a [conditional update](/docs/fhir-datastore/create-fhir-data#upsert)
+required using a batch operation. This functionality is now implemented directly as a [conditional update](/docs/fhir-datastore/working-with-fhir#upsert)
 to provide strong transactional guarantees around the operation in a single, simple `PUT` request.
 
 :::note Upsert URLs
