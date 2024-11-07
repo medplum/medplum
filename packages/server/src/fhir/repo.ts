@@ -92,7 +92,7 @@ import { ReferenceTable } from './lookups/reference';
 import { TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
-import { replaceConditionalReferences, validateReferences } from './references';
+import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
@@ -405,7 +405,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     cacheEntry: CacheEntry | undefined
   ): Promise<Resource | Error> {
     try {
-      const [resourceType, id] = reference.reference?.split('/') as [ResourceType, string];
+      const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);
 
       if (!this.canReadResourceType(resourceType)) {
@@ -632,7 +632,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     await this.validateResource(result);
     if (this.context.checkReferencesOnWrite) {
       await this.preCommit(async () => {
-        await validateReferences(this, result);
+        await validateResourceReferences(this, result);
       });
     }
 

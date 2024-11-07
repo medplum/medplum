@@ -28,21 +28,21 @@ import { getSystemRepo, Repository } from './repo';
  */
 const SYSTEM_REFERENCE_PATHS = ['Project.owner', 'Project.link.project', 'ProjectMembership.user'];
 
-async function validateReference(
+async function validateReferences(
   repo: Repository,
-  reference: Reference,
-  issues: OperationOutcomeIssue[],
-  path: string
+  references: Record<string, Reference>,
+  issues: OperationOutcomeIssue[]
 ): Promise<void> {
-  if (reference.reference?.split?.('/')?.length !== 2) {
-    return;
-  }
+  const toValidate = Object.values(references);
+  const paths = Object.keys(references);
 
-  try {
-    const validatingRepo = SYSTEM_REFERENCE_PATHS.includes(path) ? getSystemRepo() : repo;
-    await validatingRepo.readReference(reference);
-  } catch (err) {
-    issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(err)})`));
+  const validated = await repo.readReferences(toValidate);
+  for (let i = 0; i < validated.length; i++) {
+    const reference = validated[i];
+    if (reference instanceof Error) {
+      const path = paths[i];
+      issues.push(createStructureIssue(path, `Invalid reference (${normalizeErrorString(reference)})`));
+    }
   }
 }
 
@@ -51,8 +51,10 @@ function isCheckableReference(propertyValue: TypedValue | TypedValue[]): boolean
   return valueType === PropertyType.Reference;
 }
 
-export async function validateReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
-  const issues: OperationOutcomeIssue[] = [];
+export async function validateResourceReferences<T extends Resource>(repo: Repository, resource: T): Promise<void> {
+  const references: Record<string, Reference> = Object.create(null);
+  const systemReferences: Record<string, Reference> = Object.create(null);
+
   await crawlResource(
     resource,
     {
@@ -64,16 +66,32 @@ export async function validateReferences<T extends Resource>(repo: Repository, r
         if (Array.isArray(propertyValue)) {
           for (let i = 0; i < propertyValue.length; i++) {
             const reference = propertyValue[i].value as Reference;
-            await validateReference(repo, reference, issues, path + '[' + i + ']');
+            if (!reference.reference) {
+              continue;
+            }
+
+            if (SYSTEM_REFERENCE_PATHS.includes(path)) {
+              systemReferences[path + '[' + i + ']'] = reference;
+            } else {
+              references[path + '[' + i + ']'] = reference;
+            }
           }
-        } else {
+        } else if (propertyValue.value.reference) {
           const reference = propertyValue.value as Reference;
-          await validateReference(repo, reference, issues, path);
+          if (SYSTEM_REFERENCE_PATHS.includes(path)) {
+            systemReferences[path] = reference;
+          } else {
+            references[path] = reference;
+          }
         }
       },
     },
     { skipMissingProperties: true }
   );
+
+  const issues: OperationOutcomeIssue[] = [];
+  await validateReferences(repo, references, issues);
+  await validateReferences(getSystemRepo(), systemReferences, issues);
 
   if (issues.length > 0) {
     throw new OperationOutcomeError({
