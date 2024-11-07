@@ -193,7 +193,7 @@ function toTypedValueWithType(value: any, type: string): TypedValue {
  * @param path - The property path.
  * @returns The value of the property and the property type.
  */
-function getTypedPropertyValueWithoutSchema(
+export function getTypedPropertyValueWithoutSchema(
   typedValue: TypedValue,
   path: string
 ): TypedValue[] | TypedValue | undefined {
