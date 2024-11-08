@@ -143,7 +143,7 @@ export async function graphqlHandler(
     });
   }
 
-  return [allOk, result, ContentType.JSON];
+  return [allOk, result, { contentType: ContentType.JSON }];
 }
 
 /**

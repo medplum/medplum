@@ -177,7 +177,7 @@ describe('GraphQL', () => {
     expect(data.Patient).toBeDefined();
     expect(data.Patient.id).toEqual(patient.id);
     expect(data.Patient.photo[0].url).toBeDefined();
-    expect(result[2]).toBe('application/json');
+    expect(result[2]?.contentType).toBe('application/json');
   });
 
   test('Read by ID not found', async () => {
@@ -354,7 +354,7 @@ describe('GraphQL', () => {
     expect(data.Encounter.subject.resource.id).toEqual(patient.id);
     expect(data.Encounter.subject.resource.name[0].given[0]).toEqual('Alice');
 
-    expect(result[2]).toBe('application/json');
+    expect(result[2]?.contentType).toBe('application/json');
   });
 
   test('Read resource by reference not found', async () => {
@@ -1043,7 +1043,7 @@ describe('GraphQL', () => {
           PatientCreate: null,
         },
       },
-      'application/json',
+      { contentType: 'application/json' },
     ]);
   });
 
@@ -1149,7 +1149,7 @@ describe('GraphQL', () => {
           PatientUpdate: null,
         },
       },
-      'application/json',
+      { contentType: 'application/json' },
     ]);
   });
 
@@ -1192,7 +1192,7 @@ describe('GraphQL', () => {
           PatientUpdate: null,
         },
       },
-      'application/json',
+      { contentType: 'application/json' },
     ]);
   });
 
@@ -1283,6 +1283,6 @@ describe('GraphQL', () => {
     expect(data.Encounter.subject.resource.id).toEqual(patient.id);
     expect(data.Encounter.subject.resource.name[0].given[0]).toEqual('Alice');
 
-    expect(result[2]).toBe('application/json');
+    expect(result[2]?.contentType).toBe('application/json');
   });
 });
