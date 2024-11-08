@@ -2,7 +2,7 @@ import { Coding, Extension, Period, Quantity } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue, getElementDefinition, isResource } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
 import { validationRegexes } from '../typeschema/validation';
-import { capitalize, isEmpty } from '../utils';
+import { capitalize, isCodeableConcept, isCoding, isEmpty } from '../utils';
 
 /**
  * Returns a single element array with a typed boolean value.
@@ -29,6 +29,10 @@ export function toTypedValue(value: unknown): TypedValue {
     return { type: PropertyType.boolean, value };
   } else if (typeof value === 'string') {
     return { type: PropertyType.string, value };
+  } else if (isCodeableConcept(value)) {
+    return { type: PropertyType.CodeableConcept, value };
+  } else if (isCoding(value)) {
+    return { type: PropertyType.Coding, value };
   } else if (isQuantity(value)) {
     return { type: PropertyType.Quantity, value };
   } else if (isResource(value)) {
@@ -202,9 +206,15 @@ export function getTypedPropertyValueWithoutSchema(
     return undefined;
   }
 
-  let result: any = undefined;
+  let result: TypedValue[] | TypedValue | undefined = undefined;
+
   if (path in input) {
-    result = (input as { [key: string]: unknown })[path];
+    const propertyValue = (input as { [key: string]: unknown })[path];
+    if (Array.isArray(propertyValue)) {
+      result = propertyValue.map(toTypedValue);
+    } else {
+      result = toTypedValue(propertyValue);
+    }
   } else {
     // Only support property names that would be valid types
     // Examples:
@@ -216,21 +226,26 @@ export function getTypedPropertyValueWithoutSchema(
     for (const propertyType in PropertyType) {
       const propertyName = path + capitalize(propertyType);
       if (propertyName in input) {
-        result = (input as { [key: string]: unknown })[propertyName];
+        const propertyValue = (input as { [key: string]: unknown })[propertyName];
+        if (Array.isArray(propertyValue)) {
+          result = propertyValue.map((v) => ({ type: propertyType, value: v }));
+        } else {
+          result = { type: propertyType, value: propertyValue };
+        }
         break;
       }
     }
   }
 
-  if (isEmpty(result)) {
+  if (Array.isArray(result)) {
+    if (result.length === 0 || isEmpty(result[0])) {
+      return undefined;
+    }
+  } else if (isEmpty(result)) {
     return undefined;
   }
 
-  if (Array.isArray(result)) {
-    return result.map(toTypedValue);
-  } else {
-    return toTypedValue(result);
-  }
+  return result;
 }
 
 /**

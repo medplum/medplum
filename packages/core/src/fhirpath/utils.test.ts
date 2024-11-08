@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Questionnaire } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue } from '../types';
-import { InternalSchemaElement, indexStructureDefinitionBundle } from '../typeschema/types';
+import { indexStructureDefinitionBundle, InternalSchemaElement } from '../typeschema/types';
 import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
@@ -9,6 +9,7 @@ import {
   fhirPathEquivalent,
   fhirPathIs,
   getTypedPropertyValue,
+  getTypedPropertyValueWithoutSchema,
   getTypedPropertyValueWithSchema,
   isDateString,
   isDateTimeString,
@@ -49,6 +50,14 @@ describe('FHIRPath utils', () => {
     expect(toTypedValue(true)).toEqual(TYPED_TRUE);
     expect(toTypedValue(false)).toEqual(TYPED_FALSE);
     expect(toTypedValue('xyz')).toEqual({ type: PropertyType.string, value: 'xyz' });
+    expect(toTypedValue({ code: 'x' })).toEqual({
+      type: PropertyType.Coding,
+      value: { code: 'x' },
+    });
+    expect(toTypedValue({ coding: [{ code: 'y' }] })).toEqual({
+      type: PropertyType.CodeableConcept,
+      value: { coding: [{ code: 'y' }] },
+    });
     expect(toTypedValue({ value: 123, unit: 'mg' })).toEqual({
       type: PropertyType.Quantity,
       value: { value: 123, unit: 'mg' },
@@ -145,6 +154,43 @@ describe('FHIRPath utils', () => {
 
     // Property path that is part of multi-type element in schema
     expect(getTypedPropertyValue({ type: 'Extension', value: { valueBoolean: true } }, 'valueBoolean')).toEqual({
+      type: 'boolean',
+      value: true,
+    });
+  });
+
+  test('getTypedPropertyValueWithoutSchema', () => {
+    expect(getTypedPropertyValueWithoutSchema({ type: '', value: undefined }, 'x')).toBeUndefined();
+    expect(getTypedPropertyValueWithoutSchema({ type: '', value: null }, 'x')).toBeUndefined();
+    expect(getTypedPropertyValueWithoutSchema({ type: 'x', value: {} }, 'x')).toBeUndefined();
+    expect(getTypedPropertyValueWithoutSchema({ type: 'integer', value: 123 }, 'x')).toBeUndefined();
+
+    // Support missing schemas
+    expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { x: 1 } }, 'x')).toEqual(TYPED_1);
+    expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { x: [1] } }, 'x')).toEqual([TYPED_1]);
+    expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { valueInteger: 1 } }, 'value')).toEqual(TYPED_1);
+
+    // Only use valid property types
+    expect(
+      getTypedPropertyValueWithoutSchema(
+        toTypedValue({ resourceType: 'Patient', identifier: [{ value: 'foo' }] }),
+        'id'
+      )
+    ).toBeUndefined();
+    expect(
+      getTypedPropertyValueWithoutSchema(toTypedValue({ resourceType: 'AccessPolicy' }), 'resource')
+    ).toBeUndefined();
+
+    // Silently ignore empty arrays
+    expect(
+      getTypedPropertyValueWithoutSchema(toTypedValue({ resourceType: 'Patient', identifier: [] }), 'identifier')
+    ).toBeUndefined();
+    expect(getTypedPropertyValueWithoutSchema({ type: 'X', value: { x: [] } }, 'x')).toBeUndefined();
+
+    // Property path that is part of multi-type element in schema
+    expect(
+      getTypedPropertyValueWithoutSchema({ type: 'Extension', value: { valueBoolean: true } }, 'valueBoolean')
+    ).toEqual({
       type: 'boolean',
       value: true,
     });
