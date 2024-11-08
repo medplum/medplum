@@ -1867,6 +1867,47 @@ describe('FHIR Search', () => {
         expect(result.entry?.[0]?.resource?.id).toEqual(patient.id);
       }));
 
+    test('Chained search sort order', () =>
+      withTestContext(async () => {
+        config.chainedSearchWithReferenceTables = true;
+
+        const identifier = randomUUID();
+        // Create linked resources
+        const link1 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: identifier }],
+        });
+        const link2 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: identifier }],
+        });
+        for (let i = 1; i < 10; i++) {
+          await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            birthDate: '1994-11-0' + i,
+            link: [
+              { type: 'seealso', other: createReference(link1) },
+              { type: 'seealso', other: createReference(link2) },
+            ],
+          });
+        }
+
+        const result = await repo.search(
+          parseSearchRequest(`Patient?link:Patient.identifier=${identifier}&_sort=-birthdate`)
+        );
+        expect(result.entry?.map((e) => (e.resource as Patient).birthDate)).toEqual([
+          '1994-11-09',
+          '1994-11-08',
+          '1994-11-07',
+          '1994-11-06',
+          '1994-11-05',
+          '1994-11-04',
+          '1994-11-03',
+          '1994-11-02',
+          '1994-11-01',
+        ]);
+      }));
+
     test.each([true, false])('Chained search on canonical reference', (ff) =>
       withTestContext(async () => {
         config.chainedSearchWithReferenceTables = ff;
