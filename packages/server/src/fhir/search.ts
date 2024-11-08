@@ -63,6 +63,7 @@ import {
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
+  SqlFunction,
   Union,
   ValuesQuery,
 } from './sql';
@@ -1364,16 +1365,47 @@ function buildChainedSearchUsingReferenceTable(
   resourceType: string,
   param: ChainedSearchParameter
 ): Expression {
-  let currentTable = resourceType;
-  for (const link of param.chain) {
+  const initialLink = param.chain[0];
+  let currentTable = nextChainedTable(initialLink);
+
+  let initialCondition: Expression;
+  if (initialLink.details.type === SearchParameterType.CANONICAL) {
+    initialCondition = getCanonicalJoinCondition(selectQuery.tableName, initialLink, currentTable);
+  } else {
+    initialCondition = getLookupTableJoinCondition(selectQuery.tableName, initialLink, currentTable);
+  }
+  const innerQuery = new SelectQuery(currentTable).whereExpr(initialCondition);
+
+  if (initialLink.details.type !== SearchParameterType.CANONICAL) {
+    currentTable = linkLiteralReference(innerQuery, currentTable, initialLink);
+  }
+
+  if (param.chain.length === 1 && initialLink.filter) {
+    innerQuery.whereExpr(
+      buildSearchFilterExpression(
+        repo,
+        innerQuery,
+        initialLink.targetType as ResourceType,
+        currentTable,
+        initialLink.filter
+      )
+    );
+    return new SqlFunction('EXISTS', [innerQuery]);
+  }
+
+  for (const link of param.chain.slice(1)) {
     if (link.details.type === SearchParameterType.CANONICAL) {
-      currentTable = linkCanonicalReference(selectQuery, currentTable, link);
+      currentTable = linkCanonicalReference(innerQuery, currentTable, link);
     } else {
-      currentTable = linkLiteralReference(selectQuery, currentTable, link);
+      const lookupTable = linkReferenceLookupTable(innerQuery, currentTable, link);
+      currentTable = linkLiteralReference(innerQuery, lookupTable, link);
     }
 
     if (link.filter) {
-      return buildSearchFilterExpression(repo, selectQuery, link.targetType as ResourceType, currentTable, link.filter);
+      innerQuery.whereExpr(
+        buildSearchFilterExpression(repo, innerQuery, link.targetType as ResourceType, currentTable, link.filter)
+      );
+      return new SqlFunction('EXISTS', [innerQuery]);
     }
   }
 
@@ -1387,7 +1419,7 @@ function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, 
   return nextTableAlias;
 }
 
-function linkLiteralReference(selectQuery: SelectQuery, currentTable: string, link: ChainedSearchLink): string {
+function linkReferenceLookupTable(selectQuery: SelectQuery, currentTable: string, link: ChainedSearchLink): string {
   const referenceTableAlias = selectQuery.getNextJoinAlias();
   selectQuery.join(
     'LEFT JOIN',
@@ -1395,14 +1427,17 @@ function linkLiteralReference(selectQuery: SelectQuery, currentTable: string, li
     referenceTableAlias,
     getLookupTableJoinCondition(currentTable, link, referenceTableAlias)
   );
+  return referenceTableAlias;
+}
 
+function linkLiteralReference(selectQuery: SelectQuery, lookupTable: string, link: ChainedSearchLink): string {
   const nextTableAlias = selectQuery.getNextJoinAlias();
   const nextColumn = link.reverse ? 'resourceId' : 'targetId';
   selectQuery.join(
     'LEFT JOIN',
     link.targetType,
     nextTableAlias,
-    new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumn))
+    new Condition(new Column(nextTableAlias, 'id'), '=', new Column(lookupTable, nextColumn))
   );
 
   return nextTableAlias;
