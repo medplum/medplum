@@ -1,11 +1,15 @@
+import { getReferenceString } from '@medplum/core';
+import { AsyncJob } from '@medplum/fhirtypes';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Pool, PoolClient } from 'pg';
 import { MedplumDatabaseConfig, MedplumServerConfig } from './config';
+import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as dataMigrations from './migrations/data';
 import * as schemaMigrations from './migrations/schema';
+import { addAsyncJobPollerJob } from './workers/asyncjobpoller';
 
 export enum DatabaseMode {
   READER = 'reader',
@@ -179,14 +183,25 @@ async function migrate(client: PoolClient): Promise<void> {
 
   // TODO: Instead of running the migration here, queue it up in an async job
   if (pendingDataMigration) {
+    // Queue up the async job here
     const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
-    const start = Date.now();
-    await migration.run(getSystemRepo());
-    globalLogger.info('Database data migration', {
-      dataVersion: `v${pendingDataMigration}`,
-      duration: `${Date.now() - start} ms`,
+    const startTimeMs = Date.now();
+    // Get async job
+    const migrationAsyncJob = (await migration.run(getSystemRepo())) as unknown as AsyncJob;
+    const systemRepo = getSystemRepo();
+    const exec = new AsyncJobExecutor(systemRepo);
+    await exec.init(getReferenceString(migrationAsyncJob));
+    await exec.run(async (ownJob) => {
+      await addAsyncJobPollerJob(
+        {
+          ownJob,
+          trackedJob: migrationAsyncJob,
+          jobType: 'dataMigration',
+          jobData: { startTimeMs, migrationVersion: pendingDataMigration },
+        },
+        1000
+      );
     });
-    await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [pendingDataMigration]);
   }
 }
 
