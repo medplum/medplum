@@ -176,6 +176,70 @@ describe('App', () => {
     mockServer2.stop();
   });
 
+  test('Attempt to reconnect after missed heartbeats', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      heartbeatCount: 0,
+      connectRequestCount: 0,
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          state.connectRequestCount += 1;
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:heartbeat:request') {
+          state.heartbeatCount += 1;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+
+    app.heartbeatPeriod = 200;
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    while (state.connectRequestCount < 1) {
+      await sleep(100);
+    }
+
+    expect(state.connectRequestCount).toBe(1);
+
+    // Wait for 2 heartbeats to pass (we should disconnect)
+    while (state.heartbeatCount < 2) {
+      await sleep(100);
+    }
+
+    expect(state.connectRequestCount).toBe(1);
+
+    // Wait for another connect request (we reconnected)
+    while (state.connectRequestCount < 2) {
+      await sleep(100);
+    }
+
+    expect(state.connectRequestCount).toBe(2);
+
+    await app.stop();
+    await app.stop();
+    mockServer.stop();
+  });
+
   test('Empty endpoint URL', async () => {
     medplum.router.router.add('POST', ':resourceType/:id/$execute', async () => {
       return [allOk, {} as Resource];
