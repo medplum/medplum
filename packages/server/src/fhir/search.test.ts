@@ -1881,8 +1881,10 @@ describe('FHIR Search', () => {
           resourceType: 'Patient',
           identifier: [{ value: identifier }],
         });
+
+        const patientIds: string[] = [];
         for (let i = 1; i < 10; i++) {
-          await repo.createResource<Patient>({
+          const patient = await repo.createResource<Patient>({
             resourceType: 'Patient',
             birthDate: '1994-11-0' + i,
             link: [
@@ -1890,6 +1892,7 @@ describe('FHIR Search', () => {
               { type: 'seealso', other: createReference(link2) },
             ],
           });
+          patientIds.unshift(patient.id as string);
         }
 
         const result = await repo.search(
@@ -1906,6 +1909,55 @@ describe('FHIR Search', () => {
           '1994-11-02',
           '1994-11-01',
         ]);
+        expect(result.entry?.map((e) => e.resource?.id)).toEqual(patientIds);
+      }));
+
+    test('Chained search with negated filter', () =>
+      withTestContext(async () => {
+        config.chainedSearchWithReferenceTables = true;
+
+        // Create linked resources
+        const link1 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: randomUUID() }],
+        });
+        const link2 = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          identifier: [{ value: randomUUID() }],
+        });
+
+        const patientIds: string[] = [];
+        for (let i = 1; i < 10; i++) {
+          const middlePatient = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            link: [
+              { type: 'seealso', other: createReference(link1) },
+              { type: 'seealso', other: createReference(link2) },
+            ],
+          });
+          const patient = await repo.createResource<Patient>({
+            resourceType: 'Patient',
+            birthDate: '1994-11-0' + i,
+            link: [{ type: 'seealso', other: createReference(middlePatient) }],
+          });
+          patientIds.unshift(patient.id as string);
+        }
+
+        const result = await repo.search(
+          parseSearchRequest(`Patient?link:Patient.link:Patient.identifier:not=${randomUUID()}&_sort=-birthdate`)
+        );
+        expect(result.entry?.map((e) => (e.resource as Patient).birthDate)).toEqual([
+          '1994-11-09',
+          '1994-11-08',
+          '1994-11-07',
+          '1994-11-06',
+          '1994-11-05',
+          '1994-11-04',
+          '1994-11-03',
+          '1994-11-02',
+          '1994-11-01',
+        ]);
+        expect(result.entry?.map((e) => e.resource?.id)).toEqual(patientIds);
       }));
 
     test.each([true, false])('Chained search on canonical reference', (ff) =>

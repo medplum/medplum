@@ -1381,7 +1381,8 @@ function buildChainedSearchUsingReferenceTable(
   }
 
   // Add joins to inner query for all subsequent chain links
-  for (link of param.chain.slice(1)) {
+  for (let i = 1; i < param.chain.length; i++) {
+    link = param.chain[i];
     if (link.details.type === SearchParameterType.CANONICAL) {
       currentTable = linkCanonicalReference(innerQuery, currentTable, link);
     } else {
@@ -1395,9 +1396,11 @@ function buildChainedSearchUsingReferenceTable(
   }
 
   // Add terminal condition on final target table, and return EXISTS() over subquery
-  innerQuery.whereExpr(
-    buildSearchFilterExpression(repo, innerQuery, link.targetType as ResourceType, currentTable, link.filter)
-  );
+  innerQuery
+    .where(new Column(currentTable, 'id'), '!=', null)
+    .whereExpr(
+      buildSearchFilterExpression(repo, innerQuery, link.targetType as ResourceType, currentTable, link.filter)
+    );
   return new SqlFunction('EXISTS', [innerQuery]);
 }
 
