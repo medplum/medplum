@@ -532,7 +532,7 @@ async function addBotSecrets(
   }
 }
 
-const MIRRORED_CONTENT_TYPES: string[] = [ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
+const MIRRORED_CONTENT_TYPES: string[] = [ContentType.TEXT, ContentType.HL7_V2];
 
 function getResponseContentType(req: Request): string {
   const requestContentType = req.get('Content-Type');
