@@ -5,7 +5,7 @@ import {
   formatCoding,
   getExtension,
   getReferenceString,
-  getTypedPropertyValue,
+  getTypedPropertyValueWithoutSchema,
   splitN,
   stringify,
 } from '@medplum/core';
@@ -87,10 +87,7 @@ export function getNewMultiSelectValues(
       (option) =>
         formatCoding(option.valueCoding) === o || option[propertyName as keyof QuestionnaireItemAnswerOption] === o
     );
-    const optionValue = getTypedPropertyValue(
-      { type: 'QuestionnaireItemAnswerOption', value: option },
-      'value'
-    ) as TypedValue;
+    const optionValue = getItemAnswerOptionValue(option ?? {});
     return { [propertyName]: optionValue?.value };
   });
 }
@@ -144,25 +141,13 @@ function checkAnswers(
   enableBehavior: 'any' | 'all'
 ): { anyMatch: boolean; allMatch: boolean } {
   const actualAnswers = answers || [];
-  const expectedAnswer = getTypedPropertyValue(
-    {
-      type: 'QuestionnaireItemEnableWhen',
-      value: enableWhen,
-    },
-    'answer[x]'
-  ) as TypedValue;
+  const expectedAnswer = getItemEnableWhenValueAnswer(enableWhen);
 
   let anyMatch = false;
   let allMatch = true;
 
   for (const actualAnswerValue of actualAnswers) {
-    const actualAnswer = getTypedPropertyValue(
-      {
-        type: 'QuestionnaireResponseItemAnswer',
-        value: actualAnswerValue,
-      },
-      'value[x]'
-    ) as TypedValue | undefined; // possibly undefined when question unanswered
+    const actualAnswer = getResponseItemAnswerValue(actualAnswerValue);
     const { operator } = enableWhen;
     const match = evaluateMatch(actualAnswer, expectedAnswer, operator);
     if (match) {
@@ -324,4 +309,31 @@ export function getNumberOfPages(questionnaire: Questionnaire): number {
     }
   }
   return 1;
+}
+
+export function getItemInitialValue(initial: QuestionnaireItemInitial | undefined): TypedValue {
+  return getTypedPropertyValueWithoutSchema(
+    { type: 'QuestionnaireItemInitial', value: initial },
+    'value'
+  ) as TypedValue;
+}
+
+export function getItemAnswerOptionValue(option: QuestionnaireItemAnswerOption): TypedValue {
+  return getTypedPropertyValueWithoutSchema(
+    { type: 'QuestionnaireItemAnswerOption', value: option },
+    'value'
+  ) as TypedValue;
+}
+
+export function getItemEnableWhenValueAnswer(enableWhen: QuestionnaireItemEnableWhen): TypedValue {
+  return getTypedPropertyValueWithoutSchema(
+    { type: 'QuestionnaireItemEnableWhen', value: enableWhen },
+    'answer'
+  ) as TypedValue;
+}
+
+export function getResponseItemAnswerValue(answer: QuestionnaireResponseItemAnswer): TypedValue | undefined {
+  return getTypedPropertyValueWithoutSchema({ type: 'QuestionnaireResponseItemAnswer', value: answer }, 'value') as
+    | TypedValue
+    | undefined;
 }
