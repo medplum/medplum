@@ -29,14 +29,14 @@ export function toTypedValue(value: unknown): TypedValue {
     return { type: PropertyType.boolean, value };
   } else if (typeof value === 'string') {
     return { type: PropertyType.string, value };
-  } else if (isCodeableConcept(value)) {
-    return { type: PropertyType.CodeableConcept, value };
-  } else if (isCoding(value)) {
-    return { type: PropertyType.Coding, value };
   } else if (isQuantity(value)) {
     return { type: PropertyType.Quantity, value };
   } else if (isResource(value)) {
     return { type: value.resourceType, value };
+  } else if (isCodeableConcept(value)) {
+    return { type: PropertyType.CodeableConcept, value };
+  } else if (isCoding(value)) {
+    return { type: PropertyType.Coding, value };
   } else {
     return { type: PropertyType.BackboneElement, value };
   }
