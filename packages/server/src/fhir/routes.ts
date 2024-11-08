@@ -40,7 +40,7 @@ import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
-import { sendResponse } from './response';
+import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
@@ -66,28 +66,30 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
       return res.send();
     }
 
-    // Unless already set, use the FHIR content type
     if (!res.get('Content-Type')) {
-      res.contentType(ContentType.FHIR_JSON);
-    }
-
-    let legacyFhirJsonResponseFormat: boolean | undefined;
-    try {
-      const ctx = getAuthenticatedContext();
-      legacyFhirJsonResponseFormat = ctx.project.systemSetting?.find(
-        (s) => s.name === 'legacyFhirJsonResponseFormat'
-      )?.valueBoolean;
-    } catch (_err) {
-      // Ignore errors since unauthenticated requests also use this middleware
+      res.contentType(ContentType.JSON);
     }
 
     const pretty = req.query._pretty === 'true';
 
-    if (legacyFhirJsonResponseFormat) {
-      return res.send(JSON.stringify(data, undefined, pretty ? 2 : undefined));
-    } else {
-      return res.send(stringify(data, pretty));
+    if (res.get('Content-Type')?.startsWith(ContentType.FHIR_JSON)) {
+      let legacyFhirJsonResponseFormat: boolean | undefined;
+      try {
+        const ctx = getAuthenticatedContext();
+        legacyFhirJsonResponseFormat = ctx.project.systemSetting?.find(
+          (s) => s.name === 'legacyFhirJsonResponseFormat'
+        )?.valueBoolean;
+      } catch (_err) {
+        // Ignore errors since unauthenticated requests also use this middleware
+      }
+
+      if (!legacyFhirJsonResponseFormat) {
+        return res.send(stringify(data, pretty));
+      }
     }
+
+    // Default JSON response
+    return res.send(JSON.stringify(data, undefined, pretty ? 2 : undefined));
   };
   next();
 });
@@ -341,8 +343,9 @@ protectedRoutes.use(
         throw new OperationOutcomeError(result[0]);
       }
       sendOutcome(res, result[0]);
-    } else {
-      await sendResponse(req, res, result[0], result[1]);
+      return;
     }
+
+    await sendFhirResponse(req, res, result[0], result[1], result[2]);
   })
 );

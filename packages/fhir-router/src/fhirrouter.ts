@@ -43,7 +43,14 @@ export type FhirRequestConfig = {
   transactions?: boolean;
 };
 
-export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
+export type FhirResponseOptions = {
+  contentType?: string;
+};
+
+export type FhirResponse =
+  | [OperationOutcome]
+  | [OperationOutcome, Resource]
+  | [OperationOutcome, Resource, FhirResponseOptions];
 
 export type FhirRouteOptions = {
   batch?: boolean;

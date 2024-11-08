@@ -47,11 +47,9 @@ import { readStreamToString } from '../../util/streams';
 import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo, Repository } from '../repo';
-import { sendResponse } from '../response';
+import { sendFhirResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
-
-export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
 
 export interface BotExecutionRequest {
   readonly bot: Bot;
@@ -105,7 +103,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     const outcome = result.success ? allOk : badRequest(result.logResult);
 
     if (isResource(responseBody) && responseBody.resourceType === 'Binary') {
-      await sendResponse(req, res, outcome, responseBody);
+      await sendFhirResponse(req, res, outcome, responseBody);
       return;
     }
 
@@ -534,14 +532,16 @@ async function addBotSecrets(
   }
 }
 
+const MIRRORED_CONTENT_TYPES: string[] = [ContentType.TEXT, ContentType.HL7_V2];
+
 function getResponseContentType(req: Request): string {
   const requestContentType = req.get('Content-Type');
-  if (requestContentType && (EXECUTE_CONTENT_TYPES as string[]).includes(requestContentType)) {
+  if (requestContentType && MIRRORED_CONTENT_TYPES.includes(requestContentType)) {
     return requestContentType;
   }
 
-  // Default to FHIR
-  return ContentType.FHIR_JSON;
+  // Default to JSON
+  return ContentType.JSON;
 }
 
 /**

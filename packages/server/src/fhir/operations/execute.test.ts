@@ -1,4 +1,4 @@
-import { ContentType, Operator, allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
+import { ContentType, Operator, badRequest, createReference, getReferenceString } from '@medplum/core';
 import {
   AsyncJob,
   AuditEvent,
@@ -150,7 +150,7 @@ exports.handler = async function (medplum, event) {
     expect(res.text).toEqual('input');
   });
 
-  test('Submit FHIR with content type', async () => {
+  test('Submit FHIR with content type returns non-FHIR JSON', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -158,21 +158,36 @@ exports.handler = async function (medplum, event) {
       .send({
         resourceType: 'Patient',
         name: [{ given: ['John'], family: ['Doe'] }],
+        identifier: [],
       });
     expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
+    expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
+    expect(res.body.identifier).toEqual([]);
   });
 
-  test('Submit FHIR without content type', async () => {
+  test('Submit FHIR without content type return JSON content', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['John'], family: ['Doe'] }],
+        identifier: [],
       });
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
+    expect(res.body.identifier).toEqual([]);
+  });
+
+  test('Return non-Resource JSON response', async () => {
+    const input = { type: 'not-a-resource', result: [] };
+    const res = await request(app)
+      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send(JSON.parse(JSON.stringify(input)));
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
+    expect(res.body).toEqual({ type: 'not-a-resource', result: [] });
   });
 
   test('Submit HL7', async () => {
@@ -434,13 +449,12 @@ exports.handler = async function (medplum, event) {
 
   test('OperationOutcome response', async () => {
     const res = await request(app)
-      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
-      .set('Content-Type', ContentType.FHIR_JSON)
+      .post(`/fhir/R4/Bot/$execute?identifier=invalid-identifier`)
       .set('Authorization', 'Bearer ' + accessToken)
-      .send(allOk);
-    expect(res.status).toBe(200);
+      .send('');
+    expect(res.status).toBe(400);
     expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
-    expect(res.body).toMatchObject(allOk);
+    expect(res.body).toMatchObject(badRequest('Must specify bot ID or identifier.'));
   });
 
   test('Binary response', async () => {

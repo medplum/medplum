@@ -1,6 +1,7 @@
 import {
   allOk,
   badRequest,
+  ContentType,
   DEFAULT_SEARCH_COUNT,
   forbidden,
   getResourceTypes,
@@ -142,7 +143,7 @@ export async function graphqlHandler(
     });
   }
 
-  return [allOk, result];
+  return [allOk, result, { contentType: ContentType.JSON }];
 }
 
 /**
