@@ -86,14 +86,12 @@ export function addPropertyFilter(
   operator: keyof typeof SqlOperator,
   value: string | string[]
 ): SelectQuery {
-  const propertyQuery = new SelectQuery('Coding_Property')
-    .column('coding')
-    .whereExpr(
-      new Conjunction([
-        new Condition(new Column(query.tableName, 'id'), '=', new Column('Coding_Property', 'coding')),
-        new Condition('value', operator, value),
-      ])
-    );
+  const propertyQuery = new SelectQuery('Coding_Property').whereExpr(
+    new Conjunction([
+      new Condition(new Column(query.tableName, 'id'), '=', new Column('Coding_Property', 'coding')),
+      new Condition('value', operator, value),
+    ])
+  );
 
   const csPropertyTable = propertyQuery.getNextJoinAlias();
   propertyQuery.join(

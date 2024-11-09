@@ -97,14 +97,12 @@ export abstract class LookupTable {
     }
 
     const exists = new SqlFunction('EXISTS', [
-      new SelectQuery(lookupTableName)
-        .column('resourceId')
-        .whereExpr(
-          new Conjunction([
-            new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
-            disjunction,
-          ])
-        ),
+      new SelectQuery(lookupTableName).whereExpr(
+        new Conjunction([
+          new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+          disjunction,
+        ])
+      ),
     ]);
 
     if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {

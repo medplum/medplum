@@ -134,9 +134,7 @@ export class TokenTable extends LookupTable {
       conjunction.expressions.push(whereExpression);
     }
 
-    const exists = new SqlFunction('EXISTS', [
-      new SelectQuery(lookupTableName).column('resourceId').whereExpr(conjunction),
-    ]);
+    const exists = new SqlFunction('EXISTS', [new SelectQuery(lookupTableName).whereExpr(conjunction)]);
 
     if (shouldTokenRowExist(filter)) {
       return exists;
