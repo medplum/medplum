@@ -86,12 +86,17 @@ interface Cursor {
   nextId: string;
 }
 
+const Direction = {
+  FORWARD: 1,
+  REVERSE: -1,
+} as const;
+
 interface ChainedSearchLink {
   originType: string;
   targetType: string;
   code: string;
   details: SearchParameterDetails;
-  reverse?: boolean;
+  direction: (typeof Direction)['FORWARD'] | (typeof Direction)['REVERSE'];
   filter?: Filter;
 }
 
@@ -1325,7 +1330,11 @@ function buildChainedSearch(
   // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
   // Note that this does slightly change the behavior of the search query: true chained search would require the
   // reference to point to an existing resource, while the rewritten query just matches the reference string
-  if (param.chain.length === 1 && param.chain[0].filter?.code === '_id' && !param.chain[0].reverse) {
+  if (
+    param.chain.length === 1 &&
+    param.chain[0].filter?.code === '_id' &&
+    param.chain[0].direction === Direction.FORWARD
+  ) {
     const { targetType, code, filter } = param.chain[0];
     const targetId = filter.value;
     return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
@@ -1443,7 +1452,7 @@ function linkReferenceLookupTable(selectQuery: SelectQuery, currentTable: string
  * @returns The next table alias.
  */
 function linkLiteralReference(selectQuery: SelectQuery, lookupTable: string, link: ChainedSearchLink): string {
-  const nextColumn = link.reverse ? 'resourceId' : 'targetId';
+  const nextColumn = link.direction === Direction.FORWARD ? 'targetId' : 'resourceId';
   const nextTable = selectQuery.getNextJoinAlias();
   selectQuery.join(
     'LEFT JOIN',
@@ -1457,20 +1466,20 @@ function linkLiteralReference(selectQuery: SelectQuery, lookupTable: string, lin
 
 function getCanonicalJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
   const eq = link.details.array ? 'IN_SUBQUERY' : '=';
-  if (link.reverse) {
-    return new Condition(new Column(currentTable, 'url'), eq, new Column(nextTable, link.details.columnName));
-  } else {
+  if (link.direction === Direction.FORWARD) {
     return new Condition(new Column(nextTable, 'url'), eq, new Column(currentTable, link.details.columnName));
+  } else {
+    return new Condition(new Column(currentTable, 'url'), eq, new Column(nextTable, link.details.columnName));
   }
 }
 
 function nextChainedTable(link: ChainedSearchLink): string {
   if (link.details.type === SearchParameterType.CANONICAL) {
     return link.targetType;
-  } else if (link.reverse) {
-    return `${link.targetType}_References`;
-  } else {
+  } else if (link.direction === Direction.FORWARD) {
     return `${link.originType}_References`;
+  } else {
+    return `${link.targetType}_References`;
   }
 }
 
@@ -1482,7 +1491,7 @@ function nextChainedTable(link: ChainedSearchLink): string {
  * @returns The expression relating the two tables, which can be used as a JOIN condition or in a WHERE clause.
  */
 function lookupTableJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
-  const column = link.reverse ? 'targetId' : 'resourceId';
+  const column = link.direction === Direction.FORWARD ? 'resourceId' : 'targetId';
   return new Conjunction([
     new Condition(new Column(nextTable, column), '=', new Column(currentTable, 'id')),
     new Condition(new Column(nextTable, 'code'), '=', link.code),
@@ -1536,7 +1545,7 @@ function buildSearchLinkCondition(
   nextTable: string
 ): Expression {
   const linkColumn = new Column(currentTable, link.details.columnName);
-  if (link.reverse) {
+  if (link.direction === Direction.REVERSE) {
     const nextColumn = new Column(nextTable, link.details.columnName);
     const currentColumn = new Column(currentTable, 'id');
 
@@ -1602,7 +1611,7 @@ function parseChainLink(param: string, currentResourceType: string): ChainedSear
     throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
   }
   const details = getSearchParameterDetails(currentResourceType, searchParam);
-  return { originType: currentResourceType, targetType, code, details };
+  return { originType: currentResourceType, targetType, code, details, direction: Direction.FORWARD };
 }
 
 function parseReverseChainLink(param: string, targetResourceType: string): ChainedSearchLink {
@@ -1616,7 +1625,7 @@ function parseReverseChainLink(param: string, targetResourceType: string): Chain
     );
   }
   const details = getSearchParameterDetails(resourceType, searchParam);
-  return { originType: targetResourceType, targetType: resourceType, code, details, reverse: true };
+  return { originType: targetResourceType, targetType: resourceType, code, details, direction: Direction.REVERSE };
 }
 
 function splitChainedSearch(chain: string): string[] {
