@@ -1374,7 +1374,7 @@ function buildChainedSearchUsingReferenceTable(
     );
   } else {
     innerQuery = new SelectQuery(currentTable).whereExpr(
-      getLookupTableJoinCondition(selectQuery.tableName, link, currentTable)
+      lookupTableJoinCondition(selectQuery.tableName, link, currentTable)
     );
     currentTable = linkLiteralReference(innerQuery, currentTable, link);
   }
@@ -1403,6 +1403,13 @@ function buildChainedSearchUsingReferenceTable(
   return new SqlFunction('EXISTS', [innerQuery]);
 }
 
+/**
+ * Join a query to the next table via canonical reference (i.e. by `url`).
+ * @param selectQuery - The query to which the join will be added.
+ * @param currentTable - The "current" table in the chained search construction.
+ * @param link - The current link of the chained search.
+ * @returns The next table alias.
+ */
 function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, link: ChainedSearchLink): string {
   const nextTable = selectQuery.getNextJoinAlias();
   const join = getCanonicalJoinCondition(currentTable, link, nextTable);
@@ -1410,17 +1417,31 @@ function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, 
   return nextTable;
 }
 
+/**
+ * Join a query to a reference lookup table for chained search.
+ * @param selectQuery - The query to which the join will be added.
+ * @param currentTable - The "current" table in the chained search construction.
+ * @param link - The current link of the chained search.
+ * @returns The next table alias.
+ */
 function linkReferenceLookupTable(selectQuery: SelectQuery, currentTable: string, link: ChainedSearchLink): string {
   const referenceTable = selectQuery.getNextJoinAlias();
   selectQuery.join(
     'LEFT JOIN',
     nextChainedTable(link),
     referenceTable,
-    getLookupTableJoinCondition(currentTable, link, referenceTable)
+    lookupTableJoinCondition(currentTable, link, referenceTable)
   );
   return referenceTable;
 }
 
+/**
+ * Join a query to the next resource table for chained search.
+ * @param selectQuery - The query to which the join will be added.
+ * @param lookupTable - The "current" table in the chained search construction, assumed to be a reference lookup table.
+ * @param link - The current link of the chained search.
+ * @returns The next table alias.
+ */
 function linkLiteralReference(selectQuery: SelectQuery, lookupTable: string, link: ChainedSearchLink): string {
   const nextColumn = link.reverse ? 'resourceId' : 'targetId';
   const nextTable = selectQuery.getNextJoinAlias();
@@ -1453,7 +1474,14 @@ function nextChainedTable(link: ChainedSearchLink): string {
   }
 }
 
-function getLookupTableJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
+/**
+ * Constructs the condition for joining a resource table to a reference lookup table for chained search.
+ * @param currentTable - The "current" table in the chained search construction, assumed to be a resource table.
+ * @param link - The current link of the chained search.
+ * @param nextTable - The reference lookup table next in the chained search.
+ * @returns The expression relating the two tables, which can be used as a JOIN condition or in a WHERE clause.
+ */
+function lookupTableJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
   const column = link.reverse ? 'targetId' : 'resourceId';
   return new Conjunction([
     new Condition(new Column(nextTable, column), '=', new Column(currentTable, 'id')),
