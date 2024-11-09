@@ -97,11 +97,11 @@ interface ChainedSearchLink {
   code: string;
   details: SearchParameterDetails;
   direction: (typeof Direction)['FORWARD'] | (typeof Direction)['REVERSE'];
-  filter?: Filter;
 }
 
 interface ChainedSearchParameter {
   chain: ChainedSearchLink[];
+  filter: Filter;
 }
 
 export async function searchImpl<T extends Resource>(
@@ -1330,13 +1330,9 @@ function buildChainedSearch(
   // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
   // Note that this does slightly change the behavior of the search query: true chained search would require the
   // reference to point to an existing resource, while the rewritten query just matches the reference string
-  if (
-    param.chain.length === 1 &&
-    param.chain[0].filter?.code === '_id' &&
-    param.chain[0].direction === Direction.FORWARD
-  ) {
-    const { targetType, code, filter } = param.chain[0];
-    const targetId = filter.value;
+  if (param.chain.length === 1 && param.filter?.code === '_id' && param.chain[0].direction === Direction.FORWARD) {
+    const { targetType, code } = param.chain[0];
+    const targetId = param.filter.value;
     return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
       code,
       operator: Operator.EQUALS,
@@ -1399,15 +1395,11 @@ function buildChainedSearchUsingReferenceTable(
     }
   }
 
-  if (!link.filter) {
-    throw new OperationOutcomeError(badRequest('Unterminated chained search'));
-  }
-
   // Add terminal condition on final target table, and return EXISTS() over subquery
   innerQuery
     .where(new Column(currentTable, 'id'), '!=', null)
     .whereExpr(
-      buildSearchFilterExpression(repo, innerQuery, link.targetType as ResourceType, currentTable, link.filter)
+      buildSearchFilterExpression(repo, innerQuery, link.targetType as ResourceType, currentTable, param.filter)
     );
   return new SqlFunction('EXISTS', [innerQuery]);
 }
@@ -1530,12 +1522,14 @@ function buildChainedSearchUsingReferenceStrings(
     }
 
     currentResourceType = link.targetType;
-
-    if (link.filter) {
-      return buildSearchFilterExpression(repo, selectQuery, link.targetType as ResourceType, currentTable, link.filter);
-    }
   }
-  throw new OperationOutcomeError(badRequest('Unterminated chained search'));
+  return buildSearchFilterExpression(
+    repo,
+    selectQuery,
+    currentResourceType as ResourceType,
+    currentTable,
+    param.filter
+  );
 }
 
 function buildSearchLinkCondition(
@@ -1568,17 +1562,16 @@ function buildSearchLinkCondition(
 }
 
 function parseChainedParameter(resourceType: string, key: string, value: string): ChainedSearchParameter {
-  const param: ChainedSearchParameter = {
-    chain: [],
-  };
   let currentResourceType = resourceType;
-
   const parts = splitChainedSearch(key);
+
+  const chain: ChainedSearchLink[] = [];
+  let filter: Filter | undefined;
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
     if (part.startsWith('_has')) {
       const link = parseReverseChainLink(part, currentResourceType);
-      param.chain.push(link);
+      chain.push(link);
       currentResourceType = link.targetType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = splitN(part, ':', 2);
@@ -1586,14 +1579,19 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       if (!searchParam) {
         throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
       }
-      param.chain[param.chain.length - 1].filter = parseParameter(searchParam, modifier, value);
+      filter = parseParameter(searchParam, modifier, value);
     } else {
       const link = parseChainLink(part, currentResourceType);
-      param.chain.push(link);
+      chain.push(link);
       currentResourceType = link.targetType;
     }
   }
-  return param;
+
+  if (!filter) {
+    throw new OperationOutcomeError(badRequest('Unterminated chained search'));
+  }
+
+  return { chain, filter };
 }
 
 function parseChainLink(param: string, currentResourceType: string): ChainedSearchLink {
