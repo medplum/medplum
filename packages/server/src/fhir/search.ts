@@ -86,6 +86,7 @@ interface Cursor {
   nextId: string;
 }
 
+/** Linking direction for chained search. */
 const Direction = {
   FORWARD: 1,
   REVERSE: -1,
@@ -1395,7 +1396,7 @@ function buildChainedSearchUsingReferenceTable(
     }
   }
 
-  // Add terminal condition on final target table, and return EXISTS() over subquery
+  // Add terminal conditions on final target table, and return EXISTS() over subquery
   innerQuery
     .where(new Column(currentTable, 'id'), '!=', null)
     .whereExpr(
