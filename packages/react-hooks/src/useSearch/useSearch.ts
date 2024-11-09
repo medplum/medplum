@@ -2,12 +2,8 @@ import { allOk, normalizeOperationOutcome, QueryTypes, ResourceArray } from '@me
 import { Bundle, ExtractResource, OperationOutcome, ResourceType } from '@medplum/fhirtypes';
 import { useEffect, useState } from 'react';
 import { useMedplum } from '../MedplumProvider/MedplumProvider.context';
-import { useDebouncedValue } from '../useDebouncedValue/useDebouncedValue';
 
 type SearchFn = 'search' | 'searchOne' | 'searchResources';
-export type SearchOptions = { debounceMs?: number };
-
-const DEFAULT_DEBOUNCE_MS = 250;
 
 /**
  * React hook for searching FHIR resources.
@@ -16,15 +12,13 @@ const DEFAULT_DEBOUNCE_MS = 250;
  *
  * @param resourceType - The FHIR resource type to search.
  * @param query - Optional search parameters.
- * @param options - Optional options for configuring the search.
  * @returns A 3-element tuple containing the search result, loading flag, and operation outcome.
  */
 export function useSearch<K extends ResourceType>(
   resourceType: K,
-  query?: QueryTypes,
-  options?: SearchOptions
+  query?: QueryTypes
 ): [Bundle<ExtractResource<K>> | undefined, boolean, OperationOutcome | undefined] {
-  return useSearchImpl<K, Bundle<ExtractResource<K>>>('search', resourceType, query, options);
+  return useSearchImpl<K, Bundle<ExtractResource<K>>>('search', resourceType, query);
 }
 
 /**
@@ -34,15 +28,13 @@ export function useSearch<K extends ResourceType>(
  *
  * @param resourceType - The FHIR resource type to search.
  * @param query - Optional search parameters.
- * @param options - Optional options for configuring the search.
  * @returns A 3-element tuple containing the search result, loading flag, and operation outcome.
  */
 export function useSearchOne<K extends ResourceType>(
   resourceType: K,
-  query?: QueryTypes,
-  options?: SearchOptions
+  query?: QueryTypes
 ): [ExtractResource<K> | undefined, boolean, OperationOutcome | undefined] {
-  return useSearchImpl<K, ExtractResource<K>>('searchOne', resourceType, query, options);
+  return useSearchImpl<K, ExtractResource<K>>('searchOne', resourceType, query);
 }
 
 /**
@@ -52,41 +44,34 @@ export function useSearchOne<K extends ResourceType>(
  *
  * @param resourceType - The FHIR resource type to search.
  * @param query - Optional search parameters.
- * @param options - Optional options for configuring the search.
  * @returns A 3-element tuple containing the search result, loading flag, and operation outcome.
  */
 export function useSearchResources<K extends ResourceType>(
   resourceType: K,
-  query?: QueryTypes,
-  options?: SearchOptions
+  query?: QueryTypes
 ): [ResourceArray<ExtractResource<K>> | undefined, boolean, OperationOutcome | undefined] {
-  return useSearchImpl<K, ResourceArray<ExtractResource<K>>>('searchResources', resourceType, query, options);
+  return useSearchImpl<K, ResourceArray<ExtractResource<K>>>('searchResources', resourceType, query);
 }
 
-function useSearchImpl<K extends ResourceType, SearchReturnType>(
+function useSearchImpl<K extends ResourceType, ReturnType>(
   searchFn: SearchFn,
   resourceType: K,
-  query: QueryTypes | undefined,
-  options?: SearchOptions
-): [SearchReturnType | undefined, boolean, OperationOutcome | undefined] {
+  query: QueryTypes | undefined
+): [ReturnType | undefined, boolean, OperationOutcome | undefined] {
   const medplum = useMedplum();
-  const [lastSearchKey, setLastSearchKey] = useState<string>();
+  const [searchKey, setSearchKey] = useState<string>();
   const [loading, setLoading] = useState<boolean>(true);
-  const [result, setResult] = useState<SearchReturnType>();
+  const [result, setResult] = useState<ReturnType>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
 
-  const searchKey = medplum.fhirSearchUrl(resourceType, query).toString();
-  const [debouncedSearchKey] = useDebouncedValue(searchKey, options?.debounceMs ?? DEFAULT_DEBOUNCE_MS, {
-    leading: true,
-  });
-
   useEffect(() => {
-    if (debouncedSearchKey !== lastSearchKey) {
-      setLastSearchKey(debouncedSearchKey);
+    const key = medplum.fhirSearchUrl(resourceType, query).toString();
+    if (key !== searchKey) {
+      setSearchKey(key);
       medplum[searchFn](resourceType, query)
         .then((res) => {
           setLoading(false);
-          setResult(res as SearchReturnType);
+          setResult(res as ReturnType);
           setOutcome(allOk);
         })
         .catch((err) => {
@@ -95,7 +80,7 @@ function useSearchImpl<K extends ResourceType, SearchReturnType>(
           setOutcome(normalizeOperationOutcome(err));
         });
     }
-  }, [medplum, searchFn, resourceType, query, lastSearchKey, debouncedSearchKey]);
+  }, [medplum, searchFn, resourceType, query, searchKey]);
 
   return [result, loading, outcome];
 }
