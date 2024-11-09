@@ -16,6 +16,7 @@ import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
+import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -122,6 +123,9 @@ protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
 protectedRoutes.post('/Agent/([$]|%24)push', agentPushHandler);
 protectedRoutes.post('/Agent/:id/([$]|%24)push', agentPushHandler);
+
+// AsyncJob $cancel operation
+protectedRoutes.post('/AsyncJob/:id/([$]|%24)cancel', asyncJobCancelHandler);
 
 // Bot $execute operation
 // Allow extra path content after the "$execute" to support external callers who append path info
