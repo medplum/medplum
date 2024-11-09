@@ -1355,7 +1355,6 @@ function usesReferenceLookupTable(repo: Repository): boolean {
  * Self-hosted servers need to run a full re-index before this technique can be used.
  * @param repo - The repository.
  * @param selectQuery - The select query builder.
- * @param resourceType - The top level resource type.
  * @param param - The chained search parameter.
  * @returns The WHERE clause expression for the final chained filter.
  */
