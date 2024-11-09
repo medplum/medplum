@@ -1397,6 +1397,7 @@ describe('FHIR Search', () => {
           status: 'active',
           intent: 'order',
           subject: { reference: 'Patient/' + randomUUID() },
+          category: [{ coding: [{ code: randomUUID() }] }],
           code: { coding: [{ code }] },
         });
 

@@ -6,6 +6,7 @@ import {
   getSearchParameterDetails,
   getSearchParameters,
   OperationOutcomeError,
+  Operator,
   PropertyType,
   SortRule,
   splitN,
@@ -43,6 +44,8 @@ interface Token {
   readonly system: string | undefined;
   readonly value: string | undefined;
 }
+
+const negatedOperators: Operator[] = [Operator.NOT, Operator.NOT_EQUALS];
 
 /**
  * The TokenTable class is used to index and search "token" properties.
@@ -258,13 +261,7 @@ function shouldCompareTokenValue(operator: FhirOperator): boolean {
  * @returns True if the filter requires a token row to exist AFTER the join has been performed
  */
 function shouldTokenRowExist(filter: Filter): boolean {
-  if (shouldCompareTokenValue(filter.operator)) {
-    // If the filter is "not equals", then we're looking for ID=null
-    // If the filter is "equals", then we're looking for ID!=null
-    if (filter.operator === FhirOperator.NOT || filter.operator === FhirOperator.NOT_EQUALS) {
-      return false;
-    }
-  } else if (filter.operator === FhirOperator.MISSING) {
+  if (filter.operator === FhirOperator.MISSING) {
     // Missing = true means that there should not be a row
     switch (filter.value.toLowerCase()) {
       case 'true':
@@ -491,11 +488,14 @@ function buildWhereExpression(tableName: string, caseSensitive: boolean, filter:
       subExpressions.push(expression);
     }
   }
-  if (subExpressions.length > 0) {
-    return new Disjunction(subExpressions);
+
+  if (!subExpressions.length) {
+    // filter.operator does not require any WHERE Conditions on the token table (e.g. FhirOperator.MISSING)
+    return undefined;
   }
-  // filter.operator does not require any WHERE Conditions on the token table (e.g. FhirOperator.MISSING)
-  return undefined;
+
+  const disjunction = new Disjunction(subExpressions);
+  return negatedOperators.includes(filter.operator) ? new Negation(disjunction) : disjunction;
 }
 
 /**
