@@ -115,4 +115,29 @@ resource "google_compute_backend_bucket" "apps_bucket" {
   bucket_name      = module.buckets["medplum-app"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
+
+  # Attach the security policy
+  edge_security_policy = google_compute_security_policy.edge_security_policy.self_link
 }
+
+# Cloud Armor security policy
+resource "google_compute_security_policy" "edge_security_policy" {
+  name        = "edge-security-policy"
+  project     = var.project_id
+  description = "edge security policy for Cloud Armor"
+  type        = "CLOUD_ARMOR_EDGE"
+
+  # Default allow rule
+  rule {
+    action   = "allow"
+    priority = "2147483647"
+    match {
+      versioned_expr = "SRC_IPS_V1"
+      config {
+        src_ip_ranges = ["*"]
+      }
+    }
+    description = "Default rule to allow all other traffic"
+  }
+}
+

@@ -24,10 +24,7 @@ module "buckets" {
   lifecycle_rules          = each.value.lifecycle_rules
   website                  = each.value.website
   cors                     = each.value.cors
-
-  retention_policy = each.value.retention_policy
-
-  iam_members = each.value.iam_members
-
-  labels = merge(var.labels, each.value.labels)
+  retention_policy         = each.value.retention_policy
+  iam_members              = each.value.iam_members
+  labels                   = merge(var.labels, each.value.labels)
 }
