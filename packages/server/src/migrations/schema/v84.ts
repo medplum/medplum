@@ -6,6 +6,9 @@
 import { PoolClient } from 'pg';
 
 export async function run(client: PoolClient): Promise<void> {
+  await client.query(`CREATE OR REPLACE FUNCTION a2t(text[])
+    RETURNS text LANGUAGE sql IMMUTABLE AS $$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$$;`);
+
   await client.query('CREATE INDEX CONCURRENTLY IF NOT EXISTS "Account_token_idx" ON "Account" USING gin ("token")');
   await client.query('CREATE INDEX CONCURRENTLY IF NOT EXISTS "Account_token_trgm_idx" ON "Account" USING gin (a2t(token) gin_trgm_ops)');
   await client.query('CREATE INDEX CONCURRENTLY IF NOT EXISTS "ActivityDefinition_token_idx" ON "ActivityDefinition" USING gin ("token")');
