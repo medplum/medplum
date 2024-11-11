@@ -89,7 +89,7 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
-import { getTokens } from './lookups/token';
+import { USE_TOKEN_TABLE, getTokens } from './lookups/token';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
@@ -1280,40 +1280,42 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       content,
     };
 
-    const tokens = getTokens(resource);
-    const rowTokens = new Set<string>();
-    for (const t of tokens) {
-      const code = t.code;
-      const system = t.system?.trim();
-      const value = t.value?.trim();
-      if (!code) {
-        console.log('no code', JSON.stringify(t));
-        continue;
-      }
-      // is this necessary?
-      rowTokens.add(code + DELIM);
+    if (!USE_TOKEN_TABLE) {
+      const tokens = getTokens(resource);
+      const rowTokens = new Set<string>();
+      for (const t of tokens) {
+        const code = t.code;
+        const system = t.system?.trim?.();
+        const value = t.value?.trim?.();
+        if (!code || (!system && !value)) {
+          continue;
+        }
 
-      if (system) {
-        // [parameter]=[system]|
-        rowTokens.add(code + DELIM + system);
+        // MISSING/PRESENT
+        rowTokens.add(code + DELIM);
+
+        if (system) {
+          // [parameter]=[system]|
+          rowTokens.add(code + DELIM + system);
+
+          if (value) {
+            // [parameter]=[system]|[code]
+            rowTokens.add(code + DELIM + system + DELIM + value);
+          }
+        }
 
         if (value) {
-          // [parameter]=[system]|[code]
-          rowTokens.add(code + DELIM + system + DELIM + value);
+          // [parameter]=[code]
+          rowTokens.add(code + DELIM + DELIM + value);
+
+          if (!system) {
+            // [parameter]=|[code]
+            rowTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
+          }
         }
       }
-
-      if (value) {
-        // [parameter]=[code]
-        rowTokens.add(code + DELIM + DELIM + value);
-
-        if (!system) {
-          // [parameter]=|[code]
-          rowTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
-        }
-      }
+      row.token = Array.from(rowTokens);
     }
-    row.token = Array.from(rowTokens);
 
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {

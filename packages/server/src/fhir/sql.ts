@@ -68,31 +68,36 @@ export const Operator = {
     }
     sql.append(')');
   },
-  '&&': (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+  ARRAY_CONTAINS_SUBQUERY: (sql: SqlBuilder, column: Column, expression: Expression, expressionType?: string) => {
     sql.append('(');
     sql.appendColumn(column);
-    sql.append(' && ARRAY[(');
-    sql.appendExpression(parameter); // appendExpression is critical here to handle subqueries
-    sql.append(')]');
-    if (paramType) {
-      sql.append('::' + paramType);
+    sql.append(' && (');
+    sql.appendExpression(expression);
+    sql.append(')');
+    if (expressionType) {
+      sql.append('::' + expressionType);
     }
     sql.append(')');
   },
-  // '&&': (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
-  //   sql.appendColumn(column);
-  //   sql.append(' && (');
-  //   sql.appendExpression(parameter);
-  //   if (paramType) {
-  //     sql.append('::' + paramType);
-  //   }
-  //   sql.append(')');
-  // },
   ANY_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.append('TEXT(');
     sql.appendColumn(column);
     sql.append(')');
     sql.append(' LIKE ');
+    sql.appendParameters(parameter, false);
+  },
+  ARRAY_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('a2t(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~~ ');
+    sql.appendParameters(parameter, false);
+  },
+  ARRAY_ILIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('a2t(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~~* ');
     sql.appendParameters(parameter, false);
   },
   ARRAY_REGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
@@ -135,15 +140,15 @@ export const Operator = {
     sql.param(query);
     sql.append(')');
   },
-  IN_SUBQUERY: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+  IN_SUBQUERY: (sql: SqlBuilder, column: Column, expression: Expression, expressionType?: string) => {
     sql.appendColumn(column);
     sql.append('=ANY(');
-    if (paramType) {
+    if (expressionType) {
       sql.append('(');
     }
-    sql.appendExpression(parameter);
-    if (paramType) {
-      sql.append(')::' + paramType);
+    sql.appendExpression(expression);
+    if (expressionType) {
+      sql.append(')::' + expressionType);
     }
     sql.append(')');
   },
@@ -263,6 +268,17 @@ export class Condition implements Expression {
   buildSql(sql: SqlBuilder): void {
     const operator = Operator[this.operator];
     operator(sql, this.column, this.parameter, this.parameterType);
+  }
+}
+
+export class TypedCondition<T extends keyof typeof Operator> extends Condition {
+  constructor(
+    column: Column | string,
+    readonly operator: T,
+    readonly parameter: Parameters<(typeof Operator)[T]>[2],
+    readonly parameterType?: string
+  ) {
+    super(column, operator, parameter, parameterType);
   }
 }
 
