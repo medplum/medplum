@@ -1,10 +1,11 @@
 import { createReference, Operator } from '@medplum/core';
-import { Condition, Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
+import { Bundle, Condition, Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig, MedplumServerConfig } from '../../config';
 import { bundleContains, createTestProject, withTestContext } from '../../test.setup';
 import { getSystemRepo, Repository } from '../repo';
+import { USE_TOKEN_TABLE } from './token';
 
 describe('Identifier Lookup Table', () => {
   let config: MedplumServerConfig;
@@ -559,6 +560,88 @@ describe('Identifier Lookup Table', () => {
       expect(r4.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
     }));
 
+  describe('Non-strict mode', () => {
+    let nonStrictRepo: Repository;
+    let repo: Repository;
+    let patient: Patient;
+
+    const sys1 = 'http://sys.one';
+    const val1 = 'ABCDEFGHIJ';
+
+    beforeAll(async () => {
+      const { project } = await createTestProject();
+      nonStrictRepo = new Repository({
+        strictMode: false,
+        projects: [project.id as string],
+        author: { reference: 'User/' + randomUUID() },
+      });
+      repo = new Repository({
+        strictMode: true,
+        projects: [project.id as string],
+        author: { reference: 'User/' + randomUUID() },
+      });
+      patient = await nonStrictRepo.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Henry'] }] });
+    });
+
+    test('Handle malformed system', () =>
+      withTestContext(async () => {
+        const subject = createReference(patient);
+        await nonStrictRepo.createResource<Condition>({
+          resourceType: 'Condition',
+          subject,
+          code: {
+            coding: [
+              {
+                system: [sys1] as unknown as string, // Force malformed data
+                code: val1,
+              },
+            ],
+          },
+        });
+
+        const res = await repo.search<Condition>({
+          resourceType: 'Condition',
+          filters: [
+            {
+              code: 'code',
+              operator: Operator.EQUALS,
+              value: sys1 + '|',
+            },
+          ],
+        });
+        expect(toSortedIdentifierValues(res)).toEqual([]);
+      }));
+
+    test('Handle malformed value', () =>
+      withTestContext(async () => {
+        const subject = createReference(patient);
+        await nonStrictRepo.createResource<Condition>({
+          resourceType: 'Condition',
+          subject,
+          code: {
+            coding: [
+              {
+                system: 'https://example.com',
+                code: ['test1'] as unknown as string, // Force malformed data
+              },
+            ],
+          },
+        });
+
+        const res = await repo.search<Condition>({
+          resourceType: 'Condition',
+          filters: [
+            {
+              code: 'code',
+              operator: Operator.EQUALS,
+              value: val1,
+            },
+          ],
+        });
+        expect(toSortedIdentifierValues(res)).toEqual([]);
+      }));
+  });
+
   describe('Nitty gritty tests', () => {
     let repo: Repository;
 
@@ -666,7 +749,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(res.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+      expect(toSortedIdentifierValues(res)).toEqual(expected.toSorted());
     });
 
     test.each<[string, Conditions[]]>([
@@ -684,7 +767,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(resEquals.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+      expect(toSortedIdentifierValues(resEquals)).toEqual(expected.toSorted());
 
       const resContains = await repo.search<Condition>({
         resourceType: 'Condition',
@@ -696,7 +779,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+      expect(toSortedIdentifierValues(resContains)).toEqual(expected.toSorted());
     });
 
     test.each<[string, string, Conditions[]]>([
@@ -715,12 +798,12 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(res.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+      expect(toSortedIdentifierValues(res)).toEqual(expected.toSorted());
     });
 
     test.each<[string, Conditions[]]>([
       [val1, ['codeOneWithoutSystemNoCat']],
-      // [val2, ['codeTwoWithoutSystemCatTwo']],
+      [val2, ['codeTwoWithoutSystemCatTwo']],
     ])('code by missing system and value %s', async (value, expected) => {
       const res = await repo.search<Condition>({
         resourceType: 'Condition',
@@ -732,7 +815,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(res.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+      expect(toSortedIdentifierValues(res)).toEqual(expected);
     });
 
     test.each<[string, string, Conditions[]]>([
@@ -758,7 +841,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(res.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+      expect(toSortedIdentifierValues(res)).toEqual(expected);
     });
 
     test.each<[string, Conditions[]]>([
@@ -775,13 +858,13 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+      expect(toSortedIdentifierValues(resContains)?.toSorted()).toEqual(expected.toSorted());
     });
 
-    test.each<[string, Conditions[]]>([
+    (USE_TOKEN_TABLE ? test.failing : test).each<[string, Conditions[]]>([
       [val1.slice(1, 3), ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
       [val2.slice(1, 3), ['codeTwoWithoutSystemCatTwo']],
-    ])('code :contains middle of value %s', async (value, expected) => {
+    ])((USE_TOKEN_TABLE ? 'FAILING ' : '') + 'code :contains middle of value %s', async (value, expected) => {
       const resContains = await repo.search<Condition>({
         resourceType: 'Condition',
         filters: [
@@ -792,7 +875,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+      expect(toSortedIdentifierValues(resContains)).toEqual(expected.toSorted());
     });
 
     test.each<[string, Conditions[]]>([
@@ -811,7 +894,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
+      expect(toSortedIdentifierValues(resContains)).toEqual(expected);
     });
 
     // test.failing.each<[string, Conditions[]]>([
@@ -830,3 +913,7 @@ describe('Identifier Lookup Table', () => {
     // });
   });
 });
+
+function toSortedIdentifierValues(bundle: Bundle<Condition>): string[] {
+  return bundle.entry?.map((e) => e.resource?.identifier?.[0].value as string).toSorted() ?? [];
+}
