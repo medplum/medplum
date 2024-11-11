@@ -34,6 +34,7 @@ import {
   Negation,
   SelectQuery,
   escapeLikeString,
+  SqlBuilder,
 } from '../sql';
 import { LookupTable } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
@@ -155,6 +156,7 @@ export class TokenTable extends LookupTable {
       new Condition(new Column(table, 'token'), '&&', filter.code + DELIM, 'text[]');
 
     if (shouldTokenRowExist(filter)) {
+      // showSql(whereExpression);
       return whereExpression;
       // return new Condition(new Column(table, 'token'), 'ARRAY_CONTAINS', filter.code, 'text[]');
     } else {
@@ -592,6 +594,7 @@ function buildValueCondition(
     }
   }
 
+  system = system || '';
   // TODO this isn't quite right some cases where system and/or value is empty or undefined
   // there should be an explicit function for when value is missing/empty instead of piggybacking
   // in this function
@@ -610,9 +613,12 @@ function buildValueCondition(
       ),
     ]);
   } else if (filter.operator === FhirOperator.CONTAINS) {
-    return new Condition(tokenCol, 'ANY_LIKE', '%' + filter.code + DELIM + (system || '') + valuePart + '%', 'text[]');
+    return new Condition(tokenCol, 'ANY_LIKE', '%' + filter.code + DELIM + system + valuePart + '%', 'text[]');
+  } else if (caseSensitive) {
+    return new Condition(tokenCol, '&&', filter.code + DELIM + system + valuePart, 'text[]');
   } else {
-    return new Condition(tokenCol, '&&', filter.code + DELIM + (system || '') + valuePart, 'text[]');
+    const param = filter.code + DELIM + system + DELIM + value + '(' + ARRAY_DELIM + '|$)';
+    return new Condition(tokenCol, 'ARRAY_IREGEX', param, 'text[]');
   }
 }
 
@@ -708,11 +714,12 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
   const unnest = new SelectQuery('unnested', inner).column(
     new Column('ValueSet', 'unnest(reference)', true, 'reference')
   );
+  const code = 'code';
   const arrayAgg = new SelectQuery('array_agg', unnest).column(
-    new Column('unnested', `array_agg('${'code' + DELIM}' || reference)`, true, 'code_and_system')
+    new Column('unnested', "array_agg('" + code + DELIM + "' || reference)", true, 'code_and_system')
   );
 
-  return new Condition(new Column(tableName, 'token'), '&&', arrayAgg);
+  return new Condition(new Column(tableName, 'token'), '&&', arrayAgg, 'TEXT[]');
 }
 
 /**
@@ -725,8 +732,8 @@ function isCaseSensitiveSearchParameter(param: SearchParameter, resourceType: Re
   return getTokenIndexType(param, resourceType) === TokenIndexTypes.CASE_SENSITIVE;
 }
 
-// function showSql(exp: Expression): void {
-//   const sql = new SqlBuilder();
-//   sql.appendExpression(exp);
-//   console.log(sql.toString());
-// }
+function showSql(exp: Expression): void {
+  const sql = new SqlBuilder();
+  sql.appendExpression(exp);
+  console.log(sql.toString());
+}

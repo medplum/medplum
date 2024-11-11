@@ -71,9 +71,9 @@ export const Operator = {
   '&&': (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
     sql.append('(');
     sql.appendColumn(column);
-    sql.append(' && ARRAY[');
-    sql.appendParameters(parameter, false);
-    sql.append(']');
+    sql.append(' && ARRAY[(');
+    sql.appendExpression(parameter); // appendExpression is critical here to handle subqueries
+    sql.append(')]');
     if (paramType) {
       sql.append('::' + paramType);
     }
@@ -100,6 +100,13 @@ export const Operator = {
     sql.appendColumn(column);
     sql.append(')');
     sql.append(' ~ ');
+    sql.appendParameters(parameter, false);
+  },
+  ARRAY_IREGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('a2t(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~* ');
     sql.appendParameters(parameter, false);
   },
   TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {

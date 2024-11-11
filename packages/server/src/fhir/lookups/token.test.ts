@@ -559,7 +559,7 @@ describe('Identifier Lookup Table', () => {
       expect(r4.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
     }));
 
-  describe.only('Nitty gritty tests', () => {
+  describe('Nitty gritty tests', () => {
     let repo: Repository;
 
     let patient: Patient;
@@ -764,7 +764,7 @@ describe('Identifier Lookup Table', () => {
     test.each<[string, Conditions[]]>([
       [val1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
       [val1.slice(0, 3), ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
-    ])('code :contains %s', async (value, expected) => {
+    ])('code :contains beginning of value %s', async (value, expected) => {
       const resContains = await repo.search<Condition>({
         resourceType: 'Condition',
         filters: [
@@ -778,9 +778,10 @@ describe('Identifier Lookup Table', () => {
       expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
     });
 
-    test.failing.each<[string, Conditions[]]>([
-      [val2.slice(1, 3), ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
-    ])('FAILING code :contains %s', async (value, expected) => {
+    test.each<[string, Conditions[]]>([
+      [val1.slice(1, 3), ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
+      [val2.slice(1, 3), ['codeTwoWithoutSystemCatTwo']],
+    ])('code :contains middle of value %s', async (value, expected) => {
       const resContains = await repo.search<Condition>({
         resourceType: 'Condition',
         filters: [

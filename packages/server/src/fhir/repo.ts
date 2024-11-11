@@ -1279,22 +1279,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         console.log('no code', JSON.stringify(t));
         continue;
       }
-      // console.log(t);
-
+      // is this necessary?
       rowTokens.add(code + DELIM);
 
       if (system) {
+        // [parameter]=[system]|
         rowTokens.add(code + DELIM + system);
 
         if (value) {
+          // [parameter]=[system]|[code]
           rowTokens.add(code + DELIM + system + DELIM + value);
         }
       }
 
       if (value) {
+        // [parameter]=[code]
         rowTokens.add(code + DELIM + DELIM + value);
 
         if (!system) {
+          // [parameter]=|[code]
           rowTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
         }
       }
