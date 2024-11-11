@@ -35,7 +35,8 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { HTTP_HL7_ORG, LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
-import { OperationOutcomeError } from '../outcomes';
+import { generateId } from '../crypto';
+import { OperationOutcomeError, validationError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle, loadDataType } from './types';
 import { validateResource, validateTypedValue } from './validation';
@@ -1697,6 +1698,43 @@ describe('FHIR resource validation', () => {
       },
     };
     expect(() => validateTypedValue({ type: 'Timing', value: timing2 })).toThrow('Constraint tim-9 not met');
+  });
+
+  test('Bundle constraint: bdl-8', () => {
+    // fullUrl not required in `Bundle.entry`
+    const noFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: { resourceType: 'Patient' } }],
+    };
+    expect(() => validateResource(noFullUrlBdl)).not.toThrow();
+
+    // If it does exist, no `_history` version
+    const validFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ fullUrl: `http://example.com/fhir/R4/Patient/${generateId()}`, resource: { resourceType: 'Patient' } }],
+    };
+    expect(() => validateResource(validFullUrlBdl)).not.toThrow();
+
+    // This should fail since it contains `_history`
+    const invalidFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          fullUrl: `http://example.com/fhir/R4/Patient/${generateId()}/_history/${generateId()}`,
+          resource: { resourceType: 'Patient' },
+        },
+      ],
+    };
+    expect(() => validateResource(invalidFullUrlBdl)).toThrow(
+      new OperationOutcomeError(
+        validationError(
+          `Constraint bdl-8 not met: fullUrl cannot be a version specific reference ({"fhirpath":"fullUrl.exists() implies fullUrl.contains('/_history/').not()"}) (Bundle.entry[0])`
+        )
+      )
+    );
   });
 });
 
