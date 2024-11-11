@@ -31,11 +31,11 @@ labels = {
 
 ## Buckets configuration 
 gcs_buckets = {
-  medplum-storage = {
+  medplum-storage-01 = {
     location                 = "US"
     public_access_prevention = "enforced"
   },
-  medplum-app = {
+  medplum-app-01 = {
     location = "US"
     website = {
       main_page_suffix = "index.html"
@@ -47,19 +47,9 @@ gcs_buckets = {
       response_header = ["*"]
       max_age_seconds = 3600
     }]
+    iam_members = [{
+      role   = "roles/storage.objectViewer"
+      member = "allUsers"
+    }]
   }
-}
-
-# Buckets bindings for public access
-bucket_bindings = {
-  "medplum-app" = [ # This is the bucket name
-    {
-      roles = [
-        "roles/storage.objectViewer",
-      ]
-      members = [
-        "allUsers",
-      ]
-    },
-  ],
 }

@@ -130,12 +130,3 @@ variable "gcs_buckets" {
   }))
   default = {}
 }
-
-# Buckets bindings
-variable "bucket_bindings" {
-  description = "Bucket level permissions"
-  type = map(list(object({
-    roles   = list(string)
-    members = list(string)
-  })))
-}
