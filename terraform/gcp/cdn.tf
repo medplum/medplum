@@ -103,7 +103,7 @@ resource "google_compute_backend_bucket" "storage_bucket" {
   name             = "medplum-cdn-backend-storage-bucket"
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
-  bucket_name      = module.buckets["medplum-storage-01"].name
+  bucket_name      = module.buckets["medplum-storage"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
 }
@@ -112,7 +112,7 @@ resource "google_compute_backend_bucket" "apps_bucket" {
   name             = "medplum-cdn-backend-app-bucket"
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
-  bucket_name      = module.buckets["medplum-app-01"].name
+  bucket_name      = module.buckets["medplum-app"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
 

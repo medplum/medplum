@@ -1,26 +1,19 @@
 #  This file is used to define variable values for the Terraform configuration, 
 # allowing customization of the infrastructure setup without modifying the main configuration files.
 
-# GCP project configuration - Change these values to use your own project, region, and zone
-project_id     = "medplum-zencore"             # e.g. "medplum-project"
-region         = "us-west1"                    # e.g. "us-west1"
-zone           = "us-west1-a"                  # e.g. "us-west1-a"
-app_domain     = "app.zencore.medplum.dev"     # e.g. "app.medplum.dev"
-storage_domain = "storage.zencore.medplum.dev" # e.g. "storage.medplum.dev"
-api_domain     = "api.zencore.medplum.dev"     # e.g. "api.medplum.dev"
+# GCP project configuration - Change these values to use your own project, domains, region, and zone
 
+project_id     = "your-project-id"          # e.g. "medplum-project"
+region         = "your-region"              # e.g. "us-west1"
+zone           = "your-zone"                # e.g. "us-west1-a"
+app_domain     = "your-static-asset-domain" # e.g. "app.medplum.dev"
+storage_domain = "your-user-content-domain" # e.g. "storage.medplum.dev"
 
-# project_id     = "your-project-id"          # e.g. "medplum-project"
-# region         = "your-region"              # e.g. "us-west1"
-# zone           = "your-zone"                # e.g. "us-west1-a"
-# app_domain     = "your-static-asset-domain" # e.g. "app.medplum.dev"
-# storage_domain = "your-user-content-domain" # e.g. "storage.medplum.dev"
-# api_domain     = "your-api-domain"          # e.g. "api.medplum.dev"
+# GKE Cluster configuration - local network CIDR block should be replaced with your own to be able to access the GKE master nodes
 
 master_authorized_networks = [
   {
     # cidr_block   = "[Your local network CIDR Block]/32"
-    cidr_block   = "190.244.75.217/32"
     display_name = "Local Network"
   },
 ]
@@ -32,13 +25,14 @@ labels = {
   owner   = "your-owner"       # e.g., "team-name", "project-owner"
 }
 
-## Buckets configuration 
+
+## Default Buckets configuration
 gcs_buckets = {
-  medplum-storage-01 = {
+  medplum-storage = { # Bucket name
     location                 = "US"
     public_access_prevention = "enforced"
   },
-  medplum-app-01 = {
+  medplum-app = { # Bucket name
     location = "US"
     website = {
       main_page_suffix = "index.html"
