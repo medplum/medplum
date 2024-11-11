@@ -34,7 +34,7 @@ import {
   Negation,
   SelectQuery,
   escapeLikeString,
-  SqlBuilder,
+  TypedCondition,
 } from '../sql';
 import { LookupTable } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
@@ -45,7 +45,7 @@ interface Token {
   readonly value: string | undefined;
 }
 
-const OLD = false;
+export const USE_TOKEN_TABLE = false;
 const DELIM = '\x01';
 const NULL_SYSTEM = '\x02';
 const ARRAY_DELIM = '\x03';
@@ -103,7 +103,7 @@ export class TokenTable extends LookupTable {
     const values = tokens.map((token) => ({
       resourceId,
       code: token.code,
-      system: token.system?.trim(),
+      system: token.system?.trim?.(),
       value: token.value?.trim?.(),
     }));
 
@@ -127,12 +127,12 @@ export class TokenTable extends LookupTable {
     filter: Filter
   ): Expression {
     const caseSensitive = isCaseSensitiveSearchParameter(param, resourceType);
-    if (OLD) {
+    if (USE_TOKEN_TABLE) {
       const lookupTableName = this.getTableName(resourceType);
 
       const conjunction = new Conjunction([
-        new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
-        new Condition(new Column(lookupTableName, 'code'), '=', filter.code),
+        new TypedCondition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+        new TypedCondition(new Column(lookupTableName, 'code'), '=', filter.code),
       ]);
 
       const whereExpression = buildWhereExpression(lookupTableName, caseSensitive, filter);
@@ -151,12 +151,10 @@ export class TokenTable extends LookupTable {
 
     const whereExpression =
       buildWhereExpression(table, caseSensitive, filter) ??
-      new Condition(new Column(table, 'token'), '&&', filter.code + DELIM, 'text[]');
+      new TypedCondition(new Column(table, 'token'), 'ARRAY_CONTAINS', filter.code + DELIM, 'text[]');
 
     if (shouldTokenRowExist(filter)) {
-      // showSql(whereExpression);
       return whereExpression;
-      // return new Condition(new Column(table, 'token'), 'ARRAY_CONTAINS', filter.code, 'text[]');
     } else {
       return new Negation(whereExpression);
     }
@@ -169,20 +167,26 @@ export class TokenTable extends LookupTable {
    * @param sortRule - The sort rule details.
    */
   addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
-    const lookupTableName = this.getTableName(resourceType);
-    const joinName = selectQuery.getNextJoinAlias();
-    const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
-    selectQuery.join(
-      'INNER JOIN',
-      new SelectQuery(lookupTableName)
-        .distinctOn('resourceId')
-        .column('resourceId')
-        .column('value')
-        .whereExpr(new Condition(new Column(lookupTableName, 'code'), '=', sortRule.code)),
-      joinName,
-      joinOnExpression
-    );
-    selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
+    if (USE_TOKEN_TABLE) {
+      const lookupTableName = this.getTableName(resourceType);
+      const joinName = selectQuery.getNextJoinAlias();
+      const joinOnExpression = new TypedCondition(
+        new Column(resourceType, 'id'),
+        '=',
+        new Column(joinName, 'resourceId')
+      );
+      selectQuery.join(
+        'INNER JOIN',
+        new SelectQuery(lookupTableName)
+          .distinctOn('resourceId')
+          .column('resourceId')
+          .column('value')
+          .whereExpr(new TypedCondition(new Column(lookupTableName, 'code'), '=', sortRule.code)),
+        joinName,
+        joinOnExpression
+      );
+      selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
+    }
   }
 }
 
@@ -535,8 +539,8 @@ function buildWhereCondition(
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
     const [system, value] = parts;
-    if (OLD) {
-      const systemCondition = new Condition(new Column(tableName, 'system'), '=', system);
+    if (USE_TOKEN_TABLE) {
+      const systemCondition = new TypedCondition(new Column(tableName, 'system'), '=', system || null);
       return value
         ? new Conjunction([systemCondition, buildValueCondition(tableName, filter, caseSensitive, system, value)])
         : systemCondition;
@@ -572,23 +576,23 @@ function buildValueCondition(
   value: string
 ): Expression {
   value = value.trim();
-  if (OLD) {
+  if (USE_TOKEN_TABLE) {
     const column = new Column(tableName, 'value');
     if (filter.operator === FhirOperator.TEXT) {
       getLogger().warn('Potentially expensive token lookup query', { operator: filter.operator });
       return new Conjunction([
-        new Condition(new Column(tableName, 'system'), '=', 'text'),
-        new Condition(column, 'TSVECTOR_SIMPLE', value + ':*'),
+        new TypedCondition(new Column(tableName, 'system'), '=', 'text'),
+        new TypedCondition(column, 'TSVECTOR_SIMPLE', value + ':*'),
       ]);
     } else if (filter.operator === FhirOperator.CONTAINS) {
       getLogger().warn('Potentially expensive token lookup query', { operator: filter.operator });
-      return new Condition(column, 'LIKE', escapeLikeString(value) + '%');
+      return new TypedCondition(column, 'LIKE', escapeLikeString(value) + '%');
     } else if (caseSensitive) {
-      return new Condition(column, '=', value);
+      return new TypedCondition(column, '=', value);
     } else {
       // In Medplum v4, or when there is a guarantee all resources have been reindexed, the IN (...) can be
       // switched to an '=' of just the lower-cased value for a simplified query and potentially better performance.
-      return new Condition(column, 'IN', [value, value.toLocaleLowerCase()]);
+      return new TypedCondition(column, 'IN', [value, value.toLocaleLowerCase()]);
     }
   }
 
@@ -602,21 +606,38 @@ function buildValueCondition(
   if (filter.operator === FhirOperator.TEXT) {
     // a2t(token) ~ 'category\x1text\x1[^\x3]*Quick Brown'
     return new Conjunction([
-      new Condition(tokenCol, '&&', filter.code + DELIM + 'text', 'text[]'),
-      new Condition(
+      new TypedCondition(tokenCol, 'ARRAY_CONTAINS', filter.code + DELIM + 'text', 'text[]'),
+      new TypedCondition(
         tokenCol,
-        'ARRAY_REGEX',
+        'ARRAY_IREGEX',
         filter.code + DELIM + 'text' + DELIM + '[^' + ARRAY_DELIM + ']*' + value,
         'text[]'
       ),
     ]);
   } else if (filter.operator === FhirOperator.CONTAINS) {
-    return new Condition(tokenCol, 'ANY_LIKE', '%' + filter.code + DELIM + system + valuePart + '%', 'text[]');
+    return new Conjunction([
+      // This ILIKE doesn't guarantee a matching row, but including it generally results in a faster query
+      // due to the trgm index being faster at LIKE than regex; in other words, the LIKE is a low-pass filter
+      new TypedCondition(
+        tokenCol,
+        'ARRAY_ILIKE',
+        '%' + filter.code + DELIM + DELIM + '%' + escapeLikeString(value) + '%',
+        'text[]'
+      ),
+      // The case-insensitive regex guarantees that the row matches
+      new TypedCondition(
+        tokenCol,
+        'ARRAY_IREGEX',
+        filter.code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + value,
+        'text[]'
+      ),
+    ]);
   } else if (caseSensitive) {
-    return new Condition(tokenCol, '&&', filter.code + DELIM + system + valuePart, 'text[]');
+    return new TypedCondition(tokenCol, 'ARRAY_CONTAINS', filter.code + DELIM + system + valuePart, 'text[]');
   } else {
-    const param = filter.code + DELIM + system + DELIM + value + '(' + ARRAY_DELIM + '|$)';
-    return new Condition(tokenCol, 'ARRAY_IREGEX', param, 'text[]');
+    // if a2t doesn't include ARRAY_DELIM at beginning and end, use '(' + ARRAY_DELIM + '|$)' at the end
+    const param = filter.code + DELIM + system + DELIM + value + ARRAY_DELIM;
+    return new TypedCondition(tokenCol, 'ARRAY_IREGEX', param, 'text[]');
   }
 }
 
@@ -692,8 +713,8 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
   //     )
   //   )
   //
-  if (OLD) {
-    return new Condition(
+  if (USE_TOKEN_TABLE) {
+    return new TypedCondition(
       new Column(tableName, 'system'),
       'IN_SUBQUERY',
       new SelectQuery('ValueSet').column('reference').where('url', '=', value).limit(1),
@@ -717,7 +738,7 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
     new Column('unnested', "array_agg('" + code + DELIM + "' || reference)", true, 'code_and_system')
   );
 
-  return new Condition(new Column(tableName, 'token'), '&&', arrayAgg, 'TEXT[]');
+  return new TypedCondition(new Column(tableName, 'token'), 'ARRAY_CONTAINS_SUBQUERY', arrayAgg, 'TEXT[]');
 }
 
 /**
@@ -730,8 +751,8 @@ function isCaseSensitiveSearchParameter(param: SearchParameter, resourceType: Re
   return getTokenIndexType(param, resourceType) === TokenIndexTypes.CASE_SENSITIVE;
 }
 
-function showSql(exp: Expression): void {
-  const sql = new SqlBuilder();
-  sql.appendExpression(exp);
-  console.log(sql.toString());
-}
+// function showSql(exp: Expression): void {
+// const sql = new SqlBuilder();
+// sql.appendExpression(exp);
+// console.log(sql.toString());
+// }
