@@ -7,12 +7,15 @@ region         = "us-west1"                    # e.g. "us-west1"
 zone           = "us-west1-a"                  # e.g. "us-west1-a"
 app_domain     = "app.zencore.medplum.dev"     # e.g. "app.medplum.dev"
 storage_domain = "storage.zencore.medplum.dev" # e.g. "storage.medplum.dev"
+api_domain     = "api.zencore.medplum.dev"     # e.g. "api.medplum.dev"
+
 
 # project_id     = "your-project-id"          # e.g. "medplum-project"
 # region         = "your-region"              # e.g. "us-west1"
 # zone           = "your-zone"                # e.g. "us-west1-a"
 # app_domain     = "your-static-asset-domain" # e.g. "app.medplum.dev"
 # storage_domain = "your-user-content-domain" # e.g. "storage.medplum.dev"
+# api_domain     = "your-api-domain"          # e.g. "api.medplum.dev"
 
 master_authorized_networks = [
   {

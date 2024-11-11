@@ -23,12 +23,7 @@ deployment:
   autoscaling:
     enabled: true
 
-# service:
-#   port: 80
-#   targetPort: 8103
-
 ingress:
   deploy: true
-  domain: api.example.com
-  
+  domain: [MY_DOMAIN] # Your domain name
   

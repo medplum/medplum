@@ -28,65 +28,8 @@ resource "google_compute_security_policy" "ingress_security_policy" {
   adaptive_protection_config {
     layer_7_ddos_defense_config {
       enable          = true
-      rule_visibility = "STANDARD" 
+      rule_visibility = "STANDARD"
     }
-  }
-  # Rule to block SQL Injection attacks
-  rule {
-    priority = 1000
-    action   = "deny"
-    match {
-      expr {
-        expression = "evaluatePreconfiguredWaf('sqli-v33-stable', {'sensitivity': 1})"
-      }
-    }
-    description = "Block SQL Injection attacks"
-  }
-
-  # Rule to block Cross-site Scripting (XSS) attacks
-  rule {
-    priority = 1001
-    action   = "deny"
-    match {
-      expr {
-        expression = "evaluatePreconfiguredWaf('xss-v33-stable', {'sensitivity': 1})"
-      }
-    }
-    description = "Block Cross-site Scripting (XSS) attacks"
-  }
-
-  # Rule to block Remote Code Execution (RCE) attacks
-  rule {
-    priority = 1002
-    action   = "deny"
-    match {
-      expr {
-        expression = "evaluatePreconfiguredWaf('rce-v33-stable', {'sensitivity': 1})"
-      }
-    }
-    description = "Block Remote Code Execution (RCE) attacks"
-  }
-
-  # Rate limiting to mitigate DDoS attacks
-  rule {
-    priority = 900
-    action   = "rate_based_ban"
-    match {
-      versioned_expr = "SRC_IPS_V1"
-      config {
-        src_ip_ranges = ["*"]
-      }
-    }
-    rate_limit_options {
-      rate_limit_threshold {
-        count        = 1000
-        interval_sec = 60
-      }
-      conform_action   = "allow"
-      exceed_action    = "deny(429)"
-      ban_duration_sec = 600
-    }
-    description = "Rate limit to mitigate DDoS attacks"
   }
 
   # Default allow rule
@@ -100,5 +43,43 @@ resource "google_compute_security_policy" "ingress_security_policy" {
       }
     }
     description = "Default rule to allow all other traffic"
+  }
+  # Rule to log potential SQL Injection attacks
+  rule {
+    priority = 1001
+    action   = "allow"
+    preview  = true
+    match {
+      expr {
+        expression = "evaluatePreconfiguredWaf('sqli-v33-stable', {'sensitivity': 1})"
+      }
+    }
+    description = "Log potential SQL Injection attacks"
+  }
+
+  # Rule to log potential Cross-site Scripting (XSS) attacks
+  rule {
+    priority = 1002
+    action   = "allow"
+    preview  = true
+    match {
+      expr {
+        expression = "evaluatePreconfiguredWaf('xss-v33-stable', {'sensitivity': 1})"
+      }
+    }
+    description = "Log potential XSS attacks"
+  }
+
+  # Rule to log potential Remote Code Execution (RCE) attacks
+  rule {
+    priority = 1003
+    action   = "allow"
+    preview  = true
+    match {
+      expr {
+        expression = "evaluatePreconfiguredWaf('rce-v33-stable', {'sensitivity': 1})"
+      }
+    }
+    description = "Log potential RCE attacks"
   }
 }

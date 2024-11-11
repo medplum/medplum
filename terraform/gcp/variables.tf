@@ -21,6 +21,10 @@ variable "storage_domain" {
   description = "value for the user content domain"
   type        = string
 }
+variable "api_domain" {
+  description = "value for the api domain"
+  type        = string
+}
 variable "services_api" {
   description = "A list of GCP services to enable"
   type        = list(string)

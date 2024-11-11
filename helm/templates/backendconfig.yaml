@@ -7,6 +7,8 @@ metadata:
   labels:
     {{- include "medplum.labels" . | nindent 4 }}
 spec:
+  securityPolicy:
+    name: ingress-security-policy
   cdn:
     enabled: true
     cachePolicy:
@@ -18,4 +20,7 @@ spec:
     unhealthyThreshold: 3
     type: HTTP
     requestPath: /healthcheck 
+  logging:
+    enable: true
+    sampleRate: 0.5
 {{- end }}
