@@ -1722,7 +1722,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     if (updated.resourceType === 'Patient') {
-      // Otherwise, default to the existing value.
+      // When examining a Patient resource, we only look at the individual patient
+      // We should not call `getPatients` and `readReference`
       const existingAccounts = this.extractAccountReferences(existing?.meta);
       if (existingAccounts?.length) {
         for (const account of existingAccounts) {
@@ -1730,19 +1731,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       }
     } else {
-      for (const patientRef of getPatients(updated)) {
-        try {
-          // If the resource is in a patient compartment, then lookup the patient.
-          const patient = await getSystemRepo().readReference(patientRef);
-          // If the patient has an account, then use it as the resource account.
-          const patientAccounts = this.extractAccountReferences(patient.meta);
-          if (patientAccounts?.length) {
-            for (const account of patientAccounts) {
-              accounts.add(account.reference as string);
+      const patients = await getSystemRepo().readReferences(getPatients(updated));
+      for (const patient of patients) {
+        if (patient instanceof Error) {
+          getLogger().debug('Error setting patient compartment', patient);
+          continue;
+        }
+
+        // If the patient has an account, then use it as the resource account.
+        const patientAccounts = this.extractAccountReferences(patient.meta);
+        if (patientAccounts?.length) {
+          for (const account of patientAccounts) {
+            if (account.reference) {
+              accounts.add(account.reference);
             }
           }
-        } catch (err: any) {
-          getLogger().debug('Error setting patient compartment', err);
         }
       }
     }
