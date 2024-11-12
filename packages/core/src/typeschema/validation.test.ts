@@ -1367,7 +1367,7 @@ describe('FHIR resource validation', () => {
     expect(issues[0].details?.text).toContain(textContains);
   }
 
-  const DUPLICATE_CHOICE_OF_TYPE_PROPERTY = 'Duplicate choice of type property';
+  const DUPLICATE_CHOICE_OF_TYPE_PROPERTY = 'Conflicting choice of type properties';
   const PRIMITIVE_EXTENSION_TYPE_MISMATCH = 'Type of primitive extension does not match the type of property';
 
   test('Multiple values for choice of type property', () => {
@@ -1398,6 +1398,8 @@ describe('FHIR resource validation', () => {
     };
 
     expectOneWarning(carePlan, DUPLICATE_CHOICE_OF_TYPE_PROPERTY);
+    expectOneWarning(carePlan, 'scheduledTiming');
+    expectOneWarning(carePlan, 'scheduledPeriod');
   });
 
   test('Valid choice of type properties with primitive extensions', () => {
