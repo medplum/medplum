@@ -488,11 +488,11 @@ function isArrayKey(k: string): boolean {
 }
 
 /**
- * Returns true if the value is empty (null, undefined, empty string, or empty object).
+ * Returns true if the value is empty (null, undefined, empty string, empty object, or empty array).
  * @param v - Any value.
- * @returns True if the value is an empty string or an empty object.
+ * @returns True if the value is an empty string, object, or array.
  */
-export function isEmpty(v: unknown): boolean {
+export function isEmpty(v: unknown): v is null | undefined | '' | Record<string, never> | never[] {
   if (v === null || v === undefined) {
     return true;
   }
