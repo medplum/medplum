@@ -621,7 +621,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (project) {
       resultMeta.project = project;
     }
-    const accounts = await this.getAccounts(existing, updated, create);
+    const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
       resultMeta.account = accounts[0];
       resultMeta.accounts = accounts;
@@ -1740,42 +1740,63 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Returns the author reference string (resourceType/id).
    * If the current context is a ClientApplication, handles "on behalf of".
    * Otherwise uses the current context profile.
-   * @param existing - Existing resource if one exists.
+   * @param existing - Current (soon to be previous) resource, if one exists.
    * @param updated - The incoming updated resource.
-   * @param create - Flag for when "creating" vs "updating".
-   * @returns The account value.
+   * @returns The account values.
    */
-  private async getAccounts(
-    existing: Resource | undefined,
-    updated: Resource,
-    create: boolean
-  ): Promise<Reference[] | undefined> {
+  private async getAccounts(existing: Resource | undefined, updated: Resource): Promise<Reference[] | undefined> {
     const updatedAccounts = this.extractAccountReferences(updated.meta);
     if (updatedAccounts && this.canWriteAccount()) {
       // If the user specifies an account, allow it if they have permission.
       return updatedAccounts;
     }
 
-    if (create && this.context.accessPolicy?.compartment) {
-      // If the user access policy specifies a compartment, then use it as the account.
-      return [this.context.accessPolicy.compartment];
+    const accounts = new Set<string>();
+    if (!existing && this.context.accessPolicy?.compartment?.reference) {
+      // If the creator's access policy specifies a compartment, then use it as the account.
+      // The writer's access policy is only applied at resource creation: simply editing a
+      // resource does NOT pull it into the user's account.
+      accounts.add(this.context.accessPolicy.compartment.reference);
     }
 
-    if (updated.resourceType !== 'Patient') {
-      for (const patientRef of getPatients(updated)) {
-        try {
-          // If the resource is in a patient compartment, then lookup the patient.
-          const patient = await getSystemRepo().readReference(patientRef);
-          // If the patient has an account, then use it as the resource account.
-          return this.extractAccountReferences(patient.meta);
-        } catch (err: any) {
-          getLogger().debug('Error setting patient compartment', err);
+    if (updated.resourceType === 'Patient') {
+      // When examining a Patient resource, we only look at the individual patient
+      // We should not call `getPatients` and `readReference`
+      const existingAccounts = this.extractAccountReferences(existing?.meta);
+      if (existingAccounts?.length) {
+        for (const account of existingAccounts) {
+          accounts.add(account.reference as string);
+        }
+      }
+    } else {
+      const patients = await getSystemRepo().readReferences(getPatients(updated));
+      for (const patient of patients) {
+        if (patient instanceof Error) {
+          getLogger().debug('Error setting patient compartment', patient);
+          continue;
+        }
+
+        // If the patient has an account, then use it as the resource account.
+        const patientAccounts = this.extractAccountReferences(patient.meta);
+        if (patientAccounts?.length) {
+          for (const account of patientAccounts) {
+            if (account.reference) {
+              accounts.add(account.reference);
+            }
+          }
         }
       }
     }
 
-    // Otherwise, default to the existing value.
-    return this.extractAccountReferences(existing?.meta);
+    if (accounts.size < 1) {
+      return undefined;
+    }
+
+    const result: Reference[] = [];
+    for (const reference of accounts) {
+      result.push({ reference });
+    }
+    return result;
   }
 
   private extractAccountReferences(meta: Meta | undefined): Reference[] | undefined {
