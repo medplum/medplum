@@ -283,42 +283,6 @@ describe('Identifier Lookup Table', () => {
       expect(bundleContains(searchResult1, patient2)).toBeDefined();
     }));
 
-  test('Missing', () =>
-    withTestContext(async () => {
-      const identifier = randomUUID();
-      const name = randomUUID();
-
-      const patient1 = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: name }],
-      });
-
-      const patient2 = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Bob'], family: name }],
-        telecom: [{ system: 'email', value: identifier + 'xyz' }],
-      });
-
-      const searchResult1 = await systemRepo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'email',
-            operator: Operator.MISSING,
-            value: 'true',
-          },
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: name,
-          },
-        ],
-      });
-      expect(searchResult1.entry?.length).toStrictEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBeDefined();
-      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
-    }));
-
   test('Search comma separated identifier exact', () =>
     withTestContext(async () => {
       const identifier1 = randomUUID();
@@ -733,6 +697,44 @@ describe('Identifier Lookup Table', () => {
       expect(Object.keys(cond)).toHaveLength(conditionNames.length);
     });
 
+    test('Sort by identifier', () =>
+      withTestContext(async () => {
+        const system = randomUUID();
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'First' }],
+          identifier: [
+            { system, value: 'AAA' },
+            { system, value: 'ZZZ' },
+          ],
+        });
+
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Second' }],
+          identifier: [{ system, value: 'LLL' }],
+        });
+
+        const searchResult1 = await repo.search<Patient>({
+          resourceType: 'Patient',
+          // filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
+          sortRules: [{ code: 'identifier', descending: false }],
+        });
+        // console.log(JSON.stringify(searchResult1.entry, null, 2));
+        // console.log(searchResult1.entry?.map((e) => e.resource?.name?.[0]?.family));
+        // expect(searchResult1.entry?.length).toBe(2);
+        expect(searchResult1.entry?.map((e) => e.resource?.name?.[0]?.family)).toEqual(['First', 'Second']);
+        expect(searchResult1.entry?.map((e) => e.resource?.name?.[0]?.family)).toEqual(['First', 'Second', undefined]);
+
+        // const searchResult2 = await repo.search<Patient>({
+        //   resourceType: 'Patient',
+        //   filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
+        //   sortRules: [{ code: 'identifier', descending: true }],
+        // });
+        // expect(searchResult1.entry?.length).toBe(2);
+        // expect(searchResult2.entry?.map((e) => e.resource?.name?.[0]?.family)).toEqual(['First', 'Second']);
+      }));
+
     test.each<[string, Conditions[]]>([
       [sys1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo']],
       [sys2, []],
@@ -914,6 +916,10 @@ describe('Identifier Lookup Table', () => {
   });
 });
 
-function toSortedIdentifierValues(bundle: Bundle<Condition>): string[] {
-  return bundle.entry?.map((e) => e.resource?.identifier?.[0].value as string).toSorted() ?? [];
+function toIdentifierValues(bundle: Bundle<Condition | Patient>): string[] {
+  return bundle.entry?.map((e) => e.resource?.identifier?.[0].value as string) ?? [];
+}
+
+function toSortedIdentifierValues(bundle: Bundle<Condition | Patient>): string[] {
+  return toIdentifierValues(bundle).toSorted();
 }

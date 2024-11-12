@@ -22,7 +22,7 @@ import {
   ResourceType,
   SearchParameter,
 } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
+import { escapeLiteral, PoolClient } from 'pg';
 import { getLogger } from '../../context';
 import {
   Column,
@@ -186,7 +186,34 @@ export class TokenTable extends LookupTable {
         joinOnExpression
       );
       selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
+      return;
     }
+
+    /*
+      Current behavior:  
+      Sorts by the first value found in the token array for the given sort code which can result
+      in incorrect result ordering when a resource has multiple token values for the same code.
+
+      To achieve the correct behavior, we'd need to do something like:
+
+      * unnest or a2t the token array
+      * extract the matching code values with a regex group similar to below, but get ALL matching values instead of just the first
+      * sort the matching values
+      * choose the first or last sorted value based on sortRule.descending
+      
+      There is almost certainly not an efficient way to that much array/string manipulation
+      for dynamic codes for every row in the result set prior to sorting/limiting since that
+      essentially boils down to joining to a projected token table on the fly.
+
+    */
+    selectQuery.orderBy(
+      new Column(
+        undefined,
+        'substring(a2t(token),' + escapeLiteral(sortRule.code + DELIM + DELIM + '([^' + ARRAY_DELIM + ']+)') + ')',
+        true
+      ),
+      sortRule.descending
+    );
   }
 }
 
