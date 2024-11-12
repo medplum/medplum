@@ -2025,8 +2025,24 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     query: string,
     options?: MedplumRequestOptions
   ): Promise<T> {
-    return ((await this.searchOne(resource.resourceType, query, options)) ??
-      this.createResource(resource, options)) as Promise<T>;
+    const url = this.fhirUrl(resource.resourceType);
+    if (!options) {
+      options = { headers: { 'If-None-Exist': query } };
+    } else if (!options.headers) {
+      options.headers = { 'If-None-Exist': query };
+    } else if (Array.isArray(options.headers)) {
+      options.headers.push(['If-None-Exist', query]);
+    } else if (options.headers instanceof Headers) {
+      options.headers.set('If-None-Exist', query);
+    } else {
+      options.headers['If-None-Exist'] = query;
+    }
+
+    const result = await this.post(url, resource, undefined, options);
+    this.cacheResource(result);
+    this.invalidateUrl(this.fhirUrl(resource.resourceType, resource.id as string, '_history'));
+    this.invalidateSearches(resource.resourceType);
+    return result;
   }
 
   /**
