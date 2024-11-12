@@ -159,6 +159,8 @@ describe('App', () => {
     state.mySocket = undefined;
     mockServer1.stop();
 
+    console.log('Busting Turbo cache');
+
     // Start a new server
     const mockServer2 = new Server('wss://example.com/ws/agent');
     mockServer2.on('connection', mockConnectionHandler);
