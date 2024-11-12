@@ -21,7 +21,6 @@ import {
   evalFhirPathTyped,
   forbidden,
   formatSearchQuery,
-  getReferenceString,
   getSearchParameterDetails,
   getSearchParameters,
   getStatus,
