@@ -370,13 +370,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.isSuperAdmin()) {
       return true;
     }
-    console.log(
-      'Reading cache entry',
-      getReferenceString(cacheEntry.resource),
-      'for project',
-      cacheEntry.projectId,
-      cacheEntry.resource.meta
-    );
     if (!this.context.projects?.includes(cacheEntry.projectId)) {
       return false;
     }

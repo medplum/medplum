@@ -1231,7 +1231,7 @@ describe('FHIR Repo', () => {
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
     }));
 
-  test('Patch post-commit does stores full resource in cache', async () =>
+  test('Patch post-commit stores full resource in cache', async () =>
     withTestContext(async () => {
       const { project, repo, login, membership } = await createTestProject({
         withRepo: { extendedMode: false },
