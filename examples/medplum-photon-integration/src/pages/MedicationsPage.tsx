@@ -1,7 +1,7 @@
 import { Button, Flex, Modal, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString, PatchOperation } from '@medplum/core';
+import { createReference, normalizeErrorString, PatchOperation } from '@medplum/core';
 import { Coding, List, MedicationKnowledge, Resource } from '@medplum/fhirtypes';
 import { CodingInput, Container, Document, ResourceForm, useMedplum } from '@medplum/react';
 import { IconCircle, IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
@@ -13,6 +13,7 @@ export function MedicationsPage(): JSX.Element {
   const [medications, setMedications] = useState<MedicationKnowledge[]>();
   const [formulary, setFormulary] = useState<List>();
   const [opened, { open, close, toggle }] = useDisclosure(false);
+  const [loading, setLoading] = useState(false);
   const [knowledge, setKnowledge] = useState<MedicationKnowledge>({
     resourceType: 'MedicationKnowledge',
     status: 'active',
@@ -29,6 +30,7 @@ export function MedicationsPage(): JSX.Element {
   }, [medplum, medications, formulary]);
 
   async function syncFormulary(): Promise<void> {
+    setLoading(true);
     try {
       const result = (await medplum.executeBot(
         {
@@ -38,6 +40,7 @@ export function MedicationsPage(): JSX.Element {
         { ...formulary },
         'application/json'
       )) as MedicationKnowledge[];
+      setLoading(false);
 
       if (result.length === 0) {
         notifications.show({
@@ -54,6 +57,7 @@ export function MedicationsPage(): JSX.Element {
         });
       }
     } catch (err) {
+      setLoading(false);
       notifications.show({
         color: 'red',
         icon: <IconCircleOff />,
@@ -85,7 +89,7 @@ export function MedicationsPage(): JSX.Element {
       if (formulary) {
         const formularyId = formulary.id as string;
         const medications = formulary.entry ?? [];
-        medications.push({ item: { reference: getReferenceString(medication) } });
+        medications.push({ item: createReference(medication) });
         const ops: PatchOperation[] = [{ op: 'add', path: '/entry', value: medications }];
 
         const updatedFormulary = await medplum.patchResource('List', formularyId, ops);
@@ -111,7 +115,9 @@ export function MedicationsPage(): JSX.Element {
     <Document>
       <Flex justify="space-between" mb="md">
         <Title order={3}>Formulary Management</Title>
-        <Button onClick={syncFormulary}>Sync Formulary</Button>
+        <Button onClick={syncFormulary} loading={loading}>
+          Sync Formulary
+        </Button>
       </Flex>
       <Container m="md">
         <CodingInput

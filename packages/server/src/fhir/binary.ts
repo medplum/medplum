@@ -7,7 +7,7 @@ import { asyncWrap } from '../async';
 import { getAuthenticatedContext, getLogger } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { sendOutcome } from './outcomes';
-import { sendResponse } from './response';
+import { sendFhirResponse } from './response';
 import { BinarySource, getBinaryStorage } from './storage';
 import { Repository } from './repo';
 
@@ -28,7 +28,7 @@ binaryRouter.get(
     const ctx = getAuthenticatedContext();
     const { id } = req.params;
     const binary = await ctx.repo.readResource<Binary>('Binary', id);
-    await sendResponse(req, res, allOk, binary);
+    await sendFhirResponse(req, res, allOk, binary);
   })
 );
 
@@ -71,7 +71,7 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
       // """
       const resource = body as Binary;
       const binary = await (create ? repo.createResource<Binary>(resource) : repo.updateResource<Binary>(resource));
-      await sendResponse(req, res, create ? created : allOk, binary);
+      await sendFhirResponse(req, res, create ? created : allOk, binary);
       return;
     }
   }
@@ -83,7 +83,7 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
     securityContext: req.get('X-Security-Context'),
   });
 
-  await sendResponse(req, res, create ? created : allOk, binary);
+  await sendFhirResponse(req, res, create ? created : allOk, binary);
 }
 
 /**

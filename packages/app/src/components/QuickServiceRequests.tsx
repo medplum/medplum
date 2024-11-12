@@ -1,6 +1,6 @@
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import { BundleEntry, Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
+import { Patient, Reference, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { MedplumLink, sortByDateAndPriority, useMedplum, useResource } from '@medplum/react';
 import cx from 'clsx';
 import { useEffect, useState } from 'react';
@@ -28,7 +28,7 @@ export function QuickServiceRequests(props: QuickServiceRequestsProps): JSX.Elem
     medplum
       .search('ServiceRequest', 'subject=' + patientRefStr)
       .then((bundle) => {
-        const entries = bundle.entry as BundleEntry<ServiceRequest>[];
+        const entries = bundle.entry ?? [];
         const resources = entries.map((e) => e.resource as ServiceRequest);
         sortByDateAndPriority(resources);
         resources.reverse();

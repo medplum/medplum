@@ -22,7 +22,7 @@ import {
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   const patient = event.input as Patient;
   const patientHistory = await medplum.readHistory('Patient', patient.id as string);
-  if ((patientHistory.entry as BundleEntry[]).length > 1) {
+  if ((patientHistory.entry?.length ?? 0) > 1) {
     console.log('Patient already has history');
     return;
   }

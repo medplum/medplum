@@ -220,6 +220,12 @@ export interface ResearchStudy {
   location?: CodeableConcept[];
 
   /**
+   * A country, state or other area where the study is taking place rather
+   * than its precise geographic location or address.
+   */
+  region?: CodeableConcept[];
+
+  /**
    * A brief text for explaining the study.
    */
   descriptionSummary?: string;

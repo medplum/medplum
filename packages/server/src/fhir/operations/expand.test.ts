@@ -944,8 +944,7 @@ describe('Updated implementation', () => {
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
-    const expandedCodes = expansion.contains?.map((coding) => coding.code);
-    expect(expandedCodes).toHaveLength(0);
+    expect(expansion.contains).toBeUndefined();
   });
 
   test('Expand with empty filter', async () => {
@@ -956,6 +955,16 @@ describe('Updated implementation', () => {
     expect(res.status).toEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
     expect(expansion.contains).toHaveLength(12);
+  });
+
+  test('Expand with trailing quote', async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/task-status|4.0.1&filter=a'`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toBeUndefined();
   });
 
   test('Exact code match', async () => {

@@ -1,6 +1,7 @@
 // start-block imports
 import { MedplumClient } from '@medplum/core';
 import { Bundle } from '@medplum/fhirtypes';
+import { readFile } from 'fs/promises';
 // end-block imports
 
 const medplum = new MedplumClient();
@@ -72,7 +73,23 @@ curl 'https://api.medplum.com/fhir/R4' \
     ],
   }'
 // end-block simpleBatchCurl
+
+// start-block asyncBatchCurl
+curl 'https://api.medplum.com/fhir/R4' \
+  -X POST
+  -H 'authorization: Bearer $ACCESS_TOKEN' \
+  -H 'content-type: application/fhir+json' \
+  -H 'prefer: respond-async'
+  -d @large-bundle.json
+// end-block asyncBatchCurl
 */
+
+// TODO: Fix up this client function to have correct return type and/or handle polling AsyncJob internally
+// start-block asyncBatchTs
+await medplum.executeBatch(JSON.parse(await readFile('large-bundle.json', 'utf8')), {
+  headers: { prefer: 'respond-async' },
+});
+// end-block asyncBatchTs
 
 const batchCreate: Bundle =
   // start-block batchCreate

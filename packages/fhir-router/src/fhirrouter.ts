@@ -20,7 +20,7 @@ import type { IncomingHttpHeaders } from 'node:http';
 import { Operation } from 'rfc6902';
 import { LogEvent, processBatch } from './batch';
 import { graphqlHandler } from './graphql';
-import { CreateResourceOptions, FhirRepository, UpdateResourceOptions } from './repo';
+import { CreateResourceOptions, FhirRepository, RepositoryMode, UpdateResourceOptions } from './repo';
 import { HttpMethod, RouteResult, Router } from './urlrouter';
 
 export type FhirRequest = {
@@ -37,12 +37,19 @@ export type FhirRequest = {
 export type FhirRequestConfig = {
   graphqlBatchedSearchSize?: number;
   graphqlMaxDepth?: number;
-  graphqlMaxPageSize?: number;
   graphqlMaxSearches?: number;
+  searchOnReader?: boolean;
   transactions?: boolean;
 };
 
-export type FhirResponse = [OperationOutcome] | [OperationOutcome, Resource];
+export type FhirResponseOptions = {
+  contentType?: string;
+};
+
+export type FhirResponse =
+  | [OperationOutcome]
+  | [OperationOutcome, Resource]
+  | [OperationOutcome, Resource, FhirResponseOptions];
 
 export type FhirRouteOptions = {
   batch?: boolean;
@@ -71,14 +78,28 @@ async function batch(req: FhirRequest, repo: FhirRepository, router: FhirRouter)
 }
 
 // Search
-async function search(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+async function search(
+  req: FhirRequest,
+  repo: FhirRepository,
+  _router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
+  setSearchRepositoryMode(req, repo, options);
+
   const { resourceType } = req.params;
   const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, req.query));
   return [allOk, bundle];
 }
 
 // Search multiple types
-async function searchMultipleTypes(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+async function searchMultipleTypes(
+  req: FhirRequest,
+  repo: FhirRepository,
+  _router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
+  setSearchRepositoryMode(req, repo, options);
+
   const searchRequest = parseSearchRequest('MultipleTypes' as ResourceType, req.query);
   if (!searchRequest.types || searchRequest.types.length === 0) {
     return [badRequest('No types specified')];
@@ -88,11 +109,24 @@ async function searchMultipleTypes(req: FhirRequest, repo: FhirRepository): Prom
 }
 
 // Search by POST
-async function searchByPost(req: FhirRequest, repo: FhirRepository): Promise<FhirResponse> {
+async function searchByPost(
+  req: FhirRequest,
+  repo: FhirRepository,
+  _router: FhirRouter,
+  options?: FhirRouteOptions
+): Promise<FhirResponse> {
+  setSearchRepositoryMode(req, repo, options);
+
   const { resourceType } = req.params;
   const query = req.body as Record<string, string[] | string | undefined>;
   const bundle = await repo.search(parseSearchRequest(resourceType as ResourceType, query));
   return [allOk, bundle];
+}
+
+function setSearchRepositoryMode(req: FhirRequest, repo: FhirRepository, options?: FhirRouteOptions): void {
+  if (!options?.batch && req.config?.searchOnReader) {
+    repo.setMode(RepositoryMode.READER);
+  }
 }
 
 // Create resource

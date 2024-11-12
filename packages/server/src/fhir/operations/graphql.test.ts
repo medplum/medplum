@@ -1,5 +1,5 @@
 import { ContentType, createReference, getReferenceString, isPopulated } from '@medplum/core';
-import { Binary, Encounter, Patient, Practitioner, Resource, ServiceRequest } from '@medplum/fhirtypes';
+import { Binary, Bundle, Encounter, Patient, Practitioner, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -122,6 +122,10 @@ describe('GraphQL', () => {
       bobAccessToken = bobRegistration.accessToken;
     })
   );
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   afterAll(async () => {
     await shutdownApp();
@@ -276,6 +280,7 @@ describe('GraphQL', () => {
         }`,
       });
     expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.headers['cache-control']).toBe('no-store, no-cache, must-revalidate');
   });
 
@@ -1070,10 +1075,8 @@ describe('GraphQL', () => {
   });
 
   test('Uses reader instance when available', async () => {
-    const reader = getDatabasePool(DatabaseMode.READER);
-    const readerSpy = jest.spyOn(reader, 'query');
-    const writer = getDatabasePool(DatabaseMode.WRITER);
-    const writerSpy = jest.spyOn(writer, 'query');
+    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')
@@ -1083,6 +1086,39 @@ describe('GraphQL', () => {
     expect(res.status).toBe(200);
     expect(readerSpy).toHaveBeenCalledTimes(1);
     expect(writerSpy).toHaveBeenCalledTimes(0);
+  });
+
+  test('GraphQL in batch users writer', async () => {
+    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: '$graphql',
+          },
+          resource: {
+            query: `{ PatientList(_id: "${patient.id}") { id } }`,
+          } as unknown as Resource,
+        },
+      ],
+    };
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toEqual('Bundle');
+    expect(res.body.entry[0].resource.data.PatientList).toHaveLength(1);
+    expect(res.body.entry[0].resource.data.PatientList[0].id).toBe(patient.id);
+
+    expect(readerSpy).toHaveBeenCalledTimes(0);
+    expect(writerSpy).toHaveBeenCalledTimes(1);
   });
 });
 

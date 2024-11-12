@@ -18,7 +18,7 @@ import {
   Disjunction,
   escapeLikeString,
   Expression,
-  Literal,
+  Parameter,
   SelectQuery,
   SqlFunction,
 } from '../sql';
@@ -453,10 +453,7 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
         ])
       )
       .orderByExpr(
-        new SqlFunction('strict_word_similarity', [
-          new Column(undefined, 'display'),
-          new Literal(`'${params.filter}'`),
-        ]),
+        new SqlFunction('strict_word_similarity', [new Column(undefined, 'display'), new Parameter(params.filter)]),
         true
       );
   }

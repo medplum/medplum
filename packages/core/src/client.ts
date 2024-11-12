@@ -621,7 +621,7 @@ interface RequestCacheEntry {
 }
 
 interface AutoBatchEntry<T = any> {
-  readonly method: string;
+  readonly method: 'GET';
   readonly url: string;
   readonly options: MedplumRequestOptions;
   readonly resolve: (value: T) => void;
@@ -3261,10 +3261,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   private async executeAutoBatch(): Promise<void> {
     // Get the current queue
-    const entries = [...(this.autoBatchQueue as AutoBatchEntry[])];
+    if (this.autoBatchQueue === undefined) {
+      return;
+    }
+
+    const entries = [...this.autoBatchQueue];
 
     // Clear the queue
-    (this.autoBatchQueue as AutoBatchEntry[]).length = 0;
+    this.autoBatchQueue.length = 0;
 
     // Clear the timer
     this.autoBatchTimerId = undefined;
@@ -3285,14 +3289,13 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       resourceType: 'Bundle',
       type: 'batch',
       entry: entries.map(
-        (e) =>
-          ({
-            request: {
-              method: e.method,
-              url: e.url,
-            },
-            resource: e.options.body ? (JSON.parse(e.options.body as string) as Resource) : undefined,
-          }) as BundleEntry
+        (e): BundleEntry => ({
+          request: {
+            method: e.method,
+            url: e.url,
+          },
+          resource: e.options.body ? (JSON.parse(e.options.body as string) as Resource) : undefined,
+        })
       ),
     };
 

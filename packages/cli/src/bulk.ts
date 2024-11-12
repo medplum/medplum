@@ -71,7 +71,7 @@ async function importFile(
   medplum: MedplumClient,
   addExtensionsForMissingValues: boolean
 ): Promise<void> {
-  let entries = [] as BundleEntry[];
+  let entries: BundleEntry[] = [];
   const fileStream = createReadStream(path);
   const rl = createInterface({
     input: fileStream,

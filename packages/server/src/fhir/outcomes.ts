@@ -1,4 +1,4 @@
-import { getStatus, isAccepted } from '@medplum/core';
+import { ContentType, getStatus, isAccepted } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Response } from 'express';
 import { Result, ValidationError } from 'express-validator';
@@ -38,8 +38,11 @@ export function sendOutcome(res: Response, outcome: OperationOutcome): Response 
   if (isAccepted(outcome) && outcome.issue?.[0].diagnostics) {
     res.set('Content-Location', outcome.issue[0].diagnostics);
   }
-  return res.status(getStatus(outcome)).json({
-    ...outcome,
-    extension: buildTracingExtension(),
-  } as OperationOutcome);
+  return res
+    .status(getStatus(outcome))
+    .type(ContentType.FHIR_JSON)
+    .json({
+      ...outcome,
+      extension: buildTracingExtension(),
+    } as OperationOutcome);
 }

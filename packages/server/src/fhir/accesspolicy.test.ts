@@ -360,6 +360,94 @@ describe('AccessPolicy', () => {
       expect(readPatient.meta?.accounts).toContainEqual({ reference: 'Organization/' + orgId });
     }));
 
+  test('Merge access policy account override and resource accounts', () =>
+    withTestContext(async () => {
+      // Setup:
+      // User has an access policy with account/compartment restriction
+      // User updates resource with sources of account information
+      // The two sources of accounts should be merged
+
+      const overrideId = randomUUID();
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        compartment: {
+          reference: 'Organization/' + overrideId,
+        },
+        resource: [
+          {
+            resourceType: 'Observation',
+            criteria: 'Observation?_compartment=Organization/' + overrideId,
+          },
+          {
+            resourceType: 'Patient',
+          },
+        ],
+      };
+
+      const repo = new Repository({
+        extendedMode: true,
+        accessPolicy,
+        author: {
+          reference: 'Practitioner/1',
+        },
+      });
+
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'Eye color' },
+        valueCodeableConcept: { text: 'Hazel' },
+      });
+      expect(observation.meta?.account?.reference).toEqual('Organization/' + overrideId);
+      expect(observation.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(observation.meta?.accounts).toHaveLength(1);
+      expect(observation.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(observation.meta?.compartment).toHaveLength(1);
+
+      const readObservation = await repo.readResource('Observation', observation.id as string);
+      expect(readObservation.meta?.account?.reference).toEqual('Organization/' + overrideId);
+      expect(readObservation.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(readObservation.meta?.accounts).toHaveLength(1);
+      expect(readObservation.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(readObservation.meta?.compartment).toHaveLength(1);
+
+      const adminRepo = new Repository({
+        extendedMode: true,
+        projectAdmin: true,
+        author: {
+          reference: 'Practitioner/0',
+        },
+      });
+      const orgReference = { reference: 'Organization/' + randomUUID() };
+      const patient = await adminRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [orgReference] },
+      });
+      const patientRef = createReference(patient);
+      const observation2 = await repo.createResource<Observation>({
+        ...observation,
+        subject: patientRef,
+      });
+      expect(observation2.meta?.account?.reference).toEqual('Organization/' + overrideId);
+      expect(observation2.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(observation2.meta?.accounts).toContainEqual(orgReference);
+      expect(observation2.meta?.accounts).toHaveLength(2);
+      expect(observation2.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(observation2.meta?.compartment).toContainEqual(patientRef);
+      expect(observation2.meta?.compartment).toContainEqual(orgReference);
+      expect(observation2.meta?.compartment).toHaveLength(3);
+
+      const readObservation2 = await repo.readResource('Observation', observation2.id as string);
+      expect(readObservation2.meta?.account?.reference).toEqual('Organization/' + overrideId);
+      expect(readObservation2.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(readObservation2.meta?.accounts).toContainEqual(orgReference);
+      expect(readObservation2.meta?.accounts).toHaveLength(2);
+      expect(readObservation2.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(readObservation2.meta?.compartment).toContainEqual(patientRef);
+      expect(readObservation2.meta?.compartment).toContainEqual(orgReference);
+      expect(readObservation2.meta?.compartment).toHaveLength(3);
+    }));
+
   test('Access policy restrict compartment', () =>
     withTestContext(async () => {
       const org1 = randomUUID();
@@ -2546,4 +2634,36 @@ describe('AccessPolicy', () => {
       ).rejects.toThrow(expectedError);
     })
   );
+
+  test('Wildcard policy with criteria', async () =>
+    withTestContext(async () => {
+      const compartment = 'Patient/' + randomUUID();
+      const { repo, project } = await createTestProject({
+        withRepo: true,
+        accessPolicy: {
+          resourceType: 'AccessPolicy',
+          resource: [
+            {
+              resourceType: '*',
+              criteria: `*?_compartment=${compartment}`,
+            },
+          ],
+        },
+      });
+
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        link: [{ type: 'refer', other: { reference: compartment } }], // In the correct compartment
+      });
+      const readPatient = await repo.readResource('Patient', patient.id as string);
+      expect(readPatient.meta?.compartment).toContainEqual({ reference: compartment });
+
+      const patient2 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { project: project.id },
+        // Not in the compartment; should not be accessible per the access policy
+      });
+      await expect(repo.readResource('Patient', patient2.id as string)).rejects.toThrow('Not found');
+    }));
 });

@@ -51,9 +51,8 @@ async function main(): Promise<void> {
       if (botDescription.criteria) {
         results.push({
           request: {
-            url: 'Subscription',
-            method: 'POST',
-            ifNoneExist: `url=${botUrlPlaceholder}`,
+            url: `Subscription?url=${botUrlPlaceholder}`,
+            method: 'PUT',
           },
           resource: {
             resourceType: 'Subscription',

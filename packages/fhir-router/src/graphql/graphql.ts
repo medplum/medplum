@@ -1,6 +1,7 @@
 import {
   allOk,
   badRequest,
+  ContentType,
   DEFAULT_SEARCH_COUNT,
   forbidden,
   getResourceTypes,
@@ -38,7 +39,7 @@ import {
   validate,
   ValidationContext,
 } from 'graphql';
-import { FhirRequest, FhirResponse, FhirRouter } from '../fhirrouter';
+import { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
 import { FhirRepository, RepositoryMode } from '../repo';
 import { getGraphQLInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
@@ -84,12 +85,14 @@ interface ConnectionEdge {
  * @param req - The request details.
  * @param repo - The current user FHIR repository.
  * @param router - The router for router options.
+ * @param options - Additional route options.
  * @returns The response.
  */
 export async function graphqlHandler(
   req: FhirRequest,
   repo: FhirRepository,
-  router: FhirRouter
+  router: FhirRouter,
+  options?: FhirRouteOptions
 ): Promise<FhirResponse> {
   const { query, operationName, variables } = req.body;
   if (!query) {
@@ -115,8 +118,8 @@ export async function graphqlHandler(
     return [forbidden];
   }
 
-  if (includesMutations(query)) {
-    repo.setMode(RepositoryMode.WRITER);
+  if (!options?.batch && !includesMutations(query)) {
+    repo.setMode(RepositoryMode.READER);
   }
 
   const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
@@ -140,7 +143,7 @@ export async function graphqlHandler(
     });
   }
 
-  return [allOk, result];
+  return [allOk, result, { contentType: ContentType.JSON }];
 }
 
 /**

@@ -12,6 +12,7 @@ import {
   Logger,
   MEDPLUM_VERSION,
   MedplumClient,
+  ReconnectingWebSocket,
   checkIfValidMedplumVersion,
   fetchLatestVersionString,
   isValidHostname,
@@ -44,6 +45,7 @@ async function execAsync(command: string, options: ExecOptions): Promise<{ stdou
 }
 
 export const DEFAULT_PING_TIMEOUT = 3600;
+export const MAX_MISSED_HEARTBEATS = 1;
 
 export class App {
   static instance: App;
@@ -54,8 +56,8 @@ export class App {
   readonly hl7Clients = new Map<string, Hl7Client>();
   heartbeatPeriod = 10 * 1000;
   private heartbeatTimer?: NodeJS.Timeout;
-  private reconnectTimer?: NodeJS.Timeout;
-  private webSocket?: WebSocket;
+  private outstandingHeartbeats = 0;
+  private webSocket?: ReconnectingWebSocket<WebSocket>;
   private webSocketWorker?: Promise<void>;
   private live = false;
   private shutdown = false;
@@ -132,36 +134,41 @@ export class App {
   }
 
   private async heartbeat(): Promise<void> {
-    if (!(this.webSocket || this.reconnectTimer)) {
+    if (!this.webSocket) {
       this.log.warn('WebSocket not connected');
       this.connectWebSocket().catch(this.log.error);
       return;
     }
 
-    if (this.webSocket && this.live) {
+    if (this.live) {
+      if (this.outstandingHeartbeats > MAX_MISSED_HEARTBEATS) {
+        this.outstandingHeartbeats = 0;
+        this.webSocket.reconnect();
+        this.log.info('Disconnected from Medplum server. Attempting to reconnect...');
+        return;
+      }
+      this.outstandingHeartbeats += 1;
       await this.sendToWebSocket({ type: 'agent:heartbeat:request' });
     }
   }
 
   private async connectWebSocket(): Promise<void> {
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = undefined;
-    }
-
     const webSocketUrl = new URL(this.medplum.getBaseUrl());
     webSocketUrl.protocol = webSocketUrl.protocol === 'https:' ? 'wss:' : 'ws:';
     webSocketUrl.pathname = '/ws/agent';
     this.log.info(`Connecting to WebSocket: ${webSocketUrl.href}`);
 
-    this.webSocket = new WebSocket(webSocketUrl);
-    this.webSocket.binaryType = 'nodebuffer';
+    this.webSocket = new ReconnectingWebSocket<WebSocket>(webSocketUrl.toString(), undefined, {
+      WebSocket,
+      binaryType: 'nodebuffer',
+    });
 
-    this.webSocket.addEventListener('error', (err) => {
+    this.webSocket.addEventListener('error', () => {
       if (!this.shutdown) {
         // This event is only fired when WebSocket closes due to some kind of error
         // https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/error_event
-        this.log.error(`WebSocket closed due to an error: ${normalizeErrorString(err)}`);
+        // The error event seems to never contain an actual error though
+        this.log.error('WebSocket closed due to an error');
       }
     });
 
@@ -174,11 +181,9 @@ export class App {
     });
 
     this.webSocket.addEventListener('close', () => {
-      if (!this.shutdown) {
-        this.webSocket = undefined;
+      if (!this.shutdown && this.live) {
         this.live = false;
         this.log.info('WebSocket closed');
-        this.reconnectTimer = setTimeout(() => this.connectWebSocket(), 1000);
       }
     });
 
@@ -194,12 +199,14 @@ export class App {
           case 'agent:connect:response':
             this.live = true;
             this.startWebSocketWorker();
+            this.log.info('Successfully connected to Medplum server');
             break;
           case 'agent:heartbeat:request':
+            this.outstandingHeartbeats = 0;
             await this.sendToWebSocket({ type: 'agent:heartbeat:response', version: MEDPLUM_VERSION });
             break;
           case 'agent:heartbeat:response':
-            // Do nothing
+            this.outstandingHeartbeats = 0;
             break;
           // @ts-expect-error - Deprecated message type
           case 'transmit':
@@ -377,7 +384,7 @@ export class App {
       const channel = channels[i];
       const endpoint = endpoints[i];
 
-      if (endpoint.address === '') {
+      if (!endpoint.address) {
         throw new Error(`Invalid empty endpoint address for channel '${channel.name}'`);
       }
 
@@ -430,11 +437,6 @@ export class App {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = undefined;
-    }
-
-    if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer);
-      this.reconnectTimer = undefined;
     }
 
     if (this.webSocket) {

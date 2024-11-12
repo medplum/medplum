@@ -96,7 +96,7 @@ describe('Execute', () => {
         name: [{ given: ['John'], family: ['Doe'] }],
       });
     expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
+    expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
   });
 
   test('Submit FHIR without content type', async () => {
