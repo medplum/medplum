@@ -169,6 +169,9 @@ describe('FHIRPath utils', () => {
     expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { x: 1 } }, 'x')).toEqual(TYPED_1);
     expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { x: [1] } }, 'x')).toEqual([TYPED_1]);
     expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { valueInteger: 1 } }, 'value')).toEqual(TYPED_1);
+    expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { valueInteger: 1 } }, 'value[x]')).toEqual(
+      TYPED_1
+    );
 
     // Only use valid property types
     expect(
@@ -296,6 +299,10 @@ describe('FHIRPath utils', () => {
       type: [{ code: 'boolean' }],
     };
     expect(getTypedPropertyValueWithSchema(choiceOfTypeTypedValue, 'value[x]', extensionValueX)).toEqual({
+      type: 'boolean',
+      value: true,
+    });
+    expect(getTypedPropertyValueWithSchema(choiceOfTypeTypedValue, 'value', extensionValueX)).toEqual({
       type: 'boolean',
       value: true,
     });

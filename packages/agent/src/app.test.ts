@@ -159,9 +159,6 @@ describe('App', () => {
     state.mySocket = undefined;
     mockServer1.stop();
 
-    // Sleep for a bit to allow healthchecks while disconnected
-    await sleep(1000);
-
     // Start a new server
     const mockServer2 = new Server('wss://example.com/ws/agent');
     mockServer2.on('connection', mockConnectionHandler);
