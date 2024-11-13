@@ -15,6 +15,8 @@ import {
   escapeLikeString,
 } from '../sql';
 
+export const lookupTableBatchSize = 10_000;
+
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
  * This is necessary for array properties with specific structure.
@@ -149,8 +151,11 @@ export abstract class LookupTable {
       return;
     }
     const tableName = this.getTableName(resourceType);
-    const insert = new InsertQuery(tableName, values);
-    await insert.execute(client);
+    for (let i = 0; i < values.length; i += lookupTableBatchSize) {
+      const batchedValues = values.slice(i, i + lookupTableBatchSize);
+      const insert = new InsertQuery(tableName, batchedValues);
+      await insert.execute(client);
+    }
   }
 
   /**

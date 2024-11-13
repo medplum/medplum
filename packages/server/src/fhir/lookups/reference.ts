@@ -1,7 +1,7 @@
 import { PropertyType, evalFhirPathTyped, getSearchParameters, isUUID, toTypedValue } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
-import { LookupTable } from './lookuptable';
+import { LookupTable, lookupTableBatchSize } from './lookuptable';
 import { InsertQuery } from '../sql';
 
 /**
@@ -53,8 +53,11 @@ export class ReferenceTable extends LookupTable {
 
     // Reference lookup tables have a covering primary key, so a conflict means
     // that the exact desired row already exists in the database
-    const insert = new InsertQuery(tableName, values).ignoreOnConflict();
-    await insert.execute(client);
+    for (let i = 0; i < values.length; i += lookupTableBatchSize) {
+      const batchedValues = values.slice(i, i + lookupTableBatchSize);
+      const insert = new InsertQuery(tableName, batchedValues).ignoreOnConflict();
+      await insert.execute(client);
+    }
   }
 }
 
