@@ -43,7 +43,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   useEffect(() => {
     // If the Questionnaire remains "the same", keep the existing response
-    if (questionnaire && getQuestionnaireIdenity(prevQuestionnaire) === getQuestionnaireIdenity(questionnaire)) {
+    if (questionnaire && getQuestionnaireIdentity(prevQuestionnaire) === getQuestionnaireIdentity(questionnaire)) {
       return;
     }
 
@@ -176,6 +176,6 @@ function mergeItems(
   return result;
 }
 
-function getQuestionnaireIdenity(questionnaire: Questionnaire | undefined): Questionnaire | string | undefined {
+function getQuestionnaireIdentity(questionnaire: Questionnaire | undefined): Questionnaire | string | undefined {
   return questionnaire?.id || questionnaire;
 }
