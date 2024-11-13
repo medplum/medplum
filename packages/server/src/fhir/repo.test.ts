@@ -1230,4 +1230,28 @@ describe('FHIR Repo', () => {
       });
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
     }));
+
+  test('Patch post-commit stores full resource in cache', async () =>
+    withTestContext(async () => {
+      const { project, repo, login, membership } = await createTestProject({
+        withRepo: { extendedMode: false },
+        withAccessToken: true,
+        withClient: true,
+      });
+      const extendedRepo = await getRepoForLogin({ login, project, membership }, true);
+
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      expect(patient.meta?.project).toBeUndefined();
+      expect(patient.gender).toBeUndefined();
+
+      const updatedPatient = await repo.patchResource<Patient>('Patient', patient.id as string, [
+        { op: 'add', path: '/gender', value: 'unknown' },
+      ]);
+      expect(updatedPatient.meta?.project).toBeUndefined();
+      expect(updatedPatient.gender).toEqual('unknown');
+
+      const cachedPatient = await extendedRepo.readResource<Patient>('Patient', patient.id as string);
+      expect(cachedPatient.meta?.project).toEqual(project.id);
+      expect(cachedPatient.gender).toEqual('unknown');
+    }));
 });

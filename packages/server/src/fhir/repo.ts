@@ -15,6 +15,7 @@ import {
   canReadResourceType,
   canWriteResourceType,
   createReference,
+  deepClone,
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
@@ -2310,7 +2311,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async setCacheEntry(resource: Resource): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
-      await this.postCommit(() => this.setCacheEntry(resource));
+      const cachedResource = deepClone(resource);
+      await this.postCommit(() => {
+        return this.setCacheEntry(cachedResource);
+      });
       return;
     }
 
