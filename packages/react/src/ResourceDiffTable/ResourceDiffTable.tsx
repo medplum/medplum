@@ -6,6 +6,7 @@ import {
   capitalize,
   evalFhirPathTyped,
   getSearchParameterDetails,
+  isEmpty,
   toTypedValue,
 } from '@medplum/core';
 import { Resource, SearchParameter } from '@medplum/fhirtypes';
@@ -182,8 +183,8 @@ function touchUpValue(
   property: InternalSchemaElement | undefined,
   input: TypedValue[] | TypedValue | undefined
 ): TypedValue | undefined {
-  if (!input) {
-    return input;
+  if (isEmpty(input)) {
+    return undefined;
   }
   return {
     type: Array.isArray(input) ? input[0].type : input.type,

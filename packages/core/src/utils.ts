@@ -488,11 +488,16 @@ function isArrayKey(k: string): boolean {
 }
 
 /**
+ * A value which is considered to be "empty".
+ */
+export type EmptyValue = null | undefined | '' | Record<string, never> | never[];
+
+/**
  * Returns true if the value is empty (null, undefined, empty string, empty object, or empty array).
  * @param v - Any value.
  * @returns True if the value is an empty string, object, or array.
  */
-export function isEmpty(v: unknown): v is null | undefined | '' | Record<string, never> | never[] {
+export function isEmpty(v: unknown): v is EmptyValue {
   if (v === null || v === undefined) {
     return true;
   }
