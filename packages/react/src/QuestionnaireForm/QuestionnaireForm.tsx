@@ -41,7 +41,12 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   onSubmitRef.current = props.onSubmit;
 
   useEffect(() => {
-    setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
+    setResponse((prevResponse) => {
+      if (prevResponse) {
+        return prevResponse;
+      }
+      return questionnaire ? buildInitialResponse(questionnaire) : undefined;
+    });
   }, [questionnaire]);
 
   useEffect(() => {
