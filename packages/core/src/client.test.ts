@@ -3192,6 +3192,19 @@ describe('Client', () => {
     expect(console.log).toHaveBeenCalledWith('< 200 OK');
     expect(console.log).toHaveBeenCalledWith('< foo: bar');
   });
+
+  test('Disable extended mode', async () => {
+    const fetch = mockFetch(200, () => ({ resourceType: 'Patient', id: '123' }));
+
+    const client = new MedplumClient({ fetch, extendedMode: false });
+    const result = await client.readResource('Patient', '123');
+    expect(result).toBeDefined();
+
+    const fetchArgs = fetch.mock.calls[0];
+    const fetchOptions = fetchArgs[1];
+    expect(fetchOptions.headers).not.toHaveProperty('X-Medplum');
+    expect(fetchOptions.headers).not.toHaveProperty('x-medplum');
+  });
 });
 
 describe('Passed in async-backed `ClientStorage`', () => {
