@@ -44,6 +44,16 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
   }, [questionnaire]);
 
+  useEffect(() => {
+    if (response && onChangeRef.current) {
+      try {
+        onChangeRef.current(response);
+      } catch (e) {
+        console.error('Error invoking QuestionnaireForm.onChange callback', e);
+      }
+    }
+  }, [response]);
+
   const setItems = useCallback((newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void => {
     setResponse((prevResponse) => {
       const currentItems = prevResponse?.item ?? [];
@@ -57,16 +67,6 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         status: 'in-progress',
         item: mergedItems,
       };
-
-      const onChange = onChangeRef.current;
-      if (onChange) {
-        try {
-          onChange(newResponse);
-        } catch (e) {
-          console.error('Error invoking QuestionnaireForm.onChange callback', e);
-        }
-      }
-
       return newResponse;
     });
   }, []);
