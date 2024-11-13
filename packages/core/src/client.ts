@@ -321,6 +321,15 @@ export interface MedplumClientOptions {
    * When the verbose flag is set, the client will log all requests and responses to the console.
    */
   verbose?: boolean;
+
+  /**
+   * Optional flag to enable or disable Medplum extended mode.
+   *
+   * Medplum extended mode includes a few non-standard FHIR properties such as meta.author and meta.project.
+   *
+   * Default is true.
+   */
+  extendedMode?: boolean;
 }
 
 export interface MedplumRequestOptions extends RequestInit {
@@ -2237,7 +2246,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       xhr.setRequestHeader('Authorization', 'Bearer ' + this.accessToken);
       xhr.setRequestHeader('Cache-Control', 'no-cache, no-store, max-age=0');
       xhr.setRequestHeader('Content-Type', contentType);
-      xhr.setRequestHeader('X-Medplum', 'extended');
+
+      if (this.options.extendedMode !== false) {
+        xhr.setRequestHeader('X-Medplum', 'extended');
+      }
 
       if (options?.headers) {
         const headers = options.headers as Record<string, string>;
@@ -3319,8 +3331,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - The options to add defaults to.
    */
   private addFetchOptionsDefaults(options: MedplumRequestOptions): void {
-    this.setRequestHeader(options, 'X-Medplum', 'extended');
     this.setRequestHeader(options, 'Accept', DEFAULT_ACCEPT, true);
+
+    if (this.options.extendedMode !== false) {
+      this.setRequestHeader(options, 'X-Medplum', 'extended');
+    }
 
     if (options.body) {
       this.setRequestHeader(options, 'Content-Type', ContentType.FHIR_JSON, true);
