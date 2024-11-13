@@ -59,7 +59,7 @@ export type ResourceWithCode = Resource & Code;
  * @param resource - The FHIR resource.
  * @returns A reference resource.
  */
-export function createReference<T extends Resource>(resource: T): Reference<T> {
+export function createReference<T extends Resource>(resource: T): Reference<T> & { reference: string } {
   const reference = getReferenceString(resource);
   const display = getDisplayString(resource);
   return display === reference ? { reference } : { reference, display };
