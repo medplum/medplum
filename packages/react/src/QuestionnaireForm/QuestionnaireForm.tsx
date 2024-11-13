@@ -8,7 +8,7 @@ import {
   QuestionnaireResponseItem,
   Reference,
 } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, usePrevious, useResource } from '@medplum/react-hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../utils/questionnaire';
@@ -31,6 +31,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const medplum = useMedplum();
   const { subject, source: sourceFromProps } = props;
   const questionnaire = useResource(props.questionnaire);
+  const prevQuestionnaire = usePrevious(questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [activePage, setActivePage] = useState(0);
 
@@ -41,13 +42,14 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   onSubmitRef.current = props.onSubmit;
 
   useEffect(() => {
-    setResponse((prevResponse) => {
-      if (prevResponse) {
-        return prevResponse;
-      }
-      return questionnaire ? buildInitialResponse(questionnaire) : undefined;
-    });
-  }, [questionnaire]);
+    // If the Questionnaire remains "the same", keep the existing response
+    if (questionnaire && getQuestionnaireIdenity(prevQuestionnaire) === getQuestionnaireIdenity(questionnaire)) {
+      return;
+    }
+
+    // throw out the existing response and start over
+    setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
+  }, [questionnaire, prevQuestionnaire]);
 
   useEffect(() => {
     if (response && onChangeRef.current) {
@@ -172,4 +174,8 @@ function mergeItems(
   }
 
   return result;
+}
+
+function getQuestionnaireIdenity(questionnaire: Questionnaire | undefined): Questionnaire | string | undefined {
+  return questionnaire?.id || questionnaire;
 }
