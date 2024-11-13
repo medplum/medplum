@@ -223,8 +223,9 @@ export function getTypedPropertyValueWithoutSchema(
     // id + identifier = not ok, because "entifier" is not a valid type
     // resource + resourceType = not ok, because "type" is not a valid type
     //eslint-disable-next-line guard-for-in
-    for (const propertyType in PropertyType) {
-      const propertyName = path + capitalize(propertyType);
+    const trimmedPath = path.endsWith('[x]') ? path.substring(0, path.length - 3) : path;
+    for (const propertyType of Object.values(PropertyType)) {
+      const propertyName = trimmedPath + capitalize(propertyType);
       if (propertyName in input) {
         const propertyValue = (input as { [key: string]: unknown })[propertyName];
         if (Array.isArray(propertyValue)) {

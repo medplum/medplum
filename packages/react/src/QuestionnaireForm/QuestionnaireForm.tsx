@@ -8,7 +8,7 @@ import {
   QuestionnaireResponseItem,
   Reference,
 } from '@medplum/fhirtypes';
-import { useMedplum, useResource } from '@medplum/react-hooks';
+import { useMedplum, usePrevious, useResource } from '@medplum/react-hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../utils/questionnaire';
@@ -31,6 +31,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const medplum = useMedplum();
   const { subject, source: sourceFromProps } = props;
   const questionnaire = useResource(props.questionnaire);
+  const prevQuestionnaire = usePrevious(questionnaire);
   const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [activePage, setActivePage] = useState(0);
 
@@ -41,8 +42,24 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   onSubmitRef.current = props.onSubmit;
 
   useEffect(() => {
+    // If the Questionnaire remains "the same", keep the existing response
+    if (questionnaire && getQuestionnaireIdentity(prevQuestionnaire) === getQuestionnaireIdentity(questionnaire)) {
+      return;
+    }
+
+    // throw out the existing response and start over
     setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
-  }, [questionnaire]);
+  }, [questionnaire, prevQuestionnaire]);
+
+  useEffect(() => {
+    if (response && onChangeRef.current) {
+      try {
+        onChangeRef.current(response);
+      } catch (e) {
+        console.error('Error invoking QuestionnaireForm.onChange callback', e);
+      }
+    }
+  }, [response]);
 
   const setItems = useCallback((newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void => {
     setResponse((prevResponse) => {
@@ -57,16 +74,6 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         status: 'in-progress',
         item: mergedItems,
       };
-
-      const onChange = onChangeRef.current;
-      if (onChange) {
-        try {
-          onChange(newResponse);
-        } catch (e) {
-          console.error('Error invoking QuestionnaireForm.onChange callback', e);
-        }
-      }
-
       return newResponse;
     });
   }, []);
@@ -167,4 +174,8 @@ function mergeItems(
   }
 
   return result;
+}
+
+function getQuestionnaireIdentity(questionnaire: Questionnaire | undefined): Questionnaire | string | undefined {
+  return questionnaire?.id || questionnaire;
 }
