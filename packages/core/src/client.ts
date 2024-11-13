@@ -3326,7 +3326,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       this.setRequestHeader(options, 'Content-Type', ContentType.FHIR_JSON, true);
     }
 
-    console.log('Busting cache');
+    console.log('Busting cache again');
 
     if (this.accessToken) {
       this.setRequestHeader(options, 'Authorization', 'Bearer ' + this.accessToken);
