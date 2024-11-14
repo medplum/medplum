@@ -24,14 +24,17 @@ tar \
   -czf medplum-server.tar.gz \
   package.json \
   package-lock.json \
+  node_modules \
   packages/core/package.json \
   packages/core/dist \
   packages/definitions/package.json \
   packages/definitions/dist \
   packages/fhir-router/package.json \
   packages/fhir-router/dist \
+  packages/fhir-router/node_modules \
   packages/server/package.json \
-  packages/server/dist
+  packages/server/dist \
+  packages/server/node_modules
 
 # Supply chain attestations
 # See: https://docs.docker.com/scout/policy/#supply-chain-attestations

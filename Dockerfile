@@ -10,25 +10,13 @@
 # Supported architectures:
 # linux/amd64, linux/arm64, linux/arm/v7
 # https://github.com/docker-library/official-images#architectures-other-than-amd64
+FROM gcr.io/distroless/nodejs20-debian12:nonroot
+WORKDIR /app
 
-FROM node:20-slim
-
-ENV NODE_ENV=production
-
-WORKDIR /usr/src/medplum
-
-# Add the application files
+# Add the application files: Docker handles extracting the tarball automatically
 ADD ./medplum-server.tar.gz ./
 
-# Install dependencies, create non-root user, and set permissions in one layer
-RUN npm ci --maxsockets 1 && \
-  groupadd -r medplum && \
-  useradd -r -g medplum medplum && \
-  chown -R medplum:medplum /usr/src/medplum
-
-EXPOSE 5000 8103
-
-# Switch to the non-root user
-USER medplum
-
+ENV PATH=/nodejs/bin:$PATH
+ENV NODE_ENV=production
 ENTRYPOINT [ "node", "--require", "./packages/server/dist/otel/instrumentation.js", "packages/server/dist/index.js" ]
+EXPOSE 5000 8103
