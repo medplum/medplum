@@ -493,7 +493,7 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
  *   1. Most specific beats more general - the runAs project secrets override the bot project secrets
  *   2. Defer to local control" - project admin secrets override system secrets
  *
- * From lowest to highest precedence:
+ * From lowest to highest priority:
  *
  *   1. Bot project system secrets (if bot.system is true)
  *   2. Bot project secrets
