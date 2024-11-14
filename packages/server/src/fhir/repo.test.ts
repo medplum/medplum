@@ -1254,4 +1254,21 @@ describe('FHIR Repo', () => {
       expect(cachedPatient.meta?.project).toEqual(project.id);
       expect(cachedPatient.gender).toEqual('unknown');
     }));
+
+  test('Handles resources with many entries stored in lookup table', async () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        link: [],
+      };
+      // Postgres uses a 16-bit counter for placeholder formats internally,
+      // so 2^16 + 1 = 64k + 1 will definitely overflow it if not sent in smaller batches
+      for (let i = 0; i < 64 * 1024 + 1; i++) {
+        patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
+      }
+
+      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+    }));
 });
