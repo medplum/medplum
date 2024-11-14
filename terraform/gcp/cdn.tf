@@ -106,6 +106,9 @@ resource "google_compute_backend_bucket" "storage_bucket" {
   bucket_name      = module.buckets["medplum-storage"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
+
+  # Attach the security policy
+  edge_security_policy = google_compute_security_policy.edge_security_policy.self_link
 }
 
 resource "google_compute_backend_bucket" "apps_bucket" {
