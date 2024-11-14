@@ -1785,9 +1785,6 @@
       ],
       "referenceTypes": [
         {
-          "datatype": "EvidenceReport"
-        },
-        {
           "datatype": "DiagnosticReport",
           "documentLocation": "resource"
         }
