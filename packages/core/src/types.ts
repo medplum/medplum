@@ -493,7 +493,7 @@ export function stringifyTypedValue(v: TypedValue): string {
       return v.value.reference;
     default:
       if (isResource(v.value)) {
-        return createReference(v.value).reference as string;
+        return createReference(v.value).reference;
       }
       return JSON.stringify(v);
   }
