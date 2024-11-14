@@ -17,6 +17,8 @@ import { getConfig, loadTestConfig } from '../../config';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
+import * as oathKeysModule from '../../oauth/keys';
+import { getLoginForAccessToken } from '../../oauth/utils';
 
 const botCodes = [
   [
@@ -589,7 +591,6 @@ describe('Execute', () => {
         },
       ],
     ])('%s bot in %s project secrets', async (botName, whichProject, expectedSecrets) => {
-      // Use the first test bot for everything
       const bot = bots[botName];
       const systemRepo = getSystemRepo();
 
@@ -621,6 +622,37 @@ describe('Execute', () => {
       const output = JSON.parse(auditEvent?.outcomeDesc as string);
       populateNamesInSecrets(expectedSecrets);
       expect(output.secrets).toEqual(expectedSecrets);
+    });
+
+    test.each<[BotName, 'linking' | 'own']>([
+      ['echoBot', 'linking'],
+      ['echoBot', 'own'],
+      ['systemEchoBot', 'linking'],
+      ['systemEchoBot', 'own'],
+    ])('Bot %s in %s project executes with correct accessToken', async (botName, whichProject) => {
+      const generateAccessTokenSpy = jest.spyOn(oathKeysModule, 'generateAccessToken');
+      generateAccessTokenSpy.mockClear();
+
+      // execute the bot in the appropriate project context
+      const bot = bots[botName];
+      const accessToken = whichProject === 'own' ? accessToken1 : accessToken2;
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
+      expect(res.text).toEqual('input');
+
+      expect(generateAccessTokenSpy).toHaveBeenCalledTimes(1);
+      const generatedAccessToken = (await generateAccessTokenSpy.mock.results[0].value) as string;
+      const authState = await getLoginForAccessToken(generatedAccessToken);
+
+      const expectedProject = whichProject === 'own' ? project1 : project2;
+      expect(authState?.project?.id).toBeDefined();
+      expect(authState?.project?.id).toBe(expectedProject.id);
     });
   });
 
