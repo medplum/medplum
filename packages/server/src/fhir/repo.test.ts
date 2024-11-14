@@ -1263,6 +1263,8 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         link: [],
       };
+      // Postgres uses a 16-bit counter for placeholder formats internally,
+      // so 2^16 + 1 = 64k + 1 will definitely overflow it if not sent in smaller batches
       for (let i = 0; i < 64 * 1024 + 1; i++) {
         patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
       }
