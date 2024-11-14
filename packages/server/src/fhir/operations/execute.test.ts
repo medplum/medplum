@@ -18,74 +18,82 @@ import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.
 import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
 
+const botCodes = [
+  [
+    `
+export async function handler(medplum, event) {
+  console.log(JSON.stringify(event));
+  return event.input;
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  console.log(JSON.stringify(event));
+  return event.input;
+};
+`,
+  ],
+  [
+    `
+export async function handler(medplum, event) {
+  console.log('input', event.input);
+  if (event.input === 'input: true') {
+    return true;
+  } else if (event.input === 'input: false') {
+    return false;
+  } else {
+    throw new Error('Invalid boolean');
+  }
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  console.log('input', event.input);
+  if (event.input === 'input: true') {
+    return true;
+  } else if (event.input === 'input: false') {
+    return false;
+  } else {
+    throw new Error('Invalid boolean');
+  }
+};
+`,
+  ],
+  [
+    `
+export async function handler(medplum, event) {
+  return {
+    resourceType: 'Binary',
+    contentType: 'text/plain',
+    data: '${Buffer.from('Hello, world!').toString('base64')}'
+  };
+}
+  `,
+    `
+exports.handler = async function (medplum, event) {
+  return {
+    resourceType: 'Binary',
+    contentType: 'text/plain',
+    data: '${Buffer.from('Hello, world!').toString('base64')}'
+  };
+};
+`,
+  ],
+] as [string, string][];
+
+type BotName = 'echoBot' | 'systemEchoBot' | 'booleanBot' | 'binaryBot';
+const botDefinitions: { name: BotName; system: boolean; code: [string, string] }[] = [
+  { name: 'systemEchoBot', system: true, code: botCodes[0] },
+  { name: 'echoBot', system: false, code: botCodes[0] },
+  { name: 'booleanBot', system: false, code: botCodes[1] },
+  { name: 'binaryBot', system: false, code: botCodes[2] },
+];
+
 describe('Execute', () => {
   let app: express.Express;
-  let project: Project;
-  let accessToken: string;
-  const bots = [] as Bot[];
-
-  const botCodes = [
-    [
-      `
-export async function handler(medplum, event) {
-  console.log(JSON.stringify(event));
-  return event.input;
-}
-  `,
-      `
-exports.handler = async function (medplum, event) {
-  console.log(JSON.stringify(event));
-  return event.input;
-};
-`,
-    ],
-    [
-      `
-export async function handler(medplum, event) {
-  console.log('input', event.input);
-  if (event.input === 'input: true') {
-    return true;
-  } else if (event.input === 'input: false') {
-    return false;
-  } else {
-    throw new Error('Invalid boolean');
-  }
-}
-  `,
-      `
-exports.handler = async function (medplum, event) {
-  console.log('input', event.input);
-  if (event.input === 'input: true') {
-    return true;
-  } else if (event.input === 'input: false') {
-    return false;
-  } else {
-    throw new Error('Invalid boolean');
-  }
-};
-`,
-    ],
-    [
-      `
-export async function handler(medplum, event) {
-  return {
-    resourceType: 'Binary',
-    contentType: 'text/plain',
-    data: '${Buffer.from('Hello, world!').toString('base64')}'
-  };
-}
-  `,
-      `
-exports.handler = async function (medplum, event) {
-  return {
-    resourceType: 'Binary',
-    contentType: 'text/plain',
-    data: '${Buffer.from('Hello, world!').toString('base64')}'
-  };
-};
-`,
-    ],
-  ] as [string, string][];
+  let project1: Project;
+  let accessToken1: string;
+  const bots: Record<BotName, Bot> = {} as Record<BotName, Bot>;
 
   beforeAll(async () => {
     app = express();
@@ -95,28 +103,32 @@ exports.handler = async function (medplum, event) {
 
     const testSetup = await createTestProject({
       project: {
-        secret: [{ name: 'secret1', valueString: 'value1' }],
-        systemSecret: [{ name: 'secret2', valueString: 'value2' }],
+        systemSecret: [
+          { name: 'secret1', valueString: 'proj1systemValue1' },
+          { name: 'secret2', valueString: 'proj1systemValue2' },
+        ],
+        secret: [
+          { name: 'secret2', valueString: 'proj1value2' },
+          { name: 'secret3', valueString: 'proj1value3' },
+        ],
       },
       withAccessToken: true,
     });
-    project = testSetup.project;
-    accessToken = testSetup.accessToken;
+    project1 = testSetup.project;
+    accessToken1 = testSetup.accessToken;
 
-    for (let i = 0; i < botCodes.length; i++) {
-      const [esmCode, cjsCode] = botCodes[i];
-
+    async function setupBot(name: string, system: boolean, esmCode: string, cjsCode: string): Promise<Bot> {
       const res1 = await request(app)
         .post('/fhir/R4/Bot')
         .set('Content-Type', ContentType.FHIR_JSON)
-        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Authorization', 'Bearer ' + accessToken1)
         .send({
           resourceType: 'Bot',
           identifier: [{ system: 'https://example.com/bot', value: randomUUID() }],
-          name: `Test Bot #${i + 1}`,
+          name: `${name} Test Bot`,
           runtimeVersion: 'vmcontext',
           code: esmCode,
-          system: i === 0,
+          system,
         });
 
       expect(res1.status).toBe(201);
@@ -125,13 +137,18 @@ exports.handler = async function (medplum, event) {
       const res2 = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
         .set('Content-Type', ContentType.FHIR_JSON)
-        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Authorization', 'Bearer ' + accessToken1)
         .send({
           code: cjsCode,
         });
 
       expect(res2.status).toBe(200);
-      bots[i] = bot;
+
+      return bot;
+    }
+
+    for (const { name, system, code } of botDefinitions) {
+      bots[name] = await setupBot(name, system, code[0], code[1]);
     }
   });
 
@@ -141,9 +158,9 @@ exports.handler = async function (medplum, event) {
 
   test('Submit plain text', async () => {
     const res = await request(app)
-      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
+      .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
       .set('Content-Type', ContentType.TEXT)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send('input');
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
@@ -152,9 +169,9 @@ exports.handler = async function (medplum, event) {
 
   test('Submit FHIR with content type returns non-FHIR JSON', async () => {
     const res = await request(app)
-      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
+      .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['John'], family: ['Doe'] }],
@@ -167,8 +184,8 @@ exports.handler = async function (medplum, event) {
 
   test('Submit FHIR without content type return JSON content', async () => {
     const res = await request(app)
-      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         resourceType: 'Patient',
         name: [{ given: ['John'], family: ['Doe'] }],
@@ -182,8 +199,8 @@ exports.handler = async function (medplum, event) {
   test('Return non-Resource JSON response', async () => {
     const input = { type: 'not-a-resource', result: [] };
     const res = await request(app)
-      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send(JSON.parse(JSON.stringify(input)));
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
@@ -199,9 +216,9 @@ exports.handler = async function (medplum, event) {
       'MSA|AA|9B38584D|Everything was okay dokay!|';
 
     const res = await request(app)
-      .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
+      .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
       .set('Content-Type', ContentType.HL7_V2)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send(text);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('x-application/hl7-v2+er7; charset=utf-8');
@@ -213,7 +230,7 @@ exports.handler = async function (medplum, event) {
     expect(args[1]).toBe(ContentType.JSON);
 
     const row = JSON.parse(args[2] as string);
-    expect(row.botId).toEqual(bots[0].id);
+    expect(row.botId).toEqual(bots.systemEchoBot.id);
     expect(row.hl7MessageType).toEqual('ACK');
     expect(row.hl7Version).toEqual('2.6.1');
   });
@@ -223,7 +240,7 @@ exports.handler = async function (medplum, event) {
     const res1 = await request(app)
       .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         resourceType: 'Bot',
         name: 'Test Bot',
@@ -236,7 +253,7 @@ exports.handler = async function (medplum, event) {
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res2.status).toBe(400);
   });
@@ -245,7 +262,7 @@ exports.handler = async function (medplum, event) {
     const res1 = await request(app)
       .post('/fhir/R4/Bot')
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         resourceType: 'Bot',
         name: 'Test Bot',
@@ -258,7 +275,7 @@ exports.handler = async function (medplum, event) {
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         code: `
         export async function handler() {
@@ -273,7 +290,7 @@ exports.handler = async function (medplum, event) {
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res3.status).toBe(400);
   });
@@ -320,7 +337,7 @@ exports.handler = async function (medplum, event) {
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         resourceType: 'Bot',
         name: 'Test Bot',
@@ -334,7 +351,7 @@ exports.handler = async function (medplum, event) {
     const res2 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res2.status).toBe(400);
     expect(res2.body.issue[0].details.text).toEqual('No executable code');
@@ -343,7 +360,7 @@ exports.handler = async function (medplum, event) {
     const res3 = await request(app)
       .put(`/fhir/R4/Bot/${bot.id}`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         ...bot,
         executableCode: {
@@ -358,7 +375,7 @@ exports.handler = async function (medplum, event) {
     const res4 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res4.status).toBe(400);
     expect(res4.body.issue[0].details.text).toEqual('Executable code is not a Binary');
@@ -367,7 +384,7 @@ exports.handler = async function (medplum, event) {
     const res5 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         code: `
           const { getReferenceString } = require("@medplum/core");
@@ -385,7 +402,7 @@ exports.handler = async function (medplum, event) {
     const res6 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res6.status).toBe(200);
     expect(res6.body).toMatchObject({
@@ -401,7 +418,7 @@ exports.handler = async function (medplum, event) {
     const res7 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res7.status).toBe(400);
     expect(res7.body.issue[0].details.text).toEqual('VM Context bots not enabled on this server');
@@ -414,7 +431,7 @@ exports.handler = async function (medplum, event) {
     const res1 = await request(app)
       .post(`/fhir/R4/Bot`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         resourceType: 'Bot',
         name: 'Test Bot',
@@ -427,7 +444,7 @@ exports.handler = async function (medplum, event) {
     const res5 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         code: `
           exports.handler = async function () {
@@ -441,7 +458,7 @@ exports.handler = async function (medplum, event) {
     const res6 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res6.status).toBe(200);
     expect(res6.body).toEqual(42);
@@ -450,7 +467,7 @@ exports.handler = async function (medplum, event) {
   test('OperationOutcome response', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Bot/$execute?identifier=invalid-identifier`)
-      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Authorization', 'Bearer ' + accessToken1)
       .send('');
     expect(res.status).toBe(400);
     expect(res.headers['content-type']).toBe('application/fhir+json; charset=utf-8');
@@ -459,107 +476,165 @@ exports.handler = async function (medplum, event) {
 
   test('Binary response', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/Bot/${bots[2].id}/$execute`)
-      .set('Authorization', 'Bearer ' + accessToken);
+      .get(`/fhir/R4/Bot/${bots.binaryBot.id}/$execute`)
+      .set('Authorization', 'Bearer ' + accessToken1);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toEqual('Hello, world!');
   });
 
-  test('Bot secrets from linked project', async () => {
-    // Use the first test bot for everything
-    const bot = bots[0];
+  describe('linked project', () => {
+    let project2: Project;
+    let accessToken2: string;
 
-    // Create a new project that links to the first project
-    const testSetup2 = await createTestProject({
-      withAccessToken: true,
-      project: {
-        name: 'Project 2',
-        secret: [{ name: 'secret3', valueString: 'value3' }],
-        systemSecret: [{ name: 'secret4', valueString: 'value4' }],
-        link: [{ project: createReference(project) }],
-      },
-      membership: {
-        admin: true,
-      },
+    beforeAll(async () => {
+      // Create a new project that links to the first project
+      const testSetup2 = await createTestProject({
+        withAccessToken: true,
+        project: {
+          name: 'Project 2',
+          systemSecret: [
+            { name: 'secret2', valueString: 'proj2systemValue2' },
+            { name: 'secret3', valueString: 'proj2systemValue3' },
+          ],
+          secret: [
+            { name: 'secret3', valueString: 'proj2value3' },
+            { name: 'secret4', valueString: 'proj2value4' },
+          ],
+          link: [{ project: createReference(project1) }],
+        },
+        membership: {
+          admin: true,
+        },
+      });
+      project2 = testSetup2.project;
+      accessToken2 = testSetup2.accessToken;
+
+      const systemRepo = getSystemRepo();
+      for (const bot of [bots.echoBot, bots.systemEchoBot]) {
+        await systemRepo.createResource<ProjectMembership>({
+          resourceType: 'ProjectMembership',
+          project: createReference(project2),
+          user: createReference(bot),
+          profile: createReference(bot),
+        });
+
+        // Confirm that we can read our own project
+        const res1 = await request(app)
+          .get(`/fhir/R4/Project/${project2.id}`)
+          .set('Authorization', 'Bearer ' + accessToken2);
+        expect(res1.status).toBe(200);
+        expect(res1.body.resourceType).toBe('Project');
+        expect(res1.body.id).toBe(project2.id);
+
+        // Confirm that we can read the linked project
+        const res2 = await request(app)
+          .get(`/fhir/R4/Project/${project1.id}`)
+          .set('Authorization', 'Bearer ' + accessToken2);
+        expect(res2.status).toBe(200);
+        expect(res2.body.resourceType).toBe('Project');
+        expect(res2.body.id).toBe(project1.id);
+
+        // Confirm that we can read the bot in the new project
+        const res3 = await request(app)
+          .get(`/fhir/R4/Bot/${bot.id}`)
+          .set('Authorization', 'Bearer ' + accessToken2);
+        expect(res3.status).toBe(200);
+        expect(res3.body.resourceType).toBe('Bot');
+        expect(res3.body.id).toBe(bot.id);
+      }
     });
-    const project2 = testSetup2.project;
-    const accessToken2 = testSetup2.accessToken;
 
-    // Create a project membership for the existing bot in the new project
-    const systemRepo = getSystemRepo();
-    await systemRepo.createResource<ProjectMembership>({
-      resourceType: 'ProjectMembership',
-      project: createReference(project2),
-      user: createReference(bot),
-      profile: createReference(bot),
-    });
+    function populateNamesInSecrets(expected: any): void {
+      for (const key of Object.keys(expected)) {
+        expected[key].name = key;
+      }
+    }
 
-    // Confirm that we can read our own project
-    const res1 = await request(app)
-      .get(`/fhir/R4/Project/${project2.id}`)
-      .set('Authorization', 'Bearer ' + accessToken2);
-    expect(res1.status).toBe(200);
-    expect(res1.body.resourceType).toBe('Project');
-    expect(res1.body.id).toBe(project2.id);
-
-    // Confirm that we can read the linked project
-    const res2 = await request(app)
-      .get(`/fhir/R4/Project/${project.id}`)
-      .set('Authorization', 'Bearer ' + accessToken2);
-    expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toBe('Project');
-    expect(res2.body.id).toBe(project.id);
-
-    // Confirm that we can read the bot in the new project
-    const res3 = await request(app)
-      .get(`/fhir/R4/Bot/${bot.id}`)
-      .set('Authorization', 'Bearer ' + accessToken2);
-    expect(res3.status).toBe(200);
-    expect(res3.body.resourceType).toBe('Bot');
-    expect(res3.body.id).toBe(bot.id);
-
-    // Now execute the bot in the new project
-    const res = await request(app)
-      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
-      .set('Content-Type', ContentType.TEXT)
-      .set('Authorization', 'Bearer ' + accessToken2)
-      .send('input');
-    expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
-    expect(res.text).toEqual('input');
-
-    // Get the audit event
-    const auditEvent = await systemRepo.searchOne<AuditEvent>({
-      resourceType: 'AuditEvent',
-      filters: [
-        { code: '_project', operator: Operator.EQUALS, value: project2.id as string },
-        { code: 'entity', operator: Operator.EQUALS, value: getReferenceString(bot) },
+    test.each<[BotName, 'linking' | 'own', any]>([
+      [
+        'echoBot',
+        'own',
+        {
+          secret2: { valueString: 'proj1value2' },
+          secret3: { valueString: 'proj1value3' },
+        },
       ],
-    });
-    expect(auditEvent).toBeDefined();
-    expect(auditEvent?.meta?.project).toBe(project2.id);
+      [
+        'echoBot',
+        'linking',
+        {
+          secret2: { valueString: 'proj1value2' },
+          secret3: { valueString: 'proj2value3' },
+          secret4: { valueString: 'proj2value4' },
+        },
+      ],
+      [
+        'systemEchoBot',
+        'own',
+        {
+          secret1: { valueString: 'proj1systemValue1' },
+          secret2: { valueString: 'proj1value2' },
+          secret3: { valueString: 'proj1value3' },
+        },
+      ],
+      [
+        'systemEchoBot',
+        'linking',
+        {
+          secret1: { valueString: 'proj1systemValue1' },
+          secret2: { valueString: 'proj2systemValue2' },
+          secret3: { valueString: 'proj2value3' },
+          secret4: { valueString: 'proj2value4' },
+        },
+      ],
+    ])('%s bot in %s project secrets', async (botName, whichProject, expectedSecrets) => {
+      // Use the first test bot for everything
+      const bot = bots[botName];
+      const systemRepo = getSystemRepo();
 
-    const output = JSON.parse(auditEvent?.outcomeDesc as string);
-    expect(output.secrets).toMatchObject({
-      secret1: { valueString: 'value1' },
-      secret2: { valueString: 'value2' },
-      secret3: { valueString: 'value3' },
-      secret4: { valueString: 'value4' },
+      // execute the bot in the appropriate project context
+      const project = whichProject === 'own' ? project1 : project2;
+      const accessToken = whichProject === 'own' ? accessToken1 : accessToken2;
+
+      const res = await request(app)
+        .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+        .set('Content-Type', ContentType.TEXT)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .send('input');
+      expect(res.status).toBe(200);
+      expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
+      expect(res.text).toEqual('input');
+
+      // Get the audit event
+      const auditEvent = await systemRepo.searchOne<AuditEvent>({
+        resourceType: 'AuditEvent',
+        filters: [
+          { code: '_project', operator: Operator.EQUALS, value: project.id as string },
+          { code: 'entity', operator: Operator.EQUALS, value: getReferenceString(bot) },
+        ],
+      });
+      expect(auditEvent).toBeDefined();
+      expect(auditEvent?.meta?.project).toBe(project.id);
+
+      // verify secrets
+      const output = JSON.parse(auditEvent?.outcomeDesc as string);
+      populateNamesInSecrets(expectedSecrets);
+      expect(output.secrets).toEqual(expectedSecrets);
     });
   });
 
   describe('Prefer: respond-async', () => {
     test('Plain text -- Prefer: respond-async', async () => {
       const res = await request(app)
-        .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
+        .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
         .set('Content-Type', ContentType.TEXT)
-        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Authorization', 'Bearer ' + accessToken1)
         .set('Prefer', 'respond-async')
         .send('input');
       expect(res.status).toBe(202);
 
-      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken1);
       expect(job).toMatchObject<Partial<AsyncJob>>({
         resourceType: 'AsyncJob',
         status: 'completed',
@@ -578,14 +653,14 @@ exports.handler = async function (medplum, event) {
 
     test('JSON -- Prefer: respond-async', async () => {
       const res = await request(app)
-        .post(`/fhir/R4/Bot/${bots[0].id}/$execute`)
+        .post(`/fhir/R4/Bot/${bots.systemEchoBot.id}/$execute`)
         .set('Content-Type', ContentType.JSON)
-        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Authorization', 'Bearer ' + accessToken1)
         .set('Prefer', 'respond-async')
         .send({ hello: 'medplum' });
       expect(res.status).toBe(202);
 
-      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken1);
       expect(job).toMatchObject<Partial<AsyncJob>>({
         resourceType: 'AsyncJob',
         status: 'completed',
@@ -604,14 +679,14 @@ exports.handler = async function (medplum, event) {
 
     test('Boolean -- Prefer: respond-async', async () => {
       const res = await request(app)
-        .post(`/fhir/R4/Bot/${bots[1].id}/$execute`)
+        .post(`/fhir/R4/Bot/${bots.booleanBot.id}/$execute`)
         .set('Content-Type', ContentType.TEXT)
-        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Authorization', 'Bearer ' + accessToken1)
         .set('Prefer', 'respond-async')
         .send('input: true');
       expect(res.status).toBe(202);
 
-      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken1);
       expect(job).toMatchObject<Partial<AsyncJob>>({
         resourceType: 'AsyncJob',
         status: 'completed',
@@ -632,12 +707,12 @@ exports.handler = async function (medplum, event) {
       const res = await request(app)
         .post('/fhir/R4/Bot/$execute')
         .set('Content-Type', ContentType.TEXT)
-        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Authorization', 'Bearer ' + accessToken1)
         .set('Prefer', 'respond-async')
         .send('input');
       expect(res.status).toBe(202);
 
-      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
+      const job = await waitForAsyncJob(res.headers['content-location'], app, accessToken1);
       expect(job).toMatchObject<Partial<AsyncJob>>({
         resourceType: 'AsyncJob',
         status: 'error',
