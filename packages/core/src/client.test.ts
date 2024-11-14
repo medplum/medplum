@@ -1402,7 +1402,7 @@ describe('Client', () => {
     expect(result.id).toBe('123'); // Expect existing patient
   });
 
-  test('Create resource if none exist creates new', async () => {
+  test.each([undefined, {}])('Create resource if none exist creates new', async (emptyOptions) => {
     const fetch = mockFetch(200, (_url, options) => {
       if (options.method === 'GET') {
         return { resourceType: 'Bundle', total: 0, entry: [] };
@@ -1416,11 +1416,54 @@ describe('Client', () => {
         resourceType: 'Patient',
         name: [{ given: ['Bob'], family: 'Smith' }],
       },
-      'name:contains=bob'
+      'name:contains=bob',
+      emptyOptions
     );
     expect(result).toBeDefined();
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          'Content-Type': ContentType.FHIR_JSON,
+          'X-Medplum': 'extended',
+          'If-None-Exist': 'name:contains=bob',
+        },
+      })
+    );
   });
+
+  test.each<HeadersInit>([[['foo', 'bar']], { foo: 'bar' }, new Headers({ foo: 'bar' })])(
+    'Conditional create merges passed-in headers',
+    async (headers) => {
+      const fetch = mockFetch(200, (_url, _options) => {
+        return { resourceType: 'Patient', id: '123' };
+      });
+      const client = new MedplumClient({ fetch });
+      const result = await client.createResourceIfNoneExist<Patient>(
+        {
+          resourceType: 'Patient',
+          name: [{ given: ['Bob'], family: 'Smith' }],
+        },
+        'name:contains=bob',
+        { headers }
+      );
+      expect(result).toBeDefined();
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhir/R4/Patient',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      );
+      const passedHeaders = new Headers(fetch.mock.calls[0][1].headers);
+      expect(passedHeaders.get('foo')).toEqual('bar');
+      expect(passedHeaders.get('If-None-Exist')).toEqual('name:contains=bob');
+    }
+  );
 
   test('Update resource', async () => {
     const fetch = mockFetch(200, {});
