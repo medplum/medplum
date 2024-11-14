@@ -4,7 +4,6 @@
  */
 
 import { Annotation } from './Annotation';
-import { Citation } from './Citation';
 import { CodeableConcept } from './CodeableConcept';
 import { ContactDetail } from './ContactDetail';
 import { DiagnosticReport } from './DiagnosticReport';
@@ -347,7 +346,7 @@ export interface ResearchStudy {
    * also link to a research registry holding the results such as
    * ClinicalTrials.gov.
    */
-  result?: Reference<EvidenceReport | Citation | DiagnosticReport>[];
+  result?: Reference<EvidenceReport | DiagnosticReport>[];
 }
 
 /**

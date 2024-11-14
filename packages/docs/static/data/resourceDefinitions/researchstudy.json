@@ -1788,9 +1788,6 @@
           "datatype": "EvidenceReport"
         },
         {
-          "datatype": "Citation"
-        },
-        {
           "datatype": "DiagnosticReport",
           "documentLocation": "resource"
         }
