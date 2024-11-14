@@ -3,5 +3,6 @@
     "noEmit": true,
     "skipLibCheck": false,
     "typeRoots": ["dist"]
-  }
+  },
+  "include": ["dist"]
 }
