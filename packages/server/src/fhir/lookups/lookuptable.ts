@@ -15,7 +15,7 @@ import {
   escapeLikeString,
 } from '../sql';
 
-export const lookupTableBatchSize = 10_000;
+export const lookupTableBatchSize = 5_000;
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
