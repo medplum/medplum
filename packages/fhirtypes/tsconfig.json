@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "typeRoots": ["."],
+    "noEmit": true,
+    "lib": ["ES2020"],
+    "skipLibCheck": false
+  },
+  "include": ["dist/**/*.d.ts"],
+  "exclude": []
+}
