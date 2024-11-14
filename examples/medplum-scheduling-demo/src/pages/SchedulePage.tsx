@@ -197,7 +197,12 @@ export function SchedulePage(): JSX.Element {
         handlers={createUpdateSlotHandlers}
         onSlotsUpdated={() => setShouldRefreshCalender(true)}
       />
-      <SlotDetails event={selectedEvent} opened={slotDetailsOpened} handlers={slotDetailsHandlers} />
+      <SlotDetails
+        event={selectedEvent}
+        opened={slotDetailsOpened}
+        handlers={slotDetailsHandlers}
+        onSlotsUpdated={() => setShouldRefreshCalender(true)}
+      />
       <CreateAppointment
         event={selectedEvent}
         opened={createAppointmentOpened}

@@ -16,6 +16,7 @@ interface SlotDetailsProps {
     readonly close: () => void;
     readonly toggle: () => void;
   };
+  readonly onSlotsUpdated: () => void;
 }
 
 /**
@@ -25,7 +26,7 @@ interface SlotDetailsProps {
  * @returns A React component that displays the modal.
  */
 export function SlotDetails(props: SlotDetailsProps): JSX.Element | null {
-  const { event, opened, handlers } = props;
+  const { event, opened, handlers, onSlotsUpdated } = props;
   const slot: Slot | undefined = event?.resource;
 
   const [updateSlotOpened, updateSlotHandlers] = useDisclosure(false, { onClose: handlers.close });
@@ -35,6 +36,7 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element | null {
   async function handleDeleteSlot(slotId: string): Promise<void> {
     try {
       await medplum.deleteResource('Slot', slotId);
+      onSlotsUpdated();
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
@@ -97,7 +99,12 @@ export function SlotDetails(props: SlotDetailsProps): JSX.Element | null {
         </Stack>
       </Modal>
 
-      <CreateUpdateSlot event={event} opened={updateSlotOpened} handlers={updateSlotHandlers} />
+      <CreateUpdateSlot
+        event={event}
+        opened={updateSlotOpened}
+        handlers={updateSlotHandlers}
+        onSlotsUpdated={onSlotsUpdated}
+      />
     </>
   );
 }
