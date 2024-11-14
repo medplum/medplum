@@ -35,7 +35,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "",
+    "build": "tsc",
     "clean": "",
     "test": ""
   },
