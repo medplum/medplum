@@ -557,8 +557,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
     const startTime = Date.now();
     try {
-      const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
+      let result: T;
+      if (options?.ifMatch) {
+        // Ensure transactional processing for version-specific conditional update
+        result = await this.ensureInTransaction(() => this.updateResourceImpl(resource, false, options?.ifMatch));
+      } else {
+        result = await this.updateResourceImpl(resource, false, options?.ifMatch);
+      }
       const durationMs = Date.now() - startTime;
+
       await this.postCommit(async () => {
         this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
       });
@@ -591,17 +598,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new OperationOutcomeError(forbidden);
     }
 
-    const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id);
-    if (existing) {
-      (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
-      if (!this.canWriteToResource(existing)) {
-        // Check before the update
-        throw new OperationOutcomeError(forbidden);
-      }
-      if (versionId && existing.meta?.versionId !== versionId) {
-        throw new OperationOutcomeError(preconditionFailed);
-      }
-    }
+    const existing = create ? undefined : await this.checkExistingResource<T>(resourceType, id, versionId);
 
     let updated = await rewriteAttachments<T>(RewriteMode.REFERENCE, this, {
       ...this.restoreReadonlyFields(resource, existing),
@@ -852,14 +849,28 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    *  - Previous version does not exist, and user does have permission to create by ID
    * @param resourceType - The FHIR resource type.
    * @param id - The resource ID.
+   * @param versionId - The specific version of the resource that should exist.
    * @returns The existing resource, if found.
    */
   private async checkExistingResource<T extends Resource>(
     resourceType: T['resourceType'],
-    id: string
+    id: string,
+    versionId?: string
   ): Promise<T | undefined> {
     try {
-      return await this.readResourceImpl<T>(resourceType, id);
+      const existing = await this.readResourceImpl<T>(resourceType, id);
+
+      if (existing) {
+        (existing.meta as Meta).compartment = this.getCompartments(existing); // Update compartments with latest rules
+        if (!this.canWriteToResource(existing)) {
+          // Check before the update
+          throw new OperationOutcomeError(forbidden);
+        }
+        if (versionId && existing.meta?.versionId !== versionId) {
+          throw new OperationOutcomeError(preconditionFailed);
+        }
+      }
+      return existing;
     } catch (err) {
       const outcome = normalizeOperationOutcome(err);
       if (!isOk(outcome) && !isNotFound(outcome) && !isGone(outcome)) {
@@ -1042,29 +1053,35 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async patchResource<T extends Resource = Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[]
+    patch: Operation[],
+    options?: UpdateResourceOptions
   ): Promise<T> {
     const startTime = Date.now();
     try {
-      return await this.withTransaction(async () => {
-        const resource = await this.readResourceFromDatabase<T>(resourceType, id);
+      const resource = await this.readResourceFromDatabase<T>(resourceType, id);
 
-        if (resource.resourceType !== resourceType) {
-          throw new OperationOutcomeError(badRequest('Incorrect resource type'));
-        }
-        if (resource.id !== id) {
-          throw new OperationOutcomeError(badRequest('Incorrect ID'));
-        }
+      if (resource.resourceType !== resourceType) {
+        throw new OperationOutcomeError(badRequest('Incorrect resource type'));
+      }
+      if (resource.id !== id) {
+        throw new OperationOutcomeError(badRequest('Incorrect ID'));
+      }
 
-        patchObject(resource, patch);
+      patchObject(resource, patch);
 
-        const result = await this.updateResourceImpl(resource, false);
-        const durationMs = Date.now() - startTime;
-        await this.postCommit(async () => {
-          this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
-        });
-        return result;
+      let result: T;
+      if (options?.ifMatch) {
+        // Ensure transactional processing for version-specific conditional update
+        result = await this.ensureInTransaction(() => this.updateResourceImpl(resource, false, options?.ifMatch));
+      } else {
+        result = await this.updateResourceImpl(resource, false, options?.ifMatch);
+      }
+      const durationMs = Date.now() - startTime;
+
+      await this.postCommit(async () => {
+        this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
       });
+      return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
       this.logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });

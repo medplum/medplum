@@ -9,7 +9,6 @@ import {
   OperationOutcomeError,
   Operator,
   parseSearchRequest,
-  preconditionFailed,
   toTypedValue,
 } from '@medplum/core';
 import {
@@ -437,8 +436,8 @@ describe('FHIR Repo', () => {
 
       (patient as Patient).name = [{ family: 'TestUpdated' }];
 
-      await systemRepo.updateResource<Patient>(patient, { ifMatch: patient.meta?.versionId });
-      expect(patient.name?.at(0)?.family).toEqual('TestUpdated');
+      const updated = await systemRepo.updateResource<Patient>(patient, { ifMatch: patient.meta?.versionId });
+      expect(updated.name?.at(0)?.family).toEqual('TestUpdated');
     }));
 
   test('Update resource with different versionId', () =>
@@ -447,13 +446,41 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         name: [{ family: 'Test' }],
       });
+      await expect(systemRepo.updateResource(patient1, { ifMatch: 'bad-id' })).rejects.toThrow('Precondition Failed');
+    }));
 
-      try {
-        await systemRepo.updateResource<Patient>(patient1, { ifMatch: 'bad-id' });
-        fail('Should have thrown');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome).toMatchObject(preconditionFailed);
-      }
+  test('Patch resource with matching versionId', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const updated = await systemRepo.patchResource<Patient>(
+        'Patient',
+        patient.id as string,
+        [{ op: 'add', path: '/name/0/family', value: 'TestUpdated' }],
+        {
+          ifMatch: patient.meta?.versionId,
+        }
+      );
+      expect(updated.name?.at(0)?.family).toEqual('TestUpdated');
+    }));
+
+  test('Patch resource with different versionId', () =>
+    withTestContext(async () => {
+      const patient1 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+      await expect(
+        systemRepo.patchResource(
+          'Patient',
+          patient1.id as string,
+          [{ op: 'add', path: '/name/0/family', value: 'TestUpdated' }],
+          { ifMatch: 'bad-id' }
+        )
+      ).rejects.toThrow('Precondition Failed');
     }));
 
   test('Compartment permissions', () =>

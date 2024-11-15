@@ -25,6 +25,7 @@ export type CreateResourceOptions = {
 };
 
 export type UpdateResourceOptions = {
+  /** The specific version intended to be updated. */
   ifMatch?: string;
 };
 
@@ -146,9 +147,15 @@ export abstract class FhirRepository<TClient = unknown> {
    * @param resourceType - The FHIR resource type.
    * @param id - The FHIR resource ID.
    * @param patch - The JSONPatch operations.
+   * @param options - Options for the update operation.
    * @returns The patched resource.
    */
-  abstract patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource>;
+  abstract patchResource(
+    resourceType: string,
+    id: string,
+    patch: Operation[],
+    options?: UpdateResourceOptions
+  ): Promise<Resource>;
 
   /**
    * Searches for FHIR resources.
@@ -396,7 +403,12 @@ export class MemoryRepository extends FhirRepository<undefined> {
     return this.createResource(result);
   }
 
-  async patchResource(resourceType: string, id: string, patch: Operation[]): Promise<Resource> {
+  async patchResource(
+    resourceType: string,
+    id: string,
+    patch: Operation[],
+    options?: UpdateResourceOptions
+  ): Promise<Resource> {
     const resource = await this.readResource(resourceType, id);
 
     try {
@@ -408,7 +420,7 @@ export class MemoryRepository extends FhirRepository<undefined> {
       throw new OperationOutcomeError(normalizeOperationOutcome(err));
     }
 
-    return this.updateResource(resource);
+    return this.updateResource(resource, options);
   }
 
   async readResource<T extends Resource>(resourceType: string, id: string): Promise<T> {
