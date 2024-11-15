@@ -8,9 +8,8 @@ export function DoseSpotTab(): JSX.Element {
   const iframeUrl = useDoseSpotIFrame({
     patientId,
     onPatientSyncSuccess: () => showNotification({ color: 'green', title: 'Success', message: 'Patient sync success' }),
-    onPatientSyncError: (err) => showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) }),
     onIframeSuccess: () => showNotification({ color: 'green', title: 'Success', message: 'DoseSpot iframe success' }),
-    onIframeError: (err) => showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) }),
+    onError: (err) => showNotification({ color: 'red', title: 'Error', message: normalizeErrorString(err) }),
   });
 
   return (
