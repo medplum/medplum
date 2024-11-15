@@ -125,7 +125,7 @@ If something goes wrong during the switchover process, e.g. replication lag not 
 
 To get a feel for the customer experience during the switchover, we ran a k6 script starting a couple minutes before the switchover that tries to create a resource on Medplum every 0.5 seconds. In the steady state before and after the switchover, each request took about 35 milliseconds on average. During the switchover, all we noticed was one request taking just over a second (1082ms), a result we were very happy with:
 
-```json
+```
 http_req_duration,1729645809,32.86
 http_req_duration,1729645811,40.64
 http_req_duration,1729645811,1082.12
