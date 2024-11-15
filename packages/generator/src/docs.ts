@@ -1,12 +1,13 @@
 import { getExpressionForResourceType, isLowerCase } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, ElementDefinition, SearchParameter, StructureDefinition } from '@medplum/fhirtypes';
-import fs, { writeFileSync } from 'fs';
 import { DOMWindow, JSDOM } from 'jsdom';
 import * as mkdirp from 'mkdirp';
 import fetch from 'node-fetch';
-import * as path from 'path';
-import { resolve } from 'path/posix';
+import fs, { writeFileSync } from 'node:fs';
+import * as path from 'node:path';
+import { resolve } from 'node:path/posix';
+import * as readline from 'node:readline';
 import * as unzipper from 'unzipper';
 
 import {
@@ -637,8 +638,9 @@ function getMedplumDocsPath(typeName: string): string {
 }
 
 function printProgress(progress: number): void {
-  process.stdout.clearLine(0);
-  process.stdout.cursorTo(0);
+  // We use readline here since when `process.stdout` is not a tty, the `clearLine` and `cursorTo` methods on `process.out` are `undefined`
+  readline.clearLine(process.stdout, 0);
+  readline.cursorTo(process.stdout, 0);
   process.stdout.write(progress + '%');
 }
 
