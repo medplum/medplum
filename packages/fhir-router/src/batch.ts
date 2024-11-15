@@ -172,12 +172,17 @@ class BatchProcessor {
         // guarantee uniqueness of created resource
         requiresStrongTransaction = true;
       } else if (interaction === 'update') {
-        if (entry.request?.url.includes('?')) {
+        if (entry.request?.url.includes('?') || entry.request?.ifMatch) {
           // Conditional update requires strong (serializable) transaction to
           // guarantee uniqueness of possibly-created resource
           requiresStrongTransaction = true;
         }
         updates++;
+      } else if (interaction === 'patch') {
+        updates++;
+        if (entry.request?.ifMatch) {
+          requiresStrongTransaction = true;
+        }
       } else if (interaction === 'delete' && entry.request?.url.includes('?')) {
         // Conditional delete requires strong (serializable) transaction
         requiresStrongTransaction = true;

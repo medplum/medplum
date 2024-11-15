@@ -560,7 +560,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       let result: T;
       if (options?.ifMatch) {
         // Ensure transactional processing for version-specific conditional update
-        result = await this.ensureInTransaction(() => this.updateResourceImpl(resource, false, options?.ifMatch));
+        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options?.ifMatch), {
+          serializable: true,
+        });
       } else {
         result = await this.updateResourceImpl(resource, false, options?.ifMatch);
       }
@@ -1072,7 +1074,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       let result: T;
       if (options?.ifMatch) {
         // Ensure transactional processing for version-specific conditional update
-        result = await this.ensureInTransaction(() => this.updateResourceImpl(resource, false, options?.ifMatch));
+        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options?.ifMatch), {
+          serializable: true,
+        });
       } else {
         result = await this.updateResourceImpl(resource, false, options?.ifMatch);
       }
