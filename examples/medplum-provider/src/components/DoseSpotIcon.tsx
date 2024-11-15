@@ -20,7 +20,7 @@ export function DoseSpotIcon(): JSX.Element {
     </Tooltip>
   );
 
-  return unreadCount !== undefined && unreadCount > 0 ? (
+  return unreadCount ? (
     <Indicator inline label={unreadCount.toLocaleString()} size={16} offset={2} position="bottom-end" color="red">
       {icon}
     </Indicator>
