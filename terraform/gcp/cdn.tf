@@ -28,6 +28,9 @@ module "medplum-lb-https" {
   create_url_map                  = false
   ssl                             = true
   managed_ssl_certificate_domains = ["${var.storage_domain}", "${var.app_domain}"]
+  address                         = google_compute_global_address.elb_external_ip.address
+  create_address                  = false
+
 
   backends = {
     default = {
@@ -103,7 +106,7 @@ resource "google_compute_backend_bucket" "storage_bucket" {
   name             = "medplum-cdn-backend-storage-bucket"
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
-  bucket_name      = module.buckets["medplum-storage"].name
+  bucket_name      = module.buckets["medplum-storage-p"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
 
@@ -115,7 +118,7 @@ resource "google_compute_backend_bucket" "apps_bucket" {
   name             = "medplum-cdn-backend-app-bucket"
   project          = var.project_id
   description      = "Backend bucket for serving static content through CDN"
-  bucket_name      = module.buckets["medplum-app"].name
+  bucket_name      = module.buckets["medplum-app-p"].name
   enable_cdn       = true
   compression_mode = "DISABLED"
 
@@ -124,3 +127,8 @@ resource "google_compute_backend_bucket" "apps_bucket" {
 }
 
 
+resource "google_compute_global_address" "elb_external_ip" {
+  name         = "medplum-cdn-ip"
+  project      = var.project_id
+  address_type = "EXTERNAL"
+}
