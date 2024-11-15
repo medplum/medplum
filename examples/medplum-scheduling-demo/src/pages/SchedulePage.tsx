@@ -1,10 +1,10 @@
 import { Button, Group, Title } from '@mantine/core';
-import { useDisclosure } from '@mantine/hooks';
+import { useDisclosure, usePrevious } from '@mantine/hooks';
 import { getReferenceString } from '@medplum/core';
-import { Practitioner, Schedule } from '@medplum/fhirtypes';
-import { Document, useMedplumProfile, useSearchResources } from '@medplum/react';
+import { Appointment, Practitioner, Schedule, Slot } from '@medplum/fhirtypes';
+import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import dayjs from 'dayjs';
-import { useCallback, useContext, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { Calendar, dayjsLocalizer, Event } from 'react-big-calendar';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useNavigate } from 'react-router-dom';
@@ -23,6 +23,7 @@ import { ScheduleContext } from '../Schedule.context';
  */
 export function SchedulePage(): JSX.Element {
   const navigate = useNavigate();
+  const medplum = useMedplum();
 
   const [blockAvailabilityOpened, blockAvailabilityHandlers] = useDisclosure(false);
   const [setAvailabilityOpened, setAvailabilityHandlers] = useDisclosure(false);
@@ -32,10 +33,52 @@ export function SchedulePage(): JSX.Element {
 
   const [selectedEvent, setSelectedEvent] = useState<Event>();
   const { schedule } = useContext(ScheduleContext);
-
   const profile = useMedplumProfile() as Practitioner;
-  const [slots] = useSearchResources('Slot', { schedule: getReferenceString(schedule as Schedule), _count: '100' });
-  const [appointments] = useSearchResources('Appointment', { actor: getReferenceString(profile as Practitioner) });
+
+  const prevSchedule = usePrevious(schedule);
+  const prevProfile = usePrevious(profile);
+
+  const [shouldRefreshCalender, setShouldRefreshCalender] = useState(true);
+
+  const [slots, setSlots] = useState<Slot[]>();
+  const [appointments, setAppointments] = useState<Appointment[]>();
+
+  useEffect(() => {
+    if ((schedule && prevSchedule?.id !== schedule?.id) || (profile && prevProfile?.id !== profile?.id)) {
+      setShouldRefreshCalender(true);
+    }
+  }, [schedule, profile, prevSchedule?.id, prevProfile?.id]);
+
+  useEffect(() => {
+    async function searchSlots(): Promise<void> {
+      const slots = await medplum.searchResources(
+        'Slot',
+        {
+          schedule: getReferenceString(schedule as Schedule),
+          _count: '100',
+        },
+        { cache: 'no-cache' }
+      );
+      setSlots(slots);
+    }
+
+    async function searchAppointments(): Promise<void> {
+      const appointments = await medplum.searchResources(
+        'Appointment',
+        {
+          actor: getReferenceString(profile as Practitioner),
+        },
+        { cache: 'no-cache' }
+      );
+      setAppointments(appointments);
+    }
+
+    if (shouldRefreshCalender) {
+      Promise.allSettled([searchSlots(), searchAppointments()])
+        .then(() => setShouldRefreshCalender(false))
+        .catch(console.error);
+    }
+  }, [medplum, schedule, profile, shouldRefreshCalender]);
 
   // Converts Slot resources to big-calendar Event objects
   // Only show free and busy-unavailable slots
@@ -82,7 +125,7 @@ export function SchedulePage(): JSX.Element {
   );
 
   /**
-   * When an exiting event (slot/appointment) is selected, set the event object and open the
+   * When an existing event (slot/appointment) is selected, set the event object and open the
    * appropriate modal.
    * - If the event is a free slot, open the create appointment modal.
    * - If the event is a busy-unavailable slot, open the slot details modal.
@@ -148,9 +191,24 @@ export function SchedulePage(): JSX.Element {
       {/* Modals */}
       <SetAvailability opened={setAvailabilityOpened} handlers={setAvailabilityHandlers} />
       <BlockAvailability opened={blockAvailabilityOpened} handlers={blockAvailabilityHandlers} />
-      <CreateUpdateSlot event={selectedEvent} opened={createUpdateSlotOpened} handlers={createUpdateSlotHandlers} />
-      <SlotDetails event={selectedEvent} opened={slotDetailsOpened} handlers={slotDetailsHandlers} />
-      <CreateAppointment event={selectedEvent} opened={createAppointmentOpened} handlers={createAppointmentHandlers} />
+      <CreateUpdateSlot
+        event={selectedEvent}
+        opened={createUpdateSlotOpened}
+        handlers={createUpdateSlotHandlers}
+        onSlotsUpdated={() => setShouldRefreshCalender(true)}
+      />
+      <SlotDetails
+        event={selectedEvent}
+        opened={slotDetailsOpened}
+        handlers={slotDetailsHandlers}
+        onSlotsUpdated={() => setShouldRefreshCalender(true)}
+      />
+      <CreateAppointment
+        event={selectedEvent}
+        opened={createAppointmentOpened}
+        handlers={createAppointmentHandlers}
+        onAppointmentsUpdated={() => setShouldRefreshCalender(true)}
+      />
     </Document>
   );
 }
