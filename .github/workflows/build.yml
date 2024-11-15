@@ -74,7 +74,7 @@ jobs:
             echo "No uncommitted changes detected after running `generate` in `packages/generator`."
             exit 0
           else
-            echo "Uncommited changes detected. Run `npm run generate` in `packages/generator` and commit the generated changes."
+            echo "Uncommitted changes detected. Run `npm run generate` in `packages/generator` and commit the generated changes."
             exit 1
           fi
       - name: Build Project
