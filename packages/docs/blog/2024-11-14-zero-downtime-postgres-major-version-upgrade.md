@@ -43,7 +43,7 @@ To achieve this, we went about designing a plan to manually manage a blue/green 
 2. Using PgBouncer as a proxy/connection pooler to facilitate the switchover and avoid any dropped database client connections
 3. A switchover script to orchestrate the switchover as fast as possible
 
-To cut to the chase, the step-by-step runbook we used to manage our database upgrade process and its supporting resources can be found here (TODO link). Let’s walk through some steps of the runbook to provide some more color.
+To cut to the chase, **here is the [step-by-step postgres upgrade runbook](https://github.com/medplum/medplum-postgres-upgrade/blob/main/docs/runbook.md) we used to manage our database upgrade** and its [supporting resources](https://github.com/medplum/medplum-postgres-upgrade). Let’s walk through some steps of the runbook to provide some more color.
 
 ### Enabling logical replication in RDS Aurora cluster parameter group
 
@@ -69,7 +69,7 @@ PgBouncer is a powerful tool with a lot of use cases and tons of configuration s
 
 Why didn’t we keep PgBouncer in our stack permanently? We prefer to keep our stack as simple as possible to avoid the overhead of managing another service. Furthermore, making PgBouncer into a highly available (HA) service is non-trivial.
 
-A few things to call our from our PgBouncer setup guide (TODO link):
+A few things to call our from our [PgBouncer setup guide](https://github.com/medplum/medplum-postgres-upgrade/blob/main/docs/pgbouncer-setup.md):
 
 PgBouncer has pretty low CPU and memory requirements for the way we use it, but we wanted to get as much network bandwidth without totally breaking the bank to avoid introducing a network bandwidth bottleneck to/from our database. As such, we provisioned our PgBouncer instance on an `m5.2xlarge` instance which was likely overkill.
 
@@ -79,7 +79,7 @@ Make sure to put the server in the same VPC as your RDS cluster and application 
 
 This is another EC2 server that you’ll SSH onto in order to perform various steps (most notably, execute the switchover script). It needs SSH access to your PgBouncer server as well as Postgres access (port 5432) to PgBouncer as well as your blue and green database clusters.
 
-There isn’t too much else to discuss from our jumpbox setup guide (TODO link) besides commiserating that it can be a bit tedious to get all the security group rules setup correctly to allow SSH and Postgres access. The telltale that you haven’t configured your security groups quite right yet is an `ssh` or `psql` command hanging indefinitely.
+There isn’t too much else to discuss from our [jumpbox setup guide](https://github.com/medplum/medplum-postgres-upgrade/blob/main/docs/jumpbox-setup.md) besides commiserating that it can be a bit tedious to get all the security group rules setup correctly to allow SSH and Postgres access. The telltale that you haven’t configured your security groups quite right yet is an `ssh` or `psql` command hanging indefinitely.
 
 Throughout our runbook, unless otherwise noted, all SQL queries and other commands you run should be performed from the jumpbox. Why? The last thing you want is a network hiccup between your laptop/desktop and the AWS datacenter to halt the switchover script at just the wrong time. Along those lines, we highly recommend you use tmux, screen, or some other terminal multiplexer on your jumpbox to further avoid inflight scripts from being interrupted.
 
@@ -105,11 +105,11 @@ As discussed above, we only used PgBouncer temporarily to facilitate our databas
 
 ### Executing the switchover
 
-Spoiler alert: the actual switchover process was quick and anti-climatic just like we were planning for. Of course, making it quick and anti-climatic took quite a bit of preparation and iteration. The switchover process was fully automated by this script (TODO link). We erred on the side of making the script too verbose rather than not enough. While the script was written with the particulars of Medplum in mind, it should be straightforward to adapt it to other environments.
+Spoiler alert: the actual switchover process was quick and anti-climatic just like we were planning for. Of course, making it quick and anti-climatic took quite a bit of preparation and iteration. We automated the switchover process by writing [a custom script](https://github.com/medplum/medplum-postgres-upgrade/blob/main/src/switchover.ts). We erred on the side of making the script too verbose rather than not enough. While the script was written with the particulars of Medplum in mind, it should be straightforward to adapt it to other environments.
 
 The first thing the switchover script does is run a number of precondition checks before it even considers executing the actual switchover. The checks include things like connectivity to the various databases, SSH access to the PgBouncer server, verifying PgBouncer configuration, verifying recent data is identical between the blue and green servers, logical replication lag is low enough, etc. The precondition check section is the time to be paranoid and verbose. Several of the checks included were added as a result of us forgetting to manually perform some earlier step or configuration change in one of our many test runs of the script.
 
-If all preconditions have passed, the script then waits for user confirmation to proceed with the actual switchover. Why? To allow us to ensure that we weren’t in the middle of handling a sudden spike in traffic and didn’t have any long-running queries. This was fairly easy to ascertain thanks to a custom realtime CLI-based dashboard (TODO link) that displays active Postgres connections on the blue and green databases, PgBouncer configuration and traffic stats, and logical replication lag in near realtime.
+If all preconditions have passed, the script then waits for user confirmation to proceed with the actual switchover. Why? To allow us to ensure that we weren’t in the middle of handling a sudden spike in traffic and didn’t have any long-running queries. This was fairly easy to ascertain thanks to a custom realtime [terminal-based dashboard](https://github.com/medplum/medplum-postgres-upgrade/blob/main/src/dashboard.ts) that displays active Postgres connections on the blue and green databases, PgBouncer configuration and traffic stats, and logical replication lag in near realtime.
 
 Once we proceeded, the switchover script did the following in about one second:
 
