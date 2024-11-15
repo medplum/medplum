@@ -263,7 +263,7 @@ class AsyncCrawler {
       await this.visitor.onEnterObject(path, obj, schema);
     }
 
-    if (this.excludeMissingProperties) {
+    if (this.excludeMissingProperties && obj.value) {
       for (const key of Object.keys(obj.value)) {
         await this.crawlProperty(obj, key, schema, `${path}.${key}`);
       }
