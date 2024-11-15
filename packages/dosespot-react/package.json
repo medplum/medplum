@@ -31,6 +31,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
+  "type": "module",
   "exports": {
     "import": {
       "types": "./dist/esm/index.d.ts",
@@ -61,7 +62,7 @@
     "@medplum/core": "3.2.22",
     "@medplum/fhirtypes": "3.2.22",
     "@medplum/mock": "3.2.22",
-    "@medplum/react-hooks": "3.2.22",
+    "@medplum/react": "3.2.22",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.0.1",
     "@types/node": "22.9.0",
