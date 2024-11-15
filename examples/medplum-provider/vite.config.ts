@@ -1,8 +1,8 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig, UserConfig } from 'vite';
 import dns from 'dns';
-import path from 'path';
 import { existsSync } from 'fs';
+import path from 'path';
+import { defineConfig, UserConfig } from 'vite';
 
 dns.setDefaultResultOrder('verbatim');
 
@@ -10,6 +10,7 @@ dns.setDefaultResultOrder('verbatim');
 const alias: NonNullable<UserConfig['resolve']>['alias'] = Object.fromEntries(
   Object.entries({
     '@medplum/core': path.resolve(__dirname, '../../packages/core/src'),
+    '@medplum/dosespot-react': path.resolve(__dirname, '../../packages/dosespot-react/src'),
     '@medplum/react': path.resolve(__dirname, '../../packages/react/src'),
   }).filter(([, relPath]) => existsSync(relPath))
 );

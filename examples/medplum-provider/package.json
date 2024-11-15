@@ -24,6 +24,7 @@
     "@mantine/hooks": "7.14.1",
     "@mantine/notifications": "7.14.1",
     "@medplum/core": "3.2.22",
+    "@medplum/dosespot-react": "3.2.22",
     "@medplum/eslint-config": "3.2.22",
     "@medplum/fhirtypes": "3.2.22",
     "@medplum/react": "3.2.22",
