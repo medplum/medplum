@@ -61,6 +61,14 @@ jobs:
           echo "npm version: $(npm --version)"
       - name: Install
         run: npm ci --maxsockets 1
+      - name: Build Project
+        run: npm run build
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
       - name: Static generation check
         run: |
           set -e
@@ -77,14 +85,6 @@ jobs:
             echo "Uncommitted changes detected. Run `npm run generate` in `packages/generator` and commit the generated changes."
             exit 1
           fi
-      - name: Build Project
-        run: npm run build
-        env:
-          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
-          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
-          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
-          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
-          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
   eslint:
     name: Run eslint
