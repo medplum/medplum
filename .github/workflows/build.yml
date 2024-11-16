@@ -73,9 +73,7 @@ jobs:
         run: |
           set -e
 
-          cd packages/generator
           npm run generate
-          popd
 
           # Check if we have a clean working directory after running generate
           if git diff --quiet; then
