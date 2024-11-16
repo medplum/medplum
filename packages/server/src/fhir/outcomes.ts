@@ -38,11 +38,12 @@ export function sendOutcome(res: Response, outcome: OperationOutcome): Response 
   if (isAccepted(outcome) && outcome.issue?.[0].diagnostics) {
     res.set('Content-Location', outcome.issue[0].diagnostics);
   }
+  const extension = buildTracingExtension();
   return res
     .status(getStatus(outcome))
     .type(ContentType.FHIR_JSON)
     .json({
       ...outcome,
-      extension: buildTracingExtension(),
+      ...(extension ? extension : undefined),
     } as OperationOutcome);
 }
