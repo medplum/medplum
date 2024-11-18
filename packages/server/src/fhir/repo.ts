@@ -111,7 +111,7 @@ import {
 import { getBinaryStorage } from './storage';
 import { recordHistogramValue } from '../otel/otel';
 
-const transactionRetries = 2;
+const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
 
 /**
@@ -2172,7 +2172,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     options?: { serializable: boolean }
   ): Promise<TResult> {
     let error: any;
-    for (let i = 0; i < transactionRetries; i++) {
+    for (let i = 0; i < transactionAttempts; i++) {
       try {
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
         const result = await callback(client);
