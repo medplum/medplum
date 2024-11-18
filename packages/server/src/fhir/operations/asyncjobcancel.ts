@@ -1,4 +1,4 @@
-import { allOk, assert, badRequest, OperationOutcomeError } from '@medplum/core';
+import { allOk, assert, badRequest } from '@medplum/core';
 import { AsyncJob, OperationDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
@@ -27,30 +27,22 @@ export const operation: OperationDefinition = {
 export const asyncJobCancelHandler = asyncWrap(async (req: Request, res: Response) => {
   assert(req.params.id, 'This operation can only be executed on an instance');
   // Update status of async job
-  try {
-    const { repo } = getAuthenticatedContext();
-    const job = await repo.readResource<AsyncJob>('AsyncJob', req.params.id);
-    switch (job.status) {
-      case 'accepted':
-        await repo.patchResource('AsyncJob', req.params.id, [
-          { op: 'test', path: '/status', value: 'accepted' },
-          { op: 'add', path: '/status', value: 'cancelled' },
-        ]);
-        break;
-      case 'cancelled':
-        break;
-      default:
-        sendOutcome(
-          res,
-          badRequest(`AsyncJob cannot be cancelled if status is not 'accepted', job had status '${job.status}'`)
-        );
-    }
-    sendOutcome(res, allOk);
-  } catch (err) {
-    if (err instanceof OperationOutcomeError) {
-      sendOutcome(res, err.outcome);
-    } else {
-      sendOutcome(res, badRequest((err as Error).message));
-    }
+  const { repo } = getAuthenticatedContext();
+  const job = await repo.readResource<AsyncJob>('AsyncJob', req.params.id);
+  switch (job.status) {
+    case 'accepted':
+      await repo.patchResource('AsyncJob', req.params.id, [
+        { op: 'test', path: '/status', value: 'accepted' },
+        { op: 'add', path: '/status', value: 'cancelled' },
+      ]);
+      break;
+    case 'cancelled':
+      break;
+    default:
+      sendOutcome(
+        res,
+        badRequest(`AsyncJob cannot be cancelled if status is not 'accepted', job had status '${job.status}'`)
+      );
   }
+  sendOutcome(res, allOk);
 });
