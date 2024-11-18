@@ -455,20 +455,6 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
   return new OperationOutcomeError(normalizeOperationOutcome(err));
 }
 
-const retryableTransactionErrorCodes = ['40001'];
-
-export function isRetryableTransactionError(err: any): boolean {
-  if (err instanceof OperationOutcomeError && err.outcome.issue.length === 1) {
-    const issue = err.outcome.issue[0];
-    return Boolean(
-      issue.code === 'conflict' &&
-        issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
-    );
-  } else {
-    return retryableTransactionErrorCodes.includes(err.code);
-  }
-}
-
 export abstract class BaseQuery {
   readonly tableName: string;
   readonly predicate: Conjunction;

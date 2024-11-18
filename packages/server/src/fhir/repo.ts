@@ -111,6 +111,9 @@ import {
 import { getBinaryStorage } from './storage';
 import { recordHistogramValue } from '../otel/otel';
 
+const transactionRetries = 2;
+const retryableTransactionErrorCodes = ['40001'];
+
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
  * In practice, there will be one Repository per HTTP request.
@@ -2168,18 +2171,29 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     callback: (client: PoolClient) => Promise<TResult>,
     options?: { serializable: boolean }
   ): Promise<TResult> {
-    try {
-      const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
-      const result = await callback(client);
-      await this.commitTransaction();
-      return result;
-    } catch (err) {
-      const operationOutcomeError = normalizeDatabaseError(err);
-      await this.rollbackTransaction(operationOutcomeError);
-      throw operationOutcomeError;
-    } finally {
-      this.endTransaction();
+    let error: any;
+    for (let i = 0; i < transactionRetries; i++) {
+      try {
+        const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
+        const result = await callback(client);
+        await this.commitTransaction();
+        return result;
+      } catch (err) {
+        const operationOutcomeError = normalizeDatabaseError(err);
+        // Assigning here and throwing below is necessary to satisfy TypeScript;
+        error = err;
+
+        // Ensure transaction is rolled back before attempting any retry
+        await this.rollbackTransaction(operationOutcomeError);
+        if (!this.isRetryableTransactionError(err)) {
+          break; // Fall through to throw statement outside of the loop
+        }
+      } finally {
+        this.endTransaction();
+      }
     }
+
+    throw error;
   }
 
   private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
@@ -2263,6 +2277,34 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.postCommitCallbacks = [];
     for (const cb of callbacks) {
       await cb();
+    }
+  }
+
+  /**
+   * Checks whether an error represents a serialization conflict that can safely be retried.
+   * NOTE: Retrying a transaction must be done in full: the entire `Repository.withTransaction()` block
+   * should be re-executed, in a new transaction.
+   * @param err - The error to check.
+   * @returns True if the error indicates a retryable transaction failure.
+   */
+  private isRetryableTransactionError(err: any): boolean {
+    if (this.transactionDepth) {
+      // Nested transactions (i.e. savepoints) are NOT retryable per the Postgres docs;
+      // the entire transaction must have been rolled back before anything can be retried:
+      // "It is important to retry the complete transaction, including all logic
+      // that decides which SQL to issue and/or which values to use"
+      // @see https://www.postgresql.org/docs/16/mvcc-serialization-failure-handling.html
+      return false;
+    }
+
+    if (err instanceof OperationOutcomeError && err.outcome.issue.length === 1) {
+      const issue = err.outcome.issue[0];
+      return Boolean(
+        issue.code === 'conflict' &&
+          issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
+      );
+    } else {
+      return retryableTransactionErrorCodes.includes(err.code);
     }
   }
 
