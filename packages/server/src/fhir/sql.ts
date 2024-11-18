@@ -445,7 +445,7 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
       return new OperationOutcomeError(conflict(err.detail));
     case '40001': // serialization_failure
       // Transaction rollback due to serialization error -> 409 Conflict
-      return new OperationOutcomeError(conflict(err.message));
+      return new OperationOutcomeError(conflict(err.message, err.code));
     case '57014': // query_canceled
       // Statement timeout -> 504 Gateway Timeout
       return new OperationOutcomeError(serverTimeout(err.message));
@@ -453,6 +453,20 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
 
   getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
   return new OperationOutcomeError(normalizeOperationOutcome(err));
+}
+
+const retryableTransactionErrorCodes = ['40001'];
+
+export function isRetryableTransactionError(err: any): boolean {
+  if (err instanceof OperationOutcomeError && err.outcome.issue.length === 1) {
+    const issue = err.outcome.issue[0];
+    return Boolean(
+      issue.code === 'conflict' &&
+        issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
+    );
+  } else {
+    return retryableTransactionErrorCodes.includes(err.code);
+  }
 }
 
 export abstract class BaseQuery {

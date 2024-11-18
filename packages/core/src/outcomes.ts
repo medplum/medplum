@@ -216,7 +216,7 @@ export function badRequest(details: string, expression?: string): OperationOutco
   };
 }
 
-export function conflict(details: string): OperationOutcome {
+export function conflict(details: string, code?: string): OperationOutcome {
   return {
     resourceType: 'OperationOutcome',
     id: CONFLICT_ID,
@@ -225,6 +225,7 @@ export function conflict(details: string): OperationOutcome {
         severity: 'error',
         code: 'conflict',
         details: {
+          coding: code ? [{ code }] : undefined,
           text: details,
         },
       },
