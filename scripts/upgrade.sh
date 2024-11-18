@@ -23,7 +23,8 @@ git checkout -b "$BRANCH_NAME"
 # supertest - version 7+ incompatible with superwstest, waiting for fix
 # @tabler/icons-react - to avoid bad interaction with vite https://github.com/tabler/tabler-icons/issues/1233
 # react-native - 0.76.x is broken with an error caused by flow parser breaking when using `expo-crypto`: `SyntaxError: {..}/react-native/Libraries/vendor/emitter/EventEmitter.js: Unexpected token, expected "]" (39:5)`
-EXCLUDE="@types/express eslint node-fetch react react-dom rimraf supertest @tabler/icons-react react-native"
+# ua-parser-js - version 2.0.0+ is AGPL, which is incompatible with Medplum's Apache 2.0 license
+EXCLUDE="@types/express eslint node-fetch react react-dom rimraf supertest @tabler/icons-react react-native ua-parser-js"
 
 # First, only upgrade patch and minor versions
 # --workspaces - Run on all workspaces
