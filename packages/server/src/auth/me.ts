@@ -29,10 +29,11 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   const profile = await systemRepo.readReference<ProfileResource>(profileRef);
   const config = await getUserConfiguration(systemRepo, project, membership);
   const accessPolicy = await getAccessPolicyForLogin(authState);
+  let user: User | undefined = undefined;
 
   let security: UserSecurity | undefined = undefined;
   if (membership.user?.reference?.startsWith('User/')) {
-    const user = await systemRepo.readReference<User>(membership.user as Reference<User>);
+    user = await systemRepo.readReference<User>(membership.user as Reference<User>);
     const sessions = await getSessions(systemRepo, user);
     security = {
       mfaEnrolled: !!user.mfaEnrolled,
@@ -41,6 +42,14 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
   }
 
   const result = {
+    user: user
+      ? {
+          resourceType: 'User',
+          id: user.id,
+          email: user.email,
+          identifier: user.identifier,
+        }
+      : undefined,
     project: {
       resourceType: 'Project',
       id: project.id,
@@ -52,6 +61,7 @@ export async function meHandler(req: Request, res: Response): Promise<void> {
     membership: {
       resourceType: 'ProjectMembership',
       id: membership.id,
+      identifier: membership.identifier,
       user: membership.user,
       profile: membership.profile,
       admin: membership.admin,

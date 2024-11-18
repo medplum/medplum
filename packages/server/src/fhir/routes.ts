@@ -1,5 +1,5 @@
-import { allOk, ContentType, isOk, OperationOutcomeError } from '@medplum/core';
-import { BatchEvent, FhirRequest, FhirRouter, HttpMethod, RepositoryMode } from '@medplum/fhir-router';
+import { allOk, ContentType, isOk, OperationOutcomeError, stringify } from '@medplum/core';
+import { BatchEvent, FhirRequest, FhirRouter, HttpMethod } from '@medplum/fhir-router';
 import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -40,7 +40,7 @@ import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
-import { sendResponse } from './response';
+import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
@@ -66,12 +66,30 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
       return res.send();
     }
 
-    // Unless already set, use the FHIR content type
     if (!res.get('Content-Type')) {
-      res.contentType(ContentType.FHIR_JSON);
+      res.contentType(ContentType.JSON);
     }
 
-    return res.json(data);
+    const pretty = req.query._pretty === 'true';
+
+    if (res.get('Content-Type')?.startsWith(ContentType.FHIR_JSON)) {
+      let legacyFhirJsonResponseFormat: boolean | undefined;
+      try {
+        const ctx = getAuthenticatedContext();
+        legacyFhirJsonResponseFormat = ctx.project.systemSetting?.find(
+          (s) => s.name === 'legacyFhirJsonResponseFormat'
+        )?.valueBoolean;
+      } catch (_err) {
+        // Ignore errors since unauthenticated requests also use this middleware
+      }
+
+      if (!legacyFhirJsonResponseFormat) {
+        return res.send(stringify(data, pretty));
+      }
+    }
+
+    // Default JSON response
+    return res.send(JSON.stringify(data, undefined, pretty ? 2 : undefined));
   };
   next();
 });
@@ -312,18 +330,11 @@ protectedRoutes.use(
         graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
           ?.valueInteger,
         graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
-        graphqlMaxPageSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxPageSize')?.valueInteger,
         graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
+        searchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'searchOnReader')?.valueBoolean,
         transactions: ctx.project.features?.includes('transaction-bundles'),
       },
     };
-
-    if (request.pathname.includes('$graphql')) {
-      // If this is a GraphQL request, mark the repository as eligible for "reader" mode.
-      // Inside the GraphQL handler, the repository will be set to "writer" mode if needed.
-      // At the time of this writing, the GraphQL handler is the only place where we consider "reader" mode.
-      ctx.repo.setMode(RepositoryMode.READER);
-    }
 
     const result = await getInternalFhirRouter().handleRequest(request, ctx.repo);
     if (result.length === 1) {
@@ -331,8 +342,9 @@ protectedRoutes.use(
         throw new OperationOutcomeError(result[0]);
       }
       sendOutcome(res, result[0]);
-    } else {
-      await sendResponse(req, res, result[0], result[1]);
+      return;
     }
+
+    await sendFhirResponse(req, res, result[0], result[1], result[2]);
   })
 );

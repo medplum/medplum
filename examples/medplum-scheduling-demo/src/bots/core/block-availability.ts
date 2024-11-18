@@ -39,25 +39,27 @@ export async function handler(medplum: MedplumClient, event: BotEvent<BlockAvail
     `date=lt${end}&date=ge${start}&status=booked`
   );
   entries.push(
-    ...(appointmentsToCancel.map((appointment) => ({
-      request: {
-        method: 'PUT',
-        url: `Appointment?_id=${appointment.id}`,
-      },
-      resource: {
-        ...appointment,
-        status: 'cancelled',
-        cancelationReason: {
-          coding: [
-            {
-              system: 'http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason',
-              code: 'prov',
-              display: 'Provider',
-            },
-          ],
+    ...appointmentsToCancel.map(
+      (appointment): BundleEntry => ({
+        request: {
+          method: 'PUT',
+          url: `Appointment?_id=${appointment.id}`,
         },
-      },
-    })) as BundleEntry[])
+        resource: {
+          ...appointment,
+          status: 'cancelled',
+          cancelationReason: {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason',
+                code: 'prov',
+                display: 'Provider',
+              },
+            ],
+          },
+        },
+      })
+    )
   );
 
   // Block free slots that overlap the period
@@ -66,16 +68,18 @@ export async function handler(medplum: MedplumClient, event: BotEvent<BlockAvail
     `schedule=${schedule.reference}&start=lt${end}&start=ge${start}&status=free`
   );
   entries.push(
-    ...(freeSlotsToBlock.map((slot) => ({
-      request: {
-        method: 'PUT',
-        url: `Slot?_id=${slot.id}`,
-      },
-      resource: {
-        ...slot,
-        status: 'busy-unavailable',
-      },
-    })) as BundleEntry[])
+    ...freeSlotsToBlock.map(
+      (slot): BundleEntry => ({
+        request: {
+          method: 'PUT',
+          url: `Slot?_id=${slot.id}`,
+        },
+        resource: {
+          ...slot,
+          status: 'busy-unavailable',
+        },
+      })
+    )
   );
 
   // Execute the batch to create/update all resources at once

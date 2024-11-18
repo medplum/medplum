@@ -177,6 +177,22 @@
       "inherited": false
     },
     {
+      "name": "name",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.name",
+      "min": 0,
+      "max": "1",
+      "short": "Name for this study (computer friendly)",
+      "definition": "Name for this study (computer friendly).",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "title",
       "depth": 1,
       "types": [
@@ -187,8 +203,110 @@
       "path": "ResearchStudy.title",
       "min": 0,
       "max": "1",
-      "short": "Name for this study",
-      "definition": "A short, descriptive user-friendly label for the study.",
+      "short": "Human readable name of the study",
+      "definition": "The human readable name of the research study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "label",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ResearchStudy.label",
+      "min": 0,
+      "max": "*",
+      "short": "Additional names for the study",
+      "definition": "Additional names for the study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.label.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.label.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.label.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.label.type",
+      "min": 0,
+      "max": "1",
+      "short": "primary | official | scientific | plain-language | subtitle | short-title | acronym | earlier-title | language | auto-translated | human-use | machine-use | duplicate-uid",
+      "definition": "Kind of name.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "value",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.label.value",
+      "min": 0,
+      "max": "1",
+      "short": "The name",
+      "definition": "The name.",
       "comment": "",
       "inherited": false
     },
@@ -289,6 +407,23 @@
       "inherited": false
     },
     {
+      "name": "studyDesign",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.studyDesign",
+      "min": 0,
+      "max": "*",
+      "short": "Classifications of the study design characteristics",
+      "definition": "Codes categorizing the type of study such as investigational vs. observational, type of blinding, type of randomization, safety vs. efficacy, etc.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "category",
       "depth": 1,
       "types": [
@@ -368,8 +503,8 @@
       "path": "ResearchStudy.relatedArtifact",
       "min": 0,
       "max": "*",
-      "short": "References and dependencies",
-      "definition": "Citations, references and other related documents.",
+      "short": "References, URLs, and attachments",
+      "definition": "Citations, references, URLs and other related documents.  When using relatedArtifact to share URLs, the relatedArtifact.type will often be set to one of \"documentation\" or \"supported-with\" and the URL value will often be in relatedArtifact.document.url but another possible location is relatedArtifact.resource when it is a canonical URL.",
       "comment": "",
       "inherited": false
     },
@@ -408,6 +543,39 @@
       "inherited": false
     },
     {
+      "name": "region",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.region",
+      "min": 0,
+      "max": "*",
+      "short": "Geographic area for the study",
+      "definition": "A country, state or other area where the study is taking place rather than its precise geographic location or address.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "descriptionSummary",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "ResearchStudy.descriptionSummary",
+      "min": 0,
+      "max": "1",
+      "short": "Brief text explaining the study",
+      "definition": "A brief text for explaining the study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "description",
       "depth": 1,
       "types": [
@@ -418,8 +586,8 @@
       "path": "ResearchStudy.description",
       "min": 0,
       "max": "1",
-      "short": "What this is study doing",
-      "definition": "A full description of how the study is being conducted.",
+      "short": "Detailed narrative of the study",
+      "definition": "A detailed and human-readable narrative of the study. E.g., study abstract.",
       "comment": "",
       "inherited": false
     },
@@ -525,6 +693,14 @@
       "referenceTypes": [
         {
           "datatype": "Location",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "ResearchStudy",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
           "documentLocation": "resource"
         }
       ],
@@ -689,6 +865,657 @@
       "inherited": false
     },
     {
+      "name": "classifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.classifier",
+      "min": 0,
+      "max": "*",
+      "short": "Classification for the study",
+      "definition": "Additional grouping mechanism or categorization of a research study. Example: FDA regulated device, FDA regulated drug, MPG Paragraph 23b (a German legal requirement), IRB-exempt, etc. Implementation Note: do not use the classifier element to support existing semantics that are already supported thru explicit elements in the resource.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "associatedParty",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ResearchStudy.associatedParty",
+      "min": 0,
+      "max": "*",
+      "short": "Sponsors, collaborators, and other parties",
+      "definition": "Sponsors, collaborators, and other parties.",
+      "comment": "For a Sponsor or a PrincipalInvestigator use the dedicated attributes provided.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.associatedParty.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.associatedParty.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.associatedParty.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "name",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.associatedParty.name",
+      "min": 0,
+      "max": "1",
+      "short": "Name of associated party",
+      "definition": "Name of associated party.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "role",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.associatedParty.role",
+      "min": 1,
+      "max": "1",
+      "short": "sponsor | lead-sponsor | sponsor-investigator | primary-investigator | collaborator | funding-source | general-contact | recruitment-contact | sub-investigator | study-director | study-chair",
+      "definition": "Type of association.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "period",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.associatedParty.period",
+      "min": 0,
+      "max": "*",
+      "short": "When active in the role",
+      "definition": "Identifies the start date and the end date of the associated party in the role.",
+      "comment": "The cardinality is 0..* due to the fact that an associated party may be intermittently active in a given role over multiple time periods.",
+      "inherited": false
+    },
+    {
+      "name": "classifier",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.associatedParty.classifier",
+      "min": 0,
+      "max": "*",
+      "short": "nih | fda | government | nonprofit | academic | industry",
+      "definition": "A categorization other than role for the associated party.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "party",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Practitioner",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "PractitionerRole",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "Organization",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "ResearchStudy.associatedParty.party",
+      "min": 0,
+      "max": "1",
+      "short": "Individual or organization associated with study (use practitionerRole to specify their organisation)",
+      "definition": "Individual or organization associated with study (use practitionerRole to specify their organisation).",
+      "comment": "Suggestions of a better attribute name are appreciated",
+      "inherited": false
+    },
+    {
+      "name": "progressStatus",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ResearchStudy.progressStatus",
+      "min": 0,
+      "max": "*",
+      "short": "Status of study with time for that status",
+      "definition": "Status of study with time for that status.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.progressStatus.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.progressStatus.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.progressStatus.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "state",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.progressStatus.state",
+      "min": 1,
+      "max": "1",
+      "short": "Label for status or state (e.g. recruitment status)",
+      "definition": "Label for status or state (e.g. recruitment status).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "actual",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "ResearchStudy.progressStatus.actual",
+      "min": 0,
+      "max": "1",
+      "short": "Actual if true else anticipated",
+      "definition": "An indication of whether or not the date is a known date when the state changed or will change. A value of true indicates a known date. A value of false indicates an estimated date.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "period",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Period",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.progressStatus.period",
+      "min": 0,
+      "max": "1",
+      "short": "Date range",
+      "definition": "Date range.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "whyStopped",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.whyStopped",
+      "min": 0,
+      "max": "1",
+      "short": "accrual-goal-met | closed-due-to-toxicity | closed-due-to-lack-of-study-progress | temporarily-closed-per-study-design",
+      "definition": "A description and/or code explaining the premature termination of the study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "recruitment",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ResearchStudy.recruitment",
+      "min": 0,
+      "max": "1",
+      "short": "Target or actual group of participants enrolled in study",
+      "definition": "Target or actual group of participants enrolled in study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.recruitment.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.recruitment.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.recruitment.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "targetNumber",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "unsignedInt"
+        }
+      ],
+      "path": "ResearchStudy.recruitment.targetNumber",
+      "min": 0,
+      "max": "1",
+      "short": "Estimated total number of participants to be enrolled",
+      "definition": "Estimated total number of participants to be enrolled.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "actualNumber",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "unsignedInt"
+        }
+      ],
+      "path": "ResearchStudy.recruitment.actualNumber",
+      "min": 0,
+      "max": "1",
+      "short": "Actual total number of participants enrolled in study",
+      "definition": "Actual total number of participants enrolled in study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "eligibility",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        },
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "ResearchStudy.recruitment.eligibility",
+      "min": 0,
+      "max": "1",
+      "short": "Inclusion and exclusion criteria",
+      "definition": "Inclusion and exclusion criteria.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "actualGroup",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "ResearchStudy.recruitment.actualGroup",
+      "min": 0,
+      "max": "1",
+      "short": "Group of participants who were enrolled in study",
+      "definition": "Group of participants who were enrolled in study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "comparisonGroup",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ResearchStudy.comparisonGroup",
+      "min": 0,
+      "max": "*",
+      "short": "Defined path through the study for a subject",
+      "definition": "Describes an expected event or sequence of events for one of the subjects of a study. E.g. for a living subject: exposure to drug A, wash-out, exposure to drug B, wash-out, follow-up. E.g. for a stability study: {store sample from lot A at 25 degrees for 1 month}, {store sample from lot A at 40 degrees for 1 month}.",
+      "comment": "In many clinical trials this is refered to as the ARM of the study, but such a term is not used in other sorts of trials even when there is a comparison between two or more groups.",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.comparisonGroup.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.comparisonGroup.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.comparisonGroup.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "linkId",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "id"
+        }
+      ],
+      "path": "ResearchStudy.comparisonGroup.linkId",
+      "min": 0,
+      "max": "1",
+      "short": "Allows the comparisonGroup for the study and the comparisonGroup for the subject to be linked easily",
+      "definition": "Allows the comparisonGroup for the study and the comparisonGroup for the subject to be linked easily.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "name",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.comparisonGroup.name",
+      "min": 1,
+      "max": "1",
+      "short": "Label for study comparisonGroup",
+      "definition": "Unique, human-readable label for this comparisonGroup of the study.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.comparisonGroup.type",
+      "min": 0,
+      "max": "1",
+      "short": "Categorization of study comparisonGroup",
+      "definition": "Categorization of study comparisonGroup, e.g. experimental, active comparator, placebo comparater.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "ResearchStudy.comparisonGroup.description",
+      "min": 0,
+      "max": "1",
+      "short": "Short explanation of study path",
+      "definition": "A succinct description of the path through the study that would be followed by a subject adhering to this comparisonGroup.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "intendedExposure",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "ResearchStudy.comparisonGroup.intendedExposure",
+      "min": 0,
+      "max": "*",
+      "short": "Interventions or exposures in this comparisonGroup or cohort",
+      "definition": "Interventions or exposures in this comparisonGroup or cohort.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "observedGroup",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "Group",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "ResearchStudy.comparisonGroup.observedGroup",
+      "min": 0,
+      "max": "1",
+      "short": "Group of participants who were enrolled in study comparisonGroup",
+      "definition": "Group of participants who were enrolled in study comparisonGroup.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "objective",
       "depth": 1,
       "types": [
@@ -734,7 +1561,7 @@
       "min": 0,
       "max": "*",
       "short": "Additional content defined by implementations",
-      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and manageable, there is a strict set of governance  applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
       "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
       "inherited": true,
       "base": "Element"
@@ -752,7 +1579,7 @@
       "min": 0,
       "max": "*",
       "short": "Extensions that cannot be ignored even if unrecognized",
-      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and manageable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
       "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
       "inherited": true,
       "base": "BackboneElement"
@@ -787,6 +1614,186 @@
       "max": "1",
       "short": "primary | secondary | exploratory",
       "definition": "The kind of study objective.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "ResearchStudy.objective.description",
+      "min": 0,
+      "max": "1",
+      "short": "Description of the objective",
+      "definition": "Free text description of the objective of the study.  This is what the study is trying to achieve rather than how it is going to achieve it (see ResearchStudy.description).",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "outcomeMeasure",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ResearchStudy.outcomeMeasure",
+      "min": 0,
+      "max": "*",
+      "short": "A variable measured during the study",
+      "definition": "An \"outcome measure\", \"endpoint\", \"effect measure\" or \"measure of effect\" is a specific measurement or observation used to quantify the effect of experimental variables on the participants in a study, or for observational studies, to describe patterns of diseases or traits or associations with exposures, risk factors or treatment.",
+      "comment": "A study may have multiple distinct outcome measures that can be used to assess the overall goal for a study. The goal of a study is in the objective whereas the metric by which the goal is assessed is the outcomeMeasure. Examples: Time to Local Recurrence (TLR), Disease-free Survival (DFS), 30 Day Mortality, Systolic BP",
+      "inherited": false
+    },
+    {
+      "name": "id",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.outcomeMeasure.id",
+      "min": 0,
+      "max": "1",
+      "short": "Unique id for inter-element referencing",
+      "definition": "Unique id for the element within a resource (for internal references). This may be any string value that does not contain spaces.",
+      "comment": "",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "extension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.outcomeMeasure.extension",
+      "min": 0,
+      "max": "*",
+      "short": "Additional content defined by implementations",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension.",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "Element"
+    },
+    {
+      "name": "modifierExtension",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Extension",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.outcomeMeasure.modifierExtension",
+      "min": 0,
+      "max": "*",
+      "short": "Extensions that cannot be ignored even if unrecognized",
+      "definition": "May be used to represent additional information that is not part of the basic definition of the element and that modifies the understanding of the element in which it is contained and/or the understanding of the containing element's descendants. Usually modifier elements provide negation or qualification. To make the use of extensions safe and managable, there is a strict set of governance applied to the definition and use of extensions. Though any implementer can define an extension, there is a set of requirements that SHALL be met as part of the definition of the extension. Applications processing a resource are required to check for modifier extensions.\n\nModifier extensions SHALL NOT change the meaning of any elements on Resource or DomainResource (including cannot change the meaning of modifierExtension itself).",
+      "comment": "There can be no stigma associated with the use of extensions by any application, project, or standard - regardless of the institution or jurisdiction that uses or defines the extensions.  The use of extensions is what allows the FHIR specification to retain a core level of simplicity for everyone.",
+      "inherited": true,
+      "base": "BackboneElement"
+    },
+    {
+      "name": "name",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ResearchStudy.outcomeMeasure.name",
+      "min": 0,
+      "max": "1",
+      "short": "Label for the outcome",
+      "definition": "Label for the outcome.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "CodeableConcept",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ResearchStudy.outcomeMeasure.type",
+      "min": 0,
+      "max": "*",
+      "short": "primary | secondary | exploratory",
+      "definition": "The parameter or characteristic being assessed as one of the values by which the study is assessed.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "description",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "markdown"
+        }
+      ],
+      "path": "ResearchStudy.outcomeMeasure.description",
+      "min": 0,
+      "max": "1",
+      "short": "Description of the outcome",
+      "definition": "Description of the outcome.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "reference",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "EvidenceVariable",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "ResearchStudy.outcomeMeasure.reference",
+      "min": 0,
+      "max": "1",
+      "short": "Structured outcome definition",
+      "definition": "Structured outcome definition.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "result",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Reference",
+          "documentLocation": "datatype"
+        }
+      ],
+      "referenceTypes": [
+        {
+          "datatype": "DiagnosticReport",
+          "documentLocation": "resource"
+        }
+      ],
+      "path": "ResearchStudy.result",
+      "min": 0,
+      "max": "*",
+      "short": "Link to results generated during the study",
+      "definition": "Link to one or more sets of results generated by the study.  Could also link to a research registry holding the results such as ClinicalTrials.gov.",
       "comment": "",
       "inherited": false
     }
@@ -869,6 +1876,150 @@
       "type": "string",
       "description": "Name for this study",
       "expression": "ResearchStudy.title"
+    },
+    {
+      "name": "classifier",
+      "type": "token",
+      "description": "Classification for the study",
+      "expression": "ResearchStudy.classifier"
+    },
+    {
+      "name": "condition",
+      "type": "token",
+      "description": "Condition being studied",
+      "expression": "ResearchStudy.condition"
+    },
+    {
+      "name": "date",
+      "type": "date",
+      "description": "When the study began and ended",
+      "expression": "ResearchStudy.period"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "description": "Detailed narrative of the study",
+      "expression": "ResearchStudy.description"
+    },
+    {
+      "name": "eligibility",
+      "type": "reference",
+      "description": "Inclusion and exclusion criteria",
+      "expression": "ResearchStudy.recruitment.eligibility"
+    },
+    {
+      "name": "identifier",
+      "type": "token",
+      "description": "Business Identifier for study",
+      "expression": "ResearchStudy.identifier"
+    },
+    {
+      "name": "keyword",
+      "type": "token",
+      "description": "Used to search for the study",
+      "expression": "ResearchStudy.keyword"
+    },
+    {
+      "name": "name",
+      "type": "string",
+      "description": "Name for this study",
+      "expression": "ResearchStudy.name"
+    },
+    {
+      "name": "objective-description",
+      "type": "string",
+      "description": "Free text description of the objective of the study",
+      "expression": "ResearchStudy.objective.description"
+    },
+    {
+      "name": "objective-type",
+      "type": "token",
+      "description": "The kind of study objective",
+      "expression": "ResearchStudy.objective.type"
+    },
+    {
+      "name": "part-of",
+      "type": "reference",
+      "description": "Part of larger study",
+      "expression": "ResearchStudy.partOf"
+    },
+    {
+      "name": "phase",
+      "type": "token",
+      "description": "The stage in the progression of a study",
+      "expression": "ResearchStudy.phase"
+    },
+    {
+      "name": "protocol",
+      "type": "reference",
+      "description": "Steps followed in executing study",
+      "expression": "ResearchStudy.protocol"
+    },
+    {
+      "name": "recruitment-actual",
+      "type": "number",
+      "description": "Actual number of participants enrolled in study across all groups",
+      "expression": "ResearchStudy.recruitment.actualNumber"
+    },
+    {
+      "name": "recruitment-target",
+      "type": "number",
+      "description": "Target number of participants enrolled in study across all groups",
+      "expression": "ResearchStudy.recruitment.targetNumber"
+    },
+    {
+      "name": "region",
+      "type": "token",
+      "description": "Geographic area for the study",
+      "expression": "ResearchStudy.region"
+    },
+    {
+      "name": "site",
+      "type": "reference",
+      "description": "Facility where study activities are conducted",
+      "expression": "ResearchStudy.site"
+    },
+    {
+      "name": "status",
+      "type": "token",
+      "description": "active | active-but-not-recruiting | administratively-completed | approved | closed-to-accrual | closed-to-accrual-and-intervention | completed | disapproved | enrolling-by-invitation | in-review | not-yet-recruiting | recruiting | temporarily-closed-to-accrual | temporarily-closed-to-accrual-and-intervention | terminated | withdrawn",
+      "expression": "ResearchStudy.status"
+    },
+    {
+      "name": "study-design",
+      "type": "token",
+      "description": "Classifications of the study design characteristics",
+      "expression": "ResearchStudy.studyDesign"
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "description": "The human readable name of the research study",
+      "expression": "ResearchStudy.title"
+    },
+    {
+      "name": "progress-status-state-actual",
+      "type": "composite",
+      "description": "Status of study by state and actual",
+      "expression": "ResearchStudy.progressStatus"
+    },
+    {
+      "name": "progress-status-state-period",
+      "type": "composite",
+      "description": "Status of study by state and period",
+      "expression": "ResearchStudy.progressStatus"
+    },
+    {
+      "name": "progress-status-state-period-actual",
+      "type": "composite",
+      "description": "Status of study by state, period and actual",
+      "expression": "ResearchStudy.progressStatus"
+    },
+    {
+      "name": "outcome-measure-reference",
+      "type": "reference",
+      "description": "The research study outcome measure reference",
+      "expression": "ResearchStudy.outcomeMeasure.reference"
     }
   ]
 }

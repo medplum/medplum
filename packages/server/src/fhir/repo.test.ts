@@ -25,6 +25,7 @@ import {
   ProjectMembership,
   Questionnaire,
   ResourceType,
+  ServiceRequest,
   StructureDefinition,
   User,
 } from '@medplum/fhirtypes';
@@ -309,9 +310,14 @@ describe('FHIR Repo', () => {
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
+        identifier: [],
       });
 
       expect(patient.meta?.author?.reference).toEqual(getReferenceString(client));
+
+      // empty identifier array should removed when read from cache
+      const readPatient = await repo.readResource<Patient>('Patient', patient.id as string, { checkCacheOnly: true });
+      expect(readPatient.identifier).toBeUndefined();
     }));
 
   test('Create Patient as Practitioner with no author', () =>
@@ -990,7 +996,7 @@ describe('FHIR Repo', () => {
           { reference: 'Practitioner?identifier=http://hl7.org.fhir/sid/us-npi|' + practitionerIdentifier },
         ],
       };
-      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow('f');
+      await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow(/did not match any resources/);
     }));
 
   test('Conditional reference resolution multiple matches', async () =>
@@ -1012,6 +1018,48 @@ describe('FHIR Repo', () => {
         ],
       };
       await expect(systemRepo.createResource<Patient>(patient)).rejects.toThrow();
+    }));
+
+  test('Conditional reference replaced before validation', async () =>
+    withTestContext(async () => {
+      const mrn = randomUUID();
+      const patient: Patient = {
+        resourceType: 'Patient',
+        identifier: [{ value: mrn }],
+      };
+      await systemRepo.createResource<Patient>(patient);
+
+      const serviceRequest = {
+        resourceType: 'ServiceRequest',
+        status: 'active',
+        intent: 'order',
+        code: {
+          coding: [
+            {
+              system: 'http://snomed.info/sct',
+              code: '308471005',
+              display: 'Referral to cardiologist',
+            },
+          ],
+        },
+        // Reference should be replaced and NOT cause a validation error
+        subject: {
+          reference: 'Patient?identifier=' + mrn,
+        },
+        // The performerType field should be a CodeableConcept, not an array
+        performerType: [
+          {
+            coding: [
+              {
+                system: 'http://snomed.info/sct',
+                code: '17561000',
+                display: 'Cardiologist',
+              },
+            ],
+          },
+        ],
+      } as unknown as ServiceRequest;
+      await expect(systemRepo.createResource(serviceRequest)).rejects.toThrow(/^Expected single .*?performerType\)$/);
     }));
 
   test('Project default profiles', async () =>
@@ -1181,5 +1229,46 @@ describe('FHIR Repo', () => {
         project,
       });
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
+    }));
+
+  test('Patch post-commit stores full resource in cache', async () =>
+    withTestContext(async () => {
+      const { project, repo, login, membership } = await createTestProject({
+        withRepo: { extendedMode: false },
+        withAccessToken: true,
+        withClient: true,
+      });
+      const extendedRepo = await getRepoForLogin({ login, project, membership }, true);
+
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      expect(patient.meta?.project).toBeUndefined();
+      expect(patient.gender).toBeUndefined();
+
+      const updatedPatient = await repo.patchResource<Patient>('Patient', patient.id as string, [
+        { op: 'add', path: '/gender', value: 'unknown' },
+      ]);
+      expect(updatedPatient.meta?.project).toBeUndefined();
+      expect(updatedPatient.gender).toEqual('unknown');
+
+      const cachedPatient = await extendedRepo.readResource<Patient>('Patient', patient.id as string);
+      expect(cachedPatient.meta?.project).toEqual(project.id);
+      expect(cachedPatient.gender).toEqual('unknown');
+    }));
+
+  test('Handles resources with many entries stored in lookup table', async () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        link: [],
+      };
+      // Postgres uses a 16-bit counter for placeholder formats internally,
+      // so 2^16 + 1 = 64k + 1 will definitely overflow it if not sent in smaller batches
+      for (let i = 0; i < 64 * 1024 + 1; i++) {
+        patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
+      }
+
+      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
     }));
 });

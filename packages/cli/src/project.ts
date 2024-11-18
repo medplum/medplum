@@ -1,18 +1,18 @@
 import { InviteRequest, LoginState, MedplumClient } from '@medplum/core';
-import { Command, Option } from 'commander';
+import { Option } from 'commander';
 import { createMedplumClient } from './util/client';
-import { createMedplumCommand } from './util/command';
+import { addSubcommand, MedplumCommand } from './utils';
 
-const projectListCommand = createMedplumCommand('list');
-const projectCurrentCommand = createMedplumCommand('current');
-const projectSwitchCommand = createMedplumCommand('switch');
-const projectInviteCommand = createMedplumCommand('invite');
+const projectListCommand = new MedplumCommand('list');
+const projectCurrentCommand = new MedplumCommand('current');
+const projectSwitchCommand = new MedplumCommand('switch');
+const projectInviteCommand = new MedplumCommand('invite');
 
-export const project = new Command('project')
-  .addCommand(projectListCommand)
-  .addCommand(projectCurrentCommand)
-  .addCommand(projectSwitchCommand)
-  .addCommand(projectInviteCommand);
+export const project = new MedplumCommand('project');
+addSubcommand(project, projectListCommand);
+addSubcommand(project, projectCurrentCommand);
+addSubcommand(project, projectSwitchCommand);
+addSubcommand(project, projectInviteCommand);
 
 projectListCommand.description('List of current projects').action(async (options) => {
   const medplum = await createMedplumClient(options);

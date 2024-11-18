@@ -1599,7 +1599,7 @@ describe('Subscription Worker', () => {
 
         let notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          patient,
+          expect.objectContaining(patient),
           subscription.id as string,
           { includeResource: true },
         ]);
@@ -1614,7 +1614,7 @@ describe('Subscription Worker', () => {
 
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          updatedPatient,
+          expect.objectContaining(updatedPatient),
           subscription.id as string,
           { includeResource: true },
         ]);
@@ -1625,7 +1625,7 @@ describe('Subscription Worker', () => {
 
         notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          updatedPatient,
+          expect.objectContaining(updatedPatient),
           subscription.id as string,
           { includeResource: true },
         ]);
@@ -1882,7 +1882,7 @@ describe('Subscription Worker', () => {
 
         const notificationArgs = await nextArgsPromise;
         expect(notificationArgs).toMatchObject<EventNotificationArgs<Patient>>([
-          patient,
+          expect.objectContaining(patient),
           subscription.id as string,
           { includeResource: true },
         ]);

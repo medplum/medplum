@@ -5,7 +5,7 @@ import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { AuthState } from '../oauth/middleware';
-import { withTestContext } from '../test.setup';
+import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
 import { getSystemRepo } from './repo';
 
@@ -184,5 +184,21 @@ describe('Reference checks', () => {
       membership.externalId = id;
       membership = await repo.updateResource(membership);
       expect(membership.externalId).toEqual(id);
+    }));
+
+  test('Check references with non-literal reference', () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ project: { checkReferencesOnWrite: true }, withRepo: true });
+      const patient: Patient = {
+        resourceType: 'Patient',
+        link: [
+          {
+            type: 'refer',
+            other: { display: 'J. Smith' },
+          },
+        ],
+      };
+
+      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
     }));
 });

@@ -28918,7 +28918,7 @@
             "key" : "tim-9",
             "severity" : "error",
             "human" : "If there's an offset, there must be a when (and not C, CM, CD, CV)",
-            "expression" : "offset.empty() or (when.exists() and ((when in ('C' | 'CM' | 'CD' | 'CV')).not()))",
+            "expression" : "offset.empty() or (when.exists() and when.select($this in ('C' | 'CM' | 'CD' | 'CV')).allFalse())",
             "xpath" : "not(exists(f:offset)) or exists(f:when)"
           },
           {

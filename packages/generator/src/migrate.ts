@@ -543,11 +543,11 @@ function buildIndexSql(tableName: string, index: IndexDefinition): string {
     result += 'UNIQUE ';
   }
 
-  result += 'INDEX CONCURRENTLY IF NOT EXISTS ';
+  result += 'INDEX CONCURRENTLY IF NOT EXISTS "';
   result += tableName;
   result += '_';
   result += index.columns.join('_');
-  result += '_idx ON "';
+  result += '_idx" ON "';
   result += tableName;
   result += '" ';
 

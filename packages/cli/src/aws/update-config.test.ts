@@ -73,11 +73,8 @@ describe('update-config command', () => {
       'utf8'
     );
 
-    readline.createInterface = jest.fn(() =>
-      mockReadline(
-        'y' // Yes, write to Parameter Store
-      )
-    );
+    // Mock readline.createInterface for two calls
+    (readline.createInterface as jest.Mock).mockImplementation(() => mockReadline('y', 'y'));
 
     await main(['node', 'index.js', 'aws', 'update-config', tag]);
     unlinkSync(infraFileName);

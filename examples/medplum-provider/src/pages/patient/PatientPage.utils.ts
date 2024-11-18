@@ -76,4 +76,5 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
     label: 'Care Plans',
   },
   { id: 'communication', url: 'communication', label: 'Communications' },
+  { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
 ];

@@ -1,3 +1,7 @@
+---
+sidebar_position: 7
+---
+
 import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 import TabItem from '@theme/TabItem';
 import Tabs from '@theme/Tabs';
@@ -67,6 +71,33 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
 Medplum does not currently distinguish between `'batch'` and `'transaction'` type [`Bundle`](/docs/api/fhir/resources/bundle) resources and does not provide atomic transactions. This is currently being worked on, and you can track progress on the issue [here](https://github.com/medplum/medplum/issues/1369).
 :::
 
+### Asynchronous Batch Requests
+
+Processing very large batches (for example, a `Bundle` over 5 MB in size) can take a significant amount of time, often
+longer than the default request timeout of one minute. This causes issues with processing the batch, since an error is
+returned to the client before they can access the actual results of the batch request. To resolve this problem, Medplum
+offers the ability to process the batch asynchronously: a large `Bundle` (to to 50 MB by default) can be sent to the
+server, where it will be enqueued for processing, and a response is sent back to the client immediately with a URL where
+it can receive status updates around the batch processing job.
+
+To opt into asynchronous handling of the batch request, add the `Prefer: respond-async` header to the HTTP request for
+the batch:
+
+<Tabs groupId="language">
+  {/* <TabItem value="ts" label="Typescript">
+    <MedplumCodeBlock language="ts" selectBlocks="asyncBatchTs">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem> */}
+  <TabItem value="curl" label="cURL">
+    <MedplumCodeBlock language="bash" selectBlocks="asyncBatchCurl">
+      {ExampleCode}
+    </MedplumCodeBlock>
+  </TabItem>
+</Tabs>
+
+See the [FHIR Asynchronous Request pattern](http://hl7.org/fhir/R5/async-bundle.html) for more information.
+
 ## References in Bundles
 
 When using batch requests, it is common to require resources to refer to one another: either between two resources within the Bundle, or to resources outside the Bundle. FHIR provides ways to automatically link the resources together, without needing to know the exact resource IDs up front.
@@ -118,8 +149,93 @@ The `ifNoneExist` property uses [search parameters](/docs/search/basic-search#se
 ## Performing Upserts
 
 Previously, performing an "upsert" (i.e. either creating or updating a resource based on whether it already exists)
-required using a batch operation. This functionality is now implemented directly as a [conditional update](/docs/fhir-datastore/create-fhir-data#upsert)
+required using a batch operation. This functionality is now implemented directly as a [conditional update](/docs/fhir-datastore/working-with-fhir#upsert)
 to provide strong transactional guarantees around the operation in a single, simple `PUT` request.
+
+:::note Upsert URLs
+
+Because resolving the search request in the upsert URL is a prerequisite to determine which ID should be assigned as
+part of handling [internal references](#internal-references), the `urn:uuid:` syntax for internal references **cannot**
+be used in the `Bundle.entry.request.url` for a conditional update within a batch.
+
+Instead, upsert URLs should link to other resources within the Bundle consistently through conditions on the target
+resource itself, not its server-assigned ID.
+
+<details>
+<summary>Example</summary>
+
+❌ **Incorrect**
+
+```js
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc",
+      "request": {
+        "method": "PUT",
+        "url": "Patient?identifier=http://example.com/mrn|1234567"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [{ "system": "http://example.com/mrn", "value": "1234567" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b122a53c-9c0d-4654-9260-c0b67b7bc5d4",
+      "request": {
+        "method": "PUT",
+        // Incorrect: Upsert URL cannot use replaced urn:uuid: syntax
+        "url": "CareTeam?subject=urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc"
+      },
+      "resource": {
+        "resourceType": "CareTeam",
+        "subject": { "reference": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc" }
+      }
+    }
+  ]
+}
+```
+
+✅ **Correct**
+
+```js
+{
+  "resourceType": "Bundle",
+  "type": "batch",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc",
+      "request": {
+        "method": "PUT",
+        "url": "Patient?identifier=http://example.com/mrn|1234567"
+      },
+      "resource": {
+        "resourceType": "Patient",
+        "identifier": [{ "system": "http://example.com/mrn", "value": "1234567" }]
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:b122a53c-9c0d-4654-9260-c0b67b7bc5d4",
+      "request": {
+        "method": "PUT",
+        // Correct: Refer to subject via chained search,
+        // using same identifier as its own upsert URL
+        "url": "CareTeam?subject.identifier=http://example.com/mrn|1234567"
+      },
+      "resource": {
+        "resourceType": "CareTeam",
+        "subject": { "reference": "urn:uuid:4410cb87-4a38-4d3f-bee8-3c3556e6debc" }
+      }
+    }
+  ]
+}
+```
+
+</details>
+
+:::
 
 ## PATCH actions in a Batch
 
@@ -144,7 +260,17 @@ and represent it as a [Binary](/docs/api/fhir/resources/binary) resource:
 ```
 
 Additionally, Medplum supports passing JSON Patch formatted as a [Parameters](/docs/api/fhir/resources/parameters)
-resource, making it easier to see what operations are happening in the batch:
+resource, making it easier to see what operations are happening in the batch.
+
+:::note Value Formatting
+
+To avoid parsing ambiguity and simplify the format of the `Parameters`, all values are passed as
+JSON strings, via the `valueString` field on each corresponding `Parameter.parameter.part` with `"name": "value"`.
+
+All types of values, including booleans, strings, objects, and arrays, should be passed to `JSON.stringify()`
+or equivalent rather than being included directly in the `Parameters`.
+
+:::
 
 ```js
 {

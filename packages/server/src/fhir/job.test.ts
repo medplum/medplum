@@ -42,11 +42,13 @@ describe('Job status', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.status).toBe(202);
+      expect(res.get('Content-Type')).toEqual('application/fhir+json; charset=utf-8');
+      expect(res.body).toEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'accepted' }));
     }));
 
   test('completed', () =>
     withTestContext(async () => {
-      await asyncJobManager.init('http://example.com');
+      const job = await asyncJobManager.init('http://example.com');
       const callback = jest.fn();
 
       await asyncJobManager.start(async () => {
@@ -56,6 +58,14 @@ describe('Job status', () => {
       expect(callback).toHaveBeenCalled();
 
       await waitForAsyncJob(asyncJobManager.getContentLocation('http://example.com/'), app, accessToken);
+
+      const res = await request(app)
+        .get(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(res.status).toBe(200);
+      expect(res.get('Content-Type')).toEqual('application/fhir+json; charset=utf-8');
+      expect(res.body).toEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'completed' }));
     }));
 
   test('cancel', () =>
@@ -67,5 +77,7 @@ describe('Job status', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.status).toBe(202);
+      expect(res.get('Content-Type')).toEqual('text/plain; charset=utf-8');
+      expect(res.body).toEqual({});
     }));
 });

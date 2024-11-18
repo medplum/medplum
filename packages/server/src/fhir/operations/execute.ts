@@ -34,7 +34,6 @@ import {
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { randomUUID } from 'node:crypto';
-import { Readable } from 'node:stream';
 import vm from 'node:vm';
 import { asyncWrap } from '../../async';
 import { runInLambda } from '../../cloud/aws/execute';
@@ -44,14 +43,13 @@ import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
 import { MockConsole } from '../../util/console';
+import { readStreamToString } from '../../util/streams';
 import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo, Repository } from '../repo';
-import { sendResponse } from '../response';
+import { sendFhirResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
-
-export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
 
 export interface BotExecutionRequest {
   readonly bot: Bot;
@@ -105,7 +103,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     const outcome = result.success ? allOk : badRequest(result.logResult);
 
     if (isResource(responseBody) && responseBody.resourceType === 'Binary') {
-      await sendResponse(req, res, outcome, responseBody);
+      await sendFhirResponse(req, res, outcome, responseBody);
       return;
     }
 
@@ -495,12 +493,12 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
  *   1. Most specific beats more general - the runAs project secrets override the bot project secrets
  *   2. Defer to local control" - project admin secrets override system secrets
  *
- * In order of precedence:
+ * From lowest to highest priority:
  *
- *   1. Bot project secrets
- *   2. Bot project system secrets (if bot.system is true)
- *   3. RunAs project secrets (if running in a different linked project)
- *   4. RunAs project system secrets (if bot.system is true and running in a different linked project)
+ *   1. Bot project system secrets (if bot.system is true)
+ *   2. Bot project secrets
+ *   3. RunAs project system secrets (if bot.system is true and running in a different linked project)
+ *   4. RunAs project secrets (if running in a different linked project)
  *
  * @param bot - The bot to get secrets for.
  * @param runAs - The project membership to get secrets for.
@@ -534,14 +532,16 @@ async function addBotSecrets(
   }
 }
 
+const MIRRORED_CONTENT_TYPES: string[] = [ContentType.TEXT, ContentType.HL7_V2];
+
 function getResponseContentType(req: Request): string {
   const requestContentType = req.get('Content-Type');
-  if (requestContentType && (EXECUTE_CONTENT_TYPES as string[]).includes(requestContentType)) {
+  if (requestContentType && MIRRORED_CONTENT_TYPES.includes(requestContentType)) {
     return requestContentType;
   }
 
-  // Default to FHIR
-  return ContentType.FHIR_JSON;
+  // Default to JSON
+  return ContentType.JSON;
 }
 
 /**
@@ -614,12 +614,4 @@ async function createAuditEvent(
       outcomeDesc: outcomeDesc.substring(outcomeDesc.length - maxDescLength),
     });
   }
-}
-
-async function readStreamToString(stream: Readable): Promise<string> {
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of stream) {
-    chunks.push(chunk);
-  }
-  return Buffer.concat(chunks).toString('utf8');
 }

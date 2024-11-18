@@ -1,10 +1,13 @@
 import { Button } from '@mantine/core';
-import { capitalize, getReferenceString, MedplumClient } from '@medplum/core';
+import { notifications } from '@mantine/notifications';
+import { capitalize, getReferenceString, isOk, MedplumClient } from '@medplum/core';
 import { Binary, Bot, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
+import { IconCircleCheck } from '@tabler/icons-react';
 import { useCallback, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import exampleBotData from '../../data/example-bots.json';
+import formularyData from '../../data/example-data.json';
 
 type UploadFunction =
   | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
@@ -26,6 +29,9 @@ export function UploadDataPage(): JSX.Element {
       case 'bots':
         uploadFunction = uploadExampleBots;
         break;
+      case 'formulary':
+        uploadFunction = uploadExampleFormulary;
+        break;
       default:
         throw new Error('Invalid upload type');
     }
@@ -37,7 +43,7 @@ export function UploadDataPage(): JSX.Element {
 
   return (
     <Document>
-      <Button disabled={buttonDisabled} onClick={handleUpload}>
+      <Button disabled={buttonDisabled} loading={buttonDisabled} onClick={handleUpload}>
         Upload {dataTypeDisplay} Data
       </Button>
     </Document>
@@ -79,5 +85,30 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
     // Decode the base64 encoded code and deploy
     const code = atob((distBinaryEntry?.resource as Binary).data as string);
     await medplum.post(medplum.fhirUrl('Bot', botIds[botName], '$deploy'), { code });
+  }
+}
+
+async function uploadExampleFormulary(medplum: MedplumClient): Promise<void> {
+  const batch = formularyData as Bundle;
+  const result = await medplum.executeBatch(batch);
+
+  notifications.show({
+    icon: <IconCircleCheck />,
+    title: 'Success',
+    message: 'Uploaded Formulary',
+  });
+
+  if (result.entry?.every((entry) => entry.response?.outcome && isOk(entry.response?.outcome))) {
+    await setTimeout(
+      () =>
+        notifications.show({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Uploaded Formulary',
+        }),
+      1000
+    );
+  } else {
+    throw new Error('Error uploading formulary');
   }
 }

@@ -67,7 +67,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
   );
 
   function buildBatchRequest(request: RequestGroup): Bundle {
-    const batchEntries = [] as BundleEntry[];
+    const batchEntries: BundleEntry[] = [];
     if (request.action) {
       for (const action of request.action) {
         if (action.resource?.reference) {
@@ -84,7 +84,7 @@ export function RequestGroupDisplay(props: RequestGroupDisplayProps): JSX.Elemen
   }
 
   function findBundleEntry<T extends Resource>(reference: Reference<T>): T | undefined {
-    for (const entry of responseBundle?.entry as BundleEntry[]) {
+    for (const entry of responseBundle?.entry ?? []) {
       if (entry.resource && reference.reference === getReferenceString(entry.resource)) {
         return entry.resource as T;
       }

@@ -15,6 +15,7 @@ import {
   canReadResourceType,
   canWriteResourceType,
   createReference,
+  deepClone,
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
@@ -64,7 +65,7 @@ import { Pool, PoolClient } from 'pg';
 import { Operation, applyPatch } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { getLogger, getRequestContext } from '../context';
+import { getLogger } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
@@ -92,7 +93,7 @@ import { ReferenceTable } from './lookups/reference';
 import { TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
-import { replaceConditionalReferences, validateReferences } from './references';
+import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
@@ -108,6 +109,7 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
+import { recordHistogramValue } from '../otel/otel';
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -266,14 +268,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       ...resource,
       id: options?.assignedId && resource.id ? resource.id : this.generateId(),
     };
+    const startTime = Date.now();
     try {
       const result = await this.updateResourceImpl(resourceWithId, true);
+      const durationMs = Date.now() - startTime;
+
       await this.postCommit(async () => {
-        this.logEvent(CreateInteraction, AuditEventOutcome.Success, undefined, result);
+        this.logEvent(CreateInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
       });
       return result;
     } catch (err) {
-      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, resourceWithId);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, { resource: resourceWithId, durationMs });
       throw err;
     }
   }
@@ -287,12 +293,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     options?: ReadResourceOptions
   ): Promise<T> {
+    const startTime = Date.now();
     try {
       const result = this.removeHiddenFields(await this.readResourceImpl<T>(resourceType, id, options));
-      this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, result);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
       return result;
     } catch (err) {
-      this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
       throw err;
     }
   }
@@ -334,6 +343,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   private async readResourceFromDatabase<T extends Resource>(resourceType: string, id: string): Promise<T> {
+    if (!validator.isUUID(id)) {
+      throw new OperationOutcomeError(notFound);
+    }
+
     const builder = new SelectQuery(resourceType).column('content').column('deleted').where('id', '=', id);
 
     this.addSecurityFilters(builder, resourceType);
@@ -370,14 +383,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     const result: (Resource | Error)[] = new Array(references.length);
 
     for (let i = 0; i < result.length; i++) {
+      const startTime = Date.now();
       const reference = references[i];
       const cacheEntry = cacheEntries[i];
       let entryResult = await this.processReadReferenceEntry(reference, cacheEntry);
+      const durationMs = Date.now() - startTime;
+
       if (entryResult instanceof Error) {
-        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult);
+        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult, { durationMs });
       } else {
         entryResult = this.removeHiddenFields(entryResult);
-        this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, entryResult);
+        this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: entryResult, durationMs });
       }
       result[i] = entryResult;
     }
@@ -390,7 +406,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     cacheEntry: CacheEntry | undefined
   ): Promise<Resource | Error> {
     try {
-      const [resourceType, id] = reference.reference?.split('/') as [ResourceType, string];
+      const [resourceType, id] = parseReference(reference);
       validateResourceType(resourceType);
 
       if (!this.canReadResourceType(resourceType)) {
@@ -434,6 +450,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns Operation outcome and a history bundle.
    */
   async readHistory<T extends Resource>(resourceType: T['resourceType'], id: string, limit = 100): Promise<Bundle<T>> {
+    const startTime = Date.now();
     try {
       let resource: T | undefined = undefined;
       try {
@@ -487,21 +504,24 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         });
       }
 
-      this.logEvent(HistoryInteraction, AuditEventOutcome.Success, undefined, resource);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(HistoryInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
       return {
         resourceType: 'Bundle',
         type: 'history',
         entry: entries,
       };
     } catch (err) {
-      this.logEvent(HistoryInteraction, AuditEventOutcome.MinorFailure, err);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(HistoryInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
       throw err;
     }
   }
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
+    const startTime = Date.now();
     try {
-      if (!validator.isUUID(vid)) {
+      if (!validator.isUUID(id) || !validator.isUUID(vid)) {
         throw new OperationOutcomeError(notFound);
       }
 
@@ -524,23 +544,28 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
 
       const result = this.removeHiddenFields(JSON.parse(rows[0].content as string));
-      this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, result);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
       return result;
     } catch (err) {
-      this.logEvent(VreadInteraction, AuditEventOutcome.MinorFailure, err);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(VreadInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
       throw err;
     }
   }
 
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
+    const startTime = Date.now();
     try {
       const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
+      const durationMs = Date.now() - startTime;
       await this.postCommit(async () => {
-        this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, result);
+        this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
       });
       return result;
     } catch (err) {
-      this.logEvent(UpdateInteraction, AuditEventOutcome.MinorFailure, err, resource);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(UpdateInteraction, AuditEventOutcome.MinorFailure, err, { resource, durationMs });
       throw err;
     }
   }
@@ -561,8 +586,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       )?.profile;
       resource.meta = { ...resource.meta, profile: defaultProfiles };
     }
-
-    await this.validateResource(resource);
 
     if (!this.canWriteResourceType(resourceType)) {
       throw new OperationOutcomeError(forbidden);
@@ -590,11 +613,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       versionId: randomUUID(),
       lastUpdated: this.getLastUpdated(existing, resource),
       author: this.getAuthor(resource),
+      onBehalfOf: this.context.onBehalfOf,
     };
-
-    if (this.context.onBehalfOf) {
-      resultMeta.onBehalfOf = this.context.onBehalfOf;
-    }
 
     const result: T = { ...updated, meta: resultMeta };
 
@@ -602,16 +622,18 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (project) {
       resultMeta.project = project;
     }
-    const accounts = await this.getAccounts(existing, updated, create);
+    const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
       resultMeta.account = accounts[0];
       resultMeta.accounts = accounts;
     }
     resultMeta.compartment = this.getCompartments(result);
 
+    // Validate resource after all modifications and touchups above are done
+    await this.validateResource(result);
     if (this.context.checkReferencesOnWrite) {
       await this.preCommit(async () => {
-        await validateReferences(this, result);
+        await validateResourceReferences(this, result);
       });
     }
 
@@ -952,6 +974,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async deleteResource<T extends Resource = Resource>(resourceType: T['resourceType'], id: string): Promise<void> {
+    const startTime = Date.now();
     let resource: Resource;
     try {
       resource = await this.readResourceImpl<T>(resourceType, id);
@@ -1001,15 +1024,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         ]).execute(conn);
 
         await this.deleteFromLookupTables(conn, resource);
+        const durationMs = Date.now() - startTime;
 
         await this.postCommit(async () => {
-          this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, resource);
+          this.logEvent(DeleteInteraction, AuditEventOutcome.Success, undefined, { resource, durationMs });
         });
       });
 
       await addSubscriptionJobs(resource, resource, { interaction: 'delete' });
     } catch (err) {
-      this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
       throw err;
     }
   }
@@ -1019,6 +1044,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     id: string,
     patch: Operation[]
   ): Promise<T> {
+    const startTime = Date.now();
     try {
       return await this.withTransaction(async () => {
         const resource = await this.readResourceFromDatabase<T>(resourceType, id);
@@ -1033,13 +1059,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         patchObject(resource, patch);
 
         const result = await this.updateResourceImpl(resource, false);
+        const durationMs = Date.now() - startTime;
         await this.postCommit(async () => {
-          this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, result);
+          this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
         });
         return result;
       });
     } catch (err) {
-      this.logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
       throw err;
     }
   }
@@ -1099,13 +1127,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
+    const startTime = Date.now();
     try {
       // Resource type validation is performed in the searchImpl function
       const result = await searchImpl(this, searchRequest);
-      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, undefined, searchRequest);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
       return result;
     } catch (err) {
-      this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, undefined, searchRequest);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, { searchRequest, durationMs });
       throw err;
     }
   }
@@ -1115,12 +1146,15 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     referenceField: string,
     references: string[]
   ): Promise<Record<string, T[]>> {
+    const startTime = Date.now();
     try {
       const result = await searchByReferenceImpl<T>(this, searchRequest, referenceField, references);
-      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, undefined, searchRequest);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(SearchInteraction, AuditEventOutcome.Success, undefined, { searchRequest, durationMs });
       return result;
     } catch (err) {
-      this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, undefined, searchRequest);
+      const durationMs = Date.now() - startTime;
+      this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, { searchRequest, durationMs });
       throw err;
     }
   }
@@ -1164,22 +1198,37 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param resourceType - The resource type being searched.
    */
   private addAccessPolicyFilters(builder: SelectQuery, resourceType: string): void {
-    if (!this.context.accessPolicy?.resource) {
+    const accessPolicy = this.context.accessPolicy;
+    if (!accessPolicy?.resource) {
       return;
     }
 
     const expressions: Expression[] = [];
 
-    for (const policy of this.context.accessPolicy.resource) {
-      if (policy.resourceType === resourceType) {
+    for (const policy of accessPolicy.resource) {
+      if (policy.resourceType === resourceType || policy.resourceType === '*') {
         const policyCompartmentId = resolveId(policy.compartment);
         if (policyCompartmentId) {
           // Deprecated - to be removed
           // Add compartment restriction for the access policy.
           expressions.push(new Condition('compartments', 'ARRAY_CONTAINS', policyCompartmentId, 'UUID[]'));
         } else if (policy.criteria) {
+          if (!policy.criteria.startsWith(policy.resourceType + '?')) {
+            getLogger().warn('Invalid access policy criteria', {
+              accessPolicy: accessPolicy.id,
+              resourceType: policy.resourceType,
+              criteria: policy.criteria,
+            });
+            return; // Ignore invalid access policy criteria
+          }
+
           // Add subquery for access policy criteria.
-          const searchRequest = parseSearchRequest(policy.criteria);
+          let criteria = policy.criteria;
+          if (policy.resourceType === '*') {
+            const queryIndex = criteria.indexOf('?');
+            criteria = resourceType + '?' + criteria.slice(queryIndex + 1);
+          }
+          const searchRequest = parseSearchRequest(criteria);
           const accessPolicyExpression = buildSearchExpression(
             this,
             builder,
@@ -1296,7 +1345,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     if (resource.meta?.accounts) {
       for (const account of resource.meta.accounts) {
-        const id = resolveId(resource.meta.account);
+        const id = resolveId(account);
         if (!account.reference?.startsWith('Project/') && id && validator.isUUID(id)) {
           compartments.add(account.reference as string);
         }
@@ -1692,42 +1741,63 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Returns the author reference string (resourceType/id).
    * If the current context is a ClientApplication, handles "on behalf of".
    * Otherwise uses the current context profile.
-   * @param existing - Existing resource if one exists.
+   * @param existing - Current (soon to be previous) resource, if one exists.
    * @param updated - The incoming updated resource.
-   * @param create - Flag for when "creating" vs "updating".
-   * @returns The account value.
+   * @returns The account values.
    */
-  private async getAccounts(
-    existing: Resource | undefined,
-    updated: Resource,
-    create: boolean
-  ): Promise<Reference[] | undefined> {
+  private async getAccounts(existing: Resource | undefined, updated: Resource): Promise<Reference[] | undefined> {
     const updatedAccounts = this.extractAccountReferences(updated.meta);
     if (updatedAccounts && this.canWriteAccount()) {
       // If the user specifies an account, allow it if they have permission.
       return updatedAccounts;
     }
 
-    if (create && this.context.accessPolicy?.compartment) {
-      // If the user access policy specifies a compartment, then use it as the account.
-      return [this.context.accessPolicy.compartment];
+    const accounts = new Set<string>();
+    if (!existing && this.context.accessPolicy?.compartment?.reference) {
+      // If the creator's access policy specifies a compartment, then use it as the account.
+      // The writer's access policy is only applied at resource creation: simply editing a
+      // resource does NOT pull it into the user's account.
+      accounts.add(this.context.accessPolicy.compartment.reference);
     }
 
-    if (updated.resourceType !== 'Patient') {
-      for (const patientRef of getPatients(updated)) {
-        try {
-          // If the resource is in a patient compartment, then lookup the patient.
-          const patient = await getSystemRepo().readReference(patientRef);
-          // If the patient has an account, then use it as the resource account.
-          return this.extractAccountReferences(patient.meta);
-        } catch (err: any) {
-          getRequestContext().logger.debug('Error setting patient compartment', err);
+    if (updated.resourceType === 'Patient') {
+      // When examining a Patient resource, we only look at the individual patient
+      // We should not call `getPatients` and `readReference`
+      const existingAccounts = this.extractAccountReferences(existing?.meta);
+      if (existingAccounts?.length) {
+        for (const account of existingAccounts) {
+          accounts.add(account.reference as string);
+        }
+      }
+    } else {
+      const patients = await getSystemRepo().readReferences(getPatients(updated));
+      for (const patient of patients) {
+        if (patient instanceof Error) {
+          getLogger().debug('Error setting patient compartment', patient);
+          continue;
+        }
+
+        // If the patient has an account, then use it as the resource account.
+        const patientAccounts = this.extractAccountReferences(patient.meta);
+        if (patientAccounts?.length) {
+          for (const account of patientAccounts) {
+            if (account.reference) {
+              accounts.add(account.reference);
+            }
+          }
         }
       }
     }
 
-    // Otherwise, default to the existing value.
-    return this.extractAccountReferences(existing?.meta);
+    if (accounts.size < 1) {
+      return undefined;
+    }
+
+    const result: Reference[] = [];
+    for (const reference of accounts) {
+      result.push({ reference });
+    }
+    return result;
   }
 
   private extractAccountReferences(meta: Meta | undefined): Reference[] | undefined {
@@ -1988,15 +2058,20 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param subtype - The AuditEvent subtype.
    * @param outcome - The AuditEvent outcome.
    * @param description - The description.  Can be a string, object, or Error.  Will be normalized to a string.
-   * @param resource - Optional resource to associate with the AuditEvent.
-   * @param search - Optional search parameters to associate with the AuditEvent.
+   * @param options -
+   * @param options.resource - Optional resource to associate with the AuditEvent.
+   * @param options.searchRequest - Optional search parameters to associate with the AuditEvent.
+   * @param options.durationMs - Duration of the operation, used for generating metrics.
    */
   private logEvent(
     subtype: AuditEventSubtype,
     outcome: AuditEventOutcome,
     description?: unknown,
-    resource?: Resource,
-    search?: SearchRequest
+    options?: {
+      resource?: Resource;
+      searchRequest?: SearchRequest;
+      durationMs?: number;
+    }
   ): void {
     if (this.context.author.reference === 'system') {
       // Don't log system events.
@@ -2007,9 +2082,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       outcomeDesc = normalizeErrorString(description);
     }
     let query: string | undefined = undefined;
-    if (search) {
-      query = search.resourceType + formatSearchQuery(search);
+    if (options?.searchRequest) {
+      query = options.searchRequest.resourceType + formatSearchQuery(options.searchRequest);
     }
+    const resource = options?.resource;
+
     const auditEvent = logRestfulEvent(
       subtype,
       this.context.projects?.[0] as string,
@@ -2020,6 +2097,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       resource,
       query
     );
+
+    if (options?.durationMs) {
+      const duration = options.durationMs / 1000; // Report duration in whole seconds
+      recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
+        attributes: {
+          resourceType: resource?.resourceType,
+          result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
+        },
+      });
+    }
 
     if (getConfig().saveAuditEvents && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
@@ -2224,14 +2311,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async setCacheEntry(resource: Resource): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
-      await this.postCommit(() => this.setCacheEntry(resource));
+      const cachedResource = deepClone(resource);
+      await this.postCommit(() => {
+        return this.setCacheEntry(cachedResource);
+      });
       return;
     }
 
     const projectId = resource.meta?.project;
     await getRedis().set(
       getCacheKey(resource.resourceType, resource.id as string),
-      JSON.stringify({ resource, projectId }),
+      stringify({ resource, projectId }),
       'EX',
       REDIS_CACHE_EX_SECONDS
     );
@@ -2288,7 +2378,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     this.assertNotClosed();
     if (this.transactionDepth > 0) {
       // Bad state, remove connection from pool
-      getRequestContext().logger.error('Closing Repository with active transaction');
+      getLogger().error('Closing Repository with active transaction');
       this.releaseConnection(new Error('Closing Repository with active transaction'));
     } else {
       // Good state, return healthy connection to pool

@@ -15,11 +15,14 @@ import {
   isNotFound,
   isOk,
   isOperationOutcome,
+  multipleMatches,
   normalizeErrorString,
   notFound,
   notModified,
   operationOutcomeToString,
   preconditionFailed,
+  serverError,
+  serverTimeout,
   tooManyRequests,
   unauthorized,
 } from './outcomes';
@@ -78,19 +81,24 @@ describe('Outcomes', () => {
     expect(badRequest('bad', 'bad').issue?.[0]?.expression?.[0]).toBe('bad');
   });
 
-  test('Status', () => {
-    expect(getStatus(allOk)).toBe(200);
-    expect(getStatus(created)).toBe(201);
-    expect(getStatus(accepted('https://example.com'))).toBe(202);
-    expect(getStatus(notModified)).toBe(304);
-    expect(getStatus(unauthorized)).toBe(401);
-    expect(getStatus(forbidden)).toBe(403);
-    expect(getStatus(notFound)).toBe(404);
-    expect(getStatus(conflict('bad'))).toBe(409);
-    expect(getStatus(gone)).toBe(410);
-    expect(getStatus(preconditionFailed)).toBe(412);
-    expect(getStatus(tooManyRequests)).toBe(429);
-    expect(getStatus(badRequest('bad'))).toBe(400);
+  test.each([
+    [allOk, 200],
+    [created, 201],
+    [accepted('https://example.com'), 202],
+    [notModified, 304],
+    [badRequest('bad'), 400],
+    [unauthorized, 401],
+    [forbidden, 403],
+    [notFound, 404],
+    [conflict('bad'), 409],
+    [gone, 410],
+    [preconditionFailed, 412],
+    [multipleMatches, 412],
+    [tooManyRequests, 429],
+    [serverError(new Error('bad')), 500],
+    [serverTimeout(), 504],
+  ])('getStatus(%p) == %i', (outcome, expectedStatus) => {
+    expect(getStatus(outcome)).toEqual(expectedStatus);
   });
 
   test('Assert OK', () => {

@@ -57,3 +57,18 @@ Example outcome when Project name not provided:
   ]
 }
 ```
+
+## Assigning Project Ownership
+
+By default, the API will attempt to use the `User` associated with the current access token as the Project `owner`.
+In cases where a different user should be the owner, or when the access token is not associated with a `User`, one
+can be manually assigned using a parameter: either `owner` for existing users, or `ownerEmail` to create the user.
+
+```bash
+curl 'https://api.medplum.com/fhir/R4/Project/$init' \
+  -X POST \
+  -H "Content-Type: application/fhir+json" \
+  -H "Authorization: Bearer MY_ACCESS_TOKEN" \
+  -d '{"resourceType":"Parameters", "parameter":[ {"name":"name", "valueString":"Test Project"}, \
+    {"name":"owner", "valueReference": {"reference": "User/cb5bb36b-fcfa-4c07-8da1-5f3afd8d261d" } } ]}'
+```

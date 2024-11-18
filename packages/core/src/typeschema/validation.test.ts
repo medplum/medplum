@@ -28,13 +28,15 @@ import {
   StructureDefinition,
   StructureDefinitionSnapshot,
   SubstanceProtein,
+  Timing,
   ValueSet,
 } from '@medplum/fhirtypes';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { HTTP_HL7_ORG, LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
-import { OperationOutcomeError } from '../outcomes';
+import { generateId } from '../crypto';
+import { OperationOutcomeError, validationError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle, loadDataType } from './types';
 import { validateResource, validateTypedValue } from './validation';
@@ -1365,7 +1367,7 @@ describe('FHIR resource validation', () => {
     expect(issues[0].details?.text).toContain(textContains);
   }
 
-  const DUPLICATE_CHOICE_OF_TYPE_PROPERTY = 'Duplicate choice of type property';
+  const DUPLICATE_CHOICE_OF_TYPE_PROPERTY = 'Conflicting choice of type properties';
   const PRIMITIVE_EXTENSION_TYPE_MISMATCH = 'Type of primitive extension does not match the type of property';
 
   test('Multiple values for choice of type property', () => {
@@ -1396,6 +1398,8 @@ describe('FHIR resource validation', () => {
     };
 
     expectOneWarning(carePlan, DUPLICATE_CHOICE_OF_TYPE_PROPERTY);
+    expectOneWarning(carePlan, 'scheduledTiming');
+    expectOneWarning(carePlan, 'scheduledPeriod');
   });
 
   test('Valid choice of type properties with primitive extensions', () => {
@@ -1662,6 +1666,76 @@ describe('FHIR resource validation', () => {
     };
     expect(() => validateTypedValue(typedValue2)).toThrow(
       'Invalid dateTime format (SubstanceAdministration.effectiveTime[0])'
+    );
+  });
+
+  test('Multiple codes in Timing.repeat.when', () => {
+    // Timing constraint "tim-9" had a bug in R4 that prevents multiple codes in "when"
+    // We are fixing by backporting the R5 constraint to R4
+    // R4 constraint: offset.empty() or (when.exists() and ((when in ('C' | 'CM' | 'CD' | 'CV')).not()))
+    // R5 constraint: offset.empty() or (when.exists() and when.select($this in ('C' | 'CM' | 'CD' | 'CV')).allFalse())
+
+    // As submitted by user
+    // See: https://github.com/medplum/medplum/issues/5378
+    const timing1: Timing = {
+      repeat: {
+        frequency: 3,
+        period: 1,
+        periodUnit: 'd',
+        when: ['MORN', 'NOON', 'NIGHT'],
+        dayOfWeek: ['mon', 'wed', 'fri'],
+      },
+    };
+    expect(() => validateTypedValue({ type: 'Timing', value: timing1 })).not.toThrow();
+
+    // Make sure that a bad code throws
+    const timing2: Timing = {
+      repeat: {
+        offset: 1,
+        frequency: 3,
+        period: 1,
+        periodUnit: 'd',
+        when: ['C'],
+        dayOfWeek: ['mon', 'wed', 'fri'],
+      },
+    };
+    expect(() => validateTypedValue({ type: 'Timing', value: timing2 })).toThrow('Constraint tim-9 not met');
+  });
+
+  test('Bundle constraint: bdl-8', () => {
+    // fullUrl not required in `Bundle.entry`
+    const noFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: { resourceType: 'Patient' } }],
+    };
+    expect(() => validateResource(noFullUrlBdl)).not.toThrow();
+
+    // If it does exist, no `_history` version
+    const validFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ fullUrl: `http://example.com/fhir/R4/Patient/${generateId()}`, resource: { resourceType: 'Patient' } }],
+    };
+    expect(() => validateResource(validFullUrlBdl)).not.toThrow();
+
+    // This should fail since it contains `_history`
+    const invalidFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          fullUrl: `http://example.com/fhir/R4/Patient/${generateId()}/_history/${generateId()}`,
+          resource: { resourceType: 'Patient' },
+        },
+      ],
+    };
+    expect(() => validateResource(invalidFullUrlBdl)).toThrow(
+      new OperationOutcomeError(
+        validationError(
+          `Constraint bdl-8 not met: fullUrl cannot be a version specific reference ({"fhirpath":"fullUrl.exists() implies fullUrl.contains('/_history/').not()"}) (Bundle.entry[0])`
+        )
+      )
     );
   });
 });

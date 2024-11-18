@@ -51,7 +51,14 @@ describe('CLI auth', () => {
   });
 
   test('Login success', async () => {
-    (cp.exec as unknown as jest.Mock).mockReturnValue(true);
+    (cp.exec as unknown as jest.Mock).mockImplementation(
+      (_, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+        if (callback) {
+          callback(null, '', '');
+        }
+        return true;
+      }
+    );
     (http.createServer as unknown as jest.Mock).mockReturnValue({
       listen: () => ({
         close: () => undefined,
@@ -178,7 +185,7 @@ describe('CLI auth', () => {
     );
 
     await main(['node', 'index.js', 'token']);
-    expect((console.log as unknown as jest.Mock).mock.calls).toEqual([['Access token:'], [], [expect.any(String)]]);
+    expect((console.log as unknown as jest.Mock).mock.calls).toEqual([[expect.any(String)]]);
   });
 
   test('Get access token -- needs auth (expired or not logged in)', async () => {

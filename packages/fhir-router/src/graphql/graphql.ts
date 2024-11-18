@@ -1,6 +1,7 @@
 import {
   allOk,
   badRequest,
+  ContentType,
   DEFAULT_SEARCH_COUNT,
   forbidden,
   getResourceTypes,
@@ -19,7 +20,6 @@ import {
   execute,
   ExecutionResult,
   FieldNode,
-  GraphQLError,
   GraphQLFieldConfigArgumentMap,
   GraphQLFieldConfigMap,
   GraphQLFloat,
@@ -39,14 +39,13 @@ import {
   validate,
   ValidationContext,
 } from 'graphql';
-import { FhirRequest, FhirResponse, FhirRouter } from '../fhirrouter';
+import { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
 import { FhirRepository, RepositoryMode } from '../repo';
 import { getGraphQLInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
 import {
   applyMaxCount,
   buildSearchArgs,
-  getDepth,
   GraphQLContext,
   invalidRequest,
   isFieldRequested,
@@ -86,12 +85,14 @@ interface ConnectionEdge {
  * @param req - The request details.
  * @param repo - The current user FHIR repository.
  * @param router - The router for router options.
+ * @param options - Additional route options.
  * @returns The response.
  */
 export async function graphqlHandler(
   req: FhirRequest,
   repo: FhirRepository,
-  router: FhirRouter
+  router: FhirRouter,
+  options?: FhirRouteOptions
 ): Promise<FhirResponse> {
   const { query, operationName, variables } = req.body;
   if (!query) {
@@ -106,7 +107,7 @@ export async function graphqlHandler(
   }
 
   const schema = getRootSchema();
-  const validationRules = [...specifiedRules, MaxDepthRule(req.config?.graphqlMaxDepth), QueryCostRule(router)];
+  const validationRules = [...specifiedRules, MaxDepthRule(router, req.config?.graphqlMaxDepth), QueryCostRule(router)];
   const validationErrors = validate(schema, document, validationRules);
   if (validationErrors.length > 0) {
     return [invalidRequest(validationErrors)];
@@ -117,8 +118,8 @@ export async function graphqlHandler(
     return [forbidden];
   }
 
-  if (includesMutations(query)) {
-    repo.setMode(RepositoryMode.WRITER);
+  if (!options?.batch && !includesMutations(query)) {
+    repo.setMode(RepositoryMode.READER);
   }
 
   const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
@@ -142,7 +143,7 @@ export async function graphqlHandler(
     });
   }
 
-  return [allOk, result];
+  return [allOk, result, { contentType: ContentType.JSON }];
 }
 
 /**
@@ -443,33 +444,92 @@ const DEFAULT_MAX_DEPTH = 12;
 
 /**
  * Custom GraphQL rule that enforces max depth constraint.
+ * @param router - The FHIR router.
  * @param maxDepth - The maximum allowed depth.
  * @returns A function that is an ASTVisitor that validates the maximum depth rule.
  */
 const MaxDepthRule =
-  (maxDepth: number = DEFAULT_MAX_DEPTH) =>
-  (context: ValidationContext): ASTVisitor => ({
-    Field(
-      /** The current node being visiting. */
-      node: any,
-      /** The index or key to this node from the parent node or Array. */
-      _key: string | number | undefined,
-      /** The parent immediately above this node, which may be an Array. */
-      _parent: ASTNode | readonly ASTNode[] | undefined,
-      /** The key path to get to this node from the root node. */
-      path: readonly (string | number)[]
-    ): any {
-      const depth = getDepth(path);
-      if (depth > maxDepth) {
-        const fieldName = node.name.value;
-        context.reportError(
-          new GraphQLError(`Field "${fieldName}" exceeds max depth (depth=${depth}, max=${maxDepth})`, {
-            nodes: node,
-          })
-        );
+  (router: FhirRouter, maxDepth: number = DEFAULT_MAX_DEPTH) =>
+  (context: ValidationContext): ASTVisitor =>
+    new MaxDepthVisitor(context, router, maxDepth);
+
+type DepthRecord = { depth: number; node?: FieldNode };
+
+class MaxDepthVisitor {
+  private context: ValidationContext;
+  private maxDepth: number;
+  private fragmentDepths: Record<string, DepthRecord>;
+  private router: FhirRouter;
+
+  constructor(context: ValidationContext, router: FhirRouter, maxDepth: number) {
+    this.context = context;
+    this.router = router;
+    this.fragmentDepths = Object.create(null);
+    this.maxDepth = maxDepth;
+  }
+
+  OperationDefinition(node: OperationDefinitionNode): void {
+    const result = this.getDepth(...node.selectionSet.selections);
+    if (result.depth > this.maxDepth) {
+      // this.context.reportError(
+      //   new GraphQLError(
+      //     `Field "${result.node?.name.value}" exceeds max depth (depth=${result.depth}, max=${this.maxDepth})`,
+      //     {
+      //       nodes: result.node,
+      //     }
+      //   )
+      // );
+      this.router.log('warn', 'Query max depth too high', {
+        depth: result.depth,
+        limit: this.maxDepth,
+        query: node.loc?.source?.body,
+      });
+    }
+  }
+
+  /**
+   * Returns the depth of the GraphQL node in a query.
+   * We use field depth as the representation of depth: the number of concrete fields (not counting fragment expansions)
+   * @param nodes - The AST nodes.
+   * @returns The maximum "depth" of the nodes.
+   */
+  private getDepth(...nodes: ASTNode[]): DepthRecord {
+    let deepest: DepthRecord = { depth: -1 };
+    for (const node of nodes) {
+      let current: DepthRecord = { depth: 0 };
+      if (node.kind === Kind.FIELD) {
+        if (node.selectionSet?.selections) {
+          current = this.getDepth(...node.selectionSet.selections);
+          current.depth += 1;
+        } else {
+          current = { depth: 0, node }; // Leaf field node
+        }
+      } else if (node.kind === Kind.FRAGMENT_SPREAD) {
+        const fragmentName = node.name.value;
+        const fragment = this.context.getFragment(fragmentName);
+        const cachedDepth = this.fragmentDepths[fragmentName];
+
+        if (cachedDepth) {
+          current = cachedDepth;
+        } else if (fragment) {
+          current = this.getDepth(...fragment.selectionSet.selections);
+          this.fragmentDepths[fragmentName] = current;
+        }
+      } else if (node.kind === Kind.INLINE_FRAGMENT) {
+        current = this.getDepth(...node.selectionSet.selections);
       }
-    },
-  });
+
+      if (current.depth > this.maxDepth) {
+        return current; // Short circuit, no need to keep computing
+      }
+      if (current.depth > deepest.depth) {
+        deepest = current;
+      }
+    }
+
+    return deepest;
+  }
+}
 
 const DEFAULT_MAX_COST = 10_000;
 

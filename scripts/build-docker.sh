@@ -5,6 +5,11 @@ if [[ -z "${DOCKERHUB_REPOSITORY}" ]]; then
   exit 1
 fi
 
+if [[ -z "${GITHUB_SHA}" ]]; then
+  echo "GITHUB_SHA is missing"
+  exit 1
+fi
+
 # Fail on error
 set -e
 
@@ -13,6 +18,7 @@ set -x
 
 # Build server tarball
 tar \
+  --no-xattrs \
   --exclude='*.ts' \
   --exclude='*.tsbuildinfo' \
   -czf medplum-server.tar.gz \

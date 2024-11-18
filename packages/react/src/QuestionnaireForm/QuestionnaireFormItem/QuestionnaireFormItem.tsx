@@ -5,7 +5,6 @@ import {
   formatCodeableConcept,
   formatCoding,
   getElementDefinition,
-  getTypedPropertyValue,
   stringify,
   TypedValue,
 } from '@medplum/core';
@@ -26,6 +25,8 @@ import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
 import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import {
   formatReferenceString,
+  getItemAnswerOptionValue,
+  getItemInitialValue,
   getNewMultiSelectValues,
   getQuestionnaireItemReferenceFilter,
   getQuestionnaireItemReferenceTargetTypes,
@@ -81,9 +82,7 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
   }
 
   const initial = item.initial && item.initial.length > 0 ? item.initial[0] : undefined;
-  const defaultValue =
-    getCurrentAnswer(response, props.index) ??
-    getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value');
+  const defaultValue = getCurrentAnswer(response, props.index) ?? getItemInitialValue(initial);
 
   switch (type) {
     case QuestionnaireItemType.display:
@@ -253,17 +252,12 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
     return <NoAnswerDisplay />;
   }
 
-  const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
-    | TypedValue
-    | undefined;
+  const initialValue = getItemInitialValue(initial);
 
   const data = [''];
 
   for (const option of item.answerOption) {
-    const optionValue = getTypedPropertyValue(
-      { type: 'QuestionnaireItemAnswerOption', value: option },
-      'value'
-    ) as TypedValue;
+    const optionValue = getItemAnswerOptionValue(option);
     data.push(typedValueToString(optionValue) as string);
   }
 
@@ -298,10 +292,7 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
           return;
         }
         const option = (item.answerOption as QuestionnaireItemAnswerOption[])[index - 1];
-        const optionValue = getTypedPropertyValue(
-          { type: 'QuestionnaireItemAnswerOption', value: option },
-          'value'
-        ) as TypedValue;
+        const optionValue = getItemAnswerOptionValue(option);
         const propertyName = 'value' + capitalize(optionValue.type);
         props.onChangeAnswer({ [propertyName]: optionValue.value });
       }}
@@ -343,9 +334,7 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
 function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { name, item, initial, onChangeAnswer, response } = props;
   const valueElementDefinition = getElementDefinition('QuestionnaireItemAnswerOption', 'value[x]');
-  const initialValue = getTypedPropertyValue({ type: 'QuestionnaireItemInitial', value: initial }, 'value') as
-    | TypedValue
-    | undefined;
+  const initialValue = getItemInitialValue(initial);
 
   const options: [string, TypedValue][] = [];
   let defaultValue = undefined;
@@ -353,10 +342,7 @@ function QuestionnaireChoiceRadioInput(props: QuestionnaireChoiceInputProps): JS
     for (let i = 0; i < item.answerOption.length; i++) {
       const option = item.answerOption[i];
       const optionName = `${name}-option-${i}`;
-      const optionValue = getTypedPropertyValue(
-        { type: 'QuestionnaireItemAnswerOption', value: option },
-        'value'
-      ) as TypedValue;
+      const optionValue = getItemAnswerOptionValue(option);
 
       if (!optionValue?.value) {
         continue;
@@ -408,14 +394,9 @@ function NoAnswerDisplay(): JSX.Element {
   return <TextInput disabled placeholder="No Answers Defined" />;
 }
 
-function getItemValue(answer: QuestionnaireResponseItemAnswer): TypedValue {
-  const itemValue = getTypedPropertyValue({ type: 'QuestionnaireItemAnswer', value: answer }, 'value') as TypedValue;
-  return itemValue;
-}
-
 function getCurrentAnswer(response: QuestionnaireResponseItem, index: number = 0): TypedValue {
   const results = response.answer;
-  return getItemValue(results?.[index] ?? {});
+  return getItemAnswerOptionValue(results?.[index] ?? {});
 }
 
 function getCurrentMultiSelectAnswer(response: QuestionnaireResponseItem): string[] {
@@ -423,7 +404,7 @@ function getCurrentMultiSelectAnswer(response: QuestionnaireResponseItem): strin
   if (!results) {
     return [];
   }
-  const typedValues = results.map((a) => getItemValue(a));
+  const typedValues = results.map((a) => getItemAnswerOptionValue(a));
   return typedValues.map((type) => formatCoding(type?.value) || type?.value);
 }
 
@@ -470,10 +451,7 @@ function formatSelectData(item: QuestionnaireItem): FormattedData {
     return { propertyName: '', data: [] };
   }
   const option = (item.answerOption as QuestionnaireItemAnswerOption[])[0];
-  const optionValue = getTypedPropertyValue(
-    { type: 'QuestionnaireItemAnswerOption', value: option },
-    'value'
-  ) as TypedValue;
+  const optionValue = getItemAnswerOptionValue(option);
   const propertyName = 'value' + capitalize(optionValue.type);
 
   const data = (item.answerOption ?? []).map((a) => ({

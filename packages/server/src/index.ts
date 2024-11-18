@@ -20,6 +20,13 @@ export async function main(configName: string): Promise<void> {
       return;
     }
 
+    if (err.message && typeof err.message === 'string' && err.message.includes('Unexpected end of input')) {
+      // Workaround for OpenTelemetry bug: https://github.com/open-telemetry/opentelemetry-js/issues/5095
+      // The otel library can throw this error on malformed X-Forwarded-For headers.
+      // We do *not* want to exit the process in this case.
+      return;
+    }
+
     process.exit(1);
   });
 

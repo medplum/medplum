@@ -1,7 +1,8 @@
 import { PropertyType, evalFhirPathTyped, getSearchParameters, isUUID, toTypedValue } from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
+import { InsertQuery } from '../sql';
 
 /**
  * The ReferenceTable class represents a set of lookup tables for references between resources.
@@ -32,6 +33,31 @@ export class ReferenceTable extends LookupTable {
 
     const values = getSearchReferences(resource);
     await this.insertValuesForResource(client, resource.resourceType, values);
+  }
+
+  /**
+   * Inserts reference values into the lookup table for a resource.
+   * @param client - The database client.
+   * @param resourceType - The resource type.
+   * @param values - The values to insert.
+   */
+  async insertValuesForResource(
+    client: Pool | PoolClient,
+    resourceType: ResourceType,
+    values: Record<string, any>[]
+  ): Promise<void> {
+    if (values.length === 0) {
+      return;
+    }
+    const tableName = this.getTableName(resourceType);
+
+    // Reference lookup tables have a covering primary key, so a conflict means
+    // that the exact desired row already exists in the database
+    for (let i = 0; i < values.length; i += 10_000) {
+      const batchedValues = values.slice(i, i + 10_000);
+      const insert = new InsertQuery(tableName, batchedValues).ignoreOnConflict();
+      await insert.execute(client);
+    }
   }
 }
 

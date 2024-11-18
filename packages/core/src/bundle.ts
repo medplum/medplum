@@ -85,7 +85,7 @@ export function reorderBundle(bundle: Bundle): Bundle {
 
   const entryMap: Record<string, BundleEntry> = {};
 
-  for (const entry of bundle.entry || []) {
+  for (const entry of bundle.entry ?? []) {
     if (entry.fullUrl) {
       entryMap[entry.fullUrl] = entry;
     }
@@ -232,7 +232,7 @@ export function convertContainedResourcesToBundle(resource: Resource & { contain
   const simpleBundle = {
     resourceType: 'Bundle',
     type: 'transaction',
-    entry: [{ resource }] as BundleEntry[],
+    entry: [{ resource }],
   } satisfies Bundle;
 
   // Move all contained resources to the bundle

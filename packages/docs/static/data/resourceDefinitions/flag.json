@@ -393,6 +393,12 @@
       "type": "reference",
       "description": "The identity of a subject to list flags for",
       "expression": "Flag.subject"
+    },
+    {
+      "name": "category",
+      "type": "token",
+      "description": "The category of the flag, such as clinical, administrative, etc.",
+      "expression": "Flag.category"
     }
   ]
 }

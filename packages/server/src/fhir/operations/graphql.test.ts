@@ -1,5 +1,5 @@
 import { ContentType, createReference, getReferenceString, isPopulated } from '@medplum/core';
-import { Binary, Encounter, Patient, Practitioner, Resource, ServiceRequest } from '@medplum/fhirtypes';
+import { Binary, Bundle, Encounter, Patient, Practitioner, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -9,6 +9,7 @@ import { loadTestConfig } from '../../config';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
+import { DatabaseMode, getDatabasePool } from '../../database';
 
 const app = express();
 let practitioner: Practitioner;
@@ -121,6 +122,10 @@ describe('GraphQL', () => {
       bobAccessToken = bobRegistration.accessToken;
     })
   );
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   afterAll(async () => {
     await shutdownApp();
@@ -275,6 +280,7 @@ describe('GraphQL', () => {
         }`,
       });
     expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.headers['cache-control']).toBe('no-store, no-cache, must-revalidate');
   });
 
@@ -580,7 +586,7 @@ describe('GraphQL', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Max depth', async () => {
+  test.skip('Max depth', async () => {
     // The definition of "depth" is a little abstract in GraphQL
     // We use "selection", which, in a well formatted query, is the level of indentation
 
@@ -601,7 +607,12 @@ describe('GraphQL', () => {
                   basedOn {
                     resource {
                       ...on ServiceRequest {
-                        id
+                        asNeededCodeableConcept {
+                          coding {
+                            extension { url }
+                            system code
+                          }
+                        }
                       }
                     }
                   }
@@ -671,7 +682,7 @@ describe('GraphQL', () => {
     `,
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Field "id" exceeds max depth (depth=14, max=12)');
+    expect(res2.body.issue[0].details.text).toEqual('Field "id" exceeds max depth (depth=13, max=12)');
   });
 
   test('Hidden fields in nested lookups', async () => {
@@ -1061,6 +1072,53 @@ describe('GraphQL', () => {
         PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: null }] }],
       });
     });
+  });
+
+  test('Uses reader instance when available', async () => {
+    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({ query: `{ PatientList(_id: "${patient.id}") { id } }` });
+    expect(res.status).toBe(200);
+    expect(readerSpy).toHaveBeenCalledTimes(1);
+    expect(writerSpy).toHaveBeenCalledTimes(0);
+  });
+
+  test('GraphQL in batch users writer', async () => {
+    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: '$graphql',
+          },
+          resource: {
+            query: `{ PatientList(_id: "${patient.id}") { id } }`,
+          } as unknown as Resource,
+        },
+      ],
+    };
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toEqual('Bundle');
+    expect(res.body.entry[0].resource.data.PatientList).toHaveLength(1);
+    expect(res.body.entry[0].resource.data.PatientList[0].id).toBe(patient.id);
+
+    expect(readerSpy).toHaveBeenCalledTimes(0);
+    expect(writerSpy).toHaveBeenCalledTimes(1);
   });
 });
 

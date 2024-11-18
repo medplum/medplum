@@ -1374,6 +1374,22 @@
             }]
           },
           {
+            "id" : "ProjectMembership.identifier",
+            "path" : "ProjectMembership.identifier",
+            "short" : "An identifier for this ProjectMembership",
+            "definition" : "An identifier for this ProjectMembership.",
+            "min" : 0,
+            "max" : "*",
+            "type" : [{
+              "code" : "Identifier"
+            }],
+            "base" : {
+              "path" : "ProjectMembership.identifier",
+              "min" : 0,
+              "max" : "*"
+            }
+          },
+          {
             "id" : "ProjectMembership.project",
             "path" : "ProjectMembership.project",
             "definition" : "Project where the memberships are available.",
@@ -3613,7 +3629,15 @@
               "path" : "AccessPolicy.resource",
               "min" : 0,
               "max" : "*"
-            }
+            },
+            "constraint": [
+              {
+                "key": "axp-3",
+                "severity": "error",
+                "human": "Criteria must be a valid FHIR search string on the correct resource type, e.g. Patient?identifier=123",
+                "expression": "criteria.exists() implies criteria.startsWith(%context.resourceType & '?')"
+              }
+            ]
           },
           {
             "id" : "AccessPolicy.resource.resourceType",
@@ -3659,15 +3683,7 @@
               "path" : "AccessPolicy.resource.criteria",
               "min" : 0,
               "max" : "1"
-            },
-            "constraint": [
-              {
-                "key": "axp-2",
-                "severity": "error",
-                "human": "Criteria must be a valid FHIR search string, e.g. Patient?identifier=123",
-                "expression": "indexOf('?') > 0"
-              }
-            ]
+            }
           },
           {
             "id" : "AccessPolicy.resource.readonly",

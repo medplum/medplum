@@ -160,6 +160,23 @@
       "base": "DomainResource"
     },
     {
+      "name": "identifier",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "Identifier",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ProjectMembership.identifier",
+      "min": 0,
+      "max": "*",
+      "short": "An identifier for this ProjectMembership",
+      "definition": "An identifier for this ProjectMembership.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "project",
       "depth": 1,
       "types": [

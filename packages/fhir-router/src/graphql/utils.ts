@@ -235,17 +235,6 @@ export function buildSearchArgs(resourceType: string): GraphQLFieldConfigArgumen
 }
 
 /**
- * Returns the depth of the GraphQL node in a query.
- * We use "selections" as the representation of depth.
- * As a rough approximation, it's the number of indentations in a well formatted query.
- * @param path - The GraphQL node path.
- * @returns The "depth" of the node.
- */
-export function getDepth(path: readonly (string | number)[]): number {
-  return path.filter((p) => p === 'selections').length;
-}
-
-/**
  * Returns true if the field is requested in the GraphQL query.
  * @param info - The GraphQL resolve info.  This includes the field name.
  * @param fieldName - The field name to check.

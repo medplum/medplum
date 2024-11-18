@@ -170,7 +170,7 @@ jobs:
                 if(fileName == '') {
                     throw new Error('Unable to find signtool.exe in ' + windowsKitsFolder);
                 }
-                
+
                 console.log(fileName);
                 return fileName;
             }
