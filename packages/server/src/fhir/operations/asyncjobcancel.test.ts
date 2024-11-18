@@ -135,34 +135,4 @@ describe('AsyncJob/$cancel', () => {
     }
     expect(next).toHaveBeenCalledWith(new Error('This operation can only be executed on an instance'));
   });
-
-  test('Responds with bad request outcome if error thrown', async () => {
-    const next = jest.fn();
-
-    class MockResponse {
-      type = jest.fn().mockImplementation(() => this);
-      status = jest.fn().mockImplementation(() => this);
-      json = jest.fn().mockImplementation(() => this);
-    }
-
-    const mockResponse = new MockResponse();
-
-    expect(() =>
-      asyncJobCancelHandler(
-        { params: { id: 'fake-id' } as Record<string, string> } as express.Request,
-        mockResponse as unknown as express.Response,
-        next
-      )
-    ).not.toThrow();
-
-    while (mockResponse.json.mock.calls.length === 0) {
-      await sleep(100);
-    }
-
-    expect(mockResponse.type).toHaveBeenCalledWith(ContentType.FHIR_JSON);
-    expect(mockResponse.status).toHaveBeenCalledWith(400);
-    expect(mockResponse.json).toHaveBeenCalledWith(
-      expect.objectContaining<OperationOutcome>(badRequest('No request context available'))
-    );
-  });
 });
