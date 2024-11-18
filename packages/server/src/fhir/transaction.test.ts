@@ -527,6 +527,23 @@ describe('FHIR Repo Transactions', () => {
       expect(txFn).toHaveBeenCalledTimes(2);
     }));
 
+  test('Only retry specific transaction conflict', () =>
+    withTestContext(async () => {
+      let returnValue: boolean | undefined;
+      const txFn = jest.fn(async (): Promise<boolean> => {
+        if (returnValue) {
+          return returnValue;
+        } else {
+          returnValue = true;
+          // Emit some other conflict
+          throw new OperationOutcomeError(conflict('a different conflict', 'other-error'));
+        }
+      });
+
+      await expect(repo.withTransaction(txFn)).rejects.toThrow('a different conflict');
+      expect(txFn).toHaveBeenCalledTimes(1);
+    }));
+
   test('Retry transaction only once before emitting failure', () =>
     withTestContext(async () => {
       const txFn = jest.fn(async (): Promise<boolean> => {
