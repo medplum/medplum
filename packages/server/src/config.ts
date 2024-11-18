@@ -6,7 +6,7 @@ import { join, resolve } from 'path';
 import { loadAwsConfig } from './cloud/aws/config';
 import { loadGcpConfig } from './cloud/gcp/config';
 
-const DEFAULT_AWS_REGION = 'us-east-1';
+const DEFAULT_AWS_REGION = 'sa-east-1';
 
 export interface MedplumServerConfig {
   port: number;
