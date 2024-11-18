@@ -2180,7 +2180,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         return result;
       } catch (err) {
         const operationOutcomeError = normalizeDatabaseError(err);
-        // Assigning here and throwing below is necessary to satisfy TypeScript;
+        // Assigning here and throwing below is necessary to satisfy TypeScript
         error = err;
 
         // Ensure transaction is rolled back before attempting any retry
