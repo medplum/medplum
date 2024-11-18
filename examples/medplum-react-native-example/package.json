@@ -20,13 +20,13 @@
     ]
   },
   "dependencies": {
-    "@expo/metro-runtime": "3.2.3",
+    "@expo/metro-runtime": "4.0.0",
     "@medplum/core": "3.2.22",
     "@medplum/expo-polyfills": "3.2.22",
     "@medplum/fhirtypes": "3.2.22",
     "@medplum/react-hooks": "3.2.22",
-    "expo": "51.0.39",
-    "expo-status-bar": "1.12.1",
+    "expo": "52.0.7",
+    "expo-status-bar": "2.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.75.4",
