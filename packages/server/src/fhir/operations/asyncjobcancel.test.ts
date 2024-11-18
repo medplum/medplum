@@ -122,7 +122,9 @@ describe('AsyncJob/$cancel', () => {
     expect(res2.status).toEqual(400);
 
     const outcome = res2.body as OperationOutcome;
-    expect(outcome).toMatchObject<OperationOutcome>(badRequest(`Test failed: ${status} != accepted`));
+    expect(outcome).toMatchObject<OperationOutcome>(
+      badRequest(`AsyncJob cannot be cancelled if status is not 'accepted', job had status '${status}'`)
+    );
   });
 
   test('Fails if not executed on an instance (no ID given)', async () => {

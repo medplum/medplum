@@ -1,5 +1,5 @@
 import { allOk, assert, badRequest, OperationOutcomeError } from '@medplum/core';
-import { OperationDefinition } from '@medplum/fhirtypes';
+import { AsyncJob, OperationDefinition } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
@@ -29,12 +29,21 @@ export const asyncJobCancelHandler = asyncWrap(async (req: Request, res: Respons
   // Update status of async job
   try {
     const { repo } = getAuthenticatedContext();
-    const job = await repo.readResource('AsyncJob', req.params.id);
-    if (job.status !== 'cancelled') {
-      await repo.patchResource('AsyncJob', req.params.id, [
-        { op: 'test', path: '/status', value: 'accepted' },
-        { op: 'add', path: '/status', value: 'cancelled' },
-      ]);
+    const job = await repo.readResource<AsyncJob>('AsyncJob', req.params.id);
+    switch (job.status) {
+      case 'accepted':
+        await repo.patchResource('AsyncJob', req.params.id, [
+          { op: 'test', path: '/status', value: 'accepted' },
+          { op: 'add', path: '/status', value: 'cancelled' },
+        ]);
+        break;
+      case 'cancelled':
+        break;
+      default:
+        sendOutcome(
+          res,
+          badRequest(`AsyncJob cannot be cancelled if status is not 'accepted', job had status '${job.status}'`)
+        );
     }
     sendOutcome(res, allOk);
   } catch (err) {
