@@ -29,10 +29,13 @@ export const asyncJobCancelHandler = asyncWrap(async (req: Request, res: Respons
   // Update status of async job
   try {
     const { repo } = getAuthenticatedContext();
-    await repo.patchResource('AsyncJob', req.params.id, [
-      { op: 'test', path: '/status', value: 'accepted' },
-      { op: 'add', path: '/status', value: 'cancelled' },
-    ]);
+    const job = await repo.readResource('AsyncJob', req.params.id);
+    if (job.status !== 'cancelled') {
+      await repo.patchResource('AsyncJob', req.params.id, [
+        { op: 'test', path: '/status', value: 'accepted' },
+        { op: 'add', path: '/status', value: 'cancelled' },
+      ]);
+    }
     sendOutcome(res, allOk);
   } catch (err) {
     if (err instanceof OperationOutcomeError) {

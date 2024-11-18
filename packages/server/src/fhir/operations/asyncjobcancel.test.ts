@@ -63,7 +63,44 @@ describe('AsyncJob/$cancel', () => {
     });
   });
 
-  test.each(['completed', 'cancelled', 'error'] as const)('Fails if AsyncJob.status is `%s`', async (status) => {
+  test('No-op when AsyncJob is already `cancelled`', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/AsyncJob')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'AsyncJob',
+        status: 'cancelled',
+        requestTime: new Date().toISOString(),
+        request: 'random-request',
+      } satisfies AsyncJob);
+    expect(res.status).toEqual(201);
+    expect(res.body).toBeDefined();
+
+    const asyncJob = res.body as AsyncJob;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$cancel`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res2.status).toEqual(200);
+    expect(res2.body).toMatchObject<OperationOutcome>(allOk);
+
+    const res3 = await request(app)
+      .get(`/fhir/R4/AsyncJob/${asyncJob.id as string}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON);
+
+    expect(res3.status).toEqual(200);
+    expect(res3.body).toMatchObject<AsyncJob>({
+      id: asyncJob.id,
+      resourceType: 'AsyncJob',
+      status: 'cancelled',
+      requestTime: asyncJob.requestTime,
+      request: 'random-request',
+    });
+  });
+
+  test.each(['completed', 'error'] as const)('Fails if AsyncJob.status is `%s`', async (status) => {
     const res = await request(app)
       .post('/fhir/R4/AsyncJob')
       .set('Authorization', 'Bearer ' + accessToken)
