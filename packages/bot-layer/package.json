@@ -32,7 +32,7 @@
     "ssh2-sftp-client": "11.0.0"
   },
   "devDependencies": {
-    "@types/node-fetch": "2.6.11"
+    "@types/node-fetch": "2.6.12"
   },
   "peerDependencies": {
     "@medplum/core": "3.2.22",
