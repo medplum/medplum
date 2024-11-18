@@ -3,7 +3,8 @@
   "compilerOptions": {
     "module": "es2020",
     "types": [
-      "jest"
+      "jest",
+      "vite/client"
     ],
     "lib": ["esnext", "dom"],
     "outDir": "dist/types",
