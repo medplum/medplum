@@ -10,11 +10,19 @@
 # Supported architectures:
 # linux/amd64, linux/arm64, linux/arm/v7
 # https://github.com/docker-library/official-images#architectures-other-than-amd64
-FROM gcr.io/distroless/nodejs20-debian12:nonroot
-WORKDIR /app
+FROM node:20-slim AS build
+WORKDIR /build
 
 # Add the application files: Docker handles extracting the tarball automatically
 ADD ./medplum-server.tar.gz ./
+# Install dependencies inside Docker container to handle multi-arch builds
+RUN npm ci --maxsockets 1
+
+
+FROM gcr.io/distroless/nodejs20-debian12:nonroot
+WORKDIR /app
+
+COPY --from=build /build /app
 
 ENV PATH=/nodejs/bin:$PATH
 ENV NODE_ENV=production
