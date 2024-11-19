@@ -1,4 +1,4 @@
-import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import { CodeableConcept, OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import {
   accepted,
   allOk,
@@ -73,7 +73,11 @@ describe('Outcomes', () => {
 
   test('Conflict', () => {
     expect(isOk(conflict('bad'))).toBe(false);
-    expect(conflict('bad').issue?.[0]?.details?.text).toBe('bad');
+    expect(conflict('bad').issue?.[0]?.details).toMatchObject<CodeableConcept>({ text: 'bad', coding: undefined });
+    expect(conflict('bad', 'errcode').issue?.[0]?.details).toMatchObject<CodeableConcept>({
+      coding: [{ code: 'errcode' }],
+      text: 'bad',
+    });
   });
 
   test('Bad Request', () => {
