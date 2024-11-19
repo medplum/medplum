@@ -36,10 +36,10 @@
     "@medplum/fhirtypes": "3.2.22",
     "@medplum/mock": "3.2.22",
     "@types/node": "22.9.0",
-    "@types/node-fetch": "2.6.11",
+    "@types/node-fetch": "2.6.12",
     "@types/ssh2-sftp-client": "9.0.4",
-    "@vitest/coverage-v8": "2.1.4",
-    "@vitest/ui": "2.1.4",
+    "@vitest/coverage-v8": "2.1.5",
+    "@vitest/ui": "2.1.5",
     "esbuild": "0.24.0",
     "fast-glob": "3.3.2",
     "form-data": "4.0.1",
@@ -49,6 +49,6 @@
     "ssh2-sftp-client": "11.0.0",
     "stripe": "17.3.1",
     "typescript": "5.6.3",
-    "vitest": "2.1.4"
+    "vitest": "2.1.5"
   }
 }

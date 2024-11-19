@@ -25,9 +25,9 @@
     ]
   },
   "devDependencies": {
-    "@mantine/core": "7.13.5",
-    "@mantine/hooks": "7.13.5",
-    "@mantine/notifications": "7.13.5",
+    "@mantine/core": "7.14.1",
+    "@mantine/hooks": "7.14.1",
+    "@mantine/notifications": "7.14.1",
     "@medplum/bot-layer": "3.2.22",
     "@medplum/core": "3.2.22",
     "@medplum/definitions": "3.2.22",
@@ -43,17 +43,17 @@
     "@vitejs/plugin-react": "4.3.3",
     "chart.js": "4.4.6",
     "esbuild": "0.24.0",
-    "postcss": "8.4.48",
+    "postcss": "8.4.49",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
     "react-chartjs-2": "5.2.0",
     "react-dom": "18.2.0",
     "ts-node": "10.9.2",
-    "vitest": "2.1.4",
+    "vitest": "2.1.5",
     "dayjs": "1.11.13",
     "react-big-calendar": "1.15.0",
     "react-router-dom": "6.28.0",
     "typescript": "5.6.3",
-    "vite": "5.4.10"
+    "vite": "5.4.11"
   }
 }
