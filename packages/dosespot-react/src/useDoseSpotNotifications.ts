@@ -33,16 +33,16 @@ export function useDoseSpotNotifications(options?: DoseSpotNotificationsOptions)
       )) as DoseSpotNotificationCountsResponse;
 
       let newCount = 0;
-      if (result.PendingPrescriptionsCount !== undefined) {
+      if (result.PendingPrescriptionsCount) {
         newCount += result.PendingPrescriptionsCount;
       }
-      if (result.PendingRxChangeCount !== undefined) {
+      if (result.PendingRxChangeCount) {
         newCount += result.PendingRxChangeCount;
       }
-      if (result.RefillRequestsCount !== undefined) {
+      if (result.RefillRequestsCount) {
         newCount += result.RefillRequestsCount;
       }
-      if (result.TransactionErrorsCount !== undefined) {
+      if (result.TransactionErrorsCount) {
         newCount += result.TransactionErrorsCount;
       }
       if (newCount !== unreadCount) {
