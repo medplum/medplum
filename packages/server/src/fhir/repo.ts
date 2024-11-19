@@ -2171,7 +2171,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     callback: (client: PoolClient) => Promise<TResult>,
     options?: { serializable: boolean }
   ): Promise<TResult> {
-    let error: any;
+    let error: OperationOutcomeError | undefined;
     for (let i = 0; i < transactionAttempts; i++) {
       try {
         const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
@@ -2181,11 +2181,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       } catch (err) {
         const operationOutcomeError = normalizeDatabaseError(err);
         // Assigning here and throwing below is necessary to satisfy TypeScript
-        error = err;
+        error = operationOutcomeError;
 
         // Ensure transaction is rolled back before attempting any retry
         await this.rollbackTransaction(operationOutcomeError);
-        if (!this.isRetryableTransactionError(err)) {
+        if (!this.isRetryableTransactionError(operationOutcomeError)) {
           break; // Fall through to throw statement outside of the loop
         }
       } finally {
@@ -2193,6 +2193,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
     }
 
+    // Cannot be undefined: either the function returns normally from the `try` block,
+    // or `error` is assigned at top of `catch` block before reaching this line
     throw error;
   }
 
@@ -2287,7 +2289,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param err - The error to check.
    * @returns True if the error indicates a retryable transaction failure.
    */
-  private isRetryableTransactionError(err: any): boolean {
+  private isRetryableTransactionError(err: OperationOutcomeError): boolean {
     if (this.transactionDepth) {
       // Nested transactions (i.e. savepoints) are NOT retryable per the Postgres docs;
       // the entire transaction must have been rolled back before anything can be retried:
@@ -2296,16 +2298,16 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // @see https://www.postgresql.org/docs/16/mvcc-serialization-failure-handling.html
       return false;
     }
-
-    if (err instanceof OperationOutcomeError && err.outcome.issue.length === 1) {
-      const issue = err.outcome.issue[0];
-      return Boolean(
-        issue.code === 'conflict' &&
-          issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
-      );
-    } else {
-      return retryableTransactionErrorCodes.includes(err.code);
+    if (err.outcome.issue.length !== 1) {
+      // Multiple errors combined cannot be guaranteed to be retryable
+      return false;
     }
+
+    const issue = err.outcome.issue[0];
+    return Boolean(
+      issue.code === 'conflict' &&
+        issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
+    );
   }
 
   /**
