@@ -1,6 +1,6 @@
 {
   "name": "medplum-demo-bots",
-  "version": "3.2.22",
+  "version": "3.2.23",
   "description": "Medplum Demo Bots",
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
@@ -29,17 +29,17 @@
     "root": true
   },
   "devDependencies": {
-    "@medplum/bot-layer": "3.2.22",
-    "@medplum/cli": "3.2.22",
-    "@medplum/core": "3.2.22",
-    "@medplum/eslint-config": "3.2.22",
-    "@medplum/fhirtypes": "3.2.22",
-    "@medplum/mock": "3.2.22",
+    "@medplum/bot-layer": "3.2.23",
+    "@medplum/cli": "3.2.23",
+    "@medplum/core": "3.2.23",
+    "@medplum/eslint-config": "3.2.23",
+    "@medplum/fhirtypes": "3.2.23",
+    "@medplum/mock": "3.2.23",
     "@types/node": "22.9.0",
-    "@types/node-fetch": "2.6.11",
+    "@types/node-fetch": "2.6.12",
     "@types/ssh2-sftp-client": "9.0.4",
-    "@vitest/coverage-v8": "2.1.4",
-    "@vitest/ui": "2.1.4",
+    "@vitest/coverage-v8": "2.1.5",
+    "@vitest/ui": "2.1.5",
     "esbuild": "0.24.0",
     "fast-glob": "3.3.2",
     "form-data": "4.0.1",
@@ -49,6 +49,6 @@
     "ssh2-sftp-client": "11.0.0",
     "stripe": "17.3.1",
     "typescript": "5.6.3",
-    "vitest": "2.1.4"
+    "vitest": "2.1.5"
   }
 }

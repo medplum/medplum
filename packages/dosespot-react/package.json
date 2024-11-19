@@ -1,7 +1,7 @@
 {
-  "name": "@medplum/mock",
+  "name": "@medplum/dosespot-react",
   "version": "3.2.23",
-  "description": "Medplum Mock Client",
+  "description": "Medplum DoseSpot React SDK",
   "keywords": [
     "medplum",
     "fhir",
@@ -15,7 +15,9 @@
     "dstu2",
     "stu3",
     "r4",
-    "normative"
+    "normative",
+    "react",
+    "react-hooks"
   ],
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -24,11 +26,12 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/medplum/medplum.git",
-    "directory": "packages/mock"
+    "directory": "packages/dosespot-react"
   },
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "sideEffects": false,
+  "type": "module",
   "exports": {
     "import": {
       "types": "./dist/esm/index.d.ts",
@@ -41,29 +44,42 @@
   },
   "main": "dist/cjs/index.cjs",
   "module": "dist/esm/index.mjs",
-  "types": "dist/cjs/index.d.ts",
+  "types": "dist/esm/index.d.ts",
   "files": [
     "dist/cjs",
     "dist/esm"
   ],
   "scripts": {
+    "api-documenter": "api-documenter markdown --input-folder ./dist/api/ --output-folder ./dist/docs/",
     "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
-    "build": "npm run clean && tsc && node esbuild.mjs && npm run api-extractor",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
     "clean": "rimraf dist",
-    "lint": "eslint .",
-    "test": "jest"
-  },
-  "dependencies": {
-    "@medplum/core": "3.2.23",
-    "@medplum/definitions": "3.2.23",
-    "@medplum/fhir-router": "3.2.23",
-    "@medplum/fhirtypes": "3.2.23",
-    "dataloader": "2.2.2",
-    "jest-websocket-mock": "2.5.0",
-    "rfc6902": "5.1.2"
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@types/pdfmake": "0.2.9"
+    "@medplum/core": "3.2.23",
+    "@medplum/fhirtypes": "3.2.23",
+    "@medplum/mock": "3.2.23",
+    "@medplum/react": "3.2.23",
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.0.1",
+    "@types/node": "22.9.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.3",
+    "jsdom": "25.0.1",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "rimraf": "5.0.9",
+    "vitest": "2.1.4"
+  },
+  "peerDependencies": {
+    "@medplum/core": "3.2.23",
+    "@medplum/fhirtypes": "3.2.23",
+    "@medplum/react-hooks": "3.2.23",
+    "react": "^18.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
