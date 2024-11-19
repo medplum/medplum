@@ -544,6 +544,25 @@ describe('FHIR Repo Transactions', () => {
       expect(txFn).toHaveBeenCalledTimes(1);
     }));
 
+  test('Do not retry combined transaction conflict and other errors', () =>
+    withTestContext(async () => {
+      let returnValue: boolean | undefined;
+      const txFn = jest.fn(async (): Promise<boolean> => {
+        if (returnValue) {
+          return returnValue;
+        } else {
+          returnValue = true;
+          // Emit combined errors
+          const outcome = conflict('transaction conflict', '40001');
+          outcome.issue.push({ code: 'invalid', severity: 'error', details: { text: 'invalid data' } });
+          throw new OperationOutcomeError(outcome);
+        }
+      });
+
+      await expect(repo.withTransaction(txFn)).rejects.toThrow('transaction conflict; invalid data');
+      expect(txFn).toHaveBeenCalledTimes(1);
+    }));
+
   test('Retry transaction only once before emitting failure', () =>
     withTestContext(async () => {
       const txFn = jest.fn(async (): Promise<boolean> => {
