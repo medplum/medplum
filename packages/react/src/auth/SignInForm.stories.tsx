@@ -12,7 +12,7 @@ export function Basic(): JSX.Element {
   return (
     <SignInForm onSuccess={() => alert('Signed in!')}>
       <Logo size={32} />
-      <Title>Sign in to Medplum</Title>
+      <Title>INGRESAR EPA APP Ver 3</Title>
     </SignInForm>
   );
 }
@@ -24,8 +24,7 @@ export function WithLinks(): JSX.Element {
       onForgotPassword={() => alert('Forgot password')}
       onRegister={() => alert('Register')}
     >
-      <Logo size={32} />
-      <Title>Sign in to Medplum</Title>
+      <Title>INGRESAR</Title>
     </SignInForm>
   );
 }
@@ -38,8 +37,7 @@ export function WithFooter(): JSX.Element {
         onForgotPassword={() => alert('Forgot password')}
         onRegister={() => alert('Register')}
       >
-        <Logo size={32} />
-        <Title>Sign in to Medplum</Title>
+        <Title>INGRESAR</Title>
       </SignInForm>
     </>
   );

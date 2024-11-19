@@ -112,7 +112,7 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
           name="email"
           type="email"
           label="Email"
-          placeholder="name@domain.com"
+          placeholder="nombre@dominio.com"
           required={true}
           autoFocus={true}
           error={getErrorsForInput(outcome, 'email')}
@@ -122,11 +122,11 @@ export function EmailForm(props: EmailFormProps): JSX.Element {
         <div>
           {onRegister && (
             <Anchor component="button" type="button" color="dimmed" onClick={onRegister} size="xs">
-              Register
+              Registrarme
             </Anchor>
           )}
         </div>
-        {!disableEmailAuth && <Button type="submit">Next</Button>}
+        {!disableEmailAuth && <Button type="submit">Siguiente</Button>}
       </Group>
     </Form>
   );
@@ -176,11 +176,11 @@ export function PasswordForm(props: PasswordFormProps): JSX.Element {
       <Group justify="space-between" mt="xl" gap={0} wrap="nowrap">
         {onForgotPassword && (
           <Anchor component="button" type="button" c="dimmed" onClick={onForgotPassword} size="xs">
-            Forgot password
+            No recuerdo mi password
           </Anchor>
         )}
-        <Checkbox id="remember" name="remember" label="Remember me" size="xs" style={{ lineHeight: 1 }} />
-        <Button type="submit">Sign in</Button>
+        <Checkbox id="remember" name="remember" label="Recordarme" size="xs" style={{ lineHeight: 1 }} />
+        <Button type="submit">Ingresar</Button>
       </Group>
     </Form>
   );

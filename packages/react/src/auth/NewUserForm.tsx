@@ -88,8 +88,8 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
         <TextInput
           name="firstName"
           type="text"
-          label="First name"
-          placeholder="First name"
+          label="Nombre"
+          placeholder="Ingrese su primer nombre"
           required={true}
           autoFocus={true}
           error={getErrorsForInput(outcome, 'firstName')}
@@ -97,8 +97,8 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
         <TextInput
           name="lastName"
           type="text"
-          label="Last name"
-          placeholder="Last name"
+          label="Apellido"
+          placeholder="Ingrese su Apellido"
           required={true}
           error={getErrorsForInput(outcome, 'lastName')}
         />
@@ -106,7 +106,7 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           name="email"
           type="email"
           label="Email"
-          placeholder="name@domain.com"
+          placeholder="nombre@dominio.com"
           required={true}
           error={getErrorsForInput(outcome, 'email')}
         />
@@ -118,21 +118,21 @@ export function NewUserForm(props: NewUserFormProps): JSX.Element {
           error={getErrorsForInput(outcome, 'password')}
         />
         <Text c="dimmed" size="xs">
-          By clicking submit you agree to the Medplum{' '}
-          <Anchor href="https://www.medplum.com/privacy">Privacy&nbsp;Policy</Anchor>
+          Haciendo click acepta EPA{' '}
+          <Anchor href="https://www.epa-bienestar.com.ar/politica_de_privacidad.html">Privacidad</Anchor>
           {' and '}
-          <Anchor href="https://www.medplum.com/terms">Terms&nbsp;of&nbsp;Service</Anchor>.
+          <Anchor href="https://www.epa-bienestar.com.ar/condiciones_del_servicio.html">Condiciones</Anchor>.
         </Text>
         <Text c="dimmed" size="xs">
-          This site is protected by reCAPTCHA and the Google{' '}
+          Sitio protegido por reCAPTCHA and the Google{' '}
           <Anchor href="https://policies.google.com/privacy">Privacy&nbsp;Policy</Anchor>
           {' and '}
           <Anchor href="https://policies.google.com/terms">Terms&nbsp;of&nbsp;Service</Anchor> apply.
         </Text>
       </Stack>
       <Group justify="space-between" mt="xl" wrap="nowrap">
-        <Checkbox name="remember" label="Remember me" size="xs" />
-        <Button type="submit">Create account</Button>
+        <Checkbox name="remember" label="Recordarme" size="xs" />
+        <Button type="submit">Crear una cuenta nueva</Button>
       </Group>
     </Form>
   );
