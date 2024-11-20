@@ -288,7 +288,7 @@ global:
 ```
 
 Replace `[MY_PROJECT_ID]` with your actual GCP project id.
-Replace [`[MY_CONFIG_SECRET_ID]`](#2---generate-configuration-secret) with the secret name created the step before.
+Replace [`[MY_CONFIG_SECRET_ID]`](#generate-configuration-secret) with the secret name created the step before.
 
 #### Edit service account values {#edit-service-account-values}
 
@@ -335,7 +335,7 @@ Update your DNS records to point api.yourdomain.com to the Ingress IP address.
 
 This is the backend API endpoint.
 
-## Deploy the frontend (App) {#5---deploy-the-frontend-(app)}
+## Deploy the frontend (App) {#deploy-the-frontend-(app)}
 
 Serve your frontend application through Cloud Storage and the CDN-enabled load balancer.
 
