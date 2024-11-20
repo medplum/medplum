@@ -30,7 +30,7 @@ See [Generate Configuration Secret](#generate-configuration-secret)
 
 ### GCP Architecture
 
-![Medplum AWS Architecture](./gcp-architecture.webp)
+![Medplum GCP Architecture](./gcp-architecture.webp)
 
 ### Infrastructure summary
 
