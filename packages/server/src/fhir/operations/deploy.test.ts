@@ -38,6 +38,12 @@ describe('Deploy', () => {
     accessToken = await initTestAuth();
   });
 
+  beforeEach(() => {
+    jest
+      .spyOn(awsDeploy, 'getLambdaTimeoutForBot')
+      .mockImplementation(async (_bot: Bot) => awsDeploy.DEFAULT_LAMBDA_TIMEOUT);
+  });
+
   afterAll(async () => {
     await shutdownApp();
   });
@@ -99,8 +105,7 @@ describe('Deploy', () => {
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send();
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
 
     expect(readBinarySpy).toHaveBeenCalledWith(
