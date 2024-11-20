@@ -6,6 +6,7 @@ import {
   LambdaClient,
   ListLayerVersionsCommand,
   ResourceConflictException,
+  ResourceNotFoundException,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
@@ -56,9 +57,8 @@ describe('Deploy', () => {
         const lambdaConfig = lambdaMap.get(FunctionName);
         return { Configuration: lambdaConfig };
       }
-      return {
-        Configuration: {},
-      };
+      // When the function is not found, a `ResourceNotFoundException` is thrown
+      throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
 
     mockLambdaClient.on(GetFunctionConfigurationCommand).callsFake(({ FunctionName }) => {
@@ -77,7 +77,7 @@ describe('Deploy', () => {
           ],
         };
       }
-      throw new Error('Tried to get config for a function that does not exist');
+      throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
 
     mockLambdaClient.on(ListLayerVersionsCommand).resolves({
@@ -99,7 +99,7 @@ describe('Deploy', () => {
         return { Configuration: lambdaConfig };
       }
 
-      throw new Error('Function with the given name has not been created');
+      throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
 
     mockLambdaClient.on(UpdateFunctionCodeCommand).callsFake(({ FunctionName }) => {
@@ -108,7 +108,7 @@ describe('Deploy', () => {
         return { Configuration: lambdaConfig };
       }
 
-      throw new Error('Function with the given name has not been created');
+      throw new ResourceNotFoundException({ $metadata: {}, message: 'Function not found' });
     });
   });
 

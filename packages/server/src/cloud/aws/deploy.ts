@@ -17,7 +17,6 @@ import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
 import { getConfig } from '../../config';
 import { getLogger } from '../../context';
-import { globalLogger } from '../../logger';
 
 export const LAMBDA_RUNTIME = 'nodejs18.x';
 export const LAMBDA_HANDLER = 'index.handler';
@@ -123,7 +122,6 @@ export async function getLambdaTimeoutForBot(bot: Bot): Promise<number> {
     timeout = response?.Configuration?.Timeout ?? DEFAULT_LAMBDA_TIMEOUT;
   } catch (err) {
     if (err instanceof ResourceNotFoundException) {
-      globalLogger.info('[Lambda]: Resource not found');
       timeout = DEFAULT_LAMBDA_TIMEOUT;
     } else {
       throw err;
