@@ -7,6 +7,7 @@ import {
   ListLayerVersionsCommand,
   PackageType,
   ResourceConflictException,
+  ResourceNotFoundException,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
@@ -119,8 +120,12 @@ export async function getLambdaTimeoutForBot(bot: Bot): Promise<number> {
     const command = new GetFunctionCommand({ FunctionName: name });
     const response = await client.send(command);
     timeout = response?.Configuration?.Timeout ?? DEFAULT_LAMBDA_TIMEOUT;
-  } catch (_err) {
-    timeout = DEFAULT_LAMBDA_TIMEOUT;
+  } catch (err) {
+    if (err instanceof ResourceNotFoundException) {
+      timeout = DEFAULT_LAMBDA_TIMEOUT;
+    } else {
+      throw err;
+    }
   }
   return timeout;
 }
@@ -175,8 +180,11 @@ async function lambdaExists(client: LambdaClient, name: string): Promise<boolean
     const command = new GetFunctionCommand({ FunctionName: name });
     const response = await client.send(command);
     return response.Configuration?.FunctionName === name;
-  } catch (_err) {
-    return false;
+  } catch (err) {
+    if (err instanceof ResourceNotFoundException) {
+      return false;
+    }
+    throw err;
   }
 }
 
