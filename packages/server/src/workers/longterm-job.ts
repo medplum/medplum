@@ -1,0 +1,117 @@
+import { AsyncJob, Parameters } from '@medplum/fhirtypes';
+import { Job } from 'bullmq';
+import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import { getSystemRepo, Repository } from '../fhir/repo';
+
+export interface LongTermJobData {
+  asyncJob: AsyncJob;
+}
+
+const inProgressJobStatus: AsyncJob['status'][] = ['accepted', 'active'];
+
+export abstract class LongTermJob<TResult extends {}, TData extends LongTermJobData> {
+  private systemRepo: Repository;
+
+  constructor() {
+    this.systemRepo = getSystemRepo();
+  }
+
+  async updateStatus(job: Job<TData>, output: Parameters): Promise<void> {
+    // TODO: Conditional update to determine if status was changed
+    const exec = new AsyncJobExecutor(this.systemRepo, job.data.asyncJob);
+    const updatedJob = await exec.updateJobProgress(this.systemRepo, output);
+    if (updatedJob) {
+      job.data.asyncJob = updatedJob;
+    }
+  }
+
+  async finishJob(job: Job<TData>, output?: Parameters): Promise<void> {
+    const exec = new AsyncJobExecutor(this.systemRepo, job.data.asyncJob);
+    await exec.completeJob(this.systemRepo, output);
+  }
+
+  async failJob(job: Job<TData>, err?: Error): Promise<void> {
+    const exec = new AsyncJobExecutor(this.systemRepo, job.data.asyncJob);
+    await exec.failJob(this.systemRepo, err);
+  }
+
+  async checkJobStatus(job: Job<TData>): Promise<void> {
+    const asyncJob = await this.systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJob.id as string);
+
+    if (!inProgressJobStatus.includes(asyncJob.status)) {
+      throw new Error('Job already completed with status ' + asyncJob.status);
+    }
+
+    job.data.asyncJob = asyncJob;
+  }
+
+  async execute(job: Job<TData>): Promise<void> {
+    try {
+      await this.checkJobStatus(job);
+    } catch (_) {
+      // Job is not in-progress, terminate early
+      return;
+    }
+
+    try {
+      const result = await this.process(job);
+
+      // Check if AsyncJob resource should be updated; this usually
+      // happens less frequently than every iteration
+      const output = this.formatResults(result, job);
+      if (output) {
+        await this.updateStatus(job, output);
+      }
+
+      const nextIteration = this.nextIterationData(result, job);
+      if (typeof nextIteration === 'boolean') {
+        // Job is complete, no more iteration
+        const jobSucceeded = nextIteration;
+        if (jobSucceeded) {
+          await this.finishJob(job, output);
+        } else {
+          await this.failJob(job);
+        }
+      } else {
+        // Enqueue job for the specified next iteration
+        // NOTE: We do not check the AsyncJob status before enqueuing: it will be checked
+        // at the beginning of the next iteration
+        await this.enqueueJob(nextIteration);
+      }
+    } catch (err: any) {
+      await this.failJob(job, err);
+    }
+  }
+
+  /**
+   * Handles processing one iteration of the job, from the given job data.
+   * @param job - The current job iteration data to process.
+   * @returns The result for the current iteration of the job.
+   */
+  abstract process(job: Job<TData>): Promise<TResult>;
+
+  /**
+   * Format the results of the current iteration for updating the corresponding AsyncJob resource.
+   * Return `undefined` to skip updating the resource for this iteration.
+   * @param result - The current iteration result.
+   * @param job  - The current job data.
+   * @returns Data with which to update the AsyncJob resource, or undefined to skip updating.
+   */
+  abstract formatResults(result: TResult, job: Job<TData>): Parameters | undefined;
+
+  /**
+   * Constructs the data for the next iteration of this job, if it should be continued.
+   * @param result - The result of the current iteration of the job.
+   * @param job - The current job iteration data.
+   * @returns The next job data object, or boolean if the job is complete (true = success, false = failure).
+   * @throws On catastrophic error, which will fail the AsyncJob and update it with error details.
+   */
+  abstract nextIterationData(result: TResult, job: Job<TData>): TData | boolean;
+
+  /**
+   * Enqueues the next iteration of the job.
+   * @param data - The job data to enqueue.
+   * @returns The created job.
+   */
+  abstract enqueueJob(data: TData): Promise<Job<TData>>;
+}
