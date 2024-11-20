@@ -9,7 +9,7 @@ Expand the name of the chart.
 Return the namespace to be used for the resources.
 */}}
 {{- define "medplum.namespace" -}}
-{{- default "medplum" .Values.namespaceOverride }}
+{{- default "medplum" .Values.namespace }}
 {{- end }}
 
 {{/*
