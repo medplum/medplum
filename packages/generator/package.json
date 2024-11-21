@@ -17,7 +17,7 @@
     "clean": "rimraf dist",
     "compare": "ts-node src/compare.ts",
     "docs": "ts-node src/docs.ts && cd ../.. && git apply packages/generator/src/ONC-compliance-text.patch",
-    "fhirtypes": "ts-node src/index.ts",
+    "fhirtypes": "ts-node src/index.ts && cd ../fhirtypes && tsc",
     "generate": "npm run valuesets && npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient && npm run docs",
     "jsonschema": "ts-node src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",
     "lint": "eslint .",
