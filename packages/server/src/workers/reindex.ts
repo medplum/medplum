@@ -5,7 +5,7 @@ import { MedplumServerConfig } from '../config';
 import { getLogger, getRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { LongTermJob } from './longterm-job';
+import { LongJob } from './long-job';
 
 /*
  * The reindex worker updates resource rows in the database,
@@ -82,7 +82,7 @@ export async function closeReindexWorker(): Promise<void> {
   }
 }
 
-export class ReindexJob extends LongTermJob<ReindexResult, ReindexJobData> {
+export class ReindexJob extends LongJob<ReindexResult, ReindexJobData> {
   async process(job: Job<ReindexJobData>): Promise<ReindexResult> {
     const result = await processPage(job);
 

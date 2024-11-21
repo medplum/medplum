@@ -4,13 +4,13 @@ import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { getStatus, OperationOutcomeError } from '@medplum/core';
 
-export interface LongTermJobData {
+export interface LongJobData {
   asyncJob: AsyncJob;
 }
 
 const inProgressJobStatus: AsyncJob['status'][] = ['accepted', 'active'];
 
-export abstract class LongTermJob<TResult extends {}, TData extends LongTermJobData> {
+export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
   private systemRepo: Repository;
 
   constructor(systemRepo?: Repository) {
@@ -97,8 +97,8 @@ export abstract class LongTermJob<TResult extends {}, TData extends LongTermJobD
         // at the beginning of the next iteration
         await this.enqueueJob(nextIteration);
       }
-    } catch (err: any) {
-      await this.failJob(job, err);
+    } catch (err: unknown) {
+      await this.failJob(job, err as Error);
     }
   }
 
