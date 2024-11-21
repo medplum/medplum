@@ -40,7 +40,7 @@ interface ColumnDefinition {
 const IndexTypes = ['btree', 'gin', 'gist'] as const;
 type IndexType = (typeof IndexTypes)[number];
 
-type IndexColumn = {
+export type IndexColumn = {
   expression: string;
   name: string;
 };
