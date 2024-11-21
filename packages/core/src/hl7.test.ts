@@ -271,23 +271,23 @@ PV1||O|168 ~219~C~PMA^^^^^^^^^||||277^ALLEN MYLASTNAME^BONNIE^^^^|||||||||| ||26
 
     const msh = msg.getSegment('MSH') as Hl7Segment;
     expect(msh).toBeDefined();
-    expect(msh.getField(2).toString()).toBe('EPIC');
-    expect(msh.getField(3).toString()).toBe('EPICADT');
+    expect(msh.getField(3).toString()).toBe('EPIC');
+    expect(msh.getField(4).toString()).toBe('EPICADT');
 
     const pid = msg.getSegment('PID') as Hl7Segment;
     expect(pid).toBeDefined();
-    expect(pid.getField(2).getComponent(0)).toBe('0493575');
+    expect(pid.getField(2).getComponent(1)).toBe('0493575');
     expect(pid.getField(2).toString()).toBe('0493575^^^2^ID 1');
 
     const nk1 = msg.getSegment('NK1') as Hl7Segment;
     expect(nk1).toBeDefined();
-    expect(nk1.getField(2).getComponent(0)).toBe('ROE');
-    expect(nk1.getField(2).getComponent(1)).toBe('MARIE');
+    expect(nk1.getField(2).getComponent(1)).toBe('ROE');
+    expect(nk1.getField(2).getComponent(2)).toBe('MARIE');
     expect(nk1.getField(2).toString()).toBe('ROE^MARIE^^^^');
 
     const pv1 = msg.getSegment('PV1') as Hl7Segment;
     expect(pv1).toBeDefined();
-    expect(pv1.getField(2).getComponent(0)).toBe('O');
+    expect(pv1.getField(2).getComponent(1)).toBe('O');
     expect(pv1.getField(2).toString()).toBe('O');
   });
 
@@ -305,8 +305,8 @@ RCP|I|1|R^^HL70394`;
 
     const msh = msg.getSegment('MSH') as Hl7Segment;
     expect(msh).toBeDefined();
-    expect(msh.getField(2).toString()).toBe('cobas® pro');
-    expect(msh.getField(4).toString()).toBe('host');
+    expect(msh.getField(3).toString()).toBe('cobas® pro');
+    expect(msh.getField(5).toString()).toBe('host');
   });
 
   test('OUL_R22', () => {
@@ -344,8 +344,8 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
 
     const msh = msg.getSegment('MSH') as Hl7Segment;
     expect(msh).toBeDefined();
-    expect(msh.getField(2).toString()).toBe('cobas pro');
-    expect(msh.getField(4).toString()).toBe('host');
+    expect(msh.getField(3).toString()).toBe('cobas pro');
+    expect(msh.getField(5).toString()).toBe('host');
 
     const obxs = msg.getAllSegments('OBX');
     expect(obxs).toBeDefined();
@@ -409,18 +409,18 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
 
     // Test sub-components with the "&" separator
     const spm = msg.getSegment('SPM')?.getField(2) as Hl7Field;
-    expect(spm.getComponent(0)).toEqual('140799&BARCODE');
-    expect(spm.getComponent(0, 0)).toEqual('140799');
-    expect(spm.getComponent(0, 1)).toEqual('BARCODE');
+    expect(spm.toString()).toEqual('140799&BARCODE');
+    expect(spm.getComponent(1, 0)).toEqual('140799');
+    expect(spm.getComponent(1, 1)).toEqual('BARCODE');
 
     // Test repetition with the "~" separator
     const obx = msg.getSegment('OBX')?.getField(18) as Hl7Field;
     expect(obx.toString()).toEqual('e801^ROCHE~2037-06^ROCHE~1^ROCHE');
-    expect(obx.getComponent(0)).toEqual('e801');
-    expect(obx.getComponent(0, 0, 0)).toEqual('e801');
-    expect(obx.getComponent(1, 0, 0)).toEqual('ROCHE');
-    expect(obx.getComponent(0, 0, 1)).toEqual('2037-06');
-    expect(obx.getComponent(1, 0, 1)).toEqual('ROCHE');
+    expect(obx.getComponent(1)).toEqual('e801');
+    expect(obx.getComponent(1, 0, 0)).toEqual('e801');
+    expect(obx.getComponent(2, 0, 0)).toEqual('ROCHE');
+    expect(obx.getComponent(1, 0, 1)).toEqual('2037-06');
+    expect(obx.getComponent(2, 0, 1)).toEqual('ROCHE');
   });
 });
 
