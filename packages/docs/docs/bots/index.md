@@ -41,9 +41,8 @@ Super administrators can enable bots via the Medplum App:
 
 1. Checking Insurance Eligibility for a specific medical service
 2. Coming Soon: Order Medication through an Online Pharmacy
-3. [Creating and FHIR Objects on Questionnaire submissions](/docs/bots/bot-for-questionnaire-response/bot-for-questionnaire-response)
+3. Data automation driven by [FHIR Questionnaires](/docs/bots/bot-for-questionnaire-response)
 4. Coming Soon: Send email notifications when critical lab values are received
-5. Data automation driven by [FHIR Questionnaires](/docs/bots/bot-for-questionnaire-response)
 
 ## Ensure correctness
 
