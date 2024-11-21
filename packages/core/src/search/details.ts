@@ -104,7 +104,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
       builder.array = true;
       builder.propertyTypes.add('code');
     } else {
-      crawlSearchParameterDetails(builder, flattenAtom(expression), resourceType, 1);
+      crawlSearchParameterDetails(builder, atomArray, resourceType, 1);
     }
 
     // To support US Core "us-core-condition-asserted-date" search parameter without

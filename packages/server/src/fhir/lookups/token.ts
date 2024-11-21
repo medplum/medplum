@@ -81,6 +81,10 @@ export class TokenTable extends LookupTable {
    * @returns True if the search parameter is an "token" parameter.
    */
   isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
+    return TokenTable.isIndexed(searchParam, resourceType);
+  }
+
+  static isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
     return Boolean(getTokenIndexType(searchParam, resourceType));
   }
 

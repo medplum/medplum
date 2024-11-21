@@ -941,6 +941,8 @@ function buildSearchFilterExpression(
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy === 'lookup-table') {
     return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+  } else if (impl.searchStrategy === 'token-column') {
+    throw new Error('Token column search strategy not implemented');
   }
 
   // Not any special cases, just a normal search parameter.

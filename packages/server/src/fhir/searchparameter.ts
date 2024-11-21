@@ -20,9 +20,15 @@ export interface LookupTableSearchParameterImplementation extends SearchParamete
   readonly lookupTable: LookupTable;
 }
 
+export interface TokenColumnSearchParameterImplementation extends SearchParameterDetails {
+  readonly searchStrategy: 'token-column';
+  readonly columnName: string;
+}
+
 export type SearchParameterImplementation =
   | ColumnSearchParameterImplementation
-  | LookupTableSearchParameterImplementation;
+  | LookupTableSearchParameterImplementation
+  | TokenColumnSearchParameterImplementation;
 
 interface ResourceTypeSearchParameterInfo {
   searchParamsImplementations: Record<string, SearchParameterImplementation>;
@@ -68,9 +74,15 @@ function buildSearchParameterImplementation(
 
   const lookupTable = getLookupTable(resourceType, searchParam);
   if (lookupTable) {
-    const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;
-    writeable.searchStrategy = 'lookup-table';
-    writeable.lookupTable = lookupTable;
+    if (TokenTable.isIndexed(searchParam, resourceType)) {
+      const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
+      writeable.searchStrategy = 'token-column';
+      writeable.columnName = convertCodeToColumnName(code);
+    } else {
+      const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;
+      writeable.searchStrategy = 'lookup-table';
+      writeable.lookupTable = lookupTable;
+    }
   } else {
     const writeable = impl as Writeable<ColumnSearchParameterImplementation>;
     writeable.searchStrategy = 'column';
