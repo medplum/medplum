@@ -2,6 +2,7 @@ import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
+import { getStatus, OperationOutcomeError } from '@medplum/core';
 
 export interface LongTermJobData {
   asyncJob: AsyncJob;
@@ -39,20 +40,20 @@ export abstract class LongTermJob<TResult extends {}, TData extends LongTermJobD
     await exec.failJob(this.systemRepo, err);
   }
 
-  async checkJobStatus(job: Job<TData>): Promise<void> {
+  async checkJobStatus(job: Job<TData>): Promise<boolean> {
     const asyncJob = await this.systemRepo.readResource<AsyncJob>('AsyncJob', job.data.asyncJob.id as string);
 
     if (!inProgressJobStatus.includes(asyncJob.status)) {
-      throw new Error('Job already completed with status ' + asyncJob.status);
+      return false;
     }
 
     job.data.asyncJob = asyncJob;
+    return true;
   }
 
   async execute(job: Job<TData>): Promise<void> {
-    try {
-      await this.checkJobStatus(job);
-    } catch (_) {
+    const canStart = await this.checkJobStatus(job);
+    if (!canStart) {
       // Job is not in-progress, terminate early
       return;
     }
@@ -64,12 +65,26 @@ export abstract class LongTermJob<TResult extends {}, TData extends LongTermJobD
       // happens less frequently than every iteration
       const output = this.formatResults(result, job);
       if (output) {
-        await this.updateStatus(job, output);
+        try {
+          await this.updateStatus(job, output);
+        } catch (err) {
+          if (err instanceof OperationOutcomeError && getStatus(err.outcome) === 412) {
+            // Conflict: AsyncJob was updated by another party between when the job started and now!
+            // Check status to see if job was cancelled
+            const canContinue = await this.checkJobStatus(job);
+            if (!canContinue) {
+              // Job was cancelled or errored in parallel; this iteration should abort
+              return;
+            }
+          }
+
+          throw err;
+        }
       }
 
       const nextIteration = this.nextIterationData(result, job);
       if (typeof nextIteration === 'boolean') {
-        // Job is complete, no more iteration
+        // Job is complete, no more iterations should be enqueued
         const jobSucceeded = nextIteration;
         if (jobSucceeded) {
           await this.finishJob(job, output);

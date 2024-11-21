@@ -13,22 +13,13 @@ import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
-import {
-  ReindexJob,
-  ReindexJobData,
-  addReindexJob,
-  closeReindexWorker,
-  execReindexJob,
-  getReindexQueue,
-} from './reindex';
+import { ReindexJob, ReindexJobData, addReindexJob, closeReindexWorker, getReindexQueue } from './reindex';
 import { randomUUID } from 'crypto';
 import { createReference, OperationOutcomeError, parseSearchRequest, preconditionFailed } from '@medplum/core';
 import { SelectQuery } from '../fhir/sql';
 import { DatabaseMode, getDatabasePool } from '../database';
 
-const jobImpl = new ReindexJob();
-
-describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker using %p', (implFn) => {
+describe('Reindex Worker', () => {
   let repo: Repository;
 
   beforeAll(async () => {
@@ -70,7 +61,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
         );
 
         const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-        await implFn(job);
+        await new ReindexJob().execute(job);
 
         asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
         expect(asyncJob.status).toEqual('completed');
@@ -112,7 +103,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
 
       let job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
-      await implFn(job);
+      await new ReindexJob().execute(job);
 
       expect(queue.add).toHaveBeenCalledWith(
         'ReindexJobData',
@@ -128,7 +119,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
       job = { id: 2, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
 
-      await expect(implFn(job)).resolves.toBe(undefined);
+      await expect(new ReindexJob().execute(job)).resolves.toBe(undefined);
 
       expect(queue.add).toHaveBeenCalledWith(
         'ReindexJobData',
@@ -171,7 +162,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
-      await implFn(job);
+      await new ReindexJob().execute(job);
 
       expect(queue.add).toHaveBeenCalledWith(
         'ReindexJobData',
@@ -210,7 +201,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
-      await implFn(job);
+      await new ReindexJob().execute(job);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('accepted');
@@ -247,7 +238,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
 
       const err = new Error('Failed to add job to queue!');
       queue.add.mockRejectedValueOnce(err);
-      await expect(implFn(job)).resolves.toBe(undefined);
+      await expect(new ReindexJob().execute(job)).resolves.toBe(undefined);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('error');
@@ -278,7 +269,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
       let job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
 
-      await expect(implFn(job)).resolves.toBe(undefined);
+      await expect(new ReindexJob().execute(job)).resolves.toBe(undefined);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('accepted');
@@ -306,7 +297,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
       job = { id: 2, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
 
-      await expect(implFn(job)).resolves.toBe(undefined);
+      await expect(new ReindexJob().execute(job)).resolves.toBe(undefined);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('accepted');
@@ -343,7 +334,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
       job = { id: 3, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
 
-      await expect(implFn(job)).resolves.toBe(undefined);
+      await expect(new ReindexJob().execute(job)).resolves.toBe(undefined);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('error');
@@ -418,7 +409,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
-      await implFn(job);
+      await new ReindexJob().execute(job);
 
       expect(queue.add).toHaveBeenCalledWith(
         'ReindexJobData',
@@ -434,7 +425,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
 
       const job2 = { id: 2, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
-      await implFn(job2);
+      await new ReindexJob().execute(job2);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('completed');
@@ -503,7 +494,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
-      await implFn(job);
+      await new ReindexJob().execute(job);
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('completed');
@@ -556,7 +547,7 @@ describe.each([execReindexJob, jobImpl.execute.bind(jobImpl)])('Reindex Worker u
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
-      await implFn(job);
+      await new ReindexJob().execute(job);
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id as string);
       expect(asyncJob.status).toEqual('completed');
@@ -669,43 +660,43 @@ describe('Job cancellation', () => {
       const queue = getReindexQueue() as any;
       queue.add.mockClear();
 
-      const asyncJob = await repo.createResource<AsyncJob>({
+      const originalJob = await repo.createResource<AsyncJob>({
         resourceType: 'AsyncJob',
         status: 'accepted',
         requestTime: new Date().toISOString(),
         request: '/admin/super/reindex',
       });
 
+      const cancelledJob = await repo.updateResource<AsyncJob>({
+        ...originalJob,
+        status: 'cancelled',
+      });
+
       // Mock repo for the job to return error for version-conditional update
       const error = Promise.reject(new OperationOutcomeError(preconditionFailed));
       await expect(error).rejects.toBeDefined(); // Await promise to ensure it's settled to rejection state
       jest.spyOn(systemRepo, 'updateResource').mockReturnValueOnce(error);
+      // Simulate job being cancelled in the middle of the worker execution, after the initial status check
+      // but before the job would update the resource itself
+      jest
+        .spyOn(systemRepo, 'readResource')
+        .mockReturnValueOnce(Promise.resolve(originalJob))
+        .mockReturnValueOnce(Promise.resolve(cancelledJob));
 
-      await addReindexJob(['ImmunizationEvaluation'], asyncJob);
+      await addReindexJob(['ImmunizationEvaluation'], originalJob);
       expect(queue.add).toHaveBeenCalledWith(
         'ReindexJobData',
         expect.objectContaining<Partial<ReindexJobData>>({
           resourceTypes: ['ImmunizationEvaluation'],
-          asyncJob, // Job will start up with the uncancelled version of the resource
+          asyncJob: originalJob, // Job will start up with the uncancelled version of the resource
         })
       );
 
       const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
       await expect(jobRunner.execute(job)).resolves.toBeUndefined(); // Should not override the cancellation status
 
-      const finalJob = await repo.readResource<AsyncJob>('AsyncJob', asyncJob.id as string);
-      expect(finalJob.status).toEqual('error');
-      expect(finalJob.output).toMatchObject<Parameters>({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'outcome',
-            resource: expect.objectContaining({
-              resourceType: 'OperationOutcome',
-              id: 'precondition-failed',
-            }),
-          },
-        ],
-      });
+      const finalJob = await repo.readResource<AsyncJob>('AsyncJob', originalJob.id as string);
+      expect(finalJob.status).toEqual('cancelled');
+      expect(finalJob.output).toBeUndefined();
     }));
 });
