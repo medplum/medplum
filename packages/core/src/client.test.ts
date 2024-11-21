@@ -2257,18 +2257,6 @@ describe('Client', () => {
     });
   });
 
-  test('Search ValueSet', async () => {
-    const fetch = mockFetch(200, { resourceType: 'ValueSet' });
-    const client = new MedplumClient({ fetch });
-    const result = await client.searchValueSet('system', 'filter');
-    expect(result).toBeDefined();
-    expect(result.resourceType).toBe('ValueSet');
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining('https://api.medplum.com/fhir/R4/ValueSet/$expand'),
-      expect.objectContaining({ method: 'GET' })
-    );
-  });
-
   test('ValueSet $expand', async () => {
     const fetch = mockFetch(200, { resourceType: 'ValueSet' });
     const client = new MedplumClient({ fetch });

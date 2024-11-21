@@ -1635,20 +1635,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Searches a ValueSet resource using the "expand" operation.
    * See: https://www.hl7.org/fhir/operation-valueset-expand.html
    * @category Search
-   * @param system - The ValueSet system url.
-   * @param filter - The search string.
-   * @param options - Optional fetch options.
-   * @returns Promise to expanded ValueSet.
-   * @deprecated Use `valueSetExpand()` instead.
-   */
-  searchValueSet(system: string, filter: string, options?: MedplumRequestOptions): ReadablePromise<ValueSet> {
-    return this.valueSetExpand({ url: system, filter }, options);
-  }
-
-  /**
-   * Searches a ValueSet resource using the "expand" operation.
-   * See: https://www.hl7.org/fhir/operation-valueset-expand.html
-   * @category Search
    * @param params - The ValueSet expand parameters.
    * @param options - Optional fetch options.
    * @returns Promise to expanded ValueSet.

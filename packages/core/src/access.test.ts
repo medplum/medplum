@@ -5,7 +5,6 @@ import {
   canReadResourceType,
   canWriteResource,
   canWriteResourceType,
-  matchesAccessPolicy,
   satisfiedAccessPolicy,
 } from './access';
 import { indexSearchParameterBundle } from './types';
@@ -143,7 +142,19 @@ describe('Access', () => {
         },
       ],
     };
-    expect(matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '1' }] } }, true));
-    expect(matchesAccessPolicy(ap, { resourceType: 'Patient', meta: { compartment: [{ reference: '2' }] } }, false));
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'Patient', meta: { compartment: [{ reference: '1' }] } },
+        AccessPolicyInteraction.READ,
+        ap
+      )
+    ).toBeDefined();
+    expect(
+      satisfiedAccessPolicy(
+        { resourceType: 'Patient', meta: { compartment: [{ reference: '2' }] } },
+        AccessPolicyInteraction.READ,
+        ap
+      )
+    ).toBeUndefined();
   });
 });
