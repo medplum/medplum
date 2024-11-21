@@ -1,17 +1,25 @@
-import React from 'react';
+import { useState } from 'react';
 import { getQuestionnaireAnswers } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { Document, QuestionnaireForm } from '@medplum/react';
 
-async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
-  const answers = getQuestionnaireAnswers(formData);
-  console.log(answers);
-}
-
 export function ScreeningQuestionnairePage(): JSX.Element {
+  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  async function handleQuestionnaireSubmit(formData: QuestionnaireResponse): Promise<void> {
+    const answers = getQuestionnaireAnswers(formData);
+    console.log(answers);
+    setIsSubmitted(true);
+    window.scrollTo(0, 0);
+  }
+
   return (
     <Document width={800}>
-      <QuestionnaireForm questionnaire={questionnaire} onSubmit={handleQuestionnaireSubmit} />
+      {isSubmitted ? (
+        <div>Thank you for submitting your questions</div>
+      ) : (
+        <QuestionnaireForm questionnaire={questionnaire} onSubmit={handleQuestionnaireSubmit} />
+      )}
     </Document>
   );
 }
