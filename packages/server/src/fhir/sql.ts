@@ -79,6 +79,12 @@ export const Operator = {
     }
     sql.append(')');
   },
+  ARRAY_EMPTY: (sql: SqlBuilder, column: Column) => {
+    sql.append('(array_length(');
+    sql.appendColumn(column);
+    sql.append(', 1) IS NULL');
+    sql.append(')');
+  },
   ANY_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     sql.append('TEXT(');
     sql.appendColumn(column);
