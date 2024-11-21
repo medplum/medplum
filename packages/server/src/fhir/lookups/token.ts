@@ -7,6 +7,7 @@ import {
   getSearchParameters,
   OperationOutcomeError,
   PropertyType,
+  SearchParameterDetails,
   SortRule,
   splitN,
   splitSearchOnComma,
@@ -39,7 +40,7 @@ import {
 import { LookupTable } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
 
-interface Token {
+export interface LookupToken {
   readonly code: string;
   readonly system: string | undefined;
   readonly value: string | undefined;
@@ -81,7 +82,7 @@ export class TokenTable extends LookupTable {
    * @returns True if the search parameter is an "token" parameter.
    */
   isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
-    return Boolean(getTokenIndexType(searchParam, resourceType));
+    return USE_TOKEN_TABLE && Boolean(getTokenIndexType(searchParam, resourceType));
   }
 
   /**
@@ -127,6 +128,7 @@ export class TokenTable extends LookupTable {
     filter: Filter
   ): Expression {
     const caseSensitive = isCaseSensitiveSearchParameter(param, resourceType);
+    const details = getSearchParameterDetails(resourceType, param);
     if (USE_TOKEN_TABLE) {
       const lookupTableName = this.getTableName(resourceType);
 
@@ -135,7 +137,7 @@ export class TokenTable extends LookupTable {
         new TypedCondition(new Column(lookupTableName, 'code'), '=', filter.code),
       ]);
 
-      const whereExpression = buildWhereExpression(lookupTableName, caseSensitive, filter);
+      const whereExpression = buildWhereExpression(details, lookupTableName, caseSensitive, filter);
       if (whereExpression) {
         conjunction.expressions.push(whereExpression);
       }
@@ -150,8 +152,9 @@ export class TokenTable extends LookupTable {
     }
 
     const whereExpression =
-      buildWhereExpression(table, caseSensitive, filter) ??
-      new TypedCondition(new Column(table, 'token'), 'ARRAY_CONTAINS', filter.code + DELIM, 'text[]');
+      buildWhereExpression(details, table, caseSensitive, filter) ??
+      // TODO ARRAY_EMPTY is very untested
+      new TypedCondition(new Column(table, details.columnName), 'ARRAY_EMPTY', undefined);
 
     if (shouldTokenRowExist(filter)) {
       return whereExpression;
@@ -351,9 +354,9 @@ function getTableName(resourceType: ResourceType): string {
  * @param resource - The resource being indexed.
  * @returns An array of all tokens from the resource to be inserted into the database.
  */
-export function getTokens(resource: Resource): Token[] {
+export function getTokens(resource: Resource): LookupToken[] {
   const searchParams = getSearchParameters(resource.resourceType);
-  const result: Token[] = [];
+  const result: LookupToken[] = [];
   if (searchParams) {
     for (const searchParam of Object.values(searchParams)) {
       if (getTokenIndexType(searchParam, resource.resourceType)) {
@@ -373,7 +376,11 @@ export function getTokens(resource: Resource): Token[] {
  * @param resource - The resource.
  * @param searchParam - The search parameter.
  */
-function buildTokensForSearchParameter(result: Token[], resource: Resource, searchParam: SearchParameter): void {
+export function buildTokensForSearchParameter(
+  result: LookupToken[],
+  resource: Resource,
+  searchParam: SearchParameter
+): void {
   const typedValues = evalFhirPathTyped(searchParam.expression as string, [toTypedValue(resource)]);
   for (const typedValue of typedValues) {
     buildTokens(result, searchParam, resource, typedValue);
@@ -387,7 +394,12 @@ function buildTokensForSearchParameter(result: Token[], resource: Resource, sear
  * @param resource - The resource.
  * @param typedValue - A typed value to be indexed for the search parameter.
  */
-function buildTokens(result: Token[], searchParam: SearchParameter, resource: Resource, typedValue: TypedValue): void {
+function buildTokens(
+  result: LookupToken[],
+  searchParam: SearchParameter,
+  resource: Resource,
+  typedValue: TypedValue
+): void {
   const { type, value } = typedValue;
 
   const caseSensitive = isCaseSensitiveSearchParameter(searchParam, resource.resourceType);
@@ -418,7 +430,7 @@ function buildTokens(result: Token[], searchParam: SearchParameter, resource: Re
  * @param identifier - The Identifier object to be indexed.
  */
 function buildIdentifierToken(
-  result: Token[],
+  result: LookupToken[],
   searchParam: SearchParameter,
   caseSensitive: boolean,
   identifier: Identifier | undefined
@@ -434,7 +446,7 @@ function buildIdentifierToken(
  * @param codeableConcept - The CodeableConcept object to be indexed.
  */
 function buildCodeableConceptToken(
-  result: Token[],
+  result: LookupToken[],
   searchParam: SearchParameter,
   caseSensitive: boolean,
   codeableConcept: CodeableConcept | undefined
@@ -457,7 +469,7 @@ function buildCodeableConceptToken(
  * @param coding - The Coding object to be indexed.
  */
 function buildCodingToken(
-  result: Token[],
+  result: LookupToken[],
   searchParam: SearchParameter,
   caseSensitive: boolean,
   coding: Coding | undefined
@@ -478,7 +490,7 @@ function buildCodingToken(
  * @param contactPoint - The ContactPoint object to be indexed.
  */
 function buildContactPointToken(
-  result: Token[],
+  result: LookupToken[],
   searchParam: SearchParameter,
   caseSensitive: boolean,
   contactPoint: ContactPoint | undefined
@@ -501,7 +513,7 @@ function buildContactPointToken(
  * @param value - The token value.
  */
 function buildSimpleToken(
-  result: Token[],
+  result: LookupToken[],
   searchParam: SearchParameter,
   caseSensitive: boolean,
   system: string | undefined,
@@ -524,17 +536,22 @@ function buildSimpleToken(
  *
  * Returns a Disjunction of filters on the token table based on `filter.operator`, or `undefined` if no filters are required.
  * The Disjunction will contain one filter for each specified query value.
- *
+ * @param details - The SearchParameterDetails for the token search parameter
  * @param tableName - The token table name
  * @param caseSensitive - If the query value should be case sensitive.
  * @param filter - The SearchRequest filter being performed on the token
  * @returns A Disjunction of filters on the token table based on `filter.operator`, or `undefined` if no filters are
  * required.
  */
-function buildWhereExpression(tableName: string, caseSensitive: boolean, filter: Filter): Expression | undefined {
+function buildWhereExpression(
+  details: SearchParameterDetails,
+  tableName: string,
+  caseSensitive: boolean,
+  filter: Filter
+): Expression | undefined {
   const subExpressions = [];
   for (const option of splitSearchOnComma(filter.value)) {
-    const expression = buildWhereCondition(tableName, filter, caseSensitive, option);
+    const expression = buildWhereCondition(details, tableName, filter, caseSensitive, option);
     if (expression) {
       subExpressions.push(expression);
     }
@@ -550,6 +567,7 @@ function buildWhereExpression(tableName: string, caseSensitive: boolean, filter:
  *
  * Returns a WHERE Condition for a specific search query value, if applicable based on the `operator`
  *
+ * @param details - The SearchParameterDetails for the token search parameter
  * @param tableName - The token table name
  * @param filter - The SearchRequest filter being performed on the token
  * @param caseSensitive - If the query value should be case sensitive.
@@ -557,6 +575,7 @@ function buildWhereExpression(tableName: string, caseSensitive: boolean, filter:
  * @returns A WHERE Condition on the token table, if applicable, else undefined
  */
 function buildWhereCondition(
+  details: SearchParameterDetails,
   tableName: string,
   filter: Filter,
   caseSensitive: boolean,
@@ -569,11 +588,14 @@ function buildWhereCondition(
     if (USE_TOKEN_TABLE) {
       const systemCondition = new TypedCondition(new Column(tableName, 'system'), '=', system || null);
       return value
-        ? new Conjunction([systemCondition, buildValueCondition(tableName, filter, caseSensitive, system, value)])
+        ? new Conjunction([
+            systemCondition,
+            buildValueCondition(details, tableName, filter, caseSensitive, system, value),
+          ])
         : systemCondition;
     }
 
-    return buildValueCondition(tableName, filter, caseSensitive, system || NULL_SYSTEM, value);
+    return buildValueCondition(details, tableName, filter, caseSensitive, system || NULL_SYSTEM, value);
     // if (value) {
     //   return buildValueCondition(tableName, filter, system, value);
     // } else {
@@ -587,7 +609,7 @@ function buildWhereCondition(
     // If we we are searching for a particular token value, build a Condition that filters the lookup table on that
     //value
     if (shouldCompareTokenValue(filter.operator)) {
-      return buildValueCondition(tableName, filter, caseSensitive, undefined, query);
+      return buildValueCondition(details, tableName, filter, caseSensitive, undefined, query);
     }
     // Otherwise we are just looking for the presence / absence of a token (e.g. when using the FhirOperator.MISSING)
     // so we don't need to construct a filter Condition on the token table.
@@ -596,6 +618,7 @@ function buildWhereCondition(
 }
 
 function buildValueCondition(
+  details: SearchParameterDetails,
   tableName: string,
   filter: Filter,
   caseSensitive: boolean,
@@ -628,18 +651,15 @@ function buildValueCondition(
   // there should be an explicit function for when value is missing/empty instead of piggybacking
   // in this function
   const valuePart = value ? DELIM + value : '';
-  const tokenCol = new Column(tableName, 'token');
+
+  // TODO how to know when to use columnName + 'Text'?
+  const tokenCol = new Column(tableName, details.columnName);
 
   if (filter.operator === FhirOperator.TEXT) {
     // a2t(token) ~ 'category\x1text\x1[^\x3]*Quick Brown'
     return new Conjunction([
-      new TypedCondition(tokenCol, 'ARRAY_CONTAINS', filter.code + DELIM + 'text', 'text[]'),
-      new TypedCondition(
-        tokenCol,
-        'ARRAY_IREGEX',
-        filter.code + DELIM + 'text' + DELIM + '[^' + ARRAY_DELIM + ']*' + value,
-        'text[]'
-      ),
+      new TypedCondition(tokenCol, 'ARRAY_CONTAINS', 'text', 'text[]'),
+      new TypedCondition(tokenCol, 'ARRAY_IREGEX', 'text' + DELIM + '[^' + ARRAY_DELIM + ']*' + value, 'text[]'),
     ]);
   } else if (filter.operator === FhirOperator.CONTAINS) {
     return new Conjunction([
@@ -648,22 +668,17 @@ function buildValueCondition(
       new TypedCondition(
         tokenCol,
         'ARRAY_ILIKE',
-        '%' + filter.code + DELIM + DELIM + '%' + escapeLikeString(value) + '%',
+        '%' + ARRAY_DELIM + DELIM + '%' + escapeLikeString(value) + '%',
         'text[]'
       ),
       // The case-insensitive regex guarantees that the row matches
-      new TypedCondition(
-        tokenCol,
-        'ARRAY_IREGEX',
-        filter.code + DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + value,
-        'text[]'
-      ),
+      new TypedCondition(tokenCol, 'ARRAY_IREGEX', ARRAY_DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + value, 'text[]'),
     ]);
   } else if (caseSensitive) {
-    return new TypedCondition(tokenCol, 'ARRAY_CONTAINS', filter.code + DELIM + system + valuePart, 'text[]');
+    return new TypedCondition(tokenCol, 'ARRAY_CONTAINS', system + valuePart, 'text[]');
   } else {
     // if a2t doesn't include ARRAY_DELIM at beginning and end, use '(' + ARRAY_DELIM + '|$)' at the end
-    const param = filter.code + DELIM + system + DELIM + value + ARRAY_DELIM;
+    const param = system + DELIM + value + ARRAY_DELIM;
     return new TypedCondition(tokenCol, 'ARRAY_IREGEX', param, 'text[]');
   }
 }
