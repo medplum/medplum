@@ -14,7 +14,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { Client, escapeIdentifier } from 'pg';
+import { Client } from 'pg';
 import { FileBuilder } from './filebuilder';
 
 const SCHEMA_DIR = resolve(__dirname, '../../server/src/migrations/schema');
@@ -156,8 +156,10 @@ async function getIndexes(db: Client, tableName: string): Promise<IndexDefinitio
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
 
+const IndexComponentExpressionRegexes = [/a2t\("?([\w]+)"?\) gin_trgm_ops/];
+
 function parseIndexDefinition(indexdef: string): IndexDefinition {
-  // Use a regex to get the column names inside the parentheses
+  // Use a regex to get the column names or expressions inside the parentheses
   const matches = indexdef.match(/\((.+)\)$/);
   if (!matches) {
     throw new Error('Invalid index definition: ' + indexdef);
@@ -168,8 +170,30 @@ function parseIndexDefinition(indexdef: string): IndexDefinition {
     throw new Error('Invalid index type: ' + indexType);
   }
 
+  const columns = matches[1].split(',').map((expression, i): IndexDefinition['columns'][number] => {
+    if (IndexComponentExpressionRegexes.some((r) => r.test(expression))) {
+      const idxNameMatch = indexdef.match(/"(\w+)_(\w+)_idx"/); // ResourceName_column1_column2_idx
+      if (!idxNameMatch) {
+        throw new Error('Could not parse index name from ' + indexdef);
+      }
+
+      const name = idxNameMatch[2].split('_')[i]; // TODO: don't allow _ in column names?
+      if (!name) {
+        throw new Error('Could not parse index name component from ' + indexdef);
+      }
+
+      const ic: IndexColumn = {
+        expression,
+        name,
+      };
+      return ic;
+    }
+
+    return expression.trim().replaceAll('"', '');
+  });
+
   return {
-    columns: matches[1].split(',').map((s) => s.trim().replaceAll('"', '')),
+    columns,
     indexType: indexType ?? 'btree',
     unique: indexdef.includes('CREATE UNIQUE INDEX'),
   };
@@ -281,8 +305,25 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       continue;
     }
 
-    tableDefinition.columns.push(...getSearchParameterColumns(searchParam, details));
-    tableDefinition.indexes.push(...getSearchParameterIndexes(searchParam, details));
+    for (const column of getSearchParameterColumns(searchParam, details)) {
+      const existing = tableDefinition.columns.find((c) => c.name === column.name);
+      if (existing) {
+        if (!deepEquals(existing, column)) {
+          throw new Error(
+            `Search Parameters attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
+          );
+        }
+        continue;
+      }
+      tableDefinition.columns.push(column);
+    }
+    for (const index of getSearchParameterIndexes(searchParam, details)) {
+      const existing = tableDefinition.indexes.find((i) => deepEquals(i, index));
+      if (existing) {
+        continue;
+      }
+      tableDefinition.indexes.push(index);
+    }
   }
   for (const add of additionalSearchColumns) {
     if (add.table !== tableDefinition.name) {
@@ -310,8 +351,11 @@ function getSearchParameterIndexes(_searchParam: SearchParameter, details: Searc
     const indexes: IndexDefinition[] = [];
     for (const columnName of [details.columnName, details.columnName + 'Text']) {
       indexes.push({ columns: [columnName], indexType: 'gin' });
+      // TO facilitate matching with parsed start index definitions, only wrap in quotes
+      // when necessary since that is behavior of `SELECT indexdef FROM pg_indexes`
+      const escapedColumnName = columnName === columnName.toLocaleLowerCase() ? columnName : '"' + columnName + '"';
       indexes.push({
-        columns: [{ expression: `a2t(${escapeIdentifier(columnName)}) gin_trgm_ops`, name: columnName + 'Trgm' }],
+        columns: [{ expression: `a2t(${escapedColumnName}) gin_trgm_ops`, name: columnName + 'Trgm' }],
         indexType: 'gin',
       });
     }
@@ -504,7 +548,7 @@ function normalizeColumnType(column: ColumnDefinition): string {
     .replaceAll('TIMESTAMP WITH TIME ZONE', 'TIMESTAMPTZ')
     .replaceAll(' PRIMARY KEY', '')
     .replaceAll(' DEFAULT FALSE', '')
-    .replaceAll(' DEFAULT ARRAY[]::text[]', '')
+    .replaceAll(' DEFAULT ARRAY[]::TEXT[]', '')
     .replaceAll(' NOT NULL', '')
     .trim();
 }
