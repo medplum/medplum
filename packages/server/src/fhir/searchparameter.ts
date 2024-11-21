@@ -1,5 +1,5 @@
 import { capitalize, getSearchParameterDetails, SearchParameterDetails } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { HumanNameTable } from './lookups/humanname';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
@@ -48,6 +48,7 @@ export function getSearchParameterImplementation(
     globalSearchParameterRegistry.types[resourceType]?.searchParamsImplementations?.[searchParam.code as string];
   if (!result) {
     result = buildSearchParameterImplementation(resourceType, searchParam);
+    setSearchParameterImplementation(resourceType, searchParam.code, result);
   }
   return result;
 }
@@ -65,6 +66,15 @@ function setSearchParameterImplementation(
   typeSchema.searchParamsImplementations[code] = implementation;
 }
 
+const TelecomTokenSearchParameterIds = [
+  'individual-telecom',
+  'individual-email',
+  'individual-phone',
+  'OrganizationAffiliation-telecom',
+  'OrganizationAffiliation-email',
+  'OrganizationAffiliation-phone',
+];
+
 function buildSearchParameterImplementation(
   resourceType: string,
   searchParam: SearchParameter
@@ -72,24 +82,33 @@ function buildSearchParameterImplementation(
   const code = searchParam.code;
   const impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
 
-  const lookupTable = getLookupTable(resourceType, searchParam);
-  if (lookupTable) {
-    if (TokenTable.isIndexed(searchParam, resourceType)) {
-      const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
-      writeable.searchStrategy = 'token-column';
-      writeable.columnName = convertCodeToColumnName(code);
+  let lookupTable: LookupTable | undefined;
+  if (searchParam.code.startsWith('_')) {
+    console.log(`Skipping special implementation for internal search parameter: ${searchParam.code}`);
+  } else if (!searchParam.base?.includes(resourceType as ResourceType)) {
+    console.log(`Skipping special implementation for search parameter: ${searchParam.code} ${searchParam.base}`);
+    // If the search parameter is not defined on the resource type itself, skip special implementations
+  } else if (TokenTable.isIndexed(searchParam, resourceType)) {
+    const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
+    writeable.searchStrategy = 'token-column';
+
+    if (TelecomTokenSearchParameterIds.includes(searchParam.id as string)) {
+      writeable.columnName = 'telecom';
     } else {
-      const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;
-      writeable.searchStrategy = 'lookup-table';
-      writeable.lookupTable = lookupTable;
+      writeable.columnName = convertCodeToColumnName(code);
     }
-  } else {
-    const writeable = impl as Writeable<ColumnSearchParameterImplementation>;
-    writeable.searchStrategy = 'column';
-    writeable.columnName = convertCodeToColumnName(code);
+    return impl;
+  } else if ((lookupTable = getLookupTable(resourceType, searchParam))) {
+    const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;
+    writeable.searchStrategy = 'lookup-table';
+    writeable.lookupTable = lookupTable;
+    return impl;
   }
 
-  setSearchParameterImplementation(resourceType, code, impl);
+  const writeable = impl as Writeable<ColumnSearchParameterImplementation>;
+  writeable.searchStrategy = 'column';
+  writeable.columnName = convertCodeToColumnName(code);
+
   return impl;
 }
 
