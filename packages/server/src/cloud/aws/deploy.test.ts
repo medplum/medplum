@@ -7,6 +7,7 @@ import {
   ListLayerVersionsCommand,
   ResourceConflictException,
   ResourceNotFoundException,
+  TooManyRequestsException,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
@@ -14,20 +15,27 @@ import { allOk, badRequest, ContentType } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
+import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { getConfig, loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
-import { DEFAULT_LAMBDA_TIMEOUT, getLambdaNameForBot, LAMBDA_HANDLER, LAMBDA_RUNTIME } from './deploy';
-
-const app = express();
-let accessToken: string;
-let mockLambdaClient: AwsClientStub<LambdaClient>;
+import {
+  DEFAULT_LAMBDA_TIMEOUT,
+  getLambdaNameForBot,
+  getLambdaTimeoutForBot,
+  LAMBDA_HANDLER,
+  LAMBDA_RUNTIME,
+} from './deploy';
 
 const TEST_LAYER_ARN = 'arn:aws:lambda:us-east-1:123456789012:layer:test-layer:1';
 
 describe('Deploy', () => {
+  const app = express();
+  let accessToken: string;
+  let mockLambdaClient: AwsClientStub<LambdaClient>;
+
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
@@ -492,5 +500,76 @@ describe('Deploy', () => {
       });
     expect(res2.status).toBe(400);
     expect(res2.body).toMatchObject(badRequest('Bot timeout exceeds allowed maximum of 900 seconds'));
+  });
+
+  test('Exists check throws error', async () => {
+    mockLambdaClient.on(GetFunctionCommand).callsFakeOnce(() => {
+      throw new TooManyRequestsException({ message: 'Too many requests', $metadata: {} });
+    });
+
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'awslambda',
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+        timeout: 100,
+      });
+    expect(res1.status).toBe(201);
+
+    const bot = res1.body as Bot;
+
+    const res2 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id as string}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        code: `
+        export async function handler() {
+          console.log('input', input);
+          return input;
+        }
+        `,
+      });
+    expect(res2.status).toBe(400);
+    expect(res2.body).toMatchObject(badRequest('Too many requests'));
+  });
+});
+
+describe('getLambdaTimeoutForBot', () => {
+  const app = express();
+  let mockLambdaClient: AwsClientStub<LambdaClient>;
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+
+    mockLambdaClient = mockClient(LambdaClient);
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  afterEach(() => {
+    mockLambdaClient.restore();
+  });
+
+  test('Throws when any exception except for `ResourceNotFoundException` is thrown', async () => {
+    mockLambdaClient.on(GetFunctionCommand).callsFake(() => {
+      throw new TooManyRequestsException({ message: 'Too many requests', $metadata: {} });
+    });
+
+    await expect(getLambdaTimeoutForBot({ id: randomUUID(), resourceType: 'Bot', name: 'Test Bot' })).rejects.toThrow(
+      new TooManyRequestsException({ message: 'Too many requests', $metadata: {} })
+    );
   });
 });
