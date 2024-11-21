@@ -51,6 +51,8 @@ import { sendFhirResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
+export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
+
 export interface BotExecutionRequest {
   readonly bot: Bot;
   readonly runAs: ProjectMembership;
@@ -395,7 +397,7 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
   };
 
   const options: vm.RunningScriptOptions = {
-    timeout: 10000,
+    timeout: bot.timeout ? bot.timeout * 1000 : DEFAULT_VM_CONTEXT_TIMEOUT,
   };
 
   // Wrap code in an async block for top-level await support

@@ -60321,6 +60321,10 @@
           "description": "The identifier of the bot runtime environment (i.e., vmcontext, awslambda, etc).",
           "enum": ["awslambda", "vmcontext"]
         },
+        "timeout": {
+          "description": "The maximum allowed execution time of the bot in seconds.",
+          "$ref": "#/definitions/integer"
+        },
         "photo": {
           "description": "Image of the bot.",
           "$ref": "#/definitions/Attachment"

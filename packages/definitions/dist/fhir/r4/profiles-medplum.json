@@ -1843,6 +1843,21 @@
             }
           },
           {
+            "id" : "Bot.timeout",
+            "path" : "Bot.timeout",
+            "definition" : "The maximum allowed execution time of the bot in seconds.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "integer"
+            }],
+            "base" : {
+              "path" : "Bot.timeout",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "Bot.photo",
             "path" : "Bot.photo",
             "definition" : "Image of the bot.",

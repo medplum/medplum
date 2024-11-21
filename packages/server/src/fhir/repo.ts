@@ -67,6 +67,7 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -109,7 +110,6 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
-import { recordHistogramValue } from '../otel/otel';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -1063,6 +1063,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         const result = await this.updateResourceImpl(resource, false);
         const durationMs = Date.now() - startTime;
+
         await this.postCommit(async () => {
           this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
         });

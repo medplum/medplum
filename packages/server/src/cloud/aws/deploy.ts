@@ -7,6 +7,7 @@ import {
   ListLayerVersionsCommand,
   PackageType,
   ResourceConflictException,
+  ResourceNotFoundException,
   UpdateFunctionCodeCommand,
   UpdateFunctionConfigurationCommand,
 } from '@aws-sdk/client-lambda';
@@ -17,11 +18,11 @@ import JSZip from 'jszip';
 import { getConfig } from '../../config';
 import { getLogger } from '../../context';
 
-const LAMBDA_RUNTIME = 'nodejs18.x';
-
-const LAMBDA_HANDLER = 'index.handler';
-
-const LAMBDA_MEMORY = 1024;
+export const LAMBDA_RUNTIME = 'nodejs18.x';
+export const LAMBDA_HANDLER = 'index.handler';
+export const LAMBDA_MEMORY = 1024;
+export const DEFAULT_LAMBDA_TIMEOUT = 10;
+export const MAX_LAMBDA_TIMEOUT = 900; // 60 * 15 (15 mins)
 
 const WRAPPER_CODE = `const { ContentType, Hl7Message, MedplumClient } = require("@medplum/core");
 const fetch = require("node-fetch");
@@ -95,8 +96,46 @@ function createPdf(docDefinition, tableLayouts, fonts) {
 }
 `;
 
+export function getLambdaNameForBot(bot: Bot): string {
+  return `medplum-bot-lambda-${bot.id}`;
+}
+
+export async function getLambdaTimeoutForBot(bot: Bot): Promise<number> {
+  // Create a new AWS Lambda client
+  // Use a custom retry strategy to avoid throttling errors
+  // This is especially important when updating lambdas which also
+  // involve upgrading the layer version.
+
+  const client = new LambdaClient({
+    region: getConfig().awsRegion,
+    retryStrategy: new ConfiguredRetryStrategy(
+      5, // max attempts
+      (attempt: number) => 500 * 2 ** attempt // Exponential backoff
+    ),
+  });
+
+  const name = getLambdaNameForBot(bot);
+  let timeout: number;
+  try {
+    const command = new GetFunctionCommand({ FunctionName: name });
+    const response = await client.send(command);
+    timeout = response?.Configuration?.Timeout ?? DEFAULT_LAMBDA_TIMEOUT;
+  } catch (err) {
+    if (err instanceof ResourceNotFoundException) {
+      timeout = DEFAULT_LAMBDA_TIMEOUT;
+    } else {
+      throw err;
+    }
+  }
+  return timeout;
+}
+
 export async function deployLambda(bot: Bot, code: string): Promise<void> {
   const log = getLogger();
+
+  if (bot.timeout !== undefined && bot.timeout > MAX_LAMBDA_TIMEOUT) {
+    throw new Error('Bot timeout exceeds allowed maximum of 900 seconds');
+  }
 
   // Create a new AWS Lambda client
   // Use a custom retry strategy to avoid throttling errors
@@ -110,16 +149,16 @@ export async function deployLambda(bot: Bot, code: string): Promise<void> {
     ),
   });
 
-  const name = `medplum-bot-lambda-${bot.id}`;
+  const name = getLambdaNameForBot(bot);
   log.info('Deploying lambda function for bot', { name });
   const zipFile = await createZipFile(code);
   log.debug('Lambda function zip size', { bytes: zipFile.byteLength });
 
   const exists = await lambdaExists(client, name);
   if (!exists) {
-    await createLambda(client, name, zipFile);
+    await createLambda(bot, client, name, zipFile);
   } else {
-    await updateLambda(client, name, zipFile);
+    await updateLambda(bot, client, name, zipFile);
   }
 }
 
@@ -141,18 +180,22 @@ async function lambdaExists(client: LambdaClient, name: string): Promise<boolean
     const command = new GetFunctionCommand({ FunctionName: name });
     const response = await client.send(command);
     return response.Configuration?.FunctionName === name;
-  } catch (_err) {
-    return false;
+  } catch (err) {
+    if (err instanceof ResourceNotFoundException) {
+      return false;
+    }
+    throw err;
   }
 }
 
 /**
  * Creates a new AWS Lambda for the bot name.
+ * @param bot - The Bot resource for this bot.
  * @param client - The AWS Lambda client.
  * @param name - The bot name.
  * @param zipFile - The zip file with the bot code.
  */
-async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
+async function createLambda(bot: Bot, client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
   const layerVersion = await getLayerVersion(client);
 
   await client.send(
@@ -168,20 +211,21 @@ async function createLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
         ZipFile: zipFile,
       },
       Publish: true,
-      Timeout: 10, // seconds
+      Timeout: bot.timeout ?? DEFAULT_LAMBDA_TIMEOUT, // seconds
     })
   );
 }
 
 /**
  * Updates an existing AWS Lambda for the bot name.
+ * @param bot - The Bot resource for this bot.
  * @param client - The AWS Lambda client.
  * @param name - The bot name.
  * @param zipFile - The zip file with the bot code.
  */
-async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
+async function updateLambda(bot: Bot, client: LambdaClient, name: string, zipFile: Uint8Array): Promise<void> {
   // First, make sure the lambda configuration is up to date
-  await updateLambdaConfig(client, name);
+  await updateLambdaConfig(bot, client, name);
 
   // Then update the code
   await updateLambdaCode(client, name, zipFile);
@@ -189,16 +233,21 @@ async function updateLambda(client: LambdaClient, name: string, zipFile: Uint8Ar
 
 /**
  * Updates the lambda configuration.
+ * @param bot - The Bot resource for this bot.
  * @param client - The AWS Lambda client.
  * @param name - The lambda name.
  */
-async function updateLambdaConfig(client: LambdaClient, name: string): Promise<void> {
+async function updateLambdaConfig(bot: Bot, client: LambdaClient, name: string): Promise<void> {
   const layerVersion = await getLayerVersion(client);
   const functionConfig = await getLambdaConfig(client, name);
+
+  const timeout = bot.timeout ?? DEFAULT_LAMBDA_TIMEOUT;
+
   if (
     functionConfig.Runtime === LAMBDA_RUNTIME &&
     functionConfig.Handler === LAMBDA_HANDLER &&
-    functionConfig.Layers?.[0].Arn === layerVersion
+    functionConfig.Layers?.[0].Arn === layerVersion &&
+    functionConfig.Timeout === timeout
   ) {
     // Everything is up-to-date
     return;
@@ -212,6 +261,7 @@ async function updateLambdaConfig(client: LambdaClient, name: string): Promise<v
       Runtime: LAMBDA_RUNTIME,
       Handler: LAMBDA_HANDLER,
       Layers: [layerVersion],
+      Timeout: timeout,
     })
   );
 }

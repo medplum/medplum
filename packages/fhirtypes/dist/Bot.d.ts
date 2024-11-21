@@ -115,6 +115,11 @@ export interface Bot {
   runtimeVersion?: 'awslambda' | 'vmcontext';
 
   /**
+   * The maximum allowed execution time of the bot in seconds.
+   */
+  timeout?: number;
+
+  /**
    * Image of the bot.
    */
   photo?: Attachment;
