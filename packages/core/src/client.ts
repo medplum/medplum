@@ -2091,38 +2091,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param requestOptions - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
    */
-  createAttachment(
+  async createAttachment(
     createBinaryOptions: CreateBinaryOptions,
     requestOptions?: MedplumRequestOptions
-  ): Promise<Attachment>;
-
-  /**
-   * @category Create
-   * @param data - The binary data to upload.
-   * @param filename - Optional filename for the binary.
-   * @param contentType - Content type for the binary.
-   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
-   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
-   * @returns The result of the create operation.
-   * @deprecated Use `createAttachment` with `CreateBinaryOptions` instead. To be removed in Medplum 4.0.
-   */
-  createAttachment(
-    data: BinarySource,
-    filename: string | undefined,
-    contentType: string,
-    onProgress?: (e: ProgressEvent) => void,
-    options?: MedplumRequestOptions
-  ): Promise<Attachment>;
-
-  async createAttachment(
-    arg1: BinarySource | CreateBinaryOptions,
-    arg2: string | undefined | MedplumRequestOptions,
-    arg3?: string,
-    arg4?: (e: ProgressEvent) => void,
-    arg5?: MedplumRequestOptions
   ): Promise<Attachment> {
-    const createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
-    const requestOptions = arg5 ?? (typeof arg2 === 'object' ? arg2 : {});
     const binary = await this.createBinary(createBinaryOptions, requestOptions);
     return {
       contentType: createBinaryOptions.contentType,
@@ -2155,36 +2127,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param requestOptions - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
    */
-  createBinary(createBinaryOptions: CreateBinaryOptions, requestOptions?: MedplumRequestOptions): Promise<Binary>;
-
-  /**
-   * @category Create
-   * @param data - The binary data to upload.
-   * @param filename - Optional filename for the binary.
-   * @param contentType - Content type for the binary.
-   * @param onProgress - Optional callback for progress events. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
-   * @param options - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
-   * @returns The result of the create operation.
-   * @deprecated Use `createBinary` with `CreateBinaryOptions` instead. To be removed in Medplum 4.0.
-   */
-  createBinary(
-    data: BinarySource,
-    filename: string | undefined,
-    contentType: string,
-    onProgress?: (e: ProgressEvent) => void,
-    options?: MedplumRequestOptions
-  ): Promise<Binary>;
-
-  createBinary(
-    arg1: BinarySource | CreateBinaryOptions,
-    arg2: string | undefined | MedplumRequestOptions,
-    arg3?: string,
-    arg4?: (e: ProgressEvent) => void,
-    arg5?: MedplumRequestOptions
-  ): Promise<Binary> {
-    const createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
-    const requestOptions = arg5 ?? (typeof arg2 === 'object' ? arg2 : {});
-
+  createBinary(createBinaryOptions: CreateBinaryOptions, requestOptions: MedplumRequestOptions = {}): Promise<Binary> {
     const { data, contentType, filename, securityContext, onProgress } = createBinaryOptions;
 
     const url = this.fhirUrl('Binary');
@@ -2287,35 +2230,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param requestOptions - Optional fetch options.
    * @returns The result of the create operation.
    */
-  createPdf(createPdfOptions: CreatePdfOptions, requestOptions?: MedplumRequestOptions): Promise<Binary>;
-
-  /**
-   * @category Media
-   * @param docDefinition - The PDF document definition.
-   * @param filename - Optional filename for the PDF binary resource.
-   * @param tableLayouts - Optional pdfmake custom table layout.
-   * @param fonts - Optional pdfmake custom font dictionary.
-   * @returns The result of the create operation.
-   * @deprecated Use `createPdf` with `CreatePdfOptions` instead. To be removed in Medplum 4.0.
-   */
-  createPdf(
-    docDefinition: TDocumentDefinitions,
-    filename: string | undefined,
-    tableLayouts?: Record<string, CustomTableLayout>,
-    fonts?: TFontDictionary
-  ): Promise<Binary>;
-
-  async createPdf(
-    arg1: TDocumentDefinitions | CreatePdfOptions,
-    arg2?: string | MedplumRequestOptions,
-    arg3?: Record<string, CustomTableLayout>,
-    arg4?: TFontDictionary
-  ): Promise<Binary> {
+  async createPdf(createPdfOptions: CreatePdfOptions, requestOptions: MedplumRequestOptions = {}): Promise<Binary> {
     if (!this.createPdfImpl) {
       throw new Error('PDF creation not enabled');
     }
-    const createPdfOptions = normalizeCreatePdfOptions(arg1, arg2, arg3, arg4);
-    const requestOptions = typeof arg2 === 'object' ? arg2 : {};
     const { docDefinition, tableLayouts, fonts, ...rest } = createPdfOptions;
     const blob = await this.createPdfImpl(docDefinition, tableLayouts, fonts);
     const createBinaryOptions = { ...rest, data: blob, contentType: 'application/pdf' };
@@ -2966,34 +2884,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       status: 'completed',
       content,
     });
-  }
-
-  /**
-   * Upload media to the server and create a Media instance for the uploaded content.
-   * @param contents - The contents of the media file, as a string, Uint8Array, File, or Blob.
-   * @param contentType - The media type of the content.
-   * @param filename - Optional filename for the binary, or extended upload options (see `BinaryUploadOptions`).
-   * @param additionalFields - Additional fields for Media.
-   * @param options - Optional fetch options.
-   * @returns Promise that resolves to the created Media
-   * @deprecated Use `createMedia` with `CreateMediaOptions` instead. To be removed in Medplum 4.0.
-   */
-  async uploadMedia(
-    contents: string | Uint8Array | File | Blob,
-    contentType: string,
-    filename: string | undefined,
-    additionalFields?: Partial<Media>,
-    options?: MedplumRequestOptions
-  ): Promise<Media> {
-    return this.createMedia(
-      {
-        data: contents,
-        contentType,
-        filename,
-        additionalFields,
-      },
-      options
-    );
   }
 
   /**

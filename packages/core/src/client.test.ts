@@ -1565,24 +1565,6 @@ describe('Client', () => {
     );
   });
 
-  test('Create attachment (deprecated legacy version)', async () => {
-    const fetch = mockFetch(200, {});
-    const client = new MedplumClient({ fetch });
-    const result = await client.createAttachment('Hello world', undefined, ContentType.TEXT);
-    expect(result).toBeDefined();
-    expect(fetch).toHaveBeenCalledWith(
-      'https://api.medplum.com/fhir/R4/Binary',
-      expect.objectContaining({
-        method: 'POST',
-        headers: {
-          Accept: DEFAULT_ACCEPT,
-          'Content-Type': ContentType.TEXT,
-          'X-Medplum': 'extended',
-        },
-      })
-    );
-  });
-
   test('Create binary', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
@@ -1626,42 +1608,6 @@ describe('Client', () => {
     );
   });
 
-  test('Create binary (deprecated legacy version)', async () => {
-    const fetch = mockFetch(200, {});
-    const client = new MedplumClient({ fetch });
-    const result = await client.createBinary('Hello world', undefined, ContentType.TEXT);
-    expect(result).toBeDefined();
-    expect(fetch).toHaveBeenCalledWith(
-      'https://api.medplum.com/fhir/R4/Binary',
-      expect.objectContaining({
-        method: 'POST',
-        headers: {
-          Accept: DEFAULT_ACCEPT,
-          'Content-Type': ContentType.TEXT,
-          'X-Medplum': 'extended',
-        },
-      })
-    );
-  });
-
-  test('Create binary with filename (deprecated legacy version)', async () => {
-    const fetch = mockFetch(200, {});
-    const client = new MedplumClient({ fetch });
-    const result = await client.createBinary('Hello world', 'hello.txt', ContentType.TEXT);
-    expect(result).toBeDefined();
-    expect(fetch).toHaveBeenCalledWith(
-      'https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt',
-      expect.objectContaining({
-        method: 'POST',
-        headers: {
-          Accept: DEFAULT_ACCEPT,
-          'Content-Type': ContentType.TEXT,
-          'X-Medplum': 'extended',
-        },
-      })
-    );
-  });
-
   test('Create binary with progress event listener', async () => {
     const xhrMock: Partial<XMLHttpRequest> = {
       open: jest.fn(),
@@ -1681,7 +1627,7 @@ describe('Client', () => {
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const promise = client.createBinary('Hello world', undefined, ContentType.TEXT, onProgress);
+    const promise = client.createBinary({ data: 'Hello world', contentType: ContentType.TEXT, onProgress });
     expect(xhrMock.open).toHaveBeenCalled();
     expect(xhrMock.setRequestHeader).toHaveBeenCalled();
 
@@ -1710,18 +1656,16 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch, createPdf });
     const footer = jest.fn(() => 'footer');
-    const result = await client.createPdf(
-      {
+    const result = await client.createPdf({
+      docDefinition: {
         content: ['Hello World'],
         defaultStyle: {
           font: 'Helvetica',
         },
         footer,
       },
-      undefined,
-      undefined,
-      fonts
-    );
+      fonts,
+    });
     expect(result).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Binary',
@@ -1740,12 +1684,11 @@ describe('Client', () => {
   test('Create pdf with filename', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch, createPdf });
-    const result = await client.createPdf(
-      { content: ['Hello world'], defaultStyle: { font: 'Helvetica' } },
-      'report.pdf',
-      undefined,
-      fonts
-    );
+    const result = await client.createPdf({
+      docDefinition: { content: ['Hello world'], defaultStyle: { font: 'Helvetica' } },
+      filename: 'report.pdf',
+      fonts,
+    });
     expect(result).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Binary?_filename=report.pdf',
@@ -3066,7 +3009,7 @@ describe('Client', () => {
       fetch.mockImplementationOnce(async () => mockFetchResponse(200, { resourceType: 'Media', id: '123' }));
 
       const client = new MedplumClient({ fetch });
-      const media = await client.uploadMedia('Hello world', 'text/plain', 'hello.txt');
+      const media = await client.createMedia({ data: 'Hello world', contentType: 'text/plain', filename: 'hello.txt' });
       expect(media).toBeDefined();
       expect(fetch).toHaveBeenCalledTimes(3);
 
