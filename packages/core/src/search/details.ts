@@ -1,4 +1,4 @@
-import { ElementDefinitionType, SearchParameter } from '@medplum/fhirtypes';
+import { ElementDefinitionType, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Atom } from '../fhirlexer/parse';
 import {
   AsAtom,
@@ -77,7 +77,7 @@ function setSearchParameterDetails(resourceType: string, code: string, details: 
 
 function buildSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   const code = searchParam.code as string;
-  const columnName = convertCodeToColumnName(code);
+  let columnName = convertCodeToColumnName(code);
   const expressions = getExpressionsForResourceType(resourceType, searchParam.expression as string);
 
   const builder: SearchParameterDetailsBuilder = {
@@ -117,10 +117,26 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
   }
 
   let implementation: SearchParameterDetails['implementation'] = 'column';
-  if (isLookupTableParam(searchParam, builder)) {
+  if (searchParam.code.startsWith('_')) {
+    console.log(`Skipping special implementation for internal search parameter: ${searchParam.code}`);
+  } else if (!searchParam.base?.includes(resourceType as ResourceType)) {
+    console.log(`Skipping special implementation for search parameter: ${searchParam.code} ${searchParam.base}`);
+    // If the search parameter is not defined on the resource type itself, skip special implementations
+  } else if (isLookupTableParam(searchParam, builder)) {
     implementation = 'lookup-table';
   } else if (isTokenParam(searchParam, builder)) {
     implementation = 'token-columns';
+    const telecomParams = [
+      'individual-telecom',
+      'individual-email',
+      'individual-phone',
+      'OrganizationAffiliation-telecom',
+      'OrganizationAffiliation-email',
+      'OrganizationAffiliation-phone',
+    ];
+    if (telecomParams.includes(searchParam.id as string)) {
+      columnName = 'telecom';
+    }
   }
 
   const result: SearchParameterDetails = {
@@ -158,7 +174,7 @@ function isLookupTableParam(searchParam: SearchParameter, builder: SearchParamet
     'OrganizationAffiliation-phone',
   ];
   if (telecomParams.includes(searchParam.id as string)) {
-    return true;
+    // return true;
   }
 
   // Address
