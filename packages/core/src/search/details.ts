@@ -32,6 +32,7 @@ export interface SearchParameterDetails {
   readonly type: SearchParameterType;
   readonly elementDefinitions?: InternalSchemaElement[];
   readonly array?: boolean;
+  readonly implementation: 'column' | 'lookup-table' | 'token-columns';
 }
 
 interface SearchParameterDetailsBuilder {
@@ -102,7 +103,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
       builder.array = true;
       builder.propertyTypes.add('code');
     } else {
-      crawlSearchParameterDetails(builder, flattenAtom(expression), resourceType, 1);
+      crawlSearchParameterDetails(builder, atomArray, resourceType, 1);
     }
 
     // To support US Core "us-core-condition-asserted-date" search parameter without
@@ -115,14 +116,94 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
     }
   }
 
+  let implementation: SearchParameterDetails['implementation'] = 'column';
+  if (isLookupTableParam(searchParam, builder)) {
+    implementation = 'lookup-table';
+  } else if (isTokenParam(searchParam, builder)) {
+    implementation = 'token-columns';
+  }
+
   const result: SearchParameterDetails = {
     columnName,
     type: getSearchParameterType(searchParam, builder.propertyTypes),
     elementDefinitions: builder.elementDefinitions,
     array: builder.array,
+    implementation,
   };
   setSearchParameterDetails(resourceType, code, result);
   return result;
+}
+
+function isLookupTableParam(searchParam: SearchParameter, builder: SearchParameterDetailsBuilder): boolean {
+  // HumanName
+  const nameParams = [
+    'individual-given',
+    'individual-family',
+    'Patient-name',
+    'Person-name',
+    'Practitioner-name',
+    'RelatedPerson-name',
+  ];
+  if (nameParams.includes(searchParam.id as string)) {
+    return true;
+  }
+
+  // Telecom
+  const telecomParams = [
+    'individual-telecom',
+    'individual-email',
+    'individual-phone',
+    'OrganizationAffiliation-telecom',
+    'OrganizationAffiliation-email',
+    'OrganizationAffiliation-phone',
+  ];
+  if (telecomParams.includes(searchParam.id as string)) {
+    return true;
+  }
+
+  // Address
+  const addressParams = ['individual-address', 'InsurancePlan-address', 'Location-address', 'Organization-address'];
+  if (addressParams.includes(searchParam.id as string)) {
+    return true;
+  }
+
+  // "address-"
+  if (searchParam.code?.startsWith('address-')) {
+    return true;
+  }
+
+  // Token
+  if (isTokenParam(searchParam, builder)) {
+    // console.log('SKIPPING LookupTable for token param', searchParam.id);
+    // return true;
+  }
+
+  return false;
+}
+
+function isTokenParam(searchParam: SearchParameter, builder: SearchParameterDetailsBuilder): boolean {
+  if (searchParam.type === 'token') {
+    if (searchParam.code?.endsWith(':identifier')) {
+      return true;
+    }
+    for (const elementDefinition of builder.elementDefinitions ?? []) {
+      // Check for any "Identifier", "CodeableConcept", or "Coding"
+      // Any of those value types require the "Token" table for full system|value search semantics.
+      // The common case is that the "type" property only has one value,
+      // but we need to support arrays of types for the choice-of-type properties such as "value[x]".
+      for (const type of elementDefinition.type ?? []) {
+        if (
+          type.code === PropertyType.Identifier ||
+          type.code === PropertyType.CodeableConcept ||
+          type.code === PropertyType.Coding ||
+          type.code === PropertyType.ContactPoint
+        ) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
 }
 
 function crawlSearchParameterDetails(

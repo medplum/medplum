@@ -1018,17 +1018,21 @@ function trySpecialSearchParameter(
     case '_id':
       return buildIdSearchFilter(
         table,
-        { columnName: 'id', type: SearchParameterType.UUID },
+        { columnName: 'id', type: SearchParameterType.UUID, implementation: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
     case '_lastUpdated':
-      return buildDateSearchFilter(table, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
+      return buildDateSearchFilter(
+        table,
+        { type: SearchParameterType.DATETIME, columnName: 'lastUpdated', implementation: 'column' },
+        filter
+      );
     case '_compartment':
     case '_project':
       return buildIdSearchFilter(
         table,
-        { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
+        { columnName: 'compartments', type: SearchParameterType.UUID, array: true, implementation: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
