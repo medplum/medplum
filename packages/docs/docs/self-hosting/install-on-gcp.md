@@ -8,7 +8,7 @@ This document is intended to guide Medplum through the deployment of a comprehen
 
 :::caution
 
-This is a complex multi step process, and requires high proficiency with GCP, Terraform, Node.js, and command line tools.
+This is a complex multi-step process, and requires high proficiency with GCP, Terraform, Node.js, and command line tools.
 
 Medplum strives to make this as easy as possible, but despite our best efforts, it is still challenging.
 
@@ -16,7 +16,7 @@ If you have any questions, please [contact us](mailto:hello@medplum.com) or [joi
 
 :::
 
-## High level overview {#high-level-overview}
+## High-level overview {#high-level-overview}
 
 To deploy Medplum in GCP, the process is divided into two parts:
 
@@ -34,7 +34,7 @@ See [Generate Configuration Secret](#generate-configuration-secret)
 
 ### Infrastructure summary
 
-- The medplum backend (API) container runs in GKE.
+- The Medplum backend (API) container runs in GKE.
   - The API is exposed using Ingress, which creates a GCP Load Balancer
   - The Load balancer has a WAF (Cloud Armor)
   - Google-managed certificates are used
@@ -47,7 +47,7 @@ See [Generate Configuration Secret](#generate-configuration-secret)
 ### High-level deployment process {#high-level-deployment-process}
 
 1. Deploy static infrastructure (GKE, CloudSQL, Redis, Storage Buckets, LB)
-2. With the values from Step 1, create the medplum app configuration
+2. With the values from Step 1, create the Medplum app configuration
 3. With the values from Step 1, point the DNS records
 4. Deploy the backend application using the helm chart
 5. Copy the frontend files to the CDN bucket
@@ -122,7 +122,7 @@ terraform apply
 
 ### Generate configuration secret {#generate-configuration-secret}
 
-The configuration secret holds the medplum application configuration and it contains the connection strings to the rest of the infrastructure that we deployed before, using terraform.
+The configuration secret holds the Medplum application configuration and it contains the connection strings to the rest of the infrastructure that we deployed before, using terraform.
 
 **1\. Create the Secret in Secret Manager:**
 
