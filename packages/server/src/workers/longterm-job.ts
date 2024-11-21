@@ -12,14 +12,18 @@ const inProgressJobStatus: AsyncJob['status'][] = ['accepted', 'active'];
 export abstract class LongTermJob<TResult extends {}, TData extends LongTermJobData> {
   private systemRepo: Repository;
 
-  constructor() {
-    this.systemRepo = getSystemRepo();
+  constructor(systemRepo?: Repository) {
+    this.systemRepo = systemRepo ?? getSystemRepo();
   }
 
   async updateStatus(job: Job<TData>, output: Parameters): Promise<void> {
-    // TODO: Conditional update to determine if status was changed
     const exec = new AsyncJobExecutor(this.systemRepo, job.data.asyncJob);
-    const updatedJob = await exec.updateJobProgress(this.systemRepo, output);
+    const updatedJob = await exec.updateJobProgress(this.systemRepo, output, {
+      // Conditional update to ensure this update does not clobber another,
+      // which could result in e.g. continuing a job that was cancelled
+      ifMatch: job.data.asyncJob.meta?.versionId,
+    });
+
     if (updatedJob) {
       job.data.asyncJob = updatedJob;
     }
@@ -95,7 +99,7 @@ export abstract class LongTermJob<TResult extends {}, TData extends LongTermJobD
    * Return `undefined` to skip updating the resource for this iteration.
    * @param result - The current iteration result.
    * @param job  - The current job data.
-   * @returns Data with which to update the AsyncJob resource, or undefined to skip updating.
+   * @returns Data with which to update the AsyncJob resource, or undefined to skip updating the resource.
    */
   abstract formatResults(result: TResult, job: Job<TData>): Parameters | undefined;
 

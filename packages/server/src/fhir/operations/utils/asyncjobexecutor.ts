@@ -7,6 +7,7 @@ import { getAuthenticatedContext } from '../../../context';
 import { sendOutcome } from '../../outcomes';
 import { Repository, getSystemRepo } from '../../repo';
 import { getLogger } from 'nodemailer/lib/shared';
+import { UpdateResourceOptions } from '@medplum/fhir-router';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -95,14 +96,21 @@ export class AsyncJobExecutor {
     });
   }
 
-  async updateJobProgress(repo: Repository, output: Parameters): Promise<AsyncJob | undefined> {
+  async updateJobProgress(
+    repo: Repository,
+    output: Parameters,
+    options?: UpdateResourceOptions
+  ): Promise<AsyncJob | undefined> {
     if (!this.resource) {
       return undefined;
     }
-    return repo.updateResource<AsyncJob>({
-      ...this.resource,
-      output,
-    });
+    return repo.updateResource<AsyncJob>(
+      {
+        ...this.resource,
+        output,
+      },
+      options
+    );
   }
 
   async failJob(repo: Repository, err?: Error): Promise<AsyncJob | undefined> {
