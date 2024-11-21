@@ -14,11 +14,12 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { Client, Pool } from 'pg';
+import { Client, escapeIdentifier, Pool } from 'pg';
 import {
   ColumnSearchParameterImplementation,
   getSearchParameterImplementation,
   SearchParameterImplementation,
+  TokenColumnSearchParameterImplementation,
 } from '../fhir/searchparameter';
 import { deriveIdentifierSearchParameter } from '../fhir/lookups/util';
 import { doubleEscapeSingleQuotes, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
@@ -455,7 +456,16 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   }
 }
 
-function getSearchParameterColumns(impl: ColumnSearchParameterImplementation): ColumnDefinition[] {
+function getSearchParameterColumns(
+  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
+): ColumnDefinition[] {
+  if (impl.searchStrategy === 'token-column') {
+    const columns: ColumnDefinition[] = [
+      getColumnDefinition(impl.columnName, impl),
+      getColumnDefinition(impl.columnName + 'Text', impl),
+    ];
+    return columns;
+  }
   return [getColumnDefinition(impl.columnName, impl)];
 }
 
@@ -487,7 +497,20 @@ function expandAbbreviations(name: string, abbreviations: Record<string, string 
   return result;
 }
 
-function getSearchParameterIndexes(impl: ColumnSearchParameterImplementation): IndexDefinition[] {
+function getSearchParameterIndexes(
+  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
+): IndexDefinition[] {
+  if (impl.searchStrategy === 'token-column') {
+    const indexes: IndexDefinition[] = [];
+    for (const columnName of [impl.columnName, impl.columnName + 'Text']) {
+      indexes.push({ columns: [columnName], indexType: 'gin' });
+      indexes.push({
+        columns: [{ expression: `a2t(${escapeIdentifier(columnName)}) gin_trgm_ops`, name: columnName + 'Trgm' }],
+        indexType: 'gin',
+      });
+    }
+    return indexes;
+  }
   return [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
 }
 
@@ -519,6 +542,26 @@ function getColumnDefinition(name: string, impl: SearchParameterImplementation):
       baseColumnType = 'TEXT';
       break;
   }
+
+  if (impl.searchStrategy === 'token-column') {
+    if (baseColumnType.toLocaleUpperCase() !== 'TEXT') {
+      throw new Error('Token columns must have TEXT column type');
+    }
+
+    // To simplify we always use arrays for token columns even if they can only have a single value
+    // We should re-evaluate this decision before ever going live with inlined token columns since
+    // array columns have performance costs
+    // columnType += details.array ? `DEFAULT ARRAY[]::${baseColumnType}[] NOT NULL` : ' NOT NULL';
+
+    // e.g. 'TEXT[] DEFAULT ARRAY[]::TEXT[] NOT NULL'
+    return {
+      name,
+      type: baseColumnType + '[]',
+      notNull: true,
+      defaultValue: 'ARRAY[]::TEXT[]',
+    };
+  }
+
   const type = impl.array ? baseColumnType + '[]' : baseColumnType;
 
   return {
