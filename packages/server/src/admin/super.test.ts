@@ -13,7 +13,7 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
-import { ReindexJobData, execReindexJob, getReindexQueue } from '../workers/reindex';
+import { ReindexJob, ReindexJobData, getReindexQueue } from '../workers/reindex';
 import { Job } from 'bullmq';
 
 jest.mock('../seeds/valuesets');
@@ -318,7 +318,7 @@ describe('Super Admin routes', () => {
         resourceTypes: ['PaymentNotice'],
       })
     );
-    await withTestContext(() => execReindexJob({ data: queue.add.mock.calls[0][1] } as Job));
+    await withTestContext(() => new ReindexJob().execute({ data: queue.add.mock.calls[0][1] } as Job));
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
@@ -346,7 +346,7 @@ describe('Super Admin routes', () => {
     let job = { data: queue.add.mock.calls[0][1] } as Job;
     queue.add.mockClear();
 
-    await withTestContext(() => execReindexJob(job));
+    await withTestContext(() => new ReindexJob().execute(job));
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
       expect.objectContaining<Partial<ReindexJobData>>({
@@ -356,7 +356,7 @@ describe('Super Admin routes', () => {
     job = { data: queue.add.mock.calls[0][1] } as Job;
     queue.add.mockClear();
 
-    await withTestContext(() => execReindexJob(job));
+    await withTestContext(() => new ReindexJob().execute(job));
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
       expect.objectContaining<Partial<ReindexJobData>>({
@@ -366,7 +366,7 @@ describe('Super Admin routes', () => {
     job = { data: queue.add.mock.calls[0][1] } as Job;
     queue.add.mockClear();
 
-    await withTestContext(() => execReindexJob(job));
+    await withTestContext(() => new ReindexJob().execute(job));
     expect(queue.add).not.toHaveBeenCalled();
 
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
