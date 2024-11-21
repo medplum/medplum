@@ -14,7 +14,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { Client, escapeIdentifier, Pool } from 'pg';
+import { Client, Pool } from 'pg';
 import {
   ColumnSearchParameterImplementation,
   getSearchParameterImplementation,
@@ -504,8 +504,11 @@ function getSearchParameterIndexes(
     const indexes: IndexDefinition[] = [];
     for (const columnName of [impl.columnName, impl.columnName + 'Text']) {
       indexes.push({ columns: [columnName], indexType: 'gin' });
+      // To facilitate matching with parsed start index definitions, only wrap in quotes
+      // when necessary since that is behavior of `SELECT indexdef FROM pg_indexes`
+      const escapedColumnName = columnName === columnName.toLocaleLowerCase() ? columnName : '"' + columnName + '"';
       indexes.push({
-        columns: [{ expression: `a2t(${escapeIdentifier(columnName)}) gin_trgm_ops`, name: columnName + 'Trgm' }],
+        columns: [{ expression: `a2t(${escapedColumnName}) gin_trgm_ops`, name: columnName + 'Trgm' }],
         indexType: 'gin',
       });
     }
