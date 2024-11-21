@@ -4,15 +4,15 @@ import { Patient } from '@medplum/fhirtypes';
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<Hl7Message> {
   const input = event.input as Hl7Message;
   // Log Message Type
-  const messageType = input.getSegment('MSH')?.getField(8);
+  const messageType = input.getSegment('MSH')?.getField(9);
   console.log(messageType);
 
   // Get patient name
-  const givenName = input.getSegment('EVN')?.getField(5).getComponent(1) as string;
-  const familyName = input.getSegment('EVN')?.getField(5).getComponent(2) as string;
+  const givenName = input.getSegment('EVN')?.getField(6).getComponent(2) as string;
+  const familyName = input.getSegment('EVN')?.getField(6).getComponent(3) as string;
 
   // Get patient ID
-  const mrnNumber = input.getSegment('PID')?.getField(3).getComponent(4);
+  const mrnNumber = input.getSegment('PID')?.getField(4).getComponent(5);
 
   let patient = await medplum.searchOne('Patient', 'identifier=' + mrnNumber);
 
