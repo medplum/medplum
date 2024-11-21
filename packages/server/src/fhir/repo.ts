@@ -89,13 +89,14 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
-import { USE_TOKEN_TABLE, getTokens } from './lookups/token';
+import { LookupTable } from './lookups/lookuptable';
+import { buildTokensForSearchParameter, LookupToken, USE_TOKEN_TABLE } from './lookups/token';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
-import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
   DeleteQuery,
@@ -1280,43 +1281,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       content,
     };
 
-    if (!USE_TOKEN_TABLE) {
-      const tokens = getTokens(resource);
-      const rowTokens = new Set<string>();
-      for (const t of tokens) {
-        const code = t.code;
-        const system = t.system?.trim?.();
-        const value = t.value?.trim?.();
-        if (!code || (!system && !value)) {
-          continue;
-        }
-
-        // MISSING/PRESENT
-        rowTokens.add(code + DELIM);
-
-        if (system) {
-          // [parameter]=[system]|
-          rowTokens.add(code + DELIM + system);
-
-          if (value) {
-            // [parameter]=[system]|[code]
-            rowTokens.add(code + DELIM + system + DELIM + value);
-          }
-        }
-
-        if (value) {
-          // [parameter]=[code]
-          rowTokens.add(code + DELIM + DELIM + value);
-
-          if (!system) {
-            // [parameter]=|[code]
-            rowTokens.add(code + DELIM + NULL_SYSTEM + DELIM + value);
-          }
-        }
-      }
-      row.token = Array.from(rowTokens);
-    }
-
     const searchParams = getSearchParameters(resourceType);
     if (searchParams) {
       for (const searchParam of Object.values(searchParams)) {
@@ -1460,17 +1424,67 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const values = evalFhirPath(searchParam.expression as string, resource);
-    let columnValue = null;
 
-    if (values.length > 0) {
-      if (impl.array) {
-        columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
-      } else {
-        columnValue = this.buildColumnValue(searchParam, impl, values[0]);
+    if (impl.searchStrategy === 'token-column') {
+      // TODO [Search by logical references](https://github.com/medplum/medplum/issues/1630) needs
+      // to be addressed again. Hmm...
+
+      const allTokens: LookupToken[] = [];
+      buildTokensForSearchParameter(allTokens, resource, searchParam);
+
+      const rowTokens = new Set<string>();
+      const rowTextTokens = new Set<string>();
+      for (const t of allTokens) {
+        const code = t.code;
+
+        const system = t.system?.trim?.();
+        const value = t.value?.trim?.();
+        if (!code || (!system && !value)) {
+          continue;
+        }
+
+        // sanity check
+        if (code !== searchParam.code) {
+          throw new Error(`Invalid token code ${code} for search parameter with code ${searchParam.code}`);
+        }
+
+        // MISSING/PRESENT - any entries in the column at all
+
+        const tokenSet = system === 'text' ? rowTextTokens : rowTokens;
+        if (system) {
+          // [parameter]=[system]|
+          tokenSet.add(system);
+
+          if (value) {
+            // [parameter]=[system]|[code]
+            tokenSet.add(system + DELIM + value);
+          }
+        }
+
+        if (value) {
+          // [parameter]=[code]
+          tokenSet.add(DELIM + value);
+
+          if (!system) {
+            // [parameter]=|[code]
+            tokenSet.add(NULL_SYSTEM + DELIM + value);
+          }
+        }
       }
+      columns[impl.columnName] = Array.from(rowTokens);
+      columns[impl.columnName + 'Text'] = Array.from(rowTextTokens);
+    } else {
+      impl satisfies ColumnSearchParameterImplementation;
+      let columnValue = null;
+      if (values.length > 0) {
+        if (impl.array) {
+          columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
+        } else {
+          columnValue = this.buildColumnValue(searchParam, impl, values[0]);
+        }
+      }
+      columns[impl.columnName] = columnValue;
     }
-
-    columns[impl.columnName] = columnValue;
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
@@ -2506,6 +2520,29 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new Error('Already closed');
     }
   }
+}
+
+export function isIndexTable(resourceType: string, searchParam: SearchParameter): boolean {
+  const impl = getSearchParameterImplementation(resourceType, searchParam);
+  const newWay = impl.searchStrategy === 'lookup-table';
+  const oldWay = Boolean(getLookupTable(resourceType, searchParam));
+  if (USE_TOKEN_TABLE) {
+    return oldWay;
+  }
+  if (newWay !== oldWay) {
+    throw new Error('Inconsistent implementation logic');
+  }
+
+  return newWay;
+}
+
+export function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable | undefined {
+  for (const lookupTable of lookupTables) {
+    if (lookupTable.isIndexed(searchParam, resourceType)) {
+      return lookupTable;
+    }
+  }
+  return undefined;
 }
 
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
