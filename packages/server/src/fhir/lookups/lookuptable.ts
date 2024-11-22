@@ -45,7 +45,7 @@ export abstract class LookupTable {
    * @param resourceType - The resource type.
    * @returns True if the search parameter is indexed.
    */
-  abstract isIndexed(searchParam: SearchParameter, resourceType: string): boolean;
+  abstract isIndexed(searchParam: SearchParameter, resourceType: string, isSearch?: boolean): boolean;
 
   /**
    * Indexes the resource in the lookup table.
@@ -121,8 +121,9 @@ export abstract class LookupTable {
    * @param selectQuery - The select query builder.
    * @param resourceType - The FHIR resource type.
    * @param sortRule - The sort rule details.
+   * @param _param - The search parameter.
    */
-  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
+  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule, _param: SearchParameter): void {
     const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);

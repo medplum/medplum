@@ -926,7 +926,7 @@ function buildSearchFilterExpression(
     };
   }
 
-  const lookupTable = getLookupTable(resourceType, param);
+  const lookupTable = getLookupTable(resourceType, param, true);
   if (lookupTable) {
     return lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
   }
@@ -1308,9 +1308,9 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
     throw new OperationOutcomeError(badRequest('Unknown search parameter: ' + sortRule.code));
   }
 
-  const lookupTable = getLookupTable(resourceType, param);
+  const lookupTable = getLookupTable(resourceType, param, true);
   if (lookupTable) {
-    lookupTable.addOrderBy(builder, resourceType, sortRule);
+    lookupTable.addOrderBy(builder, resourceType, sortRule, param);
     return;
   }
 

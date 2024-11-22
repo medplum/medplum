@@ -1437,7 +1437,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         // MISSING/PRESENT - any entries in the column at all
 
-        const tokenSet = system === 'text' ? rowTextTokens : rowTokens;
+        const tokenSet = system === 'textXXX' ? rowTextTokens : rowTokens;
         if (system) {
           // [parameter]=[system]|
           tokenSet.add(system);
@@ -2504,9 +2504,13 @@ export function isIndexTable(resourceType: string, searchParam: SearchParameter)
   return newWay;
 }
 
-export function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable | undefined {
+export function getLookupTable(
+  resourceType: string,
+  searchParam: SearchParameter,
+  isSearch?: boolean
+): LookupTable | undefined {
   for (const lookupTable of lookupTables) {
-    if (lookupTable.isIndexed(searchParam, resourceType)) {
+    if (lookupTable.isIndexed(searchParam, resourceType, isSearch)) {
       return lookupTable;
     }
   }

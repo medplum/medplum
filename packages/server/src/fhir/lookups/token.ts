@@ -79,10 +79,11 @@ export class TokenTable extends LookupTable {
    * Returns true if the search parameter is an "token" parameter.
    * @param searchParam - The search parameter.
    * @param resourceType - The resource type.
+   * @param isSearch - Is searching
    * @returns True if the search parameter is an "token" parameter.
    */
-  isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
-    return USE_TOKEN_TABLE && Boolean(getTokenIndexType(searchParam, resourceType));
+  isIndexed(searchParam: SearchParameter, resourceType: string, isSearch?: boolean): boolean {
+    return (isSearch || USE_TOKEN_TABLE) && Boolean(getTokenIndexType(searchParam, resourceType));
   }
 
   /**
@@ -155,8 +156,7 @@ export class TokenTable extends LookupTable {
 
     const whereExpression =
       buildWhereExpression(details, table, caseSensitive, filter) ??
-      // TODO ARRAY_EMPTY is very untested
-      new TypedCondition(new Column(table, details.columnName), 'ARRAY_EMPTY', undefined);
+      new Negation(new TypedCondition(new Column(table, details.columnName), 'ARRAY_EMPTY', undefined));
 
     if (shouldTokenRowExist(filter)) {
       return whereExpression;
@@ -170,8 +170,9 @@ export class TokenTable extends LookupTable {
    * @param selectQuery - The select query builder.
    * @param resourceType - The resource type.
    * @param sortRule - The sort rule details.
+   * @param param - The search parameter.
    */
-  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
+  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule, param: SearchParameter): void {
     if (USE_TOKEN_TABLE) {
       const lookupTableName = this.getTableName(resourceType);
       const joinName = selectQuery.getNextJoinAlias();
@@ -211,10 +212,11 @@ export class TokenTable extends LookupTable {
       essentially boils down to joining to a projected token table on the fly.
 
     */
+    const details = getSearchParameterDetails(resourceType, param);
     selectQuery.orderBy(
       new Column(
         undefined,
-        'substring(a2t(token),' + escapeLiteral(sortRule.code + DELIM + DELIM + '([^' + ARRAY_DELIM + ']+)') + ')',
+        `substring(a2t("${details.columnName}"),` + escapeLiteral(DELIM + '([^' + ARRAY_DELIM + ']+)') + ')',
         true
       ),
       sortRule.descending
