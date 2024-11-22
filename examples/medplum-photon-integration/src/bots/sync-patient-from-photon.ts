@@ -8,7 +8,6 @@ import type {
   Bundle,
   BundleEntry,
   ContactPoint,
-  HumanName,
   MedicationRequest,
   Patient,
   Practitioner,
