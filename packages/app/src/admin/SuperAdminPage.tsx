@@ -2,7 +2,7 @@ import { Button, Divider, Modal, NativeSelect, PasswordInput, Stack, TextInput, 
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import {
   DateTimeInput,
   Document,
@@ -208,33 +208,71 @@ export function SuperAdminPage(): JSX.Element {
 }
 
 function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
+  const controller = new AbortController();
   notifications.show({
     id: url,
     loading: true,
     title,
     message: 'Running...',
     autoClose: false,
-    withCloseButton: false,
+    withCloseButton: true,
+    onClose: () => {
+      controller.abort();
+    },
   });
 
-  const options: MedplumRequestOptions = { method: 'POST', pollStatusOnAccepted: true };
+  const options: MedplumRequestOptions = {
+    method: 'POST',
+    pollStatusOnAccepted: true,
+    asyncReqCancelSignal: controller.signal,
+  };
   if (body) {
     options.body = JSON.stringify(body);
   }
 
   medplum
-    .startAsyncRequest(url, options)
-    .then(() => {
-      notifications.update({
-        id: url,
-        color: 'green',
-        title,
-        message: 'Done',
-        icon: <IconCheck size="1rem" />,
-        loading: false,
-        autoClose: false,
-        withCloseButton: true,
-      });
+    .startAsyncRequest<AsyncJob>(url, options)
+    .then((job) => {
+      switch (job.status) {
+        case 'completed':
+          notifications.update({
+            id: url,
+            color: 'green',
+            title,
+            message: 'Done',
+            icon: <IconCheck size="1rem" />,
+            loading: false,
+            autoClose: false,
+            withCloseButton: true,
+          });
+          break;
+        case 'cancelled':
+          notifications.update({
+            id: url,
+            color: 'red',
+            title,
+            message: 'Job cancelled',
+            icon: <IconX size="1rem" />,
+            loading: false,
+            autoClose: false,
+            withCloseButton: true,
+          });
+          break;
+        case 'error':
+          notifications.update({
+            id: url,
+            color: 'red',
+            title,
+            message: 'Error while processing job',
+            icon: <IconX size="1rem" />,
+            loading: false,
+            autoClose: false,
+            withCloseButton: true,
+          });
+          break;
+        default:
+          throw new Error('Invalid status for finalized job');
+      }
     })
     .catch((err) => {
       notifications.update({
