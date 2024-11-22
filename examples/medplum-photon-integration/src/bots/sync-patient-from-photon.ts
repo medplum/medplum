@@ -12,6 +12,7 @@ import {
   Bundle,
   BundleEntry,
   ContactPoint,
+  HumanName,
   MedicationRequest,
   Patient,
   Practitioner,
