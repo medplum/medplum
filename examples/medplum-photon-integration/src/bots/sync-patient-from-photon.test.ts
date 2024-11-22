@@ -322,7 +322,7 @@ describe('Sync patients from Photon', async () => {
       expect(result).toStrictEqual(practitioner);
     });
 
-    test('Create practitioner if none exists', async () => {
+    test('Create practitioner reference if none exists', async () => {
       const medplum = new MockClient();
 
       const photonProvider: PhotonProvider = {
@@ -347,9 +347,7 @@ describe('Sync patients from Photon', async () => {
       };
 
       const result = await getPrescriber(medplum, photonProvider);
-      const expectedResult = await medplum.searchOne('Practitioner', { identifier: NEUTRON_HEALTH + '|example-id' });
-
-      expect(result).toStrictEqual(expectedResult);
+      expect(result).toBeUndefined();
     });
   });
 

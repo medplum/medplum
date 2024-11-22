@@ -280,6 +280,9 @@ export async function createPrescriptions(
     const status = getStatusFromPhotonState(photonPrescription.state);
     const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
     const prescriber = await getPrescriber(medplum, photonPrescription.prescriber);
+    const requester: Reference<Practitioner> = prescriber
+      ? createReference(prescriber)
+      : { display: photonPrescription.prescriber.name.full };
 
     const prescription: MedicationRequest = {
       resourceType: 'MedicationRequest',
@@ -303,7 +306,7 @@ export async function createPrescriptions(
       dosageInstruction: [{ patientInstruction: photonPrescription.instructions }],
       authoredOn: photonPrescription.writtenAt,
       medicationCodeableConcept: medicationElement,
-      requester: createReference(prescriber),
+      requester,
     };
 
     if (photonPrescription.notes) {
@@ -315,7 +318,11 @@ export async function createPrescriptions(
   return prescriptions;
 }
 
-export async function getPrescriber(medplum: MedplumClient, photonProvider: PhotonProvider): Promise<Practitioner> {
+export async function getPrescriber(
+  medplum: MedplumClient,
+  photonProvider: PhotonProvider
+): Promise<Practitioner | undefined> {
+  debugger;
   const prescriberPhotonId = photonProvider.id;
   const prescriberMedplumId = photonProvider.externalId;
 
@@ -330,36 +337,7 @@ export async function getPrescriber(medplum: MedplumClient, photonProvider: Phot
   if (trackedPractitioner) {
     return trackedPractitioner;
   } else {
-    const newPractitioner = await createPractitioner(medplum, photonProvider);
-    return newPractitioner;
-  }
-}
-
-export async function createPractitioner(
-  medplum: MedplumClient,
-  photonProvider: PhotonProvider
-): Promise<Practitioner> {
-  const providerName: HumanName = { given: [photonProvider.name.first], family: photonProvider.name.last };
-  if (photonProvider.name.title) {
-    providerName.prefix = [photonProvider.name.title];
-  }
-
-  const practitionerData: Practitioner = {
-    resourceType: 'Practitioner',
-    identifier: [{ system: NEUTRON_HEALTH, value: photonProvider.id }],
-    name: [providerName],
-    telecom: [
-      { system: 'email', value: photonProvider.email },
-      { system: 'phone', value: photonProvider.phone },
-    ],
-    address: formatAddress(photonProvider.address),
-  };
-
-  try {
-    const practitioner = await medplum.createResource(practitionerData);
-    return practitioner;
-  } catch (err) {
-    throw new Error(normalizeErrorString(err));
+    return undefined;
   }
 }
 
