@@ -1,9 +1,7 @@
 import { allOk, assert, badRequest } from '@medplum/core';
+import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { AsyncJob, OperationDefinition } from '@medplum/fhirtypes';
-import { Request, Response } from 'express';
-import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
-import { sendOutcome } from '../outcomes';
 import { getSystemRepo } from '../repo';
 
 export const operation: OperationDefinition = {
@@ -24,8 +22,11 @@ export const operation: OperationDefinition = {
 /**
  * Handles HTTP requests for the AsyncJob $cancel operation.
  * Sets the status of the `AsyncJob` to `cancelled`.
+ *
+ * @param req - A request to cancel a particular async job.
+ * @returns A FhirResponse.
  */
-export const asyncJobCancelHandler = asyncWrap(async (req: Request, res: Response) => {
+export async function asyncJobCancelHandler(req: FhirRequest): Promise<FhirResponse> {
   assert(req.params.id, 'This operation can only be executed on an instance');
   // Update status of async job
   const { repo } = getAuthenticatedContext();
@@ -48,10 +49,7 @@ export const asyncJobCancelHandler = asyncWrap(async (req: Request, res: Respons
     case 'cancelled':
       break;
     default:
-      sendOutcome(
-        res,
-        badRequest(`AsyncJob cannot be cancelled if status is not 'accepted', job had status '${job.status}'`)
-      );
+      return [badRequest(`AsyncJob cannot be cancelled if status is not 'accepted', job had status '${job.status}'`)];
   }
-  sendOutcome(res, allOk);
-});
+  return [allOk];
+}

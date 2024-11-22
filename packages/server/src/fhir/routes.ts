@@ -124,9 +124,6 @@ protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 protectedRoutes.post('/Agent/([$]|%24)push', agentPushHandler);
 protectedRoutes.post('/Agent/:id/([$]|%24)push', agentPushHandler);
 
-// AsyncJob $cancel operation
-protectedRoutes.post('/AsyncJob/:id/([$]|%24)cancel', asyncJobCancelHandler);
-
 // Bot $execute operation
 // Allow extra path content after the "$execute" to support external callers who append path info
 const botPaths = [
@@ -226,6 +223,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Agent $upgrade operation
   router.add('GET', '/Agent/$upgrade', agentUpgradeHandler);
   router.add('GET', '/Agent/:id/$upgrade', agentUpgradeHandler);
+
+  // AsyncJob $cancel operation
+  router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
 
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
