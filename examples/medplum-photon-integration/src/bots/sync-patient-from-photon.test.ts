@@ -14,7 +14,6 @@ import {
   getStatusFromPhotonState,
   handler,
 } from './sync-patient-from-photon';
-import { photonGraphqlFetch } from './utils';
 
 describe('Sync patients from Photon', async () => {
   beforeAll(() => {
@@ -34,18 +33,6 @@ describe('Sync patients from Photon', async () => {
         type: 'batch-response',
         entry: [],
       });
-      const mockPhotonPatients: PhotonPatient[] = [
-        {
-          id: '123',
-          externalId: undefined,
-          name: { first: 'John', last: 'Doe', full: 'Jane Doe' },
-          sex: 'MALE',
-          dateOfBirth: '1990-01-01',
-          phone: '555-1234',
-          allergies: [],
-          prescriptions: [],
-        },
-      ];
 
       // Mock the photon GraphQL fetch
       vi.mock('./utils.ts', async () => {
@@ -53,11 +40,26 @@ describe('Sync patients from Photon', async () => {
         return {
           ...actual,
           handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
-          photonGraphqlFetch: vi.fn(),
+          photonGraphqlFetch: vi.fn().mockImplementation(() => {
+            return {
+              data: {
+                patients: [
+                  {
+                    id: '123',
+                    externalId: undefined,
+                    name: { first: 'John', last: 'Doe', full: 'Jane Doe' },
+                    sex: 'MALE',
+                    dateOfBirth: '1990-01-01',
+                    phone: '555-1234',
+                    allergies: [],
+                    prescriptions: [],
+                  },
+                ],
+              },
+            };
+          }),
         };
       });
-
-      (photonGraphqlFetch as jest.Mock).mockResolvedValue({ data: { patients: mockPhotonPatients } });
 
       const mockEvent = {
         secrets: {
