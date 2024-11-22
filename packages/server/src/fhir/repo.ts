@@ -1450,7 +1450,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         // MISSING/PRESENT - any entries in the column at all
 
-        const tokenSet = system === 'text' ? rowTextTokens : rowTokens;
+        const tokenSet = system === 'textXXX' ? rowTextTokens : rowTokens;
         if (system) {
           // [parameter]=[system]|
           tokenSet.add(system);

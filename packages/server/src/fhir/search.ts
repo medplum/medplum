@@ -66,6 +66,7 @@ import {
   Union,
   ValuesQuery,
 } from './sql';
+import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './lookups/token';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -942,10 +943,10 @@ function buildSearchFilterExpression(
   if (impl.searchStrategy === 'lookup-table') {
     return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
   } else if (impl.searchStrategy === 'token-column') {
-    throw new Error('Token column search strategy not implemented');
+    return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
   }
 
-  // Not any special cases, just a normal search parameter.
+  impl satisfies ColumnSearchParameterImplementation;
   return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
 }
 
@@ -1328,10 +1329,14 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
 
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy === 'lookup-table') {
-    impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
+    impl.lookupTable.addOrderBy(builder, resourceType, sortRule, param);
+    return;
+  } else if (impl.searchStrategy === 'token-column') {
+    addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
     return;
   }
 
+  impl satisfies ColumnSearchParameterImplementation;
   builder.orderBy(impl.columnName, !!sortRule.descending);
 }
 

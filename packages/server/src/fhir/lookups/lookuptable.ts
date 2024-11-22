@@ -119,8 +119,9 @@ export abstract class LookupTable {
    * @param selectQuery - The select query builder.
    * @param resourceType - The FHIR resource type.
    * @param sortRule - The sort rule details.
+   * @param _param - The search parameter.
    */
-  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
+  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule, _param: SearchParameter): void {
     const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
     const columnName = this.getColumnName(sortRule.code);
