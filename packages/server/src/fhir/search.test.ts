@@ -4362,6 +4362,74 @@ describe('FHIR Search', () => {
           }
           expect(count).toBe(50);
         }));
+
+      test('Cursor pagination dedupes across page boundaries', () =>
+        withTestContext(async () => {
+          const systemRepo = getSystemRepo();
+          const identifier = randomUUID();
+          const lastUpdated = new Date();
+          lastUpdated.setMilliseconds(0);
+
+          const tasks: Task[] = [];
+          for (let i = 0; i < 50; i++) {
+            const task = await systemRepo.createResource<Task>({
+              resourceType: 'Task',
+              status: 'accepted',
+              intent: 'unknown',
+              identifier: [{ value: identifier }],
+              meta: { lastUpdated: lastUpdated.toISOString() },
+            });
+            tasks.push(task);
+
+            if (i % 7 === 6) {
+              lastUpdated.setMilliseconds(lastUpdated.getMilliseconds() + 33);
+            }
+          }
+
+          let url = `Task?identifier=${identifier}&_sort=_lastUpdated`;
+          const seenResources: string[] = [];
+          while (url) {
+            const bundle = await systemRepo.search(parseSearchRequest(url));
+            for (const entry of bundle.entry ?? []) {
+              seenResources.push(entry.resource?.id as string);
+            }
+
+            const link = bundle.link?.find((l) => l.relation === 'next')?.url;
+            if (link) {
+              expect(link.includes('_cursor')).toBe(true);
+              console.log(link);
+              url = link;
+            } else {
+              url = '';
+            }
+          }
+          expect(seenResources.length).toBe(50);
+        }));
+
+      test('V1 cursor is not parsed as V2', () =>
+        withTestContext(async () => {
+          const identifier = randomUUID();
+
+          const task = await repo.createResource<Task>({
+            resourceType: 'Task',
+            status: 'accepted',
+            intent: 'unknown',
+            identifier: [{ value: identifier }],
+          });
+          const nextInstant = new Date(task.meta?.lastUpdated as string).getTime();
+
+          const v1Cursor = `1-${nextInstant}-${task.id}`;
+          const bundle = await repo.search(
+            parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=${v1Cursor}`)
+          );
+          expect(bundleContains(bundle, task)).toBeDefined();
+
+          const v2Cursor = `2-${nextInstant}-${task.id}`;
+          const bundle2 = await repo.search(
+            parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=${v2Cursor}`)
+          );
+          expect(bundleContains(bundle2, task)).toBeUndefined();
+        }));
     });
   });
 

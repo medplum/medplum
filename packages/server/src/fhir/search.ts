@@ -82,7 +82,7 @@ type SearchRequestWithCountAndOffset<T extends Resource = Resource> = SearchRequ
 interface Cursor {
   version: string;
   nextInstant: string;
-  nextId: string;
+  excludedIds?: string[];
 }
 
 interface ChainedSearchLink {
@@ -258,6 +258,10 @@ function getSelectQueryForSearch<T extends Resource>(
     if (cursor) {
       builder.orderBy(new Column(searchRequest.resourceType, 'lastUpdated', false));
       builder.whereExpr(new Condition(new Column(searchRequest.resourceType, 'lastUpdated'), '>=', cursor.nextInstant));
+
+      if (cursor.excludedIds?.length) {
+        builder.whereExpr(new Negation(new Condition('id', 'IN', cursor.excludedIds)));
+      }
     }
   }
   return builder;
@@ -565,7 +569,12 @@ function getSearchLinks(
       if (entries[0].resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated) {
         throw new OperationOutcomeError(serverError(new Error('Cursor fails to make progress')));
       }
-      buildSearchLinksWithCursor(searchRequest, nextResource, result);
+
+      // Exclude resources that would appear on the next page, but have already been given on this one
+      const excludedIds = flatMapFilter(entries, (entry) =>
+        entry.resource?.meta?.lastUpdated === nextResource?.meta?.lastUpdated ? entry.resource?.id : undefined
+      );
+      buildSearchLinksWithCursor(searchRequest, nextResource, excludedIds, result);
     } else {
       buildSearchLinksWithOffset(searchRequest, nextResource, result);
     }
@@ -598,11 +607,13 @@ function canUseCursorLinks(searchRequest: SearchRequestWithCountAndOffset): bool
  * Builds the "first", "next", and "previous" links for a search request using cursor pagination.
  * @param searchRequest - The search request.
  * @param nextResource - The next resource in the search results, which fell outside of the current page.
+ * @param excludedIds - Resource IDs to exclude from the next page because they were already shown on the current one.
  * @param result - The search bundle links.
  */
 function buildSearchLinksWithCursor(
   searchRequest: SearchRequestWithCountAndOffset,
   nextResource: Resource | undefined,
+  excludedIds: string[],
   result: BundleLink[]
 ): void {
   result.push({
@@ -616,9 +627,9 @@ function buildSearchLinksWithCursor(
       url: getSearchUrl({
         ...searchRequest,
         cursor: formatCursor({
-          version: '1',
+          version: '2',
           nextInstant: nextResource?.meta?.lastUpdated as string,
-          nextId: nextResource?.id as string,
+          excludedIds,
         }),
         offset: undefined,
       }),
@@ -632,12 +643,45 @@ function buildSearchLinksWithCursor(
  * @returns The Cursor object or undefined if the cursor string is invalid.
  */
 function parseCursor(cursor: string): Cursor | undefined {
-  const parts = splitN(cursor, '-', 3);
-  if (parts.length !== 3) {
+  const version = cursor.slice(0, cursor.indexOf('-'));
+  switch (version) {
+    case '1':
+      return parseV1Cursor(cursor);
+    case '2':
+      return parseV2Cursor(cursor);
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Parses a V1 cursor string of the format {version}-{nextInstant}-{nextId}
+ * NOTE: The nextId field is no longer used.
+ * @param cursor - The cursor string to parse.
+ * @returns The parsed cursor object.
+ */
+function parseV1Cursor(cursor: string): Cursor | undefined {
+  const [version, nextInstant, nextId] = splitN(cursor, '-', 3);
+  if (!nextId) {
     return undefined;
   }
-  const date = new Date(parseInt(parts[1], 10));
-  return { version: parts[0], nextInstant: date.toISOString(), nextId: parts[2] };
+  const date = new Date(parseInt(nextInstant, 10));
+  return { version, nextInstant: date.toISOString() };
+}
+
+/**
+ * Parses a V2 cursor string of the format {version}-{nextInstant}-{excludedIds}
+ * NOTE: The excludedIds field is optional, and contains comma-separated IDs
+ * @param cursor - The cursor string to parse.
+ * @returns The parsed cursor object.
+ */
+function parseV2Cursor(cursor: string): Cursor | undefined {
+  const [version, nextInstant, excludedIds] = splitN(cursor, '-', 3);
+  if (!nextInstant) {
+    return undefined;
+  }
+  const date = new Date(parseInt(nextInstant, 10));
+  return { version, nextInstant: date.toISOString(), excludedIds: excludedIds?.split(',') };
 }
 
 /**
@@ -647,7 +691,11 @@ function parseCursor(cursor: string): Cursor | undefined {
  */
 function formatCursor(cursor: Cursor): string {
   const date = new Date(cursor.nextInstant);
-  return `${cursor.version}-${date.getTime()}-${cursor.nextId}`;
+  let str = `${cursor.version}-${date.getTime()}`;
+  if (cursor.excludedIds?.length) {
+    str += '-' + cursor.excludedIds.join(',');
+  }
+  return str;
 }
 
 /**
