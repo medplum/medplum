@@ -29,7 +29,7 @@ export function HomePage(): JSX.Element {
   const [loading, { open, close }] = useDisclosure();
 
   const navigate = useMedplumNavigate();
-  async function handleSyncPatientsFromPhoton() {
+  async function handleSyncPatientsFromPhoton(): Promise<void> {
     open();
     try {
       await medplum.executeBot(

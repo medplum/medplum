@@ -1,18 +1,10 @@
-import {
-  BotEvent,
-  createReference,
-  getDisplayString,
-  MedplumClient,
-  normalizeErrorString,
-  RXNORM,
-} from '@medplum/core';
+import { BotEvent, createReference, getDisplayString, MedplumClient, RXNORM } from '@medplum/core';
 import {
   Address,
   AllergyIntolerance,
   Bundle,
   BundleEntry,
   ContactPoint,
-  HumanName,
   MedicationRequest,
   Patient,
   Practitioner,
@@ -322,7 +314,6 @@ export async function getPrescriber(
   medplum: MedplumClient,
   photonProvider: PhotonProvider
 ): Promise<Practitioner | undefined> {
-  debugger;
   const prescriberPhotonId = photonProvider.id;
   const prescriberMedplumId = photonProvider.externalId;
 
