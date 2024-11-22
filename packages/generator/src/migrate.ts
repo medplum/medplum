@@ -14,7 +14,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { Client, escapeIdentifier } from 'pg';
+import { Client } from 'pg';
 import { FileBuilder } from './filebuilder';
 
 const SCHEMA_DIR = resolve(__dirname, '../../server/src/migrations/schema');
@@ -156,10 +156,10 @@ async function getIndexes(db: Client, tableName: string): Promise<IndexDefinitio
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
 
-const IndexComponentExpressionRegexes = [/^a2t\("([\w]+)"\) gin_trgm_ops/];
+const IndexComponentExpressionRegexes = [/a2t\("?([\w]+)"?\) gin_trgm_ops/];
 
 function parseIndexDefinition(indexdef: string): IndexDefinition {
-  // Use a regex to get the column names inside the parentheses
+  // Use a regex to get the column names or expressions inside the parentheses
   const matches = indexdef.match(/\((.+)\)$/);
   if (!matches) {
     throw new Error('Invalid index definition: ' + indexdef);
@@ -351,8 +351,11 @@ function getSearchParameterIndexes(_searchParam: SearchParameter, details: Searc
     const indexes: IndexDefinition[] = [];
     for (const columnName of [details.columnName, details.columnName + 'Text']) {
       indexes.push({ columns: [columnName], indexType: 'gin' });
+      // TO facilitate matching with parsed start index definitions, only wrap in quotes
+      // when necessary since that is behavior of `SELECT indexdef FROM pg_indexes`
+      const escapedColumnName = columnName === columnName.toLocaleLowerCase() ? columnName : '"' + columnName + '"';
       indexes.push({
-        columns: [{ expression: `a2t(${escapeIdentifier(columnName)}) gin_trgm_ops`, name: columnName + 'Trgm' }],
+        columns: [{ expression: `a2t(${escapedColumnName}) gin_trgm_ops`, name: columnName + 'Trgm' }],
         indexType: 'gin',
       });
     }
@@ -528,8 +531,8 @@ function migrateColumns(b: FileBuilder, startTable: TableDefinition, targetTable
     if (!startColumn) {
       writeAddColumn(b, targetTable, targetColumn);
     } else if (normalizeColumnType(startColumn) !== normalizeColumnType(targetColumn)) {
-      console.log('START ', JSON.stringify(startColumn), normalizeColumnType(startColumn));
-      console.log('TARGET', JSON.stringify(targetColumn), normalizeColumnType(targetColumn));
+      console.log('START ', normalizeColumnType(startColumn));
+      console.log('TARGET', normalizeColumnType(targetColumn));
       writeUpdateColumn(b, targetTable, targetColumn);
     }
   }
@@ -545,7 +548,7 @@ function normalizeColumnType(column: ColumnDefinition): string {
     .replaceAll('TIMESTAMP WITH TIME ZONE', 'TIMESTAMPTZ')
     .replaceAll(' PRIMARY KEY', '')
     .replaceAll(' DEFAULT FALSE', '')
-    .replaceAll(' DEFAULT ARRAY[]::text[]', '')
+    .replaceAll(' DEFAULT ARRAY[]::TEXT[]', '')
     .replaceAll(' NOT NULL', '')
     .trim();
 }
