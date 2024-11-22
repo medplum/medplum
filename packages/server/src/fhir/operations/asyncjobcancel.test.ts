@@ -4,7 +4,8 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
-import { initTestAuth } from '../../test.setup';
+import { initTestAuth, withTestContext } from '../../test.setup';
+import { getSystemRepo } from '../repo';
 import { asyncJobCancelHandler } from './asyncjobcancel';
 
 const app = express();
@@ -14,7 +15,7 @@ describe('AsyncJob/$cancel', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initApp(app, config);
+    await withTestContext(() => initApp(app, config));
   });
 
   beforeEach(async () => {
@@ -135,4 +136,44 @@ describe('AsyncJob/$cancel', () => {
     }
     expect(next).toHaveBeenCalledWith(new Error('This operation can only be executed on an instance'));
   });
+
+  test('Cancelled job does not get added to super admin project', () =>
+    withTestContext(async () => {
+      // We create the resource with system repo so that it is like how system AsyncJobs get created
+      const asyncJob = await getSystemRepo().createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: 'random-request',
+      });
+
+      const res2 = await request(app)
+        .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$cancel`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum', 'extended');
+      expect(res2.status).toEqual(200);
+      expect(res2.body).toMatchObject(allOk);
+
+      const res3 = await request(app)
+        .get(`/fhir/R4/AsyncJob/${asyncJob.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum', 'extended');
+
+      expect(res3.status).toEqual(200);
+      expect(res3.body).toEqual({
+        id: asyncJob.id as string,
+        resourceType: 'AsyncJob',
+        requestTime: asyncJob.requestTime,
+        request: 'random-request',
+        status: 'cancelled',
+        meta: {
+          lastUpdated: expect.any(String),
+          versionId: expect.any(String),
+          author: {
+            reference: 'system',
+          },
+          // We make sure meta does not contain project
+        },
+      });
+    }));
 });

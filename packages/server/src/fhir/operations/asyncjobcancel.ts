@@ -4,6 +4,7 @@ import { Request, Response } from 'express';
 import { asyncWrap } from '../../async';
 import { getAuthenticatedContext } from '../../context';
 import { sendOutcome } from '../outcomes';
+import { getSystemRepo } from '../repo';
 
 export const operation: OperationDefinition = {
   id: 'AsyncJob-cancel',
@@ -28,10 +29,18 @@ export const asyncJobCancelHandler = asyncWrap(async (req: Request, res: Respons
   assert(req.params.id, 'This operation can only be executed on an instance');
   // Update status of async job
   const { repo } = getAuthenticatedContext();
+  // We read with the users repo to make sure they have permissions for this
   const job = await repo.readResource<AsyncJob>('AsyncJob', req.params.id);
   switch (job.status) {
     case 'accepted':
-      await repo.patchResource('AsyncJob', req.params.id, [
+      // We patch with system repo so that AsyncJob is not added to a project
+      // This occurs because the behavior when a super admin updates a resource is different depending on whether
+      // The `X-Medplum` header is set or not
+      // With the header set (ie. `X-Medplum: extended`), the resource will be added to the Super Admin project
+      // With the header NOT set, the resource will not be added to any project and remain without a project
+      // Using system repo always maintains that the resource is not added to a project
+      // Due to it lacking any projects listed in `context.projects`
+      await getSystemRepo().patchResource('AsyncJob', req.params.id, [
         { op: 'test', path: '/status', value: 'accepted' },
         { op: 'add', path: '/status', value: 'cancelled' },
       ]);
