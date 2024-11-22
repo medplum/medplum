@@ -195,7 +195,7 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
       { columns: ['_source'], indexType: 'btree', unique: false },
       { columns: ['_tag'], indexType: 'gin', unique: false },
       { columns: ['_profile'], indexType: 'gin', unique: false },
-      { columns: ['_security'], indexType: 'btree', unique: false },
+      { columns: ['_security'], indexType: 'gin', unique: false },
     ],
   };
 
