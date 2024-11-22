@@ -1,4 +1,5 @@
 import {
+  deepEquals,
   getAllDataTypes,
   getSearchParameterDetails,
   indexSearchParameterBundle,
@@ -40,7 +41,7 @@ type IndexType = 'btree' | 'gin';
 interface IndexDefinition {
   columns: string[];
   indexType: IndexType;
-  unique?: boolean;
+  unique: boolean;
 }
 
 const searchParams: SearchParameter[] = [];
@@ -139,7 +140,7 @@ async function getIndexes(db: Client, tableName: string): Promise<IndexDefinitio
 
 function parseIndexDefinition(indexdef: string): IndexDefinition {
   // Use a regex to get the column names inside the parentheses
-  const matches = indexdef.match(/\(([^)]+)\)/);
+  const matches = indexdef.match(/\((.+)\)$/);
   if (!matches) {
     throw new Error('Invalid index definition: ' + indexdef);
   }
@@ -188,13 +189,13 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
       { name: '_security', type: 'TEXT[]' },
     ],
     indexes: [
-      { columns: ['lastUpdated'], indexType: 'btree' },
-      { columns: ['compartments'], indexType: 'gin' },
-      { columns: ['projectId'], indexType: 'btree' },
-      { columns: ['_source'], indexType: 'btree' },
-      { columns: ['_tag'], indexType: 'gin' },
-      { columns: ['_profile'], indexType: 'gin' },
-      { columns: ['_security'], indexType: 'btree' },
+      { columns: ['lastUpdated'], indexType: 'btree', unique: false },
+      { columns: ['compartments'], indexType: 'gin', unique: false },
+      { columns: ['projectId'], indexType: 'btree', unique: false },
+      { columns: ['_source'], indexType: 'btree', unique: false },
+      { columns: ['_tag'], indexType: 'gin', unique: false },
+      { columns: ['_profile'], indexType: 'gin', unique: false },
+      { columns: ['_security'], indexType: 'btree', unique: false },
     ],
   };
 
@@ -211,8 +212,8 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
       { name: 'lastUpdated', type: 'TIMESTAMPTZ NOT NULL' },
     ],
     indexes: [
-      { columns: ['id'], indexType: 'btree' },
-      { columns: ['lastUpdated'], indexType: 'btree' },
+      { columns: ['id'], indexType: 'btree', unique: false },
+      { columns: ['lastUpdated'], indexType: 'btree', unique: false },
     ],
   });
 
@@ -225,7 +226,7 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
       { name: 'value', type: 'TEXT' },
     ],
     indexes: [
-      { columns: ['resourceId'], indexType: 'btree' },
+      { columns: ['resourceId'], indexType: 'btree', unique: false },
       // TODO: Add composite indexes and support for `include`
     ],
   });
@@ -259,14 +260,14 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
 
     const columnName = details.columnName;
     tableDefinition.columns.push({ name: columnName, type: getColumnType(details) });
-    tableDefinition.indexes.push({ columns: [columnName], indexType: details.array ? 'gin' : 'btree' });
+    tableDefinition.indexes.push({ columns: [columnName], indexType: details.array ? 'gin' : 'btree', unique: false });
   }
   for (const add of additionalSearchColumns) {
     if (add.table !== tableDefinition.name) {
       continue;
     }
     tableDefinition.columns.push({ name: add.column, type: add.type });
-    tableDefinition.indexes.push({ columns: [add.column], indexType: add.indexType as IndexType });
+    tableDefinition.indexes.push({ columns: [add.column], indexType: add.indexType as IndexType, unique: false });
   }
 }
 
@@ -398,12 +399,12 @@ function buildLookupTable(result: SchemaDefinition, tableName: string, columns: 
   const tableDefinition: TableDefinition = {
     name: tableName,
     columns: [{ name: 'resourceId', type: 'UUID NOT NULL' }],
-    indexes: [{ columns: ['resourceId'], indexType: 'btree' }],
+    indexes: [{ columns: ['resourceId'], indexType: 'btree', unique: false }],
   };
 
   for (const column of columns) {
     tableDefinition.columns.push({ name: column, type: 'TEXT' });
-    tableDefinition.indexes.push({ columns: [column], indexType: 'btree' });
+    tableDefinition.indexes.push({ columns: [column], indexType: 'btree', unique: false });
   }
 
   result.tables.push(tableDefinition);
@@ -419,9 +420,9 @@ function buildValueSetElementTable(result: SchemaDefinition): void {
       { name: 'display', type: 'TEXT' },
     ],
     indexes: [
-      { columns: ['system'], indexType: 'btree' },
-      { columns: ['code'], indexType: 'btree' },
-      { columns: ['display'], indexType: 'btree' },
+      { columns: ['system'], indexType: 'btree', unique: false },
+      { columns: ['code'], indexType: 'btree', unique: false },
+      { columns: ['display'], indexType: 'btree', unique: false },
     ],
   });
 }
@@ -525,7 +526,7 @@ function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, pr
 
 function migrateIndexes(b: FileBuilder, startTable: TableDefinition, targetTable: TableDefinition): void {
   for (const targetIndex of targetTable.indexes) {
-    const startIndex = startTable.indexes.find((i) => i.columns.join(',') === targetIndex.columns.join(','));
+    const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
       writeAddIndex(b, targetTable, targetIndex);
     }
@@ -597,6 +598,11 @@ function rewriteMigrationExports(): void {
     }
   }
   writeFileSync(`${SCHEMA_DIR}/index.ts`, exportFile, { flag: 'w' });
+}
+
+function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
+  // deepEquals has FHIR-specific logic, but IndexDefinition is simple enough that it works fine
+  return deepEquals(a, b);
 }
 
 if (process.argv[1].endsWith('migrate.ts')) {
