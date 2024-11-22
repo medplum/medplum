@@ -70,7 +70,7 @@ describe('Job status', () => {
       expect(res.body).toEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'completed' }));
     }));
 
-  test('Cancelling job', () =>
+  test('Cancel -- Happy path', () =>
     withTestContext(async () => {
       const job = await asyncJobManager.init('http://example.com');
 
@@ -85,6 +85,19 @@ describe('Job status', () => {
         .delete(`/fhir/R4/job/${job.id}/status`)
         .set('Authorization', 'Bearer ' + accessToken);
       expect(res2.status).toEqual(202);
+      expect(res2.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        id: 'accepted',
+        issue: [
+          {
+            severity: 'information',
+            code: 'informational',
+            details: {
+              text: 'Accepted',
+            },
+          },
+        ],
+      });
 
       // Check if AsyncJob.status === 'cancelled'
       const res3 = await request(app)
@@ -99,6 +112,48 @@ describe('Job status', () => {
         status: 'cancelled',
         requestTime: job.requestTime,
         request: 'http://example.com',
+      });
+    }));
+
+  test.only('Cancel -- error (job already completed)', () =>
+    withTestContext(async () => {
+      const job = await asyncJobManager.init('http://example.com');
+      const callback = jest.fn();
+
+      asyncJobManager.start(async () => {
+        callback();
+      });
+
+      expect(callback).toHaveBeenCalled();
+
+      await waitForAsyncJob(asyncJobManager.getContentLocation('http://example.com/'), app, accessToken);
+
+      const res = await request(app)
+        .get(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(res.status).toBe(200);
+      expect(res.get('Content-Type')).toEqual('application/fhir+json; charset=utf-8');
+      expect(res.body).toEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'completed' }));
+
+      // Now try to cancel the job after it's already completed
+      const res2 = await request(app)
+        .delete(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(res2.status).toBe(400);
+      expect(res2.get('Content-Type')).toEqual('application/fhir+json; charset=utf-8');
+      expect(res2.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            code: 'invalid',
+            details: {
+              text: "AsyncJob cannot be cancelled if status is not 'accepted', job had status 'completed'",
+            },
+            severity: 'error',
+          },
+        ],
       });
     }));
 });
