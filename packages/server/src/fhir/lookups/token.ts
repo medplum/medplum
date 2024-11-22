@@ -129,37 +129,24 @@ export class TokenTable extends LookupTable {
   ): Expression {
     const caseSensitive = isCaseSensitiveSearchParameter(param, resourceType);
     const details = getSearchParameterDetails(resourceType, param);
-    if (USE_TOKEN_TABLE) {
-      const lookupTableName = this.getTableName(resourceType);
+    const lookupTableName = this.getTableName(resourceType);
 
-      const conjunction = new Conjunction([
-        new TypedCondition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
-        new TypedCondition(new Column(lookupTableName, 'code'), '=', filter.code),
-      ]);
+    const conjunction = new Conjunction([
+      new TypedCondition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+      new TypedCondition(new Column(lookupTableName, 'code'), '=', filter.code),
+    ]);
 
-      const whereExpression = buildWhereExpression(details, lookupTableName, caseSensitive, filter);
-      if (whereExpression) {
-        conjunction.expressions.push(whereExpression);
-      }
-
-      const exists = new SqlFunction('EXISTS', [new SelectQuery(lookupTableName).whereExpr(conjunction)]);
-
-      if (shouldTokenRowExist(filter)) {
-        return exists;
-      } else {
-        return new Negation(exists);
-      }
+    const whereExpression = buildWhereExpression(details, lookupTableName, caseSensitive, filter);
+    if (whereExpression) {
+      conjunction.expressions.push(whereExpression);
     }
 
-    const whereExpression =
-      buildWhereExpression(details, table, caseSensitive, filter) ??
-      // TODO ARRAY_EMPTY is very untested
-      new TypedCondition(new Column(table, details.columnName), 'ARRAY_EMPTY', undefined);
+    const exists = new SqlFunction('EXISTS', [new SelectQuery(lookupTableName).whereExpr(conjunction)]);
 
     if (shouldTokenRowExist(filter)) {
-      return whereExpression;
+      return exists;
     } else {
-      return new Negation(whereExpression);
+      return new Negation(exists);
     }
   }
 
@@ -168,55 +155,27 @@ export class TokenTable extends LookupTable {
    * @param selectQuery - The select query builder.
    * @param resourceType - The resource type.
    * @param sortRule - The sort rule details.
+   * @param _param - The search parameter.
    */
-  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
-    if (USE_TOKEN_TABLE) {
-      const lookupTableName = this.getTableName(resourceType);
-      const joinName = selectQuery.getNextJoinAlias();
-      const joinOnExpression = new TypedCondition(
-        new Column(resourceType, 'id'),
-        '=',
-        new Column(joinName, 'resourceId')
-      );
-      selectQuery.join(
-        'INNER JOIN',
-        new SelectQuery(lookupTableName)
-          .distinctOn('resourceId')
-          .column('resourceId')
-          .column('value')
-          .whereExpr(new TypedCondition(new Column(lookupTableName, 'code'), '=', sortRule.code)),
-        joinName,
-        joinOnExpression
-      );
-      selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
-      return;
-    }
-
-    /*
-      Current behavior:  
-      Sorts by the first value found in the token array for the given sort code which can result
-      in incorrect result ordering when a resource has multiple token values for the same code.
-
-      To achieve the correct behavior, we'd need to do something like:
-
-      * unnest or a2t the token array
-      * extract the matching code values with a regex group similar to below, but get ALL matching values instead of just the first
-      * sort the matching values
-      * choose the first or last sorted value based on sortRule.descending
-      
-      There is almost certainly not an efficient way to that much array/string manipulation
-      for dynamic codes for every row in the result set prior to sorting/limiting since that
-      essentially boils down to joining to a projected token table on the fly.
-
-    */
-    selectQuery.orderBy(
-      new Column(
-        undefined,
-        'substring(a2t(token),' + escapeLiteral(sortRule.code + DELIM + DELIM + '([^' + ARRAY_DELIM + ']+)') + ')',
-        true
-      ),
-      sortRule.descending
+  addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule, _param: SearchParameter): void {
+    const lookupTableName = this.getTableName(resourceType);
+    const joinName = selectQuery.getNextJoinAlias();
+    const joinOnExpression = new TypedCondition(
+      new Column(resourceType, 'id'),
+      '=',
+      new Column(joinName, 'resourceId')
     );
+    selectQuery.join(
+      'INNER JOIN',
+      new SelectQuery(lookupTableName)
+        .distinctOn('resourceId')
+        .column('resourceId')
+        .column('value')
+        .whereExpr(new TypedCondition(new Column(lookupTableName, 'code'), '=', sortRule.code)),
+      joinName,
+      joinOnExpression
+    );
+    selectQuery.orderBy(new Column(joinName, 'value'), sortRule.descending);
   }
 }
 
@@ -226,7 +185,7 @@ export class TokenTable extends LookupTable {
  * @param resourceType - The resource type.
  * @returns True if the search parameter is an "token" parameter.
  */
-function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
+export function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
   if (searchParam.type !== 'token') {
     return undefined;
   }
@@ -368,6 +327,171 @@ export function getTokens(resource: Resource): LookupToken[] {
     }
   }
   return result;
+}
+
+/**
+ * Adds "order by" clause to the select query builder.
+ * @param selectQuery - The select query builder.
+ * @param resourceType - The resource type.
+ * @param sortRule - The sort rule details.
+ * @param param - The search parameter.
+ */
+export function addTokenColumnsOrderBy(
+  selectQuery: SelectQuery,
+  resourceType: ResourceType,
+  sortRule: SortRule,
+  param: SearchParameter
+): void {
+  /*
+    [R4 spec behavior](https://www.hl7.org/fhir/r4/search.html#_sort):
+    A search parameter can refer to an element that repeats, and therefore there can be
+    multiple values for a given search parameter for a single resource. In this case,
+    the sort is based on the item in the set of multiple parameters that comes earliest in
+    the specified sort order when ordering the returned resources.
+
+    In [R5](https://www.hl7.org/fhir/r5/search.html#_sort) and beyond, that language is replaced with:
+    Servers have discretion on the implementation of sorting for both repeated elements and complex
+    elements. For example, if requesting a sort on Patient.name, servers might search by family name
+    then given, given name then family, or prefix, family, and then given. Similarly, when sorting with
+    multiple given names, the sort might be based on the 'earliest' name in sort order or the first name
+    in the instance.
+
+    Current behavior:
+    Sorts by the first value found in the token array for the given sort code which can result
+    in incorrect result ordering when a resource has multiple token values for the same code.
+
+    To achieve the correct behavior, it would be "best" to precompute and store in additional columns,
+    e.g. "codeAsc" and "codeDesc" for each token column in the token table. Writes are a little slower,
+    but searching would be quick.
+  */
+  const details = getSearchParameterDetails(resourceType, param);
+  selectQuery.orderBy(
+    new Column(
+      undefined,
+      `substring(a2t("${details.columnName}"),` +
+        escapeLiteral(ARRAY_DELIM + DELIM + '([^' + ARRAY_DELIM + ']+)') +
+        ')',
+      true
+    ),
+    sortRule.descending
+  );
+}
+
+export function buildTokenColumnsSearchFilter(
+  resourceType: ResourceType,
+  tableName: string,
+  param: SearchParameter,
+  filter: Filter
+): Expression {
+  const caseSensitive = isCaseSensitiveSearchParameter(param, resourceType);
+  const details = getSearchParameterDetails(resourceType, param);
+
+  const subExpressions = [];
+  for (const option of splitSearchOnComma(filter.value)) {
+    const expression = buildTokenColumnsWhereCondition(param, details, tableName, filter, caseSensitive, option);
+    if (expression) {
+      subExpressions.push(expression);
+    }
+  }
+
+  let expression: Expression;
+  if (subExpressions.length > 0) {
+    expression = new Disjunction(subExpressions);
+  } else {
+    // missing/present
+    expression = new Negation(new TypedCondition(new Column(tableName, details.columnName), 'ARRAY_EMPTY', undefined));
+  }
+
+  if (shouldTokenRowExist(filter)) {
+    return expression;
+  } else {
+    return new Negation(expression);
+  }
+}
+
+function buildTokenColumnsWhereCondition(
+  param: SearchParameter,
+  details: SearchParameterDetails,
+  tableName: string,
+  filter: Filter,
+  caseSensitive: boolean,
+  query: string
+): Expression | undefined {
+  // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
+  if (filter.operator === FhirOperator.IN) {
+    const valueSetQ = new SelectQuery('ValueSet').column('reference').where('url', '=', query).limit(1);
+    return new TypedCondition(
+      new Column(tableName, details.columnName),
+      'ARRAY_CONTAINS_SUBQUERY',
+      valueSetQ,
+      'TEXT[]'
+    );
+  }
+
+  let system: string | undefined;
+  let value: string = query;
+
+  // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
+  const parts = splitN(query, '|', 2);
+  if (parts.length === 2) {
+    system = parts[0] || NULL_SYSTEM;
+    value = parts[1];
+  }
+
+  // If we we are searching for a particular token value, build a Condition that filters for the value
+  if (shouldCompareTokenValue(filter.operator)) {
+    return buildTokenColumnsValueCondition(details, tableName, filter, caseSensitive, system, value);
+  }
+
+  // Otherwise we are just looking for the presence / absence of a token (e.g. when using the FhirOperator.MISSING)
+  // so we don't need to construct a filter Condition on the token table.
+  return undefined;
+}
+
+function buildTokenColumnsValueCondition(
+  details: SearchParameterDetails,
+  tableName: string,
+  filter: Filter,
+  caseSensitive: boolean,
+  system: string | undefined,
+  value: string
+): Expression {
+  system ??= '';
+  value = value.trim();
+
+  // TODO this isn't quite right some cases where system and/or value is empty or undefined
+  // there should be an explicit function for when value is missing/empty instead of piggybacking
+  // in this function
+  const valuePart = value ? DELIM + value : '';
+
+  // TODO how to know when to use columnName + 'Text'?
+  const tokenCol = new Column(tableName, details.columnName);
+
+  if (filter.operator === FhirOperator.TEXT) {
+    // a2t(token) ~ 'category\x1text\x1[^\x3]*Quick Brown'
+    return new Conjunction([
+      new TypedCondition(tokenCol, 'ARRAY_CONTAINS', 'text', 'TEXT[]'),
+      new TypedCondition(tokenCol, 'ARRAY_IREGEX', 'text' + DELIM + '[^' + ARRAY_DELIM + ']*' + value, 'TEXT[]'),
+    ]);
+  } else if (filter.operator === FhirOperator.CONTAINS) {
+    return new Conjunction([
+      // This ILIKE doesn't guarantee a matching row, but including it can result faster query
+      // since a trigram index is faster at LIKE/ILIKE than regex. In other words, the LIKE is a low-pass filter
+      new TypedCondition(
+        tokenCol,
+        'ARRAY_ILIKE',
+        '%' + ARRAY_DELIM + DELIM + '%' + escapeLikeString(value) + '%',
+        'TEXT[]'
+      ),
+      // The case-insensitive regex guarantees that the row matches
+      new TypedCondition(tokenCol, 'ARRAY_IREGEX', ARRAY_DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + value, 'TEXT[]'),
+    ]);
+  } else if (caseSensitive) {
+    return new TypedCondition(tokenCol, 'ARRAY_CONTAINS', system + valuePart, 'TEXT[]');
+  } else {
+    const param = system + DELIM + value + ARRAY_DELIM;
+    return new TypedCondition(tokenCol, 'ARRAY_IREGEX', param, 'TEXT[]');
+  }
 }
 
 /**
@@ -585,22 +709,13 @@ function buildWhereCondition(
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
     const [system, value] = parts;
-    if (USE_TOKEN_TABLE) {
-      const systemCondition = new TypedCondition(new Column(tableName, 'system'), '=', system || null);
-      return value
-        ? new Conjunction([
-            systemCondition,
-            buildValueCondition(details, tableName, filter, caseSensitive, system, value),
-          ])
-        : systemCondition;
-    }
-
-    return buildValueCondition(details, tableName, filter, caseSensitive, system || NULL_SYSTEM, value);
-    // if (value) {
-    //   return buildValueCondition(tableName, filter, system, value);
-    // } else {
-    //   return new Condition(new Column(tableName, 'token'), 'ARRAY_CONTAINS', filter.code + DELIM + system, 'text[]');
-    // }
+    const systemCondition = new TypedCondition(new Column(tableName, 'system'), '=', system || null);
+    return value
+      ? new Conjunction([
+          systemCondition,
+          buildValueCondition(details, tableName, filter, caseSensitive, system, value),
+        ])
+      : systemCondition;
   } else {
     // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
     if (filter.operator === FhirOperator.IN) {
@@ -626,60 +741,22 @@ function buildValueCondition(
   value: string
 ): Expression {
   value = value.trim();
-  if (USE_TOKEN_TABLE) {
-    const column = new Column(tableName, 'value');
-    if (filter.operator === FhirOperator.TEXT) {
-      getLogger().warn('Potentially expensive token lookup query', { operator: filter.operator });
-      return new Conjunction([
-        new TypedCondition(new Column(tableName, 'system'), '=', 'text'),
-        new TypedCondition(column, 'TSVECTOR_SIMPLE', value + ':*'),
-      ]);
-    } else if (filter.operator === FhirOperator.CONTAINS) {
-      getLogger().warn('Potentially expensive token lookup query', { operator: filter.operator });
-      return new TypedCondition(column, 'LIKE', escapeLikeString(value) + '%');
-    } else if (caseSensitive) {
-      return new TypedCondition(column, '=', value);
-    } else {
-      // In Medplum v4, or when there is a guarantee all resources have been reindexed, the IN (...) can be
-      // switched to an '=' of just the lower-cased value for a simplified query and potentially better performance.
-      return new TypedCondition(column, 'IN', [value, value.toLocaleLowerCase()]);
-    }
-  }
-
-  system = system || '';
-  // TODO this isn't quite right some cases where system and/or value is empty or undefined
-  // there should be an explicit function for when value is missing/empty instead of piggybacking
-  // in this function
-  const valuePart = value ? DELIM + value : '';
-
-  // TODO how to know when to use columnName + 'Text'?
-  const tokenCol = new Column(tableName, details.columnName);
-
+  const column = new Column(tableName, 'value');
   if (filter.operator === FhirOperator.TEXT) {
-    // a2t(token) ~ 'category\x1text\x1[^\x3]*Quick Brown'
+    getLogger().warn('Potentially expensive token lookup query', { operator: filter.operator });
     return new Conjunction([
-      new TypedCondition(tokenCol, 'ARRAY_CONTAINS', 'text', 'text[]'),
-      new TypedCondition(tokenCol, 'ARRAY_IREGEX', 'text' + DELIM + '[^' + ARRAY_DELIM + ']*' + value, 'text[]'),
+      new TypedCondition(new Column(tableName, 'system'), '=', 'text'),
+      new TypedCondition(column, 'TSVECTOR_SIMPLE', value + ':*'),
     ]);
   } else if (filter.operator === FhirOperator.CONTAINS) {
-    return new Conjunction([
-      // This ILIKE doesn't guarantee a matching row, but including it generally results in a faster query
-      // due to the trgm index being faster at LIKE than regex; in other words, the LIKE is a low-pass filter
-      new TypedCondition(
-        tokenCol,
-        'ARRAY_ILIKE',
-        '%' + ARRAY_DELIM + DELIM + '%' + escapeLikeString(value) + '%',
-        'text[]'
-      ),
-      // The case-insensitive regex guarantees that the row matches
-      new TypedCondition(tokenCol, 'ARRAY_IREGEX', ARRAY_DELIM + DELIM + '[^' + ARRAY_DELIM + ']*' + value, 'text[]'),
-    ]);
+    getLogger().warn('Potentially expensive token lookup query', { operator: filter.operator });
+    return new TypedCondition(column, 'LIKE', escapeLikeString(value) + '%');
   } else if (caseSensitive) {
-    return new TypedCondition(tokenCol, 'ARRAY_CONTAINS', system + valuePart, 'text[]');
+    return new TypedCondition(column, '=', value);
   } else {
-    // if a2t doesn't include ARRAY_DELIM at beginning and end, use '(' + ARRAY_DELIM + '|$)' at the end
-    const param = system + DELIM + value + ARRAY_DELIM;
-    return new TypedCondition(tokenCol, 'ARRAY_IREGEX', param, 'text[]');
+    // In Medplum v4, or when there is a guarantee all resources have been reindexed, the IN (...) can be
+    // switched to an '=' of just the lower-cased value for a simplified query and potentially better performance.
+    return new TypedCondition(column, 'IN', [value, value.toLocaleLowerCase()]);
   }
 }
 
@@ -755,32 +832,12 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
   //     )
   //   )
   //
-  if (USE_TOKEN_TABLE) {
-    return new TypedCondition(
-      new Column(tableName, 'system'),
-      'IN_SUBQUERY',
-      new SelectQuery('ValueSet').column('reference').where('url', '=', value).limit(1),
-      'TEXT[]'
-    );
-  }
-
-  /*
-  SELECT array_agg(e'code\x1'|| reference)
-    FROM (
-      SELECT unnest(reference) as reference FROM (
-        SELECT reference FROM "ValueSet" WHERE "ValueSet"."url" = 'http://hl7.org/fhir/ValueSet/condition-code' LIMIT 1))
-  */
-
-  const inner = new SelectQuery('ValueSet', undefined).column('reference').where('url', '=', value).limit(1);
-  const unnest = new SelectQuery('unnested', inner).column(
-    new Column('ValueSet', 'unnest(reference)', true, 'reference')
+  return new TypedCondition(
+    new Column(tableName, 'system'),
+    'IN_SUBQUERY',
+    new SelectQuery('ValueSet').column('reference').where('url', '=', value).limit(1),
+    'TEXT[]'
   );
-  const code = 'code';
-  const arrayAgg = new SelectQuery('array_agg', unnest).column(
-    new Column('unnested', "array_agg('" + code + DELIM + "' || reference)", true, 'code_and_system')
-  );
-
-  return new TypedCondition(new Column(tableName, 'token'), 'ARRAY_CONTAINS_SUBQUERY', arrayAgg, 'TEXT[]');
 }
 
 /**
