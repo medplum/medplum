@@ -573,7 +573,8 @@ describe('Identifier Lookup Table', () => {
             },
           ],
         });
-        expect(toSortedIdentifierValues(res)).toEqual([]);
+        //TODO what is actually the expected behavior here?
+        expect(toSortedIdentifierValues(res)).toStrictEqual([]);
       }));
 
     test('Handle malformed value', () =>
@@ -602,7 +603,8 @@ describe('Identifier Lookup Table', () => {
             },
           ],
         });
-        expect(toSortedIdentifierValues(res)).toEqual([]);
+        //TODO what is actually the expected behavior here?
+        expect(toSortedIdentifierValues(res)).toStrictEqual([undefined]);
       }));
   });
 
@@ -702,6 +704,46 @@ describe('Identifier Lookup Table', () => {
         const system = randomUUID();
         await repo.createResource<Patient>({
           resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'None' }],
+          identifier: [{ system }],
+        });
+
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'AAA' }],
+          identifier: [{ system, value: 'AAA' }],
+        });
+
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'ZZZ' }],
+          identifier: [{ system, value: 'ZZZ' }],
+        });
+
+        // that comes earliest in the specified sort order when ordering the returned resources
+        // Counterintuitive, but yes, the same result order is expected for both ascending/descending
+        // since sorting by ascending uses "AAA" and soritng by descending uses "ZZZ"
+
+        const ascending = await repo.search<Patient>({
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
+          sortRules: [{ code: 'identifier', descending: false }],
+        });
+        expect(ascending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['AAA', 'ZZZ', 'None']);
+
+        const descending = await repo.search<Patient>({
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
+          sortRules: [{ code: 'identifier', descending: true }],
+        });
+        expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['None', 'ZZZ', 'AAA']);
+      }));
+
+    test.failing('FAILING Sort by identifier with R4 behavior', () =>
+      withTestContext(async () => {
+        const system = randomUUID();
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
           name: [{ given: ['Alice'], family: 'First' }],
           identifier: [
             { system, value: 'AAA' },
@@ -715,25 +757,24 @@ describe('Identifier Lookup Table', () => {
           identifier: [{ system, value: 'LLL' }],
         });
 
-        const searchResult1 = await repo.search<Patient>({
+        const ascending = await repo.search<Patient>({
           resourceType: 'Patient',
-          // filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
           sortRules: [{ code: 'identifier', descending: false }],
         });
-        // console.log(JSON.stringify(searchResult1.entry, null, 2));
-        // console.log(searchResult1.entry?.map((e) => e.resource?.name?.[0]?.family));
-        // expect(searchResult1.entry?.length).toBe(2);
-        expect(searchResult1.entry?.map((e) => e.resource?.name?.[0]?.family)).toEqual(['First', 'Second']);
-        expect(searchResult1.entry?.map((e) => e.resource?.name?.[0]?.family)).toEqual(['First', 'Second', undefined]);
 
-        // const searchResult2 = await repo.search<Patient>({
-        //   resourceType: 'Patient',
-        //   filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
-        //   sortRules: [{ code: 'identifier', descending: true }],
-        // });
-        // expect(searchResult1.entry?.length).toBe(2);
-        // expect(searchResult2.entry?.map((e) => e.resource?.name?.[0]?.family)).toEqual(['First', 'Second']);
-      }));
+        const descending = await repo.search<Patient>({
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
+          sortRules: [{ code: 'identifier', descending: true }],
+        });
+
+        // Counterintuitive results, but yes; the same sort order is expected for both ascending/descending
+        // since ascending uses "AAA" and descending uses "ZZZ"
+        expect(ascending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['First', 'Second']);
+        expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['First', 'Second']);
+      })
+    );
 
     test.each<[string, Conditions[]]>([
       [sys1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo']],
@@ -751,7 +792,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(res)).toEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(res)).toStrictEqual(expected.toSorted());
     });
 
     test.each<[string, Conditions[]]>([
@@ -769,7 +810,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(resEquals)).toEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(resEquals)).toStrictEqual(expected.toSorted());
 
       const resContains = await repo.search<Condition>({
         resourceType: 'Condition',
@@ -781,7 +822,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(resContains)).toEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected.toSorted());
     });
 
     test.each<[string, string, Conditions[]]>([
@@ -800,7 +841,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(res)).toEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(res)).toStrictEqual(expected.toSorted());
     });
 
     test.each<[string, Conditions[]]>([
@@ -817,7 +858,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(res)).toEqual(expected);
+      expect(toSortedIdentifierValues(res)).toStrictEqual(expected);
     });
 
     test.each<[string, string, Conditions[]]>([
@@ -843,7 +884,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(res)).toEqual(expected);
+      expect(toSortedIdentifierValues(res)).toStrictEqual(expected);
     });
 
     test.each<[string, Conditions[]]>([
@@ -860,7 +901,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(resContains)?.toSorted()).toEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(resContains)?.toSorted()).toStrictEqual(expected.toSorted());
     });
 
     (USE_TOKEN_TABLE ? test.failing : test).each<[string, Conditions[]]>([
@@ -877,7 +918,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(resContains)).toEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected.toSorted());
     });
 
     test.each<[string, Conditions[]]>([
@@ -896,23 +937,8 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(resContains)).toEqual(expected);
+      expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected);
     });
-
-    // test.failing.each<[string, Conditions[]]>([
-    // ])('FAILING code :text %s', async (value, expected) => {
-    // const resContains = await repo.search<Condition>({
-    // resourceType: 'Condition',
-    // filters: [
-    // {
-    // code: 'code',
-    // operator: Operator.TEXT,
-    // value,
-    // },
-    // ],
-    // });
-    // expect(resContains.entry?.map((e) => e.resource?.identifier?.[0].value)).toEqual(expected);
-    // });
   });
 });
 

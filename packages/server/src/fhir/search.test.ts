@@ -2924,7 +2924,7 @@ describe('FHIR Search', () => {
           code: { coding: [{ system: SNOMED, code: '165002' }] },
         });
 
-        const c2 = await repo.createResource<Condition>({
+        await repo.createResource<Condition>({
           resourceType: 'Condition',
           subject: createReference(p),
           code: { coding: [{ system: 'https://example.com', code: 'test' }] },
@@ -2948,7 +2948,6 @@ describe('FHIR Search', () => {
 
         expect(bundle.entry?.length).toStrictEqual(1);
         expect(bundleContains(bundle, c1)).toBeTruthy();
-        expect(bundleContains(bundle, c2)).not.toBeTruthy();
       }));
 
     test('Reference identifier search', () =>
