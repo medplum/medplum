@@ -23,16 +23,26 @@ export interface AppShellProps {
 
 export function AppShell(props: AppShellProps): JSX.Element {
   const [navbarOpen, setNavbarOpen] = useState(localStorage['navbarOpen'] === 'true');
+  const [isNotificationShown, setIsNotificationShown] = useState(false);
   const medplum = useMedplum();
   const profile = useMedplumProfile();
 
   useEffect(() => {
     function eventListener(): void {
-      showNotification({ color: 'red', message: 'No connection to server', autoClose: false });
+      if (!isNotificationShown) {
+        showNotification({
+          color: 'red',
+          message: 'No connection to server',
+          autoClose: false,
+          onClose: () => setIsNotificationShown(false),
+        });
+        setIsNotificationShown(true);
+      }
     }
+
     medplum.addEventListener('offline', eventListener);
     return () => medplum.removeEventListener('offline', eventListener);
-  }, [medplum]);
+  }, [medplum, isNotificationShown]);
 
   function setNavbarOpenWrapper(open: boolean): void {
     localStorage['navbarOpen'] = open.toString();
