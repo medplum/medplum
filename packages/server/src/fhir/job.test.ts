@@ -1,3 +1,5 @@
+import { ContentType } from '@medplum/core';
+import { AsyncJob } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -51,7 +53,7 @@ describe('Job status', () => {
       const job = await asyncJobManager.init('http://example.com');
       const callback = jest.fn();
 
-      await asyncJobManager.start(async () => {
+      asyncJobManager.start(async () => {
         callback();
       });
 
@@ -68,16 +70,35 @@ describe('Job status', () => {
       expect(res.body).toEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'completed' }));
     }));
 
-  test('cancel', () =>
+  test('Cancelling job', () =>
     withTestContext(async () => {
       const job = await asyncJobManager.init('http://example.com');
 
-      const res = await request(app)
+      const res1 = await request(app)
+        .get(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res1.status).toEqual(202);
+      expect(res1.body?.status).toEqual('accepted');
+
+      // Cancel the job
+      const res2 = await request(app)
         .delete(`/fhir/R4/job/${job.id}/status`)
         .set('Authorization', 'Bearer ' + accessToken);
+      expect(res2.status).toEqual(202);
 
-      expect(res.status).toBe(202);
-      expect(res.get('Content-Type')).toEqual('text/plain; charset=utf-8');
-      expect(res.body).toEqual({});
+      // Check if AsyncJob.status === 'cancelled'
+      const res3 = await request(app)
+        .get(`/fhir/R4/AsyncJob/${job.id as string}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON);
+
+      expect(res3.status).toEqual(200);
+      expect(res3.body).toMatchObject<AsyncJob>({
+        id: job.id,
+        resourceType: 'AsyncJob',
+        status: 'cancelled',
+        requestTime: job.requestTime,
+        request: 'http://example.com',
+      });
     }));
 });
