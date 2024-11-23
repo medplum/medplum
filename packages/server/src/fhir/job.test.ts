@@ -115,7 +115,7 @@ describe('Job status', () => {
       });
     }));
 
-  test.only('Cancel -- error (job already completed)', () =>
+  test('Cancel -- error (job already completed)', () =>
     withTestContext(async () => {
       const job = await asyncJobManager.init('http://example.com');
       const callback = jest.fn();
