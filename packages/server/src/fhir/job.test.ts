@@ -1,3 +1,5 @@
+import { ContentType } from '@medplum/core';
+import { AsyncJob } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -51,7 +53,7 @@ describe('Job status', () => {
       const job = await asyncJobManager.init('http://example.com');
       const callback = jest.fn();
 
-      await asyncJobManager.start(async () => {
+      asyncJobManager.start(async () => {
         callback();
       });
 
@@ -68,16 +70,90 @@ describe('Job status', () => {
       expect(res.body).toEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'completed' }));
     }));
 
-  test('cancel', () =>
+  test('Cancel -- Happy path', () =>
     withTestContext(async () => {
       const job = await asyncJobManager.init('http://example.com');
 
+      const res1 = await request(app)
+        .get(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res1.status).toEqual(202);
+      expect(res1.body?.status).toEqual('accepted');
+
+      // Cancel the job
+      const res2 = await request(app)
+        .delete(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
+      expect(res2.status).toEqual(202);
+      expect(res2.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        id: 'accepted',
+        issue: [
+          {
+            severity: 'information',
+            code: 'informational',
+            details: {
+              text: 'Accepted',
+            },
+          },
+        ],
+      });
+
+      // Check if AsyncJob.status === 'cancelled'
+      const res3 = await request(app)
+        .get(`/fhir/R4/AsyncJob/${job.id as string}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON);
+
+      expect(res3.status).toEqual(200);
+      expect(res3.body).toMatchObject<AsyncJob>({
+        id: job.id,
+        resourceType: 'AsyncJob',
+        status: 'cancelled',
+        requestTime: job.requestTime,
+        request: 'http://example.com',
+      });
+    }));
+
+  test('Cancel -- error (job already completed)', () =>
+    withTestContext(async () => {
+      const job = await asyncJobManager.init('http://example.com');
+      const callback = jest.fn();
+
+      asyncJobManager.start(async () => {
+        callback();
+      });
+
+      expect(callback).toHaveBeenCalled();
+
+      await waitForAsyncJob(asyncJobManager.getContentLocation('http://example.com/'), app, accessToken);
+
       const res = await request(app)
+        .get(`/fhir/R4/job/${job.id}/status`)
+        .set('Authorization', 'Bearer ' + accessToken);
+
+      expect(res.status).toBe(200);
+      expect(res.get('Content-Type')).toEqual('application/fhir+json; charset=utf-8');
+      expect(res.body).toEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'completed' }));
+
+      // Now try to cancel the job after it's already completed
+      const res2 = await request(app)
         .delete(`/fhir/R4/job/${job.id}/status`)
         .set('Authorization', 'Bearer ' + accessToken);
 
-      expect(res.status).toBe(202);
-      expect(res.get('Content-Type')).toEqual('text/plain; charset=utf-8');
-      expect(res.body).toEqual({});
+      expect(res2.status).toBe(400);
+      expect(res2.get('Content-Type')).toEqual('application/fhir+json; charset=utf-8');
+      expect(res2.body).toMatchObject({
+        resourceType: 'OperationOutcome',
+        issue: [
+          {
+            code: 'invalid',
+            details: {
+              text: "AsyncJob cannot be cancelled if status is not 'accepted', job had status 'completed'",
+            },
+            severity: 'error',
+          },
+        ],
+      });
     }));
 });

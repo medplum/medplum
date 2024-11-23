@@ -1,4 +1,5 @@
-import { allOk, badRequest, ContentType, sleep } from '@medplum/core';
+import { allOk, badRequest, ContentType } from '@medplum/core';
+import { FhirRequest } from '@medplum/fhir-router';
 import { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
@@ -129,12 +130,18 @@ describe('AsyncJob/$cancel', () => {
   });
 
   test('Fails if not executed on an instance (no ID given)', async () => {
-    const next = jest.fn();
-    expect(() => asyncJobCancelHandler({ params: {} } as express.Request, {} as express.Response, next)).not.toThrow();
-    while (next.mock.calls.length === 0) {
-      await sleep(100);
-    }
-    expect(next).toHaveBeenCalledWith(new Error('This operation can only be executed on an instance'));
+    const req = {
+      method: 'POST',
+      url: 'AsyncJob/$cancel',
+      pathname: '',
+      params: {},
+      query: {},
+      body: '',
+      headers: {},
+    } satisfies FhirRequest;
+    await expect(asyncJobCancelHandler(req)).rejects.toThrow(
+      new Error('This operation can only be executed on an instance')
+    );
   });
 
   test('Cancelled job does not get added to super admin project', () =>
