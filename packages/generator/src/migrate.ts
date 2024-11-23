@@ -36,7 +36,8 @@ interface ColumnDefinition {
   type: string;
 }
 
-type IndexType = 'btree' | 'gin';
+const IndexTypes = ['btree', 'gin', 'gist'] as const;
+type IndexType = (typeof IndexTypes)[number];
 
 interface IndexDefinition {
   columns: string[];
@@ -145,9 +146,14 @@ function parseIndexDefinition(indexdef: string): IndexDefinition {
     throw new Error('Invalid index definition: ' + indexdef);
   }
 
+  const indexType = indexdef.match(/USING (\w+)/)?.[1] as IndexType | undefined;
+  if (indexType && !IndexTypes.includes(indexType)) {
+    throw new Error('Invalid index type: ' + indexType);
+  }
+
   return {
     columns: matches[1].split(',').map((s) => s.trim().replaceAll('"', '')),
-    indexType: indexdef.includes('USING gin') ? 'gin' : 'btree',
+    indexType: indexType ?? 'btree',
     unique: indexdef.includes('CREATE UNIQUE INDEX'),
   };
 }
@@ -267,11 +273,11 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       continue;
     }
     tableDefinition.columns.push({ name: add.column, type: add.type });
-    tableDefinition.indexes.push({ columns: [add.column], indexType: add.indexType as IndexType, unique: false });
+    tableDefinition.indexes.push({ columns: [add.column], indexType: add.indexType, unique: false });
   }
 }
 
-const additionalSearchColumns = [
+const additionalSearchColumns: { table: string; column: string; type: string; indexType: IndexType }[] = [
   { table: 'MeasureReport', column: 'period_range', type: 'TSTZRANGE', indexType: 'gist' },
 ];
 
@@ -375,7 +381,20 @@ function getColumnType(details: SearchParameterDetails): string {
 
 function buildSearchIndexes(result: TableDefinition, resourceType: string): void {
   if (resourceType === 'User') {
-    result.indexes.push({ columns: ['email'], indexType: 'btree', unique: true });
+    result.indexes.push({ columns: ['email'], indexType: 'btree', unique: false });
+  }
+
+  // uniqueness of SearchParameter-based indexes cannot be specified anywhere, so do it manually here
+  // perhaps this should  also be moved to getSearchParameterDetails. Or preferably, where ever the
+  // implementation-specific parts of SearchParameterDetails are moved to?
+  // Or maybe even better would be an extension on the SearchParameter resource itself that
+  // getSearchParameterDetails looks for
+  if (resourceType === 'DomainConfiguration') {
+    const domainIdx = result.indexes.find((i) => i.columns.length === 1 && i.columns[0] === 'domain');
+    if (!domainIdx) {
+      throw new Error('DomainConfiguration.domain index not found');
+    }
+    domainIdx.unique = true;
   }
 }
 
@@ -606,5 +625,8 @@ function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean 
 }
 
 if (process.argv[1].endsWith('migrate.ts')) {
-  main().catch(console.error);
+  main().catch((reason) => {
+    console.error(reason);
+    process.exit(1);
+  });
 }
