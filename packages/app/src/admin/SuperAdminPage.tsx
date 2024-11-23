@@ -38,7 +38,7 @@ export function SuperAdminPage(): JSX.Element {
   }
 
   function reindexResourceType(formData: Record<string, string>): void {
-    startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
+    startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', { body: formData, cancellable: true });
   }
 
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
@@ -207,7 +207,12 @@ export function SuperAdminPage(): JSX.Element {
   );
 }
 
-function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
+type AsyncJobOptions = {
+  body?: Record<string, string>;
+  cancellable?: boolean;
+};
+
+function startAsyncJob(medplum: MedplumClient, title: string, url: string, asyncJobOptions?: AsyncJobOptions): void {
   const controller = new AbortController();
   notifications.show({
     id: url,
@@ -215,19 +220,19 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
     title,
     message: 'Running...',
     autoClose: false,
-    withCloseButton: true,
-    onClose: () => {
-      controller.abort();
-    },
+    ...(asyncJobOptions?.cancellable
+      ? { withCloseButton: true, onClose: () => controller.abort() }
+      : { withCloseButton: false }),
   });
 
   const options: MedplumRequestOptions = {
     method: 'POST',
     pollStatusOnAccepted: true,
-    asyncReqCancelSignal: controller.signal,
+    ...(asyncJobOptions?.cancellable ? { asyncReqCancelSignal: controller.signal } : undefined),
   };
-  if (body) {
-    options.body = JSON.stringify(body);
+
+  if (asyncJobOptions?.body) {
+    options.body = JSON.stringify(asyncJobOptions.body);
   }
 
   medplum
@@ -246,8 +251,8 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
             withCloseButton: true,
           });
           break;
-        case 'cancelled':
-          notifications.update({
+        case 'cancelled': {
+          const notification = {
             id: url,
             color: 'red',
             title,
@@ -256,8 +261,12 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?
             loading: false,
             autoClose: false,
             withCloseButton: true,
-          });
+          };
+          if (!notifications.update(notification)) {
+            notifications.show(notification);
+          }
           break;
+        }
         case 'error':
           notifications.update({
             id: url,
