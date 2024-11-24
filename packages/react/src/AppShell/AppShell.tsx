@@ -30,7 +30,6 @@ export function AppShell(props: AppShellProps): JSX.Element {
     function eventListener(): void {
       showNotification({ id: 'offline', color: 'red', message: 'No connection to server', autoClose: false });
     }
-
     medplum.addEventListener('offline', eventListener);
     return () => medplum.removeEventListener('offline', eventListener);
   }, [medplum]);
