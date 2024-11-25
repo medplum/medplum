@@ -2504,13 +2504,9 @@ export function isIndexTable(resourceType: string, searchParam: SearchParameter)
   return newWay;
 }
 
-export function getLookupTable(
-  resourceType: string,
-  searchParam: SearchParameter,
-  isSearch?: boolean
-): LookupTable | undefined {
+export function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable | undefined {
   for (const lookupTable of lookupTables) {
-    if (lookupTable.isIndexed(searchParam, resourceType, isSearch)) {
+    if (lookupTable.isIndexed(searchParam, resourceType)) {
       return lookupTable;
     }
   }
