@@ -51,7 +51,7 @@
     "@medplum/core": "3.2.23",
     "@types/base-64": "1.0.2",
     "@types/react": "18.3.12",
-    "@types/text-encoding": "0.0.39",
+    "@types/text-encoding": "0.0.40",
     "esbuild": "0.24.0",
     "esbuild-node-externals": "1.15.0",
     "expo-crypto": "14.0.1",

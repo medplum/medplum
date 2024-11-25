@@ -30,10 +30,10 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@mantine/core": "7.14.1",
-    "@mantine/dropzone": "7.14.1",
-    "@mantine/hooks": "7.14.1",
-    "@mantine/notifications": "7.14.1",
+    "@mantine/core": "7.14.2",
+    "@mantine/dropzone": "7.14.2",
+    "@mantine/hooks": "7.14.2",
+    "@mantine/notifications": "7.14.2",
     "@medplum/core": "3.2.23",
     "@medplum/definitions": "3.2.23",
     "@medplum/fhirtypes": "3.2.23",
