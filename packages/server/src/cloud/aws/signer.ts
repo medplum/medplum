@@ -1,4 +1,5 @@
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
+import { concatUrls } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { getConfig } from '../../config';
 
@@ -13,7 +14,7 @@ import { getConfig } from '../../config';
 export function getPresignedUrl(binary: Binary): string {
   const config = getConfig();
   const storageBaseUrl = config.storageBaseUrl;
-  const unsignedUrl = `${storageBaseUrl}${binary.id}/${binary.meta?.versionId}`;
+  const unsignedUrl = concatUrls(storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`);
   const dateLessThan = new Date();
   dateLessThan.setHours(dateLessThan.getHours() + 1);
   return getSignedUrl({

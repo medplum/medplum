@@ -1,4 +1,4 @@
-import { splitN } from '@medplum/core';
+import { concatUrls, splitN } from '@medplum/core';
 import { KeepJobs } from 'bullmq';
 import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -274,11 +274,11 @@ async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
 function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.port = config.port || 8103;
   config.issuer = config.issuer || config.baseUrl;
-  config.jwksUrl = config.jwksUrl || config.baseUrl + '/.well-known/jwks.json';
-  config.authorizeUrl = config.authorizeUrl || config.baseUrl + '/oauth2/authorize';
-  config.tokenUrl = config.tokenUrl || config.baseUrl + '/oauth2/token';
-  config.userInfoUrl = config.userInfoUrl || config.baseUrl + '/oauth2/userinfo';
-  config.storageBaseUrl = config.storageBaseUrl || config.baseUrl + '/storage';
+  config.jwksUrl = config.jwksUrl || concatUrls(config.baseUrl, '/.well-known/jwks.json');
+  config.authorizeUrl = config.authorizeUrl || concatUrls(config.baseUrl, '/oauth2/authorize');
+  config.tokenUrl = config.tokenUrl || concatUrls(config.baseUrl, '/oauth2/token');
+  config.userInfoUrl = config.userInfoUrl || concatUrls(config.baseUrl, '/oauth2/userinfo');
+  config.storageBaseUrl = config.storageBaseUrl || concatUrls(config.baseUrl, '/storage');
   config.maxJsonSize = config.maxJsonSize || '1mb';
   config.maxBatchSize = config.maxBatchSize || '50mb';
   config.awsRegion = config.awsRegion || DEFAULT_AWS_REGION;

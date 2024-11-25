@@ -1,3 +1,4 @@
+import { concatUrls } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { createSign } from 'crypto';
 import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
@@ -129,7 +130,7 @@ class FileSystemStorage implements BinaryStorage {
   getPresignedUrl(binary: Binary): string {
     const config = getConfig();
     const storageBaseUrl = config.storageBaseUrl;
-    const result = new URL(`${storageBaseUrl}${binary.id}/${binary.meta?.versionId}`);
+    const result = new URL(concatUrls(storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`));
 
     const dateLessThan = new Date();
     dateLessThan.setHours(dateLessThan.getHours() + 1);
