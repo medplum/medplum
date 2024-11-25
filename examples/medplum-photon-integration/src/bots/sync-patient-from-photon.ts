@@ -412,65 +412,58 @@ export async function createDispenseResource(
   return medicationDispense;
 }
 
-export async function createPrescriptions(
-  patientReference: Reference<Patient>,
-  medplum: MedplumClient,
-  photonPrescriptions?: PhotonPrescription[]
-): Promise<MedicationRequest[] | undefined> {
-  if (!photonPrescriptions || photonPrescriptions.length === 0) {
-    return undefined;
-  }
+// export async function createPrescriptions(
+//   patientReference: Reference<Patient>,
+//   medplum: MedplumClient,
+//   photonPrescriptions?: PhotonPrescription[]
+// ): Promise<MedicationRequest[] | undefined> {
+//   if (!photonPrescriptions || photonPrescriptions.length === 0) {
+//     return undefined;
+//   }
 
-  const prescriptions: MedicationRequest[] = [];
-  for (const photonPrescription of photonPrescriptions) {
-    if (await checkForExistingPrescription(medplum, photonPrescription)) {
-      continue;
-    }
+//   const prescriptions: MedicationRequest[] = [];
+//   for (const photonPrescription of photonPrescriptions) {
+//     const { codes, name } = photonPrescription.treatment;
+//     const status = getStatusFromPhotonState(photonPrescription.state);
+//     const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
+//     const prescriber = await getPrescriber(medplum, photonPrescription.prescriber);
+//     const requester: Reference<Practitioner> = prescriber
+//       ? createReference(prescriber)
+//       : { display: photonPrescription.prescriber.name.full };
 
-    const { codes, name } = photonPrescription.treatment;
-    const status = getStatusFromPhotonState(photonPrescription.state);
-    const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
-    const prescriber = await getPrescriber(medplum, photonPrescription.prescriber);
-    const requester: Reference<Practitioner> = prescriber
-      ? createReference(prescriber)
-      : { display: photonPrescription.prescriber.name.full };
+//     const prescription: MedicationRequest = {
+//       resourceType: 'MedicationRequest',
+//       status,
+//       intent: 'order',
+//       subject: patientReference,
+//       identifier: [{ system: NEUTRON_HEALTH, value: photonPrescription.id }],
+//       dispenseRequest: {
+//         quantity: {
+//           value: photonPrescription.dispenseQuantity,
+//           unit: photonPrescription.dispenseUnit,
+//         },
+//         numberOfRepeatsAllowed: photonPrescription.refillsAllowed,
+//         expectedSupplyDuration: { value: photonPrescription.daysSupply, unit: 'days' },
+//         validityPeriod: {
+//           start: photonPrescription.effectiveDate,
+//           end: photonPrescription.expirationDate,
+//         },
+//       },
+//       substitution: { allowedBoolean: !photonPrescription.dispenseAsWritten },
+//       dosageInstruction: [{ patientInstruction: photonPrescription.instructions }],
+//       authoredOn: photonPrescription.writtenAt,
+//       medicationCodeableConcept: medicationElement,
+//       requester,
+//     };
 
-    const prescription: MedicationRequest = {
-      resourceType: 'MedicationRequest',
-      meta: {
-        source: NEUTRON_HEALTH,
-      },
-      status,
-      intent: 'order',
-      subject: patientReference,
-      identifier: [{ system: NEUTRON_HEALTH, value: photonPrescription.id }],
-      dispenseRequest: {
-        quantity: {
-          value: photonPrescription.dispenseQuantity,
-          unit: photonPrescription.dispenseUnit,
-        },
-        numberOfRepeatsAllowed: photonPrescription.refillsAllowed,
-        expectedSupplyDuration: { value: photonPrescription.daysSupply, unit: 'days' },
-        validityPeriod: {
-          start: photonPrescription.effectiveDate,
-          end: photonPrescription.expirationDate,
-        },
-      },
-      substitution: { allowedBoolean: !photonPrescription.dispenseAsWritten },
-      dosageInstruction: [{ patientInstruction: photonPrescription.instructions }],
-      authoredOn: photonPrescription.writtenAt,
-      medicationCodeableConcept: medicationElement,
-      requester,
-    };
+//     if (photonPrescription.notes) {
+//       prescription.note = [{ text: photonPrescription.notes }];
+//     }
 
-    if (photonPrescription.notes) {
-      prescription.note = [{ text: photonPrescription.notes }];
-    }
-
-    prescriptions.push(prescription);
-  }
-  return prescriptions;
-}
+//     prescriptions.push(prescription);
+//   }
+//   return prescriptions;
+// }
 
 async function checkForExistingPrescription(
   medplum: MedplumClient,
