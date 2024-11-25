@@ -413,65 +413,6 @@ export async function createDispenseResource(
   return medicationDispense;
 }
 
-export async function createPrescriptions(
-  patientReference: Reference<Patient>,
-  medplum: MedplumClient,
-  photonPrescriptions?: PhotonPrescription[]
-): Promise<MedicationRequest[] | undefined> {
-  console.log(patientReference);
-
-  let prescriptions: MedicationRequest[] | undefined;
-  for (const photonPrescription of photonPrescriptions ?? EMPTY) {
-    console.log(photonPrescription);
-    if ((await checkForExistingPrescription(medplum, photonPrescription)) || !photonPrescription) {
-      continue;
-    }
-
-    const { codes, name } = photonPrescription.treatment;
-    const status = getStatusFromPhotonState(photonPrescription.state);
-    const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
-    const prescriber = await getPrescriber(medplum, photonPrescription.prescriber);
-    const requester: Reference<Practitioner> = prescriber
-      ? createReference(prescriber)
-      : { display: photonPrescription.prescriber.name.full };
-
-    const prescription: MedicationRequest = {
-      resourceType: 'MedicationRequest',
-      meta: {
-        source: NEUTRON_HEALTH,
-      },
-      status,
-      intent: 'order',
-      subject: patientReference,
-      identifier: [{ system: NEUTRON_HEALTH, value: photonPrescription.id }],
-      dispenseRequest: {
-        quantity: {
-          value: photonPrescription.dispenseQuantity,
-          unit: photonPrescription.dispenseUnit,
-        },
-        numberOfRepeatsAllowed: photonPrescription.refillsAllowed,
-        expectedSupplyDuration: { value: photonPrescription.daysSupply, unit: 'days' },
-        validityPeriod: {
-          start: photonPrescription.effectiveDate,
-          end: photonPrescription.expirationDate,
-        },
-      },
-      substitution: { allowedBoolean: !photonPrescription.dispenseAsWritten },
-      dosageInstruction: [{ patientInstruction: photonPrescription.instructions }],
-      authoredOn: photonPrescription.writtenAt,
-      medicationCodeableConcept: medicationElement,
-      requester,
-    };
-
-    if (photonPrescription.notes) {
-      prescription.note = [{ text: photonPrescription.notes }];
-    }
-
-    prescriptions = append(prescriptions, prescription);
-  }
-  return prescriptions;
-}
-
 async function checkForExistingPrescription(
   medplum: MedplumClient,
   photonPrescription: PhotonPrescription
