@@ -155,7 +155,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       // Add the patient resource to a bundle
       const patientEntry: BundleEntry = {
         fullUrl: patientUrl,
-        request: { method: 'POST', url: 'Patient' },
+        request: { method: 'PUT', url: `Patient?identifier=https://neutron.health|${photonPatient.id}` },
         resource: medplumPatient,
       };
       batch.entry?.push(patientEntry);
@@ -191,16 +191,26 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 }
 
 export async function checkForExistingPatient(photonPatient: PhotonPatient, medplum: MedplumClient): Promise<boolean> {
-  if (!photonPatient.externalId) {
-    return false;
+  let patient: Patient | undefined;
+  patient = await medplum.searchOne('Patient', {
+    identifier: NEUTRON_HEALTH_PATIENTS + '|' + photonPatient.id,
+  });
+  if (patient) {
+    return true;
   }
 
-  try {
-    const patient = await medplum.readResource('Patient', photonPatient.externalId);
-    return !!patient;
-  } catch {
-    return false;
+  if (photonPatient.externalId) {
+    try {
+      patient = await medplum.readResource('Patient', photonPatient.externalId);
+      if (patient) {
+        return true;
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }
+
+  return false;
 }
 
 export function createPatientResource(photonPatient: PhotonPatient): Patient {

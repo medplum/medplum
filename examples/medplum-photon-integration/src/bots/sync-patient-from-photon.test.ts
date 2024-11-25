@@ -3,8 +3,9 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, Patient, Practitioner, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
+import { resourceLimits } from 'worker_threads';
 import { PhotonPatient, PhotonPatientAllergy, PhotonPrescription, PhotonProvider } from '../photon-types';
-import { NEUTRON_HEALTH } from './constants';
+import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
 import {
   checkForExistingPatient,
   createAllergies,
@@ -122,6 +123,17 @@ describe('Sync patients from Photon', async () => {
       });
 
       const photonPatient = { externalId: patient.id as string } as PhotonPatient;
+      const result = await checkForExistingPatient(photonPatient, medplum);
+      expect(result).toBe(true);
+    });
+
+    test('Get patient by Photon ID', async () => {
+      const medplum = new MockClient();
+      const patient: Patient = await medplum.createResource({
+        resourceType: 'Patient',
+        identifier: [{ system: NEUTRON_HEALTH_PATIENTS, value: 'example-photon-id' }],
+      });
+      const photonPatient = { id: 'example-photon-id' } as PhotonPatient;
       const result = await checkForExistingPatient(photonPatient, medplum);
       expect(result).toBe(true);
     });
