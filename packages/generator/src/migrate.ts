@@ -44,7 +44,7 @@ type IndexType = (typeof IndexTypes)[number];
 interface IndexDefinition {
   columns: string[];
   indexType: IndexType;
-  unique: boolean;
+  unique?: boolean;
 }
 
 const searchParams: SearchParameter[] = [];
@@ -204,13 +204,13 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
       { name: '_security', type: 'TEXT[]' },
     ],
     indexes: [
-      { columns: ['lastUpdated'], indexType: 'btree', unique: false },
-      { columns: ['compartments'], indexType: 'gin', unique: false },
-      { columns: ['projectId'], indexType: 'btree', unique: false },
-      { columns: ['_source'], indexType: 'btree', unique: false },
-      { columns: ['_tag'], indexType: 'gin', unique: false },
-      { columns: ['_profile'], indexType: 'gin', unique: false },
-      { columns: ['_security'], indexType: 'gin', unique: false },
+      { columns: ['lastUpdated'], indexType: 'btree' },
+      { columns: ['compartments'], indexType: 'gin' },
+      { columns: ['projectId'], indexType: 'btree' },
+      { columns: ['_source'], indexType: 'btree' },
+      { columns: ['_tag'], indexType: 'gin' },
+      { columns: ['_profile'], indexType: 'gin' },
+      { columns: ['_security'], indexType: 'gin' },
     ],
   };
 
@@ -227,8 +227,8 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
       { name: 'lastUpdated', type: 'TIMESTAMPTZ NOT NULL' },
     ],
     indexes: [
-      { columns: ['id'], indexType: 'btree', unique: false },
-      { columns: ['lastUpdated'], indexType: 'btree', unique: false },
+      { columns: ['id'], indexType: 'btree' },
+      { columns: ['lastUpdated'], indexType: 'btree' },
     ],
   });
 
@@ -241,7 +241,7 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
       { name: 'value', type: 'TEXT' },
     ],
     indexes: [
-      { columns: ['resourceId'], indexType: 'btree', unique: false },
+      { columns: ['resourceId'], indexType: 'btree' },
       // TODO: Add composite indexes and support for `include`
     ],
   });
@@ -275,14 +275,14 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
 
     const columnName = details.columnName;
     tableDefinition.columns.push({ name: columnName, type: getColumnType(details) });
-    tableDefinition.indexes.push({ columns: [columnName], indexType: details.array ? 'gin' : 'btree', unique: false });
+    tableDefinition.indexes.push({ columns: [columnName], indexType: details.array ? 'gin' : 'btree' });
   }
   for (const add of additionalSearchColumns) {
     if (add.table !== tableDefinition.name) {
       continue;
     }
     tableDefinition.columns.push({ name: add.column, type: add.type });
-    tableDefinition.indexes.push({ columns: [add.column], indexType: add.indexType, unique: false });
+    tableDefinition.indexes.push({ columns: [add.column], indexType: add.indexType });
   }
 }
 
@@ -390,7 +390,7 @@ function getColumnType(details: SearchParameterDetails): string {
 
 function buildSearchIndexes(result: TableDefinition, resourceType: string): void {
   if (resourceType === 'User') {
-    result.indexes.push({ columns: ['email'], indexType: 'btree', unique: false });
+    result.indexes.push({ columns: ['email'], indexType: 'btree' });
   }
 
   // uniqueness of SearchParameter-based indexes cannot be specified anywhere, so do it manually here
@@ -427,12 +427,12 @@ function buildLookupTable(result: SchemaDefinition, tableName: string, columns: 
   const tableDefinition: TableDefinition = {
     name: tableName,
     columns: [{ name: 'resourceId', type: 'UUID NOT NULL' }],
-    indexes: [{ columns: ['resourceId'], indexType: 'btree', unique: false }],
+    indexes: [{ columns: ['resourceId'], indexType: 'btree' }],
   };
 
   for (const column of columns) {
     tableDefinition.columns.push({ name: column, type: 'TEXT' });
-    tableDefinition.indexes.push({ columns: [column], indexType: 'btree', unique: false });
+    tableDefinition.indexes.push({ columns: [column], indexType: 'btree' });
   }
 
   result.tables.push(tableDefinition);
@@ -448,9 +448,9 @@ function buildValueSetElementTable(result: SchemaDefinition): void {
       { name: 'display', type: 'TEXT' },
     ],
     indexes: [
-      { columns: ['system'], indexType: 'btree', unique: false },
-      { columns: ['code'], indexType: 'btree', unique: false },
-      { columns: ['display'], indexType: 'btree', unique: false },
+      { columns: ['system'], indexType: 'btree' },
+      { columns: ['code'], indexType: 'btree' },
+      { columns: ['display'], indexType: 'btree' },
     ],
   });
 }
@@ -640,6 +640,10 @@ function rewriteMigrationExports(): void {
 }
 
 function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
+  // Populate optional fields with default values before comparing
+  a.unique ??= false;
+  b.unique ??= false;
+
   // deepEquals has FHIR-specific logic, but IndexDefinition is simple enough that it works fine
   return deepEquals(a, b);
 }
