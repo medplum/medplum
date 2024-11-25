@@ -138,6 +138,17 @@ describe('Sync patients from Photon', async () => {
       const result = await getExistingPatient(photonPatient, medplum);
       expect(result).toStrictEqual(patient);
     });
+
+    test('Get patient by Photon ID', async () => {
+      const medplum = new MockClient();
+      const patient: Patient = await medplum.createResource({
+        resourceType: 'Patient',
+        identifier: [{ system: NEUTRON_HEALTH_PATIENTS, value: 'example-photon-id' }],
+      });
+      const photonPatient = { id: 'example-photon-id' } as PhotonPatient;
+      const result = await checkForExistingPatient(photonPatient, medplum);
+      expect(result).toBe(true);
+    });
   });
 
   describe('createPatientResource', async () => {
