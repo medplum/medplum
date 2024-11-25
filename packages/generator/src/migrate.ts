@@ -19,6 +19,8 @@ import { Client } from 'pg';
 import { FileBuilder } from './filebuilder';
 
 const SCHEMA_DIR = resolve(__dirname, '../../server/src/migrations/schema');
+let LOG_UNMATCHED_INDEXES = false;
+let DRY_RUN = false;
 
 interface SchemaDefinition {
   tables: TableDefinition[];
@@ -48,6 +50,9 @@ interface IndexDefinition {
 const searchParams: SearchParameter[] = [];
 
 export async function main(): Promise<void> {
+  LOG_UNMATCHED_INDEXES = process.argv.includes('--logUnmatchedIndexes');
+  DRY_RUN = process.argv.includes('--dryRun');
+
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
@@ -70,8 +75,12 @@ export async function main(): Promise<void> {
   const targetDefinition = buildTargetDefinition();
   const b = new FileBuilder();
   writeMigrations(b, startDefinition, targetDefinition);
-  writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
-  rewriteMigrationExports();
+  if (DRY_RUN) {
+    console.log(b.toString());
+  } else {
+    writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
+    rewriteMigrationExports();
+  }
 }
 
 async function buildStartDefinition(): Promise<SchemaDefinition> {
@@ -544,10 +553,21 @@ function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, pr
 }
 
 function migrateIndexes(b: FileBuilder, startTable: TableDefinition, targetTable: TableDefinition): void {
+  const matchedIndexes = new Set<IndexDefinition>();
   for (const targetIndex of targetTable.indexes) {
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
       writeAddIndex(b, targetTable, targetIndex);
+    } else {
+      matchedIndexes.add(startIndex);
+    }
+  }
+
+  if (LOG_UNMATCHED_INDEXES) {
+    for (const startIndex of startTable.indexes) {
+      if (!matchedIndexes.has(startIndex)) {
+        console.log(`[${startTable.name}] Unmatched start index`, JSON.stringify(startIndex));
+      }
     }
   }
 }
@@ -624,7 +644,7 @@ function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean 
   return deepEquals(a, b);
 }
 
-if (process.argv[1].endsWith('migrate.ts')) {
+if (require.main === module) {
   main().catch((reason) => {
     console.error(reason);
     process.exit(1);
