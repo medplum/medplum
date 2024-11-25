@@ -155,7 +155,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       // Add the patient resource to a bundle
       const patientEntry: BundleEntry = {
         fullUrl: patientUrl,
-        request: { method: 'PUT', url: `Patient?identifier=https://neutron.health|${photonPatient.id}` },
+        request: { method: 'PUT', url: `Patient?identifier=${NEUTRON_HEALTH_PATIENTS}|${photonPatient.id}` },
         resource: medplumPatient,
       };
       batch.entry?.push(patientEntry);
