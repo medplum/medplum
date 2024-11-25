@@ -7,12 +7,13 @@ import type {
   CodeableConcept,
   Coding,
   ContactPoint,
+  MedicationDispense,
   MedicationKnowledge,
   MedicationRequest,
   Patient,
 } from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
-import type { OrderData, PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
+import type { Fill, OrderData, PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
 
 export async function photonGraphqlFetch(body: string, authToken: string): Promise<any> {
@@ -251,6 +252,21 @@ export async function getMedicationElement(
   }
 
   return medicationCode;
+}
+
+export function getFillStatus(fillState: Fill['state']): MedicationDispense['status'] {
+  switch (fillState) {
+    case 'NEW':
+      return 'in-progress';
+    case 'SCHEDULED':
+      return 'preparation';
+    case 'SENT':
+      return 'in-progress';
+    case 'CANCELED':
+      return 'cancelled';
+    default:
+      throw new Error('Invalid Fill state');
+  }
 }
 
 /**

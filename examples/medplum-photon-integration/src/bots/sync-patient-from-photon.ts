@@ -8,6 +8,7 @@ import type {
   Bundle,
   BundleEntry,
   ContactPoint,
+  MedicationDispense,
   MedicationRequest,
   Patient,
   Practitioner,
@@ -15,6 +16,7 @@ import type {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import type {
+  Fill,
   PhotonAddress,
   PhotonPatient,
   PhotonPatientAllergy,
@@ -22,7 +24,7 @@ import type {
   PhotonProvider,
 } from '../photon-types';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
-import { getMedicationElement, handlePhotonAuth, photonGraphqlFetch } from './utils';
+import { getFillStatus, getMedicationElement, handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
   const photonClientId = event.secrets['PHOTON_CLIENT_ID']?.valueString;
@@ -154,8 +156,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     // Create any allergies the patient has
     const allergies = createAllergies(patientReference, photonPatient.allergies);
 
-    // Create any prescriptions
-    const prescriptions = await createPrescriptions(patientReference, medplum, photonPatient.prescriptions);
+      // Create any MedicationRequest and MedicationDispense entries
+      const medicationHistoryEntries = await createMedicationHistoryEntries(
+        patientReference,
+        medplum,
+        photonPatient.prescriptions
+      );
 
     // Add the patient resource to a bundle
     const patientEntry: BundleEntry = {
@@ -181,17 +187,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       batch.entry?.push(...allergyEntries);
     }
 
-    // If there are prescriptions, create entries and add them to the bundle
-    if (prescriptions) {
-      const prescriptionEntries: BundleEntry[] = prescriptions.map((prescription) => {
-        const photonId = prescription.identifier?.find((id) => id.system === NEUTRON_HEALTH)?.value;
-        return {
-          fullUrl: 'urn:uuid:' + randomUUID(),
-          request: { method: 'PUT', url: `MedicationRequest?identifier=${NEUTRON_HEALTH}|${photonId}` },
-          resource: prescription,
-        };
-      });
-      batch.entry?.push(...prescriptionEntries);
+      // If there are prescriptions, create entries and add them to the bundle
+      if (medicationHistoryEntries) {
+        batch.entry?.push(...medicationHistoryEntries);
+      }
     }
   }
 
@@ -309,6 +308,109 @@ export function createAllergies(
   }
 
   return allergies;
+}
+
+export async function createMedicationHistoryEntries(
+  patientReference: Reference<Patient>,
+  medplum: MedplumClient,
+  photonPrescriptions?: PhotonPrescription[]
+): Promise<BundleEntry<MedicationDispense | MedicationRequest>[] | undefined> {
+  if (!photonPrescriptions || photonPrescriptions.length === 0) {
+    return undefined;
+  }
+
+  const entries: BundleEntry<MedicationDispense | MedicationRequest>[] = [];
+  for (const photonPrescription of photonPrescriptions) {
+    const prescription = await createPrescriptionResource(photonPrescription, medplum, patientReference);
+    const prescriptionUrl = 'urn:uuid:' + randomUUID();
+    const prescriptionReference: Reference<MedicationRequest> = {
+      reference: prescriptionUrl,
+      display: getDisplayString(prescription),
+    };
+
+    entries.push({
+      fullUrl: prescriptionUrl,
+      request: { method: 'POST', url: 'MedicationRequest' },
+      resource: prescription,
+    });
+
+    if (photonPrescription.fills) {
+      for (const fill of photonPrescription.fills) {
+        const dispense = await createDispenseResource(fill, medplum, prescriptionReference, patientReference);
+        entries.push({
+          fullUrl: 'urn:uuid:' + randomUUID(),
+          request: { method: 'POST', url: 'MedicationDispense' },
+          resource: dispense,
+        });
+      }
+    }
+  }
+
+  return entries;
+}
+
+export async function createPrescriptionResource(
+  photonPrescription: PhotonPrescription,
+  medplum: MedplumClient,
+  patientReference: Reference<Patient>
+): Promise<MedicationRequest> {
+  const { codes, name } = photonPrescription.treatment;
+  const status = getStatusFromPhotonState(photonPrescription.state);
+  const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
+  const prescriber = await getPrescriber(medplum, photonPrescription.prescriber);
+  const requester: Reference<Practitioner> = prescriber
+    ? createReference(prescriber)
+    : { display: photonPrescription.prescriber.name.full };
+
+  const prescription: MedicationRequest = {
+    resourceType: 'MedicationRequest',
+    status,
+    intent: 'order',
+    subject: patientReference,
+    identifier: [{ system: NEUTRON_HEALTH, value: photonPrescription.id }],
+    dispenseRequest: {
+      quantity: {
+        value: photonPrescription.dispenseQuantity,
+        unit: photonPrescription.dispenseUnit,
+      },
+      numberOfRepeatsAllowed: photonPrescription.refillsAllowed,
+      expectedSupplyDuration: { value: photonPrescription.daysSupply, unit: 'days' },
+      validityPeriod: {
+        start: photonPrescription.effectiveDate,
+        end: photonPrescription.expirationDate,
+      },
+    },
+    substitution: { allowedBoolean: !photonPrescription.dispenseAsWritten },
+    dosageInstruction: [{ patientInstruction: photonPrescription.instructions }],
+    authoredOn: photonPrescription.writtenAt,
+    medicationCodeableConcept: medicationElement,
+    requester,
+  };
+
+  if (photonPrescription.notes) {
+    prescription.note = [{ text: photonPrescription.notes }];
+  }
+
+  return prescription;
+}
+
+export async function createDispenseResource(
+  fill: Fill,
+  medplum: MedplumClient,
+  authorizingPrescription: Reference<MedicationRequest>,
+  patientReference: Reference<Patient>
+): Promise<MedicationDispense> {
+  const { codes, name } = fill.treatment;
+  const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
+  const medicationDispense: MedicationDispense = {
+    resourceType: 'MedicationDispense',
+    identifier: [{ system: NEUTRON_HEALTH, value: fill.id }],
+    status: getFillStatus(fill.state),
+    authorizingPrescription: [authorizingPrescription],
+    subject: patientReference,
+    medicationCodeableConcept: medicationElement,
+  };
+  return medicationDispense;
 }
 
 export async function createPrescriptions(
