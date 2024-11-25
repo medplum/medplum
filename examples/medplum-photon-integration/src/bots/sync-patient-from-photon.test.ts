@@ -141,7 +141,7 @@ describe('Sync patients from Photon', async () => {
 
     test('Get patient by Photon ID', async () => {
       const medplum = new MockClient();
-      const patient: Patient = await medplum.createResource({
+      await medplum.createResource({
         resourceType: 'Patient',
         identifier: [{ system: NEUTRON_HEALTH_PATIENTS, value: 'example-photon-id' }],
       });
