@@ -114,7 +114,7 @@ describe('Storage', () => {
       await storage.writeBinary(binary, 'test.exe', ContentType.TEXT, stream);
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Invalid file extension');
+      expect((err as Error).message).toStrictEqual('Invalid file extension');
     }
     expect(mockS3Client).not.toHaveReceivedCommand(PutObjectCommand);
   });
@@ -131,7 +131,7 @@ describe('Storage', () => {
       await storage.writeBinary(binary, 'test.sh', 'application/x-sh', stream);
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Invalid content type');
+      expect((err as Error).message).toStrictEqual('Invalid content type');
     }
     expect(mockS3Client).not.toHaveReceivedCommand(PutObjectCommand);
   });

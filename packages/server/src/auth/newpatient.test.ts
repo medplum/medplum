@@ -204,6 +204,6 @@ describe('New patient', () => {
       .set('Authorization', 'Bearer ' + res13.body.access_token);
     expect(res14.status).toBe(200);
     expect(res14.body.entry).toHaveLength(1);
-    expect(res14.body.entry[0].resource.id).toEqual(res11.body.id);
+    expect(res14.body.entry[0].resource.id).toStrictEqual(res11.body.id);
   });
 });

@@ -64,7 +64,7 @@ describe('Reindex Worker', () => {
         await new ReindexJob().execute(job);
 
         asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-        expect(asyncJob.status).toEqual('completed');
+        expect(asyncJob.status).toStrictEqual('completed');
         expect(asyncJob.output).toMatchObject<Partial<Parameters>>({
           parameter: expect.arrayContaining([
             {
@@ -114,7 +114,7 @@ describe('Reindex Worker', () => {
       );
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('accepted');
+      expect(asyncJob.status).toStrictEqual('accepted');
 
       job = { id: 2, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
@@ -130,7 +130,7 @@ describe('Reindex Worker', () => {
       );
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('accepted');
+      expect(asyncJob.status).toStrictEqual('accepted');
     }));
 
   test('Proceeds to next resource type after exhausting initial one', () =>
@@ -173,7 +173,7 @@ describe('Reindex Worker', () => {
       );
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('accepted');
+      expect(asyncJob.status).toStrictEqual('accepted');
     }));
 
   test('Updates in-progress status on AsyncJob resource', () =>
@@ -204,7 +204,7 @@ describe('Reindex Worker', () => {
       await new ReindexJob().execute(job);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('accepted');
+      expect(asyncJob.status).toStrictEqual('accepted');
       const outputParam = asyncJob.output?.parameter?.[0];
       expect(outputParam).toMatchObject<ParametersParameter>({
         name: 'result',
@@ -241,7 +241,7 @@ describe('Reindex Worker', () => {
       await expect(new ReindexJob().execute(job)).resolves.toBe(undefined);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('error');
+      expect(asyncJob.status).toStrictEqual('error');
     }));
 
   test('Continues when one resource type fails and reports error', () =>
@@ -272,7 +272,7 @@ describe('Reindex Worker', () => {
       await expect(new ReindexJob().execute(job)).resolves.toBe(undefined);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('accepted');
+      expect(asyncJob.status).toStrictEqual('accepted');
       expect(asyncJob.output).toMatchObject<Partial<Parameters>>({
         parameter: [
           {
@@ -300,7 +300,7 @@ describe('Reindex Worker', () => {
       await expect(new ReindexJob().execute(job)).resolves.toBe(undefined);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('accepted');
+      expect(asyncJob.status).toStrictEqual('accepted');
       expect(asyncJob.output).toEqual<Parameters>({
         resourceType: 'Parameters',
         parameter: expect.arrayContaining([
@@ -337,7 +337,7 @@ describe('Reindex Worker', () => {
       await expect(new ReindexJob().execute(job)).resolves.toBe(undefined);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('error');
+      expect(asyncJob.status).toStrictEqual('error');
       expect(asyncJob.output).toEqual<Parameters>({
         resourceType: 'Parameters',
         parameter: expect.arrayContaining([
@@ -421,14 +421,14 @@ describe('Reindex Worker', () => {
       );
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('accepted');
+      expect(asyncJob.status).toStrictEqual('accepted');
 
       const job2 = { id: 2, data: queue.add.mock.calls[0][1] } as unknown as Job;
       queue.add.mockClear();
       await new ReindexJob().execute(job2);
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('completed');
+      expect(asyncJob.status).toStrictEqual('completed');
       expect(asyncJob.output).toMatchObject<Parameters>({
         resourceType: 'Parameters',
         parameter: [
@@ -497,7 +497,7 @@ describe('Reindex Worker', () => {
       await new ReindexJob().execute(job);
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('completed');
+      expect(asyncJob.status).toStrictEqual('completed');
       expect(asyncJob.output).toMatchObject<Parameters>({
         resourceType: 'Parameters',
         parameter: [
@@ -550,7 +550,7 @@ describe('Reindex Worker', () => {
       await new ReindexJob().execute(job);
 
       asyncJob = await systemRepo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('completed');
+      expect(asyncJob.status).toStrictEqual('completed');
       expect(asyncJob.output).toMatchObject<Parameters>({
         resourceType: 'Parameters',
         parameter: [
@@ -571,7 +571,7 @@ describe('Reindex Worker', () => {
         .column('projectId')
         .where('id', '=', user.id)
         .execute(getDatabasePool(DatabaseMode.READER));
-      expect(rows[0].projectId).toEqual(project.id);
+      expect(rows[0].projectId).toStrictEqual(project.id);
     }));
 });
 
@@ -617,7 +617,7 @@ describe('Job cancellation', () => {
       await jobRunner.execute(job); // Should be a no-op due to cancellation
 
       asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toEqual('cancelled');
+      expect(asyncJob.status).toStrictEqual('cancelled');
       expect(asyncJob.output).toBeUndefined();
     }));
 
@@ -651,7 +651,7 @@ describe('Job cancellation', () => {
       await jobRunner.execute(job); // Should be a no-op due to cancellation
 
       const finalJob = await repo.readResource<AsyncJob>('AsyncJob', cancelledJob.id as string);
-      expect(finalJob.status).toEqual('cancelled');
+      expect(finalJob.status).toStrictEqual('cancelled');
       expect(finalJob.output).toBeUndefined();
     }));
 
@@ -696,7 +696,7 @@ describe('Job cancellation', () => {
       await expect(jobRunner.execute(job)).resolves.toBeUndefined(); // Should not override the cancellation status
 
       const finalJob = await repo.readResource<AsyncJob>('AsyncJob', originalJob.id as string);
-      expect(finalJob.status).toEqual('cancelled');
+      expect(finalJob.status).toStrictEqual('cancelled');
       expect(finalJob.output).toBeUndefined();
     }));
 });

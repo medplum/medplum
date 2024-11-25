@@ -208,7 +208,7 @@ describe('Sync formulary', async () => {
     const medicationsUpdated = updatedFormulary.entry?.map((entry) => entry.flag);
 
     expect(medicationsUpdated?.length).toBe(1);
-    expect(medicationsUpdated?.[0]?.coding?.[0]).toEqual({ system: 'https://neutron.health', code: 'synced' });
+    expect(medicationsUpdated?.[0]?.coding?.[0]).toStrictEqual({ system: 'https://neutron.health', code: 'synced' });
     expect(result.length).toBe(0);
   }, 10000);
 

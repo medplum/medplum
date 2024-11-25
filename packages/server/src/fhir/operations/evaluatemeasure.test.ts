@@ -93,8 +93,8 @@ describe('Measure evaluate-measure', () => {
     expect(res2.status).toBe(201);
     expect(res2.body.resourceType).toBe('MeasureReport');
     expect(res2.body.group?.[0].population).toHaveLength(2);
-    expect(res2.body.group?.[0].population?.[0].count).toEqual(10);
-    expect(res2.body.group?.[0].population?.[1].count).toEqual(5);
+    expect(res2.body.group?.[0].population?.[0].count).toStrictEqual(10);
+    expect(res2.body.group?.[0].population?.[1].count).toStrictEqual(5);
 
     // 3. Verify the MeasureReport
     const res3 = await request(app)
@@ -103,8 +103,8 @@ describe('Measure evaluate-measure', () => {
     expect(res3.status).toBe(200);
     expect(res3.body.resourceType).toBe('MeasureReport');
     expect(res3.body.group?.[0].population).toHaveLength(2);
-    expect(res3.body.group?.[0].population?.[0].count).toEqual(10);
-    expect(res3.body.group?.[0].population?.[1].count).toEqual(5);
+    expect(res3.body.group?.[0].population?.[0].count).toStrictEqual(10);
+    expect(res3.body.group?.[0].population?.[1].count).toStrictEqual(5);
   });
 
   test('Unsupported content type', async () => {
@@ -124,7 +124,7 @@ describe('Measure evaluate-measure', () => {
       .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res2.status).toBe(400);
-    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       "Expected at least 1 value(s) for required input parameter 'periodStart'"
     );
   });
@@ -148,7 +148,7 @@ describe('Measure evaluate-measure', () => {
         resourceType: 'Patient',
       });
     expect(res2.status).toBe(400);
-    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       "Expected at least 1 value(s) for required input parameter 'periodStart'"
     );
   });
@@ -178,7 +178,7 @@ describe('Measure evaluate-measure', () => {
         ],
       });
     expect(res2.status).toBe(400);
-    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect((res2.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Expected 1 value(s) for input parameter periodStart, but 0 provided'
     );
 
@@ -196,7 +196,7 @@ describe('Measure evaluate-measure', () => {
         ],
       });
     expect(res3.status).toBe(400);
-    expect((res3.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect((res3.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Expected 1 value(s) for input parameter periodEnd, but 0 provided'
     );
   });

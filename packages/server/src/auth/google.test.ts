@@ -355,7 +355,7 @@ describe('Google Auth', () => {
         googleCredential: createCredential('Test', 'Test', email),
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Invalid googleClientId');
+    expect(res2.body.issue[0].details.text).toStrictEqual('Invalid googleClientId');
   });
 
   test('Custom OAuth client success', async () => {
@@ -409,7 +409,7 @@ describe('Google Auth', () => {
         googleCredential: createCredential('Text', 'User', email),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Invalid projectId');
+    expect(res.body.issue[0].details.text).toStrictEqual('Invalid projectId');
   });
 });
 

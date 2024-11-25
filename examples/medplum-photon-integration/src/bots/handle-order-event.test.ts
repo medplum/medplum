@@ -105,7 +105,7 @@ describe('Order event handler', async () => {
     };
 
     const result = await getPatient(orderPatientData, medplum);
-    expect(result).toEqual(patient);
+    expect(result).toStrictEqual(patient);
   });
 
   test.skip('Get fill status', async () => {

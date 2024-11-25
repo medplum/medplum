@@ -93,7 +93,7 @@ describe('PlanDefinition apply', () => {
         ],
       });
     expect(res4.status).toBe(200);
-    expect(res4.body.resourceType).toEqual('RequestGroup');
+    expect(res4.body.resourceType).toStrictEqual('RequestGroup');
     expect((res4.body as RequestGroup).action).toHaveLength(1);
     expect((res4.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
 
@@ -108,13 +108,15 @@ describe('PlanDefinition apply', () => {
       .get(`/fhir/R4/${(res4.body as RequestGroup).action?.[0]?.resource?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
-    expect(res6.body.resourceType).toEqual('Task');
+    expect(res6.body.resourceType).toStrictEqual('Task');
 
     const resultTask = res6.body as Task;
     expect(resultTask.for).toMatchObject(createReference(res3.body as Patient));
     expect(resultTask.focus).toMatchObject(createReference(res1.body as Questionnaire));
     expect(resultTask.input).toHaveLength(1);
-    expect(resultTask.input?.[0]?.valueReference?.reference).toEqual(getReferenceString(res1.body as Questionnaire));
+    expect(resultTask.input?.[0]?.valueReference?.reference).toStrictEqual(
+      getReferenceString(res1.body as Questionnaire)
+    );
   });
 
   test('Unsupported content type', async () => {
@@ -135,7 +137,7 @@ describe('PlanDefinition apply', () => {
       .set('Content-Type', ContentType.TEXT)
       .send('hello');
     expect(res4.status).toBe(400);
-    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       "Expected at least 1 value(s) for required input parameter 'subject'"
     );
   });
@@ -160,7 +162,7 @@ describe('PlanDefinition apply', () => {
         resourceType: 'Patient',
       });
     expect(res4.status).toBe(400);
-    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       "Expected at least 1 value(s) for required input parameter 'subject'"
     );
   });
@@ -186,7 +188,7 @@ describe('PlanDefinition apply', () => {
         parameter: [],
       });
     expect(res4.status).toBe(400);
-    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect((res4.body as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Expected 1..NaN value(s) for input parameter subject, but 0 provided'
     );
   });

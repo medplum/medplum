@@ -88,7 +88,7 @@ describe('Admin Invite', () => {
       .column('projectId')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toEqual(null);
+    expect(rows[0].projectId).toStrictEqual(null);
   });
 
   test('Existing user to project', async () => {
@@ -142,7 +142,7 @@ describe('Admin Invite', () => {
       .column('projectId')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toEqual(null);
+    expect(rows[0].projectId).toStrictEqual(null);
   });
 
   test('Existing practitioner to project', async () => {
@@ -185,13 +185,13 @@ describe('Admin Invite', () => {
       });
 
     expect(res3.status).toBe(200);
-    expect(res3.body.profile.reference).toEqual(getReferenceString(res2.body));
+    expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
     const rows = await new SelectQuery('User')
       .column('projectId')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toEqual(null);
+    expect(rows[0].projectId).toStrictEqual(null);
   });
 
   test('Specified practitioner to project', async () => {
@@ -236,13 +236,13 @@ describe('Admin Invite', () => {
       });
 
     expect(res3.status).toBe(200);
-    expect(res3.body.profile.reference).toEqual(getReferenceString(res2.body));
+    expect(res3.body.profile.reference).toStrictEqual(getReferenceString(res2.body));
 
     const rows = await new SelectQuery('User')
       .column('projectId')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toEqual(null);
+    expect(rows[0].projectId).toStrictEqual(null);
   });
 
   test('Access denied', async () => {
@@ -376,7 +376,7 @@ describe('Admin Invite', () => {
       .column('projectId')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toEqual(project.id);
+    expect(rows[0].projectId).toStrictEqual(project.id);
   });
 
   test('Duplicate externalId', async () => {
@@ -561,7 +561,7 @@ describe('Admin Invite', () => {
       .column('projectId')
       .where('email', '=', bobEmail)
       .execute(getDatabasePool(DatabaseMode.READER));
-    expect(rows[0].projectId).toEqual(project.id);
+    expect(rows[0].projectId).toStrictEqual(project.id);
   });
 
   test('Invite user with admin flag as false', async () => {
@@ -726,7 +726,7 @@ describe('Admin Invite', () => {
         email: bobEmail,
       });
     expect(res3.status).toBe(409);
-    expect(normalizeErrorString(res3.body)).toEqual('User is already a member of this project');
+    expect(normalizeErrorString(res3.body)).toStrictEqual('User is already a member of this project');
 
     // Invite Bob third time with "upsert = true" - should succeed
     const res4 = await request(app)
@@ -741,7 +741,7 @@ describe('Admin Invite', () => {
       });
     expect(res4.status).toBe(200);
     expect(res4.body.resourceType).toBe('ProjectMembership');
-    expect(res4.body.id).toEqual(res2.body.id);
+    expect(res4.body.id).toStrictEqual(res2.body.id);
 
     // Invite Bob again with different profiile - should fail
     const res5 = await request(app)
@@ -756,7 +756,7 @@ describe('Admin Invite', () => {
         membership: { profile: createReference(profile) },
       });
     expect(res5.status).toBe(409);
-    expect(normalizeErrorString(res5.body)).toEqual(
+    expect(normalizeErrorString(res5.body)).toStrictEqual(
       'User is already a member of this project with a different profile'
     );
   });

@@ -113,7 +113,7 @@ describe('assignValuesIntoSlices', () => {
         property.slicing,
         elementsContext.profileUrl
       );
-      expect(slicedValues.map((sliceValues) => sliceValues.length)).toEqual([1, 1, 1, 1, 0]);
+      expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 1, 1, 1, 0]);
     });
   });
 
@@ -169,7 +169,7 @@ describe('assignValuesIntoSlices', () => {
         property.slicing,
         elementsContext.profileUrl
       );
-      expect(slicedValues.map((sliceValues) => sliceValues.length)).toEqual([1, 0]);
+      expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 0]);
     });
 
     test('Observation.component (systolic and diastolic)', async () => {
@@ -237,7 +237,7 @@ describe('assignValuesIntoSlices', () => {
       );
 
       expect(slices.length).toBe(2);
-      expect(slicedValues.map((sliceValues) => sliceValues.length)).toEqual([1, 1, 0]);
+      expect(slicedValues.map((sliceValues) => sliceValues.length)).toStrictEqual([1, 1, 0]);
     });
   });
 });

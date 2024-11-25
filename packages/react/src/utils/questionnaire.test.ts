@@ -983,7 +983,7 @@ describe('isQuestionEnabled', () => {
 
     const result = getNewMultiSelectValues(selected, propertyName, item);
 
-    expect(result).toEqual([{ valueString: 'value1' }, { valueString: 'value2' }]);
+    expect(result).toStrictEqual([{ valueString: 'value1' }, { valueString: 'value2' }]);
   });
 
   test('multi-select non selected values', () => {
@@ -1004,7 +1004,7 @@ describe('isQuestionEnabled', () => {
 
     const result = getNewMultiSelectValues(selected, propertyName, item);
 
-    expect(result).toEqual([{ valueString: undefined }]);
+    expect(result).toStrictEqual([{ valueString: undefined }]);
   });
 
   test('multi-select empty array', () => {
@@ -1018,7 +1018,7 @@ describe('isQuestionEnabled', () => {
 
     const result = getNewMultiSelectValues(selected, propertyName, item);
 
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
   test('multi-select with value coding', () => {
@@ -1038,7 +1038,7 @@ describe('isQuestionEnabled', () => {
     };
 
     const result = getNewMultiSelectValues(selected, propertyName, item);
-    expect(result).toEqual([{ valueCoding: { code: 'code1' } }]);
+    expect(result).toStrictEqual([{ valueCoding: { code: 'code1' } }]);
   });
 
   test('multi-select with non existing values', () => {
@@ -1052,7 +1052,7 @@ describe('isQuestionEnabled', () => {
 
     const result = getNewMultiSelectValues(selected, propertyName, item);
 
-    expect(result).toEqual([{ nonExistingProperty: undefined }]);
+    expect(result).toStrictEqual([{ nonExistingProperty: undefined }]);
   });
 
   test('Reference with display', () => {

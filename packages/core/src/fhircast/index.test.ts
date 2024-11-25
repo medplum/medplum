@@ -162,7 +162,7 @@ describe('serializeFhircastSubscriptionRequest', () => {
         topic: 'abc123',
         events: ['Patient-open'],
       })
-    ).toEqual('hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open');
+    ).toStrictEqual('hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open');
   });
 
   test('Valid subscription request with multiple events', () => {
@@ -173,7 +173,9 @@ describe('serializeFhircastSubscriptionRequest', () => {
         topic: 'abc123',
         events: ['Patient-open', 'Patient-close'],
       })
-    ).toEqual('hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open%2CPatient-close');
+    ).toStrictEqual(
+      'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open%2CPatient-close'
+    );
   });
 
   test('Valid subscription request with endpoint', () => {
@@ -185,7 +187,7 @@ describe('serializeFhircastSubscriptionRequest', () => {
         events: ['Patient-open'],
         endpoint: 'wss://abc.com/hub',
       })
-    ).toEqual(
+    ).toStrictEqual(
       'hub.channel.type=websocket&hub.mode=subscribe&hub.topic=abc123&hub.events=Patient-open&endpoint=wss%3A%2F%2Fabc.com%2Fhub'
     );
   });
@@ -212,8 +214,8 @@ describe('createFhircastMessagePayload', () => {
       timestamp: expect.any(String),
       event: { 'hub.topic': topic, 'hub.event': event, context: expect.any(Object) },
     });
-    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
-    expect(messagePayload.event.context[0]).toEqual(context);
+    expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
+    expect(messagePayload.event.context[0]).toStrictEqual(context);
   });
 
   test('Valid message with array of contexts', () => {
@@ -232,9 +234,9 @@ describe('createFhircastMessagePayload', () => {
       timestamp: expect.any(String),
       event: { 'hub.topic': topic, 'hub.event': event, context: expect.any(Object) },
     });
-    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
-    expect(messagePayload.event.context[0]).toEqual(context1);
-    expect(messagePayload.event.context[1]).toEqual(context2);
+    expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
+    expect(messagePayload.event.context[0]).toStrictEqual(context1);
+    expect(messagePayload.event.context[1]).toStrictEqual(context2);
   });
 
   test('Valid message with optional context included', () => {
@@ -253,9 +255,9 @@ describe('createFhircastMessagePayload', () => {
       timestamp: expect.any(String),
       event: { 'hub.topic': topic, 'hub.event': event, context: expect.any(Object) },
     });
-    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
-    expect(messagePayload.event.context[0]).toEqual(context1);
-    expect(messagePayload.event.context[1]).toEqual(context2);
+    expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
+    expect(messagePayload.event.context[0]).toStrictEqual(context1);
+    expect(messagePayload.event.context[1]).toStrictEqual(context2);
   });
 
   test('Syncerror', () => {
@@ -455,7 +457,7 @@ describe('createFhircastMessagePayload', () => {
       timestamp: expect.any(String),
       event: { 'hub.topic': 'abc-123', 'hub.event': 'DiagnosticReport-open', context: expect.any(Object) },
     });
-    expect(payload.event.context.length).toEqual(5);
+    expect(payload.event.context.length).toStrictEqual(5);
   });
 
   test('Invalid `DiagnosticReport-open` event w/ multiple reports', () => {
@@ -496,7 +498,7 @@ describe('createFhircastMessagePayload', () => {
       timestamp: expect.any(String),
       event: { 'hub.topic': 'abc-123', 'hub.event': 'DiagnosticReport-select', context: expect.any(Object) },
     });
-    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
+    expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
     expect(messagePayload.event.context[0]).toBeDefined();
   });
 
@@ -538,7 +540,7 @@ describe('createFhircastMessagePayload', () => {
         'context.versionId': expect.any(String),
       },
     });
-    expect(new Date(messagePayload.timestamp).toISOString()).toEqual(messagePayload.timestamp);
+    expect(new Date(messagePayload.timestamp).toISOString()).toStrictEqual(messagePayload.timestamp);
     expect(messagePayload.event.context[0]).toBeDefined();
   });
 
@@ -600,7 +602,7 @@ describe('FhircastConnection', () => {
     const handler = (event: FhircastMessageEvent): void => {
       expect(event).toBeDefined();
       expect(event.type).toBe('message');
-      expect(event.payload).toEqual(message);
+      expect(event.payload).toStrictEqual(message);
       connection.removeEventListener('message', handler);
       done();
     };
@@ -618,7 +620,7 @@ describe('FhircastConnection', () => {
     const handler = (event: FhircastMessageEvent): void => {
       expect(event).toBeDefined();
       expect(event.type).toBe('message');
-      expect(event.payload).toEqual(message);
+      expect(event.payload).toStrictEqual(message);
       connection.removeEventListener('message', handler);
       done();
     };
@@ -647,7 +649,7 @@ describe('FhircastConnection', () => {
     const handler = (event: FhircastMessageEvent): void => {
       expect(event).toBeDefined();
       expect(event.type).toBe('message');
-      expect(event.payload).toEqual(message);
+      expect(event.payload).toStrictEqual(message);
       connection.removeEventListener('message', handler);
       done();
     };
@@ -684,22 +686,22 @@ describe('FhircastConnection', () => {
 
 describe('isContextVersionRequired', () => {
   test('Version required: true', () => {
-    expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('DiagnosticReport-update')).toEqual(true);
-    expect(isContextVersionRequired('DiagnosticReport-update')).toEqual(true);
+    expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('DiagnosticReport-update')).toStrictEqual(true);
+    expect(isContextVersionRequired('DiagnosticReport-update')).toStrictEqual(true);
   });
   test('Version required: false', () => {
-    expect((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes('Patient-open')).toEqual(false);
-    expect(isContextVersionRequired('Patient-open')).toEqual(false);
+    expect((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes('Patient-open')).toStrictEqual(false);
+    expect(isContextVersionRequired('Patient-open')).toStrictEqual(false);
   });
 });
 
 describe('assertContextVersionOptional', () => {
   test('Version optional: true', () => {
-    expect((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes('Patient-open')).toEqual(false);
+    expect((FHIRCAST_EVENT_VERSION_REQUIRED as readonly string[]).includes('Patient-open')).toStrictEqual(false);
     expect(() => assertContextVersionOptional('Patient-open')).not.toThrow();
   });
   test('Version optional: false', () => {
-    expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('DiagnosticReport-update')).toEqual(true);
+    expect(FHIRCAST_EVENT_VERSION_REQUIRED.includes('DiagnosticReport-update')).toStrictEqual(true);
     expect(() => assertContextVersionOptional('DiagnosticReport-update')).toThrow(OperationOutcomeError);
   });
 });

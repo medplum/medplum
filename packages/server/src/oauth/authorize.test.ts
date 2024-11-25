@@ -84,7 +84,7 @@ describe('OAuth Authorize', () => {
     expect(res.status).toBe(302);
 
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('unsupported_response_type');
+    expect(location.searchParams.get('error')).toStrictEqual('unsupported_response_type');
   });
 
   test('Unsupported request', async () => {
@@ -101,7 +101,7 @@ describe('OAuth Authorize', () => {
     expect(res.status).toBe(302);
 
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('request_not_supported');
+    expect(location.searchParams.get('error')).toStrictEqual('request_not_supported');
   });
 
   test('Missing scope', async () => {
@@ -115,7 +115,7 @@ describe('OAuth Authorize', () => {
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('invalid_request');
+    expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
 
   test('Missing code_challenge_method', async () => {
@@ -130,7 +130,7 @@ describe('OAuth Authorize', () => {
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('invalid_request');
+    expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
 
   test('Invalid audience', async () => {
@@ -146,7 +146,7 @@ describe('OAuth Authorize', () => {
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('invalid_request');
+    expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
 
   test('Malformed audience', async () => {
@@ -162,7 +162,7 @@ describe('OAuth Authorize', () => {
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('invalid_request');
+    expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
 
   test('Server URL audience', async () => {

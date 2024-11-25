@@ -65,7 +65,7 @@ describe('apply default values', () => {
       })
       .filter(isStructureDefinition);
 
-    expect(sds.length).toEqual(profileUrls.length);
+    expect(sds.length).toStrictEqual(profileUrls.length);
 
     indexStructureDefinitionBundle(sds);
   }
@@ -141,7 +141,7 @@ describe('apply default values', () => {
     describe('required values within optional element', () => {
       test('value for Observation.component.value[x] in systolic slice', () => {
         const slice = getSlice(schema, 'component', 'systolic');
-        expect(slice.elements['value[x]'].min).toEqual(0);
+        expect(slice.elements['value[x]'].min).toStrictEqual(0);
 
         const result = applyDefaultValuesToElement(Object.create(null), slice.elements, 'value[x]');
         expect(result).toEqual({ code: 'mm[Hg]', system: 'http://unitsofmeasure.org' });

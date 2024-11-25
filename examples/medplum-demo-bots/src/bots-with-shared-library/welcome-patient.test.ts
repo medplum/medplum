@@ -23,5 +23,5 @@ test('Welcome Patient', async () => {
     contentType: 'text/plain',
   });
   expect(welcomeMessage).toBeDefined();
-  expect(welcomeMessage).toEqual('Welcome Marge Simpson');
+  expect(welcomeMessage).toStrictEqual('Welcome Marge Simpson');
 });

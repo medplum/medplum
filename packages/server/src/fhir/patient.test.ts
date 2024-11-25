@@ -25,7 +25,7 @@ describe('FHIR Patient utils', () => {
   });
 
   test('getPatientCompartmentParams', () => {
-    expect(getPatientCompartmentParams('Observation')).toEqual(['subject', 'performer']);
+    expect(getPatientCompartmentParams('Observation')).toStrictEqual(['subject', 'performer']);
     expect(getPatientCompartmentParams('xxx')).toBeUndefined();
   });
 
@@ -35,14 +35,14 @@ describe('FHIR Patient utils', () => {
         resourceType: 'Account',
         subject: [] as Reference[],
       } as Account)
-    ).toEqual([]);
-    expect(getPatients({ resourceType: 'Account', subject: [{}] } as Account)).toEqual([]);
+    ).toStrictEqual([]);
+    expect(getPatients({ resourceType: 'Account', subject: [{}] } as Account)).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Account',
         subject: [{ reference: 'Device/123' }],
       } as Account)
-    ).toEqual([]);
+    ).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Account',
@@ -50,13 +50,13 @@ describe('FHIR Patient utils', () => {
       } as Account)
     ).toMatchObject([{ reference: 'Patient/123' }]);
 
-    expect(getPatients({ resourceType: 'Observation' } as Observation)).toEqual([]);
+    expect(getPatients({ resourceType: 'Observation' } as Observation)).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Observation',
         subject: undefined,
       } as Observation)
-    ).toEqual([]);
+    ).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Observation',
@@ -64,20 +64,20 @@ describe('FHIR Patient utils', () => {
         code: { text: 'abc' },
         subject: 'bad',
       } as Observation)
-    ).toEqual([]);
+    ).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Observation',
         subject: null,
       } as unknown as Observation)
-    ).toEqual([]);
-    expect(getPatients({ resourceType: 'Observation', subject: {} } as Observation)).toEqual([]);
+    ).toStrictEqual([]);
+    expect(getPatients({ resourceType: 'Observation', subject: {} } as Observation)).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Observation',
         subject: { reference: 'Device/123' },
       } as Observation)
-    ).toEqual([]);
+    ).toStrictEqual([]);
     expect(
       getPatients({
         resourceType: 'Observation',
@@ -104,9 +104,9 @@ describe('FHIR Patient utils', () => {
       })
     ).toMatchObject([{ reference: 'Patient/123' }]);
 
-    expect(getPatients({ resourceType: 'Patient' } as Patient)).toEqual([]);
-    expect(getPatients({ resourceType: 'Patient', id: undefined } as Patient)).toEqual([]);
-    expect(getPatients({ resourceType: 'Patient', id: null } as unknown as Patient)).toEqual([]);
+    expect(getPatients({ resourceType: 'Patient' } as Patient)).toStrictEqual([]);
+    expect(getPatients({ resourceType: 'Patient', id: undefined } as Patient)).toStrictEqual([]);
+    expect(getPatients({ resourceType: 'Patient', id: null } as unknown as Patient)).toStrictEqual([]);
     expect(getPatients({ resourceType: 'Patient', id: '123' } as Patient)).toMatchObject([
       { reference: 'Patient/123' },
     ]);

@@ -29,7 +29,7 @@ describe('Keys', () => {
       await initKeys(config);
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing issuer');
+      expect((err as Error).message).toStrictEqual('Missing issuer');
     }
   });
 
@@ -40,13 +40,13 @@ describe('Keys', () => {
     try {
       await initKeys(undefined as unknown as MedplumServerConfig);
     } catch (err) {
-      expect((err as Error).message).toEqual('Invalid server configuration');
+      expect((err as Error).message).toStrictEqual('Invalid server configuration');
     }
 
     try {
       await generateIdToken({ iss: config.issuer, login_id: '123', nonce: randomUUID() });
     } catch (err) {
-      expect((err as Error).message).toEqual('Signing key not initialized');
+      expect((err as Error).message).toStrictEqual('Signing key not initialized');
     }
   });
 
@@ -57,19 +57,19 @@ describe('Keys', () => {
     try {
       await initKeys({} as unknown as MedplumServerConfig);
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing issuer');
+      expect((err as Error).message).toStrictEqual('Missing issuer');
     }
 
     try {
       await generateIdToken({ iss: config.issuer, login_id: '123', nonce: randomUUID() });
     } catch (err) {
-      expect((err as Error).message).toEqual('Signing key not initialized');
+      expect((err as Error).message).toStrictEqual('Signing key not initialized');
     }
 
     try {
       await verifyJwt('xyz');
     } catch (err) {
-      expect((err as Error).message).toEqual('Signing key not initialized');
+      expect((err as Error).message).toStrictEqual('Signing key not initialized');
     }
   });
 
@@ -91,7 +91,7 @@ describe('Keys', () => {
     try {
       await verifyJwt(accessToken);
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing kid header');
+      expect((err as Error).message).toStrictEqual('Missing kid header');
     }
   });
 
@@ -114,7 +114,7 @@ describe('Keys', () => {
     try {
       await verifyJwt(accessToken);
     } catch (err) {
-      expect((err as Error).message).toEqual('Key not found');
+      expect((err as Error).message).toStrictEqual('Key not found');
     }
   });
 
@@ -130,7 +130,7 @@ describe('Keys', () => {
     expect(token).toBeDefined();
 
     const result = await verifyJwt(token);
-    expect(result.payload.login_id).toEqual('123');
+    expect(result.payload.login_id).toStrictEqual('123');
   });
 
   test('Generate access token', async () => {
@@ -147,7 +147,7 @@ describe('Keys', () => {
     expect(token).toBeDefined();
 
     const result = await verifyJwt(token);
-    expect(result.payload.login_id).toEqual('123');
+    expect(result.payload.login_id).toStrictEqual('123');
   });
 
   test('Generate refresh token', async () => {
@@ -162,7 +162,7 @@ describe('Keys', () => {
     expect(token).toBeDefined();
 
     const result = await verifyJwt(token);
-    expect(result.payload.login_id).toEqual('123');
+    expect(result.payload.login_id).toStrictEqual('123');
   });
 
   test('Generate secret', () => {

@@ -23,11 +23,11 @@ describe('FileSystemStorage', () => {
 
     storage.setString('foo', 'bar');
 
-    expect(storage.getString('foo')).toEqual('bar');
+    expect(storage.getString('foo')).toStrictEqual('bar');
 
     storage.setString('foo', 'baz');
 
-    expect(storage.getString('foo')).toEqual('baz');
+    expect(storage.getString('foo')).toStrictEqual('baz');
 
     storage.setString('foo', undefined);
 
@@ -48,12 +48,12 @@ describe('FileSystemStorage', () => {
 
     // Set and retrieve the object
     storage.setObject('objKey', obj);
-    expect(storage.getObject('objKey')).toEqual(obj);
+    expect(storage.getObject('objKey')).toStrictEqual(obj);
 
     // Change the object and ensure it's updated
     const newObj = { profiles: { a: 5 } };
     storage.setObject('objKey', newObj);
-    expect(storage.getObject('objKey')).toEqual(newObj);
+    expect(storage.getObject('objKey')).toStrictEqual(newObj);
 
     // Remove the object and ensure it's gone
     storage.setObject('objKey', undefined);

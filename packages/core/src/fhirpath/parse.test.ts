@@ -13,22 +13,22 @@ describe('FHIRPath parser', () => {
 
   test('Parser can build a arithmetic parser with correct order of operations', () => {
     const result = evalFhirPath('3 / 3 + 4 * 9 - 1', []);
-    expect(result).toEqual([36]);
+    expect(result).toStrictEqual([36]);
   });
 
   test('Parser can build a arithmetic parser with parentheses', () => {
     const result = evalFhirPath('(3 / 3 + 4 * 3)', []);
-    expect(result).toEqual([13]);
+    expect(result).toStrictEqual([13]);
   });
 
   test('Parser can build a arithmetic parser with correct associativity', () => {
     const result = evalFhirPath('5 - 4 - 3 - 2 - 1 + 512', []);
-    expect(result).toEqual([507]);
+    expect(result).toStrictEqual([507]);
   });
 
   test('Parser can build an arithmetic parser with prefix operators', () => {
     const result = evalFhirPath('-4 + -(4 + 5 - -4)', []);
-    expect(result).toEqual([-17]);
+    expect(result).toStrictEqual([-17]);
   });
 
   test('Parser throws on missing closing parentheses', () => {
@@ -44,12 +44,12 @@ describe('FHIRPath parser', () => {
   });
 
   test('Function minus number', () => {
-    expect(evalFhirPath("'Peter'.length()-3", [])).toEqual([2]);
+    expect(evalFhirPath("'Peter'.length()-3", [])).toStrictEqual([2]);
   });
 
   test('Evaluate FHIRPath Patient.name.given on empty resource', () => {
     const result = evalFhirPath('Patient.name.given', [toTypedValue({})]);
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
   test('Evaluate FHIRPath Patient.name.given', () => {
@@ -64,7 +64,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Alice']);
+    expect(result).toStrictEqual(['Alice']);
   });
 
   test('Evaluate FHIRPath string concatenation', () => {
@@ -79,7 +79,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Alice Smith']);
+    expect(result).toStrictEqual(['Alice Smith']);
   });
 
   test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
@@ -103,7 +103,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Alice', 'Bob']);
+    expect(result).toStrictEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate FHIRPath Patient.name[1].given', () => {
@@ -122,7 +122,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Robert']);
+    expect(result).toStrictEqual(['Robert']);
   });
 
   test('Evaluate FHIRPath Patient.name[ (10 - 8) / 2].given', () => {
@@ -141,7 +141,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Robert']);
+    expect(result).toStrictEqual(['Robert']);
   });
 
   test('Evaluate FHIRPath Patient.name.select(given[0])', () => {
@@ -160,7 +160,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Bob', 'Robert']);
+    expect(result).toStrictEqual(['Bob', 'Robert']);
   });
 
   test('Evaluate FHIRPath Patient.name.select(given[1])', () => {
@@ -179,7 +179,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Adam']);
+    expect(result).toStrictEqual(['Adam']);
   });
 
   test('Evaluate FHIRPath string concatenation on array of resources', () => {
@@ -203,7 +203,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Alice Smith', 'Bob Jones']);
+    expect(result).toStrictEqual(['Alice Smith', 'Bob Jones']);
   });
 
   test('Evaluate FHIRPath Patient.name.given on array of resources', () => {
@@ -227,7 +227,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Bob']);
+    expect(result).toStrictEqual(['Bob']);
   });
 
   test('Evaluate FHIRPath union', () => {
@@ -242,7 +242,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Alice']);
+    expect(result).toStrictEqual(['Alice']);
   });
 
   test('Evaluate FHIRPath union to combine results', () => {
@@ -266,7 +266,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Alice', 'Bob']);
+    expect(result).toStrictEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate FHIRPath double union', () => {
@@ -290,7 +290,7 @@ describe('FHIRPath parser', () => {
         ],
       }),
     ]);
-    expect(result).toEqual(['Alice', 'Bob']);
+    expect(result).toStrictEqual(['Alice', 'Bob']);
   });
 
   test('Evaluate ignores non-objects', () => {
@@ -299,7 +299,7 @@ describe('FHIRPath parser', () => {
         foo: 1,
       }),
     ]);
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
   test('Evaluate fails on function parentheses after non-symbol', () => {
@@ -390,7 +390,7 @@ describe('FHIRPath parser', () => {
     };
 
     const result = evalFhirPath('AuditEvent.entity.what.where(resolve() is Patient)', [toTypedValue(auditEvent)]);
-    expect(result).toEqual([{ reference: 'Patient/123' }]);
+    expect(result).toStrictEqual([{ reference: 'Patient/123' }]);
   });
 
   test('Resolve is not resourceType', () => {
@@ -406,7 +406,7 @@ describe('FHIRPath parser', () => {
     };
 
     const result = evalFhirPath('AuditEvent.entity.what.where(resolve() is Patient)', [toTypedValue(auditEvent)]);
-    expect(result).toEqual([]);
+    expect(result).toStrictEqual([]);
   });
 
   test('Calculate patient age', () => {
@@ -418,17 +418,17 @@ describe('FHIRPath parser', () => {
       birthDate: birthDate.toLocaleDateString('sv'),
     };
     const result = evalFhirPath("between(birthDate, now(), 'years')", [toTypedValue(patient)]);
-    expect(result).toEqual([{ value: 20, unit: 'years' }]);
+    expect(result).toStrictEqual([{ value: 20, unit: 'years' }]);
   });
 
   test('Boolean values', () => {
     const patient1: Patient = { resourceType: 'Patient', active: true };
     const result1 = evalFhirPathTyped('active', [toTypedValue(patient1)]);
-    expect(result1).toEqual([{ type: PropertyType.boolean, value: true }]);
+    expect(result1).toStrictEqual([{ type: PropertyType.boolean, value: true }]);
 
     const patient2: Patient = { resourceType: 'Patient', active: false };
     const result2 = evalFhirPathTyped('active', [toTypedValue(patient2)]);
-    expect(result2).toEqual([{ type: PropertyType.boolean, value: false }]);
+    expect(result2).toStrictEqual([{ type: PropertyType.boolean, value: false }]);
   });
 
   test('Schema type lookup', () => {
@@ -440,7 +440,7 @@ describe('FHIRPath parser', () => {
       ],
     };
     const result = evalFhirPathTyped('telecom', [toTypedValue(patient)]);
-    expect(result).toEqual([
+    expect(result).toStrictEqual([
       {
         type: PropertyType.ContactPoint,
         value: { system: 'phone', value: '555-555-5555' },
@@ -471,7 +471,7 @@ describe('FHIRPath parser', () => {
     const variables = { '%current': toTypedValue(patient2), '%previous': toTypedValue(patient) };
     const result = evalFhirPathTyped('%current=%previous', [toTypedValue(patient)], variables);
 
-    expect(result).toEqual([
+    expect(result).toStrictEqual([
       {
         type: PropertyType.boolean,
         value: true,
@@ -485,7 +485,7 @@ describe('FHIRPath parser', () => {
     };
     const result = evalFhirPathTyped('%previous.empty()', [toTypedValue(patient)], { '%previous': toTypedValue({}) });
 
-    expect(result).toEqual([
+    expect(result).toStrictEqual([
       {
         type: PropertyType.boolean,
         value: true,
@@ -501,7 +501,7 @@ describe('FHIRPath parser', () => {
       '%previous': toTypedValue({}),
     });
 
-    expect(result).toEqual([
+    expect(result).toStrictEqual([
       {
         type: PropertyType.boolean,
         value: true,
@@ -528,7 +528,7 @@ describe('FHIRPath parser', () => {
     const variables = { '%current': toTypedValue(patient2), '%previous': toTypedValue(patient) };
     const result = evalFhirPathTyped('%current!=%previous', [toTypedValue(patient)], variables);
 
-    expect(result).toEqual([
+    expect(result).toStrictEqual([
       {
         type: PropertyType.boolean,
         value: false,
@@ -574,7 +574,7 @@ describe('FHIRPath parser', () => {
       'value',
       observations.map((o) => toTypedValue(o))
     );
-    expect(result).toEqual([
+    expect(result).toStrictEqual([
       {
         type: PropertyType.Quantity,
         value: { value: 100, unit: 'mg' },
@@ -609,7 +609,7 @@ describe('FHIRPath parser', () => {
 
     const query = "ObservationList.where(code.coding[0].code='HBA1C').value";
     const result = evalFhirPathTyped(query, [toTypedValue(serviceRequest)]);
-    expect(result).toEqual([
+    expect(result).toStrictEqual([
       {
         type: PropertyType.Quantity,
         value: { value: 5, unit: '%' },
@@ -622,12 +622,12 @@ describe('FHIRPath parser', () => {
     const system = 'http://example.com';
     const concept = [{ code: 'foo' }];
     const filter = [{ property: 'bar', op: 'eq', value: 'baz' }];
-    expect(evalFhirPath(expr, {})).toEqual([true]);
-    expect(evalFhirPath(expr, { concept })).toEqual([false]);
-    expect(evalFhirPath(expr, { concept, filter })).toEqual([false]);
-    expect(evalFhirPath(expr, { filter })).toEqual([false]);
-    expect(evalFhirPath(expr, { concept, system })).toEqual([true]);
-    expect(evalFhirPath(expr, { concept, filter, system })).toEqual([true]);
+    expect(evalFhirPath(expr, {})).toStrictEqual([true]);
+    expect(evalFhirPath(expr, { concept })).toStrictEqual([false]);
+    expect(evalFhirPath(expr, { concept, filter })).toStrictEqual([false]);
+    expect(evalFhirPath(expr, { filter })).toStrictEqual([false]);
+    expect(evalFhirPath(expr, { concept, system })).toStrictEqual([true]);
+    expect(evalFhirPath(expr, { concept, filter, system })).toStrictEqual([true]);
   });
 
   test('where and', () => {
@@ -639,7 +639,7 @@ describe('FHIRPath parser', () => {
       class: { code: 'foo' },
       identifier: [{ system: 'http://example.com', value: '123' }],
     };
-    expect(evalFhirPath(expr, e1)).toEqual([true]);
+    expect(evalFhirPath(expr, e1)).toStrictEqual([true]);
 
     const e2: Encounter = {
       resourceType: 'Encounter',
@@ -647,7 +647,7 @@ describe('FHIRPath parser', () => {
       class: { code: 'foo' },
       identifier: [{ system: 'http://example.com', value: '456' }],
     };
-    expect(evalFhirPath(expr, e2)).toEqual([false]);
+    expect(evalFhirPath(expr, e2)).toStrictEqual([false]);
   });
 
   test('Bundle bdl-3', () => {
@@ -672,7 +672,7 @@ describe('FHIRPath parser', () => {
       ],
     };
     const tb1 = toTypedValue(b1);
-    expect(evalFhirPathTyped(expr, [tb1], { '%resource': tb1 })).toEqual([toTypedValue(true)]);
+    expect(evalFhirPathTyped(expr, [tb1], { '%resource': tb1 })).toStrictEqual([toTypedValue(true)]);
 
     const b2: Bundle = {
       resourceType: 'Bundle',
@@ -687,7 +687,7 @@ describe('FHIRPath parser', () => {
       ],
     };
     const tb2 = toTypedValue(b2);
-    expect(evalFhirPathTyped(expr, [tb2], { '%resource': tb2 })).toEqual([toTypedValue(true)]);
+    expect(evalFhirPathTyped(expr, [tb2], { '%resource': tb2 })).toStrictEqual([toTypedValue(true)]);
   });
 
   test('At symbols', () => {

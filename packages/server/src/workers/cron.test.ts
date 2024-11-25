@@ -233,7 +233,7 @@ describe('Cron Worker', () => {
 
       await execBot(job);
       const bundle = await botRepo.search<AuditEvent>({ resourceType: 'AuditEvent' });
-      expect(bundle.entry?.length).toEqual(1);
+      expect(bundle.entry?.length).toStrictEqual(1);
     }));
 });
 
@@ -249,7 +249,7 @@ describe('convertTimingToCron', () => {
 
     const result = convertTimingToCron(timing);
 
-    expect(result).toEqual(expected);
+    expect(result).toStrictEqual(expected);
   });
 
   test('cron pattern for repeating job 48 times a day', () => {
@@ -263,7 +263,7 @@ describe('convertTimingToCron', () => {
 
     const result = convertTimingToCron(timing);
 
-    expect(result).toEqual(expected);
+    expect(result).toStrictEqual(expected);
   });
 
   test('cron pattern for specific days of the week', () => {
@@ -277,7 +277,7 @@ describe('convertTimingToCron', () => {
 
     const result = convertTimingToCron(timing);
 
-    expect(result).toEqual(expected);
+    expect(result).toStrictEqual(expected);
   });
 
   test('cron pattern for no repeat period or days of the week', () => {
@@ -287,6 +287,6 @@ describe('convertTimingToCron', () => {
 
     const result = convertTimingToCron(timing);
 
-    expect(result).toEqual(expected);
+    expect(result).toStrictEqual(expected);
   });
 });

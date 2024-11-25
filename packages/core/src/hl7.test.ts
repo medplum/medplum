@@ -235,22 +235,22 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
 
     // Test sub-components with the "&" separator
     const spm = msg.getSegment('SPM') as Hl7Segment;
-    expect(spm.getField(2).getComponent(1)).toEqual('140799&BARCODE');
-    expect(spm.getField(2).getComponent(1, 0)).toEqual('140799');
-    expect(spm.getField(2).getComponent(1, 1)).toEqual('BARCODE');
+    expect(spm.getField(2).getComponent(1)).toStrictEqual('140799&BARCODE');
+    expect(spm.getField(2).getComponent(1, 0)).toStrictEqual('140799');
+    expect(spm.getField(2).getComponent(1, 1)).toStrictEqual('BARCODE');
 
     // Test repetition with the "~" separator
     const obx = msg.getSegment('OBX') as Hl7Segment;
-    expect(obx.getField(18).toString()).toEqual('e801^ROCHE~2037-06^ROCHE~1^ROCHE');
-    expect(obx.getField(18).getComponent(1)).toEqual('e801');
-    expect(obx.getField(18).getComponent(1, 0, 0)).toEqual('e801');
-    expect(obx.getField(18).getComponent(2, 0, 0)).toEqual('ROCHE');
-    expect(obx.getField(18).getComponent(1, 0, 1)).toEqual('2037-06');
-    expect(obx.getField(18).getComponent(2, 0, 1)).toEqual('ROCHE');
-    expect(obx.getComponent(18, 1, 0, 0)).toEqual('e801');
-    expect(obx.getComponent(18, 1, 0, 1)).toEqual('2037-06');
-    expect(obx.getComponent(18, 2, 0, 0)).toEqual('ROCHE');
-    expect(obx.getComponent(18, 2, 0, 1)).toEqual('ROCHE');
+    expect(obx.getField(18).toString()).toStrictEqual('e801^ROCHE~2037-06^ROCHE~1^ROCHE');
+    expect(obx.getField(18).getComponent(1)).toStrictEqual('e801');
+    expect(obx.getField(18).getComponent(1, 0, 0)).toStrictEqual('e801');
+    expect(obx.getField(18).getComponent(2, 0, 0)).toStrictEqual('ROCHE');
+    expect(obx.getField(18).getComponent(1, 0, 1)).toStrictEqual('2037-06');
+    expect(obx.getField(18).getComponent(2, 0, 1)).toStrictEqual('ROCHE');
+    expect(obx.getComponent(18, 1, 0, 0)).toStrictEqual('e801');
+    expect(obx.getComponent(18, 1, 0, 1)).toStrictEqual('2037-06');
+    expect(obx.getComponent(18, 2, 0, 0)).toStrictEqual('ROCHE');
+    expect(obx.getComponent(18, 2, 0, 1)).toStrictEqual('ROCHE');
   });
 });
 
@@ -336,7 +336,7 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
     expect(msg.segments[0].name).toBe('MSH');
     expect(msg.segments[1].name).toBe('PID');
     expect(msg.segments[2].name).toBe('SPM');
-    expect(msg.get(0)).toEqual(msg.get('MSH'));
+    expect(msg.get(0)).toStrictEqual(msg.get('MSH'));
 
     const pid = msg.get('PID') as Hl7Segment;
     expect(pid).toBeDefined();
@@ -409,18 +409,18 @@ OBX|9|ST|TR_EXPECTEDVALUES^TR_EXPECTEDVALUES^99ROC^S_OTHER^Other·Supplemental^I
 
     // Test sub-components with the "&" separator
     const spm = msg.get('SPM') as Hl7Segment;
-    expect(spm.get(2).get(0)).toEqual('140799&BARCODE');
-    expect(spm.get(2).get(0, 0)).toEqual('140799');
-    expect(spm.get(2).get(0, 1)).toEqual('BARCODE');
+    expect(spm.get(2).get(0)).toStrictEqual('140799&BARCODE');
+    expect(spm.get(2).get(0, 0)).toStrictEqual('140799');
+    expect(spm.get(2).get(0, 1)).toStrictEqual('BARCODE');
 
     // Test repetition with the "~" separator
     const obx = msg.get('OBX') as Hl7Segment;
-    expect(obx.get(18).toString()).toEqual('e801^ROCHE~2037-06^ROCHE~1^ROCHE');
-    expect(obx.get(18).get(0)).toEqual('e801');
-    expect(obx.get(18).get(0, 0, 0)).toEqual('e801');
-    expect(obx.get(18).get(1, 0, 0)).toEqual('ROCHE');
-    expect(obx.get(18).get(0, 0, 1)).toEqual('2037-06');
-    expect(obx.get(18).get(1, 0, 1)).toEqual('ROCHE');
+    expect(obx.get(18).toString()).toStrictEqual('e801^ROCHE~2037-06^ROCHE~1^ROCHE');
+    expect(obx.get(18).get(0)).toStrictEqual('e801');
+    expect(obx.get(18).get(0, 0, 0)).toStrictEqual('e801');
+    expect(obx.get(18).get(1, 0, 0)).toStrictEqual('ROCHE');
+    expect(obx.get(18).get(0, 0, 1)).toStrictEqual('2037-06');
+    expect(obx.get(18).get(1, 0, 1)).toStrictEqual('ROCHE');
   });
 });
 

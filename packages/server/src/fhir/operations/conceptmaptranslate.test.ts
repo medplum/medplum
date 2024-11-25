@@ -62,7 +62,7 @@ describe('ConceptMap $translate', () => {
           },
         ],
       });
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
     conceptMap = res.body as ConceptMap;
   });
 
@@ -92,7 +92,7 @@ describe('ConceptMap $translate', () => {
     expect(res.status).toBe(200);
 
     const output = (res.body as Parameters).parameter;
-    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
     const matches = output?.filter((p) => p.name === 'match');
     expect(matches).toHaveLength(2);
     expect(matches?.[0]).toMatchObject<ParametersParameter>({
@@ -145,7 +145,7 @@ describe('ConceptMap $translate', () => {
     expect(res.status).toBe(200);
 
     const output = (res.body as Parameters).parameter;
-    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
     const matches = output?.filter((p) => p.name === 'match');
     expect(matches).toHaveLength(2);
     expect(matches?.[0]).toMatchObject<ParametersParameter>({
@@ -198,7 +198,7 @@ describe('ConceptMap $translate', () => {
     expect(res.status).toBe(200);
 
     const output = (res.body as Parameters).parameter;
-    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
     const matches = output?.filter((p) => p.name === 'match');
     expect(matches).toHaveLength(2);
     expect(matches?.[0]).toMatchObject<ParametersParameter>({
@@ -252,7 +252,7 @@ describe('ConceptMap $translate', () => {
     expect(res.status).toBe(200);
 
     const output = (res.body as Parameters).parameter;
-    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
     const matches = output?.filter((p) => p.name === 'match');
     expect(matches).toHaveLength(1);
     expect(matches?.[0]).toMatchObject<ParametersParameter>({
@@ -451,7 +451,7 @@ describe('ConceptMap $translate', () => {
           },
         ],
       });
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
     conceptMap = res.body as ConceptMap;
 
     const res2 = await request(app)
@@ -465,7 +465,7 @@ describe('ConceptMap $translate', () => {
     expect(res2.status).toBe(200);
 
     const output = (res2.body as Parameters).parameter;
-    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
     const matches = output?.filter((p) => p.name === 'match');
     expect(matches).toHaveLength(2);
     expect(matches?.[0]).toMatchObject<ParametersParameter>({
@@ -550,7 +550,7 @@ describe('ConceptMap $translate', () => {
           },
         ],
       });
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
     conceptMap = res.body as ConceptMap;
 
     const res2 = await request(app)
@@ -564,7 +564,7 @@ describe('ConceptMap $translate', () => {
     expect(res2.status).toBe(200);
 
     const output = (res2.body as Parameters).parameter;
-    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toEqual(true);
+    expect(output?.find((p) => p.name === 'result')?.valueBoolean).toStrictEqual(true);
     const matches = output?.filter((p) => p.name === 'match');
     expect(matches).toHaveLength(1);
     expect(matches?.[0]).toMatchObject<ParametersParameter>({
@@ -598,7 +598,7 @@ describe('ConceptMap $translate', () => {
         sourceCanonical: 'http://example.com/labs',
         targetCanonical: 'http://example.com/loinc',
       });
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
     conceptMap = res.body as ConceptMap;
 
     const res2 = await request(app)

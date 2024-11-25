@@ -46,8 +46,8 @@ describe('FHIR Router', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('201');
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('201');
   });
 
   test('Batch invalid bundle', async () => {
@@ -165,7 +165,7 @@ describe('FHIR Router', () => {
       repo
     );
     expect(res2).toMatchObject(allOk);
-    expect((updatedPatient as Patient)?.active).toEqual(true);
+    expect((updatedPatient as Patient)?.active).toStrictEqual(true);
   });
 
   test('Update incorrect precondition', async () => {
@@ -280,7 +280,7 @@ describe('FHIR Router', () => {
     );
     expect(res2).toMatchObject(allOk);
     expect(patient2).toBeDefined();
-    expect((patient2 as Patient).active).toEqual(true);
+    expect((patient2 as Patient).active).toStrictEqual(true);
 
     const [res3, patient3] = await router.handleRequest(
       makeSimpleRequest('PATCH', `/Patient/${patient?.id}`, null),
@@ -381,6 +381,6 @@ describe('FHIR Router', () => {
     );
     expect(res).toMatchObject(created);
     expect(resource).toMatchObject(patient);
-    expect(resource?.meta?.account?.reference).toEqual('Organization/123');
+    expect(resource?.meta?.account?.reference).toStrictEqual('Organization/123');
   });
 });
