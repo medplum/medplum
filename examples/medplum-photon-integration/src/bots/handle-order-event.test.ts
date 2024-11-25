@@ -5,9 +5,9 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import type { Bot, Bundle, MedicationRequest, Patient, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
-import type { Fill, OrderCreatedData } from '../photon-types';
+import type { OrderCreatedData } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
-import { getFillStatus, getPatient, handler } from './handle-order-event';
+import { getPatient, handler } from './handle-order-event';
 import { createdWebhook, noPrescriptionId, placedWebhook } from './test-data/order-event-test-data';
 
 describe('Order event handler', async () => {
@@ -108,13 +108,5 @@ describe('Order event handler', async () => {
 
     const result = await getPatient(orderPatientData, medplum);
     expect(result).toStrictEqual(patient);
-  });
-
-  test.skip('Get fill status', async () => {
-    expect(getFillStatus('NEW')).toBe('in-progress');
-    expect(getFillStatus('SCHEDULED')).toBe('preparation');
-    expect(getFillStatus('SENT')).toBe('in-progress');
-    expect(getFillStatus('CANCELED')).toBe('cancelled');
-    expect(() => getFillStatus('cancelled' as Fill['state'])).toThrow('Invalid Fill state');
   });
 });
