@@ -1,0 +1,68 @@
+---
+sidebar_position: 4
+toc_max_heading_level: 2
+---
+
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+import ExampleCode from '!!raw-loader!@site/..//examples/src/bots/file-uploads.ts';
+
+# Uploading Files
+
+In digital health, a common requirement is to upload PDFs or other files from one system to another. Examples include:
+
+- Uploading pathology reports into a legacy EHR
+- Uploading service requisitions into an SFTP server
+
+In this guide, we will show you how to:
+
+- Create and upload a PDF file from a Bot to an HTTP endpoint
+- Upload a file form a to an SFTP server
+
+You can find complete example bots for these examples in the [Medplum Demo Bots repo](https://github.com/medplum/medplum-demo-bots)
+
+## HTTP File Uploads
+
+To upload to a file using http, you will have to submit an HTTP request with the `Content-Type` `multipart/form-data`. Medplum Bots ship with the npm [`form-data`](https://www.npmjs.com/package/form-data) package to make it easier to create form data.
+
+Let's take a look at an example. First, we'll create a pdf (see the [Create a PDF tutorial](./creating-a-pdf) for more details)
+
+<MedplumCodeBlock language="ts" selectBlocks="createPdf">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+[`medplum.createPdf()`](../sdk/core.medplumclient.createpdf) creates a [`Binary`](/docs/api/fhir/resources/binary) resource and stores it on the Medplum server. Our next step will be to download the resulting PDF data, and convert it to a stream to send to our 3rd party API.
+
+<MedplumCodeBlock language="ts" selectBlocks="downloadPdf">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+Next, we'll construct the request body using the `form-data` library
+
+<MedplumCodeBlock language="ts" selectBlocks="formData">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+And lastly, we'll post the form to the API (here, we're just using [httpbin](#)) as an example
+
+<MedplumCodeBlock language="ts" selectBlocks="postForm">
+  {ExampleCode}
+</MedplumCodeBlock>
+
+This is what it looks like all put together. You can also see this example in our [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/blob/main/src/form-data-upload.ts) repo.
+
+<MedplumCodeBlock
+  language="ts"
+  selectBlocks="coreImports,formImports,botFn,createPdf,checkBinary,downloadPdf,nl,formData,nl,postForm,closeFn"
+>
+  {ExampleCode}
+</MedplumCodeBlock>
+
+## SFTP Uploads
+
+Medplum Bots provide the [ssh2-sftp-client](https://www.npmjs.com/package/ssh2-sftp-client) library to connect to SFTP servers. You can reference the library's [github page](https://github.com/theophilusx/ssh2-sftp-client) for detailed documentation on how it works.
+
+Below is an example bot that connects to an SFTP server and returns a list of all available files at the root directory.
+
+<MedplumCodeBlock language="ts" selectBlocks="coreImports,sftpImport,sftpBot">
+  {ExampleCode}
+</MedplumCodeBlock>

@@ -96,7 +96,11 @@ export class AgentDicomChannel extends BaseChannel {
 
             // Upload the Medplum as a FHIR Binary
             const medplum = App.instance.medplum;
-            binary = await medplum.createBinary(buffer, 'dicom.dcm', 'application/dicom');
+            binary = await medplum.createBinary({
+              data: buffer,
+              filename: 'dicom.dcm',
+              contentType: 'application/dicom',
+            });
 
             // Parse the DICOM file into DICOM JSON
             const dicomDict = dcmjs.data.DicomMessage.readFile(buffer.buffer);

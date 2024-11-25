@@ -424,7 +424,7 @@ function processObservation(
       observation.dataAbsentReason = { text: 'Result Blanked by Partner Lab' };
     } else if (observation.status !== 'cancelled') {
       quantity = { ...quantity, ...parseValueWithComparator(value) };
-      interpretation = INTERPRETATION_CODES[segment.get(8).get(0)];
+      interpretation = INTERPRETATION_CODES[segment.getField(8).getComponent(1)];
     }
   }
 
@@ -468,14 +468,14 @@ function createOrUpdateObservation(
  * and attach it to the diagnostic report in the `DiagnosticReport.presentedForm` property
  * @param medplum - The Medplum Client.
  * @param report - The current `DiagnosticReport` resource.
- * @param fileName - The name of the PDF file.
+ * @param filename - The name of the PDF file.
  * @param message - The HL7 message.
  * @returns The uploaded `Media` resources.
  */
 async function uploadEmbeddedPdfs(
   medplum: MedplumClient,
   report: DiagnosticReport,
-  fileName: string,
+  filename: string,
   message: Hl7Message
 ): Promise<Media[]> {
   // Upload PDF reports
@@ -484,9 +484,14 @@ async function uploadEmbeddedPdfs(
     pdfLines.map(async (segment: Hl7Segment) => {
       const encodedData = segment.getComponent(5, 5);
       const decodedData = Buffer.from(encodedData, 'base64');
-      return medplum.uploadMedia(decodedData, 'application/pdf', fileName, {
-        subject: report.subject,
-        basedOn: report.basedOn as Reference<ServiceRequest>[],
+      return medplum.createMedia({
+        data: decodedData,
+        contentType: 'application/pdf',
+        filename,
+        additionalFields: {
+          subject: report.subject,
+          basedOn: report.basedOn as Reference<ServiceRequest>[],
+        },
       });
     })
   );

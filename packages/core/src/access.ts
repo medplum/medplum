@@ -107,32 +107,7 @@ export function canWriteResource(accessPolicy: AccessPolicy, resource: Resource)
   if (!canWriteResourceType(accessPolicy, resourceType)) {
     return false;
   }
-  return matchesAccessPolicy(accessPolicy, resource, false);
-}
-
-/**
- * Returns true if the resource satisfies the current access policy.
- * @param accessPolicy - The access policy.
- * @param resource - The resource.
- * @param readonlyMode - True if the resource is being read.
- * @returns True if the resource matches the access policy.
- * @deprecated Use satisfiedAccessPolicy() instead.
- */
-export function matchesAccessPolicy(accessPolicy: AccessPolicy, resource: Resource, readonlyMode: boolean): boolean {
-  if (accessPolicy.resource) {
-    for (const resourcePolicy of accessPolicy.resource) {
-      if (
-        matchesAccessPolicyResourcePolicy(
-          resource,
-          readonlyMode ? AccessPolicyInteraction.READ : AccessPolicyInteraction.UPDATE,
-          resourcePolicy
-        )
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
+  return Boolean(satisfiedAccessPolicy(resource, AccessPolicyInteraction.UPDATE, accessPolicy));
 }
 
 /**

@@ -4,7 +4,7 @@ import {
   formatSearchQuery,
   getReferenceString,
   Operator,
-  parseSearchDefinition,
+  parseSearchRequest,
   SearchRequest,
 } from '@medplum/core';
 import { Document, Loading, SearchControl, useMedplum } from '@medplum/react';
@@ -21,7 +21,7 @@ export function SearchPage(): JSX.Element {
   const [search, setSearch] = useState<SearchRequest>();
 
   useEffect(() => {
-    const parsedSearch = parseSearchDefinition(location.pathname + location.search);
+    const parsedSearch = parseSearchRequest(location.pathname + location.search);
     // Default to the Coverage search page
     if (!parsedSearch.resourceType) {
       navigate('/Coverage');

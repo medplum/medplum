@@ -30,7 +30,7 @@ PV2||||||||||||||||||||||N|||||||||||||||||||||||||||`);
     const contentType = 'x-application/hl7-v2+er7';
     const secrets = {};
     const result = await handler(medplum, { bot, input, contentType, secrets });
-    expect(result.get('MSA')).toBeDefined();
+    expect(result.getSegment('MSA')).toBeDefined();
   });
 
   test('Update HL7 Message', async () => {
@@ -44,7 +44,7 @@ ZVN|A02|||||201902011015`);
     const contentType = 'x-application/hl7-v2+er7';
     const secrets = {};
     const result = await handler(medplum, { bot, input, contentType, secrets });
-    expect(result.get('MSA')).toBeDefined();
+    expect(result.getSegment('MSA')).toBeDefined();
 
     const patient = await medplum.searchOne('Patient', 'identifier=9555555555');
     expect(patient).toBeDefined();
@@ -69,7 +69,7 @@ ZVN|A05`);
     const contentType = 'x-application/hl7-v2+er7';
     const secrets = {};
     const result = await handler(medplum, { bot, input, contentType, secrets });
-    expect(result.get('MSA')).toBeDefined();
+    expect(result.getSegment('MSA')).toBeDefined();
 
     const patient = await medplum.searchOne('Patient', 'identifier=9555555555');
     expect(patient).toBeDefined();
@@ -95,7 +95,7 @@ PV2|^^^ICU|||||||||||||202305231530`);
     const contentType = 'x-application/hl7-v2+er7';
     const secrets = {};
     const result = await handler(medplum, { bot, input, contentType, secrets });
-    expect(result.get('MSA')).toBeDefined();
+    expect(result.getSegment('MSA')).toBeDefined();
 
     const patient = await medplum.searchOne('Patient', 'identifier=123456');
     expect(patient).toBeDefined();

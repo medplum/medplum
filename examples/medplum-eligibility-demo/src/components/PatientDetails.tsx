@@ -1,6 +1,6 @@
 import { Tabs } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString, parseSearchDefinition } from '@medplum/core';
+import { getReferenceString, normalizeErrorString, parseSearchRequest } from '@medplum/core';
 import { Patient, Resource } from '@medplum/fhirtypes';
 import { Document, ResourceForm, ResourceHistoryTable, ResourceTable, SearchControl, useMedplum } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
@@ -25,7 +25,7 @@ export function PatientDetails({ patient, onChange }: PatientDetailsProps): JSX.
 
   // Get all Coverage resources related to the Patient
   const coverageSearchQuery = `Coverage?patient=${getReferenceString(patient)}`;
-  const coverageSearchRequest = parseSearchDefinition(coverageSearchQuery);
+  const coverageSearchRequest = parseSearchRequest(coverageSearchQuery);
   coverageSearchRequest.fields = ['payor', 'relationship', 'period'];
 
   const handlePatientEdit = async (newPatient: Resource): Promise<void> => {
