@@ -275,9 +275,9 @@ function addDefaults(config: MedplumServerConfig): MedplumServerConfig {
   config.port = config.port || 8103;
   config.issuer = config.issuer || config.baseUrl;
   config.jwksUrl = config.jwksUrl || config.baseUrl + '/.well-known/jwks.json';
-  config.authorizeUrl = config.authorizeUrl || config.baseUrl + '/authorize';
-  config.tokenUrl = config.tokenUrl || config.baseUrl + '/token';
-  config.userInfoUrl = config.userInfoUrl || config.baseUrl + '/userinfo';
+  config.authorizeUrl = config.authorizeUrl || config.baseUrl + '/oauth2/authorize';
+  config.tokenUrl = config.tokenUrl || config.baseUrl + '/oauth2/token';
+  config.userInfoUrl = config.userInfoUrl || config.baseUrl + '/oauth2/userinfo';
   config.storageBaseUrl = config.storageBaseUrl || config.baseUrl + '/storage';
   config.maxJsonSize = config.maxJsonSize || '1mb';
   config.maxBatchSize = config.maxBatchSize || '50mb';
