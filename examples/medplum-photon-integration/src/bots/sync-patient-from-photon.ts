@@ -413,28 +413,6 @@ export async function createDispenseResource(
   return medicationDispense;
 }
 
-async function checkForExistingPrescription(
-  medplum: MedplumClient,
-  photonPrescription: PhotonPrescription
-): Promise<boolean> {
-  if (!photonPrescription?.externalId || !photonPrescription?.id) {
-    return false;
-  }
-  let prescription: MedicationRequest | undefined;
-  if (photonPrescription.externalId) {
-    prescription = await medplum.readResource('MedicationRequest', photonPrescription.externalId);
-    if (prescription) {
-      return true;
-    }
-  }
-
-  prescription = await medplum.searchOne('MedicationRequest', {
-    identifier: NEUTRON_HEALTH + `|${photonPrescription.id}`,
-  });
-
-  return !!prescription;
-}
-
 export async function getPrescriber(
   medplum: MedplumClient,
   photonProvider: PhotonProvider
