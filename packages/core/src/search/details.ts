@@ -122,7 +122,6 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
   if (searchParam.code.startsWith('_XXX')) {
     console.log(`Skipping special implementation for internal search parameter: ${searchParam.code}`);
   } else if (!searchParam.base?.includes(resourceType as ResourceType)) {
-    console.log(`Skipping special implementation for search parameter: ${searchParam.code} ${searchParam.base}`);
     // If the search parameter is not defined on the resource type itself, skip special implementations
   } else if (isLookupTableParam(searchParam, builder)) {
     implementation = 'lookup-table';
@@ -318,6 +317,8 @@ function isBackboneElement(propertyType: string): boolean {
  * @returns The SQL column name.
  */
 function convertCodeToColumnName(code: string): string {
+  code = code.replace('_security', '__security');
+  code = code.replace('_tag', '__tag');
   return code.split(/[-:]/).reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
