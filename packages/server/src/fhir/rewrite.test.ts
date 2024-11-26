@@ -1,4 +1,4 @@
-import { ContentType, createReference, deepClone, getReferenceString } from '@medplum/core';
+import { ContentType, concatUrls, createReference, deepClone, getReferenceString } from '@medplum/core';
 import { Binary, Bundle, Media, Patient, Practitioner } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { URL } from 'url';
@@ -202,7 +202,7 @@ describe('URL rewrite', () => {
       photo: [
         {
           contentType: 'image/jpeg',
-          url: `${config.storageBaseUrl}${binary.id}`,
+          url: concatUrls(config.storageBaseUrl, binary.id as string),
         },
       ],
     };
