@@ -725,7 +725,7 @@ for (let n = 0; n < 256; n++) {
  * @param arrayBuffer - The input array buffer.
  * @returns The resulting hex string.
  */
-export function arrayBufferToHex(arrayBuffer: ArrayBuffer): string {
+export function arrayBufferToHex(arrayBuffer: ArrayLike<number> | ArrayBuffer): string {
   const bytes = new Uint8Array(arrayBuffer);
   const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
@@ -739,7 +739,7 @@ export function arrayBufferToHex(arrayBuffer: ArrayBuffer): string {
  * @param arrayBuffer - The input array buffer.
  * @returns The base-64 encoded string.
  */
-export function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
+export function arrayBufferToBase64(arrayBuffer: ArrayLike<number> | ArrayBuffer): string {
   const bytes = new Uint8Array(arrayBuffer);
   const result: string[] = [];
   for (let i = 0; i < bytes.length; i++) {
