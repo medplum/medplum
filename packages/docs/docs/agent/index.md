@@ -157,6 +157,12 @@ For a more comprehensive end-to-end test of HL7 over MLLP, we recommend using [S
 docker run --rm -it -p 8000:8000 eu.gcr.io/simhospital-images/simhospital:latest health/simulator -output mllp -mllp_destination <ip_address>:<port> -pathways_per_hour 720
 ```
 
+If you are testing your local setup on Linux/Mac with the agent running in docker you will need to do the following:
+
+```bash
+docker run --rm -it -p 8000:8000 eu.gcr.io/simhospital-images/simhospital:latest health/simulator -output mllp -mllp_destination host.docker.internal:<port> -pathways_per_hour 720
+```
+
 ## Audit Events and Logging
 
 All interactions between a `Bot` and an `Agent`, such as calling `Agent` operations from a `Bot` or calling `Agent` operations that `$execute` a `Bot`, will trigger either the creation of `AuditEvent` resources or the configured logging behavior for the `Bot` (see: [Bot logging configuration](/docs/bots/bots-in-production#configuring-bot-logging)).
