@@ -72,6 +72,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   "status": "active",
   "channel": [
     {
+      "name": "ADT Channel",
       "endpoint": {
         "reference": "Endpoint/my-endpoint-uuid",
         "display": "Test Endpoint"
