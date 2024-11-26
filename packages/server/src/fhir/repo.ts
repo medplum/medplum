@@ -110,6 +110,7 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
+import { deriveIdentifierSearchParameter } from './lookups/util';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -1273,6 +1274,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (searchParams) {
       for (const searchParam of Object.values(searchParams)) {
         this.buildColumn(resource, row, searchParam);
+        if (searchParam.type === 'reference') {
+          const derived = deriveIdentifierSearchParameter(searchParam);
+          this.buildColumn(resource, row, derived);
+        }
       }
     }
     return row;

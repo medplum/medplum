@@ -2,6 +2,7 @@ import {
   deepEquals,
   getAllDataTypes,
   getSearchParameterDetails,
+  getSearchParameters,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   InternalTypeSchema,
@@ -68,6 +69,8 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
     for (const entry of bundle.entry) {
       if (entry.resource) {
         searchParams.push(entry.resource);
+      } else {
+        // TODO throw error instead since this never happens right now?
       }
     }
   }
@@ -231,18 +234,14 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
       { name: 'compartments', type: 'UUID[] NOT NULL' },
       { name: 'projectId', type: 'UUID' },
       { name: '_source', type: 'TEXT' },
-      { name: '_tag', type: 'TEXT[]' },
       { name: '_profile', type: 'TEXT[]' },
-      { name: '_security', type: 'TEXT[]' },
     ],
     indexes: [
       { columns: ['lastUpdated'], indexType: 'btree' },
       { columns: ['compartments'], indexType: 'gin' },
       { columns: ['projectId'], indexType: 'btree' },
       { columns: ['_source'], indexType: 'btree' },
-      { columns: ['_tag'], indexType: 'gin' },
       { columns: ['_profile'], indexType: 'gin' },
-      { columns: ['_security'], indexType: 'gin' },
     ],
   };
 
@@ -291,14 +290,20 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
 }
 
 function buildSearchColumns(tableDefinition: TableDefinition, resourceType: string): void {
+  const resourceTypeSearchParams = getSearchParameters(resourceType);
   const derivedSearchParams: SearchParameter[] = [];
-  for (const paramList of [searchParams, derivedSearchParams]) {
+  // for (const paramList of [searchParams, derivedSearchParams]) {
+  for (const paramList of [Object.values(resourceTypeSearchParams ?? {}), derivedSearchParams]) {
     for (const searchParam of paramList) {
+      if (searchParam.code === '_security') {
+        // console.log('Skipping _security');
+      }
       if (searchParam.type === 'composite') {
         continue;
       }
 
       if (!searchParam.base?.includes(resourceType as ResourceType)) {
+        console.log('SKIPPING', searchParam.code, searchParam.base);
         continue;
       }
 
@@ -316,7 +321,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
         if (existing) {
           if (!deepEquals(existing, column)) {
             throw new Error(
-              `Search Parameters attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
+              `Search Parameter ${searchParam.id ?? searchParam.code} attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
             );
           }
           continue;
@@ -609,6 +614,14 @@ function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDe
 }
 
 function buildIndexSql(tableName: string, index: IndexDefinition): string {
+  let indexName = tableName + '_';
+  indexName += index.columns.map((c) => (typeof c === 'string' ? c : c.name)).join('_');
+  indexName += '_idx';
+
+  if (indexName.length > 63) {
+    throw new Error('Index name too long: ' + indexName);
+  }
+
   let result = 'CREATE ';
 
   if (index.unique) {
@@ -616,10 +629,8 @@ function buildIndexSql(tableName: string, index: IndexDefinition): string {
   }
 
   result += 'INDEX CONCURRENTLY IF NOT EXISTS "';
-  result += tableName;
-  result += '_';
-  result += index.columns.map((c) => (typeof c === 'string' ? c : c.name)).join('_');
-  result += '_idx" ON "';
+  result += indexName;
+  result += '" ON "';
   result += tableName;
   result += '" ';
 

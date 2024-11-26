@@ -24,7 +24,7 @@ const options = {
   resolveExtensions: ['.ts'],
   target: 'es2021',
   tsconfig: 'tsconfig.json',
-  minify: true,
+  minify: false,
   sourcemap: true,
   define: {
     'import.meta.env.NODE_ENV': '"production"',
