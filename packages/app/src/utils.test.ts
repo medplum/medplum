@@ -63,10 +63,10 @@ describe('partition', () => {
     const specialOutput: SpecialThing[] = results[0];
     const anyOutput: any[] = results[1];
 
-    expect(specialOutput.length).toEqual(specialThings.length);
-    expect(specialOutput).toEqual(expect.arrayContaining(specialThings));
+    expect(specialOutput.length).toStrictEqual(specialThings.length);
+    expect(specialOutput).toStrictEqual(expect.arrayContaining(specialThings));
 
-    expect(anyOutput.length).toEqual(notSpecialThings.length);
-    expect(anyOutput).toEqual(expect.arrayContaining(notSpecialThings));
+    expect(anyOutput.length).toStrictEqual(notSpecialThings.length);
+    expect(anyOutput).toStrictEqual(expect.arrayContaining(notSpecialThings));
   });
 });

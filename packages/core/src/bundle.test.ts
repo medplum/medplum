@@ -71,7 +71,7 @@ describe('Bundle tests', () => {
     test('create a FHIR bundle from JSON File', () => {
       const transactionBundle = convertToTransactionBundle(jsonFile);
       const firstEntry = transactionBundle.entry?.[0];
-      expect(firstEntry?.request?.url).toEqual('Patient');
+      expect(firstEntry?.request?.url).toStrictEqual('Patient');
     });
   });
 
@@ -90,7 +90,10 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toEqual(['Patient', 'DiagnosticReport']);
+      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
+        'Patient',
+        'DiagnosticReport',
+      ]);
     });
 
     test('reorders a bundle with a cycle', () => {
@@ -109,13 +112,13 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toEqual([
+      expect(reorderedBundle?.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
         'ServiceRequest',
         'Specimen',
         'ServiceRequest',
         'Specimen',
       ]);
-      expect(reorderedBundle?.entry?.map((e) => e.request?.method)).toEqual(['POST', 'POST', 'PUT', 'PUT']);
+      expect(reorderedBundle?.entry?.map((e) => e.request?.method)).toStrictEqual(['POST', 'POST', 'PUT', 'PUT']);
     });
 
     test('Reorders Lab bundle', () => {
@@ -140,7 +143,7 @@ describe('Bundle tests', () => {
 
       const reorderedBundle = convertToTransactionBundle(inputBundle);
 
-      expect(reorderedBundle.entry?.map((e) => e.resource?.resourceType)).toEqual([
+      expect(reorderedBundle.entry?.map((e) => e.resource?.resourceType)).toStrictEqual([
         'Patient',
         'Observation',
         'ServiceRequest',
@@ -287,7 +290,7 @@ describe('Bundle tests', () => {
       };
 
       const result = convertToTransactionBundle(inputBundle);
-      expect(result?.entry?.[0]?.resource).toEqual(expected);
+      expect(result?.entry?.[0]?.resource).toStrictEqual(expected);
     });
   });
 

@@ -102,7 +102,7 @@ describe('Outcomes', () => {
     [serverError(new Error('bad')), 500],
     [serverTimeout(), 504],
   ])('getStatus(%p) == %i', (outcome, expectedStatus) => {
-    expect(getStatus(outcome)).toEqual(expectedStatus);
+    expect(getStatus(outcome)).toStrictEqual(expectedStatus);
   });
 
   test('Assert OK', () => {
@@ -131,19 +131,21 @@ describe('Outcomes', () => {
   });
 
   test('operationOutcomeToString', () => {
-    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' } as OperationOutcome)).toEqual('Unknown error');
+    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' } as OperationOutcome)).toStrictEqual(
+      'Unknown error'
+    );
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
         issue: [{ details: { text: 'foo' } } as OperationOutcomeIssue],
       })
-    ).toEqual('foo');
+    ).toStrictEqual('foo');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
         issue: [{ details: { text: 'foo' }, expression: ['bar'] } as OperationOutcomeIssue],
       })
-    ).toEqual('foo (bar)');
+    ).toStrictEqual('foo (bar)');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
@@ -152,7 +154,7 @@ describe('Outcomes', () => {
           { details: { text: 'error2' }, expression: ['expr2'] } as OperationOutcomeIssue,
         ],
       })
-    ).toEqual('error1 (expr1); error2 (expr2)');
+    ).toStrictEqual('error1 (expr1); error2 (expr2)');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
@@ -164,6 +166,6 @@ describe('Outcomes', () => {
           },
         ],
       })
-    ).toEqual('Supplied Patient is unknown.');
+    ).toStrictEqual('Supplied Patient is unknown.');
   });
 });

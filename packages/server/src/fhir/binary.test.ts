@@ -36,7 +36,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    expect(res2.text).toEqual('Hello world');
+    expect(res2.text).toStrictEqual('Hello world');
 
     // Read as FHIR JSON
     const res3 = await request(app)
@@ -74,7 +74,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
-    expect(res3.text).toEqual('Hello world 2');
+    expect(res3.text).toStrictEqual('Hello world 2');
   });
 
   test('Binary CORS', async () => {
@@ -112,7 +112,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    expect(res2.text).toEqual('Hello world');
+    expect(res2.text).toStrictEqual('Hello world');
   });
 
   test('GZIP', async () => {
@@ -129,7 +129,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    expect(res2.text).toEqual('Hello world');
+    expect(res2.text).toStrictEqual('Hello world');
   });
 
   test('Update with GZIP', async () => {
@@ -153,7 +153,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
-    expect(res3.text).toEqual('Hello world 2');
+    expect(res3.text).toStrictEqual('Hello world 2');
   });
 
   test('Upload binary in batch', async () => {
@@ -214,7 +214,7 @@ describe('Binary', () => {
 
     // Verify that the file matches the expected contents
     const content = await streamToString(stream);
-    expect(content).toEqual('Hello World!');
+    expect(content).toStrictEqual('Hello World!');
   });
 
   test('Update JSON', async () => {
@@ -241,7 +241,7 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Accept', ContentType.FHIR_JSON);
     expect(res3.status).toBe(200);
-    expect(res3.body.securityContext.reference).toEqual('Patient/123');
+    expect(res3.body.securityContext.reference).toStrictEqual('Patient/123');
   });
 
   test('Invalid Binary JSON', async () => {
@@ -293,7 +293,7 @@ describe('Binary', () => {
       .get('/fhir/R4/Binary/' + binary.id)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
-    expect(res3.text).toEqual('{"resourceType":"Patient"}');
+    expect(res3.text).toStrictEqual('{"resourceType":"Patient"}');
   });
 });
 

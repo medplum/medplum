@@ -41,7 +41,7 @@ if (Platform.OS !== 'web') {
 
       // Test unknown -> active, when WebSocket still connecting
       expect([WebSocket.CONNECTING, WebSocket.OPEN]).toContain(ws.readyState);
-      expect(AppState.currentState).toEqual('unknown');
+      expect(AppState.currentState).toStrictEqual('unknown');
       callback('active');
       expect(reconnectSpy).not.toHaveBeenCalled();
 
@@ -61,7 +61,7 @@ if (Platform.OS !== 'web') {
       await closedPromise;
 
       // Test background -> active when closed
-      expect(ws.readyState).toEqual(WebSocket.CLOSED);
+      expect(ws.readyState).toStrictEqual(WebSocket.CLOSED);
       callback('active');
       expect(reconnectSpy).toHaveBeenCalled();
 
@@ -71,6 +71,6 @@ if (Platform.OS !== 'web') {
   });
 } else {
   test('No tests for Web', () => {
-    expect(true).toEqual(true);
+    expect(true).toStrictEqual(true);
   });
 }

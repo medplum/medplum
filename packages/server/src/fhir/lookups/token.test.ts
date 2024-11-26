@@ -38,8 +38,8 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Multiple identifiers', () =>
@@ -67,8 +67,8 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
 
       const searchResult2 = await systemRepo.search({
         resourceType: 'Patient',
@@ -80,8 +80,8 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult2.entry?.length).toEqual(1);
-      expect(searchResult2.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult2.entry?.length).toStrictEqual(1);
+      expect(searchResult2.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Update identifier', () =>
@@ -105,8 +105,8 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(bundle2.entry?.length).toEqual(1);
-      expect(bundle2.entry?.[0]?.resource?.id).toEqual(patient1.id);
+      expect(bundle2.entry?.length).toStrictEqual(1);
+      expect(bundle2.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
 
       const bundle3 = await systemRepo.search({
         resourceType: 'Patient',
@@ -118,7 +118,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(bundle3.entry?.length).toEqual(0);
+      expect(bundle3.entry?.length).toStrictEqual(0);
 
       await systemRepo.updateResource<Patient>({
         ...patient1,
@@ -135,7 +135,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(bundle5.entry?.length).toEqual(0);
+      expect(bundle5.entry?.length).toStrictEqual(0);
 
       const bundle6 = await systemRepo.search({
         resourceType: 'Patient',
@@ -147,8 +147,8 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(bundle6.entry?.length).toEqual(1);
-      expect(bundle6.entry?.[0]?.resource?.id).toEqual(patient1.id);
+      expect(bundle6.entry?.length).toStrictEqual(1);
+      expect(bundle6.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
     }));
 
   test('Implicit exact', () =>
@@ -177,7 +177,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult1.entry?.length).toEqual(1);
+      expect(searchResult1.entry?.length).toStrictEqual(1);
       expect(bundleContains(searchResult1, patient1)).toBeDefined();
       expect(bundleContains(searchResult1, patient2)).toBeUndefined();
     }));
@@ -208,7 +208,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult1.entry?.length).toEqual(1);
+      expect(searchResult1.entry?.length).toStrictEqual(1);
       expect(bundleContains(searchResult1, patient1)).toBeDefined();
       expect(bundleContains(searchResult1, patient2)).toBeUndefined();
     }));
@@ -239,7 +239,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult1.entry?.length).toEqual(2);
+      expect(searchResult1.entry?.length).toStrictEqual(2);
       expect(bundleContains(searchResult1, patient1)).toBeDefined();
       expect(bundleContains(searchResult1, patient2)).toBeDefined();
     }));
@@ -276,7 +276,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult1.entry?.length).toEqual(1);
+      expect(searchResult1.entry?.length).toStrictEqual(1);
       expect(bundleContains(searchResult1, patient1)).toBeUndefined();
       expect(bundleContains(searchResult1, patient2)).toBeDefined();
     }));
@@ -312,7 +312,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult1.entry?.length).toEqual(1);
+      expect(searchResult1.entry?.length).toStrictEqual(1);
       expect(bundleContains(searchResult1, patient1)).toBeDefined();
       expect(bundleContains(searchResult1, patient2)).toBeUndefined();
     }));
@@ -344,7 +344,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult1.entry?.length).toEqual(2);
+      expect(searchResult1.entry?.length).toStrictEqual(2);
       expect(bundleContains(searchResult1, patient1)).toBeDefined();
       expect(bundleContains(searchResult1, patient2)).toBeDefined();
     }));
@@ -377,7 +377,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult1.entry?.length).toEqual(1);
+      expect(searchResult1.entry?.length).toStrictEqual(1);
       expect(bundleContains(searchResult1, patient1)).toBeDefined();
       expect(bundleContains(searchResult1, patient2)).toBeUndefined();
 
@@ -391,7 +391,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult2.entry?.length).toEqual(1);
+      expect(searchResult2.entry?.length).toStrictEqual(1);
       expect(bundleContains(searchResult2, patient1)).toBeUndefined();
       expect(bundleContains(searchResult2, patient2)).toBeDefined();
     }));
@@ -415,8 +415,8 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(resource.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(resource.id);
     }));
 
   test('Leading whitespace', () =>
@@ -438,8 +438,8 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(resource.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(resource.id);
     }));
 
   test('CodeableConcept text', () =>
@@ -470,7 +470,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult1.entry?.length).toEqual(1);
+      expect(searchResult1.entry?.length).toStrictEqual(1);
       expect(bundleContains(searchResult1, sr1)).toBeDefined();
       expect(bundleContains(searchResult1, sr2)).toBeUndefined();
     }));
@@ -498,8 +498,8 @@ describe('Identifier Lookup Table', () => {
         resourceType: 'Patient',
         filters: [{ code: 'identifier', operator: Operator.EQUALS, value: `${system}|${id1}` }],
       });
-      expect(r1.entry?.length).toEqual(1);
-      expect(r1.entry?.[0]?.resource?.id).toEqual(p1.id);
+      expect(r1.entry?.length).toStrictEqual(1);
+      expect(r1.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
     }));
 
   test('Missing/present', () =>
@@ -524,8 +524,8 @@ describe('Identifier Lookup Table', () => {
           { code: 'identifier', operator: Operator.MISSING, value: 'true' },
         ],
       });
-      expect(r1.entry?.length).toEqual(1);
-      expect(r1.entry?.[0]?.resource?.id).toEqual(p1.id);
+      expect(r1.entry?.length).toStrictEqual(1);
+      expect(r1.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
 
       const r2 = await systemRepo.search({
         resourceType: 'Patient',
@@ -534,8 +534,8 @@ describe('Identifier Lookup Table', () => {
           { code: 'identifier', operator: Operator.MISSING, value: 'false' },
         ],
       });
-      expect(r2.entry?.length).toEqual(1);
-      expect(r2.entry?.[0]?.resource?.id).toEqual(p2.id);
+      expect(r2.entry?.length).toStrictEqual(1);
+      expect(r2.entry?.[0]?.resource?.id).toStrictEqual(p2.id);
 
       const r3 = await systemRepo.search({
         resourceType: 'Patient',
@@ -544,8 +544,8 @@ describe('Identifier Lookup Table', () => {
           { code: 'identifier', operator: Operator.PRESENT, value: 'true' },
         ],
       });
-      expect(r3.entry?.length).toEqual(1);
-      expect(r3.entry?.[0]?.resource?.id).toEqual(p2.id);
+      expect(r3.entry?.length).toStrictEqual(1);
+      expect(r3.entry?.[0]?.resource?.id).toStrictEqual(p2.id);
 
       const r4 = await systemRepo.search({
         resourceType: 'Patient',
@@ -554,7 +554,7 @@ describe('Identifier Lookup Table', () => {
           { code: 'identifier', operator: Operator.PRESENT, value: 'false' },
         ],
       });
-      expect(r4.entry?.length).toEqual(1);
-      expect(r4.entry?.[0]?.resource?.id).toEqual(p1.id);
+      expect(r4.entry?.length).toStrictEqual(1);
+      expect(r4.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
     }));
 });

@@ -198,8 +198,8 @@ describe('External', () => {
     expect(res.status).toBe(302);
 
     const redirect = new URL(res.header.location);
-    expect(redirect.host).toEqual('localhost:3000');
-    expect(redirect.pathname).toEqual('/signin');
+    expect(redirect.host).toStrictEqual('localhost:3000');
+    expect(redirect.pathname).toStrictEqual('/signin');
     expect(redirect.searchParams.get('login')).toBeTruthy();
   });
 
@@ -221,8 +221,8 @@ describe('External', () => {
     expect(res.status).toBe(302);
 
     const redirect = new URL(res.header.location);
-    expect(redirect.host).toEqual(domain);
-    expect(redirect.pathname).toEqual('/auth/callback');
+    expect(redirect.host).toStrictEqual(domain);
+    expect(redirect.pathname).toStrictEqual('/auth/callback');
     expect(redirect.searchParams.get('code')).toBeTruthy();
   });
 
@@ -244,8 +244,8 @@ describe('External', () => {
     expect(res.status).toBe(302);
 
     const redirect = new URL(res.header.location);
-    expect(redirect.host).toEqual(domain);
-    expect(redirect.pathname).toEqual('/auth/callback');
+    expect(redirect.host).toStrictEqual(domain);
+    expect(redirect.pathname).toStrictEqual('/auth/callback');
     expect(redirect.searchParams.get('code')).toBeTruthy();
   });
 
@@ -372,8 +372,8 @@ describe('External', () => {
     expect(res.status).toBe(302);
 
     const redirect = new URL(res.header.location);
-    expect(redirect.host).toEqual(domain);
-    expect(redirect.pathname).toEqual('/auth/callback');
+    expect(redirect.host).toStrictEqual(domain);
+    expect(redirect.pathname).toStrictEqual('/auth/callback');
     expect(redirect.searchParams.get('code')).toBeTruthy();
 
     const code = redirect.searchParams.get('code');
@@ -431,8 +431,8 @@ describe('External', () => {
     expect(res.status).toBe(302);
 
     const redirect = new URL(res.header.location);
-    expect(redirect.host).toEqual(domain);
-    expect(redirect.pathname).toEqual('/auth/callback');
+    expect(redirect.host).toStrictEqual(domain);
+    expect(redirect.pathname).toStrictEqual('/auth/callback');
     expect(redirect.searchParams.get('code')).toBeTruthy();
 
     const code = redirect.searchParams.get('code');
@@ -491,7 +491,7 @@ describe('External', () => {
 
       // Simulate legacy behavior by moving externalId to the user
       const updatedUser = await systemRepo.updateResource<User>({ ...user, externalId });
-      expect(updatedUser.externalId).toEqual(externalId);
+      expect(updatedUser.externalId).toStrictEqual(externalId);
       await systemRepo.updateResource<ProjectMembership>({ ...membership, externalId: undefined });
       return client2;
     });
@@ -514,8 +514,8 @@ describe('External', () => {
     expect(res.status).toBe(302);
 
     const redirect = new URL(res.header.location);
-    expect(redirect.host).toEqual(domain);
-    expect(redirect.pathname).toEqual('/auth/callback');
+    expect(redirect.host).toStrictEqual(domain);
+    expect(redirect.pathname).toStrictEqual('/auth/callback');
     expect(redirect.searchParams.get('code')).toBeTruthy();
   });
 });

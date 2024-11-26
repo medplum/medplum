@@ -89,7 +89,7 @@ describe('Create Order Bot', () => {
     const patient = bundle.entry?.find((e: any) => e.resource.resourceType === 'Patient') as
       | BundleEntry<Patient>
       | undefined;
-    expect(patient?.resource).toEqual(ctx.patient);
+    expect(patient?.resource).toStrictEqual(ctx.patient);
   });
 
   test<Context>('fetchFhirResultsFails', async (ctx) => {
@@ -119,8 +119,8 @@ describe('Create Order Bot', () => {
       orderID
     );
 
-    expect(diagnosticReport.conclusion).toEqual('Normal');
-    expect(diagnosticReport.conclusionCode).toEqual([
+    expect(diagnosticReport.conclusion).toStrictEqual('Normal');
+    expect(diagnosticReport.conclusionCode).toStrictEqual([
       {
         coding: [
           {
@@ -131,13 +131,13 @@ describe('Create Order Bot', () => {
         ],
       },
     ]);
-    expect(diagnosticReport.identifier).toEqual([
+    expect(diagnosticReport.identifier).toStrictEqual([
       {
         system: 'vital_order_id',
         value: orderID,
       },
     ]);
-    expect(diagnosticReport.subject).toEqual(createReference(patient));
+    expect(diagnosticReport.subject).toStrictEqual(createReference(patient));
     expect(diagnosticReport.result).toHaveLength(1);
   });
 });

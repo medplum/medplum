@@ -37,8 +37,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Search with spaces', () =>
@@ -62,8 +62,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Search with commas', () =>
@@ -89,7 +89,7 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(2);
+      expect(searchResult.entry?.length).toStrictEqual(2);
       expect(bundleContains(searchResult, patients[0])).toBeDefined();
       expect(bundleContains(searchResult, patients[1])).toBeDefined();
       expect(bundleContains(searchResult, patients[2])).toBeUndefined();
@@ -132,8 +132,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
 
       const searchResult2 = await systemRepo.search({
         resourceType: 'Patient',
@@ -145,8 +145,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult2.entry?.length).toEqual(1);
-      expect(searchResult2.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult2.entry?.length).toStrictEqual(1);
+      expect(searchResult2.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Update name', () =>
@@ -169,8 +169,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(bundle2.entry?.length).toEqual(1);
-      expect(bundle2.entry?.[0]?.resource?.id).toEqual(patient1.id);
+      expect(bundle2.entry?.length).toStrictEqual(1);
+      expect(bundle2.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
 
       const bundle3 = await systemRepo.search({
         resourceType: 'Patient',
@@ -182,7 +182,7 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(bundle3.entry?.length).toEqual(0);
+      expect(bundle3.entry?.length).toStrictEqual(0);
 
       await systemRepo.updateResource<Patient>({
         ...patient1,
@@ -199,7 +199,7 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(bundle5.entry?.length).toEqual(0);
+      expect(bundle5.entry?.length).toStrictEqual(0);
 
       const bundle6 = await systemRepo.search({
         resourceType: 'Patient',
@@ -211,8 +211,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(bundle6.entry?.length).toEqual(1);
-      expect(bundle6.entry?.[0]?.resource?.id).toEqual(patient1.id);
+      expect(bundle6.entry?.length).toStrictEqual(1);
+      expect(bundle6.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
     }));
 
   test('Search on text', () =>
@@ -235,7 +235,7 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 });

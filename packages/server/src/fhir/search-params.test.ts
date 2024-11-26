@@ -98,8 +98,8 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(results1.entry).toHaveLength(1);
-      expect(results1.entry?.[0].resource?.resourceType).toEqual('Appointment');
-      expect((results1.entry?.[0].resource as Appointment).id).toEqual(appointment1.id);
+      expect(results1.entry?.[0].resource?.resourceType).toStrictEqual('Appointment');
+      expect((results1.entry?.[0].resource as Appointment).id).toStrictEqual(appointment1.id);
 
       const results2 = await repo.search({
         resourceType: 'Appointment',
@@ -159,8 +159,8 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(results1.entry).toHaveLength(1);
-      expect(results1.entry?.[0].resource?.resourceType).toEqual('Slot');
-      expect((results1.entry?.[0].resource as Slot).id).toEqual(slot1.id);
+      expect(results1.entry?.[0].resource?.resourceType).toStrictEqual('Slot');
+      expect((results1.entry?.[0].resource as Slot).id).toStrictEqual(slot1.id);
 
       const results2 = await repo.search({
         resourceType: 'Slot',
@@ -235,8 +235,8 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(results1.entry).toHaveLength(1);
-      expect(results1.entry?.[0].resource?.resourceType).toEqual('DiagnosticReport');
-      expect((results1.entry?.[0].resource as DiagnosticReport).id).toEqual(report1.id);
+      expect(results1.entry?.[0].resource?.resourceType).toStrictEqual('DiagnosticReport');
+      expect((results1.entry?.[0].resource as DiagnosticReport).id).toStrictEqual(report1.id);
 
       const results2 = await repo.search({
         resourceType: 'DiagnosticReport',
@@ -244,8 +244,8 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(results2.entry).toHaveLength(1);
-      expect(results2.entry?.[0].resource?.resourceType).toEqual('DiagnosticReport');
-      expect((results2.entry?.[0].resource as DiagnosticReport).id).toEqual(report2.id);
+      expect(results2.entry?.[0].resource?.resourceType).toStrictEqual('DiagnosticReport');
+      expect((results2.entry?.[0].resource as DiagnosticReport).id).toStrictEqual(report2.id);
     }));
 
   test('Search by Flag.category', () =>
@@ -292,7 +292,7 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(results.entry).toHaveLength(1);
-      expect(results.entry?.[0].resource?.resourceType).toEqual('Flag');
-      expect(results.entry?.[0].resource?.id as string).toEqual(flag1.id as string);
+      expect(results.entry?.[0].resource?.resourceType).toStrictEqual('Flag');
+      expect(results.entry?.[0].resource?.id as string).toStrictEqual(flag1.id as string);
     }));
 });

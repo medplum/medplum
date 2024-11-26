@@ -225,7 +225,7 @@ describe('Group Export', () => {
     // Output format is "ndjson", new line delimited JSON
     // However, we only expect one Observation, so we can parse it as JSON
     expect(res7.text.trim().split('\n')).toHaveLength(1);
-    expect(JSON.parse(res7.text).id).toEqual(res2.body.id);
+    expect(JSON.parse(res7.text).id).toStrictEqual(res2.body.id);
   });
 
   test('Type filter', async () => {

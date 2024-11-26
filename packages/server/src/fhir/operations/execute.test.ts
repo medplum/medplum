@@ -166,7 +166,7 @@ describe('Execute', () => {
       .send('input');
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
-    expect(res.text).toEqual('input');
+    expect(res.text).toStrictEqual('input');
   });
 
   test('Submit FHIR with content type returns non-FHIR JSON', async () => {
@@ -181,7 +181,7 @@ describe('Execute', () => {
       });
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
-    expect(res.body.identifier).toEqual([]);
+    expect(res.body.identifier).toStrictEqual([]);
   });
 
   test('Submit FHIR without content type return JSON content', async () => {
@@ -195,7 +195,7 @@ describe('Execute', () => {
       });
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
-    expect(res.body.identifier).toEqual([]);
+    expect(res.body.identifier).toStrictEqual([]);
   });
 
   test('Return non-Resource JSON response', async () => {
@@ -206,7 +206,7 @@ describe('Execute', () => {
       .send(JSON.parse(JSON.stringify(input)));
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
-    expect(res.body).toEqual({ type: 'not-a-resource', result: [] });
+    expect(res.body).toStrictEqual({ type: 'not-a-resource', result: [] });
   });
 
   test('Submit HL7', async () => {
@@ -232,9 +232,9 @@ describe('Execute', () => {
     expect(args[1]).toBe(ContentType.JSON);
 
     const row = JSON.parse(args[2] as string);
-    expect(row.botId).toEqual(bots.systemEchoBot.id);
-    expect(row.hl7MessageType).toEqual('ACK');
-    expect(row.hl7Version).toEqual('2.6.1');
+    expect(row.botId).toStrictEqual(bots.systemEchoBot.id);
+    expect(row.hl7MessageType).toStrictEqual('ACK');
+    expect(row.hl7Version).toStrictEqual('2.6.1');
   });
 
   test('Execute without code', async () => {
@@ -331,7 +331,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({});
     expect(res3.status).toBe(400);
-    expect(res3.body.issue[0].details.text).toEqual('Bots not enabled');
+    expect(res3.body.issue[0].details.text).toStrictEqual('Bots not enabled');
   });
 
   test('VM context bot success', async () => {
@@ -356,7 +356,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('No executable code');
+    expect(res2.body.issue[0].details.text).toStrictEqual('No executable code');
 
     // Update the bot with an invalid code URL
     const res3 = await request(app)
@@ -380,7 +380,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res4.status).toBe(400);
-    expect(res4.body.issue[0].details.text).toEqual('Executable code is not a Binary');
+    expect(res4.body.issue[0].details.text).toStrictEqual('Executable code is not a Binary');
 
     // Deploy the bot
     const res5 = await request(app)
@@ -423,7 +423,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res7.status).toBe(400);
-    expect(res7.body.issue[0].details.text).toEqual('VM Context bots not enabled on this server');
+    expect(res7.body.issue[0].details.text).toStrictEqual('VM Context bots not enabled on this server');
 
     getConfig().vmContextBotsEnabled = true;
   });
@@ -463,7 +463,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res6.status).toBe(200);
-    expect(res6.body).toEqual(42);
+    expect(res6.body).toStrictEqual(42);
   });
 
   test('OperationOutcome response', async () => {
@@ -482,7 +482,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1);
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
-    expect(res.text).toEqual('Hello, world!');
+    expect(res.text).toStrictEqual('Hello, world!');
   });
 
   describe('linked project', () => {
@@ -605,7 +605,7 @@ describe('Execute', () => {
         .send('input');
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
-      expect(res.text).toEqual('input');
+      expect(res.text).toStrictEqual('input');
 
       // Get the audit event
       const auditEvent = await systemRepo.searchOne<AuditEvent>({
@@ -621,7 +621,7 @@ describe('Execute', () => {
       // verify secrets
       const output = JSON.parse(auditEvent?.outcomeDesc as string);
       populateNamesInSecrets(expectedSecrets);
-      expect(output.secrets).toEqual(expectedSecrets);
+      expect(output.secrets).toStrictEqual(expectedSecrets);
     });
 
     test.each<[BotName, 'linking' | 'own']>([
@@ -644,7 +644,7 @@ describe('Execute', () => {
         .send('input');
       expect(res.status).toBe(200);
       expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
-      expect(res.text).toEqual('input');
+      expect(res.text).toStrictEqual('input');
 
       expect(generateAccessTokenSpy).toHaveBeenCalledTimes(1);
       const generatedAccessToken = (await generateAccessTokenSpy.mock.results[0].value) as string;

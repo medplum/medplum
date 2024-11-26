@@ -30,8 +30,8 @@ describe('SearchParameterDetails', () => {
     const individualPhoneticParam = searchParams.find((e) => e.id === 'individual-phonetic') as SearchParameter;
     const details = getSearchParameterDetails('Patient', individualPhoneticParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toEqual('phonetic');
-    expect(details.array).toEqual(true);
+    expect(details.columnName).toStrictEqual('phonetic');
+    expect(details.array).toStrictEqual(true);
   });
 
   test('Boolean param', () => {
@@ -39,9 +39,9 @@ describe('SearchParameterDetails', () => {
     const activeParam = searchParams.find((e) => e.id === 'Patient-active') as SearchParameter;
     const details = getSearchParameterDetails('Patient', activeParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toEqual('active');
-    expect(details.type).toEqual(SearchParameterType.BOOLEAN);
-    expect(details.array).toEqual(false);
+    expect(details.columnName).toStrictEqual('active');
+    expect(details.type).toStrictEqual(SearchParameterType.BOOLEAN);
+    expect(details.array).toStrictEqual(false);
   });
 
   test('Date param', () => {
@@ -49,9 +49,9 @@ describe('SearchParameterDetails', () => {
     const birthDateParam = searchParams.find((e) => e.id === 'individual-birthdate') as SearchParameter;
     const details = getSearchParameterDetails('Patient', birthDateParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toEqual('birthdate');
-    expect(details.type).toEqual(SearchParameterType.DATE);
-    expect(details.array).toEqual(false);
+    expect(details.columnName).toStrictEqual('birthdate');
+    expect(details.type).toStrictEqual(SearchParameterType.DATE);
+    expect(details.array).toStrictEqual(false);
   });
 
   test('Date/Time param', () => {
@@ -59,9 +59,9 @@ describe('SearchParameterDetails', () => {
     const authoredParam = searchParams.find((e) => e.id === 'ServiceRequest-authored') as SearchParameter;
     const details = getSearchParameterDetails('ServiceRequest', authoredParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toEqual('authored');
-    expect(details.type).toEqual(SearchParameterType.DATETIME);
-    expect(details.array).toEqual(false);
+    expect(details.columnName).toStrictEqual('authored');
+    expect(details.type).toStrictEqual(SearchParameterType.DATETIME);
+    expect(details.array).toStrictEqual(false);
   });
 
   test('Get nested details', () => {
@@ -69,8 +69,8 @@ describe('SearchParameterDetails', () => {
     const missingExpressionParam = searchParams.find((e) => e.id === 'Patient-link') as SearchParameter;
     const details = getSearchParameterDetails('Patient', missingExpressionParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toEqual('link');
-    expect(details.type).toEqual(SearchParameterType.REFERENCE);
+    expect(details.columnName).toStrictEqual('link');
+    expect(details.type).toStrictEqual(SearchParameterType.REFERENCE);
   });
 
   test('Missing expression for resource type', () => {
@@ -83,7 +83,7 @@ describe('SearchParameterDetails', () => {
 
     const details = getSearchParameterDetails('Patient', missingExpressionParam);
     expect(details).toBeDefined();
-    expect(details.columnName).toEqual('test');
+    expect(details.columnName).toStrictEqual('test');
   });
 
   test('Property not found', () => {
@@ -124,8 +124,8 @@ describe('SearchParameterDetails', () => {
     const valueDateParam = searchParams.find((e) => e.id === 'Observation-value-date') as SearchParameter;
     const details = getSearchParameterDetails('Observation', valueDateParam);
     expect(details).toBeDefined();
-    expect(details.type).toEqual(SearchParameterType.DATETIME);
-    expect(details.columnName).toEqual('valueDate');
+    expect(details.type).toStrictEqual(SearchParameterType.DATETIME);
+    expect(details.columnName).toStrictEqual('valueDate');
     expect(details.elementDefinitions).toBeDefined();
   });
 
@@ -134,8 +134,8 @@ describe('SearchParameterDetails', () => {
     const valueQuantityParam = searchParams.find((e) => e.id === 'Observation-value-quantity') as SearchParameter;
     const details = getSearchParameterDetails('Observation', valueQuantityParam);
     expect(details).toBeDefined();
-    expect(details.type).toEqual(SearchParameterType.QUANTITY);
-    expect(details.columnName).toEqual('valueQuantity');
+    expect(details.type).toStrictEqual(SearchParameterType.QUANTITY);
+    expect(details.columnName).toStrictEqual('valueQuantity');
     expect(details.elementDefinitions).toBeDefined();
   });
 
@@ -144,8 +144,8 @@ describe('SearchParameterDetails', () => {
     const clinicalDateParam = searchParams.find((e) => e.id === 'clinical-date') as SearchParameter;
     const details = getSearchParameterDetails('Encounter', clinicalDateParam);
     expect(details).toBeDefined();
-    expect(details.type).toEqual(SearchParameterType.DATETIME);
-    expect(details.columnName).toEqual('date');
+    expect(details.type).toStrictEqual(SearchParameterType.DATETIME);
+    expect(details.columnName).toStrictEqual('date');
     expect(details.elementDefinitions).toBeDefined();
   });
 
@@ -222,8 +222,8 @@ describe('SearchParameterDetails', () => {
     const details = getSearchParameterDetails('Patient', searchParam);
     expect(details).toBeDefined();
     expect(details.array).toBe(true);
-    expect(details.type).toEqual(SearchParameterType.TEXT);
-    expect(details.elementDefinitions).toEqual([]);
+    expect(details.type).toStrictEqual(SearchParameterType.TEXT);
+    expect(details.elementDefinitions).toStrictEqual([]);
   });
 
   test('us-core-patient-gender-identity', () => {
@@ -231,8 +231,8 @@ describe('SearchParameterDetails', () => {
     const details = getSearchParameterDetails('Patient', searchParam);
     expect(details).toBeDefined();
     expect(details.array).toBe(true);
-    expect(details.type).toEqual(SearchParameterType.TEXT);
-    expect(details.elementDefinitions).toEqual([]);
+    expect(details.type).toStrictEqual(SearchParameterType.TEXT);
+    expect(details.elementDefinitions).toStrictEqual([]);
   });
 
   test('EvidenceVariable-characteristic-type', () => {
@@ -240,7 +240,7 @@ describe('SearchParameterDetails', () => {
     const details = getSearchParameterDetails('EvidenceVariable', searchParam);
     expect(details).toBeDefined();
     expect(details.array).toBe(true);
-    expect(details.type).toEqual(SearchParameterType.TEXT);
+    expect(details.type).toStrictEqual(SearchParameterType.TEXT);
   });
 
   test('Everything', () => {

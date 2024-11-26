@@ -44,8 +44,8 @@ describe('Job status', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.status).toBe(202);
-      expect(res.get('Content-Type')).toEqual('application/fhir+json; charset=utf-8');
-      expect(res.body).toEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'accepted' }));
+      expect(res.get('Content-Type')).toStrictEqual('application/fhir+json; charset=utf-8');
+      expect(res.body).toStrictEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'accepted' }));
     }));
 
   test('completed', () =>
@@ -66,8 +66,10 @@ describe('Job status', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.status).toBe(200);
-      expect(res.get('Content-Type')).toEqual('application/fhir+json; charset=utf-8');
-      expect(res.body).toEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'completed' }));
+      expect(res.get('Content-Type')).toStrictEqual('application/fhir+json; charset=utf-8');
+      expect(res.body).toStrictEqual(
+        expect.objectContaining({ id: job.id, request: job.request, status: 'completed' })
+      );
     }));
 
   test('Cancel -- Happy path', () =>
@@ -77,14 +79,14 @@ describe('Job status', () => {
       const res1 = await request(app)
         .get(`/fhir/R4/job/${job.id}/status`)
         .set('Authorization', 'Bearer ' + accessToken);
-      expect(res1.status).toEqual(202);
-      expect(res1.body?.status).toEqual('accepted');
+      expect(res1.status).toStrictEqual(202);
+      expect(res1.body?.status).toStrictEqual('accepted');
 
       // Cancel the job
       const res2 = await request(app)
         .delete(`/fhir/R4/job/${job.id}/status`)
         .set('Authorization', 'Bearer ' + accessToken);
-      expect(res2.status).toEqual(202);
+      expect(res2.status).toStrictEqual(202);
       expect(res2.body).toMatchObject({
         resourceType: 'OperationOutcome',
         id: 'accepted',
@@ -105,7 +107,7 @@ describe('Job status', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON);
 
-      expect(res3.status).toEqual(200);
+      expect(res3.status).toStrictEqual(200);
       expect(res3.body).toMatchObject<AsyncJob>({
         id: job.id,
         resourceType: 'AsyncJob',
@@ -133,8 +135,10 @@ describe('Job status', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res.status).toBe(200);
-      expect(res.get('Content-Type')).toEqual('application/fhir+json; charset=utf-8');
-      expect(res.body).toEqual(expect.objectContaining({ id: job.id, request: job.request, status: 'completed' }));
+      expect(res.get('Content-Type')).toStrictEqual('application/fhir+json; charset=utf-8');
+      expect(res.body).toStrictEqual(
+        expect.objectContaining({ id: job.id, request: job.request, status: 'completed' })
+      );
 
       // Now try to cancel the job after it's already completed
       const res2 = await request(app)
@@ -142,7 +146,7 @@ describe('Job status', () => {
         .set('Authorization', 'Bearer ' + accessToken);
 
       expect(res2.status).toBe(400);
-      expect(res2.get('Content-Type')).toEqual('application/fhir+json; charset=utf-8');
+      expect(res2.get('Content-Type')).toStrictEqual('application/fhir+json; charset=utf-8');
       expect(res2.body).toMatchObject({
         resourceType: 'OperationOutcome',
         issue: [

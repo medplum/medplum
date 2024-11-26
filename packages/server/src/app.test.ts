@@ -60,9 +60,9 @@ describe('App', () => {
       .set('Content-Type', contentType)
       .send(JSON.stringify({ toEcho: 'hai' }));
     if (shouldParse) {
-      expect(res.body).toEqual({ ok: true, echo: 'hai' });
+      expect(res.body).toStrictEqual({ ok: true, echo: 'hai' });
     } else {
-      expect(res.body).toEqual({ ok: false });
+      expect(res.body).toStrictEqual({ ok: false });
     }
   });
 
@@ -172,7 +172,7 @@ describe('App', () => {
     const res = await request(app)
       .get(`/fhir/R4/SearchParameter?base=Observation`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(400);
+    expect(res.status).toStrictEqual(400);
 
     expect(await shutdownApp()).toBeUndefined();
   });

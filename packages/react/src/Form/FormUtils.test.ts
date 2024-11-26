@@ -19,13 +19,13 @@ describe('FormUtils', () => {
 
     const result = parseForm(form);
     expect(result).not.toBeNull();
-    expect(result['a']).toEqual('b');
+    expect(result['a']).toStrictEqual('b');
     expect(result['a-disabled']).toBeUndefined();
     expect(result['c']).toBeUndefined();
-    expect(result['e']).toEqual('f');
+    expect(result['e']).toStrictEqual('f');
     expect(result['g']).toBeUndefined();
-    expect(result['i']).toEqual('j');
-    expect(result['k']).toEqual('l');
-    expect(result['m']).toEqual('o');
+    expect(result['i']).toStrictEqual('j');
+    expect(result['k']).toStrictEqual('l');
+    expect(result['m']).toStrictEqual('o');
   });
 });

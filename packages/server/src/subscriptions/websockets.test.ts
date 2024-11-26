@@ -88,9 +88,9 @@ describe('WebSockets Subscriptions', () => {
 
       expect(res.body).toBeDefined();
       const body = res.body as Parameters;
-      expect(body.resourceType).toEqual('Parameters');
+      expect(body.resourceType).toStrictEqual('Parameters');
       expect(body.parameter?.[0]).toBeDefined();
-      expect(body.parameter?.[0]?.name).toEqual('token');
+      expect(body.parameter?.[0]?.name).toStrictEqual('token');
       expect(body.parameter?.[0]?.valueString).toBeDefined();
 
       const token = body.parameter?.[0]?.valueString as string;
@@ -140,7 +140,7 @@ describe('WebSockets Subscriptions', () => {
                 )
               )[0] === 1;
           }
-          expect(subActive).toEqual(true);
+          expect(subActive).toStrictEqual(true);
         })
         .expectJson((msg: Bundle): boolean => {
           if (!msg.entry?.[1]) {
@@ -176,7 +176,7 @@ describe('WebSockets Subscriptions', () => {
             )
           )[0] === 1;
       }
-      expect(subActive).toEqual(false);
+      expect(subActive).toStrictEqual(false);
 
       // Check Patient subscription is NOT still in the cache
       await expect(repo.readResource<Subscription>('Subscription', patientSubscription?.id as string)).rejects.toThrow(
@@ -215,9 +215,9 @@ describe('WebSockets Subscriptions', () => {
 
       expect(res.body).toBeDefined();
       const body = res.body as Parameters;
-      expect(body.resourceType).toEqual('Parameters');
+      expect(body.resourceType).toStrictEqual('Parameters');
       expect(body.parameter?.[0]).toBeDefined();
-      expect(body.parameter?.[0]?.name).toEqual('token');
+      expect(body.parameter?.[0]?.name).toStrictEqual('token');
       expect(body.parameter?.[0]?.valueString).toBeDefined();
 
       const token = body.parameter?.[0]?.valueString as string;
@@ -267,7 +267,7 @@ describe('WebSockets Subscriptions', () => {
                 )
               )[0] === 1;
           }
-          expect(subActive).toEqual(true);
+          expect(subActive).toStrictEqual(true);
         })
         .expectJson((msg: Bundle): boolean => {
           if (!msg.entry?.[1]) {
@@ -299,7 +299,7 @@ describe('WebSockets Subscriptions', () => {
                 )
               )[0] === 1;
           }
-          expect(subActive).toEqual(false);
+          expect(subActive).toStrictEqual(false);
         })
         // Call unbind again to test that it doesn't break anything
         .sendJson({ type: 'unbind-from-token', payload: { token } })
@@ -448,9 +448,9 @@ describe('Subscription Heartbeat', () => {
 
       expect(res.body).toBeDefined();
       const body = res.body as Parameters;
-      expect(body.resourceType).toEqual('Parameters');
+      expect(body.resourceType).toStrictEqual('Parameters');
       expect(body.parameter?.[0]).toBeDefined();
-      expect(body.parameter?.[0]?.name).toEqual('token');
+      expect(body.parameter?.[0]?.name).toStrictEqual('token');
       expect(body.parameter?.[0]?.valueString).toBeDefined();
 
       await request(server)

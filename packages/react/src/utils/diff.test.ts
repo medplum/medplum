@@ -5,8 +5,8 @@ describe('Diff', () => {
     const before = ['a', 'b'];
     const after = ['a', 'c', 'b'];
     const result = diff(before, after);
-    expect(result.length).toEqual(1);
-    expect(result[0].type).toEqual('insert');
+    expect(result.length).toStrictEqual(1);
+    expect(result[0].type).toStrictEqual('insert');
     expect(result[0].original).toMatchObject({
       position: 1,
       lines: [],
@@ -21,8 +21,8 @@ describe('Diff', () => {
     const before = ['a', 'b'];
     const after = ['a', 'b', 'c'];
     const result = diff(before, after);
-    expect(result.length).toEqual(1);
-    expect(result[0].type).toEqual('insert');
+    expect(result.length).toStrictEqual(1);
+    expect(result[0].type).toStrictEqual('insert');
     expect(result[0].original).toMatchObject({
       position: 2,
       lines: [],
@@ -37,8 +37,8 @@ describe('Diff', () => {
     const before = ['a', 'b', 'c'];
     const after = ['a', 'b'];
     const result = diff(before, after);
-    expect(result.length).toEqual(1);
-    expect(result[0].type).toEqual('delete');
+    expect(result.length).toStrictEqual(1);
+    expect(result[0].type).toStrictEqual('delete');
     expect(result[0].original).toMatchObject({
       position: 2,
       lines: ['c'],
@@ -53,8 +53,8 @@ describe('Diff', () => {
     const before = ['a', 'b', 'c'];
     const after = ['a', 'b', 'd'];
     const result = diff(before, after);
-    expect(result.length).toEqual(1);
-    expect(result[0].type).toEqual('change');
+    expect(result.length).toStrictEqual(1);
+    expect(result[0].type).toStrictEqual('change');
     expect(result[0].original).toMatchObject({
       position: 2,
       lines: ['c'],

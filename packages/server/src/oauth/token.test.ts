@@ -1183,7 +1183,7 @@ describe('OAuth2 Token', () => {
     expect(res2.body.refresh_token).toBeDefined();
 
     const claims = (await verifyJwt(res2.body.refresh_token)).payload;
-    expect(claims.exp).toEqual((claims.iat as number) + 60);
+    expect(claims.exp).toStrictEqual((claims.iat as number) + 60);
   });
 
   test('refreshTokenLifetime -- Invalid duration', async () => {
@@ -1253,7 +1253,7 @@ describe('OAuth2 Token', () => {
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
     expect(res2.body.scope).toBe('openid offline');
-    expect(res2.body.patient).toEqual(testPatient.profile.id);
+    expect(res2.body.patient).toStrictEqual(testPatient.profile.id);
   });
 
   test('Client assertion success', async () => {
@@ -1619,7 +1619,7 @@ describe('OAuth2 Token', () => {
       password,
     });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('IP address not allowed');
+    expect(res.body.issue[0].details.text).toStrictEqual('IP address not allowed');
   });
 
   test('Token exchange success', async () => {

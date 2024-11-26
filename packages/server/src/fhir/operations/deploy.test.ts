@@ -197,7 +197,7 @@ describe('Deploy', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: '' });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Bot missing executable code');
+    expect(res2.body.issue[0].details.text).toStrictEqual('Bot missing executable code');
   });
 
   test('Bots not enabled', async () => {
@@ -241,6 +241,6 @@ describe('Deploy', () => {
         `,
       });
     expect(res3.status).toBe(400);
-    expect(res3.body.issue[0].details.text).toEqual('Bots not enabled');
+    expect(res3.body.issue[0].details.text).toStrictEqual('Bots not enabled');
   });
 });
