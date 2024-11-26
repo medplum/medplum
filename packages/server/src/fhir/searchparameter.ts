@@ -118,7 +118,7 @@ function buildSearchParameterImplementation(
  * @returns The SQL column name.
  */
 function convertCodeToColumnName(code: string): string {
-  return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
+  return code.split(/[-:]/).reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
 /**
