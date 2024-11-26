@@ -102,6 +102,8 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
     ) {
       builder.array = true;
       builder.propertyTypes.add('code');
+    } else if (searchParam.code.endsWith(':identifier')) {
+      builder.propertyTypes.add('Identifier');
     } else {
       crawlSearchParameterDetails(builder, atomArray, resourceType, 1);
     }
@@ -316,7 +318,7 @@ function isBackboneElement(propertyType: string): boolean {
  * @returns The SQL column name.
  */
 function convertCodeToColumnName(code: string): string {
-  return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
+  return code.split(/[-:]/).reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
 function getSearchParameterType(searchParam: SearchParameter, propertyTypes: Set<string>): SearchParameterType {
