@@ -726,6 +726,10 @@ for (let n = 0; n < 256; n++) {
  * @returns The resulting hex string.
  */
 export function arrayBufferToHex(arrayBuffer: ArrayBuffer): string {
+  // We want to allow both views and raw ArrayBuffers, so we conditionally "unwrap" the underlying ArrayBuffer
+  // If `arrayBuffer` was a view
+  // Otherwise, each of the views "elements" (ie. a uint32) will be truncated to a uint8
+  // And you end up with an incorrect shortened result of the same number of bytes as there were elements in the original TypedArray
   const buffer = ArrayBuffer.isView(arrayBuffer) ? arrayBuffer.buffer : arrayBuffer;
   const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
@@ -741,6 +745,10 @@ export function arrayBufferToHex(arrayBuffer: ArrayBuffer): string {
  * @returns The base-64 encoded string.
  */
 export function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
+  // We want to allow both views and raw ArrayBuffers, so we conditionally "unwrap" the underlying ArrayBuffer
+  // If `arrayBuffer` was a view
+  // Otherwise, each of the views "elements" (ie. a uint32) will be truncated to a uint8
+  // And you end up with an incorrect shortened result of the same number of bytes as there were elements in the original TypedArray
   const buffer = ArrayBuffer.isView(arrayBuffer) ? arrayBuffer.buffer : arrayBuffer;
   const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
