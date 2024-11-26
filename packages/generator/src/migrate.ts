@@ -291,38 +291,45 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
 }
 
 function buildSearchColumns(tableDefinition: TableDefinition, resourceType: string): void {
-  for (const searchParam of searchParams) {
-    if (searchParam.type === 'composite') {
-      continue;
-    }
+  const derivedSearchParams: SearchParameter[] = [];
+  for (const paramList of [searchParams, derivedSearchParams]) {
+    for (const searchParam of paramList) {
+      if (searchParam.type === 'composite') {
+        continue;
+      }
 
-    if (!searchParam.base?.includes(resourceType as ResourceType)) {
-      continue;
-    }
+      if (!searchParam.base?.includes(resourceType as ResourceType)) {
+        continue;
+      }
 
-    const details = getSearchParameterDetails(resourceType, searchParam);
-    if (details.implementation === 'lookup-table') {
-      continue;
-    }
+      const details = getSearchParameterDetails(resourceType, searchParam);
+      if (details.implementation === 'lookup-table') {
+        continue;
+      }
 
-    for (const column of getSearchParameterColumns(searchParam, details)) {
-      const existing = tableDefinition.columns.find((c) => c.name === column.name);
-      if (existing) {
-        if (!deepEquals(existing, column)) {
-          throw new Error(
-            `Search Parameters attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
-          );
+      if (searchParam.type === 'reference') {
+        derivedSearchParams.push(deriveIdentifierSearchParameter(searchParam));
+      }
+
+      for (const column of getSearchParameterColumns(searchParam, details)) {
+        const existing = tableDefinition.columns.find((c) => c.name === column.name);
+        if (existing) {
+          if (!deepEquals(existing, column)) {
+            throw new Error(
+              `Search Parameters attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
+            );
+          }
+          continue;
         }
-        continue;
+        tableDefinition.columns.push(column);
       }
-      tableDefinition.columns.push(column);
-    }
-    for (const index of getSearchParameterIndexes(searchParam, details)) {
-      const existing = tableDefinition.indexes.find((i) => deepEquals(i, index));
-      if (existing) {
-        continue;
+      for (const index of getSearchParameterIndexes(searchParam, details)) {
+        const existing = tableDefinition.indexes.find((i) => deepEquals(i, index));
+        if (existing) {
+          continue;
+        }
+        tableDefinition.indexes.push(index);
       }
-      tableDefinition.indexes.push(index);
     }
   }
   for (const add of additionalSearchColumns) {
@@ -671,6 +678,17 @@ function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean 
 
   // deepEquals has FHIR-specific logic, but IndexDefinition is simple enough that it works fine
   return deepEquals(a, b);
+}
+// Copied from packages/server/src/fhir/lookups/util.ts
+// TODO - dedupe this (by moving to core?)
+function deriveIdentifierSearchParameter(inputParam: SearchParameter): SearchParameter {
+  return {
+    resourceType: 'SearchParameter',
+    code: inputParam.code + ':identifier',
+    base: inputParam.base,
+    type: 'token',
+    expression: `(${inputParam.expression}).identifier`,
+  } as SearchParameter;
 }
 
 if (require.main === module) {
