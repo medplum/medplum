@@ -315,15 +315,25 @@ describe('Core Utils', () => {
   });
 
   test('Convert ArrayBuffer to hex string', () => {
-    const input = new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const output = arrayBufferToHex(input);
-    expect(output).toBe('000102030405060708090a');
+    expect(arrayBufferToHex(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe('000102030405060708090a');
+    expect(arrayBufferToHex(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe('000102030405060708090a');
+    expect(arrayBufferToHex(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe(
+      '000000000100000002000000030000000400000005000000060000000700000008000000090000000a000000'
+    );
+    expect(arrayBufferToHex(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe(
+      '000000000100000002000000030000000400000005000000060000000700000008000000090000000a000000'
+    );
   });
 
   test('Convert ArrayBuffer to base-64 encoded string', () => {
-    const input = new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const output = arrayBufferToBase64(input);
-    expect(output).toBe('AAECAwQFBgcICQo=');
+    expect(arrayBufferToBase64(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe('AAECAwQFBgcICQo=');
+    expect(arrayBufferToBase64(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe('AAECAwQFBgcICQo=');
+    expect(arrayBufferToBase64(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe(
+      'AAAAAAEAAAACAAAAAwAAAAQAAAAFAAAABgAAAAcAAAAIAAAACQAAAAoAAAA='
+    );
+    expect(arrayBufferToBase64(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe(
+      'AAAAAAEAAAACAAAAAwAAAAQAAAAFAAAABgAAAAcAAAAIAAAACQAAAAoAAAA='
+    );
   });
 
   test('Get date property', () => {
