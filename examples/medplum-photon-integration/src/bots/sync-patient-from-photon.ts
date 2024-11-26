@@ -1,4 +1,11 @@
-import { BotEvent, createReference, getDisplayString, MedplumClient, RXNORM } from '@medplum/core';
+import {
+  BotEvent,
+  createReference,
+  getDisplayString,
+  MedplumClient,
+  normalizeErrorString,
+  RXNORM,
+} from '@medplum/core';
 import {
   Address,
   AllergyIntolerance,
@@ -58,7 +65,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           comment
           onset
         }
-        prescription {
+        prescriptions {
           id
           externalId
           prescriber {
@@ -192,11 +199,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
 export async function checkForExistingPatient(photonPatient: PhotonPatient, medplum: MedplumClient): Promise<boolean> {
   let patient: Patient | undefined;
-  patient = await medplum.searchOne('Patient', {
-    identifier: NEUTRON_HEALTH_PATIENTS + '|' + photonPatient.id,
-  });
-  if (patient) {
-    return true;
+  try {
+    patient = await medplum.searchOne('Patient', {
+      identifier: NEUTRON_HEALTH_PATIENTS + '|' + photonPatient.id,
+    });
+    if (patient) {
+      return true;
+    }
+  } catch (err) {
+    console.error(`Error for Patient ID ${photonPatient.id}:`, normalizeErrorString(err));
   }
 
   if (photonPatient.externalId) {
@@ -206,7 +217,7 @@ export async function checkForExistingPatient(photonPatient: PhotonPatient, medp
         return true;
       }
     } catch (err) {
-      console.error(err);
+      console.error(`Error for Patient ID ${photonPatient.id}:`, normalizeErrorString(err));
     }
   }
 
