@@ -83,7 +83,7 @@ function buildSearchParameterImplementation(
   const impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
 
   let lookupTable: LookupTable | undefined;
-  if (searchParam.code.startsWith('_')) {
+  if (searchParam.code.startsWith('_XXX')) {
     console.log(`Skipping special implementation for internal search parameter: ${searchParam.code}`);
   } else if (!searchParam.base?.includes(resourceType as ResourceType)) {
     console.log(`Skipping special implementation for search parameter: ${searchParam.code} ${searchParam.base}`);

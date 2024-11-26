@@ -402,6 +402,10 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   const derivedSearchParams: SearchParameter[] = [];
   for (const paramList of [Object.values(resourceTypeSearchParams), derivedSearchParams]) {
     for (const searchParam of paramList) {
+      if (searchParam.code === '_security') {
+        // console.log('Skipping _security');
+      }
+
       if (searchParam.type === 'composite') {
         continue;
       }

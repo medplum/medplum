@@ -90,7 +90,8 @@ import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
 import { LookupTable } from './lookups/lookuptable';
-import { buildTokensForSearchParameter, LookupToken, USE_TOKEN_TABLE } from './lookups/token';
+import { LookupToken, USE_TOKEN_TABLE, buildTokensForSearchParameter } from './lookups/token';
+import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
@@ -1285,6 +1286,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (searchParams) {
       for (const searchParam of Object.values(searchParams)) {
         this.buildColumn(resource, row, searchParam);
+        if (searchParam.type === 'reference') {
+          const derived = deriveIdentifierSearchParameter(searchParam);
+          this.buildColumn(resource, row, derived);
+        }
       }
     }
     return row;
