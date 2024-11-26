@@ -57,8 +57,7 @@ docker run --rm \
   -e MEDPLUM_BASE_URL="" \
   -e MEDPLUM_CLIENT_ID="" \
   -e MEDPLUM_CLIENT_SECRET="" \
-  -e MEDPLUM_AGENT_ID="" \
-  medplum-agent:latest
+  -e MEDPLUM_AGENT_ID=""
 ```
 
 Optionally set the `MEDPLUM_LOG_LEVEL` environment variable
