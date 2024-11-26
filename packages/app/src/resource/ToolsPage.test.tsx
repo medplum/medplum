@@ -16,13 +16,14 @@ import { Agent } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { render } from '@testing-library/react';
+import { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, screen } from '../test-utils/render';
 
 jest.mock('react-dom', () => ({
   ...jest.requireActual('react-dom'),
-  createPortal: (children: unknown) => <>{children}</>,
+  createPortal: (children: ReactNode) => <>{children}</>,
 }));
 
 function mockFetch(
