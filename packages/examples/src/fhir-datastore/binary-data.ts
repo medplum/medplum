@@ -6,7 +6,7 @@ import { Patient } from '@medplum/fhirtypes';
 // start-block downloadBinary
 /**
  * Parses the pre-signed storage url to extract the binary resource id
- * @param url Pre-signed storage url
+ * @param url - Pre-signed storage url
  * @returns id of `Binary` resource stored in Medplum
  */
 function getBinaryId(url?: string): string {
