@@ -421,22 +421,13 @@ function buildTokenColumnsWhereCondition(
 ): Expression | undefined {
   // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
   if (filter.operator === FhirOperator.IN) {
-    /*
-      SELECT array_agg(e'code\x1'|| reference) FROM
-        (SELECT unnest(reference) as reference FROM
-          (SELECT reference FROM "ValueSet" WHERE "ValueSet"."url" = 'http://hl7.org/fhir/ValueSet/condition-code' LIMIT 1))
-      */
-
-    const valueSetQ = new SelectQuery('ValueSet', undefined).column('reference').where('url', '=', query).limit(1);
-    const unnestQ = new SelectQuery('unnested', valueSetQ).column(
-      new Column('ValueSet', 'unnest(reference)', true, 'reference')
+    const valueSetQ = new SelectQuery('ValueSet').column('reference').where('url', '=', query).limit(1);
+    return new TypedCondition(
+      new Column(tableName, details.columnName),
+      'ARRAY_CONTAINS_SUBQUERY',
+      valueSetQ,
+      'TEXT[]'
     );
-    const arrayAggQ = new SelectQuery('array_agg', unnestQ).column(
-      new Column('unnested', "array_agg('" + param.code + DELIM + "' || reference)", true, 'code_and_system')
-    );
-
-    const tokenCol = new Column(tableName, details.columnName);
-    return new TypedCondition(tokenCol, 'ARRAY_CONTAINS_SUBQUERY', arrayAggQ, 'TEXT[]');
   }
 
   let system: string | undefined;
