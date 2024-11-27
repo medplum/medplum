@@ -10,7 +10,7 @@ import { DataTypesMap, inflateBaseSchema } from '../base-schema';
 import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
-import { TypedValue, getElementDefinitionTypeName, isResourceTypeSchema } from '../types';
+import { TypedValue, getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
 import { capitalize, getExtension, isEmpty } from '../utils';
 
 /**
@@ -124,6 +124,7 @@ function getDataTypesMap(profileUrl: string): DataTypesMap {
  */
 export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
   const sds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource as StructureDefinition) ?? []);
+  indexDefaultSearchParameters(sds);
   for (const sd of sds) {
     loadDataType(sd);
   }
