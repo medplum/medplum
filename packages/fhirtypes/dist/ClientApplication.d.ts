@@ -109,6 +109,11 @@ export interface ClientApplication {
   description?: string;
 
   /**
+   * Custom values for the Log In form.
+   */
+  signInForm?: ClientApplicationSignInForm;
+
+  /**
    * Client secret string used to verify the identity of a client.
    */
   secret?: string;
@@ -146,4 +151,20 @@ export interface ClientApplication {
    * Optional configuration to set the refresh token duration
    */
   refreshTokenLifetime?: string;
+}
+
+/**
+ * Custom values for the Log In form.
+ */
+export interface ClientApplicationSignInForm {
+
+  /**
+   * Welcome string for the Log In Form.
+   */
+  welcomeString?: string;
+
+  /**
+   * Logo for the Log In Form.
+   */
+  logo?: string;
 }
