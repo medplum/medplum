@@ -6,9 +6,9 @@ import { Request, RequestHandler, Response } from 'express';
 import { sendOutcome } from '../fhir/outcomes';
 
 export const clientInfoHandler: RequestHandler = asyncWrap(async (req: Request, res: Response) => {
-  const { clientId } = req.params
+  const { clientId } = req.params;
   const systemRepo = getSystemRepo();
-  
+
   try {
     const client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
     res.status(200).json({ name: client.signInForm?.welcomeString, logoUrl: client.signInForm?.logo });
