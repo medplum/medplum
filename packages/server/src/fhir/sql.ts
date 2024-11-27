@@ -1,4 +1,10 @@
-import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
+import {
+  OperationOutcomeError,
+  append,
+  conflict,
+  normalizeOperationOutcome,
+  serverTimeout,
+} from '@medplum/core';
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
@@ -494,7 +500,7 @@ interface CTE {
 
 export class SelectQuery extends BaseQuery implements Expression {
   readonly innerQuery?: SelectQuery | Union | ValuesQuery;
-  readonly distinctOns: Column[];
+  readonly distinctOns: OrderBy[];
   readonly columns: Column[];
   readonly joins: Join[];
   readonly groupBys: GroupBy[];
@@ -521,8 +527,8 @@ export class SelectQuery extends BaseQuery implements Expression {
     return this;
   }
 
-  distinctOn(column: Column | string): this {
-    this.distinctOns.push(getColumn(column, this.tableName));
+  distinctOn(column: Column | string, descending?: boolean): this {
+    this.distinctOns.push(new OrderBy(getColumn(column, this.tableName), descending));
     return this;
   }
 
@@ -626,7 +632,7 @@ export class SelectQuery extends BaseQuery implements Expression {
         if (!first) {
           sql.append(', ');
         }
-        sql.appendColumn(column);
+        sql.appendExpression(column.key);
         first = false;
       }
       sql.append(') ');
@@ -694,7 +700,7 @@ export class SelectQuery extends BaseQuery implements Expression {
       return;
     }
 
-    const combined = [...this.distinctOns.map((d) => new OrderBy(d)), ...this.orderBys];
+    const combined = [...this.distinctOns, ...this.orderBys];
     let first = true;
 
     for (const orderBy of combined) {

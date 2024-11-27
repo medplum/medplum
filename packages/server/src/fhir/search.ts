@@ -245,7 +245,25 @@ function getSelectQueryForSearch<T extends Resource>(
   options?: GetSelectQueryForSearchOptions
 ): SelectQuery {
   const builder = getBaseSelectQuery(repo, searchRequest, options);
+  const addColumns = options?.addColumns !== false;
+
+  /*
+  Per #5499, we need to order by the fields present in the distinct clause.
+  We also need the distinct clause to include all columns in the main/left table.
+  Why? Because SQL requires the initial signature of the order by clause match the distinct clause signature,
+  and we need to be able to sort by the resource's search fields.
+  It turns out that we cannot order by id.
+  As a result, we have to include these search fields before adding the id to the list of distinct keys.
+  As luck would have it, the select itself does not need to mirror the distinct clause.
+  Meaning, you can select id, content while simultaneously having a distinct on date, id!
+  If you need to change the select queries to something other than LEFT JOINs, refactor this logic too.
+   */
+  if (addColumns && builder.joins.length > 0) {
+    addDistinctSortRules(builder, searchRequest);
+  }
+
   addSortRules(builder, searchRequest);
+
   const count = searchRequest.count;
   builder.limit(count + (options?.limitModifier ?? 1)); // Request one extra to test if there are more results
   if (searchRequest.offset > 0) {
@@ -359,9 +377,6 @@ function getBaseSelectQueryForResourceType(
     opts.resourceTypeQueryCallback(resourceType, builder);
   }
 
-  if (addColumns && builder.joins.length > 0) {
-    builder.distinctOn(idColumn);
-  }
   return builder;
 }
 
@@ -1312,6 +1327,55 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
 
   const details = getSearchParameterDetails(resourceType, param);
   builder.orderBy(details.columnName, !!sortRule.descending);
+}
+
+/**
+ * Adds all distinct keys to the query builder.
+ * We are trying to have a statement like distinct on(k1, k2, id).
+ * This is to be used in exclusion of the normal sort logic!
+ *
+ * @param builder - The client query builder.
+ * @param searchRequest - The search request.
+ */
+function addDistinctSortRules(
+  builder: SelectQuery,
+  searchRequest: SearchRequest
+  ): void {
+  const resourceType = searchRequest.resourceType;
+
+  searchRequest.sortRules?.forEach(
+      (sortRule) => addDistinctClause(builder, searchRequest, sortRule)
+  );
+
+  builder.distinctOn(new Column(resourceType, 'id'));
+}
+
+/**
+ * Adds a single "order by" clause to the query builder.
+ * @param builder - The client query builder.
+ * @param searchRequest - The search request.
+ * @param sortRule - The sort rule.
+ */
+function addDistinctClause(builder: SelectQuery, searchRequest: SearchRequest, sortRule: SortRule): void {
+  const resourceType = searchRequest.resourceType;
+
+  if (sortRule.code === '_id') {
+    return;
+  }
+
+  if (sortRule.code === '_lastUpdated') {
+    builder.distinctOn(new Column(resourceType, 'lastUpdated'));
+    return;
+  }
+
+  const param = getSearchParameter(resourceType, sortRule.code);
+  if (!param?.code) {
+    throw new OperationOutcomeError(badRequest('Unknown search parameter: ' + sortRule.code));
+  }
+
+  const details = getSearchParameterDetails(resourceType, param);
+  const column = new Column(resourceType, details.columnName);
+  builder.distinctOn(column, !!sortRule.descending);
 }
 
 /**
