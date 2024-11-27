@@ -1407,7 +1407,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
-      searchParam.code === '_compartment' ||
+      searchParam.code.startsWith('_compartment') ||
       searchParam.type === 'composite' ||
       isIndexTable(resource.resourceType, searchParam)
     ) {
@@ -1465,12 +1465,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       }
       columns[details.columnName] = Array.from(rowTokens);
       columns[details.columnName + 'Text'] = Array.from(rowTextTokens);
-    } else if (values.length > 0) {
+    } else {
       let columnValue = null;
-      if (details.array) {
-        columnValue = values.map((v) => this.buildColumnValue(searchParam, details, v));
-      } else {
-        columnValue = this.buildColumnValue(searchParam, details, values[0]);
+      if (values.length > 0) {
+        if (details.array) {
+          columnValue = values.map((v) => this.buildColumnValue(searchParam, details, v));
+        } else {
+          columnValue = this.buildColumnValue(searchParam, details, values[0]);
+        }
       }
       columns[details.columnName] = columnValue;
     }
