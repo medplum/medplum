@@ -22,7 +22,7 @@ import { setPasswordHandler, setPasswordValidator } from './setpassword';
 import { statusHandler, statusValidator } from './status';
 import { validateRecaptcha } from './utils';
 import { verifyEmailHandler, verifyEmailValidator } from './verifyemail';
-import { clientInfoHandler } from './projectinfo';
+import { clientInfoHandler } from './clientinfo';
 
 export const authRouter = Router();
 authRouter.use('/mfa', mfaRouter);
@@ -43,7 +43,7 @@ authRouter.post('/google', googleValidator, asyncWrap(googleHandler));
 authRouter.post('/exchange', exchangeValidator, asyncWrap(exchangeHandler));
 authRouter.post('/revoke', authenticateRequest, revokeValidator, asyncWrap(revokeHandler));
 authRouter.get('/login/:login', statusValidator, asyncWrap(statusHandler));
-authRouter.get('/clientoinfo/:clientId', clientInfoHandler);
+authRouter.get('/clientinfo/:clientId', clientInfoHandler);
 
 function projectRegistrationAllowed(project: Project): OperationOutcome | undefined {
   if (!project.defaultPatientAccessPolicy) {
