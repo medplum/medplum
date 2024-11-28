@@ -25,7 +25,7 @@ export function OAuthPage(): JSX.Element | null {
   const [clientName, setClientName] = useState<string | null>('Medplum');
   const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
   const clientId = params.get('client_id');
-  
+
   useEffect(() => {
     if (!clientId) {
       return;
@@ -45,11 +45,10 @@ export function OAuthPage(): JSX.Element | null {
         });
       }
     }
-  
+
     fetchProjectInfo().catch(console.error);
   }, [medplum, clientId]);
 
-  
   if (!clientId) {
     return null;
   }
@@ -80,7 +79,6 @@ export function OAuthPage(): JSX.Element | null {
       codeChallengeMethod={(params.get('code_challenge_method') as CodeChallengeMethod) || undefined}
       chooseScopes={scope !== 'openid'}
     >
-
       {clientLogoUrl ? (
         <img
           src={clientLogoUrl || undefined}
@@ -91,7 +89,7 @@ export function OAuthPage(): JSX.Element | null {
       ) : (
         <Logo size={32} />
       )}
-      
+
       <Title>{clientName || 'Sign in to Medplum'}</Title>
     </SignInForm>
   );
