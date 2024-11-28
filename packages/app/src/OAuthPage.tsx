@@ -33,7 +33,7 @@ export function OAuthPage(): JSX.Element | null {
     async function fetchProjectInfo(): Promise<void> {
       try {
         const projectInfo: ClientInfo = await medplum.get(`/auth/clientinfo/${clientId}`);
-        setClientName(projectInfo.welcomeString)
+        setClientName(projectInfo.welcomeString);
         setClientLogoUrl(projectInfo.logo?.url ?? null);
       } catch (err) {
         showNotification({
@@ -80,12 +80,7 @@ export function OAuthPage(): JSX.Element | null {
       chooseScopes={scope !== 'openid'}
     >
       {clientLogoUrl ? (
-        <img
-          src={clientLogoUrl || undefined}
-          alt={`${clientName} logo`}
-          height={60}
-          style={{ width: 'auto' }} 
-        />
+        <img src={clientLogoUrl || undefined} alt={`${clientName} logo`} height={60} style={{ width: 'auto' }} />
       ) : (
         <Logo size={32} />
       )}
