@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+import { Attachment } from './Attachment';
 import { Extension } from './Extension';
 import { IdentityProvider } from './IdentityProvider';
 import { Meta } from './Meta';
@@ -166,5 +167,5 @@ export interface ClientApplicationSignInForm {
   /**
    * Logo for the Log In Form.
    */
-  logo?: string;
+  logo?: Attachment;
 }

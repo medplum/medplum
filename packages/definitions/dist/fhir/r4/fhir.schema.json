@@ -62376,7 +62376,7 @@
         },
         "logo": {
           "description": "Logo for the Log In Form.",
-          "$ref": "#/definitions/string"
+          "$ref": "#/definitions/Attachment"
         }
       },
       "additionalProperties": false

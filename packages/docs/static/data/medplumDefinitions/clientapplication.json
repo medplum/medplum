@@ -244,7 +244,8 @@
       "depth": 2,
       "types": [
         {
-          "datatype": "string"
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
         }
       ],
       "path": "ClientApplication.signInForm.logo",

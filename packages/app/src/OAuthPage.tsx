@@ -6,9 +6,15 @@ import { getConfig } from './config';
 import { useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 
+interface LogoInfo {
+  contentType: string;
+  url: string;
+  title: string;
+}
+
 interface ClientInfo {
-  name: string;
-  logoUrl: string;
+  logo: LogoInfo | null;
+  welcomeString: string | null;
 }
 
 export function OAuthPage(): JSX.Element | null {
@@ -27,12 +33,12 @@ export function OAuthPage(): JSX.Element | null {
     async function fetchProjectInfo(): Promise<void> {
       try {
         const projectInfo: ClientInfo = await medplum.get(`/auth/clientinfo/${clientId}`);
-        setClientName(projectInfo.name)
-        setClientLogoUrl(projectInfo.logoUrl);
+        setClientName(projectInfo.welcomeString)
+        setClientLogoUrl(projectInfo.logo?.url ?? null);
       } catch (err) {
         showNotification({
           id: 'clientinfofail',
-          title: 'Batch Upload Failed',
+          title: 'Failed to retrieve client information.',
           color: 'red',
           message: normalizeErrorString(err),
           withCloseButton: true,
@@ -79,7 +85,7 @@ export function OAuthPage(): JSX.Element | null {
         <img
           src={clientLogoUrl || undefined}
           alt={`${clientName} logo`}
-          height={32}
+          height={60}
           style={{ width: 'auto' }} 
         />
       ) : (
