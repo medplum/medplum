@@ -83,6 +83,12 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
           project: project.id as string,
         },
         name: 'Test Client Application',
+        signInForm: {
+          welcomeString: "Test Welcome String",
+          logo: {
+            url: "https://example.com/logo.png"
+          }
+        }
       });
 
       if (options?.accessPolicy) {
