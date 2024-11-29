@@ -33,7 +33,7 @@ export function OAuthPage(): JSX.Element | null {
     async function fetchProjectInfo(): Promise<void> {
       try {
         const projectInfo: ClientInfo = await medplum.get(`/auth/clientinfo/${clientId}`);
-        setWelcomeString(projectInfo.welcomeString || 'Sign in to Medplum');
+        setWelcomeString(projectInfo.welcomeString ?? 'Sign in to Medplum');
         setLogoUrl(projectInfo.logo?.url ?? null);
       } catch (err) {
         showNotification({
