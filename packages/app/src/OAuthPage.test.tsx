@@ -118,10 +118,9 @@ describe('OAuthPage', () => {
   });
 
   test('Fetch and render default info', async () => {
-
     const mockClientInfo = {};
     jest.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
-  
+
     await setup('/oauth?client_id=123');
     await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
     expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
