@@ -22,8 +22,8 @@ export function OAuthPage(): JSX.Element | null {
   const [params] = useSearchParams();
   const medplum = useMedplum();
   const scope = params.get('scope') || 'openid';
-  const [clientName, setClientName] = useState<string | null>('Medplum');
-  const [clientLogoUrl, setClientLogoUrl] = useState<string | null>(null);
+  const [welcomeString, setWelcomeString] = useState<string | null>('Medplum');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const clientId = params.get('client_id');
 
   useEffect(() => {
@@ -33,8 +33,8 @@ export function OAuthPage(): JSX.Element | null {
     async function fetchProjectInfo(): Promise<void> {
       try {
         const projectInfo: ClientInfo = await medplum.get(`/auth/clientinfo/${clientId}`);
-        setClientName(projectInfo.welcomeString);
-        setClientLogoUrl(projectInfo.logo?.url ?? null);
+        setWelcomeString(projectInfo.welcomeString || 'Sign in to Medplum');
+        setLogoUrl(projectInfo.logo?.url ?? null);
       } catch (err) {
         showNotification({
           id: 'clientinfofail',
@@ -79,13 +79,13 @@ export function OAuthPage(): JSX.Element | null {
       codeChallengeMethod={(params.get('code_challenge_method') as CodeChallengeMethod) || undefined}
       chooseScopes={scope !== 'openid'}
     >
-      {clientLogoUrl ? (
-        <img src={clientLogoUrl || undefined} alt={`${clientName} logo`} height={60} style={{ width: 'auto' }} />
+      {logoUrl ? (
+        <img src={logoUrl} alt={`Welcome Logo`} height={60} style={{ width: 'auto' }} />
       ) : (
         <Logo size={32} />
       )}
 
-      <Title>{clientName || 'Sign in to Medplum'}</Title>
+      <Title>{welcomeString}</Title>
     </SignInForm>
   );
 }
