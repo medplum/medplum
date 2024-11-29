@@ -256,3 +256,18 @@ export function convertContainedResourcesToBundle(resource: Resource & { contain
   // and reorders the bundle to ensure that contained resources are created before they are referenced.
   return convertToTransactionBundle(simpleBundle);
 }
+
+/**
+ * Finds a resource in a Bundle by its ID.
+ * @param bundle - The Bundle to search through.
+ * @param id - The ID to search for in format "ResourceType/id".
+ * @returns The found resource or undefined if not found.
+ */
+export function findResourceById<T extends Resource = Resource>(
+  bundle: Bundle<T>,
+  id: string
+): T | undefined {
+  return bundle.entry?.find(
+    ({ resource }) => resource && `${resource.resourceType}/${resource.id}` === id
+  )?.resource;
+}
