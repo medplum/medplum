@@ -79,11 +79,7 @@ export function OAuthPage(): JSX.Element | null {
       codeChallengeMethod={(params.get('code_challenge_method') as CodeChallengeMethod) || undefined}
       chooseScopes={scope !== 'openid'}
     >
-      {logoUrl ? (
-        <img src={logoUrl} alt={`Welcome Logo`} height={60} style={{ width: 'auto' }} />
-      ) : (
-        <Logo size={32} />
-      )}
+      {logoUrl ? <img src={logoUrl} alt={`Welcome Logo`} height={60} style={{ width: 'auto' }} /> : <Logo size={32} />}
 
       <Title>{welcomeString}</Title>
     </SignInForm>
