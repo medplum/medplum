@@ -118,7 +118,6 @@ describe('OAuthPage', () => {
   });
 
   test('Fetch empty payload and render default info', async () => {
-
     const mockClientInfo = {};
     jest.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
 
@@ -129,12 +128,11 @@ describe('OAuthPage', () => {
   });
 
   test('Fetch logo and render default welcome string', async () => {
-
     const mockClientInfo = {
       logo: { contentType: 'image/png', url: 'https://example.com/logo.png', title: 'Test Logo' },
     };
     jest.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
-  
+
     await setup('/oauth?client_id=123');
     await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
     expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
