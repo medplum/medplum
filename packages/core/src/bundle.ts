@@ -268,6 +268,6 @@ export function findResourceById<T extends Resource = Resource>(
   id: string
 ): T | undefined {
   return bundle.entry?.find(
-    ({ resource }) => resource && `${resource.resourceType}/${resource.id}` === id
+    ({ resource }: { resource?: T }) => resource && `${resource.resourceType}/${resource.id}` === id
   )?.resource;
 }
