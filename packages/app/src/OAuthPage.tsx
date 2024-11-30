@@ -23,7 +23,7 @@ export function OAuthPage(): JSX.Element | null {
     async function fetchProjectInfo(): Promise<void> {
       try {
         const info: ClientApplicationSignInForm = await medplum.get(`/auth/clientinfo/${clientId}`);
-        setClientInfo(info)
+        setClientInfo(info);
       } catch (err) {
         showNotification({
           id: 'clientinfofail',
@@ -70,12 +70,16 @@ export function OAuthPage(): JSX.Element | null {
       codeChallengeMethod={(params.get('code_challenge_method') as CodeChallengeMethod) || undefined}
       chooseScopes={scope !== 'openid'}
     >
-       {!loading && (
+      {!loading && (
         <>
-          {clientInfo?.logo?.url ? <img src={clientInfo?.logo?.url} alt={`Welcome Logo`} height={60} style={{ width: 'auto' }} /> : <Logo size={32} />}
+          {clientInfo?.logo?.url ? (
+            <img src={clientInfo?.logo?.url} alt={`Welcome Logo`} height={60} style={{ width: 'auto' }} />
+          ) : (
+            <Logo size={32} />
+          )}
           <Title>{clientInfo?.welcomeString ?? 'Sign in to Medplum'}</Title>
         </>
-       )}
+      )}
     </SignInForm>
   );
 }
