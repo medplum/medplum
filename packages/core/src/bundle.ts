@@ -263,10 +263,7 @@ export function convertContainedResourcesToBundle(resource: Resource & { contain
  * @param id - The ID to search for in format "ResourceType/id".
  * @returns The found resource or undefined if not found.
  */
-export function findResourceById<T extends Resource = Resource>(
-  bundle: Bundle<T>,
-  id: string
-): T | undefined {
+export function findResourceById<T extends Resource = Resource>(bundle: Bundle<T>, id: string): T | undefined {
   return bundle.entry?.find(
     ({ resource }: { resource?: T }) => resource && `${resource.resourceType}/${resource.id}` === id
   )?.resource;
