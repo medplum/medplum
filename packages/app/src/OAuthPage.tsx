@@ -5,25 +5,15 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getConfig } from './config';
 import { useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
-
-interface LogoInfo {
-  contentType: string;
-  url: string;
-  title: string;
-}
-
-interface ClientInfo {
-  logo: LogoInfo | null;
-  welcomeString: string | null;
-}
+import { ClientApplicationSignInForm } from '@medplum/fhirtypes';
 
 export function OAuthPage(): JSX.Element | null {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const medplum = useMedplum();
   const scope = params.get('scope') || 'openid';
-  const [welcomeString, setWelcomeString] = useState<string | null>('Medplum');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [clientInfo, setClientInfo] = useState<ClientApplicationSignInForm>();
+  const [loading, setLoading] = useState(true);
   const clientId = params.get('client_id');
 
   useEffect(() => {
@@ -32,9 +22,8 @@ export function OAuthPage(): JSX.Element | null {
     }
     async function fetchProjectInfo(): Promise<void> {
       try {
-        const projectInfo: ClientInfo = await medplum.get(`/auth/clientinfo/${clientId}`);
-        setWelcomeString(projectInfo.welcomeString ?? 'Sign in to Medplum');
-        setLogoUrl(projectInfo.logo?.url ?? null);
+        const info: ClientApplicationSignInForm = await medplum.get(`/auth/clientinfo/${clientId}`);
+        setClientInfo(info)
       } catch (err) {
         showNotification({
           id: 'clientinfofail',
@@ -43,6 +32,8 @@ export function OAuthPage(): JSX.Element | null {
           message: normalizeErrorString(err),
           withCloseButton: true,
         });
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -79,9 +70,12 @@ export function OAuthPage(): JSX.Element | null {
       codeChallengeMethod={(params.get('code_challenge_method') as CodeChallengeMethod) || undefined}
       chooseScopes={scope !== 'openid'}
     >
-      {logoUrl ? <img src={logoUrl} alt={`Welcome Logo`} height={60} style={{ width: 'auto' }} /> : <Logo size={32} />}
-
-      <Title>{welcomeString}</Title>
+       {!loading && (
+        <>
+          {clientInfo?.logo?.url ? <img src={clientInfo?.logo?.url} alt={`Welcome Logo`} height={60} style={{ width: 'auto' }} /> : <Logo size={32} />}
+          <Title>{clientInfo?.welcomeString ?? 'Sign in to Medplum'}</Title>
+        </>
+       )}
     </SignInForm>
   );
 }
