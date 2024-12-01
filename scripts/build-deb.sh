@@ -124,7 +124,11 @@ server {
 
     # Enable sub_filter for JavaScript files
     sub_filter_types application/javascript;  # Enable for JS files
-    sub_filter '__MEDPLUM_BASE_URL__' 'https://api.nginx.medplum.dev';  # Replace with actual URL
+    sub_filter '__MEDPLUM_BASE_URL__' 'https://api.example.com';
+    sub_filter '__MEDPLUM_CLIENT_ID__' '';
+    sub_filter '__GOOGLE_CLIENT_ID__' '';
+    sub_filter '__RECAPTCHA_SITE_KEY__' '';
+    sub_filter '__MEDPLUM_REGISTER_ENABLED__' 'true';
     sub_filter_once off;  # Replace all occurrences, not just the first
 
     # Gzip compression
