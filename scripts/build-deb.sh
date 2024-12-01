@@ -133,7 +133,7 @@ server {
 
     # Main location block
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files \$uri \$uri/ /index.html;
     }
 
     # HTML files should not be cached (for SPA routing)
