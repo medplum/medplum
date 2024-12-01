@@ -73,7 +73,6 @@ jobs:
           deb-s3 upload \
             --bucket apt.medplum.com \
             --prefix debian \
-            --codename "noble,jammy" \
             --component main \
             --visibility nil \
             --preserve-versions \
