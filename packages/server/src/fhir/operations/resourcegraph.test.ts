@@ -132,7 +132,7 @@ describe('Resource $graph', () => {
 
       const bundle = await getResourceGraph(patient, graphName);
       expect(bundle.entry).toHaveLength(1);
-      expect(bundle.entry?.[0]?.resource?.resourceType).toEqual('Patient');
+      expect(bundle.entry?.[0]?.resource?.resourceType).toStrictEqual('Patient');
     });
 
     test('Malformed Target', async () => {

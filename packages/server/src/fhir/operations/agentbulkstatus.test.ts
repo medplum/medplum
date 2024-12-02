@@ -63,7 +63,7 @@ describe('Agent/$bulk-status', () => {
         name: 'Medplum Agent',
         status: 'active',
       } satisfies Agent);
-    expect(agent1Res.status).toEqual(201);
+    expect(agent1Res.status).toStrictEqual(201);
 
     const agent2Res = await request(app)
       .post('/fhir/R4/Agent')
@@ -75,7 +75,7 @@ describe('Agent/$bulk-status', () => {
         name: 'Old Medplum Agent',
         status: 'off',
       } satisfies Agent);
-    expect(agent2Res.status).toEqual(201);
+    expect(agent2Res.status).toStrictEqual(201);
 
     connectedAgent = agent1Res.body;
     disabledAgent = agent2Res.body;
@@ -123,8 +123,8 @@ describe('Agent/$bulk-status', () => {
     for (const entry of bundleEntries) {
       const parameters = entry.resource as Parameters;
       expect(parameters).toBeDefined();
-      expect(parameters.resourceType).toEqual('Parameters');
-      expect(parameters.parameter?.length).toEqual(2);
+      expect(parameters.resourceType).toStrictEqual('Parameters');
+      expect(parameters.parameter?.length).toStrictEqual(2);
     }
 
     expectBundleToContainStatusEntry(bundle, connectedAgent, {
@@ -160,8 +160,8 @@ describe('Agent/$bulk-status', () => {
     for (let i = 0; i < 2; i++) {
       const parameters = bundleEntries[i].resource as Parameters;
       expect(parameters).toBeDefined();
-      expect(parameters.resourceType).toEqual('Parameters');
-      expect(parameters.parameter?.length).toEqual(2);
+      expect(parameters.resourceType).toStrictEqual('Parameters');
+      expect(parameters.parameter?.length).toStrictEqual(2);
     }
 
     expectBundleToContainStatusEntry(bundle, connectedAgent, {
@@ -192,8 +192,8 @@ describe('Agent/$bulk-status', () => {
     for (let i = 0; i < 1; i++) {
       const parameters = bundleEntries[i].resource as Parameters;
       expect(parameters).toBeDefined();
-      expect(parameters.resourceType).toEqual('Parameters');
-      expect(parameters.parameter?.length).toEqual(2);
+      expect(parameters.resourceType).toStrictEqual('Parameters');
+      expect(parameters.parameter?.length).toStrictEqual(2);
     }
 
     expectBundleToContainStatusEntry(bundle, connectedAgent, {

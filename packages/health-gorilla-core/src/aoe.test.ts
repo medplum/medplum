@@ -302,7 +302,7 @@ describe('questionnaireItemIterator', () => {
         },
       ],
     };
-    expect(Array.from(questionnaireItemIterator(q.item)).map((i) => i.linkId)).toEqual(['a', 'b', 'c']);
+    expect(Array.from(questionnaireItemIterator(q.item)).map((i) => i.linkId)).toStrictEqual(['a', 'b', 'c']);
   });
 });
 describe('getMissingRequiredQuestionnaireItems', () => {
@@ -318,7 +318,7 @@ describe('getMissingRequiredQuestionnaireItems', () => {
       item: [],
     };
     const missing = getMissingRequiredQuestionnaireItems(q, qr, false);
-    expect(missing).toEqual(['fasting']);
+    expect(missing).toStrictEqual(['fasting']);
   });
 
   test('AOE Testing Questionnaire with answers', () => {
@@ -341,7 +341,7 @@ describe('getMissingRequiredQuestionnaireItems', () => {
       ],
     };
     const missing = getMissingRequiredQuestionnaireItems(q, qr, false);
-    expect(missing).toEqual([]);
+    expect(missing).toStrictEqual([]);
   });
 
   test('AOE Testing Questionnaire with requiredwhenspecimen with some answers', () => {
@@ -364,7 +364,7 @@ describe('getMissingRequiredQuestionnaireItems', () => {
       ],
     };
     const missing = getMissingRequiredQuestionnaireItems(q, qr, true);
-    expect(missing).toEqual(['specimen-source']);
+    expect(missing).toStrictEqual(['specimen-source']);
   });
 
   test('AOE Testing Questionnaire with requiredwhenspecimen with some answers', () => {
@@ -398,6 +398,6 @@ describe('getMissingRequiredQuestionnaireItems', () => {
       ],
     };
     const missing = getMissingRequiredQuestionnaireItems(q, qr, true);
-    expect(missing).toEqual([]);
+    expect(missing).toStrictEqual([]);
   });
 });

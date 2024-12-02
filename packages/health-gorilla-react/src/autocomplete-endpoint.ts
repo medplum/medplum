@@ -1,4 +1,4 @@
-import { MedplumClient, isCoding, isResource } from '@medplum/core';
+import { ContentType, MedplumClient, isCoding, isResource } from '@medplum/core';
 import { Identifier, Questionnaire } from '@medplum/fhirtypes';
 import { HGAutocompleteBotResponse, LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
 
@@ -22,7 +22,7 @@ export function getAutocompleteSearchFunction(
   autocompleteBot: string | Identifier
 ): HGSearchFunction {
   return async (params) => {
-    const botResponse: HGAutocompleteBotResponse = await medplum.executeBot(autocompleteBot, params);
+    const botResponse: HGAutocompleteBotResponse = await medplum.executeBot(autocompleteBot, params, ContentType.JSON);
     if (botResponse.type === 'error') {
       throw new Error('Error executing autocomplete bot', { cause: botResponse });
     }

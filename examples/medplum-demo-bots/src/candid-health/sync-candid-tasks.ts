@@ -76,9 +76,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           authorString: note.author_name,
           time: note.created_at,
         })),
-        encounter: {
-          reference: createReference(encounter) as string,
-        },
+        encounter: createReference(encounter),
       },
       'identifier=' + candidTask.task_id
     );

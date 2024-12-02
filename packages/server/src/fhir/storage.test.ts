@@ -45,7 +45,7 @@ describe('Storage', () => {
 
     // Verify that the file matches the expected contents
     const content = await streamToString(stream);
-    expect(content).toEqual('foo');
+    expect(content).toStrictEqual('foo');
   });
 
   test('Should throw an error when file is not found in readBinary()', async () => {
@@ -69,7 +69,7 @@ describe('Storage', () => {
       const stream = await storage.readBinary(binary);
       expect(stream).not.toBeDefined();
     } catch (err) {
-      expect((err as Error).message).toEqual('File not found');
+      expect((err as Error).message).toStrictEqual('File not found');
     }
   });
 });

@@ -24,6 +24,7 @@ import { Messages } from './pages/MessagesPage';
 import { QuestionnairePage } from './pages/QuestionnairePage';
 import { ObservationPage } from './pages/ObservationPage';
 import { SignOutPage } from './pages/SignOutPage';
+import { ScreeningQuestionnairePage } from './pages/ScreeningQuestionnairePage';
 
 export function Router(): JSX.Element {
   return (
@@ -32,6 +33,7 @@ export function Router(): JSX.Element {
       <Route path="messages/" element={<MessageTable />} />
       <Route path="messages/:practitionerId" element={<Messages />} />
       <Route path="Questionnaire/:questionnaireId" element={<QuestionnairePage />} />
+      <Route path="screening-questionnaire" element={<ScreeningQuestionnairePage />} />
       <Route path="health-record/*" element={<HealthRecord />}>
         <Route index element={<Navigate replace to="/health-record/lab-results" />} />
         <Route path="lab-results/*" element={<LabResults />} />

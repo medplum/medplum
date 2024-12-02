@@ -51,10 +51,10 @@ describe('RequestContext', () => {
     expect(getTraceId(mockRequest({ traceparent: 'foo' }))).toBeUndefined();
 
     const uuid = '00000000-0000-0000-0000-000000000000';
-    expect(getTraceId(mockRequest({ 'x-trace-id': uuid }))).toEqual(uuid);
+    expect(getTraceId(mockRequest({ 'x-trace-id': uuid }))).toStrictEqual(uuid);
 
     const tpid = '00-12345678901234567890123456789012-3456789012345678-01';
-    expect(getTraceId(mockRequest({ traceparent: tpid }))).toEqual(tpid);
+    expect(getTraceId(mockRequest({ traceparent: tpid }))).toStrictEqual(tpid);
   });
 
   describe('buildTracingExtension', () => {
@@ -65,7 +65,7 @@ describe('RequestContext', () => {
     test('with both traceId and requestId', async () => {
       await withTestContext(
         () => {
-          expect(buildTracingExtension()).toEqual([
+          expect(buildTracingExtension()).toStrictEqual([
             {
               extension: [
                 {
@@ -91,7 +91,7 @@ describe('RequestContext', () => {
     ])('with missing traceId', async (requestId: string | undefined, traceId: string | undefined) => {
       await withTestContext(
         () => {
-          expect(buildTracingExtension()).toEqual([
+          expect(buildTracingExtension()).toStrictEqual([
             {
               extension: [
                 {
@@ -112,7 +112,7 @@ describe('RequestContext', () => {
     ])('with missing requestId', async (requestId: string | undefined, traceId: string | undefined) => {
       await withTestContext(
         () => {
-          expect(buildTracingExtension()).toEqual([
+          expect(buildTracingExtension()).toStrictEqual([
             {
               extension: [
                 {
@@ -145,11 +145,11 @@ describe('RequestContext', () => {
 
   test('x-amzn-trace-id', () => {
     const amzn = '1-67891233-abcdef012345678912345678';
-    expect(getTraceId(mockRequest({ 'x-amzn-trace-id': `Root=${amzn}` }))).toEqual(amzn);
+    expect(getTraceId(mockRequest({ 'x-amzn-trace-id': `Root=${amzn}` }))).toStrictEqual(amzn);
 
     // x-trace-id should take precedence
     const uuid = '00000000-0000-0000-0000-000000000000';
-    expect(getTraceId(mockRequest({ 'x-amzn-trace-id': amzn, 'x-trace-id': uuid }))).toEqual(uuid);
+    expect(getTraceId(mockRequest({ 'x-amzn-trace-id': amzn, 'x-trace-id': uuid }))).toStrictEqual(uuid);
   });
 
   test('extractAmazonTraceId', () => {

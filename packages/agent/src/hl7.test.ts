@@ -446,7 +446,7 @@ describe('HL7', () => {
     expect(hl7Messages.length).toBe(1);
 
     // Make sure we are not keeping clients around yet
-    expect(app.hl7Clients.size).toEqual(0);
+    expect(app.hl7Clients.size).toStrictEqual(0);
 
     wsClient.send(
       Buffer.from(
@@ -468,7 +468,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(2);
-    expect(app.hl7Clients.size).toEqual(0);
+    expect(app.hl7Clients.size).toStrictEqual(0);
 
     // Update config and make agent reload config
     const updatedAgent1 = await medplum.updateResource({
@@ -515,7 +515,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(3);
-    expect(app.hl7Clients.size).toEqual(1);
+    expect(app.hl7Clients.size).toStrictEqual(1);
 
     wsClient.send(
       Buffer.from(
@@ -537,7 +537,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(4);
-    expect(app.hl7Clients.size).toEqual(1);
+    expect(app.hl7Clients.size).toStrictEqual(1);
 
     // Set the config back to keepAlive !== true
     const updatedAgent2 = await medplum.updateResource({
@@ -585,7 +585,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(5);
-    expect(app.hl7Clients.size).toEqual(0);
+    expect(app.hl7Clients.size).toStrictEqual(0);
 
     wsClient.send(
       Buffer.from(
@@ -607,7 +607,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(6);
-    expect(app.hl7Clients.size).toEqual(0);
+    expect(app.hl7Clients.size).toStrictEqual(0);
 
     // Shutdown everything
     await hl7Server.stop();
@@ -615,7 +615,7 @@ describe('HL7', () => {
     mockServer.stop();
 
     // Make sure all clients are closed after stopping app
-    expect(app.hl7Clients.size).toEqual(0);
+    expect(app.hl7Clients.size).toStrictEqual(0);
   });
 
   test('keepAlive: Remote closes connection', async () => {
@@ -717,7 +717,7 @@ describe('HL7', () => {
       await sleep(20);
     }
     expect(hl7Messages.length).toBe(1);
-    expect(app.hl7Clients.size).toEqual(1);
+    expect(app.hl7Clients.size).toStrictEqual(1);
 
     // After stopping the server (and therefore closing the connection),
     // We should no longer have an open client to the given server
@@ -725,7 +725,7 @@ describe('HL7', () => {
     while (app.hl7Clients.size !== 0) {
       await sleep(20);
     }
-    expect(app.hl7Clients.size).toEqual(0);
+    expect(app.hl7Clients.size).toStrictEqual(0);
 
     await app.stop();
     mockServer.stop();
@@ -845,7 +845,7 @@ describe('HL7', () => {
       await sleep(20);
     }
     expect(hl7Messages.length).toBe(1);
-    expect(app.hl7Clients.size).toEqual(1);
+    expect(app.hl7Clients.size).toStrictEqual(1);
 
     // An error happened
     const hl7Client = app.hl7Clients.get('mllp://localhost:57001');
@@ -860,7 +860,7 @@ describe('HL7', () => {
     while (app.hl7Clients.size !== 0) {
       await sleep(20);
     }
-    expect(app.hl7Clients.size).toEqual(0);
+    expect(app.hl7Clients.size).toStrictEqual(0);
 
     // Set the socket to timeout on inactivity since we are not going to manually close the connection
     mode = 'TIMEOUT';
@@ -886,7 +886,7 @@ describe('HL7', () => {
     }
 
     expect(hl7Messages.length).toBe(2);
-    expect(app.hl7Clients.size).toEqual(1);
+    expect(app.hl7Clients.size).toStrictEqual(1);
 
     await hl7Server.stop();
     await app.stop();

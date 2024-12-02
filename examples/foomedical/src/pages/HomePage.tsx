@@ -34,8 +34,8 @@ const carouselItems = [
     title: 'Welcome to Foo Medical',
     description:
       'Lorem ipsum at porta donec ultricies ut, arcu morbi amet arcu ornare, curabitur pharetra magna tempus',
-    url: '/get-care',
-    label: 'Learn how we help',
+    url: '/screening-questionnaire',
+    label: 'AHC HRSN Screening',
   },
   {
     img: <IconChecklist />,
@@ -149,7 +149,7 @@ export function HomePage(): JSX.Element {
                   <Text size="sm" color="dimmed" my="sm">
                     {item.description}
                   </Text>
-                  <Anchor>{item.label}</Anchor>
+                  <Anchor href={item.url}>{item.label}</Anchor>
                 </Card>
               </Grid.Col>
             ))}

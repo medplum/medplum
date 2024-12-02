@@ -445,7 +445,7 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
       return new OperationOutcomeError(conflict(err.detail));
     case '40001': // serialization_failure
       // Transaction rollback due to serialization error -> 409 Conflict
-      return new OperationOutcomeError(conflict(err.message));
+      return new OperationOutcomeError(conflict(err.message, err.code));
     case '57014': // query_canceled
       // Statement timeout -> 504 Gateway Timeout
       return new OperationOutcomeError(serverTimeout(err.message));

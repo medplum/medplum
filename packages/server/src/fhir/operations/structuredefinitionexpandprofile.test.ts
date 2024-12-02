@@ -27,7 +27,7 @@ describe('StructureDefinition $expand-profile', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('Content-Type', ContentType.FHIR_JSON)
         .send(sd);
-      expect(res.status).toEqual(201);
+      expect(res.status).toStrictEqual(201);
     }
   }
 
@@ -61,13 +61,13 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toEqual(200);
-    expect(res.body.resourceType).toEqual('Bundle');
+    expect(res.status).toStrictEqual(200);
+    expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const bundle = res.body as Bundle<StructureDefinition>;
-    expect(bundle.entry?.length).toEqual(expectedProfiles.length);
+    expect(bundle.entry?.length).toStrictEqual(expectedProfiles.length);
     for (const entry of bundle.entry || []) {
-      expect(expectedProfiles.includes(entry.resource?.url ?? '')).toEqual(true);
+      expect(expectedProfiles.includes(entry.resource?.url ?? '')).toStrictEqual(true);
     }
   });
 
@@ -82,13 +82,13 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toEqual(200);
-    expect(res.body.resourceType).toEqual('Bundle');
+    expect(res.status).toStrictEqual(200);
+    expect(res.body.resourceType).toStrictEqual('Bundle');
 
     const bundle = res.body as Bundle<StructureDefinition>;
-    expect(bundle.entry?.length).toEqual(expectedProfiles.length);
+    expect(bundle.entry?.length).toStrictEqual(expectedProfiles.length);
     for (const entry of bundle.entry || []) {
-      expect(expectedProfiles.includes(entry.resource?.url ?? '')).toEqual(true);
+      expect(expectedProfiles.includes(entry.resource?.url ?? '')).toStrictEqual(true);
     }
   });
 
@@ -101,7 +101,7 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toEqual(400);
+    expect(res.status).toStrictEqual(400);
   });
 
   test('Profile URL not specified', async () => {
@@ -109,7 +109,7 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toEqual(400);
+    expect(res.status).toStrictEqual(400);
   });
 
   test('Circuit breaker for deeply nested profiles', async () => {
@@ -122,11 +122,11 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const bundle = res.body as Bundle<StructureDefinition>;
-    expect(bundle.entry?.length).toEqual(sds.length);
+    expect(bundle.entry?.length).toStrictEqual(sds.length);
     for (const entry of bundle.entry || []) {
-      expect(sdUrls.includes(entry.resource?.url ?? '')).toEqual(true);
+      expect(sdUrls.includes(entry.resource?.url ?? '')).toStrictEqual(true);
     }
   });
 
@@ -140,16 +140,16 @@ describe('StructureDefinition $expand-profile', () => {
       .post(`/fhir/R4/StructureDefinition/$expand-profile?url=${profileUrl}`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const bundle = res.body as Bundle<StructureDefinition>;
-    expect(bundle.entry?.length).toEqual(sds.length - 1); // -1 because the last extension was not recursed due to circuit breaker
+    expect(bundle.entry?.length).toStrictEqual(sds.length - 1); // -1 because the last extension was not recursed due to circuit breaker
 
     for (const sdUrl of sdUrls.slice(0, -1)) {
-      expect(bundle.entry?.some((entry) => entry.resource?.url === sdUrl)).toEqual(true);
+      expect(bundle.entry?.some((entry) => entry.resource?.url === sdUrl)).toStrictEqual(true);
     }
 
     const missingSdUrl = sdUrls[sdUrls.length - 1];
-    expect(bundle.entry?.some((entry) => entry.resource?.url === missingSdUrl)).toEqual(false);
+    expect(bundle.entry?.some((entry) => entry.resource?.url === missingSdUrl)).toStrictEqual(false);
   });
 });
 
@@ -231,7 +231,7 @@ async function createNestedStructureDefinitions(
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(sd);
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
   }
 
   return sds;

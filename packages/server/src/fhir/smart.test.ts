@@ -3,11 +3,11 @@ import { applySmartScopes, parseSmartScopes } from './smart';
 
 describe('SMART on FHIR', () => {
   test('Parse empty', () => {
-    expect(parseSmartScopes(undefined)).toEqual([]);
-    expect(parseSmartScopes(null as unknown as string)).toEqual([]);
-    expect(parseSmartScopes('')).toEqual([]);
-    expect(parseSmartScopes('openid')).toEqual([]);
-    expect(parseSmartScopes('x/y.z')).toEqual([]);
+    expect(parseSmartScopes(undefined)).toStrictEqual([]);
+    expect(parseSmartScopes(null as unknown as string)).toStrictEqual([]);
+    expect(parseSmartScopes('')).toStrictEqual([]);
+    expect(parseSmartScopes('openid')).toStrictEqual([]);
+    expect(parseSmartScopes('x/y.z')).toStrictEqual([]);
   });
 
   test('Parse scopes', () => {

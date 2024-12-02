@@ -54,7 +54,7 @@ describe('ValueSet validate-code', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send(testValueSet);
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
     valueSet = res.body as ValueSet;
   });
 
@@ -75,10 +75,10 @@ describe('ValueSet validate-code', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
-    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('ward');
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('ward');
   });
 
   test.each<ParametersParameter[]>([
@@ -108,10 +108,10 @@ describe('ValueSet validate-code', () => {
         parameter: [{ name: 'url', valueUri: valueSet.url }, ...params],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
-    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('identical twin brother');
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('identical twin brother');
   });
 
   test('Filter excluded code fails', async () => {
@@ -127,7 +127,7 @@ describe('ValueSet validate-code', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
   });
@@ -146,10 +146,10 @@ describe('ValueSet validate-code', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
-    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('aunt');
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('aunt');
   });
 
   test('Returns negative result when no coding matches', async () => {
@@ -165,7 +165,7 @@ describe('ValueSet validate-code', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
     expect(output.parameter?.find((p) => p.name === 'display')).toBeUndefined();
@@ -184,7 +184,7 @@ describe('ValueSet validate-code', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(400);
-    expect(res2.body.resourceType).toEqual('OperationOutcome');
+    expect(res2.body.resourceType).toStrictEqual('OperationOutcome');
   });
 
   test('Validates coding via property filter', async () => {
@@ -200,10 +200,10 @@ describe('ValueSet validate-code', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
-    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('next of kin');
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('next of kin');
   });
 
   test('Validates coding via property filter with multiple values', async () => {
@@ -219,10 +219,10 @@ describe('ValueSet validate-code', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
-    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('Pediatrics clinic');
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('Pediatrics clinic');
   });
 
   test('Validates code when only example CodeSystem is present', async () => {
@@ -238,7 +238,7 @@ describe('ValueSet validate-code', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
     expect(output.parameter?.find((p) => p.name === 'display')).toBeUndefined();
@@ -258,7 +258,7 @@ describe('ValueSet validate-code', () => {
         ],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(false);
     expect(output.parameter?.find((p) => p.name === 'display')).toBeUndefined();
@@ -270,10 +270,10 @@ describe('ValueSet validate-code', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
-    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('ward');
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('ward');
   });
 
   test('GET instance endpoint', async () => {
@@ -282,10 +282,10 @@ describe('ValueSet validate-code', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
-    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('ward');
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('ward');
   });
 
   test('Instance endpoint with coding', async () => {
@@ -298,9 +298,9 @@ describe('ValueSet validate-code', () => {
         parameter: [{ name: 'coding', valueCoding: { system, code: 'WARD' } }],
       } as Parameters);
     expect(res2.status).toBe(200);
-    expect(res2.body.resourceType).toEqual('Parameters');
+    expect(res2.body.resourceType).toStrictEqual('Parameters');
     const output = res2.body as Parameters;
     expect(output.parameter?.find((p) => p.name === 'result')?.valueBoolean).toBe(true);
-    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toEqual('ward');
+    expect(output.parameter?.find((p) => p.name === 'display')?.valueString).toStrictEqual('ward');
   });
 });

@@ -5,7 +5,7 @@ import { MedplumServerConfig } from '../config';
 import { getLogger, getRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import { LongJob } from './long-job';
 
 /*
  * The reindex worker updates resource rows in the database,
@@ -45,7 +45,7 @@ export function initReindexWorker(config: MedplumServerConfig): void {
   queue = new Queue<ReindexJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
-      attempts: 3,
+      attempts: 1,
       backoff: {
         type: 'exponential',
         delay: 1000,
@@ -55,7 +55,7 @@ export function initReindexWorker(config: MedplumServerConfig): void {
 
   worker = new Worker<ReindexJobData>(
     queueName,
-    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => execReindexJob(job)),
+    (job) => tryRunInRequestContext(job.data.requestId, job.data.traceId, () => new ReindexJob().execute(job)),
     {
       ...defaultOptions,
       ...config.bullmq,
@@ -82,62 +82,93 @@ export async function closeReindexWorker(): Promise<void> {
   }
 }
 
-export async function execReindexJob(job: Job<ReindexJobData>): Promise<void> {
-  let resourceTypes = job.data.resourceTypes;
-  const resourceType = job.data.resourceTypes[0];
-  if (!job.data.count) {
-    getLogger().info('Reindex started', { resourceType });
-  }
-  let asyncJob = job.data.asyncJob;
-
-  try {
+export class ReindexJob extends LongJob<ReindexResult, ReindexJobData> {
+  async process(job: Job<ReindexJobData>): Promise<ReindexResult> {
     const result = await processPage(job);
+
+    const resourceType = job.data.resourceTypes[0];
     job.data.results[resourceType] = result;
 
-    if ('duration' in result || 'err' in result) {
-      asyncJob = await updateStatus(job);
+    return result;
+  }
+
+  /**
+   * Format the current job result status for inclusion in the AsyncJob resource.
+   * @param result - The current job iteration result.
+   * @param job - The current job.
+   * @returns The formatted output parameters.
+   */
+  formatResults(result: ReindexResult, job: Job<ReindexJobData>): Parameters | undefined {
+    if (isResultInProgress(result)) {
+      // Skip update for most in-progress results
+      if (!shouldLogProgress(result)) {
+        return undefined;
+      }
+
+      // Log periodic progress updates for the job
+      globalLogger.info('Reindex in progress', {
+        resourceType: job.data.resourceTypes[0],
+        latestJobId: job.id,
+        cursor: result.cursor,
+        currentCount: result.count,
+        elapsedTime: `${Date.now() - job.data.startTime} ms`,
+      });
+    }
+
+    // Current result either completes a resource type, or should be recorded as an in-progress update
+    // These should be recorded in the AsyncJob resource for visibility
+    return formatResults(job.data.results);
+  }
+
+  nextIterationData(result: ReindexResult, job: Job<ReindexJobData>): ReindexJobData | boolean {
+    const asyncJob = job.data.asyncJob;
+    let resourceTypes = job.data.resourceTypes;
+    if (isResultComplete(result)) {
       resourceTypes = resourceTypes.slice(1);
     }
 
-    if ('cursor' in result && !('err' in result)) {
-      const count = result.count;
-      // Log progress and update status in the AsyncJob resource periodically
-      if (Math.floor(count / progressLogThreshold) !== Math.floor((count - batchSize) / progressLogThreshold)) {
-        globalLogger.info('Reindex in progress', {
-          resourceType,
-          latestJobId: job.id,
-          cursor: result.cursor,
-          currentCount: count,
-          elapsedTime: `${Date.now() - job.data.startTime} ms`,
-        });
-        asyncJob = await updateStatus(job);
-      }
-
+    if (isResultInProgress(result)) {
       // Enqueue job to handle next page of the current resource type
-      await addReindexJobData({
+      return {
         ...job.data,
         asyncJob,
+        count: result.count,
         cursor: result.cursor,
-        count,
-      });
+      };
     } else if (resourceTypes.length) {
       // Enqueue job to start reindexing the next resource type
-      await addReindexJobData({
+      return {
         ...job.data,
         asyncJob,
-        resourceTypes: resourceTypes,
+        resourceTypes,
         count: 0,
         cursor: undefined,
         startTime: Date.now(),
-      });
+      };
     } else {
-      await finishReindex(job, asyncJob);
+      // All done!
+      return !Object.values(job.data.results).some((r) => 'err' in r);
     }
-  } catch (err) {
-    const systemRepo = getSystemRepo();
-    const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
-    await exec.failJob(systemRepo, err as Error);
   }
+
+  enqueueJob(data: ReindexJobData): Promise<Job<ReindexJobData>> {
+    return addReindexJobData(data);
+  }
+}
+
+function isResultComplete(result: ReindexResult): boolean {
+  return 'duration' in result || 'err' in result;
+}
+
+function isResultInProgress(
+  result: ReindexResult
+): result is { count: number; cursor: string; nextTimestamp: string; err: undefined } {
+  return 'cursor' in result && !('err' in result);
+}
+
+function shouldLogProgress(result: ReindexResult): boolean {
+  const count = result.count;
+  return Math.floor(count / progressLogThreshold) !== Math.floor((count - batchSize) / progressLogThreshold);
 }
 
 /**
@@ -211,24 +242,6 @@ function searchRequestForNextPage(job: Job<ReindexJobData>): SearchRequest {
   return searchRequest;
 }
 
-async function updateStatus(job: Job<ReindexJobData>): Promise<AsyncJob> {
-  const systemRepo = getSystemRepo();
-  const exec = new AsyncJobExecutor(systemRepo, job.data.asyncJob);
-  const output = formatResults(job.data.results);
-  return (await exec.updateJobProgress(systemRepo, output)) ?? job.data.asyncJob;
-}
-
-async function finishReindex(job: Job<ReindexJobData>, asyncJob: AsyncJob): Promise<void> {
-  const systemRepo = getSystemRepo();
-  const exec = new AsyncJobExecutor(systemRepo, asyncJob);
-  if (Object.values(job.data.results).some((r) => 'err' in r)) {
-    await exec.failJob(systemRepo);
-  } else {
-    const output = formatResults(job.data.results);
-    await exec.completeJob(systemRepo, output);
-  }
-}
-
 /**
  * Format the current job result status for inclusion in the AsyncJob resource.
  * @param results - The current results from the job
@@ -237,44 +250,45 @@ async function finishReindex(job: Job<ReindexJobData>, asyncJob: AsyncJob): Prom
 function formatResults(results: ReindexJobData['results']): Parameters {
   return {
     resourceType: 'Parameters',
-    parameter: Object.keys(results).map((resourceType) => {
-      const result = results[resourceType];
-      if ('err' in result && result.err) {
-        // Resource types that encountered an error report the error,
-        // and a timestamp to allow restarting from previous checkpoint
-        const parts: ParametersParameter[] = [
-          { name: 'resourceType', valueCode: resourceType },
-          { name: 'error', valueString: normalizeErrorString(result.err) },
-        ];
-        if (result.nextTimestamp) {
-          parts.push({ name: 'nextTimestamp', valueDateTime: result.nextTimestamp });
-        }
-        return {
-          name: 'result',
-          part: parts,
-        };
-      } else if ('cursor' in result) {
-        // In-progress resource types log the next timestamp, which could be used to restart the job
-        return {
-          name: 'result',
-          part: [
-            { name: 'resourceType', valueCode: resourceType },
-            { name: 'nextTimestamp', valueDateTime: result.nextTimestamp },
-          ],
-        };
-      } else {
-        // Completed resource types report the number of indexed resources and wall time for the reindex job(s)
-        return {
-          name: 'result',
-          part: [
-            { name: 'resourceType', valueCode: resourceType },
-            { name: 'count', valueInteger: result.count },
-            { name: 'elapsedTime', valueQuantity: { value: result.duration, code: 'ms' } },
-          ],
-        };
-      }
-    }),
+    parameter: Object.keys(results).map((resourceType) => formatReindexResult(results[resourceType], resourceType)),
   };
+}
+
+function formatReindexResult(result: ReindexResult, resourceType: string): ParametersParameter {
+  if ('err' in result && result.err) {
+    // Resource types that encountered an error report the error,
+    // and a timestamp to allow restarting from previous checkpoint
+    const parts: ParametersParameter[] = [
+      { name: 'resourceType', valueCode: resourceType },
+      { name: 'error', valueString: normalizeErrorString(result.err) },
+    ];
+    if (result.nextTimestamp) {
+      parts.push({ name: 'nextTimestamp', valueDateTime: result.nextTimestamp });
+    }
+    return {
+      name: 'result',
+      part: parts,
+    };
+  } else if ('cursor' in result) {
+    // In-progress resource types log the next timestamp, which could be used to restart the job
+    return {
+      name: 'result',
+      part: [
+        { name: 'resourceType', valueCode: resourceType },
+        { name: 'nextTimestamp', valueDateTime: result.nextTimestamp },
+      ],
+    };
+  } else {
+    // Completed resource types report the number of indexed resources and wall time for the reindex job(s)
+    return {
+      name: 'result',
+      part: [
+        { name: 'resourceType', valueCode: resourceType },
+        { name: 'count', valueInteger: result.count },
+        { name: 'elapsedTime', valueQuantity: { value: result.duration, code: 'ms' } },
+      ],
+    };
+  }
 }
 
 /**

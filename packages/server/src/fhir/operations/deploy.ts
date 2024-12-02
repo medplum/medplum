@@ -2,7 +2,7 @@ import { ContentType, allOk, badRequest, getReferenceString, normalizeOperationO
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Attachment, Binary, Bot } from '@medplum/fhirtypes';
 import { Readable } from 'node:stream';
-import { deployLambda } from '../../cloud/aws/deploy';
+import { deployLambda, getLambdaTimeoutForBot } from '../../cloud/aws/deploy';
 import { getAuthenticatedContext } from '../../context';
 import { readStreamToString } from '../../util/streams';
 import { getSystemRepo } from '../repo';
@@ -64,10 +64,16 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
       codeToDeploy = await readStreamToString(stream);
     }
 
-    const latestBot = updatedBot ?? bot;
+    let latestBot = updatedBot ?? bot;
 
     // Deploy the bot
     if (latestBot.runtimeVersion === 'awslambda') {
+      if (latestBot.timeout === undefined) {
+        latestBot = await ctx.repo.updateResource<Bot>({
+          ...latestBot,
+          timeout: await getLambdaTimeoutForBot(latestBot),
+        });
+      }
       await deployLambda(latestBot, codeToDeploy as string);
     }
 

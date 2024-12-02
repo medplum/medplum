@@ -13,7 +13,7 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
-import { ReindexJobData, execReindexJob, getReindexQueue } from '../workers/reindex';
+import { ReindexJob, ReindexJobData, getReindexQueue } from '../workers/reindex';
 import { Job } from 'bullmq';
 
 jest.mock('../seeds/valuesets');
@@ -117,7 +117,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(400);
+    expect(res.status).toStrictEqual(400);
     expect(res.body?.issue?.[0]?.details?.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
@@ -133,7 +133,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(202);
+    expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
@@ -155,7 +155,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(400);
+    expect(res.status).toStrictEqual(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
@@ -171,7 +171,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(202);
+    expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
@@ -189,9 +189,9 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(202);
+    expect(res.status).toStrictEqual(202);
     const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
-    expect(job.status).toEqual('error');
+    expect(job.status).toStrictEqual('error');
   });
 
   test('Rebuild StructureDefinitions access denied', async () => {
@@ -211,7 +211,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(400);
+    expect(res.status).toStrictEqual(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
@@ -227,7 +227,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(202);
+    expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
@@ -245,9 +245,9 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res.status).toEqual(202);
+    expect(res.status).toStrictEqual(202);
     const job = await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
-    expect(job.status).toEqual('error');
+    expect(job.status).toStrictEqual('error');
   });
 
   test('Rebuild SearchParameters access denied', async () => {
@@ -281,7 +281,7 @@ describe('Super Admin routes', () => {
         resourceType: 'PaymentNotice',
       });
 
-    expect(res.status).toEqual(400);
+    expect(res.status).toStrictEqual(400);
     expect(res.body.issue[0].details.text).toBe('Operation requires "Prefer: respond-async"');
   });
 
@@ -310,7 +310,7 @@ describe('Super Admin routes', () => {
         resourceType: 'PaymentNotice',
       });
 
-    expect(res.status).toEqual(202);
+    expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -318,7 +318,7 @@ describe('Super Admin routes', () => {
         resourceTypes: ['PaymentNotice'],
       })
     );
-    await withTestContext(() => execReindexJob({ data: queue.add.mock.calls[0][1] } as Job));
+    await withTestContext(() => new ReindexJob().execute({ data: queue.add.mock.calls[0][1] } as Job));
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });
 
@@ -335,7 +335,7 @@ describe('Super Admin routes', () => {
         resourceType: 'PaymentNotice,MedicinalProductManufactured,BiologicallyDerivedProduct',
       });
 
-    expect(res.status).toEqual(202);
+    expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
@@ -346,7 +346,7 @@ describe('Super Admin routes', () => {
     let job = { data: queue.add.mock.calls[0][1] } as Job;
     queue.add.mockClear();
 
-    await withTestContext(() => execReindexJob(job));
+    await withTestContext(() => new ReindexJob().execute(job));
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
       expect.objectContaining<Partial<ReindexJobData>>({
@@ -356,7 +356,7 @@ describe('Super Admin routes', () => {
     job = { data: queue.add.mock.calls[0][1] } as Job;
     queue.add.mockClear();
 
-    await withTestContext(() => execReindexJob(job));
+    await withTestContext(() => new ReindexJob().execute(job));
     expect(queue.add).toHaveBeenCalledWith(
       'ReindexJobData',
       expect.objectContaining<Partial<ReindexJobData>>({
@@ -366,7 +366,7 @@ describe('Super Admin routes', () => {
     job = { data: queue.add.mock.calls[0][1] } as Job;
     queue.add.mockClear();
 
-    await withTestContext(() => execReindexJob(job));
+    await withTestContext(() => new ReindexJob().execute(job));
     expect(queue.add).not.toHaveBeenCalled();
 
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
@@ -522,7 +522,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res1.status).toEqual(202);
+    expect(res1.status).toStrictEqual(202);
     expect(res1.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
   });
@@ -535,7 +535,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({});
 
-    expect(res1.status).toEqual(202);
+    expect(res1.status).toStrictEqual(202);
     expect(res1.headers['content-location']).toBeDefined();
     await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
   });

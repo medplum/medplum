@@ -79,7 +79,7 @@ describe('Export', () => {
       Object.values(output)
         .map((ex) => ex.type)
         .sort()
-    ).toEqual(['ClientApplication', 'Observation', 'Patient', 'Project', 'ProjectMembership']);
+    ).toStrictEqual(['ClientApplication', 'Observation', 'Patient', 'Project', 'ProjectMembership']);
 
     // Get the export content
     const outputLocation = new URL(output.find((o) => o.type === 'Observation')?.url as string);
@@ -92,7 +92,7 @@ describe('Export', () => {
     // However, we only expect one Observation, so we can parse it as JSON
     const resourceJSON = dataRes.text.trim().split('\n');
     expect(resourceJSON).toHaveLength(1);
-    expect(JSON.parse(resourceJSON[0])?.subject?.reference).toEqual(`Patient/${res1.body.id}`);
+    expect(JSON.parse(resourceJSON[0])?.subject?.reference).toStrictEqual(`Patient/${res1.body.id}`);
   });
 
   test('System Export Accepted with GET', async () => {

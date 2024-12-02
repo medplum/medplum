@@ -46,7 +46,7 @@ describe('Verify email', () => {
     const addUserResult = await addTestUser(project);
     user = addUserResult.user;
 
-    expect(user.emailVerified).not.toEqual(true);
+    expect(user.emailVerified).not.toStrictEqual(true);
   });
 
   test('Success', async () =>

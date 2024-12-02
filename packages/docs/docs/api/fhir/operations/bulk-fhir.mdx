@@ -16,7 +16,7 @@ The premise of the Bulk FHIR API is that it allows you to create a **bulk export
 
 The export process is asynchronous, and you will need to poll a status URL returned when you start the export. After the [BulkDataExport resource](/docs/api/fhir/medplum/bulkdataexport) with the export results is available, it will contain a set of URLs where you can download the exported data in [NDJSON][ndjson] format.
 
-[ndjson]: http://ndjson.org/
+[ndjson]: https://jsonlines.org/
 
 ## Group Export
 

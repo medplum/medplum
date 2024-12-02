@@ -10,13 +10,13 @@ import {
 } from './version-utils';
 
 test('isValidMedplumSemver', () => {
-  expect(isValidMedplumSemver('1.2.3')).toEqual(true);
-  expect(isValidMedplumSemver('1.2')).toEqual(false);
-  expect(isValidMedplumSemver('1.2.-')).toEqual(false);
-  expect(isValidMedplumSemver('.2.3')).toEqual(false);
-  expect(isValidMedplumSemver('10.256.121212')).toEqual(true);
-  expect(isValidMedplumSemver('10.256.121212-alpha')).toEqual(false);
-  expect(isValidMedplumSemver('10.256.121212-1012')).toEqual(false);
+  expect(isValidMedplumSemver('1.2.3')).toStrictEqual(true);
+  expect(isValidMedplumSemver('1.2')).toStrictEqual(false);
+  expect(isValidMedplumSemver('1.2.-')).toStrictEqual(false);
+  expect(isValidMedplumSemver('.2.3')).toStrictEqual(false);
+  expect(isValidMedplumSemver('10.256.121212')).toStrictEqual(true);
+  expect(isValidMedplumSemver('10.256.121212-alpha')).toStrictEqual(false);
+  expect(isValidMedplumSemver('10.256.121212-1012')).toStrictEqual(false);
 });
 
 test('assertReleaseManifest', () => {
@@ -66,7 +66,7 @@ describe('checkIfValidMedplumVersion', () => {
   });
 
   test('Invalid version format', async () => {
-    await expect(checkIfValidMedplumVersion('3.1.6-alpha')).resolves.toEqual(false);
+    await expect(checkIfValidMedplumVersion('3.1.6-alpha')).resolves.toStrictEqual(false);
   });
 
   test('Version not found', async () => {
@@ -81,7 +81,7 @@ describe('checkIfValidMedplumVersion', () => {
       }) as unknown as typeof globalThis.fetch
     );
 
-    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toEqual(false);
+    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toStrictEqual(false);
     fetchSpy.mockRestore();
   });
 
@@ -96,7 +96,7 @@ describe('checkIfValidMedplumVersion', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toEqual(false);
+    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toStrictEqual(false);
     fetchSpy.mockRestore();
   });
 
@@ -106,7 +106,7 @@ describe('checkIfValidMedplumVersion', () => {
         return Promise.reject(new Error('Network error'));
       })
     );
-    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toEqual(false);
+    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toStrictEqual(false);
     fetchSpy.mockRestore();
   });
 });
@@ -229,7 +229,7 @@ describe('fetchLatestVersionString', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchLatestVersionString()).resolves.toEqual('3.1.6');
+    await expect(fetchLatestVersionString()).resolves.toStrictEqual('3.1.6');
     fetchSpy.mockRestore();
   });
 

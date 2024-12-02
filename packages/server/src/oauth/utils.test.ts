@@ -40,8 +40,8 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Not found');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Not found');
     }
   });
 
@@ -58,8 +58,8 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid email');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid email');
     }
   });
 
@@ -76,8 +76,8 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid password');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid password');
     }
   });
 
@@ -94,8 +94,8 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('User not found');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('User not found');
     }
   });
 
@@ -112,7 +112,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
     }
   });
@@ -129,7 +129,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid authentication method');
     }
   });
@@ -146,7 +146,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid google credentials');
     }
   });
@@ -164,7 +164,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Invalid scope');
     }
   });
@@ -180,7 +180,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('Project ID is required for external ID');
     }
   });
@@ -197,7 +197,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
       expect(outcome.issue?.[0]?.details?.text).toBe('User not found');
     }
   });
@@ -227,7 +227,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Missing email or externalId');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Missing email or externalId');
     }
   });
 
@@ -242,7 +242,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Project ID is required for external ID');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Project ID is required for external ID');
     }
   });
 
@@ -264,7 +264,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge_method');
     }
   });
 
@@ -286,7 +286,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge');
     }
   });
 
@@ -309,7 +309,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('code_challenge_method');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('code_challenge_method');
     }
   });
 
@@ -377,7 +377,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login revoked');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login revoked');
     }
   });
 
@@ -387,7 +387,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login granted');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login granted');
     }
   });
 
@@ -397,7 +397,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login already verified');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login already verified');
     }
   });
 
@@ -407,7 +407,7 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('User reference is missing');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('User reference is missing');
     }
   });
 
@@ -423,14 +423,14 @@ describe('OAuth utils', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Login missing profile');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Login missing profile');
     }
   });
 
   test('CLI client', async () => {
     const client = await getClientApplication('medplum-cli');
     expect(client).toBeDefined();
-    expect(client.id).toEqual('medplum-cli');
+    expect(client.id).toStrictEqual('medplum-cli');
   });
 });
 

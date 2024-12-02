@@ -9,30 +9,34 @@ describe('parseTraceparent', () => {
   };
 
   it('parses traceparent spec', () => {
-    expect(parseTraceparent(`${tp.version}-${tp.traceId}-${tp.parentId}-${tp.flags}`)).toEqual(tp);
+    expect(parseTraceparent(`${tp.version}-${tp.traceId}-${tp.parentId}-${tp.flags}`)).toStrictEqual(tp);
   });
 
   it('allows missing version', () => {
-    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-${tp.flags}`)).toEqual({ ...tp, version: undefined });
+    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-${tp.flags}`)).toStrictEqual({ ...tp, version: undefined });
   });
 
   it('allows missing flags', () => {
-    expect(parseTraceparent(`${tp.version}-${tp.traceId}-${tp.parentId}`)).toEqual({ ...tp, flags: undefined });
+    expect(parseTraceparent(`${tp.version}-${tp.traceId}-${tp.parentId}`)).toStrictEqual({ ...tp, flags: undefined });
   });
 
   it('allows missing version and flags', () => {
-    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}`)).toEqual({ ...tp, version: undefined, flags: undefined });
+    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}`)).toStrictEqual({
+      ...tp,
+      version: undefined,
+      flags: undefined,
+    });
   });
 
   it('allows 1 character for flags', () => {
-    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-1`)).toEqual({ ...tp, version: undefined, flags: '1' });
+    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-1`)).toStrictEqual({ ...tp, version: undefined, flags: '1' });
   });
 
   it('returns null for more than 2 characters for flags', () => {
-    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-001`)).toEqual(null);
+    expect(parseTraceparent(`${tp.traceId}-${tp.parentId}-001`)).toStrictEqual(null);
   });
 
   it('reports invalid', () => {
-    expect(parseTraceparent(`invalid-traceparent`)).toEqual(null);
+    expect(parseTraceparent(`invalid-traceparent`)).toStrictEqual(null);
   });
 });

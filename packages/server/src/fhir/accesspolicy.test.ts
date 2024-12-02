@@ -78,7 +78,7 @@ describe('AccessPolicy', () => {
         await repo2.readResource('Patient', patient.id as string);
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
       }
     }));
 
@@ -100,7 +100,7 @@ describe('AccessPolicy', () => {
         await repo2.search({ resourceType: 'Patient' });
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
       }
     }));
 
@@ -137,7 +137,7 @@ describe('AccessPolicy', () => {
         await repo2.updateResource(patient);
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
       }
     }));
 
@@ -181,7 +181,7 @@ describe('AccessPolicy', () => {
         await repo2.updateResource(resource);
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
       }
     }));
 
@@ -225,7 +225,7 @@ describe('AccessPolicy', () => {
         await repo2.updateResource({ ...resource, status: 'completed' });
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
       }
     }));
 
@@ -262,7 +262,7 @@ describe('AccessPolicy', () => {
         await repo2.deleteResource('Patient', patient.id as string);
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
       }
     }));
 
@@ -298,12 +298,12 @@ describe('AccessPolicy', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
       });
-      expect(patient.meta?.account?.reference).toEqual('Organization/' + orgId);
+      expect(patient.meta?.account?.reference).toStrictEqual('Organization/' + orgId);
       expect(patient.meta?.accounts).toHaveLength(1);
       expect(patient.meta?.accounts).toContainEqual({ reference: 'Organization/' + orgId });
 
       const readPatient = await repo.readResource('Patient', patient.id as string);
-      expect(readPatient.meta?.account?.reference).toEqual('Organization/' + orgId);
+      expect(readPatient.meta?.account?.reference).toStrictEqual('Organization/' + orgId);
       expect(readPatient.meta?.accounts).toHaveLength(1);
       expect(readPatient.meta?.accounts).toContainEqual({ reference: 'Organization/' + orgId });
     }));
@@ -350,14 +350,102 @@ describe('AccessPolicy', () => {
           },
         },
       });
-      expect(patient.meta?.account?.reference).toEqual('Organization/' + orgId);
+      expect(patient.meta?.account?.reference).toStrictEqual('Organization/' + orgId);
       expect(patient.meta?.accounts).toHaveLength(1);
       expect(patient.meta?.accounts).toContainEqual({ reference: 'Organization/' + orgId });
 
       const readPatient = await repo.readResource('Patient', patient.id as string);
-      expect(readPatient.meta?.account?.reference).toEqual('Organization/' + orgId);
+      expect(readPatient.meta?.account?.reference).toStrictEqual('Organization/' + orgId);
       expect(readPatient.meta?.accounts).toHaveLength(1);
       expect(readPatient.meta?.accounts).toContainEqual({ reference: 'Organization/' + orgId });
+    }));
+
+  test('Merge access policy account override and resource accounts', () =>
+    withTestContext(async () => {
+      // Setup:
+      // User has an access policy with account/compartment restriction
+      // User updates resource with sources of account information
+      // The two sources of accounts should be merged
+
+      const overrideId = randomUUID();
+      const accessPolicy: AccessPolicy = {
+        resourceType: 'AccessPolicy',
+        compartment: {
+          reference: 'Organization/' + overrideId,
+        },
+        resource: [
+          {
+            resourceType: 'Observation',
+            criteria: 'Observation?_compartment=Organization/' + overrideId,
+          },
+          {
+            resourceType: 'Patient',
+          },
+        ],
+      };
+
+      const repo = new Repository({
+        extendedMode: true,
+        accessPolicy,
+        author: {
+          reference: 'Practitioner/1',
+        },
+      });
+
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        status: 'final',
+        code: { text: 'Eye color' },
+        valueCodeableConcept: { text: 'Hazel' },
+      });
+      expect(observation.meta?.account?.reference).toStrictEqual('Organization/' + overrideId);
+      expect(observation.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(observation.meta?.accounts).toHaveLength(1);
+      expect(observation.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(observation.meta?.compartment).toHaveLength(1);
+
+      const readObservation = await repo.readResource('Observation', observation.id as string);
+      expect(readObservation.meta?.account?.reference).toStrictEqual('Organization/' + overrideId);
+      expect(readObservation.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(readObservation.meta?.accounts).toHaveLength(1);
+      expect(readObservation.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(readObservation.meta?.compartment).toHaveLength(1);
+
+      const adminRepo = new Repository({
+        extendedMode: true,
+        projectAdmin: true,
+        author: {
+          reference: 'Practitioner/0',
+        },
+      });
+      const orgReference = { reference: 'Organization/' + randomUUID() };
+      const patient = await adminRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        meta: { accounts: [orgReference] },
+      });
+      const patientRef = createReference(patient);
+      const observation2 = await repo.createResource<Observation>({
+        ...observation,
+        subject: patientRef,
+      });
+      expect(observation2.meta?.account?.reference).toStrictEqual('Organization/' + overrideId);
+      expect(observation2.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(observation2.meta?.accounts).toContainEqual(orgReference);
+      expect(observation2.meta?.accounts).toHaveLength(2);
+      expect(observation2.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(observation2.meta?.compartment).toContainEqual(patientRef);
+      expect(observation2.meta?.compartment).toContainEqual(orgReference);
+      expect(observation2.meta?.compartment).toHaveLength(3);
+
+      const readObservation2 = await repo.readResource('Observation', observation2.id as string);
+      expect(readObservation2.meta?.account?.reference).toStrictEqual('Organization/' + overrideId);
+      expect(readObservation2.meta?.accounts).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(readObservation2.meta?.accounts).toContainEqual(orgReference);
+      expect(readObservation2.meta?.accounts).toHaveLength(2);
+      expect(readObservation2.meta?.compartment).toContainEqual({ reference: 'Organization/' + overrideId });
+      expect(readObservation2.meta?.compartment).toContainEqual(patientRef);
+      expect(readObservation2.meta?.compartment).toContainEqual(orgReference);
+      expect(readObservation2.meta?.compartment).toHaveLength(3);
     }));
 
   test('Access policy restrict compartment', () =>
@@ -418,7 +506,7 @@ describe('AccessPolicy', () => {
       });
       expect(patient1).toBeDefined();
       expect(patient1.meta?.account).toBeDefined();
-      expect(patient1.meta?.account?.reference).toEqual('Organization/' + org1);
+      expect(patient1.meta?.account?.reference).toStrictEqual('Organization/' + org1);
 
       const readPatient1 = await repo1.readResource('Patient', patient1.id as string);
       expect(readPatient1).toBeDefined();
@@ -429,12 +517,12 @@ describe('AccessPolicy', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
       });
-      expect(patient2.meta?.account?.reference).toEqual('Organization/' + org2);
+      expect(patient2.meta?.account?.reference).toStrictEqual('Organization/' + org2);
       expect(patient2.meta?.accounts).toHaveLength(1);
       expect(patient2.meta?.accounts).toContainEqual({ reference: 'Organization/' + org2 });
 
       const readPatient2 = await repo2.readResource('Patient', patient2.id as string);
-      expect(readPatient2.meta?.account?.reference).toEqual('Organization/' + org2);
+      expect(readPatient2.meta?.account?.reference).toStrictEqual('Organization/' + org2);
       expect(readPatient2.meta?.accounts).toHaveLength(1);
       expect(readPatient2.meta?.accounts).toContainEqual({ reference: 'Organization/' + org2 });
 
@@ -444,7 +532,7 @@ describe('AccessPolicy', () => {
         await repo2.readResource('Patient', patient1.id as string);
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
       }
 
       // Try to read patient2 with repo1
@@ -453,7 +541,7 @@ describe('AccessPolicy', () => {
         await repo1.readResource('Patient', patient2.id as string);
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
       }
     }));
 
@@ -516,7 +604,7 @@ describe('AccessPolicy', () => {
       patient = await repo2.updateResource(patient);
 
       expect(patient).toBeDefined();
-      expect(patient.meta?.account?.reference).toEqual('Organization/' + org1);
+      expect(patient.meta?.account?.reference).toStrictEqual('Organization/' + org1);
       expect(patient.meta?.accounts).toHaveLength(1);
       expect(patient.meta?.accounts).toContainEqual({ reference: 'Organization/' + org1 });
     }));
@@ -573,12 +661,12 @@ describe('AccessPolicy', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
       });
-      expect(patient1.meta?.account?.reference).toEqual('Organization/' + org1);
+      expect(patient1.meta?.account?.reference).toStrictEqual('Organization/' + org1);
       expect(patient1.meta?.accounts).toHaveLength(1);
       expect(patient1.meta?.accounts).toContainEqual({ reference: 'Organization/' + org1 });
 
       const readPatient1 = await repo1.readResource('Patient', patient1.id as string);
-      expect(readPatient1.meta?.account?.reference).toEqual('Organization/' + org1);
+      expect(readPatient1.meta?.account?.reference).toStrictEqual('Organization/' + org1);
       expect(readPatient1.meta?.accounts).toHaveLength(1);
       expect(readPatient1.meta?.accounts).toContainEqual({ reference: 'Organization/' + org1 });
 
@@ -587,12 +675,12 @@ describe('AccessPolicy', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
         birthDate: '1970-01-01',
       });
-      expect(patient2.meta?.account?.reference).toEqual('Organization/' + org2);
+      expect(patient2.meta?.account?.reference).toStrictEqual('Organization/' + org2);
       expect(patient2.meta?.accounts).toHaveLength(1);
       expect(patient2.meta?.accounts).toContainEqual({ reference: 'Organization/' + org2 });
 
       const readPatient2 = await repo2.readResource('Patient', patient2.id as string);
-      expect(readPatient2.meta?.account?.reference).toEqual('Organization/' + org2);
+      expect(readPatient2.meta?.account?.reference).toStrictEqual('Organization/' + org2);
       expect(readPatient2.meta?.accounts).toHaveLength(1);
       expect(readPatient2.meta?.accounts).toContainEqual({ reference: 'Organization/' + org2 });
 
@@ -602,7 +690,7 @@ describe('AccessPolicy', () => {
         await repo2.readResource('Patient', patient1.id as string);
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
       }
 
       // Try to read patient2 with repo1
@@ -611,7 +699,7 @@ describe('AccessPolicy', () => {
         await repo1.readResource('Patient', patient2.id as string);
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
       }
     }));
 
@@ -661,7 +749,7 @@ describe('AccessPolicy', () => {
         });
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
       }
     }));
 
@@ -735,7 +823,7 @@ describe('AccessPolicy', () => {
 
       // The Patient should have the account value set
       const patientCheck = await systemRepo.readResource('Patient', patient.id as string);
-      expect(patientCheck.meta?.account?.reference).toEqual(account);
+      expect(patientCheck.meta?.account?.reference).toStrictEqual(account);
       expect(patientCheck.meta?.accounts).toHaveLength(1);
       expect(patientCheck.meta?.accounts).toContainEqual({ reference: account });
 
@@ -753,7 +841,7 @@ describe('AccessPolicy', () => {
 
       // The Observation should have the account value set
       const observationCheck = await systemRepo.readResource('Observation', observation.id as string);
-      expect(observationCheck.meta?.account?.reference).toEqual(account);
+      expect(observationCheck.meta?.account?.reference).toStrictEqual(account);
       expect(observationCheck.meta?.accounts).toHaveLength(1);
       expect(observationCheck.meta?.accounts).toContainEqual({ reference: account });
 
@@ -770,7 +858,7 @@ describe('AccessPolicy', () => {
         await clientRepo.readResource<Patient>('Patient', patient2.id as string);
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
       }
 
       // Create an Observation outside of the account
@@ -790,7 +878,7 @@ describe('AccessPolicy', () => {
         await clientRepo.readResource<Observation>('Observation', observation2.id as string);
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('not-found');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('not-found');
       }
     }));
 
@@ -857,7 +945,7 @@ describe('AccessPolicy', () => {
         });
         fail('Expected error');
       } catch (err) {
-        expect((err as OperationOutcomeError).outcome.id).toEqual('forbidden');
+        expect((err as OperationOutcomeError).outcome.id).toStrictEqual('forbidden');
       }
     }));
 
@@ -1063,7 +1151,7 @@ describe('AccessPolicy', () => {
           },
         ],
       });
-      expect(bundle2.entry?.length).toEqual(0);
+      expect(bundle2.entry?.length).toStrictEqual(0);
     }));
 
   test('Try to remove readonly property', () =>
@@ -1089,7 +1177,7 @@ describe('AccessPolicy', () => {
           },
         ],
       });
-      expect(bundle1.entry?.length).toEqual(1);
+      expect(bundle1.entry?.length).toStrictEqual(1);
 
       // AccessPolicy with Patient.identifier readonly
       const accessPolicy: AccessPolicy = {
@@ -1118,7 +1206,7 @@ describe('AccessPolicy', () => {
       // This returns success, but the identifier should still be there
       const patient2 = await repo.updateResource<Patient>(rest);
       expect(patient2.identifier).toBeDefined();
-      expect(patient2.identifier?.[0]?.value).toEqual(value);
+      expect(patient2.identifier?.[0]?.value).toStrictEqual(value);
 
       // Try to search for the identifier
       // This should still return the result succeed
@@ -1132,7 +1220,7 @@ describe('AccessPolicy', () => {
           },
         ],
       });
-      expect(bundle2.entry?.length).toEqual(1);
+      expect(bundle2.entry?.length).toStrictEqual(1);
     }));
 
   test.skip('Try to remove readonly choice-of-type property', () =>
@@ -1161,14 +1249,14 @@ describe('AccessPolicy', () => {
       });
 
       const { multipleBirthInteger, ...rest } = patient1;
-      expect(multipleBirthInteger).toEqual(2);
+      expect(multipleBirthInteger).toStrictEqual(2);
       expect((rest as Patient).multipleBirthInteger).toBeUndefined();
 
       // Try to update the patient without multipleBirth[x]
       // Effectively, try to remove it
       // This returns success, but multipleBirth[x] is still there
       const patient2 = await repo.updateResource<Patient>(rest);
-      expect(patient2.multipleBirthInteger).toEqual(2);
+      expect(patient2.multipleBirthInteger).toStrictEqual(2);
     }));
 
   test('Hidden fields on read', () =>
@@ -1307,7 +1395,7 @@ describe('AccessPolicy', () => {
       });
 
       expect(readResource.name?.[0]).toBeDefined();
-      expect(readResource.name?.[0].given).toEqual(['Alice']);
+      expect(readResource.name?.[0].given).toStrictEqual(['Alice']);
       expect(readResource.name?.[0].family).toBeUndefined();
     }));
 
@@ -1561,14 +1649,14 @@ describe('AccessPolicy', () => {
         },
       };
       const resource = await repo.createResource(obs);
-      expect(resource.status).toEqual('preliminary');
+      expect(resource.status).toStrictEqual('preliminary');
 
       resource.status = 'final';
-      await expect(repo.updateResource(resource)).rejects.toEqual(new Error('Forbidden'));
+      await expect(repo.updateResource(resource)).rejects.toThrow(new Error('Forbidden'));
       resource.subject = { reference: 'Patient/test' };
       await expect(repo.updateResource(resource)).resolves.toBeDefined();
       resource.status = 'cancelled';
-      await expect(repo.updateResource(resource)).rejects.toEqual(new Error('Forbidden'));
+      await expect(repo.updateResource(resource)).rejects.toThrow(new Error('Forbidden'));
     }));
 
   test('Overlapping resource policies', () =>
@@ -1621,7 +1709,7 @@ describe('AccessPolicy', () => {
         });
         throw new Error('Should not be able to update resource');
       } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Forbidden');
+        expect(normalizeErrorString(err)).toStrictEqual('Forbidden');
       }
 
       // As admin, set the status
@@ -1641,7 +1729,7 @@ describe('AccessPolicy', () => {
         });
         throw new Error('Should not be able to update resource');
       } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Forbidden');
+        expect(normalizeErrorString(err)).toStrictEqual('Forbidden');
       }
     }));
 
@@ -1806,10 +1894,10 @@ describe('AccessPolicy', () => {
       expect(check1.id).toBe(patient.id);
 
       const check2 = await repo2.readResource<Project>('Project', project.id as string);
-      expect(check2.id).toEqual(project.id);
+      expect(check2.id).toStrictEqual(project.id);
 
       const check3 = await repo2.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
-      expect(check3.id).toEqual(membership.id);
+      expect(check3.id).toStrictEqual(membership.id);
 
       const check4 = await repo2.searchResources<User>({ resourceType: 'User' });
       expect(check4.find((u) => u.id === inviteResult.user.id)).toBeDefined();
@@ -1818,8 +1906,8 @@ describe('AccessPolicy', () => {
 
       // Update the project membership
       const check6 = await repo2.updateResource<ProjectMembership>({ ...check3, externalId: randomUUID() });
-      expect(check6.id).toEqual(check3.id);
-      expect(check6.meta?.versionId).not.toEqual(check3.meta?.versionId);
+      expect(check6.id).toStrictEqual(check3.id);
+      expect(check6.meta?.versionId).not.toStrictEqual(check3.meta?.versionId);
     }));
 
   test('Project admin cannot modify protected fields', () =>
@@ -1841,14 +1929,14 @@ describe('AccessPolicy', () => {
       const repo2 = await getRepoForLogin({ login: { resourceType: 'Login' } as Login, membership, project }, true);
 
       const check1 = await repo2.readResource<Project>('Project', project.id as string);
-      expect(check1.id).toEqual(project.id);
+      expect(check1.id).toStrictEqual(project.id);
 
       // Try to change the project name
       // This should succeed
       const check2 = await repo2.updateResource<Project>({ ...check1, name: 'Updated name' });
-      expect(check2.id).toEqual(project.id);
-      expect(check2.name).toEqual('Updated name');
-      expect(check2.meta?.versionId).not.toEqual(project.meta?.versionId);
+      expect(check2.id).toStrictEqual(project.id);
+      expect(check2.name).toStrictEqual('Updated name');
+      expect(check2.meta?.versionId).not.toStrictEqual(project.meta?.versionId);
       expect(check2.meta?.compartment?.find((c) => c.reference === getReferenceString(project))).toBeTruthy();
 
       // Try to change protected fields
@@ -1860,15 +1948,15 @@ describe('AccessPolicy', () => {
         systemSetting: [{ name: 'rateLimit', valueInteger: 1000000 }],
         systemSecret: [{ name: 'mySecret', valueString: 'bar' }],
       });
-      expect(check3.id).toEqual(project.id);
-      expect(check3.meta?.versionId).toEqual(check2.meta?.versionId);
+      expect(check3.id).toStrictEqual(project.id);
+      expect(check3.meta?.versionId).toStrictEqual(check2.meta?.versionId);
       expect(check3.superAdmin).toBeUndefined();
       expect(check3.features).toBeUndefined();
       expect(check3.systemSetting).toBeUndefined();
       expect(check3.systemSecret).toBeUndefined();
 
       const check4 = await repo2.readResource<ProjectMembership>('ProjectMembership', membership.id as string);
-      expect(check4.id).toEqual(membership.id);
+      expect(check4.id).toStrictEqual(membership.id);
 
       // Try to change the membership
       // This should succeed
@@ -1876,8 +1964,8 @@ describe('AccessPolicy', () => {
         ...check4,
         profile: { reference: 'Practitioner/' + randomUUID() },
       });
-      expect(check5.id).toEqual(check4.id);
-      expect(check5.meta?.versionId).not.toEqual(check4.meta?.versionId);
+      expect(check5.id).toStrictEqual(check4.id);
+      expect(check5.meta?.versionId).not.toStrictEqual(check4.meta?.versionId);
       expect(check5.meta?.compartment?.find((c) => c.reference === getReferenceString(project))).toBeTruthy();
 
       // Try to change protected fields
@@ -1886,9 +1974,9 @@ describe('AccessPolicy', () => {
         ...check5,
         project: { reference: 'Project/' + randomUUID() },
       });
-      expect(check6.id).toEqual(check4.id);
-      expect(check6.meta?.versionId).toEqual(check5.meta?.versionId);
-      expect(check6.project?.reference).toEqual(check4.project?.reference);
+      expect(check6.id).toStrictEqual(check4.id);
+      expect(check6.meta?.versionId).toStrictEqual(check5.meta?.versionId);
+      expect(check6.project?.reference).toStrictEqual(check4.project?.reference);
 
       // Try to create a new project
       // This should fail
@@ -1896,7 +1984,7 @@ describe('AccessPolicy', () => {
         await repo2.createResource<Project>({ resourceType: 'Project', name: 'Test Project' });
         throw new Error('Should not be able to create resource');
       } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Forbidden');
+        expect(normalizeErrorString(err)).toStrictEqual('Forbidden');
       }
     }));
 
@@ -1940,7 +2028,7 @@ describe('AccessPolicy', () => {
           account: { reference: account1 },
         },
       });
-      expect(patient1.meta?.account?.reference).toEqual(account1);
+      expect(patient1.meta?.account?.reference).toStrictEqual(account1);
       expect(patient1.meta?.accounts).toHaveLength(1);
       expect(patient1.meta?.accounts).toContainEqual({ reference: account1 });
 
@@ -1952,7 +2040,7 @@ describe('AccessPolicy', () => {
           account: { reference: account2 },
         },
       });
-      expect(patient2.meta?.account?.reference).toEqual(account2);
+      expect(patient2.meta?.account?.reference).toStrictEqual(account2);
       expect(patient2.meta?.accounts).toHaveLength(1);
       expect(patient2.meta?.accounts).toContainEqual({ reference: account2 });
 
@@ -1964,8 +2052,8 @@ describe('AccessPolicy', () => {
           account: { reference: 'Organization/' + randomUUID() },
         },
       });
-      expect(patient3.meta?.versionId).toEqual(patient2.meta?.versionId);
-      expect(patient3.meta?.account?.reference).toEqual(account2);
+      expect(patient3.meta?.versionId).toStrictEqual(patient2.meta?.versionId);
+      expect(patient3.meta?.account?.reference).toStrictEqual(account2);
       expect(patient3.meta?.accounts).toHaveLength(1);
       expect(patient3.meta?.accounts).toContainEqual({ reference: account2 });
     }));
@@ -2011,7 +2099,7 @@ describe('AccessPolicy', () => {
           accounts: [{ reference: account1 }, { reference: account2 }],
         },
       });
-      expect(patient1.meta?.account?.reference).toEqual(account1);
+      expect(patient1.meta?.account?.reference).toStrictEqual(account1);
       expect(patient1.meta?.accounts).toHaveLength(2);
       expect(patient1.meta?.accounts).toContainEqual({ reference: account1 });
       expect(patient1.meta?.accounts).toContainEqual({ reference: account2 });
@@ -2024,7 +2112,7 @@ describe('AccessPolicy', () => {
           accounts: [{ reference: account2 }, { reference: account3 }],
         },
       });
-      expect(patient2.meta?.account?.reference).toEqual(account2);
+      expect(patient2.meta?.account?.reference).toStrictEqual(account2);
       expect(patient2.meta?.accounts).toHaveLength(2);
       expect(patient2.meta?.accounts).toContainEqual({ reference: account2 });
       expect(patient2.meta?.accounts).toContainEqual({ reference: account3 });
@@ -2038,7 +2126,7 @@ describe('AccessPolicy', () => {
           accounts: [{ reference: account1 }],
         },
       });
-      expect(patient3.meta?.account?.reference).toEqual(account2);
+      expect(patient3.meta?.account?.reference).toStrictEqual(account2);
       expect(patient3.meta?.accounts).toHaveLength(2);
       expect(patient3.meta?.accounts).toContainEqual({ reference: account1 });
       expect(patient3.meta?.accounts).toContainEqual({ reference: account2 });
@@ -2051,7 +2139,7 @@ describe('AccessPolicy', () => {
           accounts: [{ reference: 'Organization/' + randomUUID() }],
         },
       });
-      expect(patient4.meta?.account?.reference).toEqual(account2);
+      expect(patient4.meta?.account?.reference).toStrictEqual(account2);
       expect(patient4.meta?.accounts).toHaveLength(2);
       expect(patient4.meta?.accounts).toContainEqual({ reference: account1 });
       expect(patient4.meta?.accounts).toContainEqual({ reference: account2 });
@@ -2175,7 +2263,7 @@ describe('AccessPolicy', () => {
         await repo1.readResource('Project', project2.id as string);
         throw new Error('Should not be able to read resource');
       } catch (err) {
-        expect(normalizeErrorString(err)).toEqual('Not found');
+        expect(normalizeErrorString(err)).toStrictEqual('Not found');
       }
 
       // Try to create a Patient in Project2 that references a Practitioner in Project1
@@ -2216,7 +2304,7 @@ describe('AccessPolicy', () => {
       expect(bundle1).toBeDefined();
 
       const sd = bundle1.entry?.[0]?.resource as StructureDefinition;
-      expect(sd.resourceType).toEqual('StructureDefinition');
+      expect(sd.resourceType).toStrictEqual('StructureDefinition');
 
       // Try to update StructureDefinition, should fail
       await expect(repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() })).rejects.toThrow('Forbidden');
@@ -2241,7 +2329,7 @@ describe('AccessPolicy', () => {
       expect(bundle1).toBeDefined();
 
       const sd = bundle1.entry?.[0]?.resource as StructureDefinition;
-      expect(sd.resourceType).toEqual('StructureDefinition');
+      expect(sd.resourceType).toStrictEqual('StructureDefinition');
 
       // Try to update StructureDefinition, should fail
       await expect(repo.updateResource<StructureDefinition>({ ...sd, url: randomUUID() })).rejects.toThrow('Forbidden');
@@ -2455,28 +2543,28 @@ describe('AccessPolicy', () => {
       let bundle = await repoWithoutAccessPolicy.search(
         parseSearchRequest('Subscription?type=rest-hook&criteria=Patient?name=Homer')
       );
-      expect(bundle?.entry?.length).toEqual(1);
+      expect(bundle?.entry?.length).toStrictEqual(1);
 
       // Test searching for WebSocket subscriptions
       bundle = await repoWithoutAccessPolicy.search(
         parseSearchRequest('Subscription?type=websocket&criteria=Patient?name=Homer')
       );
       // This actually returns 0 for now because search doesn't know about cache-only resources
-      expect(bundle?.entry?.length).toEqual(0);
+      expect(bundle?.entry?.length).toStrictEqual(0);
 
       // Search -- With access policy
       // Test searching for rest-hook subscriptions
       bundle = await repoWithAccessPolicy.search(
         parseSearchRequest('Subscription?type=rest-hook&criteria=Patient?name=Homer')
       );
-      expect(bundle?.entry?.length).toEqual(0);
+      expect(bundle?.entry?.length).toStrictEqual(0);
 
       // Test searching for WebSocket subscriptions
       bundle = await repoWithAccessPolicy.search(
         parseSearchRequest('Subscription?type=websocket&criteria=Patient?name=Homer')
       );
       // This actually returns 0 for now because search doesn't know about cache-only resources
-      expect(bundle?.entry?.length).toEqual(0);
+      expect(bundle?.entry?.length).toStrictEqual(0);
 
       // Updating subscription -- Without access policy
 

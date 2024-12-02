@@ -122,18 +122,13 @@ server {
     root /usr/lib/medplum/packages/app/dist;
     index index.html;
 
-    # Enable sub_filter for JavaScript files
-    sub_filter_types application/javascript;  # Enable for JS files
-    sub_filter '__MEDPLUM_BASE_URL__' 'https://api.nginx.medplum.dev';  # Replace with actual URL
-    sub_filter_once off;  # Replace all occurrences, not just the first
-
     # Gzip compression
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
 
     # Main location block
     location / {
-        try_files $uri $uri/ /index.html;
+        try_files \$uri \$uri/ /index.html;
     }
 
     # HTML files should not be cached (for SPA routing)
@@ -271,6 +266,16 @@ db_get medplum/db_host
 DB_HOST="\$RET"
 db_get medplum/db_password
 DB_PASSWORD="\$RET"
+
+# Update the app config
+# Recursively apply to all text files in the app dist directory
+find "/usr/lib/medplum/packages/app/dist" -type f -exec sed -i \
+  -e "s|__MEDPLUM_BASE_URL__|https://\${SERVER_HOSTNAME}/|g" \
+  -e "s|__MEDPLUM_CLIENT_ID__|\${MEDPLUM_CLIENT_ID}|g" \
+  -e "s|__GOOGLE_CLIENT_ID__|\${GOOGLE_CLIENT_ID}|g" \
+  -e "s|__RECAPTCHA_SITE_KEY__|\${RECAPTCHA_SITE_KEY}|g" \
+  -e "s|__MEDPLUM_REGISTER_ENABLED__|\${MEDPLUM_REGISTER_ENABLED}|g" \
+  {} \;
 
 # Update the server config
 if [ -f /etc/medplum/medplum.config.json ]; then

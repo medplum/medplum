@@ -297,15 +297,15 @@ describe('Config', () => {
     });
     // Test [string, string] => return raw
     test('Provided string, expected string => rawValue', () => {
-      expect(normalizeFetchedValue('medplumString', 'medplum', 'string')).toEqual('medplum');
+      expect(normalizeFetchedValue('medplumString', 'medplum', 'string')).toStrictEqual('medplum');
     });
     // Test [string, number] => number
     test('Provided string, expected number => parseInt(string)', () => {
-      expect(normalizeFetchedValue('medplumNumber', '20', 'number')).toEqual(20);
+      expect(normalizeFetchedValue('medplumNumber', '20', 'number')).toStrictEqual(20);
     });
     // Test [number, number] => rawValue
     test('Provided number, expected number => rawValue', () => {
-      expect(normalizeFetchedValue('medplumNumber', 20, 'number')).toEqual(20);
+      expect(normalizeFetchedValue('medplumNumber', 20, 'number')).toStrictEqual(20);
     });
     // Test [invalidNumStr, number] => throws
     test('Provided non-numeric string, expected number => throws', () => {
@@ -313,10 +313,10 @@ describe('Config', () => {
     });
     // Test [string, boolean] => boolean
     test('Provided string, expected boolean => parsedBoolean', () => {
-      expect(normalizeFetchedValue('medplumBool', 'TRUE', 'boolean')).toEqual(true);
-      expect(normalizeFetchedValue('medplumBool', 'false', 'boolean')).toEqual(false);
-      expect(normalizeFetchedValue('medplumBool', 'TrUe', 'boolean')).toEqual(true);
-      expect(normalizeFetchedValue('medplumBool', 'FALSE', 'boolean')).toEqual(false);
+      expect(normalizeFetchedValue('medplumBool', 'TRUE', 'boolean')).toStrictEqual(true);
+      expect(normalizeFetchedValue('medplumBool', 'false', 'boolean')).toStrictEqual(false);
+      expect(normalizeFetchedValue('medplumBool', 'TrUe', 'boolean')).toStrictEqual(true);
+      expect(normalizeFetchedValue('medplumBool', 'FALSE', 'boolean')).toStrictEqual(false);
     });
     // Test [invalidStr, boolean] => throws
     test('Provided string, expected boolean => parsedBoolean', () => {
@@ -358,7 +358,7 @@ describe('Config', () => {
     });
 
     test('Valid key in param store', async () => {
-      await expect(configNormalizer.fetchParameterStoreSecret('stackName')).resolves.toEqual('MyFoomedicalStack');
+      await expect(configNormalizer.fetchParameterStoreSecret('stackName')).resolves.toStrictEqual('MyFoomedicalStack');
     });
 
     test('Invalid key in param store', async () => {
@@ -403,7 +403,7 @@ describe('Config', () => {
             } satisfies ExternalSecret<'string'>,
           ],
         })
-      ).toEqual({ medplumStuff: ['medplum', 'MyMedplumSecret'] });
+      ).toStrictEqual({ medplumStuff: ['medplum', 'MyMedplumSecret'] });
       expect(
         await configNormalizer.normalizeObjectInInfraConfig({
           medplumStuff: [
@@ -415,7 +415,7 @@ describe('Config', () => {
             'medplum',
           ],
         })
-      ).toEqual({ medplumStuff: ['MyMedplumSecret', 'medplum'] });
+      ).toStrictEqual({ medplumStuff: ['MyMedplumSecret', 'medplum'] });
     });
   });
 
@@ -460,7 +460,7 @@ describe('Config', () => {
           key: 'medplumString',
           type: 'string',
         } satisfies ExternalSecret<'string'>)
-      ).toEqual(true);
+      ).toStrictEqual(true);
     });
     // Test secret with shape but invalid type
     test('Almost valid ExternalSecret, invalid type value', () => {
@@ -470,7 +470,7 @@ describe('Config', () => {
           key: 'medplumString',
           type: 'plum',
         })
-      ).toEqual(false);
+      ).toStrictEqual(false);
     });
     // Test completely invalid secret
     test('Invalid ExternalSecret', () => {
@@ -479,7 +479,7 @@ describe('Config', () => {
           key: 10,
           type: true,
         })
-      ).toEqual(false);
+      ).toStrictEqual(false);
     });
   });
 });

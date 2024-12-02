@@ -496,6 +496,11 @@
             "code": "error",
             "display": "Error",
             "definition": "Error"
+          },
+          {
+            "code": "cancelled",
+            "display": "Cancelled",
+            "definition": "Cancelled"
           }
         ]
       }

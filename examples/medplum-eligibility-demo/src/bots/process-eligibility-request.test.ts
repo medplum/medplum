@@ -53,7 +53,7 @@ describe('Process Eligibility Request', async () => {
     const response = await medplum.searchOne('CoverageEligibilityResponse');
 
     expect(response).toBeDefined();
-    expect(response?.insurance?.[0].item?.[0].excluded).toEqual(true);
+    expect(response?.insurance?.[0].item?.[0].excluded).toStrictEqual(true);
   });
 
   test('Non-eligible request', async () => {
@@ -66,6 +66,6 @@ describe('Process Eligibility Request', async () => {
 
     const response = await medplum.searchOne('CoverageEligibilityResponse');
     expect(response).toBeDefined();
-    expect(response?.insurance?.[0].item?.[0].excluded).toEqual(false);
+    expect(response?.insurance?.[0].item?.[0].excluded).toStrictEqual(false);
   });
 });

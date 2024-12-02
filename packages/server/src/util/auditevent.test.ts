@@ -7,8 +7,7 @@ import {
 import { AuditEvent } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import fs from 'fs';
-import { loadConfig } from '../config';
+import { loadTestConfig } from '../config';
 import { waitFor } from '../test.setup';
 import { logAuditEvent } from './auditevent';
 
@@ -34,9 +33,8 @@ describe('AuditEvent utils', () => {
     console.info = jest.fn();
     console.log = jest.fn();
 
-    jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ logAuditEvents: false }));
-
-    await loadConfig('file:test.json');
+    const config = await loadTestConfig();
+    config.logAuditEvents = false;
 
     logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
 
@@ -47,8 +45,8 @@ describe('AuditEvent utils', () => {
   test('AuditEvent to console.log', async () => {
     console.log = jest.fn();
 
-    jest.spyOn(fs, 'readFileSync').mockReturnValue(JSON.stringify({ logAuditEvents: true }));
-    await loadConfig('file:test.json');
+    const config = await loadTestConfig();
+    config.logAuditEvents = true;
 
     // Log an AuditEvent
     logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);
@@ -61,16 +59,10 @@ describe('AuditEvent utils', () => {
     console.info = jest.fn();
     console.log = jest.fn();
 
-    // Mock readFileSync for custom config file
-    jest.spyOn(fs, 'readFileSync').mockReturnValue(
-      JSON.stringify({
-        logAuditEvents: true,
-        auditEventLogGroup: 'test-log-group',
-        auditEventLogStream: 'test-log-stream',
-      })
-    );
-
-    await loadConfig('file:test.json');
+    const config = await loadTestConfig();
+    config.logAuditEvents = true;
+    config.auditEventLogGroup = 'test-log-group';
+    config.auditEventLogStream = 'test-log-stream';
 
     // Log an AuditEvent
     logAuditEvent({ resourceType: 'AuditEvent' } as AuditEvent);

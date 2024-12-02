@@ -339,8 +339,8 @@ class ResourceValidator implements CrawlerVisitor {
             createOperationOutcomeIssue(
               'warning',
               'structure',
-              `Duplicate choice of type property "${choiceOfTypeElementName}"`,
-              choiceOfTypeElementName
+              `Conflicting choice of type properties: "${key}", "${choiceOfTypeElements[choiceOfTypeElementName]}"`,
+              key
             )
           );
         }

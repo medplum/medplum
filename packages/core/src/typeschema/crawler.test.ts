@@ -141,7 +141,7 @@ describe('ResourceCrawler', () => {
       { initialPath: 'component' }
     );
 
-    expect(resultCodes).toEqual(
+    expect(resultCodes).toStrictEqual(
       expect.arrayContaining<Coding>([
         { system: LOINC, code: '8480-6' },
         { system: LOINC, code: '8462-4' },
@@ -190,7 +190,7 @@ describe('ResourceCrawler', () => {
       { initialPath: 'component' }
     );
 
-    expect(resultCodes).toEqual(
+    expect(resultCodes).toStrictEqual(
       expect.arrayContaining<Coding>([
         { system: LOINC, code: '8480-6' },
         { system: LOINC, code: '8462-4' },

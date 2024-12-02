@@ -179,7 +179,7 @@ describe('CSV Export', () => {
       )
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Invalid FHIRPath expression');
+    expect(res.body.issue[0].details.text).toStrictEqual('Invalid FHIRPath expression');
   });
 
   test('Escape formula string', async () => {

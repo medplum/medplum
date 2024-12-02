@@ -23,5 +23,5 @@ test('Say goodbye', async () => {
     secrets: {},
   });
   expect(goodbyeMessage).toBeDefined();
-  expect(goodbyeMessage).toEqual('Goodbye Homer Simpson');
+  expect(goodbyeMessage).toStrictEqual('Goodbye Homer Simpson');
 });

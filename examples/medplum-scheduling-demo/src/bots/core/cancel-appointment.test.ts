@@ -74,7 +74,7 @@ describe('Cancel Appointment', async () => {
     const cancelledAppointment = await medplum.readResource('Appointment', appointment.id as string);
     expect(cancelledAppointment).toBeDefined();
     expect(cancelledAppointment.status).toBe('cancelled');
-    expect(cancelledAppointment.cancelationReason).toEqual({
+    expect(cancelledAppointment.cancelationReason).toStrictEqual({
       coding: [
         {
           system: 'http://terminology.hl7.org/CodeSystem/appointment-cancellation-reason',

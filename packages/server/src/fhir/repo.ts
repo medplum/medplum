@@ -15,6 +15,7 @@ import {
   canReadResourceType,
   canWriteResourceType,
   createReference,
+  deepClone,
   deepEquals,
   evalFhirPath,
   evalFhirPathTyped,
@@ -66,6 +67,7 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -108,7 +110,9 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
-import { recordHistogramValue } from '../otel/otel';
+
+const transactionAttempts = 2;
+const retryableTransactionErrorCodes = ['40001'];
 
 /**
  * The RepositoryContext interface defines standard metadata for repository actions.
@@ -621,7 +625,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (project) {
       resultMeta.project = project;
     }
-    const accounts = await this.getAccounts(existing, updated, create);
+    const accounts = await this.getAccounts(existing, updated);
     if (accounts) {
       resultMeta.account = accounts[0];
       resultMeta.accounts = accounts;
@@ -1059,6 +1063,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         const result = await this.updateResourceImpl(resource, false);
         const durationMs = Date.now() - startTime;
+
         await this.postCommit(async () => {
           this.logEvent(PatchInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
         });
@@ -1740,42 +1745,63 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * Returns the author reference string (resourceType/id).
    * If the current context is a ClientApplication, handles "on behalf of".
    * Otherwise uses the current context profile.
-   * @param existing - Existing resource if one exists.
+   * @param existing - Current (soon to be previous) resource, if one exists.
    * @param updated - The incoming updated resource.
-   * @param create - Flag for when "creating" vs "updating".
-   * @returns The account value.
+   * @returns The account values.
    */
-  private async getAccounts(
-    existing: Resource | undefined,
-    updated: Resource,
-    create: boolean
-  ): Promise<Reference[] | undefined> {
+  private async getAccounts(existing: Resource | undefined, updated: Resource): Promise<Reference[] | undefined> {
     const updatedAccounts = this.extractAccountReferences(updated.meta);
     if (updatedAccounts && this.canWriteAccount()) {
       // If the user specifies an account, allow it if they have permission.
       return updatedAccounts;
     }
 
-    if (create && this.context.accessPolicy?.compartment) {
-      // If the user access policy specifies a compartment, then use it as the account.
-      return [this.context.accessPolicy.compartment];
+    const accounts = new Set<string>();
+    if (!existing && this.context.accessPolicy?.compartment?.reference) {
+      // If the creator's access policy specifies a compartment, then use it as the account.
+      // The writer's access policy is only applied at resource creation: simply editing a
+      // resource does NOT pull it into the user's account.
+      accounts.add(this.context.accessPolicy.compartment.reference);
     }
 
-    if (updated.resourceType !== 'Patient') {
-      for (const patientRef of getPatients(updated)) {
-        try {
-          // If the resource is in a patient compartment, then lookup the patient.
-          const patient = await getSystemRepo().readReference(patientRef);
-          // If the patient has an account, then use it as the resource account.
-          return this.extractAccountReferences(patient.meta);
-        } catch (err: any) {
-          getLogger().debug('Error setting patient compartment', err);
+    if (updated.resourceType === 'Patient') {
+      // When examining a Patient resource, we only look at the individual patient
+      // We should not call `getPatients` and `readReference`
+      const existingAccounts = this.extractAccountReferences(existing?.meta);
+      if (existingAccounts?.length) {
+        for (const account of existingAccounts) {
+          accounts.add(account.reference as string);
+        }
+      }
+    } else {
+      const patients = await getSystemRepo().readReferences(getPatients(updated));
+      for (const patient of patients) {
+        if (patient instanceof Error) {
+          getLogger().debug('Error setting patient compartment', patient);
+          continue;
+        }
+
+        // If the patient has an account, then use it as the resource account.
+        const patientAccounts = this.extractAccountReferences(patient.meta);
+        if (patientAccounts?.length) {
+          for (const account of patientAccounts) {
+            if (account.reference) {
+              accounts.add(account.reference);
+            }
+          }
         }
       }
     }
 
-    // Otherwise, default to the existing value.
-    return this.extractAccountReferences(existing?.meta);
+    if (accounts.size < 1) {
+      return undefined;
+    }
+
+    const result: Reference[] = [];
+    for (const reference of accounts) {
+      result.push({ reference });
+    }
+    return result;
   }
 
   private extractAccountReferences(meta: Meta | undefined): Reference[] | undefined {
@@ -2146,18 +2172,31 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     callback: (client: PoolClient) => Promise<TResult>,
     options?: { serializable: boolean }
   ): Promise<TResult> {
-    try {
-      const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
-      const result = await callback(client);
-      await this.commitTransaction();
-      return result;
-    } catch (err) {
-      const operationOutcomeError = normalizeDatabaseError(err);
-      await this.rollbackTransaction(operationOutcomeError);
-      throw operationOutcomeError;
-    } finally {
-      this.endTransaction();
+    let error: OperationOutcomeError | undefined;
+    for (let i = 0; i < transactionAttempts; i++) {
+      try {
+        const client = await this.beginTransaction(options?.serializable ? 'SERIALIZABLE' : undefined);
+        const result = await callback(client);
+        await this.commitTransaction();
+        return result;
+      } catch (err) {
+        const operationOutcomeError = normalizeDatabaseError(err);
+        // Assigning here and throwing below is necessary to satisfy TypeScript
+        error = operationOutcomeError;
+
+        // Ensure transaction is rolled back before attempting any retry
+        await this.rollbackTransaction(operationOutcomeError);
+        if (!this.isRetryableTransactionError(operationOutcomeError)) {
+          break; // Fall through to throw statement outside of the loop
+        }
+      } finally {
+        this.endTransaction();
+      }
     }
+
+    // Cannot be undefined: either the function returns normally from the `try` block,
+    // or `error` is assigned at top of `catch` block before reaching this line
+    throw error;
   }
 
   private async beginTransaction(isolationLevel: TransactionIsolationLevel = 'REPEATABLE READ'): Promise<PoolClient> {
@@ -2245,6 +2284,34 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   /**
+   * Checks whether an error represents a serialization conflict that can safely be retried.
+   * NOTE: Retrying a transaction must be done in full: the entire `Repository.withTransaction()` block
+   * should be re-executed, in a new transaction.
+   * @param err - The error to check.
+   * @returns True if the error indicates a retryable transaction failure.
+   */
+  private isRetryableTransactionError(err: OperationOutcomeError): boolean {
+    if (this.transactionDepth) {
+      // Nested transactions (i.e. savepoints) are NOT retryable per the Postgres docs;
+      // the entire transaction must have been rolled back before anything can be retried:
+      // "It is important to retry the complete transaction, including all logic
+      // that decides which SQL to issue and/or which values to use"
+      // @see https://www.postgresql.org/docs/16/mvcc-serialization-failure-handling.html
+      return false;
+    }
+    if (err.outcome.issue.length !== 1) {
+      // Multiple errors combined cannot be guaranteed to be retryable
+      return false;
+    }
+
+    const issue = err.outcome.issue[0];
+    return Boolean(
+      issue.code === 'conflict' &&
+        issue.details?.coding?.some((c) => retryableTransactionErrorCodes.includes(c.code as string))
+    );
+  }
+
+  /**
    * Tries to read a cache entry from Redis by resource type and ID.
    * @param resourceType - The resource type.
    * @param id - The resource ID.
@@ -2289,7 +2356,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async setCacheEntry(resource: Resource): Promise<void> {
     // No cache access allowed mid-transaction
     if (this.transactionDepth) {
-      await this.postCommit(() => this.setCacheEntry(resource));
+      const cachedResource = deepClone(resource);
+      await this.postCommit(() => {
+        return this.setCacheEntry(cachedResource);
+      });
       return;
     }
 

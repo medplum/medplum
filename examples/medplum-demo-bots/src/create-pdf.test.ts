@@ -14,8 +14,8 @@ test('Create PDF', async () => {
 
   const contents = documentReference.content?.[0];
   expect(documentReference).toBeDefined();
-  expect(documentReference.resourceType).toEqual('DocumentReference');
-  expect(contents.attachment?.contentType).toEqual('application/pdf');
+  expect(documentReference.resourceType).toStrictEqual('DocumentReference');
+  expect(contents.attachment?.contentType).toStrictEqual('application/pdf');
   expect(contents?.attachment?.url).toMatch('Binary');
 
   // TODO: Commenting this out until MockClient.createPDF is fixed to savePDFs properly

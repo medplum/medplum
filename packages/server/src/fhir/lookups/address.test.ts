@@ -49,8 +49,8 @@ describe('Address Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult1.entry?.length).toEqual(1);
-      expect(searchResult1.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult1.entry?.length).toStrictEqual(1);
+      expect(searchResult1.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
 
       const searchResult2 = await systemRepo.search({
         resourceType: 'Patient',
@@ -62,8 +62,8 @@ describe('Address Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult2.entry?.length).toEqual(1);
-      expect(searchResult2.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult2.entry?.length).toStrictEqual(1);
+      expect(searchResult2.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
 
       const searchResult3 = await systemRepo.search({
         resourceType: 'Patient',
@@ -75,8 +75,8 @@ describe('Address Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult3.entry?.length).toEqual(1);
-      expect(searchResult3.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult3.entry?.length).toStrictEqual(1);
+      expect(searchResult3.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Multiple addresses', () =>
@@ -103,8 +103,8 @@ describe('Address Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
 
       const searchResult2 = await systemRepo.search({
         resourceType: 'Patient',
@@ -116,8 +116,8 @@ describe('Address Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult2.entry?.length).toEqual(1);
-      expect(searchResult2.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult2.entry?.length).toStrictEqual(1);
+      expect(searchResult2.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test.each([
@@ -161,8 +161,8 @@ describe('Address Lookup Table', () => {
           },
         ],
       });
-      expect(bundle2.entry?.length).toEqual(1);
-      expect(bundle2.entry?.[0]?.resource?.id).toEqual(resource1.id);
+      expect(bundle2.entry?.length).toStrictEqual(1);
+      expect(bundle2.entry?.[0]?.resource?.id).toStrictEqual(resource1.id);
 
       const bundle3 = await systemRepo.search({
         resourceType,
@@ -174,7 +174,7 @@ describe('Address Lookup Table', () => {
           },
         ],
       });
-      expect(bundle3.entry?.length).toEqual(0);
+      expect(bundle3.entry?.length).toStrictEqual(0);
 
       await systemRepo.updateResource({
         ...resource1,
@@ -191,7 +191,7 @@ describe('Address Lookup Table', () => {
           },
         ],
       });
-      expect(bundle5.entry?.length).toEqual(0);
+      expect(bundle5.entry?.length).toStrictEqual(0);
 
       const bundle6 = await systemRepo.search({
         resourceType,
@@ -203,8 +203,8 @@ describe('Address Lookup Table', () => {
           },
         ],
       });
-      expect(bundle6.entry?.length).toEqual(1);
-      expect(bundle6.entry?.[0]?.resource?.id).toEqual(resource1.id);
+      expect(bundle6.entry?.length).toStrictEqual(1);
+      expect(bundle6.entry?.[0]?.resource?.id).toStrictEqual(resource1.id);
     })
   );
 });

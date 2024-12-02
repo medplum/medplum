@@ -193,7 +193,7 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe(
         `SELECT "MyTable"."id" FROM "MyTable" WHERE to_tsvector('${type}',"MyTable"."name") @@ to_tsquery('${type}',$1)`
       );
-      expect(sql.getValues()).toEqual(['Jimmy:* & James:* & Dean:*']);
+      expect(sql.getValues()).toStrictEqual(['Jimmy:* & James:* & Dean:*']);
     });
   });
 

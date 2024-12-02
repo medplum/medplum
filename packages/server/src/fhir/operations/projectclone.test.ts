@@ -95,7 +95,7 @@ describe('Project clone', () => {
     const newProjectId = res.body.id;
     expect(newProjectId).toBeDefined();
     expect(isUUID(newProjectId)).toBe(true);
-    expect(newProjectId).not.toEqual(project.id);
+    expect(newProjectId).not.toStrictEqual(project.id);
 
     const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
     expect(newProject).toBeDefined();
@@ -113,7 +113,7 @@ describe('Project clone', () => {
     });
     expect(obsBundle).toBeDefined();
     expect(obsBundle.entry).toHaveLength(1);
-    expect((obsBundle.entry?.[0]?.resource as Observation).subject?.reference).toEqual(
+    expect((obsBundle.entry?.[0]?.resource as Observation).subject?.reference).toStrictEqual(
       getReferenceString(patientBundle.entry?.[0]?.resource as Patient)
     );
   });
@@ -358,7 +358,7 @@ describe('Project clone', () => {
       const newProjectId = res.body.id;
       expect(newProjectId).toBeDefined();
       expect(isUUID(newProjectId)).toBe(true);
-      expect(newProjectId).not.toEqual(project.id);
+      expect(newProjectId).not.toStrictEqual(project.id);
 
       const newProject = await systemRepo.readResource<Project>('Project', newProjectId);
       expect(newProject).toBeDefined();
@@ -369,13 +369,13 @@ describe('Project clone', () => {
       });
       expect(newBot).toBeDefined();
       expect(newBot?.sourceCode?.url).toMatch(/Binary\/[a-z0-9-]+$/);
-      expect(newBot?.sourceCode?.url).not.toEqual(bot.sourceCode?.url);
+      expect(newBot?.sourceCode?.url).not.toStrictEqual(bot.sourceCode?.url);
 
       // Get the binary content
       const newBinary = await systemRepo.readReference<Binary>({ reference: newBot?.sourceCode?.url as string });
       const newBinaryContent = await getBinaryStorage().readBinary(newBinary);
       const newBinaryStr = (await streamToBuffer(newBinaryContent)).toString('utf8');
-      expect(newBinaryStr).toEqual('console.log("Hello world");');
+      expect(newBinaryStr).toStrictEqual('console.log("Hello world");');
     });
   });
 });

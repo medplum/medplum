@@ -35,7 +35,7 @@ describe('Coding lookup table', () => {
 
       const db = getDatabasePool(DatabaseMode.READER);
       const results = await db.query('SELECT id, code, display FROM "Coding" WHERE system = $1', [systemResource.id]);
-      expect(results.rows.map((r) => `${r.code} (${r.display})`).sort()).toEqual([
+      expect(results.rows.map((r) => `${r.code} (${r.display})`).sort()).toStrictEqual([
         'AB (Ambulance)',
         'CD (Cardiology)',
         'E (Emergency)',
@@ -47,9 +47,9 @@ describe('Coding lookup table', () => {
         codingId,
         'CD',
       ]);
-      expect(properties.rowCount).toEqual(1);
+      expect(properties.rowCount).toStrictEqual(1);
       const targetId = results.rows.find((r) => r.code === 'CD').id;
-      expect(properties.rows[0].target).toEqual(targetId);
+      expect(properties.rows[0].target).toStrictEqual(targetId);
     }));
 
   test('Omits codings from incomplete CodeSystem resource', () =>
@@ -70,6 +70,6 @@ describe('Coding lookup table', () => {
 
       const db = getDatabasePool(DatabaseMode.READER);
       const results = await db.query('SELECT code, display FROM "Coding" WHERE system = $1', [systemResource.id]);
-      expect(results.rowCount).toEqual(0);
+      expect(results.rowCount).toStrictEqual(0);
     }));
 });

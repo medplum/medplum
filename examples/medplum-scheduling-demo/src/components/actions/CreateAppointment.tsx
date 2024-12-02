@@ -27,6 +27,7 @@ interface CreateAppointmentProps {
     readonly close: () => void;
     readonly toggle: () => void;
   };
+  readonly onAppointmentsUpdated: () => void;
 }
 
 /**
@@ -35,7 +36,7 @@ interface CreateAppointmentProps {
  * @returns A React component that displays the modal.
  */
 export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | null {
-  const { patient, event, opened, handlers } = props;
+  const { patient, event, opened, handlers, onAppointmentsUpdated } = props;
   const slot: Slot | undefined = event?.resource;
 
   const [updateSlotOpened, updateSlotHandlers] = useDisclosure(false, { onClose: handlers.close });
@@ -51,6 +52,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | 
   async function handleDeleteSlot(slotId: string): Promise<void> {
     try {
       await medplum.deleteResource('Slot', slotId);
+      onAppointmentsUpdated();
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
@@ -100,6 +102,7 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | 
 
       // Navigate to the appointment detail page
       navigate(`/Appointment/${appointment.id}`);
+      onAppointmentsUpdated();
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
@@ -154,7 +157,12 @@ export function CreateAppointment(props: CreateAppointmentProps): JSX.Element | 
         <QuestionnaireForm questionnaire={createAppointmentQuestionnaire} onSubmit={handleQuestionnaireSubmit} />
       </Modal>
 
-      <CreateUpdateSlot event={event} opened={updateSlotOpened} handlers={updateSlotHandlers} />
+      <CreateUpdateSlot
+        event={event}
+        opened={updateSlotOpened}
+        handlers={updateSlotHandlers}
+        onSlotsUpdated={onAppointmentsUpdated}
+      />
     </>
   );
 }
