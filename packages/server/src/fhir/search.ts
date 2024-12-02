@@ -1337,15 +1337,10 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
  * @param builder - The client query builder.
  * @param searchRequest - The search request.
  */
-function addDistinctSortRules(
-  builder: SelectQuery,
-  searchRequest: SearchRequest
-  ): void {
+function addDistinctSortRules(builder: SelectQuery, searchRequest: SearchRequest): void {
   const resourceType = searchRequest.resourceType;
 
-  searchRequest.sortRules?.forEach(
-      (sortRule) => addDistinctClause(builder, searchRequest, sortRule)
-  );
+  searchRequest.sortRules?.forEach((sortRule) => addDistinctClause(builder, searchRequest, sortRule));
 
   builder.distinctOn(new Column(resourceType, 'id'));
 }

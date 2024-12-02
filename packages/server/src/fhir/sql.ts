@@ -1,10 +1,4 @@
-import {
-  OperationOutcomeError,
-  append,
-  conflict,
-  normalizeOperationOutcome,
-  serverTimeout,
-} from '@medplum/core';
+import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, serverTimeout } from '@medplum/core';
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
