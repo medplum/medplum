@@ -725,8 +725,9 @@ for (let n = 0; n < 256; n++) {
  * @param arrayBuffer - The input array buffer.
  * @returns The resulting hex string.
  */
-export function arrayBufferToHex(arrayBuffer: ArrayLike<number> | ArrayBuffer): string {
-  const bytes = new Uint8Array(arrayBuffer);
+export function arrayBufferToHex(arrayBuffer: ArrayBufferLike | ArrayBufferView): string {
+  const buffer = normalizeArrayBufferView(arrayBuffer);
+  const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
     result[i] = byteToHex[bytes[i]];
@@ -739,13 +740,27 @@ export function arrayBufferToHex(arrayBuffer: ArrayLike<number> | ArrayBuffer): 
  * @param arrayBuffer - The input array buffer.
  * @returns The base-64 encoded string.
  */
-export function arrayBufferToBase64(arrayBuffer: ArrayLike<number> | ArrayBuffer): string {
-  const bytes = new Uint8Array(arrayBuffer);
-  const result: string[] = [];
+export function arrayBufferToBase64(arrayBuffer: ArrayBufferLike | ArrayBufferView): string {
+  const buffer = normalizeArrayBufferView(arrayBuffer);
+  const bytes = new Uint8Array(buffer);
+  const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
     result[i] = String.fromCharCode(bytes[i]);
   }
   return window.btoa(result.join(''));
+}
+
+/**
+ * Normalizes an `ArrayBufferLike` (eg. an `ArrayBuffer`) to a raw `ArrayBufferLike` (without a view). If the passed buffer is a view, it gives the raw `ArrayBufferLike`.
+ *
+ * This is useful in cases where you need to operate on the raw bytes of an `ArrayBuffer` where a `TypedArray` (eg. `Uint32Array`) might be passed in.
+ * This ensures that you will always operate on the raw bytes rather than accidentally truncating the input by operating on the elements of the view.
+ *
+ * @param typedArrayOrBuffer - The `ArrayBufferLike` (either `TypedArray` or raw `ArrayBuffer`) to normalize to raw `ArrayBuffer`.
+ * @returns The raw `ArrayBuffer` without a view.
+ */
+export function normalizeArrayBufferView(typedArrayOrBuffer: ArrayBufferLike | ArrayBufferView): ArrayBufferLike {
+  return ArrayBuffer.isView(typedArrayOrBuffer) ? typedArrayOrBuffer.buffer : typedArrayOrBuffer;
 }
 
 export function capitalize(word: string): string {
