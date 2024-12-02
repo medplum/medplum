@@ -290,14 +290,10 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
 }
 
 function buildSearchColumns(tableDefinition: TableDefinition, resourceType: string): void {
-  const resourceTypeSearchParams = getSearchParameters(resourceType);
+  const resourceTypeSearchParams = getSearchParameters(resourceType) ?? {};
   const derivedSearchParams: SearchParameter[] = [];
-  // for (const paramList of [searchParams, derivedSearchParams]) {
-  for (const paramList of [Object.values(resourceTypeSearchParams ?? {}), derivedSearchParams]) {
+  for (const paramList of [Object.values(resourceTypeSearchParams), derivedSearchParams]) {
     for (const searchParam of paramList) {
-      if (searchParam.code === '_security') {
-        // console.log('Skipping _security');
-      }
       if (searchParam.type === 'composite') {
         continue;
       }
@@ -476,7 +472,7 @@ function buildValueSetElementTable(result: SchemaDefinition): void {
   result.tables.push({
     name: 'ValueSetElement',
     columns: [
-      { name: 'resourceId', type: 'UUID NOT NULL' },
+      { name: 'resourceId', type: 'UUID' }, // For data from previous implementations, resourceId is nullable
       { name: 'system', type: 'TEXT' },
       { name: 'code', type: 'TEXT' },
       { name: 'display', type: 'TEXT' },
