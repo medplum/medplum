@@ -375,10 +375,8 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
 function getSearchParameterColumns(_searchParam: SearchParameter, details: SearchParameterDetails): ColumnDefinition[] {
   if (details.implementation === 'token-columns') {
     const columns: ColumnDefinition[] = [
-      // { name: details.columnName, type: getColumnType(details) },
-      // { name: details.columnName + 'Text', type: getColumnType(details) },
       getColumnDefinition(details.columnName, details),
-      getColumnDefinition(details.columnName + 'Text', details),
+      // getColumnDefinition(details.columnName + 'Text', details),
     ];
     return columns;
   }
@@ -417,7 +415,7 @@ function expandAbbreviations(name: string, abbreviations: Record<string, string 
 function getSearchParameterIndexes(_searchParam: SearchParameter, details: SearchParameterDetails): IndexDefinition[] {
   if (details.implementation === 'token-columns') {
     const indexes: IndexDefinition[] = [];
-    for (const columnName of [details.columnName, details.columnName + 'Text']) {
+    for (const columnName of [details.columnName]) {
       const escapedName = columnName === columnName.toLocaleLowerCase() ? columnName : '"' + columnName + '"';
       indexes.push({ columns: [columnName], indexType: 'gin' });
       // TO facilitate matching with parsed start index definitions, only wrap in quotes
