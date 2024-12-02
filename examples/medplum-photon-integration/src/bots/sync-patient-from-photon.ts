@@ -147,49 +147,50 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
 
   for (const photonPatient of photonPatients) {
     // Make sure the patient does not already exist
-    if (!(await checkForExistingPatient(photonPatient, medplum))) {
+    let patient: Patient | undefined = await getExistingPatient(photonPatient, medplum);
+    if (!patient) {
       // Create the patient resource
-      const medplumPatient = createPatientResource(photonPatient);
-      const patientUrl = 'urn:uuid:' + randomUUID();
-      const patientReference: Reference<Patient> = { reference: patientUrl, display: getDisplayString(medplumPatient) };
+      patient = createPatientResource(photonPatient);
+    }
+    const patientUrl = 'urn:uuid:' + randomUUID();
+    const patientReference: Reference<Patient> = { reference: patientUrl, display: getDisplayString(patient) };
 
-      // Create any allergies the patient has
-      const allergies = createAllergies(patientReference, photonPatient.allergies);
+    // Create any allergies the patient has
+    const allergies = createAllergies(patientReference, photonPatient.allergies);
 
-      // Create any prescriptions
-      const prescriptions = await createPrescriptions(patientReference, medplum, photonPatient.prescriptions);
+    // Create any prescriptions
+    const prescriptions = await createPrescriptions(patientReference, medplum, photonPatient.prescriptions);
 
-      // Add the patient resource to a bundle
-      const patientEntry: BundleEntry = {
-        fullUrl: patientUrl,
-        request: { method: 'PUT', url: `Patient?identifier=${NEUTRON_HEALTH_PATIENTS}|${photonPatient.id}` },
-        resource: medplumPatient,
-      };
-      batch.entry?.push(patientEntry);
+    // Add the patient resource to a bundle
+    const patientEntry: BundleEntry = {
+      fullUrl: patientUrl,
+      request: { method: 'PUT', url: `Patient?identifier=${NEUTRON_HEALTH_PATIENTS}|${photonPatient.id}` },
+      resource: patient,
+    };
+    batch.entry?.push(patientEntry);
 
-      // If there are allergies, create entries and add them to the bundle
-      if (allergies) {
-        const allergyEntries: BundleEntry[] = allergies.map((allergy) => {
-          return {
-            fullUrl: 'urn:uuid:' + randomUUID(),
-            request: { method: 'POST', url: 'AllergyIntolerance' },
-            resource: allergy,
-          };
-        });
-        batch.entry?.push(...allergyEntries);
-      }
+    // If there are allergies, create entries and add them to the bundle
+    if (allergies) {
+      const allergyEntries: BundleEntry[] = allergies.map((allergy) => {
+        return {
+          fullUrl: 'urn:uuid:' + randomUUID(),
+          request: { method: 'POST', url: 'AllergyIntolerance' },
+          resource: allergy,
+        };
+      });
+      batch.entry?.push(...allergyEntries);
+    }
 
-      // If there are prescriptions, create entries and add them to the bundle
-      if (prescriptions) {
-        const prescriptionEntries: BundleEntry[] = prescriptions.map((prescription) => {
-          return {
-            fullUrl: 'urn:uuid:' + randomUUID(),
-            request: { method: 'POST', url: 'MedicationRequest' },
-            resource: prescription,
-          };
-        });
-        batch.entry?.push(...prescriptionEntries);
-      }
+    // If there are prescriptions, create entries and add them to the bundle
+    if (prescriptions) {
+      const prescriptionEntries: BundleEntry[] = prescriptions.map((prescription) => {
+        return {
+          fullUrl: 'urn:uuid:' + randomUUID(),
+          request: { method: 'POST', url: 'MedicationRequest' },
+          resource: prescription,
+        };
+      });
+      batch.entry?.push(...prescriptionEntries);
     }
   }
 
@@ -197,14 +198,17 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   await medplum.executeBatch(batch);
 }
 
-export async function checkForExistingPatient(photonPatient: PhotonPatient, medplum: MedplumClient): Promise<boolean> {
+export async function getExistingPatient(
+  photonPatient: PhotonPatient,
+  medplum: MedplumClient
+): Promise<Patient | undefined> {
   let patient: Patient | undefined;
   try {
     patient = await medplum.searchOne('Patient', {
       identifier: NEUTRON_HEALTH_PATIENTS + '|' + photonPatient.id,
     });
     if (patient) {
-      return true;
+      return patient;
     }
   } catch (err) {
     console.error(`Error for Patient ID ${photonPatient.id}:`, normalizeErrorString(err));
@@ -214,14 +218,14 @@ export async function checkForExistingPatient(photonPatient: PhotonPatient, medp
     try {
       patient = await medplum.readResource('Patient', photonPatient.externalId);
       if (patient) {
-        return true;
+        return patient;
       }
     } catch (err) {
       console.error(`Error for Patient ID ${photonPatient.id}:`, normalizeErrorString(err));
     }
   }
 
-  return false;
+  return undefined;
 }
 
 export function createPatientResource(photonPatient: PhotonPatient): Patient {
@@ -289,6 +293,10 @@ export async function createPrescriptions(
 
   const prescriptions: MedicationRequest[] = [];
   for (const photonPrescription of photonPrescriptions) {
+    if (await checkForExistingPrescription(medplum, photonPrescription)) {
+      continue;
+    }
+
     const { codes, name } = photonPrescription.treatment;
     const status = getStatusFromPhotonState(photonPrescription.state);
     const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
@@ -299,6 +307,9 @@ export async function createPrescriptions(
 
     const prescription: MedicationRequest = {
       resourceType: 'MedicationRequest',
+      meta: {
+        source: NEUTRON_HEALTH + `|${photonPrescription.id}`,
+      },
       status,
       intent: 'order',
       subject: patientReference,
@@ -329,6 +340,25 @@ export async function createPrescriptions(
     prescriptions.push(prescription);
   }
   return prescriptions;
+}
+
+async function checkForExistingPrescription(
+  medplum: MedplumClient,
+  photonPrescription: PhotonPrescription
+): Promise<boolean> {
+  let prescription: MedicationRequest | undefined;
+  if (photonPrescription.externalId) {
+    prescription = await medplum.readResource('MedicationRequest', photonPrescription.externalId);
+    if (prescription) {
+      return true;
+    }
+  }
+
+  prescription = await medplum.searchOne('MedicationRequest', {
+    identifier: NEUTRON_HEALTH + `|${photonPrescription.id}`,
+  });
+
+  return !!prescription;
 }
 
 export async function getPrescriber(

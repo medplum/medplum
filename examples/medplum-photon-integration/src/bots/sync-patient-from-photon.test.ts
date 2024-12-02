@@ -6,7 +6,7 @@ import { vi } from 'vitest';
 import { PhotonPatient, PhotonPatientAllergy, PhotonPrescription, PhotonProvider } from '../photon-types';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
 import {
-  checkForExistingPatient,
+  getExistingPatient,
   createAllergies,
   createPatientResource,
   createPrescriptions,
@@ -89,8 +89,8 @@ describe('Sync patients from Photon', async () => {
     });
   });
 
-  describe('checkForExistingPatient', async () => {
-    test('Check for patient with no external id', async () => {
+  describe('getExistingPatient', async () => {
+    test('Get a patient with no external id', async () => {
       const medplum = new MockClient();
       const photonPatient: PhotonPatient = {
         id: 'example-id',
@@ -104,37 +104,37 @@ describe('Sync patients from Photon', async () => {
         phone: '9085552432',
       };
 
-      const result = await checkForExistingPatient(photonPatient, medplum);
-      expect(result).toBe(false);
+      const result = await getExistingPatient(photonPatient, medplum);
+      expect(result).toBeUndefined();
     });
 
-    test('Check for patient with external id not in Medplum', async () => {
+    test('Get patient with external id not in Medplum', async () => {
       const medplum = new MockClient();
       const photonPatient = { externalId: 'exterenalId' } as PhotonPatient;
-      const result = await checkForExistingPatient(photonPatient, medplum);
-      expect(result).toBe(false);
+      const result = await getExistingPatient(photonPatient, medplum);
+      expect(result).toBeUndefined();
     });
 
-    test('Check for existing patient', async () => {
+    test('Get an existing patient', async () => {
       const medplum = new MockClient();
       const patient: Patient = await medplum.createResource({
         resourceType: 'Patient',
       });
 
       const photonPatient = { externalId: patient.id as string } as PhotonPatient;
-      const result = await checkForExistingPatient(photonPatient, medplum);
-      expect(result).toBe(true);
+      const result = await getExistingPatient(photonPatient, medplum);
+      expect(result).toStrictEqual(patient);
     });
 
     test('Get patient by Photon ID', async () => {
       const medplum = new MockClient();
-      await medplum.createResource({
+      const patient = await medplum.createResource({
         resourceType: 'Patient',
         identifier: [{ system: NEUTRON_HEALTH_PATIENTS, value: 'example-photon-id' }],
       });
       const photonPatient = { id: 'example-photon-id' } as PhotonPatient;
-      const result = await checkForExistingPatient(photonPatient, medplum);
-      expect(result).toBe(true);
+      const result = await getExistingPatient(photonPatient, medplum);
+      expect(result).toStrictEqual(patient);
     });
   });
 
