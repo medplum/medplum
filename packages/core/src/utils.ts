@@ -760,7 +760,7 @@ export function arrayBufferToBase64(arrayBuffer: ArrayBufferLike | ArrayBufferVi
  * @returns The raw `ArrayBuffer` without a view.
  */
 export function normalizeArrayBufferView(typedArrayOrBuffer: ArrayBufferLike | ArrayBufferView): ArrayBufferLike {
-  return ArrayBuffer.isView(typedArrayOrBuffer) ? (typedArrayOrBuffer.buffer as ArrayBuffer) : typedArrayOrBuffer;
+  return ArrayBuffer.isView(typedArrayOrBuffer) ? typedArrayOrBuffer.buffer : typedArrayOrBuffer;
 }
 
 export function capitalize(word: string): string {
