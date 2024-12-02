@@ -1,4 +1,5 @@
 import {
+  deepEquals,
   getAllDataTypes,
   getSearchParameterDetails,
   indexSearchParameterBundle,
@@ -18,6 +19,8 @@ import { Client } from 'pg';
 import { FileBuilder } from './filebuilder';
 
 const SCHEMA_DIR = resolve(__dirname, '../../server/src/migrations/schema');
+let LOG_UNMATCHED_INDEXES = false;
+let DRY_RUN = false;
 
 interface SchemaDefinition {
   tables: TableDefinition[];
@@ -35,7 +38,8 @@ interface ColumnDefinition {
   type: string;
 }
 
-type IndexType = 'btree' | 'gin';
+const IndexTypes = ['btree', 'gin', 'gist'] as const;
+type IndexType = (typeof IndexTypes)[number];
 
 interface IndexDefinition {
   columns: string[];
@@ -46,6 +50,9 @@ interface IndexDefinition {
 const searchParams: SearchParameter[] = [];
 
 export async function main(): Promise<void> {
+  LOG_UNMATCHED_INDEXES = process.argv.includes('--logUnmatchedIndexes');
+  DRY_RUN = process.argv.includes('--dryRun');
+
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-types.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-resources.json') as Bundle);
   indexStructureDefinitionBundle(readJson('fhir/r4/profiles-medplum.json') as Bundle);
@@ -68,8 +75,12 @@ export async function main(): Promise<void> {
   const targetDefinition = buildTargetDefinition();
   const b = new FileBuilder();
   writeMigrations(b, startDefinition, targetDefinition);
-  writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
-  rewriteMigrationExports();
+  if (DRY_RUN) {
+    console.log(b.toString());
+  } else {
+    writeFileSync(`${SCHEMA_DIR}/v${getNextSchemaVersion()}.ts`, b.toString(), 'utf8');
+    rewriteMigrationExports();
+  }
 }
 
 async function buildStartDefinition(): Promise<SchemaDefinition> {
@@ -139,14 +150,19 @@ async function getIndexes(db: Client, tableName: string): Promise<IndexDefinitio
 
 function parseIndexDefinition(indexdef: string): IndexDefinition {
   // Use a regex to get the column names inside the parentheses
-  const matches = indexdef.match(/\(([^)]+)\)/);
+  const matches = indexdef.match(/\((.+)\)$/);
   if (!matches) {
     throw new Error('Invalid index definition: ' + indexdef);
   }
 
+  const indexType = indexdef.match(/USING (\w+)/)?.[1] as IndexType | undefined;
+  if (indexType && !IndexTypes.includes(indexType)) {
+    throw new Error('Invalid index type: ' + indexType);
+  }
+
   return {
     columns: matches[1].split(',').map((s) => s.trim().replaceAll('"', '')),
-    indexType: indexdef.includes('USING gin') ? 'gin' : 'btree',
+    indexType: indexType ?? 'btree',
     unique: indexdef.includes('CREATE UNIQUE INDEX'),
   };
 }
@@ -194,7 +210,7 @@ function buildCreateTables(result: SchemaDefinition, resourceType: string, fhirT
       { columns: ['_source'], indexType: 'btree' },
       { columns: ['_tag'], indexType: 'gin' },
       { columns: ['_profile'], indexType: 'gin' },
-      { columns: ['_security'], indexType: 'btree' },
+      { columns: ['_security'], indexType: 'gin' },
     ],
   };
 
@@ -266,11 +282,11 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       continue;
     }
     tableDefinition.columns.push({ name: add.column, type: add.type });
-    tableDefinition.indexes.push({ columns: [add.column], indexType: add.indexType as IndexType });
+    tableDefinition.indexes.push({ columns: [add.column], indexType: add.indexType });
   }
 }
 
-const additionalSearchColumns = [
+const additionalSearchColumns: { table: string; column: string; type: string; indexType: IndexType }[] = [
   { table: 'MeasureReport', column: 'period_range', type: 'TSTZRANGE', indexType: 'gist' },
 ];
 
@@ -374,7 +390,20 @@ function getColumnType(details: SearchParameterDetails): string {
 
 function buildSearchIndexes(result: TableDefinition, resourceType: string): void {
   if (resourceType === 'User') {
-    result.indexes.push({ columns: ['email'], indexType: 'btree', unique: true });
+    result.indexes.push({ columns: ['email'], indexType: 'btree' });
+  }
+
+  // uniqueness of SearchParameter-based indexes cannot be specified anywhere, so do it manually here
+  // perhaps this should  also be moved to getSearchParameterDetails. Or preferably, where ever the
+  // implementation-specific parts of SearchParameterDetails are moved to?
+  // Or maybe even better would be an extension on the SearchParameter resource itself that
+  // getSearchParameterDetails looks for
+  if (resourceType === 'DomainConfiguration') {
+    const domainIdx = result.indexes.find((i) => i.columns.length === 1 && i.columns[0] === 'domain');
+    if (!domainIdx) {
+      throw new Error('DomainConfiguration.domain index not found');
+    }
+    domainIdx.unique = true;
   }
 }
 
@@ -524,10 +553,21 @@ function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, pr
 }
 
 function migrateIndexes(b: FileBuilder, startTable: TableDefinition, targetTable: TableDefinition): void {
+  const matchedIndexes = new Set<IndexDefinition>();
   for (const targetIndex of targetTable.indexes) {
-    const startIndex = startTable.indexes.find((i) => i.columns.join(',') === targetIndex.columns.join(','));
+    const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
     if (!startIndex) {
       writeAddIndex(b, targetTable, targetIndex);
+    } else {
+      matchedIndexes.add(startIndex);
+    }
+  }
+
+  if (LOG_UNMATCHED_INDEXES) {
+    for (const startIndex of startTable.indexes) {
+      if (!matchedIndexes.has(startIndex)) {
+        console.log(`[${startTable.name}] Unmatched start index`, JSON.stringify(startIndex));
+      }
     }
   }
 }
@@ -599,6 +639,18 @@ function rewriteMigrationExports(): void {
   writeFileSync(`${SCHEMA_DIR}/index.ts`, exportFile, { flag: 'w' });
 }
 
-if (process.argv[1].endsWith('migrate.ts')) {
-  main().catch(console.error);
+function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
+  // Populate optional fields with default values before comparing
+  a.unique ??= false;
+  b.unique ??= false;
+
+  // deepEquals has FHIR-specific logic, but IndexDefinition is simple enough that it works fine
+  return deepEquals(a, b);
+}
+
+if (require.main === module) {
+  main().catch((reason) => {
+    console.error(reason);
+    process.exit(1);
+  });
 }
