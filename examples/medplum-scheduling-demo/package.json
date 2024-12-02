@@ -52,8 +52,8 @@
     "vitest": "2.1.6",
     "dayjs": "1.11.13",
     "react-big-calendar": "1.16.3",
-    "react-router-dom": "6.28.0",
+    "react-router-dom": "7.0.1",
     "typescript": "5.7.2",
-    "vite": "5.4.11"
+    "vite": "6.0.2"
   }
 }
