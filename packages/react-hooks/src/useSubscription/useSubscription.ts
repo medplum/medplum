@@ -28,7 +28,7 @@ export type UseSubscriptionOptions = {
  * `options` contains the following properties, all of which are optional:
  * - `subscriptionProps` - Allows the caller to pass a `Partial<Subscription>` to use as part of the creation
  * of the `Subscription` resource for this subscription. It enables the user namely to pass things like the `extension` property and to create
- * the `Subscription` with extensions such the {@link https://www.medplum.com/docs/subscriptions/subscription-extensions#interactions "Supported Interaction"} extension which would enable to listen for `create` or `update` only events.
+ * the `Subscription` with extensions such the {@link https://www.medplum.com/docs/subscriptions/subscription-extensions#interactions | Supported Interaction} extension which would enable to listen for `create` or `update` only events.
  * - `onWebsocketOpen` - Called when the WebSocket connection is established with Medplum server.
  * - `onWebsocketClose` - Called when the WebSocket connection disconnects.
  * - `onSubscriptionConnect` - Called when the corresponding subscription starts to receive updates after the subscription has been initialized and connected to.
