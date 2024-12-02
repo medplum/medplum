@@ -6,8 +6,7 @@
   "scripts": {
     "clean": "rimraf dist",
     "dev": "npm run build:profiles",
-        "build": "npm run clean && npm run build:profiles",
-
+    "build": "npm run clean && npm run build:profiles",
     "build:profiles": "sushi build src/profiles -o dist -s"
   },
   "devDependencies": {
