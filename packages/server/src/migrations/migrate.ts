@@ -462,7 +462,7 @@ function getSearchParameterColumns(
   if (impl.searchStrategy === 'token-column') {
     const columns: ColumnDefinition[] = [
       getColumnDefinition(impl.columnName, impl),
-      getColumnDefinition(impl.columnName + 'Text', impl),
+      // getColumnDefinition(impl.columnName + 'Text', impl),
     ];
     return columns;
   }
@@ -502,7 +502,7 @@ function getSearchParameterIndexes(
 ): IndexDefinition[] {
   if (impl.searchStrategy === 'token-column') {
     const indexes: IndexDefinition[] = [];
-    for (const columnName of [impl.columnName, impl.columnName + 'Text']) {
+    for (const columnName of [impl.columnName /*, impl.columnName + 'Text'*/]) {
       indexes.push({ columns: [columnName], indexType: 'gin' });
       // To facilitate matching with parsed start index definitions, only wrap in quotes
       // when necessary since that is behavior of `SELECT indexdef FROM pg_indexes`

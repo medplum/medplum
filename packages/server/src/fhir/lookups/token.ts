@@ -475,7 +475,6 @@ function buildTokenColumnsValueCondition(
   // in this function
   const valuePart = value ? DELIM + value : '';
 
-  // TODO how to know when to use columnName + 'Text'?
   const tokenCol = new Column(tableName, impl.columnName);
 
   if (filter.operator === FhirOperator.TEXT) {

@@ -1439,7 +1439,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       buildTokensForSearchParameter(allTokens, resource, searchParam);
 
       const rowTokens = new Set<string>();
-      const rowTextTokens = new Set<string>();
       for (const t of allTokens) {
         const code = t.code;
 
@@ -1456,7 +1455,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         // MISSING/PRESENT - any entries in the column at all
 
-        const tokenSet = system === 'textXXX' ? rowTextTokens : rowTokens;
+        const tokenSet = rowTokens;
         if (system) {
           // [parameter]=[system]|
           tokenSet.add(system);
@@ -1478,7 +1477,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       }
       columns[impl.columnName] = Array.from(rowTokens);
-      columns[impl.columnName + 'Text'] = Array.from(rowTextTokens);
     } else {
       impl satisfies ColumnSearchParameterImplementation;
       let columnValue = null;
