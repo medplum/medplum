@@ -338,7 +338,7 @@ export async function createMedicationHistoryEntries(
         const dispense = await createDispenseResource(fill, medplum, prescriptionReference, patientReference);
         entries.push({
           fullUrl: 'urn:uuid:' + randomUUID(),
-          request: { method: 'POST', url: 'MedicationDispense' },
+          request: { method: 'PUT', url: `MedicationDispense?identifier=${NEUTRON_HEALTH}|${fill.id}` },
           resource: dispense,
         });
       }
@@ -403,6 +403,9 @@ export async function createDispenseResource(
   const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
   const medicationDispense: MedicationDispense = {
     resourceType: 'MedicationDispense',
+    meta: {
+      source: NEUTRON_HEALTH + `|${fill.id}`,
+    },
     identifier: [{ system: NEUTRON_HEALTH, value: fill.id }],
     status: getFillStatus(fill.state),
     authorizingPrescription: [authorizingPrescription],
