@@ -208,6 +208,55 @@
       "inherited": false
     },
     {
+      "name": "signInForm",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "BackboneElement"
+        }
+      ],
+      "path": "ClientApplication.signInForm",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Custom values for the Log In form.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "welcomeString",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.signInForm.welcomeString",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Welcome string for the Log In Form.",
+      "comment": "",
+      "inherited": false
+    },
+    {
+      "name": "logo",
+      "depth": 2,
+      "types": [
+        {
+          "datatype": "Attachment",
+          "documentLocation": "datatype"
+        }
+      ],
+      "path": "ClientApplication.signInForm.logo",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Logo for the Log In Form.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "secret",
       "depth": 1,
       "types": [
