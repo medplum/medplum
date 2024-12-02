@@ -726,11 +726,7 @@ for (let n = 0; n < 256; n++) {
  * @returns The resulting hex string.
  */
 export function arrayBufferToHex(arrayBuffer: ArrayBuffer): string {
-  // We want to allow both views and raw ArrayBuffers, so we conditionally "unwrap" the underlying ArrayBuffer
-  // If `arrayBuffer` was a view
-  // Otherwise, each of the views "elements" (ie. a uint32) will be truncated to a uint8
-  // And you end up with an incorrect shortened result of the same number of bytes as there were elements in the original TypedArray
-  const buffer = ArrayBuffer.isView(arrayBuffer) ? arrayBuffer.buffer : arrayBuffer;
+  const buffer = normalizeArrayBufferView(arrayBuffer);
   const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
@@ -745,17 +741,26 @@ export function arrayBufferToHex(arrayBuffer: ArrayBuffer): string {
  * @returns The base-64 encoded string.
  */
 export function arrayBufferToBase64(arrayBuffer: ArrayBuffer): string {
-  // We want to allow both views and raw ArrayBuffers, so we conditionally "unwrap" the underlying ArrayBuffer
-  // If `arrayBuffer` was a view
-  // Otherwise, each of the views "elements" (ie. a uint32) will be truncated to a uint8
-  // And you end up with an incorrect shortened result of the same number of bytes as there were elements in the original TypedArray
-  const buffer = ArrayBuffer.isView(arrayBuffer) ? arrayBuffer.buffer : arrayBuffer;
+  const buffer = normalizeArrayBufferView(arrayBuffer);
   const bytes = new Uint8Array(buffer);
   const result: string[] = new Array(bytes.length);
   for (let i = 0; i < bytes.length; i++) {
     result[i] = String.fromCharCode(bytes[i]);
   }
   return window.btoa(result.join(''));
+}
+
+/**
+ * Normalizes an `ArrayBuffer` to a raw `ArrayBuffer` (without a view). If the passed `ArrayBuffer` is a view, it gives the raw `ArrayBuffer`.
+ *
+ * This is useful in cases where you need to operate on the raw bytes of an `ArrayBuffer` where a `TypedArray` (eg. `Uint32Array`) might be passed in.
+ * This ensures that you will always operate on the raw bytes rather than accidentally truncating the input by operating on the elements of the view.
+ *
+ * @param typedArrayOrBuffer - The `ArrayBuffer` (either `TypedArray` or raw `ArrayBuffer`) to normalize to raw `ArrayBuffer`.
+ * @returns The raw `ArrayBuffer` without a view.
+ */
+export function normalizeArrayBufferView(typedArrayOrBuffer: ArrayBuffer): ArrayBuffer {
+  return ArrayBuffer.isView(typedArrayOrBuffer) ? typedArrayOrBuffer.buffer : typedArrayOrBuffer;
 }
 
 export function capitalize(word: string): string {
