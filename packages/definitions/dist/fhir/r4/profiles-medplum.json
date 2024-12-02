@@ -781,6 +781,51 @@
             }
           },
           {
+            "id" : "ClientApplication.signInForm",
+            "path" : "ClientApplication.signInForm",
+            "definition" : "Custom values for the Log In form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "ClientApplication.signInForm",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.signInForm.welcomeString",
+            "path" : "ClientApplication.signInForm.welcomeString",
+            "definition" : "Welcome string for the Log In Form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.signInForm.welcomeString",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.signInForm.logo",
+            "path" : "ClientApplication.signInForm.logo",
+            "definition" : "Logo for the Log In Form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Attachment"
+            }],
+            "base": {
+              "path" : "ClientApplication.signInForm.logo",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ClientApplication.secret",
             "path" : "ClientApplication.secret",
             "definition" : "Client secret string used to verify the identity of a client.",

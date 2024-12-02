@@ -190,7 +190,8 @@
       "ViewDefinitionSelectColumnTag": "#/definitions/ViewDefinitionSelectColumnTag",
       "ViewDefinitionSelectColumn": "#/definitions/ViewDefinitionSelectColumn",
       "ViewDefinitionSelect": "#/definitions/ViewDefinitionSelect",
-      "ViewDefinitionWhere": "#/definitions/ViewDefinitionWhere"
+      "ViewDefinitionWhere": "#/definitions/ViewDefinitionWhere",
+      "ClientApplicationSignInForm": "#/definitions/ClientApplicationSignInForm"
     }
   },
   "oneOf": [
@@ -751,6 +752,9 @@
     },
     {
       "$ref": "#/definitions/ViewDefinitionWhere"
+    },
+    {
+      "$ref": "#/definitions/ClientApplicationSignInForm"
     }
   ],
   "definitions": {
@@ -1313,6 +1317,9 @@
         },
         {
           "$ref": "#/definitions/ViewDefinitionWhere"
+        },
+        {
+          "$ref": "#/definitions/ClientApplicationSignInForm"
         }
       ]
     },
@@ -59789,6 +59796,10 @@
           "description": "A summary, characterization or explanation of the ClientApplication.",
           "$ref": "#/definitions/string"
         },
+        "signInForm": {
+          "description": "Custom values for the Log In form.",
+          "$ref": "#/definitions/ClientApplicationSignInForm"
+        },
         "secret": {
           "description": "Client secret string used to verify the identity of a client.",
           "$ref": "#/definitions/string"
@@ -62355,6 +62366,20 @@
       },
       "additionalProperties": false,
       "required": ["path"]
+    },
+    "ClientApplicationSignInForm": {
+      "description": "Custom values for the Log In form.",
+      "properties": {
+        "welcomeString": {
+          "description": "Welcome string for the Log In Form.",
+          "$ref": "#/definitions/string"
+        },
+        "logo": {
+          "description": "Logo for the Log In Form.",
+          "$ref": "#/definitions/Attachment"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

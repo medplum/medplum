@@ -11,7 +11,7 @@ Health Gorilla is an interoperability services used to order labs and diagnostic
 This is advanced integration. [Email us](mailto:info+healthgorilla@medplum.com?subject=Health%20Gorilla%20Integration%20for%20Medplum) for more information.
 :::
 
-The Medplum toolkit provides tooling to optimize the physician ordering experience (CPOE), to minimize errors and enhance patient experience. A well defined workflow with diagnostic menu will help set you up for success. The workflows shown here are intended to reduce the amount of repeated data entry required by clinicians and staff.
+The Medplum toolkit provides tooling to optimize the computerized provider order entry (CPOE) experience, to minimize errors and enhance patient experience. A well defined workflow with diagnostic menu will help set you up for success. The workflows shown here are intended to reduce the amount of repeated data entry required by clinicians and staff.
 
 This guide is not comprehensive, but is meant to be used as a tool in planning and scoping your lab orders workflow.
 

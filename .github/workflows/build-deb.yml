@@ -33,6 +33,12 @@ jobs:
 
       - name: Build
         run: npm run build:fast
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
       - name: Build Deb
         shell: bash
@@ -73,7 +79,6 @@ jobs:
           deb-s3 upload \
             --bucket apt.medplum.com \
             --prefix debian \
-            --codename "noble,jammy" \
             --component main \
             --visibility nil \
             --preserve-versions \
