@@ -1,5 +1,5 @@
 import { getReferenceString } from '@medplum/core';
-import { Binary, BulkDataExport, Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
 import { Repository, getSystemRepo } from '../../repo';
 import { getBinaryStorage } from '../../storage';
@@ -33,7 +33,7 @@ export class BulkExporter {
   readonly repo: Repository;
   readonly since: string | undefined;
   readonly types: string[];
-  private resource: BulkDataExport | undefined;
+  private resource: AsyncJob | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSet = new Set<string>();
 
@@ -43,9 +43,9 @@ export class BulkExporter {
     this.types = types;
   }
 
-  async start(url: string): Promise<BulkDataExport> {
-    this.resource = await this.repo.createResource<BulkDataExport>({
-      resourceType: 'BulkDataExport',
+  async start(url: string): Promise<AsyncJob> {
+    this.resource = await this.repo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
       status: 'active',
       request: url,
       requestTime: new Date().toISOString(),
@@ -94,7 +94,7 @@ export class BulkExporter {
     }
   }
 
-  async close(project: Project): Promise<BulkDataExport> {
+  async close(project: Project): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Export muse be started before calling close()');
     }
@@ -103,19 +103,29 @@ export class BulkExporter {
       await writer.close();
     }
 
-    // Update the BulkDataExport
+    // Update the AsyncJob
     const systemRepo = getSystemRepo();
-    return systemRepo.updateResource<BulkDataExport>({
+    return systemRepo.updateResource<AsyncJob>({
       ...this.resource,
       meta: {
         project: project.id,
       },
       status: 'completed',
       transactionTime: new Date().toISOString(),
-      output: Object.entries(this.writers).map(([resourceType, writer]) => ({
-        type: resourceType as ResourceType,
-        url: getReferenceString(writer.binary),
-      })),
+      output: this.formatOutput(),
     });
+  }
+
+  formatOutput(): Parameters {
+    return {
+      resourceType: 'Parameters',
+      parameter: Object.entries(this.writers).map(([resourceType, writer]) => ({
+        name: 'output',
+        part: [
+          { name: 'type', valueCode: resourceType },
+          { name: 'url', valueUri: getReferenceString(writer.binary) },
+        ],
+      })),
+    };
   }
 }
