@@ -222,7 +222,7 @@ Optional flag to skip all DNS entries. Use this option if you do not use Route 5
 
 Optional Route 53 Hosted Zone name for DNS entries. By default, the CDK will use root domain name of the `domainName` setting (for example, if `domainName` is `staging.example.com`, the default hosted zone name is `example.com`).
 
-:::note Task Size
+## Task Size
 
 A certain amount of server CPU and memory is required to validate resources on write, and having an underpowered server
 instance may result in excessive garbage collection pressure and degraded performance. The recommended server task
@@ -239,8 +239,6 @@ memory resources; instead of increasing these settings further, adding more inst
 recommended way to improve performance if the server CPU is a performance bottleneck.
 
 For more information, see the [AWS task size documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task_definition_parameters.html#task_size).
-
-:::
 
 ## Server config
 
