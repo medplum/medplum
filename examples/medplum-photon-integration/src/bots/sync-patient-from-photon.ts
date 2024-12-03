@@ -174,7 +174,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       const allergyEntries: BundleEntry[] = allergies.map((allergy) => {
         return {
           fullUrl: 'urn:uuid:' + randomUUID(),
-          request: { method: 'POST', url: 'AllergyIntolerance' },
+          request: {
+            method: 'PUT',
+            url: `AllergyIntolerance?_source=${NEUTRON_HEALTH}&code=${allergy.code}&patient=${allergy.patient.reference}`,
+          },
           resource: allergy,
         };
       });
@@ -184,9 +187,10 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     // If there are prescriptions, create entries and add them to the bundle
     if (prescriptions) {
       const prescriptionEntries: BundleEntry[] = prescriptions.map((prescription) => {
+        const photonId = prescription.identifier?.find((id) => id.system === NEUTRON_HEALTH)?.value;
         return {
           fullUrl: 'urn:uuid:' + randomUUID(),
-          request: { method: 'POST', url: 'MedicationRequest' },
+          request: { method: 'PUT', url: `MedicationRequest?identifier=${NEUTRON_HEALTH}|${photonId}` },
           resource: prescription,
         };
       });
@@ -288,6 +292,9 @@ export function createAllergies(
 
     const allergy: AllergyIntolerance = {
       resourceType: 'AllergyIntolerance',
+      meta: {
+        source: NEUTRON_HEALTH,
+      },
       patient: patientReference,
       code: { coding: [{ system: RXNORM, code: allergen.rxcui, display: allergen.name }] },
       onsetDateTime: onset,
@@ -328,7 +335,7 @@ export async function createPrescriptions(
     const prescription: MedicationRequest = {
       resourceType: 'MedicationRequest',
       meta: {
-        source: NEUTRON_HEALTH + `|${photonPrescription.id}`,
+        source: NEUTRON_HEALTH,
       },
       status,
       intent: 'order',
