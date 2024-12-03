@@ -309,6 +309,17 @@ export function createAllergies(
   return allergies;
 }
 
+/**
+ * Takes an array of Photon Prescription objects for a given patient and uses these to create the patient's medication
+ * history. This creates MedicationRequest resources to represent prescriptions and MedicationDispense resources to
+ * represent fills of these prescriptions. These are added to an array of Bundle entries that can be executed in a
+ * batch.
+ *
+ * @param patientReference - A reference to the Patient the MedicationRequests and MedicationDispenses are for
+ * @param medplum - Medplum Client used to get additional details from your project
+ * @param photonPrescriptions - An array of Photon Prescription objects used to create the medication history
+ * @returns An array of Bundle Entries containing the medication history of a patient
+ */
 export async function createMedicationHistoryEntries(
   patientReference: Reference<Patient>,
   medplum: MedplumClient,
@@ -348,6 +359,15 @@ export async function createMedicationHistoryEntries(
   return entries;
 }
 
+/**
+ * Takes a Photon Prescription object and uses it to create a corresponding MedicationRequest resource in FHIR. The resource is
+ * not created on the server, but returned so it can be added to a batch request.
+ *
+ * @param photonPrescription - The Photon Prescription object with the details used in the MedicationRequest
+ * @param medplum - Medplum Client to get additional details from your proeject
+ * @param patientReference - A reference to the Patient the prescription is for
+ * @returns A MedicationRequest resource to be created by adding to a batch request
+ */
 export async function createPrescriptionResource(
   photonPrescription: PhotonPrescription,
   medplum: MedplumClient,
@@ -393,6 +413,16 @@ export async function createPrescriptionResource(
   return prescription;
 }
 
+/**
+ * Takes a Photon Fill and uses it to create a MedicationDispense resource in FHIR. The resource is not created, but
+ * returned so it can be executed as part of a batch.
+ *
+ * @param fill - The Photon Fill resource that contains the details used to create the MedicationDispense
+ * @param medplum - Medplum Client used to get the code of the medication being dispensed
+ * @param authorizingPrescription - The MedicationRequest resource authorizing a dispense
+ * @param patientReference - The Patient the dispense is for
+ * @returns A MedicationDispense resource that is ready to be added to a bundle
+ */
 export async function createDispenseResource(
   fill: Fill,
   medplum: MedplumClient,
