@@ -3,6 +3,7 @@
  * Do not edit manually.
  */
 
+import { Annotation } from './Annotation';
 import { Attachment } from './Attachment';
 import { CarePlan } from './CarePlan';
 import { CareTeam } from './CareTeam';
@@ -236,6 +237,11 @@ export interface DiagnosticReport {
    * semantically equivalent.
    */
   presentedForm?: Attachment[];
+
+  /**
+   * General comments about the diagnostic report.
+   */
+  note?: Annotation[];
 }
 
 /**
