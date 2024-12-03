@@ -318,22 +318,27 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   const derivedSearchParams: SearchParameter[] = [];
   for (const paramList of [Object.values(resourceTypeSearchParams), derivedSearchParams]) {
     for (const searchParam of paramList) {
+      if (!searchParam.base?.includes(resourceType as ResourceType)) {
+        throw new Error(
+          `${searchParam.id}: SearchParameter.base ${searchParam.base.join(',')} does not include resourceType ${resourceType}`
+        );
+      }
+
+      if (IgnoredSearchParameters.has(searchParam.code)) {
+        continue;
+      }
+
       if (searchParam.type === 'composite') {
         continue;
       }
 
-      if (IgnoredSearchParameters.has(searchParam.code)) {
-        // console.log(searchParam.code, searchParam.type);
-        continue;
-      } else if (!searchParam.base?.includes(resourceType as ResourceType)) {
-        // console.log('SKIPPING', searchParam.code, searchParam.base);
-        continue;
-      } else {
-        // console.log('HANDLING', searchParam.code, searchParam.base);
-      }
-
       const details = getSearchParameterDetails(resourceType, searchParam);
       if (details.implementation === 'lookup-table') {
+        continue;
+      }
+
+      // TODO{inline-tokens}: Remove this if statement to create token columns
+      if (details.implementation === 'token-columns') {
         continue;
       }
 

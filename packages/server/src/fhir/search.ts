@@ -67,7 +67,7 @@ import {
   Union,
   ValuesQuery,
 } from './sql';
-import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './lookups/token';
+import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
