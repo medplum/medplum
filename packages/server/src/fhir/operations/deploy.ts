@@ -32,7 +32,6 @@ export async function deployHandler(req: FhirRequest): Promise<FhirResponse> {
   }
 
   try {
-    const code = req.body.code as string | undefined;
     let updatedBot: Bot | undefined;
 
     let codeToDeploy = code;

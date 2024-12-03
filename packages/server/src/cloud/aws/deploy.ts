@@ -297,7 +297,8 @@ async function updateLambdaCode(client: LambdaClient, name: string, zipFile: Uin
       const isBusy = err instanceof ResourceConflictException;
       const isLastAttempt = attempt === maxAttempts - 1;
       if (isBusy && !isLastAttempt) {
-        await sleep(1000);
+        // 1 sec, 2 sec, 4 sec, 8 sec
+        await sleep(1000 * 2 ** attempt);
       } else {
         throw err;
       }
