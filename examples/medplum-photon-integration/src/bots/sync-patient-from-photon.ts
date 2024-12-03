@@ -198,6 +198,13 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   await medplum.executeBatch(batch);
 }
 
+/**
+ * Takes a Photon Patient and gets the corresponding Patient resource from your project if it exists.
+ *
+ * @param photonPatient - The Photon Patient being searched for
+ * @param medplum - Medplum Client to search your project
+ * @returns A FHIR Patient resource if it exists in your project
+ */
 export async function getExistingPatient(
   photonPatient: PhotonPatient,
   medplum: MedplumClient
@@ -228,6 +235,12 @@ export async function getExistingPatient(
   return undefined;
 }
 
+/**
+ * Creates a Patient resource from the details of a Photon Patient object.
+ *
+ * @param photonPatient - Photon Patient object used to create the Patient in your project
+ * @returns A Patient resource that can be added to a bundle to be executed in a batch
+ */
 export function createPatientResource(photonPatient: PhotonPatient): Patient {
   const telecom: ContactPoint[] = [{ system: 'phone', value: photonPatient.phone }];
   if (photonPatient.email) {
@@ -252,6 +265,13 @@ export function createPatientResource(photonPatient: PhotonPatient): Patient {
   return patient;
 }
 
+/**
+ * Creates an array of AllergyIntolerance resources given a Patient's allergies from Photon.
+ *
+ * @param patientReference - A reference to the Patient that has the allergies
+ * @param photonAllergies - The Photon PatientAllergy object used to create the AllergyIntolerance resource
+ * @returns An array of AllergyIntolerance resources
+ */
 export function createAllergies(
   patientReference: Reference<Patient>,
   photonAllergies?: PhotonPatientAllergy[]
