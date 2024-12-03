@@ -92,7 +92,6 @@ import { HumanNameTable } from './lookups/humanname';
 import { LookupTable } from './lookups/lookuptable';
 import { ReferenceTable } from './lookups/reference';
 import { TokenTable } from './lookups/token';
-import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
@@ -220,7 +219,6 @@ const lookupTables: LookupTable[] = [
   new AddressTable(),
   new HumanNameTable(),
   new TokenTable(),
-  new ValueSetElementTable(),
   new ReferenceTable(),
   new CodingTable(),
 ];
