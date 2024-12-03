@@ -63,6 +63,7 @@ import {
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
+  SqlFunction,
   Union,
   ValuesQuery,
 } from './sql';
@@ -85,16 +86,23 @@ interface Cursor {
   excludedIds?: string[];
 }
 
+/** Linking direction for chained search. */
+const Direction = {
+  FORWARD: 1,
+  REVERSE: -1,
+} as const;
+
 interface ChainedSearchLink {
-  resourceType: string;
+  originType: string;
+  targetType: string;
   code: string;
   details: SearchParameterDetails;
-  reverse?: boolean;
-  filter?: Filter;
+  direction: (typeof Direction)['FORWARD'] | (typeof Direction)['REVERSE'];
 }
 
 interface ChainedSearchParameter {
   chain: ChainedSearchLink[];
+  filter: Filter;
 }
 
 export async function searchImpl<T extends Resource>(
@@ -1371,9 +1379,9 @@ function buildChainedSearch(
   // Special case: single-link chain of the form param._id=<id> can be rewritten as param=ResourceType/<id>
   // Note that this does slightly change the behavior of the search query: true chained search would require the
   // reference to point to an existing resource, while the rewritten query just matches the reference string
-  if (param.chain.length === 1 && param.chain[0].filter?.code === '_id' && !param.chain[0].reverse) {
-    const { resourceType: targetType, code, filter } = param.chain[0];
-    const targetId = filter.value;
+  if (param.chain.length === 1 && param.filter?.code === '_id' && param.chain[0].direction === Direction.FORWARD) {
+    const { targetType, code } = param.chain[0];
+    const targetId = param.filter.value;
     return buildSearchFilterExpression(repo, selectQuery, resourceType as ResourceType, resourceType, {
       code,
       operator: Operator.EQUALS,
@@ -1382,7 +1390,7 @@ function buildChainedSearch(
   }
 
   if (usesReferenceLookupTable(repo)) {
-    return buildChainedSearchUsingReferenceTable(repo, selectQuery, resourceType, param);
+    return buildChainedSearchUsingReferenceTable(repo, selectQuery, param);
   } else {
     return buildChainedSearchUsingReferenceStrings(repo, selectQuery, resourceType, param);
   }
@@ -1401,94 +1409,134 @@ function usesReferenceLookupTable(repo: Repository): boolean {
  * Self-hosted servers need to run a full re-index before this technique can be used.
  * @param repo - The repository.
  * @param selectQuery - The select query builder.
- * @param resourceType - The top level resource type.
  * @param param - The chained search parameter.
  * @returns The WHERE clause expression for the final chained filter.
  */
 function buildChainedSearchUsingReferenceTable(
   repo: Repository,
   selectQuery: SelectQuery,
-  resourceType: string,
   param: ChainedSearchParameter
 ): Expression {
-  let currentResourceType = resourceType;
-  let currentTable = resourceType;
-  for (const link of param.chain) {
+  let link = param.chain[0];
+  let currentTable = nextChainedTable(link);
+
+  // Set up subquery for EXISTS(), starting on the first link of the chain
+  let innerQuery: SelectQuery;
+  if (link.details.type === SearchParameterType.CANONICAL) {
+    innerQuery = new SelectQuery(currentTable).whereExpr(
+      getCanonicalJoinCondition(selectQuery.tableName, link, currentTable)
+    );
+  } else {
+    innerQuery = new SelectQuery(currentTable).whereExpr(
+      lookupTableJoinCondition(selectQuery.tableName, link, currentTable)
+    );
+    currentTable = linkLiteralReference(innerQuery, currentTable, link);
+  }
+
+  // Add joins to inner query for all subsequent chain links
+  for (let i = 1; i < param.chain.length; i++) {
+    link = param.chain[i];
     if (link.details.type === SearchParameterType.CANONICAL) {
-      currentTable = linkCanonicalReference(selectQuery, currentTable, link);
+      currentTable = linkCanonicalReference(innerQuery, currentTable, link);
     } else {
-      currentTable = linkLiteralReference(selectQuery, currentTable, link, currentResourceType);
-    }
-    currentResourceType = link.resourceType;
-
-    if (link.filter) {
-      return buildSearchFilterExpression(
-        repo,
-        selectQuery,
-        currentResourceType as ResourceType,
-        currentTable,
-        link.filter
-      );
+      const lookupTable = linkReferenceLookupTable(innerQuery, currentTable, link);
+      currentTable = linkLiteralReference(innerQuery, lookupTable, link);
     }
   }
-  throw new OperationOutcomeError(badRequest('Unterminated chained search'));
+
+  // Add terminal conditions on final target table, and return EXISTS() over subquery
+  innerQuery
+    .where(new Column(currentTable, 'id'), '!=', null)
+    .whereExpr(
+      buildSearchFilterExpression(repo, innerQuery, link.targetType as ResourceType, currentTable, param.filter)
+    );
+  return new SqlFunction('EXISTS', [innerQuery]);
 }
 
+/**
+ * Join a query to the next table via canonical reference (i.e. by `url`).
+ * @param selectQuery - The query to which the join will be added.
+ * @param currentTable - The "current" table in the chained search construction.
+ * @param link - The current link of the chained search.
+ * @returns The next table alias.
+ */
 function linkCanonicalReference(selectQuery: SelectQuery, currentTable: string, link: ChainedSearchLink): string {
-  const nextTableAlias = selectQuery.getNextJoinAlias();
-  const eq = link.details.array ? 'IN_SUBQUERY' : '=';
-
-  let join: Condition;
-  if (link.reverse) {
-    join = new Condition(new Column(currentTable, 'url'), eq, new Column(nextTableAlias, link.details.columnName));
-  } else {
-    join = new Condition(new Column(nextTableAlias, 'url'), eq, new Column(currentTable, link.details.columnName));
-  }
-
-  selectQuery.join('LEFT JOIN', link.resourceType, nextTableAlias, join);
-  return nextTableAlias;
+  const nextTable = selectQuery.getNextJoinAlias();
+  const join = getCanonicalJoinCondition(currentTable, link, nextTable);
+  selectQuery.join('LEFT JOIN', nextChainedTable(link), nextTable, join);
+  return nextTable;
 }
 
-function linkLiteralReference(
-  selectQuery: SelectQuery,
-  currentTable: string,
-  link: ChainedSearchLink,
-  currentResourceType: string
-): string {
-  let referenceTableName: string;
-  let currentColumnName: string;
-  let nextColumnName;
+/**
+ * Join a query to a reference lookup table for chained search.
+ * @param selectQuery - The query to which the join will be added.
+ * @param currentTable - The "current" table in the chained search construction.
+ * @param link - The current link of the chained search.
+ * @returns The next table alias.
+ */
+function linkReferenceLookupTable(selectQuery: SelectQuery, currentTable: string, link: ChainedSearchLink): string {
+  const referenceTable = selectQuery.getNextJoinAlias();
+  selectQuery.join(
+    'LEFT JOIN',
+    nextChainedTable(link),
+    referenceTable,
+    lookupTableJoinCondition(currentTable, link, referenceTable)
+  );
+  return referenceTable;
+}
 
-  if (link.reverse) {
-    referenceTableName = `${link.resourceType}_References`;
-    currentColumnName = 'targetId';
-    nextColumnName = 'resourceId';
+/**
+ * Join a query to the next resource table for chained search.
+ * @param selectQuery - The query to which the join will be added.
+ * @param lookupTable - The "current" table in the chained search construction, assumed to be a reference lookup table.
+ * @param link - The current link of the chained search.
+ * @returns The next table alias.
+ */
+function linkLiteralReference(selectQuery: SelectQuery, lookupTable: string, link: ChainedSearchLink): string {
+  const nextColumn = link.direction === Direction.FORWARD ? 'targetId' : 'resourceId';
+  const nextTable = selectQuery.getNextJoinAlias();
+  selectQuery.join(
+    'LEFT JOIN',
+    link.targetType,
+    nextTable,
+    new Condition(new Column(nextTable, 'id'), '=', new Column(lookupTable, nextColumn))
+  );
+
+  return nextTable;
+}
+
+function getCanonicalJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
+  const eq = link.details.array ? 'IN_SUBQUERY' : '=';
+  if (link.direction === Direction.FORWARD) {
+    return new Condition(new Column(nextTable, 'url'), eq, new Column(currentTable, link.details.columnName));
   } else {
-    referenceTableName = `${currentResourceType}_References`;
-    currentColumnName = 'resourceId';
-    nextColumnName = 'targetId';
+    return new Condition(new Column(currentTable, 'url'), eq, new Column(nextTable, link.details.columnName));
   }
+}
 
-  const referenceTableAlias = selectQuery.getNextJoinAlias();
-  selectQuery.join(
-    'LEFT JOIN',
-    referenceTableName,
-    referenceTableAlias,
-    new Conjunction([
-      new Condition(new Column(referenceTableAlias, currentColumnName), '=', new Column(currentTable, 'id')),
-      new Condition(new Column(referenceTableAlias, 'code'), '=', link.code),
-    ])
-  );
+function nextChainedTable(link: ChainedSearchLink): string {
+  if (link.details.type === SearchParameterType.CANONICAL) {
+    return link.targetType;
+  } else if (link.direction === Direction.FORWARD) {
+    return `${link.originType}_References`;
+  } else {
+    return `${link.targetType}_References`;
+  }
+}
 
-  const nextTableAlias = selectQuery.getNextJoinAlias();
-  selectQuery.join(
-    'LEFT JOIN',
-    link.resourceType,
-    nextTableAlias,
-    new Condition(new Column(nextTableAlias, 'id'), '=', new Column(referenceTableAlias, nextColumnName))
-  );
-
-  return nextTableAlias;
+/**
+ * Constructs the condition for joining a resource table to a reference lookup table for chained search.
+ * @param currentTable - The "current" table in the chained search construction, assumed to be a resource table.
+ * @param link - The current link of the chained search.
+ * @param nextTable - The reference lookup table next in the chained search.
+ * @returns The expression relating the two tables, which can be used as a JOIN condition or in a WHERE clause.
+ */
+function lookupTableJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
+  const column = link.direction === Direction.FORWARD ? 'resourceId' : 'targetId';
+  return new Conjunction([
+    new Condition(new Column(nextTable, column), '=', new Column(currentTable, 'id')),
+    new Condition(new Column(nextTable, 'code'), '=', link.code),
+  ]);
 }
 
 /**
@@ -1517,24 +1565,20 @@ function buildChainedSearchUsingReferenceStrings(
     } else {
       const nextTable = selectQuery.getNextJoinAlias();
       const joinCondition = buildSearchLinkCondition(currentResourceType, link, currentTable, nextTable);
-      selectQuery.join('LEFT JOIN', link.resourceType, nextTable, joinCondition);
+      selectQuery.join('LEFT JOIN', link.targetType, nextTable, joinCondition);
 
       currentTable = nextTable;
     }
 
-    currentResourceType = link.resourceType;
-
-    if (link.filter) {
-      return buildSearchFilterExpression(
-        repo,
-        selectQuery,
-        link.resourceType as ResourceType,
-        currentTable,
-        link.filter
-      );
-    }
+    currentResourceType = link.targetType;
   }
-  throw new OperationOutcomeError(badRequest('Unterminated chained search'));
+  return buildSearchFilterExpression(
+    repo,
+    selectQuery,
+    currentResourceType as ResourceType,
+    currentTable,
+    param.filter
+  );
 }
 
 function buildSearchLinkCondition(
@@ -1544,7 +1588,7 @@ function buildSearchLinkCondition(
   nextTable: string
 ): Expression {
   const linkColumn = new Column(currentTable, link.details.columnName);
-  if (link.reverse) {
+  if (link.direction === Direction.REVERSE) {
     const nextColumn = new Column(nextTable, link.details.columnName);
     const currentColumn = new Column(currentTable, 'id');
 
@@ -1567,32 +1611,36 @@ function buildSearchLinkCondition(
 }
 
 function parseChainedParameter(resourceType: string, key: string, value: string): ChainedSearchParameter {
-  const param: ChainedSearchParameter = {
-    chain: [],
-  };
   let currentResourceType = resourceType;
-
   const parts = splitChainedSearch(key);
+
+  const chain: ChainedSearchLink[] = [];
+  let filter: Filter | undefined;
   for (let i = 0; i < parts.length; i++) {
     const part = parts[i];
     if (part.startsWith('_has')) {
       const link = parseReverseChainLink(part, currentResourceType);
-      param.chain.push(link);
-      currentResourceType = link.resourceType;
+      chain.push(link);
+      currentResourceType = link.targetType;
     } else if (i === parts.length - 1) {
       const [code, modifier] = splitN(part, ':', 2);
       const searchParam = getSearchParameter(currentResourceType, code);
       if (!searchParam) {
         throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
       }
-      param.chain[param.chain.length - 1].filter = parseParameter(searchParam, modifier, value);
+      filter = parseParameter(searchParam, modifier, value);
     } else {
       const link = parseChainLink(part, currentResourceType);
-      param.chain.push(link);
-      currentResourceType = link.resourceType;
+      chain.push(link);
+      currentResourceType = link.targetType;
     }
   }
-  return param;
+
+  if (!filter) {
+    throw new OperationOutcomeError(badRequest('Unterminated chained search'));
+  }
+
+  return { chain, filter };
 }
 
 function parseChainLink(param: string, currentResourceType: string): ChainedSearchLink {
@@ -1601,16 +1649,16 @@ function parseChainLink(param: string, currentResourceType: string): ChainedSear
   if (!searchParam) {
     throw new Error(`Invalid search parameter in chain: ${currentResourceType}?${code}`);
   }
-  let resourceType: string;
+  let targetType: string;
   if (searchParam.target?.length === 1) {
-    resourceType = searchParam.target[0];
+    targetType = searchParam.target[0];
   } else if (searchParam.target?.includes(modifier as ResourceType)) {
-    resourceType = modifier;
+    targetType = modifier;
   } else {
     throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
   }
   const details = getSearchParameterDetails(currentResourceType, searchParam);
-  return { resourceType, code, details };
+  return { originType: currentResourceType, targetType, code, details, direction: Direction.FORWARD };
 }
 
 function parseReverseChainLink(param: string, targetResourceType: string): ChainedSearchLink {
@@ -1624,7 +1672,7 @@ function parseReverseChainLink(param: string, targetResourceType: string): Chain
     );
   }
   const details = getSearchParameterDetails(resourceType, searchParam);
-  return { resourceType, code, details, reverse: true };
+  return { originType: targetResourceType, targetType: resourceType, code, details, direction: Direction.REVERSE };
 }
 
 function splitChainedSearch(chain: string): string[] {

@@ -635,8 +635,10 @@ export class SelectQuery extends BaseQuery implements Expression {
 
   private buildColumns(sql: SqlBuilder): void {
     if (this.columns.length === 0) {
-      throw new Error('No columns selected');
+      sql.append('1');
+      return;
     }
+
     let first = true;
     for (const column of this.columns) {
       if (!first) {
