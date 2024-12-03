@@ -43,6 +43,7 @@ import {
 } from '@medplum/fhirtypes';
 import validator from 'validator';
 import { getConfig } from '../config';
+import { getLogger } from '../context';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { Repository } from './repo';
@@ -62,6 +63,7 @@ import {
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
+  SqlBuilder,
   SqlFunction,
   Union,
   ValuesQuery,
@@ -280,6 +282,7 @@ function getSelectQueryForSearch<T extends Resource>(
   return builder;
 }
 
+const DO_EXPLAIN = true;
 /**
  * Returns the bundle entries for a search request.
  * @param repo - The repository.
@@ -292,7 +295,9 @@ async function getSearchEntries<T extends Resource>(
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; nextResource?: T }> {
+  const startTime = Date.now();
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  const endTime = Date.now();
   const rowCount = rows.length;
   const resources = rows.map((row) => JSON.parse(row.content as string)) as T[];
   let nextResource: T | undefined;
@@ -316,6 +321,18 @@ async function getSearchEntries<T extends Resource>(
       continue;
     }
     removeResourceFields(entry.resource, repo, searchRequest);
+  }
+
+  const duration = endTime - startTime;
+  if (DO_EXPLAIN) {
+    builder.explain = true;
+    builder.analyzeBuffers = true;
+    const sqlBuilder = new SqlBuilder();
+    builder.buildSql(sqlBuilder);
+    const sql = sqlBuilder.toString();
+    const explainRows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+    const explain = explainRows.map((row) => row['QUERY PLAN']).join('\n');
+    getLogger().warn('Explain query', { duration, searchRequest, sql, explain });
   }
 
   return {
