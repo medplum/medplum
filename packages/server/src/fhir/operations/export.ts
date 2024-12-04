@@ -7,6 +7,7 @@ import {
   protectedResourceTypes,
   SearchRequest,
   singularize,
+  WithId,
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
@@ -100,7 +101,7 @@ export async function exportResourceType<T extends Resource>(
     sortRules: [{ code: '_lastUpdated', descending: false }],
   };
   while (searchRequest) {
-    const bundle: Bundle<T> = await repo.search<T>(searchRequest);
+    const bundle: Bundle<WithId<T>> = await repo.search<T>(searchRequest);
     if (!bundle.entry || bundle.entry.length === 0) {
       break;
     }

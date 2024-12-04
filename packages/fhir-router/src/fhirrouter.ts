@@ -262,7 +262,7 @@ async function patchResource(req: FhirRequest, repo: FhirRepository): Promise<Fh
   if (!Array.isArray(patch)) {
     return [badRequest('Patch body must be an array')];
   }
-  const resource = await repo.patchResource(resourceType, id, patch);
+  const resource = await repo.patchResource(resourceType as ResourceType, id, patch);
   return [allOk, resource];
 }
 

@@ -1,4 +1,11 @@
-import { AgentUpgradeResponse, OperationOutcomeError, badRequest, serverError, singularize } from '@medplum/core';
+import {
+  AgentUpgradeResponse,
+  OperationOutcomeError,
+  WithId,
+  badRequest,
+  serverError,
+  singularize,
+} from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Agent, OperationDefinition } from '@medplum/fhirtypes';
 import { handleBulkAgentOperation, publishAgentRequest } from './utils/agentutils';
@@ -48,7 +55,7 @@ export async function agentUpgradeHandler(req: FhirRequest): Promise<FhirRespons
     }
   }
 
-  return handleBulkAgentOperation(req, async (agent: Agent) =>
+  return handleBulkAgentOperation(req, async (agent) =>
     upgradeAgent(agent, { version: singularize(version), timeout })
   );
 }
@@ -58,7 +65,7 @@ export type AgentUpgradeOptions = {
   timeout?: number;
 };
 
-async function upgradeAgent(agent: Agent, options?: AgentUpgradeOptions): Promise<FhirResponse> {
+async function upgradeAgent(agent: WithId<Agent>, options?: AgentUpgradeOptions): Promise<FhirResponse> {
   let timeout = options?.timeout ?? DEFAULT_UPGRADE_TIMEOUT;
   if (timeout > MAX_UPGRADE_TIMEOUT) {
     timeout = MAX_UPGRADE_TIMEOUT;

@@ -5,6 +5,7 @@ import {
   ContentType,
   OperationOutcomeError,
   Operator,
+  WithId,
   createReference,
   getExtension,
   getExtensionValue,
@@ -349,7 +350,7 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
     const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
       const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
-      const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
+      const inMemorySubs = JSON.parse(subArrStr) as { resource: WithId<Subscription>; projectId: string }[];
       for (const { resource } of inMemorySubs) {
         subscriptions.push(resource);
       }

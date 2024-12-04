@@ -1,5 +1,5 @@
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Agent, OperationDefinition } from '@medplum/fhirtypes';
+import { OperationDefinition } from '@medplum/fhirtypes';
 import { agentStatusHandler } from './agentstatus';
 import { handleBulkAgentOperation } from './utils/agentutils';
 
@@ -30,7 +30,5 @@ export const operation: OperationDefinition = {
  * @returns The FHIR response.
  */
 export async function agentBulkStatusHandler(req: FhirRequest): Promise<FhirResponse> {
-  return handleBulkAgentOperation(req, (agent: Agent) =>
-    agentStatusHandler({ ...req, params: { id: agent.id as string } })
-  );
+  return handleBulkAgentOperation(req, (agent) => agentStatusHandler({ ...req, params: { id: agent.id as string } }));
 }
