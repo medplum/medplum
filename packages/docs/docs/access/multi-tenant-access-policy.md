@@ -1,0 +1,244 @@
+# Multi-Tenant Access Control
+
+## Overview
+
+This guide explains how to implement multi-tenant access control in Medplum projects using `AccessPolicy` and `Organization` FHIR resources. This approach allows you to restrict access to resources based on organizational membership, making it ideal for scenarios where you need to separate data access between different organizations or practices within the same project.
+
+## Architecture
+
+The multi-tenant access control system is built on these key components:
+
+1. An `AccessPolicy` that defines the access rules
+2. `Organization` resources that represent different tenants
+3. Resources (like `Practitioner`, `Patient`, `Questionnaire`) that are associated with specific organizations
+4. The `meta.accounts` field that links resources to organizations
+5. [Parameterized variables](/docs/access/access-policies#parameterized-policies)
+
+## Visual Architecture
+
+```mermaid
+%%{init: {'theme': 'neutral' }}%%
+graph TB
+   
+    subgraph Project/123
+        AP[AccessPolicy/1234<br>multi-tenant-org-policy]
+
+        OrgA[Organization/A]
+        PracA[Practitioner/A.1<br>practitioner.a.1@example.com]
+        QA[Questionnaire/A.1<br>Experience Rating]
+        PatA[Patients<br>Organization/A]
+
+        OrgB[Organization/B]
+        PracB[Practitioner/B.1<br>practitioner.b.1@example.com]
+        QB[Questionnaire/B.1<br>Experience Rating]
+        PatB[Patients<br>Organization B]
+    end
+    AP --> OrgA
+    AP --> OrgB
+    
+    OrgA --> PracA
+    OrgA --> QA
+    OrgA --> PatA
+
+    OrgB --> PracB
+    OrgB --> QB
+    OrgB --> PatB
+
+```
+
+## Implementation Guide
+
+### 1. Create the Access Policy
+
+In `AccessPolicy` we use the parameterized variable `%current_organization` in the [compartment](/docs/access/access-policies#compartments) section and then we use `%current_organization` again  for [Criteria-based Access Control](/docs/access/access-policies#compartments).
+
+
+```json
+{
+    "resourceType": "AccessPolicy",
+    "id": "multi-tenant-org-policy",
+    "name": "Multi-Tenant Organization Access Policy",
+    "compartment": {
+        "reference": "%current_organization"
+    },
+    "resource": [
+        {
+            "resourceType": "ValueSet"
+        },
+        {
+            "resourceType": "CodeSet"
+        },
+        {
+            "resourceType": "Organization",
+            "criteria": "Organization?_id=%current_organization",
+            "readonly": true
+        },
+        {
+            "resourceType": "Practitioner",
+            "criteria": "Practitioner?organization=%current_organization"
+        },
+        {
+            "resourceType": "Questionnaire",
+            "criteria": "Questionnaire?_compartment=Organization/%current_organization"
+        },
+        {
+            "resourceType": "Patient",
+            "criteria": "Patient?organization=%current_organization",
+            "readonly": true
+        }
+    ]
+}
+```
+
+### 2. Create the Organizations
+
+Create separate organizations for each tenant:
+
+```json
+{
+    "resourceType": "Organization",
+    "name": "Organization A"
+}
+```
+
+```json
+{
+    "resourceType": "Organization",
+    "name": "Organization B"
+}
+```
+
+### 3. Associate Resources with Organizations
+
+When creating resources, associate them with their respective organizations using the `meta.accounts` field. Here are examples for different resource types:
+
+
+
+#### Questionnaire for Organization A
+```json
+{
+    "resourceType": "Questionnaire",
+    "meta": {
+        "accounts": [
+            {
+                "reference": "Organization/{{organization_a}}"
+            }
+        ]
+    },
+    "title": "Experience Rating Questionnaire",
+    "status": "active",
+    "item": [
+        {
+            "linkId": "1",
+            "text": "How would you rate your overall experience?",
+            "type": "choice",
+            "answerOption": [
+                {
+                    "valueCoding": {
+                        "system": "http://example.org/rating",
+                        "code": "5",
+                        "display": "Excellent"
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+#### Questionnaire for Organization B
+```json
+{
+    "resourceType": "Questionnaire",
+    "meta": {
+        "accounts": [
+            {
+                "reference": "Organization/{{organization_b}}"
+            }
+        ]
+    },
+    "title": "Experience Rating Questionnaire",
+    "status": "active",
+    "item": [
+        {
+            "linkId": "1",
+            "text": "How would you rate your overall experience?",
+            "type": "choice",
+            "answerOption": [
+                {
+                    "valueCoding": {
+                        "system": "http://example.org/rating",
+                        "code": "5",
+                        "display": "Excellent"
+                    }
+                }
+            ]
+        }
+    ]
+}
+```
+
+
+### Create Users and attach AccessPolicy
+
+First create a `Practitioner` resource associated with **Organization A**
+
+```json
+{
+    "resourceType": "Practitioner",
+    "meta": {
+        "accounts": [
+            {
+                "reference": "Organization/{{organization_a}}"
+            }
+        ]
+    },
+    "name": [
+        {
+            "given": [
+                "Practitioner"
+            ],
+            "family": "A.1"
+        }
+    ],
+    "telecom": [
+        {
+            "system": "email",
+            "use": "work",
+            "value": "practitioner.a.1@example.com"
+        }
+    ]
+}
+```
+
+Next create a `User` associated with that `Practitioner`
+
+
+
+```json
+{
+    "resourceType": "Practitioner",
+    "firstName": "Practitioner",
+    "lastName": "A.1",
+    "email": "practitioner.a.1@example.com",
+    "sendEmail": "false",
+    "password": "foobar",
+    "membership": {
+        "access": [
+            {
+                "policy": {
+                    "reference": "AccessPolicy/{{access_policy}}"
+                },
+                "parameter": [
+                    {
+                        "name": "current_organization",
+                        "valueReference": {
+                            "reference": "Organization/{{organization_a}}"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
