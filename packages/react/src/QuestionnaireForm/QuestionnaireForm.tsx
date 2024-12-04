@@ -100,7 +100,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   }, [medplum, questionnaire, response, subject, sourceFromProps]);
 
   function checkForQuestionEnabled(item: QuestionnaireItem): boolean {
-    return isQuestionEnabled(item, response?.item ?? []);
+    return isQuestionEnabled(item, response);
   }
 
   if (!questionnaire || !response) {
