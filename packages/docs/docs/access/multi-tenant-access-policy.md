@@ -24,13 +24,13 @@ graph TB
         AP[AccessPolicy/1234<br>multi-tenant-org-policy]
 
         OrgA[Organization/A]
-        PracA[Practitioner/A.1<br>practitioner.a.1@example.com]
-        QA[Questionnaire/A.1<br>Experience Rating]
+        PracA[Practitioner/A.1]
+        QA[Questionnaire/A.1]
         PatA[Patients<br>Organization/A]
 
         OrgB[Organization/B]
-        PracB[Practitioner/B.1<br>practitioner.b.1@example.com]
-        QB[Questionnaire/B.1<br>Experience Rating]
+        PracB[Practitioner/B.1]
+        QB[Questionnaire/B.1]
         PatB[Patients<br>Organization B]
     end
     AP --> OrgA
@@ -110,7 +110,7 @@ Create separate organizations for each tenant:
 
 ### 3. Associate Resources with Organizations
 
-When creating resources, associate them with their respective organizations using the `meta.accounts` field. Here are examples for different resource types:
+When creating resources, associate them with their respective organizations using the `meta.accounts` field. Here are examples for `Questionnaire` resources:
 
 
 
@@ -186,38 +186,6 @@ First create a `Practitioner` resource associated with **Organization A**
 ```json
 {
     "resourceType": "Practitioner",
-    "meta": {
-        "accounts": [
-            {
-                "reference": "Organization/{{organization_a}}"
-            }
-        ]
-    },
-    "name": [
-        {
-            "given": [
-                "Practitioner"
-            ],
-            "family": "A.1"
-        }
-    ],
-    "telecom": [
-        {
-            "system": "email",
-            "use": "work",
-            "value": "practitioner.a.1@example.com"
-        }
-    ]
-}
-```
-
-Next create a `User` associated with that `Practitioner`
-
-
-
-```json
-{
-    "resourceType": "Practitioner",
     "firstName": "Practitioner",
     "lastName": "A.1",
     "email": "practitioner.a.1@example.com",
@@ -242,3 +210,40 @@ Next create a `User` associated with that `Practitioner`
     }
 }
 ```
+
+Then create a Practitioner resource associated with **Organization B**
+
+```json
+{
+    "resourceType": "Practitioner",
+    "firstName": "Practitioner",
+    "lastName": "B.1",
+    "email": "practitioner.b.1@example.com",
+    "sendEmail": "false",
+    "password": "foobar",
+    "membership": {
+        "access": [
+            {
+                "policy": {
+                    "reference": "AccessPolicy/{{access_policy}}"
+                },
+                "parameter": [
+                    {
+                        "name": "current_organization",
+                        "valueReference": {
+                            "reference": "Organization/{{organization_b}}"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
+```
+
+
+Now Practitioners should only be able to read or write resources mentioned in the `AccessPolicy` that belong to an `Organization` they are a member of. 
+
+## Postman example
+
+To see a full example of this set up using cURL, you can visit this postman collection - [Multi-Tenancy Project](https://documenter.getpostman.com/view/38540571/2sAYBa99dR#intro).
