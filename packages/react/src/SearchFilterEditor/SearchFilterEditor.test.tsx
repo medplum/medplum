@@ -55,24 +55,24 @@ describe('SearchFilterEditor', () => {
       fireEvent.click(screen.getByText('Add Filter'));
     });
 
-    const fieldInput = screen.getByTestId('filter-field');
+    const fieldInput = screen.getByTestId('filter-0-row-filter-field');
     expect(fieldInput).toBeInTheDocument();
     expect(fieldInput).toHaveValue('');
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-field'), {
+      fireEvent.change(screen.getByTestId('filter-0-row-filter-field'), {
         target: { value: 'name' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-operation'), {
+      fireEvent.change(screen.getByTestId('filter-0-row-filter-operation'), {
         target: { value: 'contains' },
       });
     });
 
     await act(async () => {
-      fireEvent.change(screen.getByTestId('filter-value'), {
+      fireEvent.change(screen.getByTestId('filter-0-row-filter-value'), {
         target: { value: 'Alice' },
       });
     });
@@ -278,7 +278,7 @@ describe('SearchFilterEditor', () => {
       await waitFor(() => screen.queryAllByText('Last Updated').length > 0);
     });
 
-    const input = screen.getByTestId('filter-value') as HTMLInputElement;
+    const input = screen.getByTestId('filter-0-row-filter-value') as HTMLInputElement;
     expect(input.value).toMatch(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
   });
 

@@ -72,6 +72,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
             <tbody>
               {filters.map((filter: Filter, index: number) => (
                 <FilterRowInput
+                  id={`filter-${index}-row`}
                   key={`filter-${index}-row`}
                   resourceType={resourceType}
                   searchParams={searchParams}
@@ -89,7 +90,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
           <ArrayAddButton propertyDisplayName="Filter" onClick={() => onAddFilter({} as Filter)} />
         </div>
         <Group justify="flex-end" mt="xl">
-          <Button onClick={() => props.onOk(searchRef.current)}>OK</Button>
+          <Button type="submit">OK</Button>
         </Group>
       </Form>
     </Modal>
@@ -97,6 +98,7 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
 }
 
 interface FilterRowInputProps {
+  readonly id: string;
   readonly resourceType: string;
   readonly searchParams: Record<string, SearchParameter>;
   readonly value: Filter;
@@ -134,7 +136,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
     <tr>
       <td>
         <NativeSelect
-          data-testid="filter-field"
+          data-testid={`${props.id}-filter-field`}
           defaultValue={props.value.code}
           onChange={(e) => setFilterCode(e.currentTarget.value)}
           data={[
@@ -146,7 +148,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {operators && (
           <NativeSelect
-            data-testid="filter-operation"
+            data-testid={`${props.id}-filter-operation`}
             defaultValue={value.operator}
             onChange={(e) => setFilterOperator(e.currentTarget.value as Operator)}
             data={['', ...operators.map((op) => ({ value: op, label: getOpString(op) }))]}
@@ -156,6 +158,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {searchParam && value.operator && (
           <SearchFilterValueInput
+            name={`${props.id}-filter-value`}
             resourceType={props.resourceType}
             searchParam={searchParam}
             defaultValue={value.value}
