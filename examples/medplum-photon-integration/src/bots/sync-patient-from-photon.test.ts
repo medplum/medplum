@@ -3,13 +3,15 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, Patient, Practitioner, Reference, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
-import { PhotonPatient, PhotonPatientAllergy, PhotonPrescription, PhotonProvider } from '../photon-types';
+import { Fill, PhotonPatient, PhotonPatientAllergy, PhotonPrescription, PhotonProvider } from '../photon-types';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
 import {
   getExistingPatient,
   createAllergies,
+  createDispenseResource,
+  createMedicationHistoryEntries,
   createPatientResource,
-  createPrescriptions,
+  createPrescriptionResource,
   getPrescriber,
   getStatusFromPhotonState,
   handler,
@@ -40,6 +42,11 @@ describe('Sync patients from Photon', async () => {
         return {
           ...actual,
           handlePhotonAuth: vi.fn().mockImplementation(() => 'example-auth-token'),
+          getMedicationElement: vi.fn().mockImplementation(() => {
+            return {
+              coding: [{ system: RXNORM, code: '12345', display: 'Test Medication' }],
+            };
+          }),
           photonGraphqlFetch: vi.fn().mockImplementation(() => {
             return {
               data: {
@@ -224,60 +231,98 @@ describe('Sync patients from Photon', async () => {
     });
   });
 
-  describe('createPrescriptions', async () => {
+  describe('createMedicationHistoryEntries', async () => {
     const patientReference: Reference<Patient> = { reference: 'Patient/123', display: 'Homer Simpson' };
 
     test('No prescriptions', async () => {
       const medplum = new MockClient();
-      const result = await createPrescriptions(patientReference, medplum, []);
+      const result = await createMedicationHistoryEntries(patientReference, medplum, []);
       expect(result).toBeUndefined();
     });
 
-    test('Creates a prescription', async () => {
+    test('Creates entries from photon prescriptions', async () => {
       const medplum = new MockClient();
-      const photonPrescriptions: PhotonPrescription[] = [
+      const photonPrescriptions = [
         {
-          id: 'rx-123',
-          state: 'ACTIVE',
+          id: 'rx1',
           treatment: {
-            id: 'example-id',
             codes: { rxcui: '12345' },
             name: 'Test Medication',
           },
-          prescriber: {
-            id: 'provider-123',
-            name: {
-              first: 'Alice',
-              last: 'Smith',
-              title: 'Dr.',
-              full: 'Dr. Alice Smith',
-            },
-            email: 'dralicesmith@example.com',
-            phone: '6105558932',
-            address: {
-              street1: '123 Main Street',
-              city: 'Anytown',
-              state: 'IN',
-              country: 'USA',
-              postalCode: '09328',
-            },
-          } as PhotonProvider,
+          state: 'ACTIVE',
+          prescriber: { name: { full: 'Dr. Test' } },
           dispenseQuantity: 30,
           dispenseUnit: 'tablets',
-          refillsAllowed: 3,
+          refillsAllowed: 2,
           daysSupply: 30,
           effectiveDate: '2023-01-01',
           expirationDate: '2023-12-31',
-          dispenseAsWritten: false,
-          instructions: 'Take one tablet daily',
-          writtenAt: '2023-01-01T00:00:00Z',
-          notes: 'Additional notes',
-        } as PhotonPrescription,
+          writtenAt: '2023-01-01',
+          fills: [
+            {
+              id: 'fill1',
+              treatment: {
+                codes: { rxcui: '12345' },
+                name: 'Test Medication',
+              },
+              state: 'NEW',
+            },
+          ],
+        },
       ];
-      const result = await createPrescriptions(patientReference, medplum, photonPrescriptions);
 
-      expect(result).toHaveLength(1);
-      const prescription = result?.[0];
+      const result = await createMedicationHistoryEntries(
+        patientReference,
+        medplum,
+        photonPrescriptions as PhotonPrescription[]
+      );
+
+      expect(result).toBeDefined();
+      expect(result).toHaveLength(2); // One MedicationRequest, one MedicationDispense
+      expect(result?.[0].resource?.resourceType).toBe('MedicationRequest');
+      expect(result?.[1].resource?.resourceType).toBe('MedicationDispense');
+    });
+
+    test('Create a prescription', async () => {
+      const medplum = new MockClient();
+      const photonPrescription: PhotonPrescription = {
+        id: 'rx-123',
+        state: 'ACTIVE',
+        treatment: {
+          id: 'example-id',
+          codes: { rxcui: '12345' },
+          name: 'Test Medication',
+        },
+        prescriber: {
+          id: 'provider-123',
+          name: {
+            first: 'Alice',
+            last: 'Smith',
+            title: 'Dr.',
+            full: 'Dr. Alice Smith',
+          },
+          email: 'dralicesmith@example.com',
+          phone: '6105558932',
+          address: {
+            street1: '123 Main Street',
+            city: 'Anytown',
+            state: 'IN',
+            country: 'USA',
+            postalCode: '09328',
+          },
+        } as PhotonProvider,
+        dispenseQuantity: 30,
+        dispenseUnit: 'tablets',
+        refillsAllowed: 3,
+        daysSupply: 30,
+        effectiveDate: '2023-01-01',
+        expirationDate: '2023-12-31',
+        dispenseAsWritten: false,
+        instructions: 'Take one tablet daily',
+        writtenAt: '2023-01-01T00:00:00Z',
+        notes: 'Additional notes',
+      } as PhotonPrescription;
+      const prescription = await createPrescriptionResource(photonPrescription, medplum, patientReference);
 
       expect(prescription).toEqual(
         expect.objectContaining({
@@ -307,6 +352,55 @@ describe('Sync patients from Photon', async () => {
           note: [{ text: 'Additional notes' }],
         })
       );
+    });
+
+    test('Create a prescription without a provider', async () => {
+      const medplum = new MockClient();
+      const photonPrescription = {
+        id: 'rx1',
+        treatment: {
+          codes: { rxcui: '12345' },
+          name: 'Test Medication',
+        },
+        state: 'ACTIVE',
+        prescriber: { name: { full: 'Unknown Doctor' } },
+        dispenseQuantity: 30,
+        dispenseUnit: 'tablets',
+        writtenAt: '2023-01-01',
+      };
+
+      const patientReference = { reference: 'Patient/123' };
+
+      const result = await createPrescriptionResource(
+        photonPrescription as PhotonPrescription,
+        medplum,
+        patientReference
+      );
+
+      expect(result.requester?.display).toBe('Unknown Doctor');
+    });
+
+    test('Create a MedicationDispense', async () => {
+      const medplum = new MockClient();
+      const fill = {
+        id: 'fill1',
+        treatment: {
+          codes: { rxcui: '12345' },
+          name: 'Test Medication',
+        },
+        state: 'SENT',
+      };
+      const patientRef = { reference: 'Patient/123' };
+      const authScript = {
+        reference: 'MedicationRequest/123',
+      };
+
+      const result = await createDispenseResource(fill as Fill, medplum, authScript, patientRef);
+
+      expect(result.resourceType).toBe('MedicationDispense');
+      expect(result.status).toBe('in-progress');
+      expect(result.subject).toEqual(patientRef);
+      expect(result.authorizingPrescription?.[0]).toEqual(authScript);
     });
   });
 
