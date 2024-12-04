@@ -156,12 +156,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     // Create any allergies the patient has
     const allergies = createAllergies(patientReference, photonPatient.allergies);
 
-      // Create any MedicationRequest and MedicationDispense entries
-      const medicationHistoryEntries = await createMedicationHistoryEntries(
-        patientReference,
-        medplum,
-        photonPatient.prescriptions
-      );
+    // Create any MedicationRequest and MedicationDispense entries
+    const medicationHistoryEntries = await createMedicationHistoryEntries(
+      patientReference,
+      medplum,
+      photonPatient.prescriptions
+    );
 
     // Add the patient resource to a bundle
     const patientEntry: BundleEntry = {
@@ -187,10 +187,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       batch.entry?.push(...allergyEntries);
     }
 
-      // If there are prescriptions, create entries and add them to the bundle
-      if (medicationHistoryEntries) {
-        batch.entry?.push(...medicationHistoryEntries);
-      }
+    // If there are prescriptions, create entries and add them to the bundle
+    if (medicationHistoryEntries) {
+      batch.entry?.push(...medicationHistoryEntries);
     }
   }
 
