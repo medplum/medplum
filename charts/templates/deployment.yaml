@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "medplum.fullname" . }}
+  namespace: {{ include "medplum.namespace" . }}
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.deployment.autoscaling.enabled }}
+  replicas: {{ default 1 .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "medplum.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "medplum.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.deployment.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "medplum.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.deployment.image.repository }}:{{ .Values.deployment.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: IfNotPresent
+          command:
+            - "node"
+            - "--require"
+            - "./packages/server/dist/otel/instrumentation.js"
+            - "packages/server/dist/index.js"
+            {{- if (eq .Values.global.cloudProvider "gcp") }}
+            - "gcp:{{ .Values.global.gcp.projectId }}:{{ .Values.global.gcp.secretId }}"
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort | default 8103 }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /healthcheck
+              port: {{ .Values.service.targetPort | default 8103 }}
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: {{ .Values.service.targetPort | default 8103 }}
+          resources:
+            limits:
+              memory: "512Mi"
+            requests:
+              memory: "256Mi"
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
