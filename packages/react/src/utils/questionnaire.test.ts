@@ -31,7 +31,7 @@ test('isQuestionEnabled', () => {
       },
       {
         resourceType: 'QuestionnaireResponse',
-        status: "completed",
+        status: 'completed',
         item: [
           {
             linkId: 'q1',
@@ -41,7 +41,7 @@ test('isQuestionEnabled', () => {
             linkId: 'q2',
             answer: [{ valueString: 'Yes' }],
           },
-        ]
+        ],
       }
     )
   ).toBe(true);
@@ -70,7 +70,7 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
@@ -80,7 +80,7 @@ describe('isQuestionEnabled', () => {
               linkId: 'q2',
               answer: [{ valueString: 'Yes' }],
             },
-          ]
+          ],
         }
       )
     ).toBe(true);
@@ -108,7 +108,7 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
@@ -118,7 +118,7 @@ describe('isQuestionEnabled', () => {
               linkId: 'q2',
               answer: [{ valueString: 'No' }],
             },
-          ]
+          ],
         }
       )
     ).toBe(false);
@@ -146,7 +146,7 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
@@ -156,7 +156,7 @@ describe('isQuestionEnabled', () => {
               linkId: 'q2',
               answer: [{ valueString: 'Yes' }],
             },
-          ]
+          ],
         }
       )
     ).toBe(true);
@@ -184,7 +184,7 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
@@ -194,7 +194,7 @@ describe('isQuestionEnabled', () => {
               linkId: 'q2',
               answer: [{ valueString: 'Yes' }],
             },
-          ]
+          ],
         }
       )
     ).toBe(false);
@@ -222,8 +222,8 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
-          item:  [
+          status: 'completed',
+          item: [
             {
               linkId: 'q1',
               answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
@@ -232,7 +232,7 @@ describe('isQuestionEnabled', () => {
               linkId: 'q2',
               answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
             },
-          ]
+          ],
         }
       )
     ).toBe(false);
@@ -260,9 +260,9 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
-              {
+            {
               linkId: 'q1',
               answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
             },
@@ -270,7 +270,7 @@ describe('isQuestionEnabled', () => {
               linkId: 'q2',
               answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
             },
-          ]
+          ],
         }
       )
     ).toBe(false);
@@ -298,17 +298,17 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueString: 'No' }, { valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-          },
-          ]
+              answer: [{ valueString: 'No' }, { valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -336,17 +336,17 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-          },
-          ]
+              answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -374,17 +374,17 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
-          },
-          ]
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -406,17 +406,17 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -438,17 +438,17 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -470,13 +470,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -498,13 +498,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -526,13 +526,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -554,13 +554,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -582,17 +582,17 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -614,17 +614,17 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -646,17 +646,17 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -678,17 +678,17 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -712,13 +712,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueString: 'No' }],
-          },
-          ]
+              answer: [{ valueString: 'No' }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -732,13 +732,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueString: 'Yes' }],
-          },
-          ]
+              answer: [{ valueString: 'Yes' }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -762,13 +762,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
-          {
-            linkId: 'q1',
-            answer: [{ valueInteger: 4 }],
-          },
-          ]
+            {
+              linkId: 'q1',
+              answer: [{ valueInteger: 4 }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -782,13 +782,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
-          item: [ 
+          status: 'completed',
+          item: [
             {
               linkId: 'q1',
-            answer: [{ valueInteger: 2 }],
-          },
-          ]
+              answer: [{ valueInteger: 2 }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -812,13 +812,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
-          item: [ 
+          status: 'completed',
+          item: [
             {
               linkId: 'q1',
-            answer: [{ valueInteger: 4 }],
-          },
-          ]
+              answer: [{ valueInteger: 4 }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -832,13 +832,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
-          item: [ 
+          status: 'completed',
+          item: [
             {
               linkId: 'q1',
-            answer: [{ valueInteger: 3 }],
-          },
-          ]
+              answer: [{ valueInteger: 3 }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -862,13 +862,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
-          item: [ 
+          status: 'completed',
+          item: [
             {
               linkId: 'q1',
-            answer: [{ valueInteger: 2 }],
-          },
-          ]
+              answer: [{ valueInteger: 2 }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -882,13 +882,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
-          item: [ 
+          status: 'completed',
+          item: [
             {
               linkId: 'q1',
-            answer: [{ valueInteger: 3 }],
-          },
-          ]
+              answer: [{ valueInteger: 3 }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -912,13 +912,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
-          item: [ 
+          status: 'completed',
+          item: [
             {
               linkId: 'q1',
-            answer: [{ valueInteger: 2 }],
-          },
-          ]
+              answer: [{ valueInteger: 2 }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -932,13 +932,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
-          item: [ 
+          status: 'completed',
+          item: [
             {
               linkId: 'q1',
-            answer: [{ valueInteger: 3 }],
-          },
-          ]
+              answer: [{ valueInteger: 3 }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -952,13 +952,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
-          item: [ 
+          status: 'completed',
+          item: [
             {
               linkId: 'q1',
-            answer: [{ valueInteger: 4 }],
-          },
-          ]
+              answer: [{ valueInteger: 4 }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -978,13 +978,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
-          },
-          ]
+              answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -998,13 +998,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
-          },
-          ]
+              answer: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -1018,13 +1018,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
-          },
-          ]
+              answer: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -1044,13 +1044,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueCoding: { code: 'NOT_MEDPLUM123' } }],
-          },
-          ]
+              answer: [{ valueCoding: { code: 'NOT_MEDPLUM123' } }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -1064,13 +1064,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
-          },
-          ]
+              answer: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
+            },
+          ],
         }
       )
     ).toBe(true);
@@ -1084,13 +1084,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
+          status: 'completed',
           item: [
             {
               linkId: 'q1',
-            answer: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
-          },
-          ]
+              answer: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -1104,13 +1104,13 @@ describe('isQuestionEnabled', () => {
         },
         {
           resourceType: 'QuestionnaireResponse',
-          status: "completed",
-          item:   [
+          status: 'completed',
+          item: [
             {
               linkId: 'q1',
-            answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
-          },
-          ]
+              answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
+            },
+          ],
         }
       )
     ).toBe(false);
@@ -1149,7 +1149,7 @@ describe('isQuestionEnabled', () => {
         }
       )
     ).toBe(true);
-  
+
     expect(
       isQuestionEnabled(
         {

@@ -51,14 +51,19 @@ export function isChoiceQuestion(item: QuestionnaireItem): boolean {
   return item.type === 'choice' || item.type === 'open-choice';
 }
 
-export function isQuestionEnabled(item: QuestionnaireItem, questionnaireResponse: QuestionnaireResponse | undefined): boolean {
-
-  const extension = getExtension(item, 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression');
+export function isQuestionEnabled(
+  item: QuestionnaireItem,
+  questionnaireResponse: QuestionnaireResponse | undefined
+): boolean {
+  const extension = getExtension(
+    item,
+    'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression'
+  );
   if (questionnaireResponse && extension) {
     const expression = extension.valueExpression?.expression;
     if (expression) {
-      const value = toTypedValue(questionnaireResponse)
-      const result = evalFhirPathTyped(expression, [value], {'%resource': value});
+      const value = toTypedValue(questionnaireResponse);
+      const result = evalFhirPathTyped(expression, [value], { '%resource': value });
       return toJsBoolean(result);
     }
   }
@@ -66,7 +71,7 @@ export function isQuestionEnabled(item: QuestionnaireItem, questionnaireResponse
   if (!item.enableWhen) {
     return true;
   }
-  
+
   const enableBehavior = item.enableBehavior ?? 'any';
   for (const enableWhen of item.enableWhen) {
     const actualAnswers = getByLinkId(questionnaireResponse?.item, enableWhen.question as string);
