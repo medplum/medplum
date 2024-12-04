@@ -1,4 +1,5 @@
 import {
+  HTTP_HL7_ORG,
   TypedValue,
   deepClone,
   evalFhirPathTyped,
@@ -316,7 +317,7 @@ export function formatReferenceString(typedValue: TypedValue): string {
 export function getNumberOfPages(questionnaire: Questionnaire): number {
   const firstItem = questionnaire?.item?.[0];
   if (firstItem) {
-    const extension = getExtension(firstItem, 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl');
+    const extension = getExtension(firstItem, HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl');
     if (extension?.valueCodeableConcept?.coding?.[0]?.code === 'page') {
       return (questionnaire.item as QuestionnaireItem[]).length;
     }
