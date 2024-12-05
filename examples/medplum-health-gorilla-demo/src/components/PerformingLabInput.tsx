@@ -33,7 +33,7 @@ export function PerformingLabInput({ patient, error }: PractitionerInputProps): 
 
 function resourceToOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
   return {
-    value: getReferenceString(resource),
+    value: getReferenceString(resource) ?? '',
     label: getDisplayString(resource),
     resource,
   };

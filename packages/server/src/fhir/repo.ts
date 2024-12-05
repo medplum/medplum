@@ -382,9 +382,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return true;
   }
 
-  async readReferences(references: Reference[]): Promise<(Resource | Error)[]> {
+  async readReferences<T extends Resource>(references: Reference<T>[]): Promise<(T | Error)[]> {
     const cacheEntries = await this.getCacheEntries(references);
-    const result: (Resource | Error)[] = new Array(references.length);
+    const result: (T | Error)[] = new Array(references.length);
 
     for (let i = 0; i < result.length; i++) {
       const startTime = Date.now();
@@ -399,7 +399,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         entryResult = this.removeHiddenFields(entryResult);
         this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: entryResult, durationMs });
       }
-      result[i] = entryResult;
+      result[i] = entryResult as T | Error;
     }
 
     return result;

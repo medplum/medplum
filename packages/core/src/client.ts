@@ -79,6 +79,7 @@ import {
   CodeChallengeMethod,
   ProfileResource,
   QueryTypes,
+  WithId,
   arrayBufferToBase64,
   concatUrls,
   createReference,
@@ -697,8 +698,8 @@ export enum OAuthClientAssertionType {
 interface SessionDetails {
   project: Project;
   membership: ProjectMembership;
-  profile: ProfileResource;
-  config: UserConfiguration;
+  profile: WithId<ProfileResource>;
+  config: WithId<UserConfiguration>;
   accessPolicy: AccessPolicy;
 }
 
@@ -1023,7 +1024,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Caching
    * @param resourceType - The resource type to invalidate.
    */
-  invalidateSearches<K extends ResourceType>(resourceType: K): void {
+  invalidateSearches(resourceType: ResourceType): void {
     const url = concatUrls(this.fhirBaseUrl, resourceType);
     if (this.requestCache) {
       for (const key of this.requestCache.keys()) {
@@ -1481,11 +1482,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to the search result bundle.
    */
-  search<K extends ResourceType>(
-    resourceType: K,
+  search<RT extends ResourceType>(
+    resourceType: RT,
     query?: QueryTypes,
     options?: MedplumRequestOptions
-  ): ReadablePromise<Bundle<ExtractResource<K>>> {
+  ): ReadablePromise<Bundle<WithId<ExtractResource<RT>>>> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = 'search-' + url.toString();
     const cached = this.getCacheEntry(cacheKey, options);
@@ -1494,7 +1495,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
     const promise = new ReadablePromise(
       (async () => {
-        const bundle = await this.get<Bundle<ExtractResource<K>>>(url, options);
+        const bundle = await this.get<Bundle<WithId<ExtractResource<RT>>>>(url, options);
         if (bundle.entry) {
           for (const entry of bundle.entry) {
             this.cacheResource(entry.resource);
@@ -1529,11 +1530,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to the first search result.
    */
-  searchOne<K extends ResourceType>(
-    resourceType: K,
+  searchOne<RT extends ResourceType>(
+    resourceType: RT,
     query?: QueryTypes,
     options?: MedplumRequestOptions
-  ): ReadablePromise<ExtractResource<K> | undefined> {
+  ): ReadablePromise<WithId<ExtractResource<RT>> | undefined> {
     const url = this.fhirSearchUrl(resourceType, query);
     url.searchParams.set('_count', '1');
     url.searchParams.sort();
@@ -1543,7 +1544,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       return cached.value;
     }
     const promise = new ReadablePromise(
-      this.search<K>(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
+      this.search<RT>(resourceType, url.searchParams, options).then((b) => b.entry?.[0]?.resource)
     );
     this.setCacheEntry(cacheKey, promise);
     return promise;
@@ -1571,18 +1572,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to the array of search results.
    */
-  searchResources<K extends ResourceType>(
-    resourceType: K,
+  searchResources<RT extends ResourceType>(
+    resourceType: RT,
     query?: QueryTypes,
     options?: MedplumRequestOptions
-  ): ReadablePromise<ResourceArray<ExtractResource<K>>> {
+  ): ReadablePromise<ResourceArray<WithId<ExtractResource<RT>>>> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = 'searchResources-' + url.toString();
     const cached = this.getCacheEntry(cacheKey, options);
     if (cached) {
       return cached.value;
     }
-    const promise = new ReadablePromise(this.search<K>(resourceType, query, options).then(bundleToResourceArray));
+    const promise = new ReadablePromise(this.search<RT>(resourceType, query, options).then(bundleToResourceArray));
     this.setCacheEntry(cacheKey, promise);
     return promise;
   }
@@ -1611,11 +1612,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @yields An async generator, where each result is an array of resources for each page.
    */
-  async *searchResourcePages<K extends ResourceType>(
-    resourceType: K,
+  async *searchResourcePages<RT extends ResourceType>(
+    resourceType: RT,
     query?: QueryTypes,
     options?: MedplumRequestOptions
-  ): AsyncGenerator<ResourceArray<ExtractResource<K>>> {
+  ): AsyncGenerator<ResourceArray<WithId<ExtractResource<RT>>>> {
     let url: URL | undefined = this.fhirSearchUrl(resourceType, query);
 
     while (url) {
@@ -1666,9 +1667,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param id - The FHIR resource ID.
    * @returns The resource if it is available in the cache; undefined otherwise.
    */
-  getCached<K extends ResourceType>(resourceType: K, id: string): ExtractResource<K> | undefined {
+  getCached<RT extends ResourceType>(resourceType: RT, id: string): WithId<ExtractResource<RT>> | undefined {
     const cached = this.requestCache?.get(this.fhirUrl(resourceType, id).toString())?.value;
-    return cached?.isOk() ? (cached.read() as ExtractResource<K>) : undefined;
+    return cached?.isOk() ? (cached.read() as WithId<ExtractResource<RT>>) : undefined;
   }
 
   /**
@@ -1710,15 +1711,15 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The resource if available.
    */
-  readResource<K extends ResourceType>(
-    resourceType: K,
+  readResource<RT extends ResourceType>(
+    resourceType: RT,
     id: string,
     options?: MedplumRequestOptions
-  ): ReadablePromise<ExtractResource<K>> {
+  ): ReadablePromise<WithId<ExtractResource<RT>>> {
     if (!id) {
       throw new Error('The "id" parameter cannot be null, undefined, or an empty string.');
     }
-    return this.get<ExtractResource<K>>(this.fhirUrl(resourceType, id), options);
+    return this.get<WithId<ExtractResource<RT>>>(this.fhirUrl(resourceType, id), options);
   }
 
   /**
@@ -1741,19 +1742,22 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The resource if available.
    */
-  readReference<T extends Resource>(reference: Reference<T>, options?: MedplumRequestOptions): ReadablePromise<T> {
+  readReference<T extends Resource>(
+    reference: Reference<T>,
+    options?: MedplumRequestOptions
+  ): ReadablePromise<WithId<T>> {
     const refString = reference.reference;
     if (!refString) {
       return new ReadablePromise(Promise.reject(new Error('Missing reference')));
     }
     if (refString === 'system') {
-      return new ReadablePromise(Promise.resolve(system as unknown as T));
+      return new ReadablePromise(Promise.resolve(system as unknown as WithId<T>));
     }
     const [resourceType, id] = refString.split('/');
     if (!resourceType || !id) {
       return new ReadablePromise(Promise.reject(new Error('Invalid reference')));
     }
-    return this.readResource(resourceType as ResourceType, id, options) as ReadablePromise<T>;
+    return this.readResource(resourceType as ResourceType, id, options) as ReadablePromise<WithId<T>>;
   }
 
   /**
@@ -1898,11 +1902,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to the resource history.
    */
-  readHistory<K extends ResourceType>(
-    resourceType: K,
+  readHistory<RT extends ResourceType>(
+    resourceType: RT,
     id: string,
     options?: MedplumRequestOptions
-  ): ReadablePromise<Bundle<ExtractResource<K>>> {
+  ): ReadablePromise<Bundle<WithId<ExtractResource<RT>>>> {
     return this.get(this.fhirUrl(resourceType, id, '_history'), options);
   }
 
@@ -1925,12 +1929,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The resource if available.
    */
-  readVersion<K extends ResourceType>(
-    resourceType: K,
+  readVersion<RT extends ResourceType>(
+    resourceType: RT,
     id: string,
     vid: string,
     options?: MedplumRequestOptions
-  ): ReadablePromise<ExtractResource<K>> {
+  ): ReadablePromise<WithId<ExtractResource<RT>>> {
     return this.get(this.fhirUrl(resourceType, id, '_history', vid), options);
   }
 
@@ -1980,7 +1984,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The result of the create operation.
    */
-  createResource<T extends Resource>(resource: T, options?: MedplumRequestOptions): Promise<T> {
+  createResource<T extends Resource>(resource: T, options?: MedplumRequestOptions): Promise<WithId<T>> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
@@ -2033,7 +2037,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     resource: T,
     query: string,
     options?: MedplumRequestOptions
-  ): Promise<T> {
+  ): Promise<WithId<T>> {
     const url = this.fhirUrl(resource.resourceType);
     if (!options) {
       options = { headers: { 'If-None-Exist': query } };
@@ -2066,7 +2070,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     resource: T,
     query: QueryTypes,
     options?: MedplumRequestOptions
-  ): Promise<T> {
+  ): Promise<WithId<T>> {
     // Build conditional update URL, e.g. `PUT /ResourceType?search-param=value`
     const url = this.fhirSearchUrl(resource.resourceType, query);
 
@@ -2169,7 +2173,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param requestOptions - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
    */
-  createBinary(createBinaryOptions: CreateBinaryOptions, requestOptions?: MedplumRequestOptions): Promise<Binary>;
+  createBinary(
+    createBinaryOptions: CreateBinaryOptions,
+    requestOptions?: MedplumRequestOptions
+  ): Promise<WithId<Binary>>;
 
   /**
    * @category Create
@@ -2187,7 +2194,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     contentType: string,
     onProgress?: (e: ProgressEvent) => void,
     options?: MedplumRequestOptions
-  ): Promise<Binary>;
+  ): Promise<WithId<Binary>>;
 
   createBinary(
     arg1: BinarySource | CreateBinaryOptions,
@@ -2195,7 +2202,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     arg3?: string,
     arg4?: (e: ProgressEvent) => void,
     arg5?: MedplumRequestOptions
-  ): Promise<Binary> {
+  ): Promise<WithId<Binary>> {
     const createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
     const requestOptions = arg5 ?? (typeof arg2 === 'object' ? arg2 : {});
 
@@ -2301,7 +2308,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param requestOptions - Optional fetch options.
    * @returns The result of the create operation.
    */
-  createPdf(createPdfOptions: CreatePdfOptions, requestOptions?: MedplumRequestOptions): Promise<Binary>;
+  createPdf(createPdfOptions: CreatePdfOptions, requestOptions?: MedplumRequestOptions): Promise<WithId<Binary>>;
 
   /**
    * @category Media
@@ -2317,14 +2324,14 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     filename: string | undefined,
     tableLayouts?: Record<string, CustomTableLayout>,
     fonts?: TFontDictionary
-  ): Promise<Binary>;
+  ): Promise<WithId<Binary>>;
 
   async createPdf(
     arg1: TDocumentDefinitions | CreatePdfOptions,
     arg2?: string | MedplumRequestOptions,
     arg3?: Record<string, CustomTableLayout>,
     arg4?: TFontDictionary
-  ): Promise<Binary> {
+  ): Promise<WithId<Binary>> {
     if (!this.createPdfImpl) {
       throw new Error('PDF creation not enabled');
     }
@@ -2346,7 +2353,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The result of the create operation.
    */
-  createComment(resource: Resource, text: string, options?: MedplumRequestOptions): Promise<Communication> {
+  createComment(resource: Resource, text: string, options?: MedplumRequestOptions): Promise<WithId<Communication>> {
     const profile = this.getProfile();
     let encounter: Reference<Encounter> | undefined = undefined;
     let subject: Reference<Patient> | undefined = undefined;
@@ -2365,7 +2372,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       subject = createReference(resource);
     }
 
-    return this.createResource<Communication>(
+    return this.createResource(
       {
         resourceType: 'Communication',
         status: 'completed',
@@ -2406,7 +2413,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The result of the update operation.
    */
-  async updateResource<T extends Resource>(resource: T, options?: MedplumRequestOptions): Promise<T> {
+  async updateResource<T extends Resource>(resource: T, options?: MedplumRequestOptions): Promise<WithId<T>> {
     if (!resource.resourceType) {
       throw new Error('Missing resourceType');
     }
@@ -2450,12 +2457,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns The result of the patch operations.
    */
-  async patchResource<K extends ResourceType>(
-    resourceType: K,
+  async patchResource<RT extends ResourceType>(
+    resourceType: RT,
     id: string,
     operations: PatchOperation[],
     options?: MedplumRequestOptions
-  ): Promise<ExtractResource<K>> {
+  ): Promise<WithId<ExtractResource<RT>>> {
     const result = await this.patch(this.fhirUrl(resourceType, id), operations, options);
     this.cacheResource(result);
     this.invalidateUrl(this.fhirUrl(resourceType, id, '_history'));
@@ -2699,8 +2706,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns A Bundle
    */
-  readResourceGraph<K extends ResourceType>(
-    resourceType: K,
+  readResourceGraph(
+    resourceType: ResourceType,
     id: string,
     graphName: string,
     options?: MedplumRequestOptions
@@ -2801,7 +2808,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.storage.setObject('logins', logins);
   }
 
-  private async refreshProfile(): Promise<ProfileResource | undefined> {
+  private async refreshProfile(): Promise<WithId<ProfileResource> | undefined> {
     if (!this.medplumServer) {
       return Promise.resolve(undefined);
     }
@@ -2886,7 +2893,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The current user profile resource.
    * @category User Profile
    */
-  async getProfileAsync(): Promise<ProfileResource | undefined> {
+  async getProfileAsync(): Promise<WithId<ProfileResource> | undefined> {
     if (this.profilePromise) {
       return this.profilePromise;
     }
@@ -2901,7 +2908,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns The current user configuration if available.
    * @category User Profile
    */
-  getUserConfiguration(): UserConfiguration | undefined {
+  getUserConfiguration(): WithId<UserConfiguration> | undefined {
     return this.sessionDetails?.config;
   }
 

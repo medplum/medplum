@@ -98,7 +98,7 @@ export abstract class FhirRepository<TClient = unknown> {
    * @param references - The FHIR references.
    * @returns The FHIR resources.
    */
-  abstract readReferences(references: readonly Reference[]): Promise<(Resource | Error)[]>;
+  abstract readReferences<T extends Resource>(references: readonly Reference<T>[]): Promise<(T | Error)[]>;
 
   /**
    * Returns resource history.
@@ -436,8 +436,10 @@ export class MemoryRepository extends FhirRepository<undefined> {
     return this.readResource(parts[0], parts[1]);
   }
 
-  async readReferences(references: readonly Reference[]): Promise<(Resource | OperationOutcomeError)[]> {
-    return Promise.all(references.map((r) => this.readReference(r)));
+  async readReferences<T extends Resource>(
+    references: readonly Reference<T>[]
+  ): Promise<(T | OperationOutcomeError)[]> {
+    return Promise.all(references.map((r) => this.readReference<T>(r)));
   }
 
   async readHistory<T extends Resource>(resourceType: string, id: string): Promise<Bundle<T>> {
