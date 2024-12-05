@@ -448,6 +448,7 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
       return new OperationOutcomeError(conflict(err.message, err.code));
     case '57014': // query_canceled
       // Statement timeout -> 504 Gateway Timeout
+      getLogger().warn('Database statement timeout', { error: err.message, stack: err.stack, code: err.code });
       return new OperationOutcomeError(serverTimeout(err.message));
   }
 
