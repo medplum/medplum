@@ -1,4 +1,5 @@
 import {
+  HTTP_HL7_ORG,
   TypedValue,
   deepClone,
   evalFhirPathTyped,
@@ -8,6 +9,8 @@ import {
   getTypedPropertyValueWithoutSchema,
   splitN,
   stringify,
+  toJsBoolean,
+  toTypedValue,
 } from '@medplum/core';
 import {
   Encounter,
@@ -47,15 +50,30 @@ export function isChoiceQuestion(item: QuestionnaireItem): boolean {
   return item.type === 'choice' || item.type === 'open-choice';
 }
 
-export function isQuestionEnabled(item: QuestionnaireItem, responseItems: QuestionnaireResponseItem[]): boolean {
+export function isQuestionEnabled(
+  item: QuestionnaireItem,
+  questionnaireResponse: QuestionnaireResponse | undefined
+): boolean {
+  const extension = getExtension(
+    item,
+    HTTP_HL7_ORG + '/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression'
+  );
+  if (questionnaireResponse && extension) {
+    const expression = extension.valueExpression?.expression;
+    if (expression) {
+      const value = toTypedValue(questionnaireResponse);
+      const result = evalFhirPathTyped(expression, [value], { '%resource': value });
+      return toJsBoolean(result);
+    }
+  }
+
   if (!item.enableWhen) {
     return true;
   }
 
   const enableBehavior = item.enableBehavior ?? 'any';
-
   for (const enableWhen of item.enableWhen) {
-    const actualAnswers = getByLinkId(responseItems, enableWhen.question as string);
+    const actualAnswers = getByLinkId(questionnaireResponse?.item, enableWhen.question as string);
 
     if (enableWhen.operator === 'exists' && !enableWhen.answerBoolean && !actualAnswers?.length) {
       if (enableBehavior === 'any') {

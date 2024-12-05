@@ -29,16 +29,20 @@ test('isQuestionEnabled', () => {
           },
         ],
       },
-      [
-        {
-          linkId: 'q1',
-          answer: [{ valueString: 'No' }],
-        },
-        {
-          linkId: 'q2',
-          answer: [{ valueString: 'Yes' }],
-        },
-      ]
+      {
+        resourceType: 'QuestionnaireResponse',
+        status: 'completed',
+        item: [
+          {
+            linkId: 'q1',
+            answer: [{ valueString: 'No' }],
+          },
+          {
+            linkId: 'q2',
+            answer: [{ valueString: 'Yes' }],
+          },
+        ],
+      }
     )
   ).toBe(true);
 });
@@ -64,16 +68,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'Yes' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'Yes' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -98,16 +106,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -132,16 +144,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'Yes' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'Yes' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -166,16 +182,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'Yes' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'Yes' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -200,17 +220,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -235,16 +258,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -269,16 +296,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'No' }, { valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'No' }, { valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -303,16 +334,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }, { valueString: 'Maybe' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -337,16 +372,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'Yes' }, { valueString: 'Yes' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -365,16 +404,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -393,16 +436,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -421,12 +468,16 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -445,12 +496,16 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -469,12 +524,16 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -493,12 +552,16 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -517,16 +580,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -545,16 +612,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -573,16 +644,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -601,16 +676,20 @@ describe('isQuestionEnabled', () => {
             },
           ],
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
-          },
-          {
-            linkId: 'q2',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }, { valueString: 'No' }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -631,12 +710,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'No' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'No' }],
+            },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -647,12 +730,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueString: 'Yes' }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueString: 'Yes' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -673,12 +760,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueInteger: 4 }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueInteger: 4 }],
+            },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -689,12 +780,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueInteger: 2 }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueInteger: 2 }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -715,12 +810,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueInteger: 4 }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueInteger: 4 }],
+            },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -731,12 +830,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueInteger: 3 }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueInteger: 3 }],
+            },
+          ],
+        }
       )
     ).toBe(true);
   });
@@ -757,12 +860,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueInteger: 2 }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueInteger: 2 }],
+            },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -773,12 +880,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueInteger: 3 }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueInteger: 3 }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -799,12 +910,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueInteger: 2 }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueInteger: 2 }],
+            },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -815,12 +930,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueInteger: 3 }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueInteger: 3 }],
+            },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -831,12 +950,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueInteger: 4 }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueInteger: 4 }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -853,12 +976,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
+            },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -869,12 +996,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
+            },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -885,12 +1016,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
@@ -907,12 +1042,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueCoding: { code: 'NOT_MEDPLUM123' } }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueCoding: { code: 'NOT_MEDPLUM123' } }],
+            },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -923,12 +1062,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueCoding: { code: 'NOT_MEDPLUM123', display: 'Medplum123' } }],
+            },
+          ],
+        }
       )
     ).toBe(true);
 
@@ -939,12 +1082,16 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueCoding: { code: 'MEDPLUM123', display: 'Medplum123' } }],
+            },
+          ],
+        }
       )
     ).toBe(false);
 
@@ -955,12 +1102,84 @@ describe('isQuestionEnabled', () => {
           type: 'string',
           enableWhen,
         },
-        [
-          {
-            linkId: 'q1',
-            answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
-          },
-        ]
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
+            },
+          ],
+        }
+      )
+    ).toBe(false);
+  });
+
+  test('expression evaluation', () => {
+    expect(
+      isQuestionEnabled(
+        {
+          linkId: 'q3',
+          type: 'string',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression',
+              valueExpression: {
+                language: 'text/fhirpath',
+                expression:
+                  "%resource.item.where(linkId = 'q1').answer.valueCoding.code = 'MEDPLUM123' and %resource.item.where(linkId = 'q2').answer.valueString = 'Female'",
+              },
+            },
+          ],
+        },
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueCoding: { code: 'MEDPLUM123' } }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'Female' }],
+            },
+          ],
+        }
+      )
+    ).toBe(true);
+
+    expect(
+      isQuestionEnabled(
+        {
+          linkId: 'q3',
+          type: 'string',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression',
+              valueExpression: {
+                language: 'text/fhirpath',
+                expression:
+                  "%resource.item.where(linkId = 'q1').answer.valueCoding.code = 'MEDPLUM123' and %resource.item.where(linkId = 'q2').answer.valueString = 'Female'",
+              },
+            },
+          ],
+        },
+        {
+          resourceType: 'QuestionnaireResponse',
+          status: 'completed',
+          item: [
+            {
+              linkId: 'q1',
+              answer: [{ valueCoding: { code: 'DIFFERENT_CODE' } }],
+            },
+            {
+              linkId: 'q2',
+              answer: [{ valueString: 'Female' }],
+            },
+          ],
+        }
       )
     ).toBe(false);
   });
