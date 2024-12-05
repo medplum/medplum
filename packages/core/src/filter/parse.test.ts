@@ -40,7 +40,7 @@ describe('_filter Parameter parser', () => {
 
     const left = connective.left as FhirFilterComparison;
     expect(left.path).toBe('given');
-    expect(left.operator).toBe(Operator.EQUALS);
+    expect(left.operator).toBe(Operator.EXACT);
     expect(left.value).toBe('peter');
 
     const right = connective.right as FhirFilterComparison;
@@ -61,7 +61,7 @@ describe('_filter Parameter parser', () => {
 
     const left = connective.left as FhirFilterComparison;
     expect(left.path).toBe('given');
-    expect(left.operator).toBe(Operator.EQUALS);
+    expect(left.operator).toBe(Operator.EXACT);
     expect(left.value).toBe('peter');
 
     const right = connective.right as FhirFilterComparison;
@@ -102,7 +102,7 @@ describe('_filter Parameter parser', () => {
 
     const first = connective1.left as FhirFilterComparison;
     expect(first.path).toBe('given');
-    expect(first.operator).toBe(Operator.EQUALS);
+    expect(first.operator).toBe(Operator.EXACT);
     expect(first.value).toBe('alice');
 
     const connective2 = connective1.right as FhirFilterConnective;
@@ -112,7 +112,7 @@ describe('_filter Parameter parser', () => {
 
     const second = connective2.left as FhirFilterComparison;
     expect(second.path).toBe('given');
-    expect(second.operator).toBe(Operator.EQUALS);
+    expect(second.operator).toBe(Operator.EXACT);
     expect(second.value).toBe('peter');
 
     const third = connective2.right as FhirFilterComparison;
@@ -143,22 +143,22 @@ describe('_filter Parameter parser', () => {
 
     const first = connective2.left as FhirFilterComparison;
     expect(first.path).toBe('status');
-    expect(first.operator).toBe(Operator.EQUALS);
+    expect(first.operator).toBe(Operator.EXACT);
     expect(first.value).toBe('preliminary');
 
     const second = connective2.right as FhirFilterComparison;
     expect(second.path).toBe('code');
-    expect(second.operator).toBe(Operator.EQUALS);
+    expect(second.operator).toBe(Operator.EXACT);
     expect(second.value).toBe('123');
 
     const third = connective3.left as FhirFilterComparison;
     expect(third.path).toBe('status');
-    expect(third.operator).toBe(Operator.EQUALS);
+    expect(third.operator).toBe(Operator.EXACT);
     expect(third.value).toBe('final');
 
     const fourth = connective3.right as FhirFilterComparison;
     expect(fourth.path).toBe('code');
-    expect(fourth.operator).toBe(Operator.EQUALS);
+    expect(fourth.operator).toBe(Operator.EXACT);
     expect(fourth.value).toBe('456');
   });
 
@@ -186,23 +186,23 @@ describe('_filter Parameter parser', () => {
 
     const first = connective2.left as FhirFilterComparison;
     expect(first.path).toBe('status');
-    expect(first.operator).toBe(Operator.EQUALS);
+    expect(first.operator).toBe(Operator.EXACT);
     expect(first.value).toBe('preliminary');
 
     const second = connective2.right as FhirFilterComparison;
     expect(second.path).toBe('code');
-    expect(second.operator).toBe(Operator.EQUALS);
+    expect(second.operator).toBe(Operator.EXACT);
     expect(second.value).toBe('123');
 
     const negation = connective3.left as FhirFilterNegation;
     const third = negation.child as FhirFilterComparison;
     expect(third.path).toBe('status');
-    expect(third.operator).toBe(Operator.EQUALS);
+    expect(third.operator).toBe(Operator.EXACT);
     expect(third.value).toBe('preliminary');
 
     const fourth = connective3.right as FhirFilterComparison;
     expect(fourth.path).toBe('code');
-    expect(fourth.operator).toBe(Operator.EQUALS);
+    expect(fourth.operator).toBe(Operator.EXACT);
     expect(fourth.value).toBe('456');
   });
 
@@ -213,7 +213,7 @@ describe('_filter Parameter parser', () => {
 
     const comp = result as FhirFilterComparison;
     expect(comp.path).toBe('code');
-    expect(comp.operator).toBe(Operator.EQUALS);
+    expect(comp.operator).toBe(Operator.EXACT);
     expect(comp.value).toBe('http://loinc.org|1234-5');
   });
 
