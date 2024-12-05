@@ -72,7 +72,7 @@ export function createReference<T extends Resource>(resource: T): Reference<T> &
  * @param input - The FHIR resource or reference.
  * @returns A reference string of the form resourceType/id.
  */
-export function getReferenceString(input: (Reference & { reference: string }) | (Resource & { id: string })): string;
+export function getReferenceString(input: (Reference & { reference: string }) | WithId<Resource>): string;
 export function getReferenceString(input: Reference | Resource): string | undefined;
 export function getReferenceString(
   input: Reference | Resource | (Reference & { reference: string }) | (Resource & { id: string })
