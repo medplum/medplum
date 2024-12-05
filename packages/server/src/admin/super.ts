@@ -238,8 +238,10 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/tablesettings',
   [
-    body('tableName').isString(),
-    body('settings').isObject(),
+    body('tableName').isString().withMessage('Table name must be a string'),
+    body('settings')
+      .isObject()
+      .withMessage('Settings must be an object with valid Postgres table setting name as keys'),
     ...Object.entries(OVERRIDABLE_TABLE_SETTINGS).map(([settingName, dataType]) => {
       switch (dataType) {
         case 'float':
@@ -263,13 +265,12 @@ superAdminRouter.post(
     await getSystemRepo()
       .getDatabaseClient(DatabaseMode.WRITER)
       .query(
-        `ALTER TABLE "${req.body.tableName}" SET (
+        `ALTER TABLE "$1" SET (
           ${Object.entries(req.body.settings)
-            .map(([settingName, val]) => {
-              return `${settingName} = ${val}`;
-            })
+            .map((_, i) => `$${2 + 2 * i} = $${3 + 2 * i}`)
             .join(',')}
-        );`
+        );`,
+        [req.body.tableName, ...Object.entries(req.body.settings).flat()]
       );
     sendOutcome(res, allOk);
   })
