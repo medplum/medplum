@@ -89,6 +89,7 @@ async function authenticateBasicAuth(req: IncomingMessage, token: string): Promi
   };
 
   const onBehalfOfHeader = req.headers['x-medplum-on-behalf-of'];
+  console.log('onBehalfOfHeader', onBehalfOfHeader, login.id, project.id, membership.id);
   let onBehalfOf: ProfileResource | undefined = undefined;
   let onBehalfOfMembership: ProjectMembership | undefined = undefined;
 

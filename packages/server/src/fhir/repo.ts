@@ -1440,7 +1440,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           throw new Error(`Invalid token code ${code} for search parameter with code ${searchParam.code}`);
         }
 
-        // MISSING/PRESENT - any entries in the column at all
+        // MISSING/PRESENT - is the array empty?
 
         const tokenSet = rowTokens;
         if (system) {
@@ -1463,6 +1463,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           }
         }
       }
+      console.log(
+        'buildColumn',
+        searchParam.code,
+        details.columnName,
+        JSON.stringify(values),
+        JSON.stringify(Array.from(rowTokens))
+      );
       columns[details.columnName] = Array.from(rowTokens);
     } else {
       let columnValue = null;

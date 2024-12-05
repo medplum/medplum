@@ -338,9 +338,9 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       }
 
       // TODO{inline-tokens}: Remove this if statement to create token columns
-      if (details.implementation === 'token-columns') {
-        continue;
-      }
+      // if (details.implementation === 'token-columns') {
+      //   continue;
+      // }
 
       if (searchParam.type === 'reference') {
         derivedSearchParams.push(deriveIdentifierSearchParameter(searchParam));
