@@ -29,6 +29,15 @@ import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
 
+export const OVERRIDABLE_TABLE_SETTINGS = {
+  autovacuum_vacuum_scale_factor: 'float',
+  autovacuum_analyze_scale_factor: 'float',
+  autovacuum_vacuum_threshold: 'int',
+  autovacuum_analyze_threshold: 'int',
+  autovacuum_vacuum_cost_limit: 'int',
+  autovacuum_vacuum_cost_delay: 'float',
+} as const satisfies Record<string, 'float' | 'int'>;
+
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
 
@@ -221,6 +230,48 @@ superAdminRouter.post(
         await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
       }
     });
+  })
+);
+
+// POST to /admin/super/tablesettings
+// to set table settings.
+superAdminRouter.post(
+  '/tablesettings',
+  [
+    body('tableName').isString(),
+    body('settings').isObject(),
+    ...Object.entries(OVERRIDABLE_TABLE_SETTINGS).map(([settingName, dataType]) => {
+      switch (dataType) {
+        case 'float':
+          return body(`settings.${settingName}`).isFloat();
+        case 'int':
+          return body(`settings.${settingName}`).isInt();
+        default:
+          throw new Error('Unreachable');
+      }
+    }),
+  ],
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    await getSystemRepo()
+      .getDatabaseClient(DatabaseMode.WRITER)
+      .query(
+        `ALTER TABLE "${req.body.tableName}" SET (
+          ${Object.entries(req.body.settings)
+            .map(([settingName, val]) => {
+              return `${settingName} = ${val}`;
+            })
+            .join(',')}
+        );`
+      );
+    sendOutcome(res, allOk);
   })
 );
 
