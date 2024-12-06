@@ -720,4 +720,121 @@ describe('Super Admin routes', () => {
       infoSpy.mockRestore();
     });
   });
+
+  describe('Vacuum', () => {
+    test('Vacuum -- No tables specified', async () => {
+      const infoSpy = jest.spyOn(globalLogger, 'info');
+
+      const res1 = await request(app)
+        .post('/admin/super/vacuum')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json');
+
+      expect(res1.status).toStrictEqual(202);
+      expect(res1.headers['content-location']).toBeDefined();
+      await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+
+      expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
+        durationMs: expect.any(Number),
+        analyze: undefined,
+        query: 'VACUUM;',
+        tableNames: undefined,
+      });
+      infoSpy.mockRestore();
+    });
+
+    test('Vacuum -- Table names listed', async () => {
+      const infoSpy = jest.spyOn(globalLogger, 'info');
+
+      const res1 = await request(app)
+        .post('/admin/super/vacuum')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({ tableNames: ['Observation', 'Observation_History'] });
+
+      expect(res1.status).toStrictEqual(202);
+      expect(res1.headers['content-location']).toBeDefined();
+      await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+
+      expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
+        durationMs: expect.any(Number),
+        analyze: undefined,
+        query: 'VACUUM "Observation", "Observation_History";',
+        tableNames: ['Observation', 'Observation_History'],
+      });
+      infoSpy.mockRestore();
+    });
+
+    test('Vacuum -- Analyze too', async () => {
+      const infoSpy = jest.spyOn(globalLogger, 'info');
+
+      const res1 = await request(app)
+        .post('/admin/super/vacuum')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({ tableNames: ['Observation', 'Observation_History'], analyze: true });
+
+      expect(res1.status).toStrictEqual(202);
+      expect(res1.headers['content-location']).toBeDefined();
+      await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+
+      expect(infoSpy).toHaveBeenCalledWith('[Super Admin]: Vacuum completed', {
+        durationMs: expect.any(Number),
+        analyze: true,
+        query: 'VACUUM ANALYZE "Observation", "Observation_History";',
+        tableNames: ['Observation', 'Observation_History'],
+      });
+      infoSpy.mockRestore();
+    });
+
+    test('Vacuum -- Invalid table names', async () => {
+      const infoSpy = jest.spyOn(globalLogger, 'info');
+
+      const res1 = await request(app)
+        .post('/admin/super/vacuum')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({ tableNames: ['Observation', 123] });
+
+      expect(res1.status).toStrictEqual(400);
+      expect(res1.headers['content-location']).not.toBeDefined();
+      expect(res1.body).toMatchObject(badRequest('Table name(s) must be a string'));
+
+      expect(infoSpy).not.toHaveBeenCalled();
+      infoSpy.mockRestore();
+    });
+
+    test('Vacuum -- Invalid parameter name', async () => {
+      const infoSpy = jest.spyOn(globalLogger, 'info');
+
+      const res1 = await request(app)
+        .post('/admin/super/vacuum')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({ tableName: ['Observation', 123] }); // should be tableNames
+
+      expect(res1.status).toStrictEqual(400);
+      expect(res1.headers['content-location']).not.toBeDefined();
+      expect(res1.body).toMatchObject(badRequest('Unknown field(s)'));
+
+      expect(infoSpy).not.toHaveBeenCalled();
+      infoSpy.mockRestore();
+    });
+
+    test('Vacuum -- no prefer respond-async', async () => {
+      const res1 = await request(app)
+        .post('/admin/super/vacuum')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .type('json');
+
+      expect(res1.status).toStrictEqual(400);
+      expect(res1.headers['content-location']).not.toBeDefined();
+      expect(res1.body).toMatchObject(badRequest('Operation requires "Prefer: respond-async"'));
+    });
+  });
 });
