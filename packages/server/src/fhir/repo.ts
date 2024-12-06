@@ -30,6 +30,7 @@ import {
   isNotFound,
   isObject,
   isOk,
+  isResourceWithId,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
@@ -579,10 +580,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     create: boolean,
     versionId?: string
   ): Promise<WithId<T>> {
-    const { resourceType, id } = resource;
-    if (!id) {
+    if (!isResourceWithId(resource)) {
       throw new OperationOutcomeError(badRequest('Missing id'));
     }
+    const { resourceType, id } = resource;
     if (!validator.isUUID(id)) {
       throw new OperationOutcomeError(badRequest('Invalid id'));
     }
@@ -612,7 +613,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     let updated = await rewriteAttachments(RewriteMode.REFERENCE, this, {
-      ...this.restoreReadonlyFields(resource as WithId<T>, existing),
+      ...this.restoreReadonlyFields(resource, existing),
     });
     updated = await replaceConditionalReferences(this, updated);
 

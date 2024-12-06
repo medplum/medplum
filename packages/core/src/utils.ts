@@ -56,6 +56,25 @@ export type ResourceWithCode = Resource & Code;
 
 export type WithId<T> = T & { id: string };
 
+export function isResourceWithId<T extends Resource>(
+  resource: unknown,
+  resourceType?: T['resourceType']
+): resource is WithId<T> {
+  // Resource must be an object
+  if (!resource || typeof resource !== 'object') {
+    return false;
+  }
+  // Must contain `resourceType` and `id` keys
+  if (!('resourceType' in resource && 'id' in resource)) {
+    return false;
+  }
+  // Optionally check resource type
+  if (resourceType && resource.resourceType !== resourceType) {
+    return false;
+  }
+  return true;
+}
+
 /**
  * Creates a reference resource.
  * @param resource - The FHIR resource.
