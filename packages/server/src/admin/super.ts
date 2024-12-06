@@ -20,6 +20,7 @@ import { DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
+import { globalLogger } from '../logger';
 import * as dataMigrations from '../migrations/data';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
@@ -275,7 +276,14 @@ superAdminRouter.post(
       .map(([settingName, val]) => `${settingName} = ${val}`)
       .join(',')});`;
 
+    const startTime = Date.now();
     await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
+    globalLogger.info('[Super Admin]: Table settings updated', {
+      tableName: req.body.tableName,
+      settings: req.body.settings,
+      query,
+      durationMs: Date.now() - startTime,
+    });
     sendOutcome(res, allOk);
   })
 );
@@ -303,7 +311,14 @@ superAdminRouter.post(
     const query = `VACUUM${req.body.analyze ? ' ANALYZE' : ''}${req.body.tableNames?.length ? ` ${req.body.tableNames.map((name: string) => `"${name}"`).join(', ')}` : ''};`;
 
     await sendAsyncResponse(req, res, async () => {
+      const startTime = Date.now();
       await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
+      globalLogger.info('[Super Admin]: Vacuum completed', {
+        tableNames: req.body.tableNames,
+        analyze: req.body.analyze,
+        query,
+        durationMs: Date.now() - startTime,
+      });
       return {
         resourceType: 'Parameters',
         parameter: [{ name: 'outcome', resource: allOk }],
