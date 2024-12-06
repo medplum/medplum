@@ -17,7 +17,7 @@ export function OAuthPage(): JSX.Element | null {
   const clientId = params.get('client_id');
 
   useEffect(() => {
-    if (!clientId) {
+    if (!clientId || clientId === 'medplum-cli') {
       return;
     }
     async function fetchProjectInfo(): Promise<void> {
