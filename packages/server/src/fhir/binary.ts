@@ -59,7 +59,7 @@ async function handleBinaryWriteRequest(req: Request, res: Response): Promise<vo
       getLogger().debug('Invalid JSON', { error: err });
     }
 
-    if (isResource(body) && body.resourceType === 'Binary' && (!id || body.id === id)) {
+    if (isResource(body, 'Binary') && (!id || body.id === id)) {
       // Special case where the content is actually a Binary resource.
       // From the spec: https://hl7.org/fhir/R4/binary.html#rest
       //

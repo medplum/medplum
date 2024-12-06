@@ -477,7 +477,7 @@ async function getSearchIncludeEntries(
     }
   }
 
-  const includedResources = (await repo.readReferences(references)).filter(isResource);
+  const includedResources = (await repo.readReferences(references)).filter((v) => isResource(v));
   if (searchParam.target && canonicalReferences.length > 0) {
     const canonicalSearches = searchParam.target.map((resourceType) => {
       const searchRequest = {

@@ -104,7 +104,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     const responseBody = getResponseBodyFromResult(result);
     const outcome = result.success ? allOk : badRequest(result.logResult);
 
-    if (isResource(responseBody) && responseBody.resourceType === 'Binary') {
+    if (isResource(responseBody, 'Binary')) {
       await sendFhirResponse(req, res, outcome, responseBody);
       return;
     }

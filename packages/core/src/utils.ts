@@ -22,7 +22,7 @@ import {
 import { getTypedPropertyValue } from './fhirpath/utils';
 import { formatCodeableConcept, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
-import { isReference } from './types';
+import { isReference, isResource } from './types';
 
 /**
  * QueryTypes defines the different ways to specify FHIR search parameters.
@@ -60,19 +60,7 @@ export function isResourceWithId<T extends Resource>(
   resource: unknown,
   resourceType?: T['resourceType']
 ): resource is WithId<T> {
-  // Resource must be an object
-  if (!resource || typeof resource !== 'object') {
-    return false;
-  }
-  // Must contain `resourceType` and `id` keys
-  if (!('resourceType' in resource && 'id' in resource)) {
-    return false;
-  }
-  // Optionally check resource type
-  if (resourceType && resource.resourceType !== resourceType) {
-    return false;
-  }
-  return true;
+  return isResource(resource, resourceType) && 'id' in resource;
 }
 
 /**
@@ -94,12 +82,12 @@ export function createReference<T extends Resource>(resource: T): Reference<T> &
 export function getReferenceString(input: (Reference & { reference: string }) | WithId<Resource>): string;
 export function getReferenceString(input: Reference | Resource): string | undefined;
 export function getReferenceString(
-  input: Reference | Resource | (Reference & { reference: string }) | (Resource & { id: string })
+  input: Reference | Resource | (Reference & { reference: string }) | WithId<Resource>
 ): string | undefined {
   if (isReference(input)) {
     return input.reference;
   }
-  if ('resourceType' in input && input.id) {
+  if (isResourceWithId(input)) {
     return `${(input as Resource).resourceType}/${input.id}`;
   }
   return undefined;
