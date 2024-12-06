@@ -63,7 +63,7 @@ export function ThreadChat(props: ThreadChatProps): JSX.Element | null {
         ? (message: Communication): void => {
             if (!(message.received && message.status === 'completed')) {
               medplum
-                .updateResource<Communication>({
+                .updateResource({
                   ...message,
                   received: message.received ?? new Date().toISOString(), // Mark as received if needed
                   status: 'completed', // Mark as 'read'

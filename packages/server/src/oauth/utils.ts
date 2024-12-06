@@ -11,6 +11,7 @@ import {
   ProfileResource,
   resolveId,
   tooManyRequests,
+  WithId,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -349,7 +350,9 @@ export async function getMembershipsForLogin(login: Login): Promise<ProjectMembe
  * @param client - The client application.
  * @returns The project membership for the client application if found; otherwise undefined.
  */
-export function getClientApplicationMembership(client: ClientApplication): Promise<ProjectMembership | undefined> {
+export function getClientApplicationMembership(
+  client: WithId<ClientApplication>
+): Promise<WithId<ProjectMembership> | undefined> {
   const systemRepo = getSystemRepo();
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
@@ -640,9 +643,9 @@ export async function getUserByEmail(email: string, projectId: string | undefine
  * @param projectId - The project ID.
  * @returns The user if found; otherwise, undefined.
  */
-export async function getUserByEmailInProject(email: string, projectId: string): Promise<User | undefined> {
+export async function getUserByEmailInProject(email: string, projectId: string): Promise<WithId<User> | undefined> {
   const systemRepo = getSystemRepo();
-  const bundle = await systemRepo.search({
+  const bundle = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
       {
@@ -657,7 +660,7 @@ export async function getUserByEmailInProject(email: string, projectId: string):
       },
     ],
   });
-  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
+  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }
 
 /**
@@ -666,9 +669,9 @@ export async function getUserByEmailInProject(email: string, projectId: string):
  * @param email - The email string.
  * @returns The user if found; otherwise, undefined.
  */
-export async function getUserByEmailWithoutProject(email: string): Promise<User | undefined> {
+export async function getUserByEmailWithoutProject(email: string): Promise<WithId<User> | undefined> {
   const systemRepo = getSystemRepo();
-  const bundle = await systemRepo.search({
+  const bundle = await systemRepo.search<User>({
     resourceType: 'User',
     filters: [
       {
@@ -683,7 +686,7 @@ export async function getUserByEmailWithoutProject(email: string): Promise<User 
       },
     ],
   });
-  return bundle.entry && bundle.entry.length > 0 ? (bundle.entry[0].resource as User) : undefined;
+  return bundle.entry && bundle.entry.length > 0 ? bundle.entry[0].resource : undefined;
 }
 
 /**

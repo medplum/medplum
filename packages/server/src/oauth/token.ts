@@ -5,6 +5,7 @@ import {
   OAuthTokenType,
   Operator,
   ProfileResource,
+  WithId,
   createReference,
   getStatus,
   isJwt,
@@ -103,7 +104,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   }
 
   const systemRepo = getSystemRepo();
-  let client: ClientApplication;
+  let client: WithId<ClientApplication>;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   } catch (_err) {

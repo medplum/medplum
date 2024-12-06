@@ -22,7 +22,7 @@ import {
 import { getTypedPropertyValue } from './fhirpath/utils';
 import { formatCodeableConcept, formatHumanName } from './format';
 import { OperationOutcomeError, validationError } from './outcomes';
-import { isReference } from './types';
+import { isReference, isResource } from './types';
 
 /**
  * QueryTypes defines the different ways to specify FHIR search parameters.
@@ -54,13 +54,22 @@ export interface Code {
 
 export type ResourceWithCode = Resource & Code;
 
+export type WithId<T> = T & { id: string };
+
+export function isResourceWithId<T extends Resource>(
+  resource: unknown,
+  resourceType?: T['resourceType']
+): resource is WithId<T> {
+  return isResource(resource, resourceType) && 'id' in resource && typeof resource.id === 'string';
+}
+
 /**
  * Creates a reference resource.
  * @param resource - The FHIR resource.
  * @returns A reference resource.
  */
 export function createReference<T extends Resource>(resource: T): Reference<T> & { reference: string } {
-  const reference = getReferenceString(resource);
+  const reference = getReferenceString(resource) ?? 'undefined/undefined';
   const display = getDisplayString(resource);
   return display === reference ? { reference } : { reference, display };
 }
@@ -70,11 +79,18 @@ export function createReference<T extends Resource>(resource: T): Reference<T> &
  * @param input - The FHIR resource or reference.
  * @returns A reference string of the form resourceType/id.
  */
-export function getReferenceString(input: Reference | Resource): string {
+export function getReferenceString(input: (Reference & { reference: string }) | WithId<Resource>): string;
+export function getReferenceString(input: Reference | Resource): string | undefined;
+export function getReferenceString(
+  input: Reference | Resource | (Reference & { reference: string }) | WithId<Resource>
+): string | undefined {
   if (isReference(input)) {
     return input.reference;
   }
-  return `${(input as Resource).resourceType}/${input.id}`;
+  if (isResourceWithId(input)) {
+    return `${(input as Resource).resourceType}/${input.id}`;
+  }
+  return undefined;
 }
 
 /**
@@ -163,7 +179,7 @@ export function getDisplayString(resource: Resource): string {
       return code.text;
     }
   }
-  return getReferenceString(resource);
+  return getReferenceString(resource) ?? '';
 }
 
 /**

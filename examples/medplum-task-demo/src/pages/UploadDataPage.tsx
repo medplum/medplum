@@ -1,6 +1,7 @@
 import { Button, LoadingOverlay } from '@mantine/core';
 import {
   MedplumClient,
+  WithId,
   capitalize,
   createReference,
   getReferenceString,
@@ -24,7 +25,7 @@ import exampleReportData from '../../data/example/example-reports.json';
 import exampleTaskData from '../../data/example/example-tasks.json';
 
 type UploadFunction =
-  | ((medplum: MedplumClient, profile: Practitioner) => Promise<void>)
+  | ((medplum: MedplumClient, profile: WithId<Practitioner>) => Promise<void>)
   | ((medplum: MedplumClient) => Promise<void>);
 
 export function UploadDataPage(): JSX.Element {
@@ -65,7 +66,7 @@ export function UploadDataPage(): JSX.Element {
         throw new Error(`Invalid upload type '${dataType}'`);
     }
 
-    uploadFunction(medplum, profile as Practitioner)
+    uploadFunction(medplum, profile as WithId<Practitioner>)
       .then(() => navigate(-1))
       .catch((error) => {
         showNotification({
@@ -219,7 +220,7 @@ async function uploadExampleQualifications(medplum: MedplumClient, profile: Prac
   });
 }
 
-async function uploadExampleRoleData(medplum: MedplumClient, profile: Practitioner): Promise<void> {
+async function uploadExampleRoleData(medplum: MedplumClient, profile: WithId<Practitioner>): Promise<void> {
   // Update the suffix of the current user to highlight the change
   if (!profile?.name?.[0]?.suffix) {
     await medplum.patchResource(profile.resourceType, profile.id as string, [
@@ -262,7 +263,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
       const createBotUrl = new URL('admin/projects/' + (projectId as string) + '/bot', medplum.getBaseUrl());
       existingBot = (await medplum.post(createBotUrl, {
         name: botName,
-      })) as Bot;
+      })) as WithId<Bot>;
     }
 
     botIds[botName] = existingBot.id as string;

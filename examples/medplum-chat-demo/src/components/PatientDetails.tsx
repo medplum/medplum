@@ -1,6 +1,6 @@
 import { Loader, Tabs } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { getReferenceString, normalizeErrorString, Operator, SearchRequest } from '@medplum/core';
+import { getReferenceString, normalizeErrorString, Operator, SearchRequest, WithId } from '@medplum/core';
 import { Patient, Practitioner, Resource } from '@medplum/fhirtypes';
 import {
   Document,
@@ -24,7 +24,7 @@ interface PatientDetailsProps {
 export function PatientDetails({ onChange }: PatientDetailsProps): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
-  const profile = useMedplumProfile() as Practitioner;
+  const profile = useMedplumProfile() as WithId<Practitioner>;
   const { id } = useParams() as { id: string };
   const patient = useResource<Patient>({ reference: `Patient/${id}` });
 

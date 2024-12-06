@@ -10,8 +10,9 @@ import {
   Operator,
   ProfileResource,
   resolveId,
+  WithId,
 } from '@medplum/core';
-import { Practitioner, Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body, oneOf } from 'express-validator';
 import Mail from 'nodemailer/lib/mailer';
@@ -60,9 +61,9 @@ export interface ServerInviteRequest extends InviteRequest {
 }
 
 export interface ServerInviteResponse {
-  user: User;
-  profile: ProfileResource;
-  membership: ProjectMembership;
+  user: WithId<User>;
+  profile: WithId<ProfileResource>;
+  membership: WithId<ProjectMembership>;
 }
 
 export async function inviteUser(request: ServerInviteRequest): Promise<ServerInviteResponse> {
@@ -73,7 +74,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
     request.email = request.email.toLowerCase();
   }
 
-  const project = request.project;
+  const project = request.project as WithId<Project>;
   const email = request.email;
   let user = undefined;
   let existingUser = true;
@@ -81,7 +82,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
 
   if (email) {
     if (request.resourceType === 'Patient') {
-      user = await getUserByEmailInProject(email, project.id as string);
+      user = await getUserByEmailInProject(email, project.id);
     } else {
       user = await getUserByEmailWithoutProject(email);
     }
@@ -102,13 +103,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
       email,
       profileType: request.resourceType,
     });
-    profile = (await createProfile(
-      project,
-      request.resourceType,
-      request.firstName,
-      request.lastName,
-      email
-    )) as Practitioner;
+    profile = await createProfile(project, request.resourceType, request.firstName, request.lastName, email);
 
     logger.info('Profile  created', { profile: getReferenceString(profile) });
   }
@@ -143,7 +138,7 @@ export async function inviteUser(request: ServerInviteRequest): Promise<ServerIn
   return { user, profile, membership };
 }
 
-async function createUser(request: ServerInviteRequest): Promise<User> {
+async function createUser(request: ServerInviteRequest): Promise<WithId<User>> {
   const { firstName, lastName, externalId } = request;
   const email = request.email?.toLowerCase();
   const password = request.password ?? generateSecret(16);
@@ -170,7 +165,7 @@ async function createUser(request: ServerInviteRequest): Promise<User> {
   });
 }
 
-async function searchForExistingProfile(request: ServerInviteRequest): Promise<ProfileResource | undefined> {
+async function searchForExistingProfile(request: ServerInviteRequest): Promise<WithId<ProfileResource> | undefined> {
   const { project, resourceType, membership, email } = request;
   const systemRepo = getSystemRepo();
 
@@ -182,7 +177,7 @@ async function searchForExistingProfile(request: ServerInviteRequest): Promise<P
     if (result.resourceType !== resourceType) {
       throw new OperationOutcomeError(badRequest('Profile resourceType does not match request'));
     }
-    return result as ProfileResource;
+    return result;
   }
 
   if (email) {
@@ -208,12 +203,12 @@ async function searchForExistingProfile(request: ServerInviteRequest): Promise<P
 
 async function createOrUpdateProjectMembership(
   systemRepo: Repository,
-  user: User,
-  project: Project,
+  user: WithId<User>,
+  project: WithId<Project>,
   profile: ProfileResource,
   membershipTemplate: Partial<ProjectMembership>,
   upsert: boolean
-): Promise<ProjectMembership> {
+): Promise<WithId<ProjectMembership>> {
   const existingMembership = await searchForExistingMembership(systemRepo, user, project);
   if (existingMembership) {
     if (!upsert) {
@@ -243,8 +238,8 @@ async function createOrUpdateProjectMembership(
 
 async function searchForExistingMembership(
   systemRepo: Repository,
-  user: User,
-  project: Project
+  user: WithId<User>,
+  project: WithId<Project>
 ): Promise<ProjectMembership | undefined> {
   return systemRepo.searchOne<ProjectMembership>({
     resourceType: 'ProjectMembership',
