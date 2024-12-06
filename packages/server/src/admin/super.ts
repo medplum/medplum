@@ -39,6 +39,10 @@ export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_cost_delay: 'float',
 } as const satisfies Record<string, 'float' | 'int'>;
 
+export function isValidTableName(tableName: string): boolean {
+  return /^(\w_?)+$/.test(tableName);
+}
+
 export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
 
@@ -239,7 +243,11 @@ superAdminRouter.post(
 superAdminRouter.post(
   '/tablesettings',
   [
-    body('tableName').isString().withMessage('Table name must be a string'),
+    body('tableName')
+      .isString()
+      .withMessage('Table name must be a string')
+      .custom(isValidTableName)
+      .withMessage('Table name must be a snake_cased_string'),
     body('settings')
       .isObject()
       .withMessage('Settings must be object mapping valid table settings to desired values')
@@ -301,7 +309,12 @@ superAdminRouter.post(
   '/vacuum',
   [
     body('tableNames').isArray().withMessage('Table names must be an array of strings').optional(),
-    body('tableNames.*').isString().withMessage('Table name(s) must be a string').optional(),
+    body('tableNames.*')
+      .isString()
+      .withMessage('Table name(s) must be a string')
+      .custom(isValidTableName)
+      .withMessage('Table name(s) must be a snake_cased_string')
+      .optional(),
     body('analyze').isBoolean().optional().default(false),
     checkExact(),
   ],

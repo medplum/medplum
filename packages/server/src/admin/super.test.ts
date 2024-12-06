@@ -16,6 +16,7 @@ import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { getReindexQueue, ReindexJob, ReindexJobData } from '../workers/reindex';
+import { isValidTableName } from './super';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -25,6 +26,16 @@ const app = express();
 let project: Project;
 let adminAccessToken: string;
 let nonAdminAccessToken: string;
+
+describe('isValidTableName', () => {
+  test('isValidTableName', () => {
+    expect(isValidTableName('Observation')).toStrictEqual(true);
+    expect(isValidTableName('Observation_History')).toStrictEqual(true);
+    expect(isValidTableName('Observation_Token_text_idx_tsv')).toStrictEqual(true);
+    expect(isValidTableName('Robert"; DROP TABLE Students;')).toStrictEqual(false);
+    expect(isValidTableName('Observation History')).toStrictEqual(false);
+  });
+});
 
 describe('Super Admin routes', () => {
   beforeAll(async () => {
@@ -744,6 +755,22 @@ describe('Super Admin routes', () => {
       infoSpy.mockRestore();
     });
 
+    test('Invalid table name', async () => {
+      const infoSpy = jest.spyOn(globalLogger, 'info');
+
+      const res1 = await request(app)
+        .post('/admin/super/tablesettings')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .type('json')
+        .send({ tableName: 'Observation History', settings: { autovacuum_analyze_scale_factor: 0.005 } });
+
+      expect(res1.status).toStrictEqual(400);
+      expect(res1.body).toMatchObject(badRequest('Table name must be a snake_cased_string'));
+
+      expect(infoSpy).not.toHaveBeenCalled();
+      infoSpy.mockRestore();
+    });
+
     test('Vacuum -- Table names listed', async () => {
       const infoSpy = jest.spyOn(globalLogger, 'info');
 
@@ -790,7 +817,7 @@ describe('Super Admin routes', () => {
       infoSpy.mockRestore();
     });
 
-    test('Vacuum -- Invalid table names', async () => {
+    test('Vacuum -- Non-string table names', async () => {
       const infoSpy = jest.spyOn(globalLogger, 'info');
 
       const res1 = await request(app)
@@ -803,6 +830,24 @@ describe('Super Admin routes', () => {
       expect(res1.status).toStrictEqual(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Table name(s) must be a string'));
+
+      expect(infoSpy).not.toHaveBeenCalled();
+      infoSpy.mockRestore();
+    });
+
+    test('Vacuum -- Non-snake-cased table names', async () => {
+      const infoSpy = jest.spyOn(globalLogger, 'info');
+
+      const res1 = await request(app)
+        .post('/admin/super/vacuum')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({ tableNames: ['Observation', 'Observation History'] });
+
+      expect(res1.status).toStrictEqual(400);
+      expect(res1.headers['content-location']).not.toBeDefined();
+      expect(res1.body).toMatchObject(badRequest('Table name(s) must be a snake_cased_string'));
 
       expect(infoSpy).not.toHaveBeenCalled();
       infoSpy.mockRestore();
