@@ -242,11 +242,12 @@ superAdminRouter.post(
     body('tableName').isString().withMessage('Table name must be a string'),
     body('settings')
       .isObject()
+      .withMessage('Settings must be object mapping valid table settings to desired values')
       .custom((settings) => {
         for (const settingName of Object.keys(settings)) {
           const dataType = OVERRIDABLE_TABLE_SETTINGS[settingName as keyof typeof OVERRIDABLE_TABLE_SETTINGS];
           if (!dataType) {
-            throw new Error('Not a valid table setting');
+            throw new Error(`${settingName} is not a valid table setting`);
           }
         }
         return true;
@@ -254,9 +255,15 @@ superAdminRouter.post(
     ...Object.entries(OVERRIDABLE_TABLE_SETTINGS).map(([settingName, dataType]) => {
       switch (dataType) {
         case 'float':
-          return body(`settings.${settingName}`).isFloat().optional();
+          return body(`settings.${settingName}`)
+            .isFloat()
+            .withMessage(`settings.${settingName} must be a float value`)
+            .optional();
         case 'int':
-          return body(`settings.${settingName}`).isInt().optional();
+          return body(`settings.${settingName}`)
+            .isInt()
+            .withMessage(`settings.${settingName} must be an integer value`)
+            .optional();
         default:
           throw new Error('Unreachable');
       }
@@ -274,7 +281,7 @@ superAdminRouter.post(
 
     const query = `ALTER TABLE "${req.body.tableName}" SET (${Object.entries(req.body.settings)
       .map(([settingName, val]) => `${settingName} = ${val}`)
-      .join(',')});`;
+      .join(', ')});`;
 
     const startTime = Date.now();
     await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
