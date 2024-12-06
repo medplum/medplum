@@ -40,7 +40,7 @@ export const OVERRIDABLE_TABLE_SETTINGS = {
 } as const satisfies Record<string, 'float' | 'int'>;
 
 export function isValidTableName(tableName: string): boolean {
-  return /^(\w_?)+$/.test(tableName);
+  return /^[\w_]+$/.test(tableName);
 }
 
 export const superAdminRouter = Router();
