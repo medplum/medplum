@@ -60,7 +60,7 @@ export function isResourceWithId<T extends Resource>(
   resource: unknown,
   resourceType?: T['resourceType']
 ): resource is WithId<T> {
-  return isResource(resource, resourceType) && 'id' in resource;
+  return isResource(resource, resourceType) && 'id' in resource && typeof resource.id === 'string';
 }
 
 /**
