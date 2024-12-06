@@ -1820,7 +1820,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
         const response = (await this.graphql(query)) as SchemaGraphQLResponse;
 
-        indexStructureDefinitionBundle(response.data.StructureDefinitionList);
+        indexStructureDefinitionBundle(response.data.StructureDefinitionList.filter((sd) => sd.name === resourceType));
 
         for (const searchParameter of response.data.SearchParameterList) {
           indexSearchParameter(searchParameter);
