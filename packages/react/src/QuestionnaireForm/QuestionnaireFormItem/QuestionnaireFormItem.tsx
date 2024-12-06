@@ -219,6 +219,16 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             onChangeAnswer={(e) => onChangeAnswer(e)}
           />
         );
+      } else if (isMultiSelectChoicel(item) && !item.answerValueSet) {
+        return (
+          <QuestionnaireChoiceDropDownInput
+            name={name}
+            item={item}
+            initial={initial}
+            response={response}
+            onChangeAnswer={(e) => onChangeAnswer(e)}
+          />
+        );
       } else {
         return (
           <QuestionnaireChoiceSetInput
@@ -433,6 +443,14 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
     (e) =>
       e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
       e.valueCodeableConcept?.coding?.[0]?.code === 'drop-down'
+  );
+}
+
+function isMultiSelectChoice(item: QuestionnaireItem): boolean {
+  return !!item.extension?.some(
+    (e) =>
+      e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+      e.valueCodeableConcept?.coding?.[0]?.code === 'multi-select'
   );
 }
 
