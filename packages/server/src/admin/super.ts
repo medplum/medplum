@@ -11,7 +11,7 @@ import {
 } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
-import { body, validationResult } from 'express-validator';
+import { body, checkExact, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config';
@@ -241,17 +241,26 @@ superAdminRouter.post(
     body('tableName').isString().withMessage('Table name must be a string'),
     body('settings')
       .isObject()
-      .withMessage('Settings must be an object with valid Postgres table setting name as keys'),
+      .custom((settings) => {
+        for (const settingName of Object.keys(settings)) {
+          const dataType = OVERRIDABLE_TABLE_SETTINGS[settingName as keyof typeof OVERRIDABLE_TABLE_SETTINGS];
+          if (!dataType) {
+            throw new Error('Not a valid table setting');
+          }
+        }
+        return true;
+      }),
     ...Object.entries(OVERRIDABLE_TABLE_SETTINGS).map(([settingName, dataType]) => {
       switch (dataType) {
         case 'float':
-          return body(`settings.${settingName}`).isFloat();
+          return body(`settings.${settingName}`).isFloat().optional();
         case 'int':
-          return body(`settings.${settingName}`).isInt();
+          return body(`settings.${settingName}`).isInt().optional();
         default:
           throw new Error('Unreachable');
       }
     }),
+    checkExact(),
   ],
   asyncWrap(async (req: Request, res: Response) => {
     requireSuperAdmin();
@@ -262,17 +271,44 @@ superAdminRouter.post(
       return;
     }
 
-    await getSystemRepo()
-      .getDatabaseClient(DatabaseMode.WRITER)
-      .query(
-        `ALTER TABLE "$1" SET (
-          ${Object.entries(req.body.settings)
-            .map((_, i) => `$${2 + 2 * i} = $${3 + 2 * i}`)
-            .join(',')}
-        );`,
-        [req.body.tableName, ...Object.entries(req.body.settings).flat()]
-      );
+    const query = `ALTER TABLE "${req.body.tableName}" SET (${Object.entries(req.body.settings)
+      .map(([settingName, val]) => `${settingName} = ${val}`)
+      .join(',')});`;
+
+    await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
     sendOutcome(res, allOk);
+  })
+);
+
+// POST to /admin/super/vacuum
+// to vacuum and optional analyze on one or more tables
+superAdminRouter.post(
+  '/vacuum',
+  [
+    body('tableNames').isArray().withMessage('Table names must be an array of strings').optional(),
+    body('tableNames.*').isString().withMessage('Table name(s) must be a string').optional(),
+    body('analyze').isBoolean().optional().default(false),
+    checkExact(),
+  ],
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+    requireAsync(req);
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const query = `VACUUM${req.body.analyze ? ' ANALYZE' : ''}${req.body.tableNames?.length ? ` ${req.body.tableNames.map((name: string) => `"${name}"`).join(', ')}` : ''};`;
+
+    await sendAsyncResponse(req, res, async () => {
+      await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
+      return {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'outcome', resource: allOk }],
+      };
+    });
   })
 );
 
