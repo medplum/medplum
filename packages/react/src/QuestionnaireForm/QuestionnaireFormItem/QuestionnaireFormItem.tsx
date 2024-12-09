@@ -5,6 +5,7 @@ import {
   formatCodeableConcept,
   formatCoding,
   getElementDefinition,
+  HTTP_HL7_ORG,
   stringify,
   TypedValue,
 } from '@medplum/core';
@@ -475,7 +476,7 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
 function isMultiSelectChoice(item: QuestionnaireItem): boolean {
   return !!item.extension?.some(
     (e) =>
-      e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
+      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
       e.valueCodeableConcept?.coding?.[0]?.code === 'multi-select'
   );
 }

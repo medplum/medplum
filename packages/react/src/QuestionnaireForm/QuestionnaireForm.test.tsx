@@ -1387,6 +1387,63 @@ describe('QuestionnaireForm', () => {
     expect(searchInput).toBeInstanceOf(HTMLInputElement);
   });
 
+  test('Multi Select Code', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'default-values',
+        title: 'Default Values Example',
+        item: [
+          {
+            id: 'choice',
+            linkId: 'choice',
+            text: 'choice',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'multi-select',
+                      display: 'Multi Select',
+                    },
+                  ],
+                  text: 'Multi Select',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    const dropDown = screen.getByText('choice');
+
+    await act(async () => {
+      fireEvent.click(dropDown);
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'Yes' });
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'No' });
+    });
+  });
+
   test('Nested repeat', async () => {
     const onSubmit = jest.fn();
     await setup({
