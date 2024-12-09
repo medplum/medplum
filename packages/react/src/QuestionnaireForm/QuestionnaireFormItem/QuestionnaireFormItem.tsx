@@ -313,7 +313,6 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
   );
 }
 
-
 function QuestionnaireMultiSelectInput(props: QuestionnaireChoiceInputProps): JSX.Element {
   const { item, initial, response } = props;
 
@@ -322,21 +321,21 @@ function QuestionnaireMultiSelectInput(props: QuestionnaireChoiceInputProps): JS
   }
 
   const initialValue = getItemInitialValue(initial);
-   const { propertyName, data } = formatSelectData(props.item);
-    const currentAnswer = getCurrentMultiSelectAnswer(response);
+  const { propertyName, data } = formatSelectData(props.item);
+  const currentAnswer = getCurrentMultiSelectAnswer(response);
 
-    return (
-      <MultiSelect
-        data={data}
-        placeholder="Select items"
-        searchable
-        defaultValue={currentAnswer || [typedValueToString(initialValue)]}
-        onChange={(selected) => {
-          const values = getNewMultiSelectValues(selected, propertyName, item);
-          props.onChangeAnswer(values);
-        }}
-      />
-    );
+  return (
+    <MultiSelect
+      data={data}
+      placeholder="Select items"
+      searchable
+      defaultValue={currentAnswer || [typedValueToString(initialValue)]}
+      onChange={(selected) => {
+        const values = getNewMultiSelectValues(selected, propertyName, item);
+        props.onChangeAnswer(values);
+      }}
+    />
+  );
 }
 
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {
