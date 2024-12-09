@@ -352,6 +352,29 @@ Actions:
 In some cases, the `send-to-health-gorilla`, but will return an error as follows, asking for the order to be split and resubmitted.
 
 ```ts
+{
+  "resourceType": "OperationOutcome",
+  "extension": [
+    {
+      "url": "https://api.healthgorilla.com/fhir/R4/fhir/StructureDefinition/operationoutcome-order-splitting",
+      "valueString": "436|1877;9230;900323"
+    }
+  ],
+  "issue": [
+    {
+      "severity": "fatal",
+      "code": "processing",
+      "details": {
+        "coding": [
+          {
+            "code": "order-splitting-required"
+          }
+        ],
+        "text": "Splitting required"
+      }
+    }
+  ]
+}
 
 ```
 
