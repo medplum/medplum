@@ -219,9 +219,9 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             onChangeAnswer={(e) => onChangeAnswer(e)}
           />
         );
-      } else if (isMultiSelectChoicel(item) && !item.answerValueSet) {
+      } else if (isMultiSelectChoice(item) && !item.answerValueSet) {
         return (
-          <QuestionnaireChoiceDropDownInput
+          <QuestionnaireMultiSelectInput
             name={name}
             item={item}
             initial={initial}
@@ -310,6 +310,32 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
       data={data}
     />
   );
+}
+
+
+function QuestionnaireMultiSelectInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { item, initial, response } = props;
+
+  if (!item.answerOption?.length) {
+    return <NoAnswerDisplay />;
+  }
+
+  const initialValue = getItemInitialValue(initial);
+   const { propertyName, data } = formatSelectData(props.item);
+    const currentAnswer = getCurrentMultiSelectAnswer(response);
+
+    return (
+      <MultiSelect
+        data={data}
+        placeholder="Select items"
+        searchable
+        defaultValue={currentAnswer || [typedValueToString(initialValue)]}
+        onChange={(selected) => {
+          const values = getNewMultiSelectValues(selected, propertyName, item);
+          props.onChangeAnswer(values);
+        }}
+      />
+    );
 }
 
 function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.Element {

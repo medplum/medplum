@@ -4112,11 +4112,11 @@ export const AHCHRSNScreening = (): JSX.Element => (
                           coding: [
                             {
                               system: 'http://hl7.org/fhir/questionnaire-item-control',
-                              code: 'drop-down',
-                              display: 'Drop down',
+                              code: 'multi-select',
+                              display: 'Multi Select',
                             },
                           ],
-                          text: 'Drop down',
+                          text: 'Multi Select',
                         },
                       },
                     ],
