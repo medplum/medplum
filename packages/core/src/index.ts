@@ -21,6 +21,7 @@ export * from './fhirmapper/transform';
 export * from './fhirpath/atoms';
 export * from './fhirpath/parse';
 export * from './fhirpath/utils';
+export * from './filebuilder';
 export * from './filter/parse';
 export * from './filter/types';
 export * from './format';

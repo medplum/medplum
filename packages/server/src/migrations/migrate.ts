@@ -1,5 +1,6 @@
 import {
   deepEquals,
+  FileBuilder,
   getAllDataTypes,
   getSearchParameterDetails,
   indexSearchParameterBundle,
@@ -16,9 +17,8 @@ import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { Client } from 'pg';
-import { FileBuilder } from './filebuilder';
 
-const SCHEMA_DIR = resolve(__dirname, '../../server/src/migrations/schema');
+const SCHEMA_DIR = resolve(__dirname, 'schema');
 let LOG_UNMATCHED_INDEXES = false;
 let DRY_RUN = false;
 
