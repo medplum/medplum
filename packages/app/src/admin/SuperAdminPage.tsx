@@ -2,7 +2,7 @@ import { Button, Divider, Modal, NativeSelect, PasswordInput, Stack, TextInput, 
 import { useDisclosure } from '@mantine/hooks';
 import { notifications, showNotification } from '@mantine/notifications';
 import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import {
   DateTimeInput,
   Document,
@@ -38,7 +38,7 @@ export function SuperAdminPage(): JSX.Element {
   }
 
   function reindexResourceType(formData: Record<string, string>): void {
-    startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
+    startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', { body: formData, cancellable: true });
   }
 
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
@@ -174,34 +174,81 @@ export function SuperAdminPage(): JSX.Element {
   );
 }
 
-function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
+type AsyncJobOptions = {
+  body?: Record<string, string>;
+  cancellable?: boolean;
+};
+
+function startAsyncJob(medplum: MedplumClient, title: string, url: string, asyncJobOptions?: AsyncJobOptions): void {
+  const controller = new AbortController();
   notifications.show({
     id: url,
     loading: true,
     title,
     message: 'Running...',
     autoClose: false,
-    withCloseButton: false,
+    ...(asyncJobOptions?.cancellable
+      ? { withCloseButton: true, onClose: () => controller.abort() }
+      : { withCloseButton: false }),
   });
 
-  const options: MedplumRequestOptions = { method: 'POST', pollStatusOnAccepted: true };
-  if (body) {
-    options.body = JSON.stringify(body);
+  const options: MedplumRequestOptions = {
+    method: 'POST',
+    pollStatusOnAccepted: true,
+    ...(asyncJobOptions?.cancellable ? { asyncReqCancelSignal: controller.signal } : undefined),
+  };
+
+  if (asyncJobOptions?.body) {
+    options.body = JSON.stringify(asyncJobOptions.body);
   }
 
   medplum
-    .startAsyncRequest(url, options)
-    .then(() => {
-      notifications.update({
-        id: url,
-        color: 'green',
-        title,
-        message: 'Done',
-        icon: <IconCheck size="1rem" />,
-        loading: false,
-        autoClose: false,
-        withCloseButton: true,
-      });
+    .startAsyncRequest<AsyncJob>(url, options)
+    .then((job) => {
+      switch (job.status) {
+        case 'completed':
+          notifications.update({
+            id: url,
+            color: 'green',
+            title,
+            message: 'Done',
+            icon: <IconCheck size="1rem" />,
+            loading: false,
+            autoClose: false,
+            withCloseButton: true,
+          });
+          break;
+        case 'cancelled': {
+          const notification = {
+            id: url,
+            color: 'red',
+            title,
+            message: 'Job cancelled',
+            icon: <IconX size="1rem" />,
+            loading: false,
+            autoClose: false,
+            withCloseButton: true,
+          };
+          if (!notifications.update(notification)) {
+            notifications.show(notification);
+          }
+          break;
+        }
+        case 'error':
+          notifications.update({
+            id: url,
+            color: 'red',
+            title,
+            message: 'Error while processing job',
+            icon: <IconX size="1rem" />,
+            loading: false,
+            autoClose: false,
+            withCloseButton: true,
+          });
+          break;
+        default:
+          throw new Error('Invalid status for finalized job');
+      }
     })
     .catch((err) => {
       notifications.update({
