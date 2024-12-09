@@ -8,11 +8,10 @@ This guide explains how to implement multi-tenant access control in Medplum proj
 
 The multi-tenant access control system is built on these key components:
 
-1. An `AccessPolicy` that defines the access rules
+1. An `AccessPolicy` that defines access rules with [parameterized variables](/docs/access/access-policies#parameterized-policies)
 2. `Organization` resources that represent different tenants
 3. Resources (like `Practitioner`, `Patient`, `Questionnaire`) that are associated with specific organizations
 4. The `meta.accounts` field that links resources to organizations
-5. [Parameterized variables](/docs/access/access-policies#parameterized-policies)
 
 ## Visual Architecture
 
@@ -45,6 +44,8 @@ graph TB
     OrgB --> PatB
 
 ```
+
+A multi-tenant system where one AccessPolicy controls access for multiple organizations and their associated resources (practitioners, questionnaires, and patients)
 
 ## Implementation Guide
 
@@ -181,7 +182,7 @@ When creating resources, associate them with their respective organizations usin
 
 ### Create Users and attach AccessPolicy
 
-First create a `Practitioner` resource associated with **Organization A**
+First create a `Practitioner` User associated with **Organization A** via the [`/admin/invite` endpoint](/docs/api/project-admin/invite)
 
 ```json
 {
@@ -197,6 +198,7 @@ First create a `Practitioner` resource associated with **Organization A**
                 "policy": {
                     "reference": "AccessPolicy/{{access_policy}}"
                 },
+// highlight-start
                 "parameter": [
                     {
                         "name": "current_organization",
@@ -205,6 +207,7 @@ First create a `Practitioner` resource associated with **Organization A**
                         }
                     }
                 ]
+ // highlight-end
             }
         ]
     }
@@ -227,6 +230,8 @@ Then create a Practitioner resource associated with **Organization B**
                 "policy": {
                     "reference": "AccessPolicy/{{access_policy}}"
                 },
+
+// highlight-start
                 "parameter": [
                     {
                         "name": "current_organization",
@@ -235,6 +240,7 @@ Then create a Practitioner resource associated with **Organization B**
                         }
                     }
                 ]
+// highlight-end
             }
         ]
     }
