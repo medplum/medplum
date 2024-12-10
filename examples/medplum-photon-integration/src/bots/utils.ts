@@ -1,5 +1,13 @@
 import { MedplumClient, normalizeErrorString } from '@medplum/core';
-import { Address, ContactPoint, MedicationKnowledge, MedicationRequest, Patient } from '@medplum/fhirtypes';
+import {
+  Address,
+  CodeableConcept,
+  Coding,
+  ContactPoint,
+  MedicationKnowledge,
+  MedicationRequest,
+  Patient,
+} from '@medplum/fhirtypes';
 import { createHmac } from 'crypto';
 import { OrderData, PhotonAddress, PhotonEvent, PhotonWebhook } from '../photon-types';
 import { NEUTRON_HEALTH } from './constants';
@@ -218,4 +226,59 @@ export async function getMedicationKnowledge(
   } catch (err) {
     throw new Error(normalizeErrorString(err));
   }
+}
+
+export async function getMedicationElement(
+  medplum: MedplumClient,
+  rxcui?: string,
+  medicationName?: string
+): Promise<CodeableConcept> {
+  let medicationKnowledge = await getMedicationKnowledge(medplum, rxcui);
+  if (!medicationKnowledge) {
+    try {
+      medicationKnowledge = await createMedicationKnowledge(medplum, rxcui, medicationName);
+    } catch (err) {
+      throw new Error(normalizeErrorString(err));
+    }
+  }
+
+  const medicationCode = medicationKnowledge.code;
+  if (!medicationCode) {
+    throw new Error('Medication has no code and could not be added to the prescription');
+  }
+
+  return medicationCode;
+}
+
+/**
+ * Takes data from a Photon prescription created event and creates a FHIR Medication resource in your project. If there is no
+ * linked RX Norm code, the Medication will not be created.
+ *
+ * @param medplum - Medplum Client to create the medication in your project
+ * @param rxcui - The RXCUI code of the medication
+ * @param medicationName - The name of the medication, used to display it in the reference
+ * @returns The created FHIR Medication resource if it can be created
+ */
+async function createMedicationKnowledge(
+  medplum: MedplumClient,
+  rxcui?: string,
+  medicationName?: string
+): Promise<MedicationKnowledge> {
+  if (!rxcui) {
+    throw new Error('Unable to create a MedicationKnowledge resource');
+  }
+
+  const coding: Coding = { system: 'http://www.nlm.nih.gov/research/umls/rxnorm', code: rxcui };
+  if (medicationName) {
+    coding.display = medicationName;
+  }
+
+  const medicationData: MedicationKnowledge = {
+    resourceType: 'MedicationKnowledge',
+    code: { coding: [coding] },
+    status: 'active',
+  };
+
+  const medicationKnowledge = await medplum.createResource(medicationData);
+  return medicationKnowledge;
 }
