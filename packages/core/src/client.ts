@@ -330,6 +330,13 @@ export interface MedplumClientOptions {
    * Default is true.
    */
   extendedMode?: boolean;
+
+  /**
+   * Default headers to include in all requests.
+   * This can be used to set custom headers such as Cookies or Authorization headers.
+   * @default {}
+   */
+  defaultHeaders?: Record<string, string>;
 }
 
 export interface MedplumRequestOptions extends RequestInit {
@@ -801,6 +808,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private readonly tokenUrl: string;
   private readonly logoutUrl: string;
   private readonly fhircastHubUrl: string;
+  private readonly defaultHeaders: Record<string, string>;
   private readonly onUnauthenticated?: () => void;
   private readonly autoBatchTime: number;
   private readonly autoBatchQueue: AutoBatchEntry[] | undefined;
@@ -842,6 +850,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.fhircastHubUrl = concatUrls(this.baseUrl, options?.fhircastHubUrl ?? 'fhircast/STU3');
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
+    this.defaultHeaders = options?.defaultHeaders ?? {};
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
 
@@ -3347,6 +3356,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - The options to add defaults to.
    */
   private addFetchOptionsDefaults(options: MedplumRequestOptions): void {
+    // Apply default headers
+    Object.entries(this.defaultHeaders).forEach(([name, value]) => {
+      this.setRequestHeader(options, name, value);
+    });
+
     this.setRequestHeader(options, 'Accept', DEFAULT_ACCEPT, true);
 
     if (this.options.extendedMode !== false) {
@@ -3811,6 +3825,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       credentials: 'include',
     };
     const headers = options.headers as Record<string, string>;
+    Object.assign(headers, this.defaultHeaders);
 
     if (this.basicAuth) {
       headers['Authorization'] = `Basic ${this.basicAuth}`;
