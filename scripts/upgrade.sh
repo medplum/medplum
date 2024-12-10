@@ -16,15 +16,17 @@ git checkout -b "$BRANCH_NAME"
 
 # Exclude known problem packages
 # @types/express - version 5+ incompatible with express 4, waiting for express 5 upgrade
+# @types/react - version 19+ incompatible with react 18, waiting for fix
 # eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # react - version 18.3+ incompatible with react-native, waiting for fix
+# react-router-dom - version 7+ has breaking changes, will fix separately
 # rimraf - version 6+ requires Node 20+, holding back until Medplum v4
 # supertest - version 7+ incompatible with superwstest, waiting for fix
 # @tabler/icons-react - to avoid bad interaction with vite https://github.com/tabler/tabler-icons/issues/1233
 # react-native - 0.76.x is broken with an error caused by flow parser breaking when using `expo-crypto`: `SyntaxError: {..}/react-native/Libraries/vendor/emitter/EventEmitter.js: Unexpected token, expected "]" (39:5)`
 # ua-parser-js - version 2.0.0+ is AGPL, which is incompatible with Medplum's Apache 2.0 license
-EXCLUDE="@types/express eslint node-fetch react react-dom rimraf supertest @tabler/icons-react react-native ua-parser-js"
+EXCLUDE="@types/express @types/react @types/react-dom eslint node-fetch react react-dom react-router-dom rimraf supertest @tabler/icons-react react-native ua-parser-js"
 
 # First, only upgrade patch and minor versions
 # --workspaces - Run on all workspaces

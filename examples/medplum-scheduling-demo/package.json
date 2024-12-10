@@ -49,11 +49,11 @@
     "react-chartjs-2": "5.2.0",
     "react-dom": "18.2.0",
     "ts-node": "10.9.2",
-    "vitest": "2.1.6",
+    "vitest": "2.1.8",
     "dayjs": "1.11.13",
     "react-big-calendar": "1.16.3",
     "react-router-dom": "6.28.0",
     "typescript": "5.7.2",
-    "vite": "6.0.2"
+    "vite": "6.0.3"
   }
 }

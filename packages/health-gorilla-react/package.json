@@ -65,7 +65,7 @@
     "@medplum/mock": "3.2.24",
     "@medplum/react": "3.2.24",
     "@testing-library/jest-dom": "6.6.3",
-    "@testing-library/react": "16.0.1",
+    "@testing-library/react": "16.1.0",
     "@types/node": "22.10.1",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
@@ -75,7 +75,7 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.28.0",
     "rimraf": "5.0.9",
-    "vitest": "2.1.6"
+    "vitest": "2.1.8"
   },
   "peerDependencies": {
     "@medplum/core": "3.2.24",

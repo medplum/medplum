@@ -41,7 +41,7 @@
     "@medplum/react": "3.2.24",
     "@tabler/icons-react": "3.17.0",
     "@testing-library/jest-dom": "6.6.3",
-    "@testing-library/react": "16.0.1",
+    "@testing-library/react": "16.1.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
@@ -51,7 +51,7 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.28.0",
     "rfc6902": "5.1.2",
-    "vite": "6.0.2"
+    "vite": "6.0.3"
   },
   "engines": {
     "node": ">=18.0.0"

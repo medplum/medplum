@@ -36,6 +36,6 @@
     "react-router-dom": "6.28.0",
     "rimraf": "5.0.9",
     "typescript": "5.7.2",
-    "vite": "6.0.2"
+    "vite": "6.0.3"
   }
 }

@@ -38,8 +38,8 @@
     "@types/node": "22.10.1",
     "@types/node-fetch": "2.6.12",
     "@types/ssh2-sftp-client": "9.0.4",
-    "@vitest/coverage-v8": "2.1.6",
-    "@vitest/ui": "2.1.6",
+    "@vitest/coverage-v8": "2.1.8",
+    "@vitest/ui": "2.1.8",
     "esbuild": "0.24.0",
     "fast-glob": "3.3.2",
     "form-data": "4.0.1",
@@ -49,6 +49,6 @@
     "ssh2-sftp-client": "11.0.0",
     "stripe": "17.4.0",
     "typescript": "5.7.2",
-    "vitest": "2.1.6"
+    "vitest": "2.1.8"
   }
 }

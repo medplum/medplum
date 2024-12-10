@@ -20,7 +20,7 @@
     ]
   },
   "devDependencies": {
-    "@emotion/react": "11.13.5",
+    "@emotion/react": "11.14.0",
     "@mantine/core": "7.14.3",
     "@mantine/hooks": "7.14.3",
     "@mantine/notifications": "7.14.3",
@@ -39,6 +39,6 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.28.0",
     "typescript": "5.7.2",
-    "vite": "6.0.2"
+    "vite": "6.0.3"
   }
 }
