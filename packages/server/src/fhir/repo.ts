@@ -21,7 +21,6 @@ import {
   evalFhirPathTyped,
   forbidden,
   formatSearchQuery,
-  getSearchParameterDetails,
   getSearchParameters,
   getStatus,
   gone,
@@ -113,6 +112,7 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
+import { getSearchParameterImplementation } from './searchparameter';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -1436,19 +1436,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return;
     }
 
-    const details = getSearchParameterDetails(resource.resourceType, searchParam);
+    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
     const values = evalFhirPath(searchParam.expression as string, resource);
     let columnValue = null;
 
     if (values.length > 0) {
-      if (details.array) {
-        columnValue = values.map((v) => this.buildColumnValue(searchParam, details, v));
+      if (impl.array) {
+        columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
       } else {
-        columnValue = this.buildColumnValue(searchParam, details, values[0]);
+        columnValue = this.buildColumnValue(searchParam, impl, values[0]);
       }
     }
 
-    columns[details.columnName] = columnValue;
+    columns[impl.columnName] = columnValue;
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
