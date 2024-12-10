@@ -36,8 +36,10 @@ export function FormSection(props: FormSectionProps): JSX.Element {
       classNames={{
         label: [
           props?.readonly ? classes.dimmed : undefined,
-          classes.preserveBreaks  // Add this line
-        ].filter(Boolean).join(' ')
+          classes.preserveBreaks, // Add this line
+        ]
+          .filter(Boolean)
+          .join(' '),
       }}
       description={props.description}
       withAsterisk={props.withAsterisk}
