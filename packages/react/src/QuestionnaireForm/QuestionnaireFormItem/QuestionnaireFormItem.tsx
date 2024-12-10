@@ -5,6 +5,7 @@ import {
   formatCodeableConcept,
   formatCoding,
   getElementDefinition,
+  HTTP_HL7_ORG,
   stringify,
   TypedValue,
 } from '@medplum/core';
@@ -219,6 +220,16 @@ export function QuestionnaireFormItem(props: QuestionnaireFormItemProps): JSX.El
             onChangeAnswer={(e) => onChangeAnswer(e)}
           />
         );
+      } else if (isMultiSelectChoice(item) && !item.answerValueSet) {
+        return (
+          <QuestionnaireMultiSelectInput
+            name={name}
+            item={item}
+            initial={initial}
+            response={response}
+            onChangeAnswer={(e) => onChangeAnswer(e)}
+          />
+        );
       } else {
         return (
           <QuestionnaireChoiceSetInput
@@ -298,6 +309,31 @@ function QuestionnaireChoiceDropDownInput(props: QuestionnaireChoiceInputProps):
       }}
       defaultValue={formatCoding(defaultValue?.value) || defaultValue?.value}
       data={data}
+    />
+  );
+}
+
+function QuestionnaireMultiSelectInput(props: QuestionnaireChoiceInputProps): JSX.Element {
+  const { item, initial, response } = props;
+
+  if (!item.answerOption?.length) {
+    return <NoAnswerDisplay />;
+  }
+
+  const initialValue = getItemInitialValue(initial);
+  const { propertyName, data } = formatSelectData(props.item);
+  const currentAnswer = getCurrentMultiSelectAnswer(response);
+
+  return (
+    <MultiSelect
+      data={data}
+      placeholder="Select items"
+      searchable
+      defaultValue={currentAnswer || [typedValueToString(initialValue)]}
+      onChange={(selected) => {
+        const values = getNewMultiSelectValues(selected, propertyName, item);
+        props.onChangeAnswer(values);
+      }}
     />
   );
 }
@@ -433,6 +469,14 @@ function isDropDownChoice(item: QuestionnaireItem): boolean {
     (e) =>
       e.url === 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl' &&
       e.valueCodeableConcept?.coding?.[0]?.code === 'drop-down'
+  );
+}
+
+function isMultiSelectChoice(item: QuestionnaireItem): boolean {
+  return !!item.extension?.some(
+    (e) =>
+      e.url === HTTP_HL7_ORG + '/fhir/StructureDefinition/questionnaire-itemControl' &&
+      e.valueCodeableConcept?.coding?.[0]?.code === 'multi-select'
   );
 }
 
