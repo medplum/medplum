@@ -933,9 +933,14 @@ function buildSearchFilterExpression(
     };
   }
 
-  const lookupTable = getLookupTable(resourceType, param);
-  if (lookupTable) {
-    return lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+  const impl = getSearchParameterImplementation(resourceType, param);
+  if (impl.implementation === 'lookup-table') {
+    const lookupTable = getLookupTable(resourceType, param);
+    if (lookupTable) {
+      return lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+    }
+
+    //TODO: error handling
   }
 
   // Not any special cases, just a normal search parameter.
@@ -1017,17 +1022,21 @@ function trySpecialSearchParameter(
     case '_id':
       return buildIdSearchFilter(
         table,
-        { columnName: 'id', type: SearchParameterType.UUID },
+        { columnName: 'id', type: SearchParameterType.UUID, implementation: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
     case '_lastUpdated':
-      return buildDateSearchFilter(table, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
+      return buildDateSearchFilter(
+        table,
+        { type: SearchParameterType.DATETIME, columnName: 'lastUpdated', implementation: 'column' },
+        filter
+      );
     case '_compartment':
     case '_project':
       return buildIdSearchFilter(
         table,
-        { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
+        { columnName: 'compartments', type: SearchParameterType.UUID, array: true, implementation: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
@@ -1314,13 +1323,16 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
     throw new OperationOutcomeError(badRequest('Unknown search parameter: ' + sortRule.code));
   }
 
-  const lookupTable = getLookupTable(resourceType, param);
-  if (lookupTable) {
-    lookupTable.addOrderBy(builder, resourceType, sortRule);
-    return;
+  const impl = getSearchParameterImplementation(resourceType, param);
+  if (impl.implementation === 'lookup-table') {
+    const lookupTable = getLookupTable(resourceType, param);
+    if (lookupTable) {
+      lookupTable.addOrderBy(builder, resourceType, sortRule);
+      return;
+    }
+    // TODO error handling
   }
 
-  const impl = getSearchParameterImplementation(resourceType, param);
   builder.orderBy(impl.columnName, !!sortRule.descending);
 }
 
