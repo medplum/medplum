@@ -981,6 +981,16 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Returns default headers to include in all requests.
+   * This can be used to set custom headers such as Cookies or Authorization headers.
+   * @category HTTP
+   * @returns Default headers to include in all requests.
+   */
+  getDefaultHeaders(): Record<string, string> {
+    return this.defaultHeaders;
+  }
+
+  /**
    * Clears all auth state including local storage and session storage.
    * @category Authentication
    */
