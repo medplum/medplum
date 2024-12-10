@@ -61,7 +61,7 @@ export interface BinaryStorage {
 
   copyFile(sourceKey: string, destinationKey: string): Promise<void>;
 
-  getPresignedUrl(binary: Binary): string;
+  getPresignedUrl(binary: Binary): Promise<string>;
 }
 
 /**
@@ -127,7 +127,7 @@ class FileSystemStorage implements BinaryStorage {
     copyFileSync(resolve(this.baseDir, sourceKey), resolve(this.baseDir, destinationKey));
   }
 
-  getPresignedUrl(binary: Binary): string {
+  async getPresignedUrl(binary: Binary): Promise<string> {
     const config = getConfig();
     const storageBaseUrl = config.storageBaseUrl;
     const result = new URL(concatUrls(storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`));
@@ -136,9 +136,11 @@ class FileSystemStorage implements BinaryStorage {
     dateLessThan.setHours(dateLessThan.getHours() + 1);
     result.searchParams.set('Expires', dateLessThan.getTime().toString());
 
-    const privateKey = { key: config.signingKey, passphrase: config.signingKeyPassphrase };
-    const signature = createSign('sha256').update(result.toString()).sign(privateKey, 'base64');
-    result.searchParams.set('Signature', signature);
+    if (config.signingKey) {
+      const privateKey = { key: config.signingKey, passphrase: config.signingKeyPassphrase };
+      const signature = createSign('sha256').update(result.toString()).sign(privateKey, 'base64');
+      result.searchParams.set('Signature', signature);
+    }
 
     return result.toString();
   }

@@ -155,6 +155,6 @@ export async function uploadBinaryData(
   const contentType = options?.contentType ?? DEFAULT_CONTENT_TYPE;
   await getBinaryStorage().writeBinary(binary, options?.filename, contentType, source);
 
-  binary.url = getBinaryStorage().getPresignedUrl(binary);
+  binary.url = await getBinaryStorage().getPresignedUrl(binary);
   return binary;
 }

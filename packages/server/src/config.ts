@@ -20,9 +20,9 @@ export interface MedplumServerConfig {
   logLevel?: string;
   binaryStorage?: string;
   storageBaseUrl: string;
-  signingKey: string;
-  signingKeyId: string;
-  signingKeyPassphrase: string;
+  signingKey?: string;
+  signingKeyId?: string;
+  signingKeyPassphrase?: string;
   supportEmail: string;
   approvedSenderEmails?: string;
   database: MedplumDatabaseConfig;
