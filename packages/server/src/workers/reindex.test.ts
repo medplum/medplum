@@ -18,6 +18,7 @@ import { randomUUID } from 'crypto';
 import { createReference, OperationOutcomeError, parseSearchRequest, preconditionFailed } from '@medplum/core';
 import { SelectQuery } from '../fhir/sql';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { escapeIdentifier } from 'pg';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
@@ -246,6 +247,17 @@ describe('Reindex Worker', () => {
 
   test('Continues when one resource type fails and reports error', () =>
     withTestContext(async () => {
+      const resourceTypes: ResourceType[] = ['Condition', 'Binary', 'DiagnosticReport'];
+
+      // When running tests during local development, these resourceTypes
+      // will accumulate enough rows overtime in their tables to result in ReindexJob
+      // taking more than one iteration to complete a given resource type
+      // since the test database is not reset/truncated between test runs.
+      const dbClient = repo.getDatabaseClient(DatabaseMode.WRITER);
+      for (const resourceType of resourceTypes) {
+        await dbClient.query('TRUNCATE TABLE ' + escapeIdentifier(resourceType));
+      }
+
       const queue = getReindexQueue() as any;
       queue.add.mockClear();
 
@@ -256,7 +268,6 @@ describe('Reindex Worker', () => {
         request: '/admin/super/reindex',
       });
 
-      const resourceTypes: ResourceType[] = ['Condition', 'Binary', 'DiagnosticReport'];
       await addReindexJob(resourceTypes, asyncJob);
       expect(queue.add).toHaveBeenCalledWith(
         'ReindexJobData',
