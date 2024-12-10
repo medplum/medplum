@@ -560,7 +560,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
     const startTime = Date.now();
     try {
-      const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
+      let result: T;
+      if (options?.ifMatch) {
+        // Conditional update requires transaction
+        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options.ifMatch));
+      } else {
+        result = await this.updateResourceImpl(resource, false);
+      }
       const durationMs = Date.now() - startTime;
       await this.postCommit(async () => {
         this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
@@ -1045,7 +1051,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async patchResource<T extends Resource = Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[]
+    patch: Operation[],
+    options?: UpdateResourceOptions
   ): Promise<T> {
     const startTime = Date.now();
     try {
@@ -1061,7 +1068,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         patchObject(resource, patch);
 
-        const result = await this.updateResourceImpl(resource, false);
+        const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
         const durationMs = Date.now() - startTime;
 
         await this.postCommit(async () => {
