@@ -33,7 +33,12 @@ export function FormSection(props: FormSectionProps): JSX.Element {
     <Input.Wrapper
       id={props.htmlFor}
       label={label}
-      classNames={{ label: props?.readonly ? classes.dimmed : undefined }}
+      classNames={{
+        label: [
+          props?.readonly ? classes.dimmed : undefined,
+          classes.preserveBreaks  // Add this line
+        ].filter(Boolean).join(' ')
+      }}
       description={props.description}
       withAsterisk={props.withAsterisk}
       error={getErrorsForInput(props.outcome, props.errorExpression ?? props.htmlFor)}
