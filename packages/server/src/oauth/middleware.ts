@@ -2,6 +2,7 @@ import {
   OperationOutcomeError,
   Operator,
   ProfileResource,
+  WithId,
   createReference,
   getReferenceString,
   isString,
@@ -17,8 +18,8 @@ import { getClientApplicationMembership, getLoginForAccessToken, timingSafeEqual
 
 export interface AuthState {
   login: Login;
-  project: Project;
-  membership: ProjectMembership;
+  project: WithId<Project>;
+  membership: WithId<ProjectMembership>;
   accessToken?: string;
 
   onBehalfOf?: ProfileResource;
@@ -64,7 +65,7 @@ async function authenticateBasicAuth(req: IncomingMessage, token: string): Promi
   }
 
   const systemRepo = getSystemRepo();
-  let client: ClientApplication;
+  let client: WithId<ClientApplication>;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', username);
   } catch (_err) {

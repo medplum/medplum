@@ -7,6 +7,7 @@ import {
   notFound,
   OperationOutcomeError,
   parseSearchRequest,
+  WithId,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, Observation, Patient, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
@@ -143,7 +144,7 @@ describe('MemoryRepository', () => {
   });
 
   describe('searchByReference', () => {
-    async function createPatients(repo: MemoryRepository, count: number): Promise<Patient[]> {
+    async function createPatients(repo: MemoryRepository, count: number): Promise<WithId<Patient>[]> {
       const patients = [];
       for (let i = 0; i < count; i++) {
         patients.push(await repo.createResource<Patient>({ resourceType: 'Patient' }));
@@ -151,7 +152,11 @@ describe('MemoryRepository', () => {
       return patients;
     }
 
-    async function createObservations(repo: MemoryRepository, count: number, patient: Patient): Promise<Observation[]> {
+    async function createObservations(
+      repo: MemoryRepository,
+      count: number,
+      patient: Patient
+    ): Promise<WithId<Observation>[]> {
       const resources = [];
       for (let i = 0; i < count; i++) {
         resources.push(
@@ -177,7 +182,7 @@ describe('MemoryRepository', () => {
     ): void {
       expect(Object.keys(results)).toHaveLength(parents.length);
       for (const [parent, children] of zip(parents, childrenByParent)) {
-        const result = results[getReferenceString(parent)];
+        const result = results[getReferenceString(parent) as string];
         expect(result).toHaveLength(Math.min(children.length - offset, count));
         for (const child of result) {
           expect(children.map((c) => c.id)).toContain(child.id);

@@ -1,6 +1,12 @@
 import { OperationOutcomeError, badRequest, capitalize, isEmpty, isResource, validateResource } from '@medplum/core';
 import { FhirRequest } from '@medplum/fhir-router';
-import { OperationDefinition, OperationDefinitionParameter, Parameters, ParametersParameter } from '@medplum/fhirtypes';
+import {
+  OperationDefinition,
+  OperationDefinitionParameter,
+  Parameters,
+  ParametersParameter,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import { Request } from 'express';
 
 export function parseParameters<T>(input: T | Parameters): T {
@@ -154,7 +160,7 @@ export function buildOutputParameters(operation: OperationDefinition, output: an
   const outputParameters = operation.parameter?.filter((p) => p.use === 'out');
   const param1 = outputParameters?.[0];
   if (outputParameters?.length === 1 && param1 && param1.name === 'return') {
-    if (!isResource(output) || (param1.type && output.resourceType !== param1.type)) {
+    if (!isResource(output, param1.type as ResourceType | undefined)) {
       throw new Error(`Expected ${param1.type ?? 'Resource'} output, but got unexpected ${typeof output}`);
     } else {
       // Send Resource as output directly, instead of using Parameters format

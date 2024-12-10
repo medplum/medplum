@@ -1,4 +1,4 @@
-import { ContentType, MedplumClient, createReference, getStatus, isOperationOutcome } from '@medplum/core';
+import { ContentType, MedplumClient, WithId, createReference, getStatus, isOperationOutcome } from '@medplum/core';
 import { OperationOutcome, Patient, ServiceRequest } from '@medplum/fhirtypes';
 import { Mock, vi } from 'vitest';
 import {
@@ -38,13 +38,13 @@ describe('Deduplication', () => {
       resourceType: 'Patient',
       id: 'src',
       name: [{ given: ['Homer'], family: 'Simpson' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       name: [{ given: ['Lisa'], family: 'Simpson' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const result = linkPatientRecords(srcPatient, targetPatient);
 
@@ -66,14 +66,14 @@ describe('Deduplication', () => {
       resourceType: 'Patient',
       id: 'src',
       name: [{ given: ['Homer'], family: 'Simpson' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       name: [{ given: ['Lisa'], family: 'Simpson' }],
       link: [{ other: [createReference({ resourceType: 'Patient', id: '123' })], type: 'seealso' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const result = linkPatientRecords(srcPatient, targetPatient);
 
@@ -92,7 +92,7 @@ describe('Deduplication', () => {
       active: false,
       name: [{ given: ['Homer'], family: 'Simpson' }],
       link: [{ other: { reference: 'Patient/target' }, type: 'replaced-by' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const targetPatient = {
       resourceType: 'Patient',
@@ -100,7 +100,7 @@ describe('Deduplication', () => {
       active: true,
       name: [{ given: ['Lisa'], family: 'Simpson' }],
       link: [{ other: createReference(srcPatient), type: 'replaces' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const result = unlinkPatientRecords(srcPatient, targetPatient);
 
@@ -114,13 +114,13 @@ describe('Deduplication', () => {
       resourceType: 'Patient',
       id: 'src',
       identifier: [{ use: 'usual', system: 'http://foo.org', value: '123' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       identifier: [{ use: 'official', system: 'http://bar.org', value: '456' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const fields = {
       address: [{ city: 'Springfield' }],
@@ -141,13 +141,13 @@ describe('Deduplication', () => {
     const srcPatient = {
       resourceType: 'Patient',
       id: 'src',
-    } as Patient;
+    } as WithId<Patient>;
 
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       identifier: [{ use: 'usual', value: '123', system: 'http://example.org' }],
-    } as Patient;
+    } as WithId<Patient>;
 
     const fields = {
       address: [{ city: 'Springfield' }],
@@ -170,12 +170,12 @@ describe('Deduplication', () => {
     const srcPatient = {
       resourceType: 'Patient',
       id: 'src',
-    } as Patient;
+    } as WithId<Patient>;
     const targetPatient = {
       resourceType: 'Patient',
       id: 'target',
       name: [{ given: ['Lisa'], family: 'Simpson' }],
-    } as Patient;
+    } as WithId<Patient>;
     const fetch = mockFetch(200, (url: string) => {
       if (url.includes('subject=')) {
         return {
