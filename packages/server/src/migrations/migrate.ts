@@ -2,7 +2,6 @@ import {
   deepEquals,
   FileBuilder,
   getAllDataTypes,
-  getSearchParameterDetails,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   InternalTypeSchema,
@@ -17,6 +16,7 @@ import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { Client } from 'pg';
+import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
 let LOG_UNMATCHED_INDEXES = false;
@@ -268,14 +268,14 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       continue;
     }
 
-    const details = getSearchParameterDetails(resourceType, searchParam);
-    if (isLookupTableParam(searchParam, details)) {
+    const impl = getSearchParameterImplementation(resourceType, searchParam);
+    if (isLookupTableParam(searchParam, impl)) {
       continue;
     }
 
-    const columnName = details.columnName;
-    tableDefinition.columns.push({ name: columnName, type: getColumnType(details) });
-    tableDefinition.indexes.push({ columns: [columnName], indexType: details.array ? 'gin' : 'btree' });
+    const columnName = impl.columnName;
+    tableDefinition.columns.push({ name: columnName, type: getColumnType(impl) });
+    tableDefinition.indexes.push({ columns: [columnName], indexType: impl.array ? 'gin' : 'btree' });
   }
   for (const add of additionalSearchColumns) {
     if (add.table !== tableDefinition.name) {
@@ -360,9 +360,9 @@ function isLookupTableParam(searchParam: SearchParameter, details: SearchParamet
   return false;
 }
 
-function getColumnType(details: SearchParameterDetails): string {
+function getColumnType(impl: SearchParameterImplementation): string {
   let baseColumnType: string;
-  switch (details.type) {
+  switch (impl.type) {
     case SearchParameterType.BOOLEAN:
       baseColumnType = 'BOOLEAN';
       break;
@@ -374,7 +374,7 @@ function getColumnType(details: SearchParameterDetails): string {
       break;
     case SearchParameterType.NUMBER:
     case SearchParameterType.QUANTITY:
-      if (details.columnName === 'priorityOrder') {
+      if (impl.columnName === 'priorityOrder') {
         baseColumnType = 'INTEGER';
       } else {
         baseColumnType = 'DOUBLE PRECISION';
@@ -385,7 +385,7 @@ function getColumnType(details: SearchParameterDetails): string {
       break;
   }
 
-  return details.array ? baseColumnType + '[]' : baseColumnType;
+  return impl.array ? baseColumnType + '[]' : baseColumnType;
 }
 
 function buildSearchIndexes(result: TableDefinition, resourceType: string): void {
