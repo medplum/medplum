@@ -12,7 +12,7 @@ import {
 } from '@mantine/core';
 import { useResizeObserver } from '@mantine/hooks';
 import { showNotification } from '@mantine/notifications';
-import { ProfileResource, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { ProfileResource, WithId, getDisplayString, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
@@ -102,7 +102,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
   }
 
   const profileRefStr = useMemo<string>(
-    () => (profile ? getReferenceString(medplum.getProfile() as ProfileResource) : ''),
+    () => (profile ? getReferenceString(medplum.getProfile() as WithId<ProfileResource>) : ''),
     [profile, medplum]
   );
 
@@ -110,7 +110,9 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     setLoading(true);
     const searchParams = new URLSearchParams(query);
     searchParams.append('_sort', '-sent');
-    const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
+    const searchResult = await medplum.searchResources('Communication', searchParams, {
+      cache: 'no-cache',
+    });
     upsertCommunications(communicationsRef.current, searchResult, setCommunications);
     setLoading(false);
   }, [medplum, setCommunications, query]);

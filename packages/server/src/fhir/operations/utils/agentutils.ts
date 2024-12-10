@@ -5,6 +5,7 @@ import {
   ContentType,
   OperationOutcomeError,
   Operator,
+  WithId,
   allOk,
   badRequest,
   getReferenceString,
@@ -41,7 +42,10 @@ export const MAX_AGENTS_PER_PAGE = 100;
  * @param repo - The repository.
  * @returns The agent, or undefined if not found.
  */
-export async function getAgentForRequest(req: Request | FhirRequest, repo: Repository): Promise<Agent | undefined> {
+export async function getAgentForRequest(
+  req: Request | FhirRequest,
+  repo: Repository
+): Promise<WithId<Agent> | undefined> {
   // Prefer to search by ID from path parameter
   const { id } = req.params;
   if (id) {
@@ -68,7 +72,7 @@ export async function getAgentForRequest(req: Request | FhirRequest, repo: Repos
  * @param repo - The repository.
  * @returns The agent, or undefined if not found.
  */
-export async function getAgentsForRequest(req: FhirRequest, repo: Repository): Promise<Agent[] | undefined> {
+export async function getAgentsForRequest(req: FhirRequest, repo: Repository): Promise<WithId<Agent>[] | undefined> {
   if (req.params.id) {
     const agent = await getAgentForRequest(req, repo);
     return agent ? [agent] : undefined;
@@ -96,7 +100,7 @@ export async function getDevice(repo: Repository, params: AgentPushParameters): 
 
 export async function handleBulkAgentOperation(
   req: FhirRequest,
-  handler: (agent: Agent) => Promise<FhirResponse>
+  handler: (agent: WithId<Agent>) => Promise<FhirResponse>
 ): Promise<FhirResponse> {
   const { repo } = getAuthenticatedContext();
 
@@ -114,7 +118,7 @@ export async function handleBulkAgentOperation(
     return handler(agents[0]);
   }
 
-  const promises = agents.map((agent: Agent) => handler(agent));
+  const promises = agents.map((agent) => handler(agent));
   const results = await Promise.allSettled(promises);
   const entries: BundleEntry<Parameters>[] = [];
 
@@ -165,7 +169,7 @@ export interface AgentMessageOptions {
 }
 
 export async function publishAgentRequest<T extends AgentResponseMessage = AgentResponseMessage>(
-  agent: Agent,
+  agent: WithId<Agent>,
   message: AgentRequestMessage,
   options?: AgentMessageOptions
 ): Promise<[OperationOutcome] | [OperationOutcome, T | AgentError]> {
@@ -206,7 +210,7 @@ export async function publishAgentRequest<T extends AgentResponseMessage = Agent
 }
 
 function publishRequestMessage<T extends AgentRequestMessage = AgentRequestMessage>(
-  agent: Agent,
+  agent: WithId<Agent>,
   message: T
 ): Promise<number> {
   return getRedis().publish(getReferenceString(agent), JSON.stringify(message));

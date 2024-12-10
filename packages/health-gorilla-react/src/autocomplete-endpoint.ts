@@ -30,7 +30,7 @@ export function getAutocompleteSearchFunction(
     const { result } = botResponse;
     switch (botResponse.type) {
       case 'lab': {
-        if (Array.isArray(result) && result.every((item) => isResource(item) && item.resourceType === 'Organization')) {
+        if (Array.isArray(result) && result.every((item) => isResource(item, 'Organization'))) {
           return { type: 'lab', result } as LabSearchResult;
         }
         break;

@@ -1,6 +1,6 @@
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString, WithId } from '@medplum/core';
 import { Bot, Bundle, BundleEntry, Practitioner } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
@@ -164,7 +164,7 @@ async function uploadExampleBots(medplum: MedplumClient, profile: Practitioner):
       const createBotUrl = new URL('admin/projects/' + (projectId as string) + '/bot', medplum.getBaseUrl());
       existingBot = (await medplum.post(createBotUrl, {
         name: botName,
-      })) as Bot;
+      })) as WithId<Bot>;
     }
 
     botIds[botName] = existingBot.id as string;

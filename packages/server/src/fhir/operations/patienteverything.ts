@@ -1,6 +1,6 @@
-import { allOk, getReferenceString, Operator, sortStringArray } from '@medplum/core';
+import { allOk, getReferenceString, Operator, sortStringArray, WithId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Bundle, CompartmentDefinitionResource, Patient, ResourceType } from '@medplum/fhirtypes';
+import { Bundle, CompartmentDefinitionResource, Patient, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
@@ -50,9 +50,9 @@ export async function patientEverythingHandler(req: FhirRequest): Promise<FhirRe
  */
 export async function getPatientEverything(
   repo: Repository,
-  patient: Patient,
+  patient: WithId<Patient>,
   params?: PatientEverythingParameters
-): Promise<Bundle> {
+): Promise<Bundle<WithId<Resource>>> {
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
   const types = resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
   types.push('Patient');

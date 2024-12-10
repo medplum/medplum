@@ -1,4 +1,4 @@
-import { getReferenceString } from '@medplum/core';
+import { getReferenceString, WithId } from '@medplum/core';
 import { Binary, BulkDataExport, Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
 import { Repository, getSystemRepo } from '../../repo';
@@ -7,11 +7,11 @@ import { getBinaryStorage } from '../../storage';
 const NDJSON_CONTENT_TYPE = 'application/fhir+ndjson';
 
 class BulkFileWriter {
-  readonly binary: Binary;
+  readonly binary: WithId<Binary>;
   private readonly stream: PassThrough;
   private readonly writerPromise: Promise<void>;
 
-  constructor(binary: Binary) {
+  constructor(binary: WithId<Binary>) {
     this.binary = binary;
 
     const filename = `export.ndjson`;
@@ -66,7 +66,7 @@ export class BulkExporter {
     return writer;
   }
 
-  async writeBundle(bundle: Bundle): Promise<void> {
+  async writeBundle(bundle: Bundle<WithId<Resource>>): Promise<void> {
     if (bundle.entry) {
       for (const entry of bundle.entry) {
         if (entry.resource) {
@@ -76,7 +76,7 @@ export class BulkExporter {
     }
   }
 
-  async writeResource(resource: Resource): Promise<void> {
+  async writeResource(resource: WithId<Resource>): Promise<void> {
     if (this.types.length > 0 && !this.types.includes(resource.resourceType)) {
       return;
     }

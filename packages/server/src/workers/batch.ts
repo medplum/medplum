@@ -11,6 +11,7 @@ import {
   isOk,
   OperationOutcomeError,
   serverError,
+  WithId,
 } from '@medplum/core';
 import { getSystemRepo } from '../fhir/repo';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
@@ -25,8 +26,8 @@ export interface BatchJobData {
   readonly asyncJob: AsyncJob;
   readonly bundle: Bundle;
   readonly login: Login;
-  readonly project: Project;
-  readonly membership: ProjectMembership;
+  readonly project: WithId<Project>;
+  readonly membership: WithId<ProjectMembership>;
   readonly requestId?: string;
   readonly traceId?: string;
 }

@@ -1,4 +1,13 @@
-import { BotEvent, createReference, getReferenceString, LOINC, MedplumClient, SNOMED, UCUM } from '@medplum/core';
+import {
+  BotEvent,
+  createReference,
+  getReferenceString,
+  LOINC,
+  MedplumClient,
+  SNOMED,
+  UCUM,
+  WithId,
+} from '@medplum/core';
 import {
   AllergyIntolerance,
   BundleEntry,
@@ -206,7 +215,7 @@ async function ensureSchedule(medplum: MedplumClient, practitioner: Practitioner
  * @param schedule - The practitioner's schedule.
  * @param slotDate - The day of slots.
  */
-async function ensureSlots(medplum: MedplumClient, schedule: Schedule, slotDate: Date): Promise<void> {
+async function ensureSlots(medplum: MedplumClient, schedule: WithId<Schedule>, slotDate: Date): Promise<void> {
   const existingSlots = await medplum.search(
     'Slot',
     new URLSearchParams([

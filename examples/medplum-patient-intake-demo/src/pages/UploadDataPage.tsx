@@ -1,6 +1,6 @@
 import { Button, LoadingOverlay } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString } from '@medplum/core';
+import { capitalize, getReferenceString, isOk, MedplumClient, normalizeErrorString, WithId } from '@medplum/core';
 import { Bot, Bundle, BundleEntry, Practitioner, Questionnaire, Resource } from '@medplum/fhirtypes';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
@@ -14,7 +14,11 @@ import valuesetsData from '../../data/core/valuesets.json';
 
 import { IntakeQuestionnaireContext } from '../Questionnaire.context';
 
-type UploadFunction = (medplum: MedplumClient, profile: Practitioner, questionnaire: Questionnaire) => Promise<void>;
+type UploadFunction = (
+  medplum: MedplumClient,
+  profile: Practitioner,
+  questionnaire: WithId<Questionnaire>
+) => Promise<void>;
 
 export function UploadDataPage(): JSX.Element {
   const medplum = useMedplum();
@@ -52,7 +56,7 @@ export function UploadDataPage(): JSX.Element {
         throw new Error(`Invalid upload type: ${dataType}`);
     }
 
-    uploadFunction(medplum, profile as Practitioner, questionnaire as Questionnaire)
+    uploadFunction(medplum, profile as Practitioner, questionnaire as WithId<Questionnaire>)
       .then(() => navigate('/'))
       .catch((error) => {
         showNotification({
@@ -135,7 +139,7 @@ async function uploadExampleData(medplum: MedplumClient): Promise<void> {
 async function uploadExampleBots(
   medplum: MedplumClient,
   profile: Practitioner,
-  questionnaire: Questionnaire
+  questionnaire: WithId<Questionnaire>
 ): Promise<void> {
   let transactionString = JSON.stringify(exampleBotData);
   const botEntries: BundleEntry[] =
@@ -151,7 +155,7 @@ async function uploadExampleBots(
       const createBotUrl = new URL('admin/projects/' + (projectId as string) + '/bot', medplum.getBaseUrl());
       existingBot = (await medplum.post(createBotUrl, {
         name: botName,
-      })) as Bot;
+      })) as WithId<Bot>;
     }
 
     botIds[botName] = existingBot.id as string;
