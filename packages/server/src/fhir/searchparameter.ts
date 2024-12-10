@@ -1,5 +1,12 @@
-import { capitalize, getSearchParameterDetails, PropertyType, SearchParameterDetails } from '@medplum/core';
+import { capitalize, getSearchParameterDetails, SearchParameterDetails } from '@medplum/core';
 import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { HumanNameTable } from './lookups/humanname';
+import { AddressTable } from './lookups/address';
+import { CodingTable } from './lookups/coding';
+import { LookupTable } from './lookups/lookuptable';
+import { ReferenceTable } from './lookups/reference';
+import { TokenTable } from './lookups/token';
+import { ValueSetElementTable } from './lookups/valuesetelement';
 
 interface ImplementationBuilder extends SearchParameterDetails {
   columnName: string;
@@ -60,7 +67,7 @@ function buildSearchParameterImplementation(
   if (!searchParam.base?.includes(resourceType as ResourceType)) {
     // TODO is ignoring this really the right behavior? When does this happen in practice?
     // If the search parameter is not defined on the resource type itself, skip special implementations
-  } else if (isLookupTableParam(searchParam, builder)) {
+  } else if (getLookupTable(resourceType, searchParam)) {
     implementation = 'lookup-table';
   }
   builder.implementation = implementation;
@@ -78,73 +85,23 @@ function convertCodeToColumnName(code: string): string {
   return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
-function isLookupTableParam(searchParam: SearchParameter, builder: ImplementationBuilder): boolean {
-  // HumanName
-  const nameParams = [
-    'individual-given',
-    'individual-family',
-    'Patient-name',
-    'Person-name',
-    'Practitioner-name',
-    'RelatedPerson-name',
-  ];
-  if (nameParams.includes(searchParam.id as string)) {
-    return true;
-  }
+/**
+ * The lookup tables array includes a list of special tables for search indexing.
+ */
+export const lookupTables: LookupTable[] = [
+  new AddressTable(),
+  new HumanNameTable(),
+  new TokenTable(),
+  new ValueSetElementTable(),
+  new ReferenceTable(),
+  new CodingTable(),
+];
 
-  // Telecom
-  const telecomParams = [
-    'individual-telecom',
-    'individual-email',
-    'individual-phone',
-    'OrganizationAffiliation-telecom',
-    'OrganizationAffiliation-email',
-    'OrganizationAffiliation-phone',
-  ];
-  if (telecomParams.includes(searchParam.id as string)) {
-    // return true;
-  }
-
-  // Address
-  const addressParams = ['individual-address', 'InsurancePlan-address', 'Location-address', 'Organization-address'];
-  if (addressParams.includes(searchParam.id as string)) {
-    return true;
-  }
-
-  // "address-"
-  if (searchParam.code?.startsWith('address-')) {
-    return true;
-  }
-
-  // Token
-  if (isTokenParam(searchParam, builder)) {
-    return true;
-  }
-
-  return false;
-}
-
-function isTokenParam(searchParam: SearchParameter, builder: ImplementationBuilder): boolean {
-  if (searchParam.type === 'token') {
-    if (searchParam.code?.endsWith(':identifier')) {
-      return true;
-    }
-    for (const elementDefinition of builder.elementDefinitions ?? []) {
-      // Check for any "Identifier", "CodeableConcept", or "Coding"
-      // Any of those value types require the "Token" table for full system|value search semantics.
-      // The common case is that the "type" property only has one value,
-      // but we need to support arrays of types for the choice-of-type properties such as "value[x]".
-      for (const type of elementDefinition.type ?? []) {
-        if (
-          type.code === PropertyType.Identifier ||
-          type.code === PropertyType.CodeableConcept ||
-          type.code === PropertyType.Coding ||
-          type.code === PropertyType.ContactPoint
-        ) {
-          return true;
-        }
-      }
+export function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable | undefined {
+  for (const lookupTable of lookupTables) {
+    if (lookupTable.isIndexed(searchParam, resourceType)) {
+      return lookupTable;
     }
   }
-  return false;
+  return undefined;
 }
