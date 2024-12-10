@@ -33,7 +33,13 @@ import { authenticator } from 'otplib';
 import { getLogger } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
-import { AuditEventOutcome, logAuthEvent, LoginEvent } from '../util/auditevent';
+import {
+  AuditEventOutcome,
+  createAuditEvent,
+  logAuditEvent,
+  LoginEvent,
+  UserAuthenticationEvent,
+} from '../util/auditevent';
 import {
   generateAccessToken,
   generateIdToken,
@@ -415,7 +421,15 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
   // Check IP Access Rules
   await checkIpAccessRules(login, accessPolicy);
 
-  logAuthEvent(LoginEvent, project.id as string, membership.profile, login.remoteAddress, AuditEventOutcome.Success);
+  const auditEvent = createAuditEvent(
+    UserAuthenticationEvent,
+    LoginEvent,
+    project.id as string,
+    membership.profile,
+    login.remoteAddress,
+    AuditEventOutcome.Success
+  );
+  logAuditEvent(auditEvent);
 
   // Everything checks out, update the login
   const updatedLogin: Login = {

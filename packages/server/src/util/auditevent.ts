@@ -1,9 +1,10 @@
-import { createReference } from '@medplum/core';
+import { append, createReference, isResource } from '@medplum/core';
 import {
   AuditEvent,
   AuditEventAgentNetwork,
   AuditEventEntity,
   Coding,
+  Extension,
   Practitioner,
   Reference,
   Resource,
@@ -148,76 +149,38 @@ export enum AuditEventOutcome {
   MajorFailure = '12',
 }
 
-export function logAuthEvent(
-  subtype: AuditEventSubtype,
-  projectId: string,
-  who: Reference | undefined,
-  remoteAddress: string | undefined,
-  outcome: AuditEventOutcome,
-  outcomeDesc?: string
-): AuditEvent {
-  const auditEvent = createAuditEvent(
-    UserAuthenticationEvent,
-    subtype,
-    projectId,
-    who,
-    remoteAddress,
-    outcome,
-    outcomeDesc
-  );
-  logAuditEvent(auditEvent);
-  return auditEvent;
-}
-
-export function logRestfulEvent(
-  subtype: AuditEventSubtype,
-  projectId: string,
-  who: Reference | undefined,
-  remoteAddress: string | undefined,
-  outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  resource?: Resource,
-  searchQuery?: string
-): AuditEvent {
-  const auditEvent = createAuditEvent(
-    RestfulOperationType,
-    subtype,
-    projectId,
-    who,
-    remoteAddress,
-    outcome,
-    outcomeDesc,
-    resource,
-    searchQuery
-  );
-  logAuditEvent(auditEvent);
-  return auditEvent;
-}
-
-function createAuditEvent(
+export function createAuditEvent(
   type: AuditEventType,
   subtype: AuditEventSubtype,
   projectId: string,
   who: Reference | undefined,
   remoteAddress: string | undefined,
   outcome: AuditEventOutcome,
-  outcomeDesc?: string,
-  resource?: Resource,
-  searchQuery?: string
+  options?: {
+    description?: string;
+    resource?: Resource | Reference;
+    searchQuery?: string;
+    durationMs?: number;
+  }
 ): AuditEvent {
   const config = getConfig();
 
   let entity: AuditEventEntity[] | undefined = undefined;
-  if (resource) {
-    entity = [{ what: createReference(resource) }];
-  }
-  if (searchQuery) {
-    entity = [{ query: searchQuery }];
+  if (options?.resource) {
+    const what: Reference = isResource(options.resource) ? createReference(options.resource) : options.resource;
+    entity = [{ what }];
+  } else if (options?.searchQuery) {
+    entity = [{ query: options.searchQuery }];
   }
 
   let network: AuditEventAgentNetwork | undefined = undefined;
   if (remoteAddress) {
     network = { address: remoteAddress, type: '2' };
+  }
+
+  let extension = buildTracingExtension();
+  if (options?.durationMs) {
+    extension = append(extension, buildDurationExtension(options.durationMs));
   }
 
   const auditEvent: AuditEvent = {
@@ -238,9 +201,9 @@ function createAuditEvent(
       },
     ],
     outcome,
-    outcomeDesc,
+    outcomeDesc: options?.description,
     entity,
-    extension: buildTracingExtension(),
+    extension,
   };
 
   return auditEvent;
@@ -255,6 +218,13 @@ export function logAuditEvent(auditEvent: AuditEvent): void {
       console.log(JSON.stringify(auditEvent));
     }
   }
+}
+
+function buildDurationExtension(duration: number): Extension {
+  return {
+    url: 'https://medplum.com/fhir/StructureDefinition/durationMs',
+    valueInteger: Math.round(duration),
+  };
 }
 
 /** @deprecated */
