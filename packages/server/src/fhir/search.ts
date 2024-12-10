@@ -45,8 +45,9 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
-import { getLookupTable, Repository } from './repo';
+import { Repository } from './repo';
 import { getFullUrl } from './response';
+import { getLookupTable, getSearchParameterImplementation, SearchParameterImplementation } from './searchparameter';
 import {
   ArraySubquery,
   Column,
@@ -65,7 +66,6 @@ import {
   Union,
   ValuesQuery,
 } from './sql';
-import { getSearchParameterImplementation, SearchParameterImplementation } from './searchparameter';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
