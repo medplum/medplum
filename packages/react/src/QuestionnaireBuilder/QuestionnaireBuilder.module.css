@@ -70,3 +70,7 @@
 .typeSelect {
   width: 100px;
 }
+
+.preserveBreaks {
+  white-space: pre-wrap;
+}
