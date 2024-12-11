@@ -22,13 +22,7 @@ storageRouter.get(
 
     try {
       const stream = await getBinaryStorage().readBinary(binary);
-      res
-        .status(200)
-        .contentType(binary.contentType as string)
-        .header(
-          'Content-Security-Policy',
-          "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors '*';"
-        );
+      res.status(200).contentType(binary.contentType as string);
       stream.pipe(res);
     } catch (_err) {
       res.sendStatus(404);
