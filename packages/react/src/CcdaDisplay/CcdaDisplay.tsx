@@ -1,44 +1,28 @@
-import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useRef, useState } from 'react';
 
 const CCDA_VIEWER_URL = 'https://ccda.medplum.com';
 
 export interface CcdaDisplayProps {
-  readonly url?: string;
+  readonly xml?: string;
   readonly maxWidth?: number;
 }
 
 export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
-  const { url } = props;
-  const medplum = useMedplum();
-  const [ccdaXml, setCcdaXml] = useState<string>();
+  const { xml } = props;
   const [shouldSend, setShouldSend] = useState(false);
   const iframeRef = useRef(null);
 
   useEffect(() => {
-    if (!url) {
-      return;
-    }
-
-    medplum
-      .download(url)
-      .then((blob) => blob.text().then(setCcdaXml))
-      .catch(console.error);
-  }, [medplum, url]);
-
-  useEffect(() => {
-    if (!ccdaXml) {
+    if (!xml) {
       return;
     }
     if (shouldSend && iframeRef.current) {
-      console.log('should send');
-
-      sendCommand(iframeRef.current, { command: 'setCcdaXml', value: ccdaXml }).catch(console.error);
+      sendCommand(iframeRef.current, { command: 'setCcdaXml', value: xml }).catch(console.error);
       setShouldSend(false);
     }
-  }, [ccdaXml, shouldSend]);
+  }, [xml, shouldSend]);
 
-  if (!url) {
+  if (!xml) {
     return null;
   }
 
