@@ -68,7 +68,7 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { recordHistogramValue } from '../otel/otel';
+import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -2137,6 +2137,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (options?.durationMs) {
       const duration = options.durationMs / 1000; // Report duration in whole seconds
       recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
+        attributes: {
+          resourceType: isResource(resource) ? resource?.resourceType : undefined,
+        },
+      });
+      incrementCounter(`medplum.fhir.interaction.${subtype.code}.count`, {
         attributes: {
           resourceType: isResource(resource) ? resource?.resourceType : undefined,
           result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
