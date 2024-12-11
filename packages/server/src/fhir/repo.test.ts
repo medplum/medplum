@@ -435,25 +435,56 @@ describe('FHIR Repo', () => {
         name: [{ family: 'Test' }],
       });
 
-      (patient as Patient).name = [{ family: 'TestUpdated' }];
-
+      patient.name = [{ family: 'TestUpdated' }];
       await systemRepo.updateResource<Patient>(patient, { ifMatch: patient.meta?.versionId });
       expect(patient.name?.at(0)?.family).toStrictEqual('TestUpdated');
     }));
 
   test('Update resource with different versionId', () =>
     withTestContext(async () => {
-      const patient1 = await systemRepo.createResource<Patient>({
+      const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ family: 'Test' }],
       });
 
-      try {
-        await systemRepo.updateResource<Patient>(patient1, { ifMatch: 'bad-id' });
-        fail('Should have thrown');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome).toMatchObject(preconditionFailed);
-      }
+      await expect(systemRepo.updateResource(patient, { ifMatch: 'bad-id' })).rejects.toThrow(
+        new OperationOutcomeError(preconditionFailed)
+      );
+    }));
+
+  test('Patch resource with matching versionId', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(
+        patient.resourceType,
+        patient.id as string,
+        [{ op: 'replace', path: '/name/0/family', value: 'TestUpdated' }],
+        {
+          ifMatch: patient.meta?.versionId,
+        }
+      );
+      expect(patched.name?.at(0)?.family).toStrictEqual('TestUpdated');
+    }));
+
+  test('Patch resource with different versionId', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      await expect(
+        systemRepo.patchResource<Patient>(
+          patient.resourceType,
+          patient.id as string,
+          [{ op: 'add', path: '/birthDate', value: '1993-09-14' }],
+          { ifMatch: 'bad-id' }
+        )
+      ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
     }));
 
   test('Compartment permissions', () =>
