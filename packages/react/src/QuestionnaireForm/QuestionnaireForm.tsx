@@ -1,5 +1,5 @@
 import { Title } from '@mantine/core';
-import { createReference, getReferenceString } from '@medplum/core';
+import { createReference, evalFhirPathTyped, getExtension, getReferenceString, HTTP_HL7_ORG, toTypedValue } from '@medplum/core';
 import {
   Encounter,
   Questionnaire,
@@ -101,6 +101,25 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   function checkForQuestionEnabled(item: QuestionnaireItem): boolean {
     return isQuestionEnabled(item, response);
+  }
+
+  function checkForCalculatedExpression(item: QuestionnaireItem): void {
+    
+    const extension = getExtension(
+      item,
+      HTTP_HL7_ORG + '/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression'
+    );
+  
+    if (response && extension) {
+      const expression = extension.valueExpression?.expression;
+      if (expression) {
+        const value = toTypedValue(response);
+        const result = evalFhirPathTyped(expression, [value], { '%resource': value });
+    
+      }
+    }
+  
+
   }
 
   if (!questionnaire || !response) {
