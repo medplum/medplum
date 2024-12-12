@@ -1,5 +1,6 @@
 import {
   HTTP_HL7_ORG,
+  PropertyType,
   TypedValue,
   deepClone,
   evalFhirPathTyped,
@@ -93,6 +94,99 @@ export function isQuestionEnabled(
   }
 
   return enableBehavior !== 'any';
+}
+
+export function evaluateCalculatedExpressions(
+  items: QuestionnaireItem[],
+  response: QuestionnaireResponse | undefined
+): QuestionnaireResponseItem[] {
+  return items
+    .map((item) => {
+      if (item.item) {
+        return {
+          ...item,
+          item: evaluateCalculatedExpressions(item.item, response),
+        };
+      } else {
+        const calculatedValue = checkForCalculatedExpression(item, response);
+        if (!calculatedValue || calculatedValue.length === 0) {
+          return null;
+        }
+
+        const answer = createResponseAnswer(item, calculatedValue[0]);
+        console.log(answer)
+        if (!answer) {
+          return null;
+        }
+
+        return {
+          id: item?.id,
+          linkId: item?.linkId,
+          text: item.text,
+          answer: [answer],
+        };
+      }
+    })
+    .filter((item) => item !== null) as QuestionnaireResponseItem[]; 
+}
+
+
+function createResponseAnswer(item: QuestionnaireItem, value: TypedValue): QuestionnaireResponseItemAnswer | undefined {
+  console.log(item.type)
+  console.log(value)
+  if (!item.type) {
+    return undefined;
+  }
+
+  switch (item.type) {
+    case QuestionnaireItemType.boolean:
+      return value.type === PropertyType.boolean ? { valueBoolean: value.value } : undefined;
+    case QuestionnaireItemType.date:
+      return value.type === PropertyType.date ? { valueDate: value.value } : undefined;
+    case QuestionnaireItemType.dateTime:
+      return value.type === PropertyType.dateTime ? { valueDateTime: value.value } : undefined;
+    case QuestionnaireItemType.time:
+      return value.type === PropertyType.time ? { valueTime: value.value } : undefined;
+    case QuestionnaireItemType.url:
+      return value.type === PropertyType.url ? { valueString: value.value } : undefined;
+    case QuestionnaireItemType.text:
+      return value.type === PropertyType.string ? { valueString: value.value } : undefined;
+    case QuestionnaireItemType.attachment:
+      return value.type === PropertyType.Attachment ? { valueAttachment: value.value } : undefined;
+    case QuestionnaireItemType.reference:
+      return value.type === PropertyType.Reference ? { valueReference: value.value } : undefined;
+    case QuestionnaireItemType.quantity:
+    case QuestionnaireItemType.decimal:
+    case QuestionnaireItemType.integer:
+    case QuestionnaireItemType.string:
+          return { valueQuantity: value.value }
+    default:
+      return undefined;
+  }
+}
+
+function checkForCalculatedExpression(
+  item: QuestionnaireItem,
+  response: QuestionnaireResponse | undefined
+): TypedValue[] | undefined {
+  if (!response) {
+    return undefined;
+  }
+
+  const extension = getExtension(
+    item,
+    HTTP_HL7_ORG + '/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression'
+  );
+
+  if (extension) {
+    const expression = extension.valueExpression?.expression;
+    if (expression) {
+      const value = toTypedValue(response);
+      const result = evalFhirPathTyped(expression, [value], { '%resource': value });
+      return result;
+    }
+  }
+  return undefined;
 }
 
 export function getNewMultiSelectValues(

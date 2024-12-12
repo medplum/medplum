@@ -1,5 +1,5 @@
 import { Title } from '@mantine/core';
-import { createReference, evalFhirPathTyped, getExtension, getReferenceString, HTTP_HL7_ORG, toTypedValue } from '@medplum/core';
+import { createReference, getReferenceString } from '@medplum/core';
 import {
   Encounter,
   Questionnaire,
@@ -11,7 +11,7 @@ import {
 import { useMedplum, usePrevious, useResource } from '@medplum/react-hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
-import { buildInitialResponse, getNumberOfPages, isQuestionEnabled } from '../utils/questionnaire';
+import { buildInitialResponse, getNumberOfPages, isQuestionEnabled, evaluateCalculatedExpressions } from '../utils/questionnaire';
 import { QuestionnaireFormContext } from './QuestionnaireForm.context';
 import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 
@@ -69,14 +69,29 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
       );
 
-      const newResponse: QuestionnaireResponse = {
+      const tempResponse: QuestionnaireResponse = {
         resourceType: 'QuestionnaireResponse',
         status: 'in-progress',
         item: mergedItems,
       };
+
+      const updatedItems = evaluateCalculatedExpressions(questionnaire?.item ?? [], tempResponse);
+      const mergedItemsWithUpdates = mergedItems.map((mergedItem) => {
+        const updatedItem = updatedItems.find(
+          (updated) => updated.linkId === mergedItem.linkId
+        );
+        return updatedItem || mergedItem;
+      });
+
+      const newResponse: QuestionnaireResponse = {
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: mergedItemsWithUpdates,
+      };
+
       return newResponse;
     });
-  }, []);
+  }, [questionnaire]);
 
   const handleSubmit = useCallback(() => {
     const onSubmit = onSubmitRef.current;
@@ -101,25 +116,6 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   function checkForQuestionEnabled(item: QuestionnaireItem): boolean {
     return isQuestionEnabled(item, response);
-  }
-
-  function checkForCalculatedExpression(item: QuestionnaireItem): void {
-    
-    const extension = getExtension(
-      item,
-      HTTP_HL7_ORG + '/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression'
-    );
-  
-    if (response && extension) {
-      const expression = extension.valueExpression?.expression;
-      if (expression) {
-        const value = toTypedValue(response);
-        const result = evalFhirPathTyped(expression, [value], { '%resource': value });
-    
-      }
-    }
-  
-
   }
 
   if (!questionnaire || !response) {
