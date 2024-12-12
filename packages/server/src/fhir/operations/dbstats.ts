@@ -39,6 +39,9 @@ export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
   const params = parseInputParameters<{ tableNames?: string }>(operation, req);
 
   const client = getDatabasePool(DatabaseMode.WRITER);
+
+  const tableNames = params.tableNames?.split(',').map((name) => name.trim());
+
   const sql = `SELECT * FROM (
     SELECT
       i.relname AS table_name,
@@ -58,19 +61,12 @@ export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
       last_autovacuum,
       last_autoanalyze
     FROM pg_stat_user_indexes i JOIN pg_class c ON i.relid = c.oid JOIN pg_stat_user_tables u ON i.relname = u.relname
-    ${
-      params.tableNames
-        ? `WHERE i.relname IN (${params.tableNames
-            .split(',')
-            .map((name) => `'${name.trim()}'`)
-            .join(',')})`
-        : ''
-    }
+    ${tableNames ? 'WHERE i.relname = ANY($1::text[])' : ''}
   ) t
   WHERE raw_size > 0
   ORDER BY raw_size DESC, table_name ASC`;
 
-  const results = await client.query(sql);
+  const results = await client.query(sql, tableNames ? [tableNames] : undefined);
 
   let currentTable = '';
   const output: string[] = [];
