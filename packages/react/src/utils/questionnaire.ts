@@ -114,7 +114,6 @@ export function evaluateCalculatedExpressions(
         }
 
         const answer = createResponseAnswer(item, calculatedValue[0]);
-        console.log(answer)
         if (!answer) {
           return null;
         }
@@ -131,9 +130,7 @@ export function evaluateCalculatedExpressions(
 }
 
 
-function createResponseAnswer(item: QuestionnaireItem, value: TypedValue): QuestionnaireResponseItemAnswer | undefined {
-  console.log(item.type)
-  console.log(value)
+function createResponseAnswer(item: QuestionnaireItem, value: TypedValue): QuestionnaireResponseItemAnswer | undefined {git 
   if (!item.type) {
     return undefined;
   }
