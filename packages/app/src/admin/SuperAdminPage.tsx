@@ -62,9 +62,17 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
-  function getDatabaseStats(): void {
+  function getDatabaseStats(formData: Record<string, string>): void {
     medplum
-      .post('fhir/R4/$db-stats', {})
+      .post(
+        'fhir/R4/$db-stats',
+        formData.tableNames
+          ? {
+              resourceType: 'Parameters',
+              parameter: [{ name: 'tableNames', valueString: formData.tableNames }],
+            }
+          : undefined
+      )
       .then((params: Parameters) => {
         setModalTitle('Database Stats');
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
@@ -165,7 +173,12 @@ export function SuperAdminPage(): JSX.Element {
       <Title order={2}>Database Stats</Title>
       <p>Query current table statistics from the database.</p>
       <Form onSubmit={getDatabaseStats}>
-        <Button type="submit">Get Database Stats</Button>
+        <Stack>
+          <FormSection title="Table Names (comma-delimited)" htmlFor="tableNames">
+            <TextInput id="tableNames" name="tableNames" placeholder="Observation,Observation_History" />
+          </FormSection>
+          <Button type="submit">Get Database Stats</Button>
+        </Stack>
       </Form>
       <Modal opened={opened} onClose={close} title={modalTitle} centered>
         {modalContent}
