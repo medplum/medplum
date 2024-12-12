@@ -1,6 +1,7 @@
 import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
 import { allOk } from '@medplum/core';
+import { Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -140,6 +141,37 @@ describe('SuperAdminPage', () => {
     });
 
     expect(await screen.findByText('table1: 100')).toBeInTheDocument();
+  });
+
+  test('Database Stats - Specified table names', async () => {
+    setup();
+
+    medplum.router.add('POST', '$db-stats', async () => {
+      return [
+        allOk,
+        { resourceType: 'Parameters', parameter: [{ name: 'tableString', valueString: 'table1: 100\n' }] },
+      ];
+    });
+
+    const postSpy = jest.spyOn(medplum, 'post');
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Table Names'), { target: { value: 'Observation' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Get Database Stats' }));
+    });
+
+    expect(await screen.findByText('table1: 100')).toBeInTheDocument();
+
+    expect(postSpy).toHaveBeenCalledWith(
+      'fhir/R4/$db-stats',
+      expect.objectContaining({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'tableNames', valueString: 'Observation' }],
+      } satisfies Parameters)
+    );
   });
 
   test('Access denied', async () => {
