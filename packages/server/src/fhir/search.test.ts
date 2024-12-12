@@ -3269,6 +3269,51 @@ describe('FHIR Search', () => {
         expect(result.entry).toHaveLength(2);
       }));
 
+    test('_filter eq', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Evelyn'] }],
+          managingOrganization: { reference: 'Organization/' + randomUUID() },
+        });
+
+        const result1 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'organization',
+              operator: Operator.EQUALS,
+              value: patient.managingOrganization?.reference as string,
+            },
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'given eq Eve', // eq with a prefix should NOT match
+            },
+          ],
+        });
+
+        expect(result1.entry).toHaveLength(0);
+
+        const result2 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'organization',
+              operator: Operator.EQUALS,
+              value: patient.managingOrganization?.reference as string,
+            },
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'given eq Evelyn', // eq with exact value should match
+            },
+          ],
+        });
+
+        expect(result2.entry).toHaveLength(1);
+      }));
+
     test('_filter ne', () =>
       withTestContext(async () => {
         const patient = await repo.createResource<Patient>({
