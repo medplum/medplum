@@ -21,6 +21,7 @@ import {
   SearchParameterImplementation,
 } from '../fhir/searchparameter';
 import { deriveIdentifierSearchParameter } from '../fhir/lookups/util';
+import { parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
 let LOG_UNMATCHED_INDEXES = false;
@@ -53,7 +54,7 @@ export type IndexColumn = {
   name: string;
 };
 
-interface IndexDefinition {
+export interface IndexDefinition {
   columns: (string | IndexColumn)[];
   indexType: IndexType;
   unique?: boolean;
@@ -114,6 +115,11 @@ async function buildStartDefinition(): Promise<SchemaDefinition> {
     tables.push(await getTableDefinition(db, tableName));
   }
 
+  const unusedParsers = SpecialIndexParsers.filter((p) => !p.usageCount);
+  if (unusedParsers.length) {
+    throw new Error('Unused special index parsers:\n' + unusedParsers.map((p) => p.toString()).join('\n'));
+  }
+
   await db.end();
   return { tables };
 }
@@ -168,82 +174,54 @@ async function getIndexes(db: Client, tableName: string): Promise<IndexDefinitio
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
 
-const IndexComponentExpressionRegexes = [/a2t\("?([\w]+)"?\) gin_trgm_ops/];
-// CREATE INDEX "Patient_Token_code_system_value_idx" ON public."Patient_Token" USING btree (code, system, value) INCLUDE ("resourceId")
-// CREATE INDEX "Patient_Token_text_idx_tsv" ON public."Patient_Token" USING gin (to_tsvector('simple'::regconfig, value)) WHERE (system = 'text'::text)
-
-type SpecialIndexParser = (expression: string) => IndexDefinition | undefined;
-
+// If the index definition is beyond the ability of the parser, define a special-handler function here
+type SpecialIndexParser = ((indexdef: string) => IndexDefinition | undefined) & { usageCount?: number };
 const SpecialIndexParsers: SpecialIndexParser[] = [
-  (indexdef: string) => {
-    const match = indexdef.match(/to_tsvector\('simple'::regconfig, value\)\) WHERE \(system = 'text'::text\)/);
-    if (!match) {
-      return undefined;
-    }
-    return {
-      columns: [{ expression: "to_tsvector('simple'::regconfig, value)", name: 'text' }],
-      indexType: 'gin',
-      indexNameSuffix: 'idx_tsv',
-    };
-  },
-  (indexdef: string) => {
-    // CREATE INDEX "Coding_display_idx" ON public."Coding" USING gin (system, to_tsvector('english'::regconfig, display)) WHERE (display IS NOT NULL)
-    const match = indexdef.match(
-      /USING gin \(system, to_tsvector\('english'::regconfig, display\)\) WHERE \(display IS NOT NULL\)/
-    );
-    if (!match) {
-      return undefined;
-    }
-    return {
-      columns: ['system', { expression: "to_tsvector('english'::regconfig, display)", name: 'display' }],
-      indexType: 'gin',
-      where: 'display IS NOT NULL',
-    };
-  },
-  (indexdef: string) => {
-    // CREATE INDEX "ValueSetElement_display_idx_tsv" ON public."ValueSetElement" USING gin (to_tsvector('english'::regconfig, display))
-    const match = indexdef.match(/USING gin \(to_tsvector\('english'::regconfig, display\)\)/);
-    if (!match) {
-      return undefined;
-    }
-    return {
-      columns: [{ expression: "to_tsvector('english'::regconfig, display)", name: 'display' }],
-      indexType: 'gin',
-    };
-  },
+  // example special parser that is no longer needed
+  // (indexdef: string) => {
+  //   // CREATE INDEX "Coding_display_idx" ON public."Coding" USING gin (system, to_tsvector('english'::regconfig, display)) WHERE (display IS NOT NULL)
+  //   const tsVectorExpr = tsVectorExpression('english', 'display');
+  //   const match = indexdef.endsWith(`USING gin (system, ${tsVectorExpr}) WHERE (display IS NOT NULL)`);
+  //   if (!match) {
+  //     return undefined;
+  //   }
+  //   return {
+  //     columns: ['system', { expression: tsVectorExpr, name: 'display' }],
+  //     indexType: 'gin',
+  //     where: 'display IS NOT NULL',
+  //   };
+  // },
 ];
 
-function parseIndexDefinition(indexdef: string): IndexDefinition {
-  // const originalIndexdef = indexdef;
+export function parseIndexDefinition(indexdef: string): IndexDefinition {
+  const fullIndexDef = indexdef;
 
-  const specialMatches = SpecialIndexParsers.map((p) => p(indexdef)).filter((d): d is IndexDefinition => !!d);
+  const specialMatches = SpecialIndexParsers.map((p) => {
+    const result = p(indexdef);
+    if (result) {
+      p.usageCount = (p.usageCount ?? 0) + 1;
+    }
+    return p(indexdef);
+  }).filter((d): d is IndexDefinition => !!d);
   if (specialMatches.length > 1) {
     throw new Error('Multiple special index parsers matched: ' + indexdef);
   } else if (specialMatches.length === 1) {
-    // specialMatches[0].indexdef = originalIndexdef;
+    specialMatches[0].indexdef = fullIndexDef;
     return specialMatches[0];
   }
 
-  if (indexdef.includes(' WHERE ') || indexdef.includes('to_tsvector')) {
-    console.log(indexdef);
+  let where: string | undefined;
+  const whereMatch = indexdef.match(/ WHERE \((.+)\)$/);
+  if (whereMatch) {
+    where = whereMatch[1];
+    indexdef = indexdef.substring(0, whereMatch.index);
   }
-
-  // const whereMatch = indexdef.match(/ WHERE \((.+)\)$/);
-  // if (whereMatch) {
-  //   indexdef = indexdef.substring(0, whereMatch.index);
-  // }
 
   let include: string[] | undefined;
   const includeMatch = indexdef.match(/ INCLUDE \((.+)\)$/);
   if (includeMatch) {
     include = includeMatch[1].split(',').map((s) => s.trim().replaceAll('"', ''));
     indexdef = indexdef.substring(0, includeMatch.index);
-  }
-
-  // Use a regex to get the column names or expressions inside the parentheses
-  const matches = indexdef.match(/\((.+)\)$/);
-  if (!matches) {
-    throw new Error('Invalid index definition: ' + indexdef);
   }
 
   const indexTypeMatch = indexdef.match(/USING (\w+)/);
@@ -256,58 +234,50 @@ function parseIndexDefinition(indexdef: string): IndexDefinition {
     throw new Error('Invalid index type: ' + indexType);
   }
 
-  // if (matches[1].includes('to_tsvector')) {
-  //   console.log(matches[1]);
-  // }
-  const columns = matches[1].split(',').map((expression, i): IndexDefinition['columns'][number] => {
-    if (IndexComponentExpressionRegexes.some((r) => r.test(expression))) {
-      const idxNameMatch = indexdef.match(/"([a-zA-Z]+)_(\w+)_idx"/); // ResourceName_column1_column2_idx
-      if (!idxNameMatch) {
-        throw new Error('Could not parse index name from ' + indexdef);
-      }
+  const expressionsMatch = indexdef.match(/\((.+)\)$/);
+  if (!expressionsMatch) {
+    throw new Error('Invalid index definition: ' + indexdef);
+  }
 
-      let name = splitIndexColumnNames(idxNameMatch[2])[i]; // TODO: don't allow _ in column names?
-      if (!name) {
-        throw new Error('Could not parse index name component from ' + indexdef);
-      }
-      name = expandAbbreviations(name, ColumnNameAbbreviations);
-
-      const ic: IndexColumn = {
-        expression,
-        name,
-      };
-      return ic;
+  const parsedExpressions = parseIndexColumns(expressionsMatch[1]);
+  const columns = parsedExpressions.map<IndexDefinition['columns'][number]>((expression, i) => {
+    if (expression.match(/^[ \w"]+$/)) {
+      return expression.trim().replaceAll('"', '');
     }
 
-    return expression.trim().replaceAll('"', '');
+    const idxNameMatch = indexdef.match(/INDEX "([a-zA-Z]+)_(\w+)_(idx|idx_tsv)"/); // ResourceName_column1_column2_idx
+    if (!idxNameMatch) {
+      throw new Error('Could not parse index name from ' + indexdef);
+    }
+
+    let name = splitIndexColumnNames(idxNameMatch[2])[i];
+    if (!name) {
+      // column names aren't considered when determining index equality, so it is fine to use a placeholder
+      // name here. If we want to be stricter and match on index name as well, throw an error here instead
+      // of using a placeholder name among other changes
+      name = 'placeholder';
+    }
+    name = expandAbbreviations(name, ColumnNameAbbreviations);
+
+    return { expression, name };
   });
 
-  return {
+  const indexDef: IndexDefinition = {
     columns,
-    indexType: indexType ?? 'btree',
+    indexType: indexType,
     unique: indexdef.includes('CREATE UNIQUE INDEX'),
-    include,
-    // indexdef: originalIndexdef,
+    indexdef: fullIndexDef,
   };
-}
 
-/**
- * Splits a string on leading single underscores.
- * e.g. 'col1__col2___col3' => ['col1', '_col2', '__col3']
- * @param indexColumnNames - The string to split
- * @returns The split string
- */
-function splitIndexColumnNames(indexColumnNames: string): string[] {
-  const parts = indexColumnNames.split('_');
-  for (let i = parts.length - 1; i >= 0; i--) {
-    const part = parts[i];
-    if (part === '') {
-      parts[i + 1] = '_' + parts[i + 1];
-      parts.splice(i, 1);
-      i++;
-    }
+  if (where) {
+    indexDef.where = where;
   }
-  return parts;
+
+  if (include) {
+    indexDef.include = include;
+  }
+
+  return indexDef;
 }
 
 function buildTargetDefinition(): SchemaDefinition {
@@ -323,6 +293,7 @@ function buildTargetDefinition(): SchemaDefinition {
   buildHumanNameTable(result);
   buildValueSetElementTable(result);
   buildCodingTable(result);
+  buildCodingPropertyTable(result);
 
   return result;
 }
@@ -387,11 +358,11 @@ export function buildCreateTables(result: SchemaDefinition, resourceType: string
       {
         columns: [{ expression: "to_tsvector('simple'::regconfig, value)", name: 'text' }],
         indexType: 'gin',
+        where: "system = 'text'::text",
         indexNameSuffix: 'idx_tsv',
       },
       { columns: ['code', 'value'], indexType: 'btree', include: ['resourceId'] },
       { columns: ['code', 'system', 'value'], indexType: 'btree', include: ['resourceId'] },
-      // TODO: Add composite indexes and support for `include`
     ],
   });
 
@@ -609,7 +580,43 @@ function buildSearchIndexes(result: TableDefinition, resourceType: string): void
 }
 
 function buildAddressTable(result: SchemaDefinition): void {
-  buildLookupTable(result, 'Address', ['address', 'city', 'country', 'postalCode', 'state', 'use']);
+  buildLookupTable(
+    result,
+    'Address',
+    ['address', 'city', 'country', 'postalCode', 'state', 'use'],
+    [
+      {
+        columns: [{ expression: "to_tsvector('simple'::regconfig, address)", name: 'address' }],
+        indexType: 'gin',
+        indexNameSuffix: 'idx_tsv',
+      },
+      {
+        columns: [{ expression: 'to_tsvector(\'simple\'::regconfig, "postalCode")', name: 'postalCode' }],
+        indexType: 'gin',
+        indexNameSuffix: 'idx_tsv',
+      },
+      {
+        columns: [{ expression: "to_tsvector('simple'::regconfig, city)", name: 'city' }],
+        indexType: 'gin',
+        indexNameSuffix: 'idx_tsv',
+      },
+      {
+        columns: [{ expression: "to_tsvector('simple'::regconfig, use)", name: 'use' }],
+        indexType: 'gin',
+        indexNameSuffix: 'idx_tsv',
+      },
+      {
+        columns: [{ expression: "to_tsvector('simple'::regconfig, country)", name: 'country' }],
+        indexType: 'gin',
+        indexNameSuffix: 'idx_tsv',
+      },
+      {
+        columns: [{ expression: "to_tsvector('simple'::regconfig, state)", name: 'state' }],
+        indexType: 'gin',
+        indexNameSuffix: 'idx_tsv',
+      },
+    ]
+  );
 }
 
 function buildContactPointTable(result: SchemaDefinition): void {
@@ -621,10 +628,36 @@ function buildIdentifierTable(result: SchemaDefinition): void {
 }
 
 function buildHumanNameTable(result: SchemaDefinition): void {
-  buildLookupTable(result, 'HumanName', ['name', 'given', 'family']);
+  buildLookupTable(
+    result,
+    'HumanName',
+    ['name', 'given', 'family'],
+    [
+      {
+        columns: [{ expression: "to_tsvector('simple'::regconfig, name)", name: 'name' }],
+        indexType: 'gin',
+        unique: false,
+      },
+      {
+        columns: [{ expression: "to_tsvector('simple'::regconfig, given)", name: 'given' }],
+        indexType: 'gin',
+        unique: false,
+      },
+      {
+        columns: [{ expression: "to_tsvector('simple'::regconfig, family)", name: 'family' }],
+        indexType: 'gin',
+        unique: false,
+      },
+    ]
+  );
 }
 
-function buildLookupTable(result: SchemaDefinition, tableName: string, columns: string[]): void {
+function buildLookupTable(
+  result: SchemaDefinition,
+  tableName: string,
+  columns: string[],
+  additionalIndexes?: IndexDefinition[]
+): void {
   const tableDefinition: TableDefinition = {
     name: tableName,
     columns: [{ name: 'resourceId', type: 'UUID', notNull: true }],
@@ -634,6 +667,10 @@ function buildLookupTable(result: SchemaDefinition, tableName: string, columns: 
   for (const column of columns) {
     tableDefinition.columns.push({ name: column, type: 'TEXT' });
     tableDefinition.indexes.push({ columns: [column], indexType: 'btree' });
+  }
+
+  if (additionalIndexes?.length) {
+    tableDefinition.indexes.push(...additionalIndexes);
   }
 
   result.tables.push(tableDefinition);
@@ -682,6 +719,24 @@ function buildCodingTable(result: SchemaDefinition): void {
       // This index definition is cheating since "display gin_trgm_ops" is of course not just a column name
       // It should have a special parser
       { columns: ['system', 'display gin_trgm_ops'], indexType: 'gin' },
+    ],
+  });
+}
+
+function buildCodingPropertyTable(result: SchemaDefinition): void {
+  result.tables.push({
+    name: 'Coding_Property',
+    columns: [
+      { name: 'coding', type: 'BIGINT', notNull: true },
+      { name: 'property', type: 'BIGINT', notNull: true },
+      { name: 'target', type: 'BIGINT' },
+      { name: 'value', type: 'TEXT' },
+    ],
+    compositePrimaryKey: ['target', 'property', 'coding'],
+    indexes: [
+      { columns: ['coding', 'property', 'target', 'value'], indexType: 'btree', unique: true },
+      { columns: ['target', 'property', 'coding'], indexType: 'btree', unique: false, where: 'target IS NOT NULL' },
+      { columns: ['coding'], indexType: 'btree', unique: false },
     ],
   });
 }
@@ -819,7 +874,11 @@ function migrateIndexes(b: FileBuilder, startTable: TableDefinition, targetTable
   if (LOG_UNMATCHED_INDEXES) {
     for (const startIndex of startTable.indexes) {
       if (!matchedIndexes.has(startIndex)) {
-        console.log(`[${startTable.name}] Unmatched start index`, JSON.stringify(startIndex));
+        // console.log(`[${startTable.name}] Unmatched start index`, JSON.stringify(startIndex));
+        console.log(
+          `[${startTable.name}] Existing index should not exist:`,
+          startIndex.indexdef || JSON.stringify(startIndex)
+        );
       }
     }
   }
@@ -907,33 +966,19 @@ function rewriteMigrationExports(): void {
   writeFileSync(`${SCHEMA_DIR}/index.ts`, exportFile, { flag: 'w' });
 }
 
-function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
-  // Populate optional fields with default values before comparing
-  for (const def of [a, b]) {
-    def.unique ??= false;
-    // def.indexNameSuffix ??= 'idx';
-  }
+export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): boolean {
+  const [aPrime, bPrime] = [a, b].map((d) => {
+    return {
+      ...d,
+      unique: d.unique ?? false,
+      // don't care about indexNameSuffix, indexdef, nor expression names
+      indexNameSuffix: undefined,
+      indexdef: undefined,
+      columns: d.columns.map((c) => (typeof c === 'string' ? c : c.expression)),
+    };
+  });
 
-  // ignore indexdef
-  const aIndexdef = a.indexdef;
-  const bIndexdef = b.indexdef;
-  a.indexdef = undefined;
-  b.indexdef = undefined;
-  const aSuf = a.indexNameSuffix;
-  const bSuf = b.indexNameSuffix;
-  a.indexNameSuffix = undefined;
-  b.indexNameSuffix = undefined;
-
-  // deepEquals has FHIR-specific logic, but IndexDefinition is simple enough that it works fine
-  const result = deepEquals(a, b);
-
-  // restore ignored fields
-  a.indexdef = aIndexdef;
-  b.indexdef = bIndexdef;
-  a.indexNameSuffix = aSuf;
-  b.indexNameSuffix = bSuf;
-
-  return result;
+  return deepEquals(aPrime, bPrime);
 }
 
 function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition): boolean {
