@@ -156,7 +156,7 @@ describe('SuperAdminPage', () => {
     const postSpy = jest.spyOn(medplum, 'post');
 
     await act(async () => {
-      fireEvent.change(screen.getByLabelText('Table Names'), { target: { value: 'Observation' } });
+      fireEvent.change(screen.getByLabelText('Table Names (comma-delimited)'), { target: { value: 'Observation' } });
     });
 
     await act(async () => {
