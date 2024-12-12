@@ -21,10 +21,10 @@ import {
   SearchParameterImplementation,
 } from '../fhir/searchparameter';
 import { deriveIdentifierSearchParameter } from '../fhir/lookups/util';
-import { parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
+import { doubleEscapeSingleQuotes, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
-let LOG_UNMATCHED_INDEXES = false;
+let DROP_UNMATCHED_INDEXES = false;
 let DRY_RUN = false;
 
 export interface SchemaDefinition {
@@ -80,7 +80,7 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
 }
 
 export async function main(): Promise<void> {
-  LOG_UNMATCHED_INDEXES = process.argv.includes('--logUnmatchedIndexes');
+  DROP_UNMATCHED_INDEXES = process.argv.includes('--dropUnmatchedIndexes');
   DRY_RUN = process.argv.includes('--dryRun');
 
   indexStructureDefinitionsAndSearchParameters();
@@ -824,7 +824,6 @@ function writeUpdateColumn(
 ): void {
   if (startDef.defaultValue !== targetDef.defaultValue) {
     if (targetDef.defaultValue) {
-      console.log(startDef.defaultValue, targetDef.defaultValue);
       b.appendNoWrap(
         `await client.query('ALTER TABLE IF EXISTS "${tableDefinition.name}" ALTER COLUMN "${targetDef.name}" SET DEFAULT ${targetDef.defaultValue}');`
       );
@@ -871,14 +870,18 @@ function migrateIndexes(b: FileBuilder, startTable: TableDefinition, targetTable
     }
   }
 
-  if (LOG_UNMATCHED_INDEXES) {
-    for (const startIndex of startTable.indexes) {
-      if (!matchedIndexes.has(startIndex)) {
-        // console.log(`[${startTable.name}] Unmatched start index`, JSON.stringify(startIndex));
-        console.log(
-          `[${startTable.name}] Existing index should not exist:`,
-          startIndex.indexdef || JSON.stringify(startIndex)
-        );
+  for (const startIndex of startTable.indexes) {
+    if (!matchedIndexes.has(startIndex)) {
+      console.log(
+        `[${startTable.name}] Existing index should not exist:`,
+        startIndex.indexdef || JSON.stringify(startIndex)
+      );
+      if (DROP_UNMATCHED_INDEXES) {
+        const indexName = startIndex.indexdef?.match(/INDEX "?(.+)"? ON/)?.[1];
+        if (!indexName) {
+          throw new Error('Could not extract index name from ' + startIndex.indexdef);
+        }
+        writeDropIndex(b, indexName);
       }
     }
   }
@@ -886,6 +889,10 @@ function migrateIndexes(b: FileBuilder, startTable: TableDefinition, targetTable
 
 function writeAddIndex(b: FileBuilder, tableDefinition: TableDefinition, indexDefinition: IndexDefinition): void {
   b.appendNoWrap(`await client.query('${buildIndexSql(tableDefinition.name, indexDefinition)}');`);
+}
+
+function writeDropIndex(b: FileBuilder, indexName: string): void {
+  b.appendNoWrap(`await client.query('DROP INDEX CONCURRENTLY IF EXISTS "${indexName}"');`);
 }
 
 function buildIndexSql(tableName: string, index: IndexDefinition): string {
@@ -917,7 +924,9 @@ function buildIndexSql(tableName: string, index: IndexDefinition): string {
   }
 
   result += '(';
-  result += index.columns.map((c) => (typeof c === 'string' ? `"${c}"` : c.expression)).join(', ');
+  result += index.columns
+    .map((c) => (typeof c === 'string' ? `"${c}"` : doubleEscapeSingleQuotes(c.expression)))
+    .join(', ');
   result += ')';
 
   if (index.include) {
@@ -925,6 +934,13 @@ function buildIndexSql(tableName: string, index: IndexDefinition): string {
     result += index.include.map((c) => `"${c}"`).join(', ');
     result += ')';
   }
+
+  if (index.where) {
+    result += ' WHERE (';
+    result += doubleEscapeSingleQuotes(index.where);
+    result += ')';
+  }
+
   return result;
 }
 
