@@ -5,6 +5,7 @@ export const SNOMED = 'http://snomed.info/sct';
 export const RXNORM = 'http://www.nlm.nih.gov/research/umls/rxnorm';
 export const CPT = 'http://www.ama-assn.org/go/cpt';
 export const ICD10 = 'http://hl7.org/fhir/sid/icd-10';
+export const NDC = 'http://hl7.org/fhir/sid/ndc';
 
 // common http-based origins useful for avoiding false-positives about preferring https over http,
 // e.g. https://rules.sonarsource.com/javascript/type/Security%20Hotspot/RSPEC-5332/
