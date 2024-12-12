@@ -1108,14 +1108,17 @@ function buildStringSearchFilter(
   return expression;
 }
 
+const prefixMatchOperators = [Operator.EQUALS, Operator.STARTS_WITH];
 function buildStringFilterExpression(column: Column, operator: Operator, values: string[]): Expression {
   const conditions = values.map((v) => {
     if (operator === Operator.EXACT) {
       return new Condition(column, '=', v);
     } else if (operator === Operator.CONTAINS) {
       return new Condition(column, 'LIKE', `%${escapeLikeString(v)}%`);
-    } else {
+    } else if (prefixMatchOperators.includes(operator)) {
       return new Condition(column, 'LIKE', `${escapeLikeString(v)}%`);
+    } else {
+      throw new OperationOutcomeError(badRequest('Unsupported string search operator: ' + operator));
     }
   });
   return new Disjunction(conditions);

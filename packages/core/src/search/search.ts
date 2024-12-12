@@ -66,6 +66,7 @@ export enum Operator {
 
   // String
   CONTAINS = 'contains',
+  STARTS_WITH = 'sw',
   EXACT = 'exact',
 
   // Token
@@ -124,6 +125,7 @@ const PREFIX_OPERATORS: Record<string, Operator> = {
   sa: Operator.STARTS_AFTER,
   eb: Operator.ENDS_BEFORE,
   ap: Operator.APPROXIMATELY,
+  sw: Operator.STARTS_WITH,
 };
 
 /**
