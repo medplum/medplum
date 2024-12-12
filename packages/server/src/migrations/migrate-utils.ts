@@ -6,6 +6,19 @@
 export function quotedColumnName(name: string): string {
   return name === name.toLocaleLowerCase() ? name : '"' + name + '"';
 }
+
+/**
+ * When writing SQL statements to a file, adds an escaped backslash, i.e. \\, before single quotes in the expression.
+ *
+ * @example doubleEscapeSingleQuotes("to_tsvector('simple'::regconfig, value)") => "to_tsvector(\\'simple\\'::regconfig, value)"
+ *
+ * @param expression - A SQL expression that may include single quotes
+ * @returns The expression with single quotes escaped
+ */
+export function doubleEscapeSingleQuotes(expression: string): string {
+  return expression.replace(/'/g, "\\'");
+}
+
 /**
  * Generate a SQL expression that converts a column to a tsvector using the specified configuration.
  * @param config - the configuration to use
