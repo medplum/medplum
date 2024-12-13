@@ -763,7 +763,7 @@ describe('Super Admin routes', () => {
         expect(maybeStartDataMigrationSpy).not.toHaveBeenCalled();
       });
 
-      test.only('Run data migrations -- Asserted version is greater than current data version AND not the pending version', async () => {
+      test('Run data migrations -- Asserted version is greater than current data version AND not the pending version', async () => {
         const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => 0);
         const getCurrentDataVersionSpy = jest.spyOn(database, 'getCurrentDataVersion').mockImplementation(() => 1);
         const maybeStartDataMigrationSpy = jest.spyOn(database, 'maybeStartDataMigration');

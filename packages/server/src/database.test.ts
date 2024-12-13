@@ -1,8 +1,7 @@
 import { deepClone } from '@medplum/core';
 import { EventEmitter } from 'node:events';
-import { Duplex } from 'node:stream';
+import { Duplex, Readable, Writable } from 'node:stream';
 import pg, { Pool, PoolClient, PoolConfig, QueryArrayResult } from 'pg';
-import { Readable, Writable } from 'stream';
 import { MedplumDatabaseConfig, MedplumDatabaseSslConfig, loadConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 
