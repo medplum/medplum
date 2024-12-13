@@ -11,16 +11,7 @@ import {
 import { useMedplum, usePrevious, useResource } from '@medplum/react-hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
-<<<<<<< HEAD
 import { buildInitialResponse, getNumberOfPages, isQuestionEnabled, evaluateCalculatedExpressionsInQuestionnaire } from '../utils/questionnaire';
-=======
-import {
-  buildInitialResponse,
-  getNumberOfPages,
-  isQuestionEnabled,
-  evaluateCalculatedExpressions,
-} from '../utils/questionnaire';
->>>>>>> 7307feee20788209859d3a1da09bf76e462666f5
 import { QuestionnaireFormContext } from './QuestionnaireForm.context';
 import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 
@@ -70,7 +61,6 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
     }
   }, [response]);
 
-<<<<<<< HEAD
   const setItems = useCallback((newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void => {
     setResponse((prevResponse) => {
       const currentItems = prevResponse?.item ?? [];
@@ -89,40 +79,19 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       const mergedItemsWithUpdates = mergedItems.map((mergedItem) => {
         const updatedItem = updatedItems.find(
           (updated) => updated.linkId === mergedItem.linkId
-=======
-  const setItems = useCallback(
-    (newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void => {
-      setResponse((prevResponse) => {
-        const currentItems = prevResponse?.item ?? [];
-        const mergedItems = mergeItems(
-          currentItems,
-          Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
->>>>>>> 7307feee20788209859d3a1da09bf76e462666f5
         );
-
-        const tempResponse: QuestionnaireResponse = {
-          resourceType: 'QuestionnaireResponse',
-          status: 'in-progress',
-          item: mergedItems,
-        };
-
-        const updatedItems = evaluateCalculatedExpressions(questionnaire?.item ?? [], tempResponse);
-        const mergedItemsWithUpdates = mergedItems.map((mergedItem) => {
-          const updatedItem = updatedItems.find((updated) => updated.linkId === mergedItem.linkId);
-          return updatedItem || mergedItem;
-        });
-
-        const newResponse: QuestionnaireResponse = {
-          resourceType: 'QuestionnaireResponse',
-          status: 'in-progress',
-          item: mergedItemsWithUpdates,
-        };
-
-        return newResponse;
+        return updatedItem || mergedItem;
       });
-    },
-    [questionnaire]
-  );
+
+      const newResponse: QuestionnaireResponse = {
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: mergedItemsWithUpdates,
+      };
+
+      return newResponse;
+    });
+  }, [questionnaire]);
 
   const handleSubmit = useCallback(() => {
     const onSubmit = onSubmitRef.current;

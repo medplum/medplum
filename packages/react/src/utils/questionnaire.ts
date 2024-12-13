@@ -126,19 +126,11 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
         };
       }
     })
-<<<<<<< HEAD
     .filter((item): item is QuestionnaireResponseItem => item !== null);
 }
 
 function typedValueToResponseItem(item: QuestionnaireItem, value: TypedValue): QuestionnaireResponseItemAnswer | undefined { 
 
-=======
-    .filter((item) => item !== null) as QuestionnaireResponseItem[];
-}
-
-function createResponseAnswer(item: QuestionnaireItem, value: TypedValue): QuestionnaireResponseItemAnswer | undefined {
-  git;
->>>>>>> 7307feee20788209859d3a1da09bf76e462666f5
   if (!item.type) {
     return undefined;
   }
