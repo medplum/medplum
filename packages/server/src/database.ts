@@ -34,6 +34,12 @@ export function getPendingDataMigration(): number {
   return pendingDataMigration;
 }
 
+export function markPendingDataMigrationCompleted(): void {
+  if (pendingDataMigration > 0) {
+    pendingDataMigration = 0;
+  }
+}
+
 export function getDatabasePool(mode: DatabaseMode): Pool {
   if (!pool) {
     throw new Error('Database not setup');
@@ -221,14 +227,18 @@ function getServerVersion(): string {
   return serverVersion;
 }
 
-export async function maybeStartDataMigration(): Promise<AsyncJob> {
+export async function maybeStartDataMigration(): Promise<AsyncJob | undefined> {
   const systemRepo = getSystemRepo();
+
+  if (!pendingDataMigration) {
+    return undefined;
+  }
 
   // Check if there is already a migration job in progress
   const dataMigrationJobRef = await getRedis().get(DATA_MIGRATION_JOB_KEY);
   if (dataMigrationJobRef) {
     // If there is a migration job already, then return the existing job
-    return systemRepo.readReference({ reference: dataMigrationJobRef });
+    return systemRepo.readReference<AsyncJob>({ reference: dataMigrationJobRef });
   }
 
   // Queue up the async job here

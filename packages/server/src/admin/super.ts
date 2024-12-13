@@ -38,7 +38,7 @@ import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
 
-const DATA_MIGRATION_LOCK_KEY = 'medplum:migration:data:lock';
+export const DATA_MIGRATION_LOCK_KEY = 'medplum:migration:data:lock';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_scale_factor: 'float',
@@ -222,8 +222,8 @@ superAdminRouter.post(
 );
 
 // POST to /admin/super/migrationlock
-// to take the exclusive migration lock.
-// This should be called every ~30 seconds in order to keep the lock during the entire duration that a client is attempting to
+// to take the exclusive client migration lock.
+// This is used to prevent other clients from posting to the `/migrate` route while a client is actively stepping through an upgrade path.
 superAdminRouter.post(
   '/migrationlock',
   asyncWrap(async (_req: Request, res: Response) => {
@@ -255,41 +255,83 @@ superAdminRouter.post(
   })
 );
 
+// DELETE to /admin/super/migrationlock
+// to release the exclusive client migration lock.
+superAdminRouter.delete(
+  '/migrationlock',
+  asyncWrap(async (_req: Request, res: Response) => {
+    const ctx = requireSuperAdmin();
+    const profileRefStr = getReferenceString(ctx.profile);
+
+    const result = await getRedis().get(DATA_MIGRATION_LOCK_KEY);
+    if (result !== profileRefStr) {
+      sendOutcome(res, badRequest('Unable to release lock; current user does not hold the lock'));
+      return;
+    }
+
+    await getRedis().del(DATA_MIGRATION_LOCK_KEY);
+    sendOutcome(res, allOk);
+  })
+);
+
 // POST to /admin/super/migrate
 // to run pending data migrations.
 // This is intended to replace all of the above endpoints,
 // because it will be run automatically by the server upgrade process.
 superAdminRouter.post(
   '/migrate',
-  [body('dataMigration').isInt().withMessage('dataMigration must be an integer')],
+  [body('dataMigration').isInt().withMessage('dataMigration must be an integer').optional()],
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
 
-    // Assert that we are on the right version of the server
-
-    const pendingDataMigration = getPendingDataMigration();
-    const currentDataVersion = getCurrentDataVersion();
-
-    // If asserted data migration is <= the data version we have, we can skip it
-    if (req.body.dataMigration <= currentDataVersion) {
-      sendOutcome(res, allOk);
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
       return;
     }
 
-    // If the asserted version is greater than the pending migration, we can bail
-    if (req.body.dataMigration > pendingDataMigration) {
+    const pendingDataMigration = getPendingDataMigration();
+    if (pendingDataMigration === -1) {
       sendOutcome(
         res,
         badRequest(
-          `Data migration assertion failed. Expected pending migration to be migration ${req.body.dataMigration}, server has current pending data migration ${pendingDataMigration}`
+          'Cannot run data migration; config.runMigrations may be false and has prevented schema migrations from running'
         )
       );
       return;
     }
 
+    // Optional validation when dataMigration assertion is passed
+    if (req.body.dataMigration !== undefined) {
+      // Assert that we are on the right version of the server
+      const currentDataVersion = getCurrentDataVersion();
+
+      // If asserted data migration is <= the data version we have, we can skip it
+      if (req.body.dataMigration <= currentDataVersion) {
+        sendOutcome(res, allOk);
+        return;
+      }
+
+      // If the asserted version is greater than the pending migration, we can bail
+      if (req.body.dataMigration > pendingDataMigration) {
+        sendOutcome(
+          res,
+          badRequest(
+            `Data migration assertion failed. Expected pending migration to be migration ${req.body.dataMigration}, server has ${pendingDataMigration > 0 ? `current pending data migration ${pendingDataMigration}` : 'no pending data migration'}`
+          )
+        );
+        return;
+      }
+    }
+
     const { baseUrl } = getConfig();
     const dataMigrationJob = await maybeStartDataMigration();
+    // If there is no migration job to run, return allOk
+    if (!dataMigrationJob) {
+      sendOutcome(res, allOk);
+      return;
+    }
     const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   })

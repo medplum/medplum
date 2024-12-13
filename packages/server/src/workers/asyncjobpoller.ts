@@ -1,7 +1,7 @@
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { MedplumServerConfig } from '../config';
-import { DATA_MIGRATION_JOB_KEY, DatabaseMode, getDatabasePool } from '../database';
+import { DATA_MIGRATION_JOB_KEY, DatabaseMode, getDatabasePool, markPendingDataMigrationCompleted } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
@@ -147,6 +147,7 @@ async function onCompleteJob(job: Job<AsyncJobPollerJobData>, _trackedJob: Async
         dataVersion: `v${migrationVersion}`,
         duration: `${Date.now() - job.data.jobData.startTimeMs} ms`,
       });
+      markPendingDataMigrationCompleted();
       await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [migrationVersion]);
       break;
     }
