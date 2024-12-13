@@ -516,8 +516,7 @@ function buildWhereCondition(
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
     const [system, value] = parts;
-    // TODO is `system || null` correct here?
-    const systemCondition = new Condition(new Column(tableName, 'system'), '=', system || null);
+    const systemCondition = new Condition(new Column(tableName, 'system'), '=', system);
     return value
       ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, caseSensitive, value)])
       : systemCondition;
