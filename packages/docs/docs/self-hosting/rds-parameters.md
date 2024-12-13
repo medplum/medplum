@@ -160,7 +160,7 @@ Once the database instances have all restarted, they should be using the new con
 If your cluster does not use RDS Proxy during normal service, you can remove it once the database instance restarts are
 complete.
 
-First, manually delete the `databaseProxyEndpoint` server configuration parameter from AWS Parameter Store. Then, force
+First, revert the changes or delete the `database.host` and `database.ssl.require` server configuration parameters from AWS Parameter Store. Then, force
 another restart of the server ECS instances to connect back to the RDS cluster directly, and wait for it to
 complete.
 
