@@ -57,11 +57,15 @@ This means when version X.Y.Z is released, all components are updated to that ve
 - All unit and integration tests are run against supported versions
 - Follows Node.js even-numbered LTS release schedule (16.x, 18.x, 20.x, etc.)
 
+See [https://nodejs.org/en/about/previous-releases](https://nodejs.org/en/about/previous-releases) for Node.js version support details.
+
 #### PostgreSQL
 
 - Supports all PostgreSQL LTS versions that overlap with Medplum "Active" releases
 - Integration tests are run against all supported versions
 - Typically covers 4 major PostgreSQL versions
+
+See [https://www.postgresql.org/support/versioning/](https://www.postgresql.org/support/versioning/) for PostgreSQL version support details.
 
 ### Other Major Dependencies
 
@@ -99,11 +103,11 @@ During the "Maintenance" year of a major version, updates are limited to:
 
 ## Version Lifecycle Example
 
-Using version 3.0.0 as an example:
+Using version 4.0.0 as an example:
 
-- Q4 2024: Version 3.0.0 released, enters "Active" status
-- Q4 2025: Version 4.0.0 released, version 3.x.x enters "Maintenance" status
-- Q4 2026: Version 3.x.x reaches end-of-life
+- Q4 2024: Version 4.0.0 released, enters "Active" status
+- Q4 2025: Version 5.0.0 released, version 3.x.x enters "Maintenance" status
+- Q4 2026: Version 4.x.x reaches end-of-life
 
 ## Recommended Practices
 
