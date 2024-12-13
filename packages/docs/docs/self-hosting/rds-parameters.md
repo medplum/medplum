@@ -108,9 +108,11 @@ of directly.
 
 ### Redirect connections through the proxy
 
-First, confirm the `databaseProxyEndpoint` setting is created in [AWS Parameter Store](/docs/self-hosting/config-settings#server-config):
+First, confirm the `database.host` and `database.ssl.require` settings are created in [AWS Parameter Store](/docs/self-hosting/config-settings#server-config):
 
-![AWS Console screenshot showing the "databaseProxyEndpoint" setting is present in AWS Parameter Store](./rds-proxy-endpoint-param.png)
+![AWS Console screenshot showing the "database.host" setting is present in AWS Parameter Store with an RDS Proxy endpoint value](./rds-database-host-with-rds-proxy-param.png)
+
+![AWS Console screenshot showing the "database.ssl.require" setting is set to "true" in AWS Parameter Store](./rds-database-ssl-require-true.png)
 
 Additionally, since the RDS Proxy uses a self-signed TLS certificate and requires TLS by default, set the
 `database.ssl.rejectUnauthorized` parameter to `false` in order to ensure connectivity with the proxy:

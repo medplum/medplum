@@ -26,8 +26,10 @@ export interface MedplumServerConfig {
   supportEmail: string;
   approvedSenderEmails?: string;
   database: MedplumDatabaseConfig;
+  /** @deprecated specify `database.host` and `database.ssl.require` as needed */
   databaseProxyEndpoint?: string;
   readonlyDatabase?: MedplumDatabaseConfig;
+  /** @deprecated specify `readonlyDatabase.host` and `readonlyDatabase.ssl.require` as needed */
   readonlyDatabaseProxyEndpoint?: string;
   redis: MedplumRedisConfig;
   emailProvider?: 'none' | 'awsses' | 'smtp';
