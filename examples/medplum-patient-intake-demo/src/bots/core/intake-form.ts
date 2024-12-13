@@ -5,6 +5,7 @@ import {
   addCondition,
   addConsent,
   addCoverage,
+  addExtension,
   addFamilyMemberHistory,
   addImmunization,
   addLanguage,
@@ -20,7 +21,6 @@ import {
   getPatientAddress,
   observationCategoryMapping,
   observationCodeMapping,
-  setExtension,
   upsertObservation,
 } from './intake-utils';
 
@@ -101,9 +101,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     }
   }
 
-  setExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race']);
-  setExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity']);
-  setExtension(patient, extensionURLMapping.veteran, 'valueBoolean', answers['veteran-status']);
+  addExtension(patient, extensionURLMapping.race, 'valueCoding', answers['race'], 'ombCategory');
+  addExtension(patient, extensionURLMapping.ethnicity, 'valueCoding', answers['ethnicity'], 'ombCategory');
+  addExtension(patient, extensionURLMapping.veteran, 'valueBoolean', answers['veteran-status']);
 
   addLanguage(patient, answers['languages-spoken']?.valueCoding);
   addLanguage(patient, answers['preferred-language']?.valueCoding, true);

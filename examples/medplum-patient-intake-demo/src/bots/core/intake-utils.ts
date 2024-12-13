@@ -1,6 +1,5 @@
 import {
   createReference,
-  getExtension,
   getReferenceString,
   HTTP_HL7_ORG,
   HTTP_TERMINOLOGY_HL7_ORG,
@@ -220,44 +219,52 @@ export async function upsertObservation(
 type ExtensionQuestionnaireItemType = 'valueCoding' | 'valueBoolean';
 
 /**
- * Sets an extension to a patient
+ * Add an extension to a patient
  *
  * @param patient - A patient resource
  * @param url - An URL that identifies the extension
  * @param answerType - The value[x] field where the answer should be stored
  * @param answer - The value to be stored in the extension
+ * @param subExtensionKey - A key to identify a sub-extension
  */
-export function setExtension(
+export function addExtension(
   patient: Patient,
   url: string,
   answerType: ExtensionQuestionnaireItemType,
-  answer: QuestionnaireResponseItemAnswer | undefined
+  answer: QuestionnaireResponseItemAnswer | undefined,
+  subExtensionKey?: string
 ): void {
   let value = answer?.[answerType];
 
   // Answer to boolean Questionnaire fields will be set as `undefined` if the check mark is not ticked
   // so in this case we should interpret it as `false`.
   if (answerType === 'valueBoolean') {
-    value = !!value;
+    value = Boolean(value);
   }
 
   if (value === undefined) {
     return;
   }
 
-  const extension = getExtension(patient, url);
+  patient.extension ||= [];
 
-  if (extension) {
-    // Update the value if there's already an extension for the URL
-    Object.assign(extension, { [answerType]: value });
-  } else {
-    if (!patient.extension) {
-      patient.extension = [];
+  if (subExtensionKey) {
+    const subExtensions = [
+      {
+        url: subExtensionKey,
+        [answerType]: value,
+      },
+    ];
+    if (answerType === 'valueCoding' && (value as Coding).display) {
+      subExtensions.push({ url: 'text', valueString: (value as Coding).display as string });
     }
-
-    // Add a new extension if there isn't one
     patient.extension.push({
-      url: url,
+      url,
+      extension: subExtensions,
+    });
+  } else {
+    patient.extension.push({
+      url,
       [answerType]: value,
     });
   }

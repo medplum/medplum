@@ -18,7 +18,6 @@ import {
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
   createReference,
-  getExtensionValue,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
@@ -130,22 +129,52 @@ describe('Intake form', async () => {
       });
     });
 
-    test('Race and ethnicity', async () => {
+    test('Race, ethnicity, and veteran status', async () => {
       await handler(medplum, { bot, input: response, contentType, secrets: {} });
 
       patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
 
       expect(patient).toBeDefined();
-      expect(getExtensionValue(patient, extensionURLMapping.race)).toStrictEqual({
-        code: '2131-1',
-        display: 'Other Race',
-        system: 'urn:oid:2.16.840.1.113883.6.238',
-      });
-      expect(getExtensionValue(patient, extensionURLMapping.ethnicity)).toStrictEqual({
-        code: '2135-2',
-        display: 'Hispanic or Latino',
-        system: 'urn:oid:2.16.840.1.113883.6.238',
-      });
+      expect(patient.extension).toStrictEqual([
+        {
+          url: extensionURLMapping.race,
+          extension: [
+            {
+              url: 'ombCategory',
+              valueCoding: {
+                code: '2131-1',
+                display: 'Other Race',
+                system: 'urn:oid:2.16.840.1.113883.6.238',
+              },
+            },
+            {
+              url: 'text',
+              valueString: 'Other Race',
+            },
+          ],
+        },
+        {
+          url: extensionURLMapping.ethnicity,
+          extension: [
+            {
+              url: 'ombCategory',
+              valueCoding: {
+                code: '2135-2',
+                display: 'Hispanic or Latino',
+                system: 'urn:oid:2.16.840.1.113883.6.238',
+              },
+            },
+            {
+              url: 'text',
+              valueString: 'Hispanic or Latino',
+            },
+          ],
+        },
+        {
+          url: extensionURLMapping.veteran,
+          valueBoolean: true,
+        },
+      ]);
     });
   });
 
@@ -292,17 +321,6 @@ describe('Intake form', async () => {
       expect(patient.communication?.[0].language.coding?.[0].code).toStrictEqual('pt');
       expect(patient.communication?.[1].language.coding?.[0].code).toStrictEqual('en');
       expect(patient.communication?.[1].preferred).toBeTruthy();
-    });
-  });
-
-  describe('Veteran status', async () => {
-    test('sets as veteran', async () => {
-      await handler(medplum, { bot, input: response, contentType, secrets: {} });
-
-      patient = (await medplum.searchOne('Patient', `identifier=${ssn}`)) as Patient;
-
-      expect(patient).toBeDefined();
-      expect(getExtensionValue(patient, extensionURLMapping.veteran)).toStrictEqual(true);
     });
   });
 
