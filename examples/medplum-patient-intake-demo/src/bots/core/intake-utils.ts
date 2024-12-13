@@ -1,4 +1,5 @@
 import {
+  addProfileToResource,
   createReference,
   getReferenceString,
   HTTP_HL7_ORG,
@@ -23,6 +24,17 @@ import {
   QuestionnaireResponseItemAnswer,
   Reference,
 } from '@medplum/fhirtypes';
+
+export const PROFILE_URLS: Record<string, string> = {
+  AllergyIntolerance: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-allergyintolerance`,
+  CareTeam: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-careteam`,
+  Coverage: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-coverage`,
+  Immunization: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-immunization`,
+  MedicationRequest: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-medicationrequest`,
+  Patient: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-patient`,
+  ObservationSexualOrientation: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-observation-sexual-orientation`,
+  ObservationSmokingStatus: `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-smokingstatus`,
+};
 
 export const extensionURLMapping: Record<string, string> = {
   race: HTTP_HL7_ORG + '/fhir/us/core/StructureDefinition/us-core-race',
@@ -180,6 +192,7 @@ type ObservationQuestionnaireItemType = 'valueCodeableConcept' | 'valueDateTime'
  * @param category - A category for the observation
  * @param answerType - The value[x] field where the answer should be stored
  * @param value - The value to be stored in the observation
+ * @param profileUrl - An optional profile URL to be added to the resource
  */
 export async function upsertObservation(
   medplum: MedplumClient,
@@ -187,19 +200,25 @@ export async function upsertObservation(
   code: CodeableConcept,
   category: CodeableConcept,
   answerType: ObservationQuestionnaireItemType,
-  value: QuestionnaireResponseItemAnswer | undefined
+  value: QuestionnaireResponseItemAnswer | undefined,
+  profileUrl?: string
 ): Promise<void> {
   if (!value || !code) {
     return;
   }
 
-  const observation: Observation = {
+  let observation: Observation = {
     resourceType: 'Observation',
     status: 'final',
     subject: createReference(patient),
     code: code,
     category: [category],
+    effectiveDateTime: new Date().toISOString(),
   };
+
+  if (profileUrl) {
+    observation = addProfileToResource(observation, profileUrl);
+  }
 
   if (answerType === 'valueCodeableConcept') {
     observation.valueCodeableConcept = {
@@ -330,6 +349,9 @@ export async function addAllergy(
   await medplum.upsertResource(
     {
       resourceType: 'AllergyIntolerance',
+      meta: {
+        profile: [PROFILE_URLS.AllergyIntolerance],
+      },
       clinicalStatus: {
         text: 'Active',
         coding: [
@@ -386,6 +408,9 @@ export async function addMedication(
   await medplum.upsertResource(
     {
       resourceType: 'MedicationRequest',
+      meta: {
+        profile: [PROFILE_URLS.MedicationRequest],
+      },
       subject: createReference(patient),
       status: 'active',
       intent: 'order',
@@ -498,6 +523,9 @@ export async function addImmunization(
   await medplum.upsertResource(
     {
       resourceType: 'Immunization',
+      meta: {
+        profile: [PROFILE_URLS.Immunization],
+      },
       status: 'completed',
       vaccineCode: { coding: [code] },
       patient: createReference(patient),
@@ -527,6 +555,9 @@ export async function addPharmacy(
   await medplum.upsertResource(
     {
       resourceType: 'CareTeam',
+      meta: {
+        profile: [PROFILE_URLS.CareTeam],
+      },
       status: 'proposed',
       name: 'Patient Preferred Pharmacy',
       subject: createReference(patient),
@@ -578,13 +609,16 @@ export async function addCoverage(
       name: name ? [name] : undefined,
       birthDate: relatedPersonAnswers['related-person-dob']?.valueDate,
       gender:
-        (relatedPersonAnswers['related-person-gender-identity'].valueCoding?.code as Patient['gender']) ?? undefined,
+        (relatedPersonAnswers['related-person-gender-identity']?.valueCoding?.code as Patient['gender']) ?? undefined,
     });
   }
 
   await medplum.upsertResource(
     {
       resourceType: 'Coverage',
+      meta: {
+        profile: [PROFILE_URLS.Coverage],
+      },
       status: 'active',
       beneficiary: createReference(patient),
       subscriberId: subscriberId,

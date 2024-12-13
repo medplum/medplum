@@ -1,4 +1,4 @@
-import { BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
+import { addProfileToResource, BotEvent, createReference, getQuestionnaireAnswers, MedplumClient } from '@medplum/core';
 import { Organization, Patient, Questionnaire, QuestionnaireResponse, Reference } from '@medplum/fhirtypes';
 import {
   addAllergy,
@@ -21,6 +21,7 @@ import {
   getPatientAddress,
   observationCategoryMapping,
   observationCodeMapping,
+  PROFILE_URLS,
   upsertObservation,
 } from './intake-utils';
 
@@ -37,6 +38,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
   let patient: Patient = {
     resourceType: 'Patient',
   };
+
+  patient = addProfileToResource(patient, PROFILE_URLS.Patient);
 
   // Handle demographic information
 
@@ -125,7 +128,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     observationCodeMapping.sexualOrientation,
     observationCategoryMapping.socialHistory,
     'valueCodeableConcept',
-    answers['sexual-orientation']?.valueCoding
+    answers['sexual-orientation']?.valueCoding,
+    PROFILE_URLS.ObservationSexualOrientation
   );
 
   await upsertObservation(
@@ -152,7 +156,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Questionna
     observationCodeMapping.smokingStatus,
     observationCategoryMapping.socialHistory,
     'valueCodeableConcept',
-    answers['smoking-status']?.valueCoding
+    answers['smoking-status']?.valueCoding,
+    PROFILE_URLS.ObservationSmokingStatus
   );
 
   await upsertObservation(
