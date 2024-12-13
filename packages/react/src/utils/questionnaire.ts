@@ -126,11 +126,19 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
         };
       }
     })
+<<<<<<< HEAD
     .filter((item): item is QuestionnaireResponseItem => item !== null);
 }
 
 function typedValueToResponseItem(item: QuestionnaireItem, value: TypedValue): QuestionnaireResponseItemAnswer | undefined { 
 
+=======
+    .filter((item) => item !== null) as QuestionnaireResponseItem[];
+}
+
+function createResponseAnswer(item: QuestionnaireItem, value: TypedValue): QuestionnaireResponseItemAnswer | undefined {
+  git;
+>>>>>>> 7307feee20788209859d3a1da09bf76e462666f5
   if (!item.type) {
     return undefined;
   }
@@ -156,7 +164,7 @@ function typedValueToResponseItem(item: QuestionnaireItem, value: TypedValue): Q
     case QuestionnaireItemType.decimal:
     case QuestionnaireItemType.integer:
     case QuestionnaireItemType.string:
-          return { valueQuantity: value.value }
+      return { valueQuantity: value.value };
     default:
       return undefined;
   }
