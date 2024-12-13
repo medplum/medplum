@@ -11,7 +11,7 @@ import {
 import { useMedplum, usePrevious, useResource } from '@medplum/react-hooks';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
-import { buildInitialResponse, getNumberOfPages, isQuestionEnabled, evaluateCalculatedExpressions } from '../utils/questionnaire';
+import { buildInitialResponse, getNumberOfPages, isQuestionEnabled, evaluateCalculatedExpressionsInQuestionnaire } from '../utils/questionnaire';
 import { QuestionnaireFormContext } from './QuestionnaireForm.context';
 import { QuestionnairePageSequence } from './QuestionnaireFormComponents/QuestionnaireFormPageSequence';
 
@@ -75,7 +75,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         item: mergedItems,
       };
 
-      const updatedItems = evaluateCalculatedExpressions(questionnaire?.item ?? [], tempResponse);
+      const updatedItems = evaluateCalculatedExpressionsInQuestionnaire(questionnaire?.item ?? [], tempResponse);
       const mergedItemsWithUpdates = mergedItems.map((mergedItem) => {
         const updatedItem = updatedItems.find(
           (updated) => updated.linkId === mergedItem.linkId

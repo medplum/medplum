@@ -96,24 +96,24 @@ export function isQuestionEnabled(
   return enableBehavior !== 'any';
 }
 
-export function evaluateCalculatedExpressions(
+export function evaluateCalculatedExpressionsInQuestionnaire(
   items: QuestionnaireItem[],
   response: QuestionnaireResponse | undefined
 ): QuestionnaireResponseItem[] {
   return items
-    .map((item) => {
+    .map((item): QuestionnaireResponseItem | null => {
       if (item.item) {
         return {
           ...item,
-          item: evaluateCalculatedExpressions(item.item, response),
+          item: evaluateCalculatedExpressionsInQuestionnaire(item.item, response),
         };
       } else {
-        const calculatedValue = checkForCalculatedExpression(item, response);
-        if (!calculatedValue || calculatedValue.length === 0) {
+        const calculatedValue = evaluateCalculatedExpression(item, response);
+        if (!calculatedValue) {
           return null;
         }
 
-        const answer = createResponseAnswer(item, calculatedValue[0]);
+        const answer = typedValueToResponseItem(item, calculatedValue);
         if (!answer) {
           return null;
         }
@@ -126,11 +126,11 @@ export function evaluateCalculatedExpressions(
         };
       }
     })
-    .filter((item) => item !== null) as QuestionnaireResponseItem[]; 
+    .filter((item): item is QuestionnaireResponseItem => item !== null);
 }
 
+function typedValueToResponseItem(item: QuestionnaireItem, value: TypedValue): QuestionnaireResponseItemAnswer | undefined { 
 
-function createResponseAnswer(item: QuestionnaireItem, value: TypedValue): QuestionnaireResponseItemAnswer | undefined {git 
   if (!item.type) {
     return undefined;
   }
@@ -162,10 +162,10 @@ function createResponseAnswer(item: QuestionnaireItem, value: TypedValue): Quest
   }
 }
 
-function checkForCalculatedExpression(
+function evaluateCalculatedExpression(
   item: QuestionnaireItem,
   response: QuestionnaireResponse | undefined
-): TypedValue[] | undefined {
+): TypedValue | undefined {
   if (!response) {
     return undefined;
   }
@@ -180,7 +180,7 @@ function checkForCalculatedExpression(
     if (expression) {
       const value = toTypedValue(response);
       const result = evalFhirPathTyped(expression, [value], { '%resource': value });
-      return result;
+      return result.length === 0 ? result[0] : undefined;
     }
   }
   return undefined;
