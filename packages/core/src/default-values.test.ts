@@ -329,6 +329,28 @@ describe('apply default values', () => {
       expect(elem.pattern).toBeUndefined();
     });
   });
+
+  describe('US Core Smoking Status', () => {
+    const profileUrl = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus';
+
+    beforeAll(() => {
+      const smokingStatusProfile: StructureDefinition = readJson('fhir/r4/testing/uscore-v7.0.0-smoking-status.json');
+      indexStructureDefinitionBundle([smokingStatusProfile]);
+    });
+
+    test('Slice on singleton element does not error', () => {
+      const schema = tryGetProfile(profileUrl);
+      expect(schema).toBeDefined();
+
+      const resource: Observation = {
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: 'http://loinc.org', code: '72166-2' }] },
+      };
+      const withDefaults = applyDefaultValuesToResource(resource, schema as InternalTypeSchema);
+      expect(withDefaults).toEqual(resource);
+    });
+  });
 });
 
 function getComplexUSCorePatient(): Patient {
