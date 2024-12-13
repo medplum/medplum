@@ -188,10 +188,10 @@ function evaluateCalculatedExpression(
   return undefined;
 }
 
-export const mergeUpdatedItems = (
+export function mergeUpdatedItems(
   mergedItems: QuestionnaireResponseItem[],
   updatedItems: QuestionnaireResponseItem[]
-): QuestionnaireResponseItem[] => {
+): QuestionnaireResponseItem[] {
   return mergedItems.map((mergedItem) => {
     const updatedItem = updatedItems.find((updated) => updated.linkId === mergedItem.linkId);
 
@@ -205,7 +205,7 @@ export const mergeUpdatedItems = (
 
     return updatedItem || mergedItem;
   });
-};
+}
 
 export function getNewMultiSelectValues(
   selected: string[],
