@@ -129,8 +129,10 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
     .filter((item): item is QuestionnaireResponseItem => item !== null);
 }
 
-function typedValueToResponseItem(item: QuestionnaireItem, value: TypedValue): QuestionnaireResponseItemAnswer | undefined { 
-
+function typedValueToResponseItem(
+  item: QuestionnaireItem,
+  value: TypedValue
+): QuestionnaireResponseItemAnswer | undefined {
   if (!item.type) {
     return undefined;
   }
