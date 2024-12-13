@@ -17,7 +17,7 @@ const operatorMap: Record<string, Operator | undefined> = {
   // co - An item in the set contains this value
   co: Operator.CONTAINS,
   // sw - An item in the set starts with this value
-  sw: undefined,
+  sw: Operator.STARTS_WITH,
   // ew - An item in the set ends with this value
   ew: undefined,
   // gt / lt / ge / le - A value in the set is (greater than, less than, greater or equal, less or equal) the given value

@@ -3319,6 +3319,42 @@ describe('FHIR Search', () => {
         expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
       }));
 
+    test('_filter sw', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Evelyn', 'Dierdre'], family: 'Arachnae' }],
+        });
+
+        // NOTE: This incorrect behavior is currently kept for backwards compatibility,
+        // and should be changed to exact matching in Medplum v4
+        const result = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'name eq Evel',
+            },
+          ],
+        });
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+
+        const result2 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'name sw Evel',
+            },
+          ],
+        });
+        expect(result2.entry).toHaveLength(1);
+        expect(result2.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+      }));
+
     test.each([true, false])('_filter with chained search', (ff) =>
       withTestContext(async () => {
         config.chainedSearchWithReferenceTables = ff;
