@@ -3,10 +3,12 @@ import {
   allOk,
   badRequest,
   forbidden,
+  getReferenceString,
   getResourceTypes,
   OperationOutcomeError,
   parseSearchRequest,
   SearchRequest,
+  serverError,
   validateResourceType,
 } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
@@ -16,19 +18,27 @@ import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { DatabaseMode, getDatabasePool } from '../database';
+import {
+  DatabaseMode,
+  getCurrentDataVersion,
+  getDatabasePool,
+  getPendingDataMigration,
+  maybeStartDataMigration,
+} from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import * as dataMigrations from '../migrations/data';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
+import { getRedis } from '../redis';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
+
+const DATA_MIGRATION_LOCK_KEY = 'medplum:migration:data:lock';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_scale_factor: 'float',
@@ -211,30 +221,77 @@ superAdminRouter.post(
   })
 );
 
+// POST to /admin/super/migrationlock
+// to take the exclusive migration lock.
+// This should be called every ~30 seconds in order to keep the lock during the entire duration that a client is attempting to
+superAdminRouter.post(
+  '/migrationlock',
+  asyncWrap(async (_req: Request, res: Response) => {
+    const ctx = requireSuperAdmin();
+    const profileRefStr = getReferenceString(ctx.profile);
+
+    const results = await getRedis()
+      .multi()
+      .set(DATA_MIGRATION_LOCK_KEY, profileRefStr, 'NX')
+      .get(DATA_MIGRATION_LOCK_KEY)
+      .exec();
+    if (!results) {
+      // This should only happen if Redis fails in some catastrophic way
+      throw new OperationOutcomeError(
+        serverError(new Error(`Failed to get value for ${DATA_MIGRATION_LOCK_KEY} from Redis`))
+      );
+    }
+    const [error, result] = results?.[1] as [error: Error, result: string];
+    if (error) {
+      // This should only happen if Redis fails in some catastrophic way
+      throw new OperationOutcomeError(serverError(error));
+    }
+    if (result === profileRefStr) {
+      sendOutcome(res, allOk);
+      return;
+    }
+
+    sendOutcome(res, badRequest('Unable to acquire the exclusive data migration lock. Migration already in-progress'));
+  })
+);
+
 // POST to /admin/super/migrate
 // to run pending data migrations.
 // This is intended to replace all of the above endpoints,
 // because it will be run automatically by the server upgrade process.
 superAdminRouter.post(
   '/migrate',
+  [body('dataMigration').isInt().withMessage('dataMigration must be an integer')],
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => {
-      const systemRepo = getSystemRepo();
-      const client = getDatabasePool(DatabaseMode.WRITER);
-      const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
-      const version = result.rows[0]?.dataVersion as number;
-      const migrationKeys = Object.keys(dataMigrations);
-      for (let i = version + 1; i <= migrationKeys.length; i++) {
-        const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
-        const start = Date.now();
-        await migration.run(systemRepo);
-        ctx.logger.info('Data migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
-        await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
-      }
-    });
+    // Assert that we are on the right version of the server
+
+    const pendingDataMigration = getPendingDataMigration();
+    const currentDataVersion = getCurrentDataVersion();
+
+    // If asserted data migration is <= the data version we have, we can skip it
+    if (req.body.dataMigration <= currentDataVersion) {
+      sendOutcome(res, allOk);
+      return;
+    }
+
+    // If the asserted version is greater than the pending migration, we can bail
+    if (req.body.dataMigration > pendingDataMigration) {
+      sendOutcome(
+        res,
+        badRequest(
+          `Data migration assertion failed. Expected pending migration to be migration ${req.body.dataMigration}, server has current pending data migration ${pendingDataMigration}`
+        )
+      );
+      return;
+    }
+
+    const { baseUrl } = getConfig();
+    const dataMigrationJob = await maybeStartDataMigration();
+    const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   })
 );
 

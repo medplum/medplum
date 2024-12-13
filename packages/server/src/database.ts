@@ -3,13 +3,17 @@ import { AsyncJob } from '@medplum/fhirtypes';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Pool, PoolClient } from 'pg';
+import * as semver from 'semver';
 import { MedplumDatabaseConfig, MedplumServerConfig } from './config';
 import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as dataMigrations from './migrations/data';
 import * as schemaMigrations from './migrations/schema';
+import { getRedis } from './redis';
 import { addAsyncJobPollerJob } from './workers/asyncjobpoller';
+
+const DATA_MIGRATION_JOB_KEY = 'medplum:migration:data:job';
 
 export enum DatabaseMode {
   READER = 'reader',
@@ -19,6 +23,16 @@ export enum DatabaseMode {
 let pool: Pool | undefined;
 let readonlyPool: Pool | undefined;
 let serverVersion: string | undefined;
+let dataVersion = -1;
+let pendingDataMigration = -1;
+
+export function getCurrentDataVersion(): number {
+  return dataVersion;
+}
+
+export function getPendingDataMigration(): number {
+  return pendingDataMigration;
+}
 
 export function getDatabasePool(mode: DatabaseMode): Pool {
   if (!pool) {
@@ -130,9 +144,9 @@ async function migrate(client: PoolClient): Promise<void> {
 
   const result = await client.query('SELECT "version", "dataVersion" FROM "DatabaseMigration"');
   let version = result.rows[0]?.version ?? -1;
-  let dataVersion = result.rows[0]?.dataVersion ?? -1;
+  dataVersion = result.rows[0]?.dataVersion ?? -1;
   const allDataVersions = getMigrationVersions(dataMigrations);
-  let pendingDataMigration = 0;
+  pendingDataMigration = 0;
 
   // If this is the first time the server has been started up (version < 0)
   // We need to initialize our migrations table
@@ -161,11 +175,18 @@ async function migrate(client: PoolClient): Promise<void> {
     // If the current server version is not the one we require for this data migration
     // Then we should throw and abort the migration process
     const serverVersion = getServerVersion();
-    if (serverVersion !== requiredServerVersion) {
+    // TODO: Make this version strict after v4
+    // We made this requirement looser so that self-hosters can run first migration on any version within the minor version before v4
+    if (!semver.satisfies(serverVersion, `>=${requiredServerVersion} <${semver.inc(requiredServerVersion, 'minor')}`)) {
       throw new Error(
         `Unable to run data migration against the current server version. Migration requires server at version ${requiredServerVersion}, but current server version is ${serverVersion}`
       );
     }
+    // if (serverVersion !== requiredServerVersion) {
+    //   throw new Error(
+    //     `Unable to run data migration against the current server version. Migration requires server at version ${requiredServerVersion}, but current server version is ${serverVersion}`
+    //   );
+    // }
 
     // If we make it here, we have a pending migration, but we don't want to apply it until we make sure we apply all the schema migrations first
   }
@@ -179,29 +200,6 @@ async function migrate(client: PoolClient): Promise<void> {
       globalLogger.info('Database schema migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
       await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
     }
-  }
-
-  // TODO: Instead of running the migration here, queue it up in an async job
-  if (pendingDataMigration) {
-    // Queue up the async job here
-    const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
-    const startTimeMs = Date.now();
-    // Get async job
-    const migrationAsyncJob = (await migration.run(getSystemRepo())) as unknown as AsyncJob;
-    const systemRepo = getSystemRepo();
-    const exec = new AsyncJobExecutor(systemRepo);
-    await exec.init(getReferenceString(migrationAsyncJob));
-    await exec.run(async (ownJob) => {
-      await addAsyncJobPollerJob(
-        {
-          ownJob,
-          trackedJob: migrationAsyncJob,
-          jobType: 'dataMigration',
-          jobData: { startTimeMs, migrationVersion: pendingDataMigration },
-        },
-        1000
-      );
-    });
   }
 }
 
@@ -218,4 +216,38 @@ function getServerVersion(): string {
     ).version as string;
   }
   return serverVersion;
+}
+
+export async function maybeStartDataMigration(): Promise<AsyncJob> {
+  const systemRepo = getSystemRepo();
+
+  // Check if there is already a migration job in progress
+  const dataMigrationJobRef = await getRedis().get(DATA_MIGRATION_JOB_KEY);
+  if (dataMigrationJobRef) {
+    // If there is a migration job already, then return the existing job
+    return systemRepo.readReference({ reference: dataMigrationJobRef });
+  }
+
+  // Queue up the async job here
+  const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
+  const startTimeMs = Date.now();
+  // Get async job
+  const migrationAsyncJob = await migration.run(systemRepo);
+  const exec = new AsyncJobExecutor(systemRepo);
+  const pollerJob = await exec.init(getReferenceString(migrationAsyncJob));
+  // Sets the key for the migration poller job
+  // Acts as a "lock" for the data migration async job
+  await getRedis().set(DATA_MIGRATION_JOB_KEY, getReferenceString(pollerJob));
+  await exec.run(async (ownJob) => {
+    await addAsyncJobPollerJob(
+      {
+        ownJob,
+        trackedJob: migrationAsyncJob,
+        jobType: 'dataMigration',
+        jobData: { startTimeMs, migrationVersion: pendingDataMigration },
+      },
+      1000
+    );
+  });
+  return migrationAsyncJob;
 }

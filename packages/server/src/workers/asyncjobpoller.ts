@@ -74,21 +74,50 @@ export async function closeAsyncJobPollerWorker(): Promise<void> {
 }
 
 export async function execAsyncJobPollerJob(job: Job<AsyncJobPollerJobData>): Promise<void> {
-  // Check status of async job
+  const systemRepo = getSystemRepo();
   try {
-    const trackedJob = await getSystemRepo().readResource<AsyncJob>('AsyncJob', job.data.trackedJob.id as string);
-    if (trackedJob.status !== 'completed' && trackedJob.status !== 'error') {
-      // Re-enqueue the job
-      await addAsyncJobPollerJob({ ...job.data, trackedJob }, 1000);
+    // Check status of async job
+    const trackedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.trackedJob.id as string);
+    if (trackedJob.status === 'accepted') {
+      if (await shouldEnqueueJob(job, trackedJob)) {
+        await addAsyncJobPollerJob({ ...job.data, trackedJob }, 1000);
+      }
     } else {
       // Job has been completed
       await finalizeJob(job, trackedJob);
     }
   } catch (err) {
-    const systemRepo = getSystemRepo();
     const exec = new AsyncJobExecutor(systemRepo, job.data.ownJob);
     await exec.failJob(systemRepo, err as Error);
   }
+}
+
+/**
+ *
+ * @param job - The job data for the async poller job.
+ * @param trackedJob - The tracked AsyncJob.
+ * @returns a Promise<boolean> which indicates whether the job should be enqueued or not.
+ */
+async function shouldEnqueueJob(job: Job<AsyncJobPollerJobData>, trackedJob: AsyncJob): Promise<boolean> {
+  const systemRepo = getSystemRepo();
+  switch (job.data.jobType) {
+    case 'dataMigration': {
+      // We only care about our ownJob when are checking if the job has been cancelled before re-enqueuing the polling job
+      // If the polled job is already in a finalized state then we can ignore the cancel
+      const ownJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.ownJob.id as string);
+      if (ownJob.status === 'cancelled') {
+        // Cancel the polled job if the parent
+        await systemRepo.patchResource('AsyncJob', trackedJob.id as string, [
+          { op: 'test', path: '/status', value: 'accepted' },
+          { op: 'add', path: '/status', value: 'cancelled' },
+        ]);
+        return false;
+      }
+      break;
+    }
+  }
+
+  return true;
 }
 
 async function finalizeJob(job: Job<AsyncJobPollerJobData>, trackedJob: AsyncJob): Promise<void> {
@@ -97,10 +126,12 @@ async function finalizeJob(job: Job<AsyncJobPollerJobData>, trackedJob: AsyncJob
   if (trackedJob.status === 'completed') {
     await onCompleteJob(job, trackedJob);
     await exec.completeJob(systemRepo);
-  } else if (trackedJob.status === 'error') {
+  } else if (trackedJob.status === 'error' || trackedJob.status === 'cancelled') {
     await onFailJob(job, trackedJob);
     await exec.failJob(systemRepo);
   }
+
+  // Clear the data migration job key
 }
 
 async function onCompleteJob(job: Job<AsyncJobPollerJobData>, _trackedJob: AsyncJob): Promise<void> {
