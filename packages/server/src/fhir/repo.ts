@@ -29,6 +29,7 @@ import {
   isNotFound,
   isObject,
   isOk,
+  isResource,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
@@ -67,7 +68,7 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { recordHistogramValue } from '../otel/otel';
+import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -78,10 +79,12 @@ import {
   HistoryInteraction,
   PatchInteraction,
   ReadInteraction,
+  RestfulOperationType,
   SearchInteraction,
   UpdateInteraction,
   VreadInteraction,
-  logRestfulEvent,
+  createAuditEvent,
+  logAuditEvent,
 } from '../util/auditevent';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
@@ -282,7 +285,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, { resource: resourceWithId, durationMs });
+      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
       throw err;
     }
   }
@@ -304,7 +307,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err, {
+        resource: { reference: `${resourceType}/${id}` },
+        durationMs,
+      });
       throw err;
     }
   }
@@ -393,7 +399,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const durationMs = Date.now() - startTime;
 
       if (entryResult instanceof Error) {
-        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult, { durationMs });
+        const reference = references[i];
+        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult, {
+          resource: reference,
+          durationMs,
+        });
       } else {
         entryResult = this.removeHiddenFields(entryResult);
         this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: entryResult, durationMs });
@@ -516,13 +526,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       };
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(HistoryInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(HistoryInteraction, AuditEventOutcome.MinorFailure, err, {
+        resource: { reference: `${resourceType}/${id}` },
+        durationMs,
+      });
       throw err;
     }
   }
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
     const startTime = Date.now();
+    const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
     try {
       if (!validator.isUUID(id) || !validator.isUUID(vid)) {
         throw new OperationOutcomeError(notFound);
@@ -548,11 +562,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
       const result = this.removeHiddenFields(JSON.parse(rows[0].content as string));
       const durationMs = Date.now() - startTime;
-      this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
+      this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(VreadInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(VreadInteraction, AuditEventOutcome.MinorFailure, err, { resource: versionReference, durationMs });
       throw err;
     }
   }
@@ -560,7 +574,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
     const startTime = Date.now();
     try {
-      const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
+      let result: T;
+      if (options?.ifMatch) {
+        // Conditional update requires transaction
+        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options.ifMatch));
+      } else {
+        result = await this.updateResourceImpl(resource, false);
+      }
       const durationMs = Date.now() - startTime;
       await this.postCommit(async () => {
         this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
@@ -1037,7 +1057,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await addSubscriptionJobs(resource, resource, { interaction: 'delete' });
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err, {
+        resource: { reference: `${resourceType}/${id}` },
+        durationMs,
+      });
       throw err;
     }
   }
@@ -1045,7 +1068,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async patchResource<T extends Resource = Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[]
+    patch: Operation[],
+    options?: UpdateResourceOptions
   ): Promise<T> {
     const startTime = Date.now();
     try {
@@ -1061,7 +1085,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         patchObject(resource, patch);
 
-        const result = await this.updateResourceImpl(resource, false);
+        const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
         const durationMs = Date.now() - startTime;
 
         await this.postCommit(async () => {
@@ -1071,7 +1095,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       });
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err, {
+        resource: { reference: `${resourceType}/${id}` },
+        durationMs,
+      });
       throw err;
     }
   }
@@ -2072,7 +2099,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     outcome: AuditEventOutcome,
     description?: unknown,
     options?: {
-      resource?: Resource;
+      resource?: Resource | Reference;
       searchRequest?: SearchRequest;
       durationMs?: number;
     }
@@ -2091,28 +2118,38 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
     const resource = options?.resource;
 
-    const auditEvent = logRestfulEvent(
+    const auditEvent = createAuditEvent(
+      RestfulOperationType,
       subtype,
       this.context.projects?.[0] as string,
       this.context.author,
       this.context.remoteAddress,
       outcome,
-      outcomeDesc,
-      resource,
-      query
+      {
+        description: outcomeDesc,
+        resource,
+        searchQuery: query,
+        durationMs: options?.durationMs,
+      }
     );
+    logAuditEvent(auditEvent);
 
-    if (options?.durationMs) {
+    if (options?.durationMs && outcome === AuditEventOutcome.Success) {
       const duration = options.durationMs / 1000; // Report duration in whole seconds
       recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
         attributes: {
-          resourceType: resource?.resourceType,
-          result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
+          resourceType: isResource(resource) ? resource?.resourceType : undefined,
         },
       });
     }
+    incrementCounter(`medplum.fhir.interaction.${subtype.code}.count`, {
+      attributes: {
+        resourceType: isResource(resource) ? resource?.resourceType : undefined,
+        result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
+      },
+    });
 
-    if (getConfig().saveAuditEvents && resource?.resourceType !== 'AuditEvent') {
+    if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
       this.updateResourceImpl(auditEvent, true).catch(console.error);
     }

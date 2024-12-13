@@ -4490,7 +4490,6 @@ describe('FHIR Search', () => {
             const link = bundle.link?.find((l) => l.relation === 'next')?.url;
             if (link) {
               expect(link.includes('_cursor')).toBe(true);
-              console.log(link);
               url = link;
             } else {
               url = '';

@@ -254,6 +254,16 @@ describe('Client', () => {
     expect(client.getAuthorizeUrl()).toBe(authorizeUrl);
   });
 
+  test('getDefaultHeaders', () => {
+    const client = new MedplumClient({ defaultHeaders: { 'X-Test': '123', Cookie: 'abc' } });
+    const headers = client.getDefaultHeaders();
+    expect(headers).toBeDefined();
+    expect(headers['X-Test']).toBe('123');
+    expect(headers.Cookie).toBe('abc');
+    const clientWithoutDefaultHeaders = new MedplumClient();
+    expect(clientWithoutDefaultHeaders.getDefaultHeaders()).toStrictEqual({});
+  });
+
   test('Restore from localStorage', async () => {
     window.localStorage.setItem(
       'activeLogin',
