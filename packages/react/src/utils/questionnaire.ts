@@ -199,7 +199,7 @@ export function mergeUpdatedItems(
       return {
         ...mergedItem,
         item: mergeUpdatedItems(mergedItem.item, updatedItem.item),
-        answer: updatedItem.answer || mergedItem.answer, 
+        answer: updatedItem.answer || mergedItem.answer,
       };
     }
 
