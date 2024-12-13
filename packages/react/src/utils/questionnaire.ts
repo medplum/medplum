@@ -186,6 +186,25 @@ function evaluateCalculatedExpression(
   return undefined;
 }
 
+export const mergeUpdatedItems = (
+  mergedItems: QuestionnaireResponseItem[],
+  updatedItems: QuestionnaireResponseItem[]
+): QuestionnaireResponseItem[] => {
+  return mergedItems.map((mergedItem) => {
+    const updatedItem = updatedItems.find((updated) => updated.linkId === mergedItem.linkId);
+
+    if (updatedItem?.item && mergedItem.item) {
+      return {
+        ...mergedItem,
+        item: mergeUpdatedItems(mergedItem.item, updatedItem.item),
+        answer: updatedItem.answer || mergedItem.answer, 
+      };
+    }
+
+    return updatedItem || mergedItem;
+  });
+};
+
 export function getNewMultiSelectValues(
   selected: string[],
   propertyName: string,
