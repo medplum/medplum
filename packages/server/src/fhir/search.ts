@@ -934,7 +934,7 @@ function buildSearchFilterExpression(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.implementation === 'lookup-table') {
+  if (impl.storagePattern === 'lookup-table') {
     const lookupTable = getLookupTable(resourceType, param);
     if (lookupTable) {
       return lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
@@ -1022,21 +1022,21 @@ function trySpecialSearchParameter(
     case '_id':
       return buildIdSearchFilter(
         table,
-        { columnName: 'id', type: SearchParameterType.UUID, implementation: 'column' },
+        { columnName: 'id', type: SearchParameterType.UUID, storagePattern: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
     case '_lastUpdated':
       return buildDateSearchFilter(
         table,
-        { type: SearchParameterType.DATETIME, columnName: 'lastUpdated', implementation: 'column' },
+        { type: SearchParameterType.DATETIME, columnName: 'lastUpdated', storagePattern: 'column' },
         filter
       );
     case '_compartment':
     case '_project':
       return buildIdSearchFilter(
         table,
-        { columnName: 'compartments', type: SearchParameterType.UUID, array: true, implementation: 'column' },
+        { columnName: 'compartments', type: SearchParameterType.UUID, array: true, storagePattern: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
@@ -1324,7 +1324,7 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.implementation === 'lookup-table') {
+  if (impl.storagePattern === 'lookup-table') {
     const lookupTable = getLookupTable(resourceType, param);
     if (lookupTable) {
       lookupTable.addOrderBy(builder, resourceType, sortRule);

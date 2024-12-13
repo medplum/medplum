@@ -10,12 +10,12 @@ import { ValueSetElementTable } from './lookups/valuesetelement';
 
 interface ImplementationBuilder extends SearchParameterDetails {
   columnName: string;
-  implementation: 'column' | 'lookup-table';
+  storagePattern: 'column' | 'lookup-table';
 }
 
 export interface SearchParameterImplementation extends SearchParameterDetails {
   readonly columnName: string;
-  readonly implementation: 'column' | 'lookup-table';
+  readonly storagePattern: 'column' | 'lookup-table';
 }
 
 interface ResourceTypeSearchParameterInfo {
@@ -63,14 +63,14 @@ function buildSearchParameterImplementation(
   const columnName = convertCodeToColumnName(code);
   builder.columnName = columnName;
 
-  let implementation: ImplementationBuilder['implementation'] = 'column';
+  let storagePattern: ImplementationBuilder['storagePattern'] = 'column';
   if (!searchParam.base?.includes(resourceType as ResourceType)) {
     // TODO is ignoring this really the right behavior? When does this happen in practice?
     // If the search parameter is not defined on the resource type itself, skip special implementations
   } else if (getLookupTable(resourceType, searchParam)) {
-    implementation = 'lookup-table';
+    storagePattern = 'lookup-table';
   }
-  builder.implementation = implementation;
+  builder.storagePattern = storagePattern;
 
   setSearchParameterImplementation(resourceType, code, builder);
   return builder;
