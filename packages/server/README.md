@@ -2,10 +2,10 @@
 
 ## Prerequisites
 
-- Node.js 20
-- npm 10
-- Postgres 16
-- Redis 6
+- Node.js 20+
+- npm 10+
+- Postgres 13+
+- Redis 6+
 
 ## Database
 
