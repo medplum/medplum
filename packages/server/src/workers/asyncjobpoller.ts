@@ -7,11 +7,6 @@ import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 
-/*
- * The reindex worker updates resource rows in the database,
- * recomputing all search columns and lookup table entries.
- */
-
 export type PolledAsyncJobType = 'dataMigration';
 
 export type JobTypeDataMap = {
@@ -58,7 +53,7 @@ export function initAsyncJobPollerWorker(config: MedplumServerConfig): void {
 }
 
 /**
- * Shuts down the reindex worker.
+ * Shuts down the async job poller worker.
  * Closes the BullMQ job queue.
  * Closes the BullMQ worker.
  */
@@ -164,9 +159,9 @@ async function onFailJob(job: Job<AsyncJobPollerJobData>, _trackedJob: AsyncJob)
 }
 
 /**
- * Returns the reindex queue instance.
+ * Returns the async job poller queue instance.
  * This is used by the unit tests.
- * @returns The reindex queue (if available).
+ * @returns The async job poller queue (if available).
  */
 export function getAsyncJobPollerQueue(): Queue<AsyncJobPollerJobData> | undefined {
   return queue;
