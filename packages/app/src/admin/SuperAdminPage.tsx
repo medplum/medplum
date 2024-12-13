@@ -41,6 +41,10 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
   }
 
+  function runPendingDataMigration(): void {
+    startAsyncJob(medplum, 'Run Pending Data Migration', 'admin/super/migrate');
+  }
+
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
@@ -112,6 +116,17 @@ export function SuperAdminPage(): JSX.Element {
       </p>
       <Form>
         <Button onClick={rebuildValueSets}>Rebuild ValueSets</Button>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Run Pending Data Migration</Title>
+      <p>
+        When a Medplum version releases with data migrations to apply, you can run them here. Press this button to kick
+        off the background data migration process.
+      </p>
+      <Form onSubmit={runPendingDataMigration}>
+        <Stack>
+          <Button type="submit">Start Migration</Button>
+        </Stack>
       </Form>
       <Divider my="lg" />
       <Title order={2}>Reindex Resources</Title>

@@ -45,6 +45,16 @@ const poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig)
     totalCount = -1;
     idleCount = -1;
     waitingCount = -1;
+    expiredCount = -1;
+    ending = false;
+    ended = false;
+    options = {
+      max: Number.POSITIVE_INFINITY,
+      allowExitOnIdle: false,
+      maxUses: Number.POSITIVE_INFINITY,
+      maxLifetimeSeconds: Number.POSITIVE_INFINITY,
+      idleTimeoutMillis: Number.POSITIVE_INFINITY,
+    };
     async connect(): Promise<pg.PoolClient> {
       return new MockPoolClient();
     }

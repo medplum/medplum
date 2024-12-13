@@ -13,7 +13,7 @@ import * as schemaMigrations from './migrations/schema';
 import { getRedis } from './redis';
 import { addAsyncJobPollerJob } from './workers/asyncjobpoller';
 
-const DATA_MIGRATION_JOB_KEY = 'medplum:migration:data:job';
+export const DATA_MIGRATION_JOB_KEY = 'medplum:migration:data:job';
 
 export enum DatabaseMode {
   READER = 'reader',
@@ -126,6 +126,7 @@ async function runMigrations(pool: Pool): Promise<void> {
       client.release(err);
       client = undefined;
     }
+    process.exit(1);
   } finally {
     if (client) {
       await client.query('SELECT pg_advisory_unlock($1)', [locks.migration]);
@@ -152,7 +153,7 @@ async function migrate(client: PoolClient): Promise<void> {
   // We need to initialize our migrations table
   // This also opts us into the fast path for data migrations, so we can skip all checks for server version and go straight to the latest data version
   if (version < 0) {
-    const latestDataVersion = allDataVersions[allDataVersions.length - 1];
+    const latestDataVersion = allDataVersions[allDataVersions.length - 1] ?? 0;
     await client.query(
       `INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, ${latestDataVersion})`
     );
@@ -182,6 +183,8 @@ async function migrate(client: PoolClient): Promise<void> {
         `Unable to run data migration against the current server version. Migration requires server at version ${requiredServerVersion}, but current server version is ${serverVersion}`
       );
     }
+
+    globalLogger.info('Data migration ready to run', { dataVersion: pendingDataMigration });
     // if (serverVersion !== requiredServerVersion) {
     //   throw new Error(
     //     `Unable to run data migration against the current server version. Migration requires server at version ${requiredServerVersion}, but current server version is ${serverVersion}`
@@ -239,15 +242,13 @@ export async function maybeStartDataMigration(): Promise<AsyncJob> {
   // Acts as a "lock" for the data migration async job
   await getRedis().set(DATA_MIGRATION_JOB_KEY, getReferenceString(pollerJob));
   await exec.run(async (ownJob) => {
-    await addAsyncJobPollerJob(
-      {
-        ownJob,
-        trackedJob: migrationAsyncJob,
-        jobType: 'dataMigration',
-        jobData: { startTimeMs, migrationVersion: pendingDataMigration },
-      },
-      1000
-    );
+    await addAsyncJobPollerJob({
+      ownJob,
+      trackedJob: migrationAsyncJob,
+      jobType: 'dataMigration',
+      jobData: { startTimeMs, migrationVersion: pendingDataMigration },
+      delay: 10000,
+    });
   });
   return migrationAsyncJob;
 }

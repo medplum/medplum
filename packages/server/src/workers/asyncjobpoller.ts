@@ -1,10 +1,11 @@
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { MedplumServerConfig } from '../config';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DATA_MIGRATION_JOB_KEY, DatabaseMode, getDatabasePool } from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
+import { getRedis } from '../redis';
 
 /*
  * The reindex worker updates resource rows in the database,
@@ -25,6 +26,7 @@ export type AsyncJobPollerJobData<
   readonly trackedJob: AsyncJob;
   readonly jobType: T;
   readonly jobData: JobData;
+  readonly delay: number;
 };
 
 const queueName = 'AsyncJobPollerQueue';
@@ -80,7 +82,8 @@ export async function execAsyncJobPollerJob(job: Job<AsyncJobPollerJobData>): Pr
     const trackedJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.trackedJob.id as string);
     if (trackedJob.status === 'accepted') {
       if (await shouldEnqueueJob(job, trackedJob)) {
-        await addAsyncJobPollerJob({ ...job.data, trackedJob }, 1000);
+        globalLogger.info('Requeuing job', { job: job.data });
+        await addAsyncJobPollerJob({ ...job.data, trackedJob });
       }
     } else {
       // Job has been completed
@@ -131,7 +134,8 @@ async function finalizeJob(job: Job<AsyncJobPollerJobData>, trackedJob: AsyncJob
     await exec.failJob(systemRepo);
   }
 
-  // Clear the data migration job key
+  // Clear the key so that the "lock" is released
+  await getRedis().del(DATA_MIGRATION_JOB_KEY);
 }
 
 async function onCompleteJob(job: Job<AsyncJobPollerJobData>, _trackedJob: AsyncJob): Promise<void> {
@@ -167,12 +171,9 @@ export function getAsyncJobPollerQueue(): Queue<AsyncJobPollerJobData> | undefin
   return queue;
 }
 
-export async function addAsyncJobPollerJob(
-  job: AsyncJobPollerJobData,
-  delay?: number
-): Promise<Job<AsyncJobPollerJobData>> {
+export async function addAsyncJobPollerJob(jobData: AsyncJobPollerJobData): Promise<Job<AsyncJobPollerJobData>> {
   if (!queue) {
     throw new Error('Job queue not available');
   }
-  return queue.add(jobName, job, { delay });
+  return queue.add(jobName, jobData, { delay: jobData.delay });
 }

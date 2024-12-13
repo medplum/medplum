@@ -108,7 +108,7 @@
     "@types/pg": "8.11.10",
     "@types/qrcode": "1.5.5",
     "@types/set-cookie-parser": "2.4.10",
-    "@types/semver": "7.6.3",
+    "@types/semver": "7.5.8",
     "@types/supertest": "6.0.2",
     "@types/ua-parser-js": "0.7.39",
     "@types/uuid": "10.0.0",
