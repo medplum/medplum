@@ -27,13 +27,19 @@ jobs:
           curl -s https://api.github.com/repos/medplum/medplum/releases > releases.json
 
           # Process JSON with jq to create the desired structure
-          # and add version field without 'v' prefix
+          # including assets array with specified properties
           jq '{
             versions: [
               .[] | {
                 tag_name,
                 version: (.tag_name | ltrimstr("v")),
-                published_at
+                published_at,
+                assets: [
+                  .assets[] | {
+                    name,
+                    browser_download_url
+                  }
+                ]
               }
             ]
           }' releases.json > versions.json
