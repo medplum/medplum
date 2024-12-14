@@ -545,6 +545,10 @@ describe('Super Admin routes', () => {
   });
 
   describe('Data migrations', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
     describe('Migration lock', () => {
       beforeEach(async () => {
         await getRedis().del(DATA_MIGRATION_LOCK_KEY);
