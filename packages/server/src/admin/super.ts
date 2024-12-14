@@ -47,7 +47,7 @@ export const superAdminRouter = Router();
 superAdminRouter.use(authenticateRequest);
 
 // POST to /admin/super/valuesets
-// to rebuild the "ValueSetElements" table.
+// to rebuild the terminology tables.
 // Run this after changes to how ValueSet elements are defined.
 superAdminRouter.post(
   '/valuesets',

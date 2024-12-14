@@ -59508,7 +59508,6 @@
               "email",
               "google-auth-required",
               "graphql-introspection",
-              "terminology",
               "websocket-subscriptions",
               "reference-lookups",
               "transaction-bundles"
