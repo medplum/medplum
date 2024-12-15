@@ -2,21 +2,21 @@
 sidebar_position: 2
 ---
 
-# Install on Ubuntu
+# Install from scratch
 
-This guide was last updated for Ubuntu 24.04, although it should work for most recent versions.
+This guide provides comprehensive instructions for installing and configuring Medplum from scratch on Ubuntu 24.04. It covers all essential components including PostgreSQL database setup, Redis installation, Node.js configuration, and the core Medplum server and app deployment.
 
-## Prerequisites
+The guide also includes optional but recommended steps for setting up Nginx as a reverse proxy with SSL/TLS support, enabling secure access through custom domains. While primarily written for Ubuntu 24.04, these instructions are compatible with most recent Ubuntu versions.
 
-First, update and upgrade the system.
+This installation method is particularly useful for development and testing environments, though for production deployments, the guide notes that using AWS with CDK or other infrastructure-as-code tools is recommended.
 
-```bash
-sudo apt-get update
-sudo apt-get upgrade
-sudo reboot
-```
+## Install PostgreSQL
 
-## Install postgres
+:::note
+
+These Postgres installation steps can be skipped if you've already installed Postgres, or are using a database hosted elsewhere. Medplum server can be configured to connect to remote databases. We'll discuss how to connect to a remote Postgres server below.
+
+:::
 
 Add the PostgreSQL Apt Repository (see [PostgreSQL Apt Repository docs](https://www.postgresql.org/download/linux/ubuntu/))
 
@@ -57,29 +57,19 @@ GRANT ALL ON SCHEMA public TO medplum;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO medplum;
 ```
 
-Create a "medplum_test" database:
-
-```PLpgSQL
-CREATE DATABASE medplum_test;
-GRANT ALL PRIVILEGES ON DATABASE medplum_test TO medplum;
-\c medplum_test
-GRANT ALL ON SCHEMA public TO medplum;
-ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO medplum;
-```
-
 Exit psql
 
 ```PLpgSQL
 exit
 ```
 
-## Install redis
+## Install Redis
 
 ```bash
 sudo apt-get install redis-server
 ```
 
-Open the redis config file
+Open the Redis config file
 
 ```bash
 sudo vi /etc/redis/redis.conf
@@ -91,7 +81,7 @@ Uncomment the "requirepass" line and set a password
 requirepass medplum
 ```
 
-Restart redis
+Restart Redis
 
 ```bash
 sudo systemctl restart redis-server
