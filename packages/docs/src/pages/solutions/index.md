@@ -20,10 +20,30 @@ A portal for patients to message their provider, view their records, request med
 
 Create an intuitive portal for referring physicians and support integrations into their systems via FHIR API. Ensure that referring physicians only see data related to their patients. [Learn More](/solutions/provider-portal)
 
+### Remote Patient Monitoring
 
-### Diagnostics
+Build and implement a custom, robust remote patient monitoring program. Read a [case study](/blog/codex-and-the-power-of-g10) on the topic.
 
-## LIS/LIMS and Lab Network
+### Sidecar Application
+
+Build an application that reads and writes data to common medical records systems such as Epic, Cerner or Athena.
+
+### Durable Medical Equipment
+
+Build an application that supports common durable medical equipment workflows such as integration with logistics services, prior auth, records request and payor integration and dashboards.
+
+### Population Health
+
+With standards-compliant data, it is possible to build population health reports and tools.
+
+### Clinical Decision Support
+
+Build clinical decision support applications that are data driven and in context.
+
+
+## Diagnostics
+
+### LIS/LIMS and Lab Network
 
 Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations. [Learn More](/solutions/lab)
 
@@ -54,22 +74,4 @@ Run and maintain an EMPI including patient identification, data accuracy/risk sc
 
 Highly customizable internal service that supports integrations that are common in healthcare such as FHIR and Smart-on-FHIR integrations, HL7 connections, SFTP, Lab data, home health integrations, logistics providers and more. Can also be used as a system of record between multiple integrations. Available hosted or self-hosted. [Learn More](/products/integration)
 
-## Remote Patient Monitoring
 
-Build and implement a custom, robust remote patient monitoring program. Read a [case study](/blog/codex-and-the-power-of-g10) on the topic.
-
-## Sidecar Application
-
-Build an application that reads and writes data to common medical records systems such as Epic, Cerner or Athena.
-
-## Durable Medical Equipment
-
-Build an application that supports common durable medical equipment workflows such as integration with logistics services, prior auth, records request and payor integration and dashboards.
-
-## Population Health
-
-With standards-compliant data, it is possible to build population health reports and tools.
-
-## Clinical Decision Support
-
-Build clinical decision support applications that are data driven and in context.
