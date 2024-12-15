@@ -302,16 +302,35 @@ addgroup --system $SERVICE_NAME
 adduser --system --ingroup $SERVICE_NAME $SERVICE_NAME
 chown $SERVICE_NAME:$SERVICE_NAME "/var/lib/$SERVICE_NAME"
 
-# Start the service
-systemctl daemon-reload
-systemctl enable $SERVICE_NAME.service
+# Start or restart the service
+if [ "\$1" = "configure" ]; then
+    systemctl daemon-reload
+    systemctl enable $SERVICE_NAME.service
+    if [ -n "\$2" ]; then
+        # Restart the service if this is an upgrade
+        systemctl restart $SERVICE_NAME
+    else
+        # Start the service if this is a fresh install
+        systemctl start $SERVICE_NAME
+    fi
+fi
 EOF
 
 # Create the Debian pre-remove script
 cat > "$DEBIAN_DIR/prerm" <<EOF
 #!/bin/sh
-systemctl stop $SERVICE_NAME.service
-systemctl disable $SERVICE_NAME.service
+set -e
+
+# Only fully stop/disable on package removal
+if [ "\$1" = "remove" ]; then
+    systemctl stop $SERVICE_NAME.service
+    systemctl disable $SERVICE_NAME.service
+fi
+
+# For upgrades, we only need to stop the service temporarily
+if [ "\$1" = "upgrade" ]; then
+    systemctl stop $SERVICE_NAME.service
+fi
 EOF
 
 # Set permissions
