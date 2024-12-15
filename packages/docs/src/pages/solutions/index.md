@@ -2,35 +2,47 @@
 
 Medplum supports a wide array of use cases. Please look at this section for detailed examples of how to build sophisticated, compliant applications quickly. Though these are written as separate use cases, it is possible, indeed recommended, to have several implementations running off the same Medplum Project.
 
-## Medplum EHR
+## For Providers
+
+### Medplum EHR
 
 A streamlined EHR that's easy to implement and supports core workflows. Chart efficiently, place orders and schedule with ease. [Learn More](/solutions/medplum-ehr)
 
-## Custom EHR
+### Custom EHR
 
-Build a custom EHR to streamline provider workflow. Implement bespoke clinical workflows with high levels of automation and quality assurance. [Learn More](/solutions/custom-ehr)
+Build a custom EHR to streamline provider workflows. Implement bespoke clinical workflows with high levels of automation and quality assurance. [Learn More](/solutions/custom-ehr)
 
-## Patient Portal
+### Patient Portal
 
 A portal for patients to message their provider, view their records, request medications and refills, schedule appointments and more. [Learn More](/solutions/patient-portal)
 
-## Provider Portal and FHIR API
+### Provider Portal and FHIR API
 
 Create an intuitive portal for referring physicians and support integrations into their systems via FHIR API. Ensure that referring physicians only see data related to their patients. [Learn More](/solutions/provider-portal)
 
-## Life Sciences
 
-Build a custom experience for clinical research including schedule of assessments, PRO and ePRO management, records requests, integrations and dashboards. [Learn More](/solutions/life-sciences)
+### Diagnostics
 
 ## LIS/LIMS and Lab Network
 
 Build a custom LIS/LIMS that includes panel management, machine interfacing, quality reporting, dashboards and more. A lab network allows a streamlined experience for ordering lab tests via application or API and handles all of the complex business operations. [Learn More](/solutions/lab)
 
-## Pediatrics
+## Specialties
+
+### Pediatrics
 
 Build an application that supports common pediatric patterns such as parental access, messaging integrations, tasking, educational material and more. [Learn More](/solutions/pediatrics)
 
-## CMS FHIR for Payors
+### Radiology
+
+Build Radiology reporting and interoperability solutions using on FHIRcast and advanced HL7 bi-directional interfacing.
+
+## Life Science Suite
+
+Build a custom experience for clinical research.  Manage consents, digital signatures and enable patient facing SMART-on-FHIR applications to streamline medical applications.  Plan a rigorous schedule of assessments, PRO and ePRO management, records requests, integrations and dashboards. [Learn More](/solutions/life-sciences)
+
+
+## For Payors
 
 Quickly comply with CMS 9115 FHIR requirements for payors with easy to implement interfaces and turnkey solution for CARIN Blue Button and DaVinci Implementation Guides. [Learn More](/docs/compliance/cms-fhir)
 
