@@ -130,7 +130,7 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
     .filter((item): item is QuestionnaireResponseItem => item !== null);
 }
 
-function typedValueToResponseItem(
+export function typedValueToResponseItem(
   item: QuestionnaireItem,
   value: TypedValue
 ): QuestionnaireResponseItemAnswer | undefined {

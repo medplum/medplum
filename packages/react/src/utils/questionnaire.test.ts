@@ -1,5 +1,5 @@
 import { QuestionnaireItem, QuestionnaireItemEnableWhen } from '@medplum/fhirtypes';
-import { formatReferenceString, getNewMultiSelectValues, isChoiceQuestion, isQuestionEnabled } from './questionnaire';
+import { formatReferenceString, getNewMultiSelectValues, isChoiceQuestion, isQuestionEnabled, typedValueToResponseItem } from './questionnaire';
 
 describe('QuestionnaireUtils', () => {
   test('isChoiceQuestion', () => {
@@ -1288,4 +1288,85 @@ describe('isQuestionEnabled', () => {
     const reference = { type: 'valueReference', value: { reference: undefined, display: undefined, id: '123' } };
     expect(formatReferenceString(reference)).toBe('{"id":"123"}');
   });
+
+  describe('typedValueToResponseItem', () => {
+
+    it('returns correct value for type boolean', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'boolean' };
+      const value = { type: 'boolean', value: true };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toEqual({ valueBoolean: true });
+    });
+
+    it('returns undefined for mismatched boolean type', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'boolean' };
+      const value = { type: 'string', value: 'text' };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toBeUndefined();
+    });
+
+    it('returns correct value for type date', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'date' };
+      const value = { type: 'date', value: '2024-01-01' };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toEqual({ valueDate: '2024-01-01' });
+    });
+
+    it('returns correct value for type dateTime', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'dateTime' };
+      const value = { type: 'dateTime', value: '2024-01-01T12:00:00Z' };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toEqual({ valueDateTime: '2024-01-01T12:00:00Z' });
+    });
+
+    it('returns correct value for type time', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'time' };
+      const value = { type: 'time', value: '12:00:00' };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toEqual({ valueTime: '12:00:00' });
+    });
+
+    it('returns correct value for type url', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'url' };
+      const value = { type: 'url', value: 'http://example.com' };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toEqual({ valueString: 'http://example.com' });
+    });
+
+    it('returns correct value for type text', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'text' };
+      const value = { type: 'string', value: 'Sample text' };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toEqual({ valueString: 'Sample text' });
+    });
+
+    it('returns correct value for type attachment', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'attachment' };
+      const value = { type: 'Attachment', value: { file: 'file.pdf' } };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toEqual({ valueAttachment: { file: 'file.pdf' } });
+    });
+
+    it('returns correct value for type reference', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'reference' };
+      const value = { type: 'Reference', value: { ref: '123' } };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toEqual({ valueReference: { ref: '123' } });
+    });
+
+    it('returns correct value for type quantity', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'quantity' };
+      const value = { type: 'quantity', value: 10 };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toEqual({ valueQuantity: 10 });
+    });
+
+    it('returns undefined for unsupported type', () => {
+      const item: QuestionnaireItem = { linkId: '1', type: 'unsupported' as any };
+      const value = { type: 'string', value: 'text' };
+      const result = typedValueToResponseItem(item, value);
+      expect(result).toBeUndefined();
+    });
+  });
+
 });
