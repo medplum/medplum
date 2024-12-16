@@ -155,11 +155,14 @@ export function typedValueToResponseItem(
       return value.type === PropertyType.Attachment ? { valueAttachment: value.value } : undefined;
     case QuestionnaireItemType.reference:
       return value.type === PropertyType.Reference ? { valueReference: value.value } : undefined;
-    case QuestionnaireItemType.quantity:
-    case QuestionnaireItemType.decimal:
-    case QuestionnaireItemType.integer:
-    case QuestionnaireItemType.string:
-      return { valueQuantity: value.value };
+      case QuestionnaireItemType.quantity:
+        return { valueQuantity: value.value };
+      case QuestionnaireItemType.decimal:
+        return { valueDecimal: value.value };
+      case QuestionnaireItemType.integer:
+        return { valueInteger: value.value };
+      case QuestionnaireItemType.string:
+        return { valueString: value.value };
     default:
       return undefined;
   }
