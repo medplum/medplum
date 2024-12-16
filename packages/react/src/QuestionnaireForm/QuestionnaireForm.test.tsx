@@ -1744,7 +1744,90 @@ describe('QuestionnaireForm', () => {
     expect(params.get('code')).toBe('Test');
   });
 
-  test('Questionnaire CalculatedExpression', async () => {
+  test('Questionnaire CalculatedExpression with boolean field', async () => {
+    const onSubmit = jest.fn();
+  
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-threshold',
+        title: 'Temperature Threshold Check',
+        item: [
+          {
+            id: 'id-1',
+            linkId: 'q1',
+            type: 'string',
+            text: 'Fahrenheit',
+          },
+          {
+            id: 'id-2',
+            linkId: 'q2',
+            type: 'boolean',
+            text: 'Is temperature over 120?',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                valueExpression: {
+                  language: 'text/fhirpath',
+                  expression:
+                    "iif(%resource.item.where(linkId='q1').answer.value.empty(), false, (%resource.item.where(linkId='q1').answer.value.toDecimal() > 120))",
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+  
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '125' } });
+    });
+  
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+  
+    expect(onSubmit).toHaveBeenCalled();
+  
+    const response = onSubmit.mock.calls[0][0];
+    const answers = getQuestionnaireAnswers(response);
+  
+    expect(answers['q1']).toMatchObject({ valueString: '125' });
+    expect(answers['q2']).toMatchObject({ valueBoolean: true });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '100' } });
+    });
+  
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+  
+    const response2 = onSubmit.mock.calls[1][0];
+    const answers2 = getQuestionnaireAnswers(response2);
+  
+    expect(answers2['q1']).toMatchObject({ valueString: '100' });
+    expect(answers2['q2']).toMatchObject({ valueBoolean: false });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '' } });
+    });
+  
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+  
+    const response3 = onSubmit.mock.calls[2][0];
+    const answers3 = getQuestionnaireAnswers(response3);
+  
+    expect(answers3['q1']).toMatchObject({ valueString: '' });
+    expect(answers3['q2']).toMatchObject({ valueBoolean: false });
+  });
+  
+
+  test('Questionnaire CalculatedExpression with nested groups', async () => {
     const onSubmit = jest.fn();
 
     await setup({
