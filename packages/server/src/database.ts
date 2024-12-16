@@ -164,9 +164,9 @@ async function migrate(client: PoolClient): Promise<void> {
   // This also opts us into the fast path for data migrations, so we can skip all checks for server version and go straight to the latest data version
   if (version < 0) {
     const latestDataVersion = allDataVersions[allDataVersions.length - 1] ?? 0;
-    await client.query(
-      `INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, ${latestDataVersion})`
-    );
+    await client.query(`INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, $1)`, [
+      latestDataVersion,
+    ]);
     version = 0;
     dataVersion = latestDataVersion;
   } else if (allDataVersions.includes(dataVersion + 1)) {
