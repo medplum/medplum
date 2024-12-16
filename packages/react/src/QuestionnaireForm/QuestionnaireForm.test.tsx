@@ -1744,10 +1744,9 @@ describe('QuestionnaireForm', () => {
     expect(params.get('code')).toBe('Test');
   });
 
-
   test('Questionnaire CalculatedExpression', async () => {
     const onSubmit = jest.fn();
-  
+
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -1805,23 +1804,22 @@ describe('QuestionnaireForm', () => {
       },
       onSubmit,
     });
-  
+
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '100' } });
     });
-  
+
     await act(async () => {
       fireEvent.click(screen.getByText('Submit'));
     });
-  
+
     expect(onSubmit).toHaveBeenCalled();
-  
+
     const response = onSubmit.mock.calls[0][0];
     const answers = getQuestionnaireAnswers(response);
-  
+
     expect(answers['q1']).toMatchObject({ valueString: '100' }); // Original value from input
     expect(answers['q2']).toMatchObject({ valueQuantity: 38 }); // Calculated Celsius
     expect(answers['q3']).toMatchObject({ valueQuantity: 311 }); // Original Kelvin
   });
-  
 });

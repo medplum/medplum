@@ -103,7 +103,7 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
   return items
     .map((item): QuestionnaireResponseItem | null => {
       if (item.item) {
-        console.log("is group")
+        console.log('is group');
         return {
           ...item,
           item: evaluateCalculatedExpressionsInQuestionnaire(item.item, response),
@@ -115,7 +115,7 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
         }
 
         const answer = typedValueToResponseItem(item, calculatedValue);
-        
+
         if (!answer) {
           return null;
         }
@@ -181,7 +181,7 @@ function evaluateCalculatedExpression(
 
   if (extension) {
     const expression = extension.valueExpression?.expression;
-    console.log(expression)
+    console.log(expression);
     if (expression) {
       const value = toTypedValue(response);
       const result = evalFhirPathTyped(expression, [value], { '%resource': value });
@@ -201,22 +201,18 @@ export function mergeUpdatedItems(
   return mergedItems.map((mergedItem) => {
     const updatedItem = updatedItems.find((updated) => updated.linkId === mergedItem.linkId);
 
-    // Usually fields with calculated expressions would be readOnly in the case where it allows foe manual updates. 
+    // Usually fields with calculated expressions would be readOnly in the case where it allows foe manual updates.
     // It would get replaced with content from calcultaed expresion.
     if (updatedItem) {
       return {
         ...mergedItem,
-        item: updatedItem.item 
-          ? mergeUpdatedItems(mergedItem.item || [], updatedItem.item)
-          : mergedItem.item,
+        item: updatedItem.item ? mergeUpdatedItems(mergedItem.item || [], updatedItem.item) : mergedItem.item,
         answer: updatedItem.answer || mergedItem.answer,
       };
     }
     return mergedItem;
   });
 }
-
-
 
 export function getNewMultiSelectValues(
   selected: string[],
