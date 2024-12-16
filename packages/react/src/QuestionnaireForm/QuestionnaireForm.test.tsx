@@ -1806,26 +1806,21 @@ describe('QuestionnaireForm', () => {
       onSubmit,
     });
   
-    // Fill in the Fahrenheit input
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '100' } });
     });
   
-    // Submit the form
     await act(async () => {
       fireEvent.click(screen.getByText('Submit'));
     });
   
     expect(onSubmit).toHaveBeenCalled();
   
-    // Check the values in the response
     const response = onSubmit.mock.calls[0][0];
     const answers = getQuestionnaireAnswers(response);
   
-    // expect(answers['q1']).toMatchObject({ valueString: '100' });
     expect(answers['q2']).toMatchObject({ valueQuantity: 38 });
     expect(answers['q3']).toMatchObject({ valueQuantity: 311 });
   });
   
-
 });
