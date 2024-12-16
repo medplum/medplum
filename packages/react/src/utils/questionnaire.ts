@@ -109,10 +109,7 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
           item: evaluateCalculatedExpressionsInQuestionnaire(item.item, response),
         };
       } else {
-        // console.log(response)
-        // console.log(item)
         const calculatedValue = evaluateCalculatedExpression(item, response);
-        // console.log(calculatedValue)
         if (!calculatedValue) {
           return null;
         }
@@ -123,12 +120,6 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
           return null;
         }
 
-        console.log( {
-          id: item?.id,
-          linkId: item?.linkId,
-          text: item.text,
-          answer: [answer],
-        })
         return {
           id: item?.id,
           linkId: item?.linkId,

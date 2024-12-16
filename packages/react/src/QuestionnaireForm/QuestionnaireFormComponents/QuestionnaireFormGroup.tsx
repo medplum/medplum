@@ -58,8 +58,6 @@ interface QuestionnaireGroupProps {
 
 export function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null {
   const { response, checkForQuestionEnabled, onChange } = props;
-  console.log("==== QuestionnaireGroup =")
-  console.log(response)
   function onSetGroup(newResponseItem: QuestionnaireResponseItem[]): void {
     const newResponse = response.item?.map((current) => {
       const matchingItem = newResponseItem.find((newResponse) => newResponse.id === current.id);
@@ -105,14 +103,11 @@ export function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element 
             );
           }
 
-          console.log("item")
-          const r = response.item?.find((i) => i.linkId === item.linkId)
-          console.log(r)
           return (
             <QuestionnaireRepeatableItem
               key={item.linkId}
               item={item}
-              response={r}
+              response={response.item?.find((i) => i.linkId === item.linkId)}
               onChange={onSetGroup}
               checkForQuestionEnabled={checkForQuestionEnabled}
             />
