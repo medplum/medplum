@@ -452,7 +452,7 @@ describe('Candid Health Tests', () => {
       },
     });
 
-    const body = JSON.parse(vi.mocked(fetch).mock?.lastCall?.[1]?.body?.toString() || '{}');
+    const body = vi.mocked(fetch).mock?.lastCall?.[1]?.body;
 
     expect(body).toMatchObject({
       external_id: getReferenceString(encounter),

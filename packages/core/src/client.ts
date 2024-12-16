@@ -334,7 +334,6 @@ export interface MedplumClientOptions {
   /**
    * Default headers to include in all requests.
    * This can be used to set custom headers such as Cookies or Authorization headers.
-   * @default {}
    */
   defaultHeaders?: Record<string, string>;
 }

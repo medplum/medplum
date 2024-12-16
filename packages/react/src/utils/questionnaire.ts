@@ -3,14 +3,13 @@ import {
   TypedValue,
   deepClone,
   evalFhirPathTyped,
-  formatCoding,
   getExtension,
   getReferenceString,
   getTypedPropertyValueWithoutSchema,
   splitN,
-  stringify,
   toJsBoolean,
   toTypedValue,
+  typedValueToString,
 } from '@medplum/core';
 import {
   Encounter,
@@ -100,14 +99,21 @@ export function getNewMultiSelectValues(
   propertyName: string,
   item: QuestionnaireItem
 ): QuestionnaireResponseItemAnswer[] {
-  return selected.map((o) => {
+  const result: QuestionnaireResponseItemAnswer[] = [];
+
+  for (const selectedStr of selected) {
     const option = item.answerOption?.find(
-      (option) =>
-        formatCoding(option.valueCoding) === o || option[propertyName as keyof QuestionnaireItemAnswerOption] === o
+      (candidate) => typedValueToString(getItemAnswerOptionValue(candidate)) === selectedStr
     );
-    const optionValue = getItemAnswerOptionValue(option ?? {});
-    return { [propertyName]: optionValue?.value };
-  });
+    if (option) {
+      const optionValue = getItemAnswerOptionValue(option);
+      if (optionValue) {
+        result.push({ [propertyName]: optionValue.value });
+      }
+    }
+  }
+
+  return result;
 }
 
 function getByLinkId(
@@ -300,10 +306,6 @@ function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): Questionn
   // This works because QuestionnaireItemInitial and QuestionnaireResponseItemAnswer
   // have the same properties.
   return { ...answer };
-}
-
-export function formatReferenceString(typedValue: TypedValue): string {
-  return typedValue.value.display || typedValue.value.reference || stringify(typedValue.value);
 }
 
 /**

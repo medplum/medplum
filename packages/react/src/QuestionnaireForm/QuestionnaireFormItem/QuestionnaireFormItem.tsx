@@ -1,13 +1,13 @@
-import { Checkbox, Group, MultiSelect, NativeSelect, Radio, Textarea, TextInput } from '@mantine/core';
+import { Checkbox, ComboboxItem, Group, MultiSelect, NativeSelect, Radio, Textarea, TextInput } from '@mantine/core';
 import {
   capitalize,
   deepEquals,
-  formatCodeableConcept,
   formatCoding,
   getElementDefinition,
   HTTP_HL7_ORG,
   stringify,
   TypedValue,
+  typedValueToString,
 } from '@medplum/core';
 import {
   QuestionnaireItem,
@@ -25,7 +25,6 @@ import { QuantityInput } from '../../QuantityInput/QuantityInput';
 import { ReferenceInput } from '../../ReferenceInput/ReferenceInput';
 import { ResourcePropertyDisplay } from '../../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import {
-  formatReferenceString,
   getItemAnswerOptionValue,
   getItemInitialValue,
   getNewMultiSelectValues,
@@ -448,22 +447,6 @@ function getCurrentRadioAnswer(options: [string, TypedValue][], defaultAnswer: T
   return options.find((option) => deepEquals(option[1].value, defaultAnswer?.value))?.[0];
 }
 
-function typedValueToString(typedValue: TypedValue | undefined): string | undefined {
-  if (!typedValue) {
-    return undefined;
-  }
-  if (typedValue.type === 'CodeableConcept') {
-    return formatCodeableConcept(typedValue.value);
-  }
-  if (typedValue.type === 'Coding') {
-    return formatCoding(typedValue.value);
-  }
-  if (typedValue.type === 'Reference') {
-    return formatReferenceString(typedValue);
-  }
-  return typedValue.value.toString();
-}
-
 function isDropDownChoice(item: QuestionnaireItem): boolean {
   return !!item.extension?.some(
     (e) =>
@@ -480,14 +463,9 @@ function isMultiSelectChoice(item: QuestionnaireItem): boolean {
   );
 }
 
-interface MultiSelect {
-  readonly value: any;
-  readonly label: any;
-}
-
 interface FormattedData {
   readonly propertyName: string;
-  readonly data: MultiSelect[];
+  readonly data: ComboboxItem[];
 }
 
 function formatSelectData(item: QuestionnaireItem): FormattedData {
@@ -498,13 +476,13 @@ function formatSelectData(item: QuestionnaireItem): FormattedData {
   const optionValue = getItemAnswerOptionValue(option);
   const propertyName = 'value' + capitalize(optionValue.type);
 
-  const data = (item.answerOption ?? []).map((a) => ({
-    value: getValueAndLabel(a, propertyName),
-    label: getValueAndLabel(a, propertyName),
-  }));
+  const data = (item.answerOption ?? []).map((answerOption) => {
+    const answerOptionValue = getItemAnswerOptionValue(answerOption);
+    const answerOptionValueStr = typedValueToString(answerOptionValue);
+    return {
+      value: answerOptionValueStr,
+      label: answerOptionValueStr,
+    };
+  });
   return { propertyName, data };
-}
-
-function getValueAndLabel(option: QuestionnaireItemAnswerOption, propertyName: string): string | undefined {
-  return formatCoding(option.valueCoding) || option[propertyName as keyof QuestionnaireItemAnswerOption]?.toString();
 }
