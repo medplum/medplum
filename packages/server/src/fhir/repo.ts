@@ -21,7 +21,6 @@ import {
   evalFhirPathTyped,
   forbidden,
   formatSearchQuery,
-  getSearchParameterDetails,
   getSearchParameters,
   getStatus,
   gone,
@@ -89,13 +88,6 @@ import {
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
-import { AddressTable } from './lookups/address';
-import { CodingTable } from './lookups/coding';
-import { HumanNameTable } from './lookups/humanname';
-import { LookupTable } from './lookups/lookuptable';
-import { ReferenceTable } from './lookups/reference';
-import { TokenTable } from './lookups/token';
-import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
@@ -113,6 +105,7 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
+import { getSearchParameterImplementation, lookupTables } from './searchparameter';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -215,18 +208,6 @@ export interface ResendSubscriptionsOptions extends InteractionOptions {
   interaction?: BackgroundJobInteraction;
   subscription?: string;
 }
-
-/**
- * The lookup tables array includes a list of special tables for search indexing.
- */
-const lookupTables: LookupTable[] = [
-  new AddressTable(),
-  new HumanNameTable(),
-  new TokenTable(),
-  new ValueSetElementTable(),
-  new ReferenceTable(),
-  new CodingTable(),
-];
 
 /**
  * The Repository class manages reading and writing to the FHIR repository.
@@ -1426,29 +1407,30 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param searchParam - The search parameter definition.
    */
   private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
+    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
+
     if (
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment' ||
       searchParam.type === 'composite' ||
-      isIndexTable(resource.resourceType, searchParam)
+      impl.searchStrategy === 'lookup-table'
     ) {
       return;
     }
 
-    const details = getSearchParameterDetails(resource.resourceType, searchParam);
     const values = evalFhirPath(searchParam.expression as string, resource);
     let columnValue = null;
 
     if (values.length > 0) {
-      if (details.array) {
-        columnValue = values.map((v) => this.buildColumnValue(searchParam, details, v));
+      if (impl.array) {
+        columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
       } else {
-        columnValue = this.buildColumnValue(searchParam, details, values[0]);
+        columnValue = this.buildColumnValue(searchParam, impl, values[0]);
       }
     }
 
-    columns[details.columnName] = columnValue;
+    columns[impl.columnName] = columnValue;
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
@@ -2478,19 +2460,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new Error('Already closed');
     }
   }
-}
-
-export function isIndexTable(resourceType: string, searchParam: SearchParameter): boolean {
-  return !!getLookupTable(resourceType, searchParam);
-}
-
-export function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable | undefined {
-  for (const lookupTable of lookupTables) {
-    if (lookupTable.isIndexed(searchParam, resourceType)) {
-      return lookupTable;
-    }
-  }
-  return undefined;
 }
 
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds
