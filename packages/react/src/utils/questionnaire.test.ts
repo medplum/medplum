@@ -1387,7 +1387,7 @@ describe('isQuestionEnabled', () => {
             {
               url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
               valueExpression: {
-                expression: "20 > 18",
+                expression: '20 > 18',
                 language: 'text/fhirpath',
               },
             },
@@ -1413,12 +1413,12 @@ describe('isQuestionEnabled', () => {
           id: 'q2',
           linkId: 'q2',
           type: 'date',
-          text: 'Today\'s Date',
+          text: "Today's Date",
           extension: [
             {
               url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
               valueExpression: {
-                expression: "today()",
+                expression: 'today()',
                 language: 'text/fhirpath',
               },
             },
@@ -1433,7 +1433,7 @@ describe('isQuestionEnabled', () => {
         {
           id: 'q2',
           linkId: 'q2',
-          text: 'Today\'s Date',
+          text: "Today's Date",
           answer: [{ valueDate: today }],
         },
       ]);
@@ -1450,7 +1450,7 @@ describe('isQuestionEnabled', () => {
             {
               url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
               valueExpression: {
-                expression: "30 + 1",
+                expression: '30 + 1',
                 language: 'text/fhirpath',
               },
             },
@@ -1481,7 +1481,7 @@ describe('isQuestionEnabled', () => {
             {
               url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
               valueExpression: {
-                expression: "98 / 2",
+                expression: '98 / 2',
                 language: 'text/fhirpath',
               },
             },
@@ -1531,7 +1531,5 @@ describe('isQuestionEnabled', () => {
         },
       ]);
     });
-    
   });
-
 });
