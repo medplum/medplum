@@ -1828,7 +1828,7 @@ describe('QuestionnaireForm', () => {
 
   test('Questionnaire CalculatedExpression with nested groups', async () => {
     const onSubmit = jest.fn();
-
+  
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
@@ -1845,13 +1845,13 @@ describe('QuestionnaireForm', () => {
               {
                 id: 'id-1',
                 linkId: 'q1',
-                type: 'string',
+                type: 'decimal',
                 text: 'Fahrenheit',
               },
               {
                 id: 'id-2',
                 linkId: 'q2',
-                type: 'string',
+                type: 'decimal',
                 text: 'Celsius',
                 extension: [
                   {
@@ -1867,7 +1867,7 @@ describe('QuestionnaireForm', () => {
               {
                 id: 'id-3',
                 linkId: 'q3',
-                type: 'string',
+                type: 'decimal',
                 text: 'Kelvin',
                 extension: [
                   {
@@ -1886,22 +1886,23 @@ describe('QuestionnaireForm', () => {
       },
       onSubmit,
     });
-
+  
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '100' } });
     });
-
+  
     await act(async () => {
       fireEvent.click(screen.getByText('Submit'));
     });
-
+  
     expect(onSubmit).toHaveBeenCalled();
-
+  
     const response = onSubmit.mock.calls[0][0];
     const answers = getQuestionnaireAnswers(response);
-
-    expect(answers['q1']).toMatchObject({ valueString: '100' }); // Original value from input
-    expect(answers['q2']).toMatchObject({ valueQuantity: 38 }); // Calculated Celsius
-    expect(answers['q3']).toMatchObject({ valueQuantity: 311 }); // Original Kelvin
+  
+    expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
+    expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
+    expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
   });
+  
 });
