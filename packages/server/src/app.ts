@@ -9,6 +9,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { adminRouter } from './admin/routes';
 import { asyncWrap } from './async';
+import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
 import { getConfig, MedplumServerConfig } from './config';
 import {
@@ -34,6 +35,7 @@ import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
 import { initKeys } from './oauth/keys';
+import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { closeRateLimiter, getRateLimiter } from './ratelimit';
@@ -44,8 +46,6 @@ import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
-import { authenticateRequest } from './oauth/middleware';
-import { asyncBatchHandler } from './async-batch';
 
 let server: http.Server | undefined = undefined;
 

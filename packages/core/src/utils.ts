@@ -467,6 +467,15 @@ export function stringify(value: any, pretty?: boolean): string {
 }
 
 /**
+ * Strips nested empty values from an object.
+ * @param value - The value to strip of all nested empty values.
+ * @returns A copy of the value, with all nested empty values stripped out.
+ */
+export function stripEmpty<T extends Record<string, any>>(value: T): T {
+  return JSON.parse(stringify(value));
+}
+
+/**
  * Evaluates JSON key/value pairs for FHIR JSON stringify.
  * Removes properties with empty string values.
  * Removes objects with zero properties.

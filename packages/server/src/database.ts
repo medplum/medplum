@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Pool, PoolClient } from 'pg';
 import * as semver from 'semver';
-import { MedplumDatabaseConfig, MedplumServerConfig } from './config';
+import { getConfig, MedplumDatabaseConfig, MedplumServerConfig } from './config';
 import { AsyncJobExecutor } from './fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
@@ -149,9 +149,11 @@ async function migrate(client: PoolClient): Promise<void> {
     "dataVersion" INTEGER NOT NULL
   )`);
 
-  const result = await client.query('SELECT "version", "dataVersion" FROM "DatabaseMigration"');
-  let version = result.rows[0]?.version ?? -1;
-  dataVersion = result.rows[0]?.dataVersion ?? -1;
+  const result = await client.query<{ version: number; dataVersion: number }>(
+    'SELECT "version", "dataVersion" FROM "DatabaseMigration"'
+  );
+  let version = result.rows[0].version ?? -1;
+  dataVersion = result.rows[0].dataVersion ?? -1;
   const allDataVersions = getMigrationVersions(dataMigrations);
   pendingDataMigration = 0;
 
@@ -244,6 +246,7 @@ export async function maybeStartDataMigration(): Promise<AsyncJob | undefined> {
   // Queue up the async job here
   const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
   const startTimeMs = Date.now();
+
   // Get async job
   const migrationAsyncJob = await migration.run(systemRepo);
   const exec = new AsyncJobExecutor(systemRepo);
@@ -257,8 +260,8 @@ export async function maybeStartDataMigration(): Promise<AsyncJob | undefined> {
       trackedJob: migrationAsyncJob,
       jobType: 'dataMigration',
       jobData: { startTimeMs, migrationVersion: pendingDataMigration },
-      delay: 10000,
+      delay: getConfig().asyncJobPollRateMilliseconds,
     });
   });
-  return migrationAsyncJob;
+  return pollerJob;
 }

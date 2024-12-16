@@ -7,6 +7,8 @@ import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 
+export const DEFAULT_ASYNC_JOB_POLL_RATE_MS = 10000;
+
 export type PolledAsyncJobType = 'dataMigration';
 
 export type JobTypeDataMap = {
@@ -21,7 +23,7 @@ export type AsyncJobPollerJobData<
   readonly trackedJob: AsyncJob;
   readonly jobType: T;
   readonly jobData: JobData;
-  readonly delay: number;
+  readonly delay?: number;
 };
 
 const queueName = 'AsyncJobPollerQueue';
@@ -136,14 +138,15 @@ async function finalizeJob(job: Job<AsyncJobPollerJobData>, trackedJob: AsyncJob
 async function onCompleteJob(job: Job<AsyncJobPollerJobData>, _trackedJob: AsyncJob): Promise<void> {
   switch (job.data.jobType) {
     case 'dataMigration': {
-      const client = await getDatabasePool(DatabaseMode.WRITER).connect();
       const migrationVersion = job.data.jobData.migrationVersion;
       globalLogger.info('Database data migration', {
         dataVersion: `v${migrationVersion}`,
         duration: `${Date.now() - job.data.jobData.startTimeMs} ms`,
       });
       markPendingDataMigrationCompleted();
-      await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [migrationVersion]);
+      await getDatabasePool(DatabaseMode.WRITER).query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [
+        migrationVersion,
+      ]);
       break;
     }
   }
@@ -152,7 +155,11 @@ async function onCompleteJob(job: Job<AsyncJobPollerJobData>, _trackedJob: Async
 async function onFailJob(job: Job<AsyncJobPollerJobData>, _trackedJob: AsyncJob): Promise<void> {
   switch (job.data.jobType) {
     case 'dataMigration': {
-      // Do nothing
+      const migrationVersion = job.data.jobData.migrationVersion;
+      globalLogger.info('Database data migration failed', {
+        dataVersion: `v${migrationVersion}`,
+        duration: `${Date.now() - job.data.jobData.startTimeMs} ms`,
+      });
       break;
     }
   }
@@ -171,5 +178,5 @@ export async function addAsyncJobPollerJob(jobData: AsyncJobPollerJobData): Prom
   if (!queue) {
     throw new Error('Job queue not available');
   }
-  return queue.add(jobName, jobData, { delay: jobData.delay });
+  return queue.add(jobName, jobData, { delay: jobData.delay ?? DEFAULT_ASYNC_JOB_POLL_RATE_MS });
 }
