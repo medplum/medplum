@@ -1,5 +1,11 @@
 import { QuestionnaireItem, QuestionnaireItemEnableWhen } from '@medplum/fhirtypes';
-import { formatReferenceString, getNewMultiSelectValues, isChoiceQuestion, isQuestionEnabled, typedValueToResponseItem } from './questionnaire';
+import {
+  formatReferenceString,
+  getNewMultiSelectValues,
+  isChoiceQuestion,
+  isQuestionEnabled,
+  typedValueToResponseItem,
+} from './questionnaire';
 
 describe('QuestionnaireUtils', () => {
   test('isChoiceQuestion', () => {
@@ -1290,7 +1296,6 @@ describe('isQuestionEnabled', () => {
   });
 
   describe('typedValueToResponseItem', () => {
-
     it('returns correct value for type boolean', () => {
       const item: QuestionnaireItem = { linkId: '1', type: 'boolean' };
       const value = { type: 'boolean', value: true };
@@ -1368,5 +1373,4 @@ describe('isQuestionEnabled', () => {
       expect(result).toBeUndefined();
     });
   });
-
 });
