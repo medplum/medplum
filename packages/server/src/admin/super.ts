@@ -302,7 +302,7 @@ superAdminRouter.post(
       return;
     }
 
-    // Optional validation when dataMigration assertion is passed
+    // Conditional validation when dataMigration assertion is passed
     if (req.body.dataMigration !== undefined) {
       // Assert that we are on the right version of the server
       const currentDataVersion = getCurrentDataVersion();

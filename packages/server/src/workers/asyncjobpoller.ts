@@ -106,7 +106,7 @@ async function shouldEnqueueJob(job: Job<AsyncJobPollerJobData>, trackedJob: Asy
       // If the polled job is already in a finalized state then we can ignore the cancel
       const ownJob = await systemRepo.readResource<AsyncJob>('AsyncJob', job.data.ownJob.id as string);
       if (ownJob.status === 'cancelled') {
-        // Cancel the polled job if the parent
+        // Cancel the polled job if the parent has been cancelled
         await systemRepo.patchResource('AsyncJob', trackedJob.id as string, [
           { op: 'test', path: '/status', value: 'accepted' },
           { op: 'add', path: '/status', value: 'cancelled' },

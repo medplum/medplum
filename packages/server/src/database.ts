@@ -11,6 +11,7 @@ import { globalLogger } from './logger';
 import * as dataMigrations from './migrations/data';
 import * as schemaMigrations from './migrations/schema';
 import { getRedis } from './redis';
+import { getServerVersion } from './util/version';
 import { addAsyncJobPollerJob } from './workers/asyncjobpoller';
 
 export const DATA_MIGRATION_JOB_KEY = 'medplum:migration:data:job';
@@ -22,7 +23,6 @@ export enum DatabaseMode {
 
 let pool: Pool | undefined;
 let readonlyPool: Pool | undefined;
-let serverVersion: string | undefined;
 let dataVersion = -1;
 let pendingDataMigration = -1;
 
@@ -186,21 +186,20 @@ async function migrate(client: PoolClient): Promise<void> {
     // If the current server version is not the one we require for this data migration
     // Then we should throw and abort the migration process
     const serverVersion = getServerVersion();
-    // TODO: Make this version strict after v4
-    // We made this requirement looser so that self-hosters can run first migration on any version within the minor version before v4
-    if (!semver.satisfies(serverVersion, `>=${requiredServerVersion} <${semver.inc(requiredServerVersion, 'minor')}`)) {
+
+    // TODO(ThatOneBro 16 Dec 2024): Make this version strict after v4 (exact version only)
+    // ----  We made this requirement looser so that self-hosters can run first migration on any version within the minor version before v4
+
+    // We allow any version where the data migration is present and it less than the required version
+    // To run the migration, as we can assume that after the data migration is added, any version between the migration being present
+    // And the minor release that it is supposed to be run in will have the capacity to safely run the migration
+    if (!semver.satisfies(serverVersion, `<${semver.inc(requiredServerVersion, 'minor')}`)) {
       throw new Error(
         `Unable to run data migration against the current server version. Migration requires server at version ${requiredServerVersion}, but current server version is ${serverVersion}`
       );
     }
 
     globalLogger.info('Data migration ready to run', { dataVersion: pendingDataMigration });
-    // if (serverVersion !== requiredServerVersion) {
-    //   throw new Error(
-    //     `Unable to run data migration against the current server version. Migration requires server at version ${requiredServerVersion}, but current server version is ${serverVersion}`
-    //   );
-    // }
-
     // If we make it here, we have a pending migration, but we don't want to apply it until we make sure we apply all the schema migrations first
   }
 
@@ -220,15 +219,6 @@ function getMigrationVersions(migrationModule: Record<string, any>): number[] {
   const prefixedVersions = Object.keys(migrationModule).filter((key) => key.startsWith('v'));
   const migrationVersions = prefixedVersions.map((key) => Number.parseInt(key.slice(1), 10)).sort((a, b) => a - b);
   return migrationVersions;
-}
-
-function getServerVersion(): string {
-  if (!serverVersion) {
-    serverVersion = (
-      JSON.parse(readFileSync(resolve(__dirname, '../package.json'), { encoding: 'utf-8' })) as Record<string, any>
-    ).version as string;
-  }
-  return serverVersion;
 }
 
 export async function maybeStartDataMigration(): Promise<AsyncJob | undefined> {
