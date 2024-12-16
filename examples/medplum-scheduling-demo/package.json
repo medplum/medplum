@@ -25,9 +25,9 @@
     ]
   },
   "devDependencies": {
-    "@mantine/core": "7.14.3",
-    "@mantine/hooks": "7.14.3",
-    "@mantine/notifications": "7.14.3",
+    "@mantine/core": "7.15.1",
+    "@mantine/hooks": "7.15.1",
+    "@mantine/notifications": "7.15.1",
     "@medplum/bot-layer": "3.2.25",
     "@medplum/core": "3.2.25",
     "@medplum/definitions": "3.2.25",
@@ -36,7 +36,7 @@
     "@medplum/mock": "3.2.25",
     "@medplum/react": "3.2.25",
     "@tabler/icons-react": "3.17.0",
-    "@types/node": "22.10.1",
+    "@types/node": "22.10.2",
     "@types/react": "18.3.12",
     "@types/react-big-calendar": "^1.16.0",
     "@types/react-dom": "18.3.1",
@@ -51,7 +51,7 @@
     "ts-node": "10.9.2",
     "vitest": "2.1.8",
     "dayjs": "1.11.13",
-    "react-big-calendar": "1.16.3",
+    "react-big-calendar": "1.17.0",
     "react-router-dom": "6.28.0",
     "typescript": "5.7.2",
     "vite": "6.0.3"

@@ -58,7 +58,7 @@
     "@medplum/definitions": "3.2.25",
     "@medplum/fhirtypes": "3.2.25",
     "dataloader": "2.2.3",
-    "graphql": "16.9.0",
+    "graphql": "16.10.0",
     "rfc6902": "5.1.2"
   },
   "engines": {
