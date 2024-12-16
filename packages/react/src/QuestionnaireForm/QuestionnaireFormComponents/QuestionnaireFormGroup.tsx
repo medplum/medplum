@@ -72,7 +72,7 @@ export function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element 
   if (!props.checkForQuestionEnabled(props.item)) {
     return null;
   }
-  
+
   return (
     <div key={props.item.linkId}>
       {props.item.text && (
