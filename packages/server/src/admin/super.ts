@@ -221,11 +221,11 @@ superAdminRouter.post(
   })
 );
 
-// POST to /admin/super/migrationlock
-// to take the exclusive client migration lock.
+// POST to /admin/super/upgradelock
+// to take the exclusive client upgrade lock.
 // This is used to prevent other clients from posting to the `/migrate` route while a client is actively stepping through an upgrade path.
 superAdminRouter.post(
-  '/migrationlock',
+  '/upgradelock',
   asyncWrap(async (_req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     const profileRefStr = getReferenceString(ctx.profile);
@@ -251,14 +251,14 @@ superAdminRouter.post(
       return;
     }
 
-    sendOutcome(res, badRequest('Unable to acquire the exclusive data migration lock. Migration already in-progress'));
+    sendOutcome(res, badRequest('Unable to acquire the exclusive data upgrade lock. Migration already in-progress'));
   })
 );
 
-// DELETE to /admin/super/migrationlock
-// to release the exclusive client migration lock.
+// DELETE to /admin/super/upgradelock
+// to release the exclusive client upgrade lock.
 superAdminRouter.delete(
-  '/migrationlock',
+  '/upgradelock',
   asyncWrap(async (_req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     const profileRefStr = getReferenceString(ctx.profile);

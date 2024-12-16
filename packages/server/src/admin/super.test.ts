@@ -549,14 +549,14 @@ describe('Super Admin routes', () => {
       jest.resetAllMocks();
     });
 
-    describe('Migration lock', () => {
+    describe('Upgrade lock', () => {
       beforeEach(async () => {
         await getRedis().del(DATA_MIGRATION_LOCK_KEY);
       });
 
       test('Can take the lock when no one holds it', async () => {
         const res1 = await request(app)
-          .post('/admin/super/migrationlock')
+          .post('/admin/super/upgradelock')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .type('json')
           .send({});
@@ -569,7 +569,7 @@ describe('Super Admin routes', () => {
         await getRedis().set(DATA_MIGRATION_LOCK_KEY, getReferenceString(practitioner1));
 
         const res1 = await request(app)
-          .post('/admin/super/migrationlock')
+          .post('/admin/super/upgradelock')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .type('json')
           .send({});
@@ -582,14 +582,14 @@ describe('Super Admin routes', () => {
         await getRedis().set(DATA_MIGRATION_LOCK_KEY, getReferenceString(practitioner2));
 
         const res1 = await request(app)
-          .post('/admin/super/migrationlock')
+          .post('/admin/super/upgradelock')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .type('json')
           .send({});
 
         expect(res1.status).toStrictEqual(400);
         expect(res1.body).toMatchObject(
-          badRequest('Unable to acquire the exclusive data migration lock. Migration already in-progress')
+          badRequest('Unable to acquire the exclusive data upgrade lock. Migration already in-progress')
         );
       });
 
@@ -597,7 +597,7 @@ describe('Super Admin routes', () => {
         await getRedis().set(DATA_MIGRATION_LOCK_KEY, getReferenceString(practitioner1));
 
         const res1 = await request(app)
-          .delete('/admin/super/migrationlock')
+          .delete('/admin/super/upgradelock')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .type('json');
 
@@ -607,7 +607,7 @@ describe('Super Admin routes', () => {
 
       test('Cannot release the lock if the current user does NOT hold it', async () => {
         const res1 = await request(app)
-          .delete('/admin/super/migrationlock')
+          .delete('/admin/super/upgradelock')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .type('json');
 
@@ -617,7 +617,7 @@ describe('Super Admin routes', () => {
         await getRedis().set(DATA_MIGRATION_LOCK_KEY, getReferenceString(practitioner2));
 
         const res2 = await request(app)
-          .delete('/admin/super/migrationlock')
+          .delete('/admin/super/upgradelock')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .type('json');
 
