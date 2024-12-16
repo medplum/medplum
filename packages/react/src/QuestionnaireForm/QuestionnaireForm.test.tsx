@@ -1819,8 +1819,9 @@ describe('QuestionnaireForm', () => {
     const response = onSubmit.mock.calls[0][0];
     const answers = getQuestionnaireAnswers(response);
   
-    expect(answers['q2']).toMatchObject({ valueQuantity: 38 });
-    expect(answers['q3']).toMatchObject({ valueQuantity: 311 });
+    expect(answers['q1']).toMatchObject({ valueString: '100' }); // Original value from input
+    expect(answers['q2']).toMatchObject({ valueQuantity: 38 }); // Calculated Celsius
+    expect(answers['q3']).toMatchObject({ valueQuantity: 311 }); // Original Kelvin
   });
   
 });
