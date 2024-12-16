@@ -7,8 +7,6 @@ import {
   InternalTypeSchema,
   isPopulated,
   isResourceTypeSchema,
-  PropertyType,
-  SearchParameterDetails,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
@@ -269,7 +267,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
     }
 
     const impl = getSearchParameterImplementation(resourceType, searchParam);
-    if (isLookupTableParam(searchParam, impl)) {
+    if (impl.searchStrategy === 'lookup-table') {
       continue;
     }
 
@@ -290,76 +288,6 @@ const additionalSearchColumns: { table: string; column: string; type: string; in
   { table: 'MeasureReport', column: 'period_range', type: 'TSTZRANGE', indexType: 'gist' },
 ];
 
-function isLookupTableParam(searchParam: SearchParameter, details: SearchParameterDetails): boolean {
-  // Identifier
-  if (searchParam.code === 'identifier' && searchParam.type === 'token') {
-    return true;
-  }
-
-  // HumanName
-  const nameParams = [
-    'individual-given',
-    'individual-family',
-    'Patient-name',
-    'Person-name',
-    'Practitioner-name',
-    'RelatedPerson-name',
-  ];
-  if (nameParams.includes(searchParam.id as string)) {
-    return true;
-  }
-
-  // Telecom
-  const telecomParams = [
-    'individual-telecom',
-    'individual-email',
-    'individual-phone',
-    'OrganizationAffiliation-telecom',
-    'OrganizationAffiliation-email',
-    'OrganizationAffiliation-phone',
-  ];
-  if (telecomParams.includes(searchParam.id as string)) {
-    return true;
-  }
-
-  // Address
-  const addressParams = ['individual-address', 'InsurancePlan-address', 'Location-address', 'Organization-address'];
-  if (addressParams.includes(searchParam.id as string)) {
-    return true;
-  }
-
-  // "address-"
-  if (searchParam.code?.startsWith('address-')) {
-    return true;
-  }
-
-  // Token
-  if (searchParam.type === 'token') {
-    if (searchParam.code?.endsWith(':identifier')) {
-      return true;
-    }
-
-    for (const elementDefinition of details.elementDefinitions ?? []) {
-      // Check for any "Identifier", "CodeableConcept", or "Coding"
-      // Any of those value types require the "Token" table for full system|value search semantics.
-      // The common case is that the "type" property only has one value,
-      // but we need to support arrays of types for the choice-of-type properties such as "value[x]".
-      for (const type of elementDefinition.type ?? []) {
-        if (
-          type.code === PropertyType.Identifier ||
-          type.code === PropertyType.CodeableConcept ||
-          type.code === PropertyType.Coding ||
-          type.code === PropertyType.ContactPoint
-        ) {
-          return true;
-        }
-      }
-    }
-  }
-
-  return false;
-}
-
 function getColumnType(impl: SearchParameterImplementation): string {
   let baseColumnType: string;
   switch (impl.type) {
@@ -374,7 +302,7 @@ function getColumnType(impl: SearchParameterImplementation): string {
       break;
     case SearchParameterType.NUMBER:
     case SearchParameterType.QUANTITY:
-      if (impl.columnName === 'priorityOrder') {
+      if ('columnName' in impl && impl.columnName === 'priorityOrder') {
         baseColumnType = 'INTEGER';
       } else {
         baseColumnType = 'DOUBLE PRECISION';

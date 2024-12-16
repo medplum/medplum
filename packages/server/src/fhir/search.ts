@@ -47,7 +47,7 @@ import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { Repository } from './repo';
 import { getFullUrl } from './response';
-import { getLookupTable, getSearchParameterImplementation, SearchParameterImplementation } from './searchparameter';
+import { ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
 import {
   ArraySubquery,
   Column,
@@ -95,7 +95,7 @@ interface ChainedSearchLink {
   originType: string;
   targetType: string;
   code: string;
-  implementation: SearchParameterImplementation;
+  implementation: ColumnSearchParameterImplementation;
   direction: (typeof Direction)['FORWARD'] | (typeof Direction)['REVERSE'];
 }
 
@@ -157,6 +157,11 @@ export async function searchByReferenceImpl<T extends Resource>(
         );
       }
       const impl = getSearchParameterImplementation(resourceType, param);
+      if (impl.searchStrategy !== 'column') {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
+        );
+      }
       builder.whereExpr(buildReferenceSearchFilter(builder.tableName, impl, Operator.EQUALS, referenceColumn));
     },
   });
@@ -935,16 +940,11 @@ function buildSearchFilterExpression(
 
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy === 'lookup-table') {
-    const lookupTable = getLookupTable(resourceType, param);
-    if (lookupTable) {
-      return lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
-    }
-
-    //TODO: error handling
+    return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
   }
 
   // Not any special cases, just a normal search parameter.
-  return buildNormalSearchFilterExpression(resourceType, table, param, filter);
+  return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
 }
 
 /**
@@ -954,6 +954,7 @@ function buildSearchFilterExpression(
  * @param resourceType - The FHIR resource type.
  * @param table - The resource table.
  * @param param - The FHIR search parameter.
+ * @param impl - The search parameter implementation.
  * @param filter - The search filter.
  * @returns A SQL "WHERE" clause expression.
  */
@@ -961,9 +962,9 @@ function buildNormalSearchFilterExpression(
   resourceType: string,
   table: string,
   param: SearchParameter,
+  impl: ColumnSearchParameterImplementation,
   filter: Filter
 ): Expression {
-  const impl = getSearchParameterImplementation(resourceType, param);
   if (filter.operator === Operator.MISSING) {
     return new Condition(new Column(table, impl.columnName), filter.value === 'true' ? '=' : '!=', null);
   } else if (filter.operator === Operator.PRESENT) {
@@ -1103,7 +1104,7 @@ function buildFilterParameterComparison(
  */
 function buildStringSearchFilter(
   table: string,
-  impl: SearchParameterImplementation,
+  impl: ColumnSearchParameterImplementation,
   operator: Operator,
   values: string[]
 ): Expression {
@@ -1142,7 +1143,7 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
  */
 function buildIdSearchFilter(
   table: string,
-  impl: SearchParameterImplementation,
+  impl: ColumnSearchParameterImplementation,
   operator: Operator,
   values: string[]
 ): Expression {
@@ -1174,7 +1175,7 @@ function buildIdSearchFilter(
  */
 function buildTokenSearchFilter(
   table: string,
-  impl: SearchParameterImplementation,
+  impl: ColumnSearchParameterImplementation,
   operator: Operator,
   values: string[]
 ): Expression {
@@ -1189,7 +1190,7 @@ function buildTokenSearchFilter(
 const allowedBooleanValues = ['true', 'false'];
 function buildBooleanSearchFilter(
   table: string,
-  impl: SearchParameterImplementation,
+  impl: ColumnSearchParameterImplementation,
   operator: Operator,
   value: string
 ): Expression {
@@ -1214,7 +1215,7 @@ function buildBooleanSearchFilter(
  */
 function buildReferenceSearchFilter(
   table: string,
-  impl: SearchParameterImplementation,
+  impl: ColumnSearchParameterImplementation,
   operator: Operator,
   values: string[] | Column
 ): Expression {
@@ -1244,7 +1245,7 @@ function buildReferenceSearchFilter(
  * @param filter - The search filter.
  * @returns The select query condition.
  */
-function buildDateSearchFilter(table: string, impl: SearchParameterImplementation, filter: Filter): Expression {
+function buildDateSearchFilter(table: string, impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
   const dateValue = new Date(filter.value);
   if (isNaN(dateValue.getTime())) {
     throw new OperationOutcomeError(badRequest(`Invalid date value: ${filter.value}`));
@@ -1325,12 +1326,8 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
 
   const impl = getSearchParameterImplementation(resourceType, param);
   if (impl.searchStrategy === 'lookup-table') {
-    const lookupTable = getLookupTable(resourceType, param);
-    if (lookupTable) {
-      lookupTable.addOrderBy(builder, resourceType, sortRule);
-      return;
-    }
-    // TODO error handling
+    impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
+    return;
   }
 
   builder.orderBy(impl.columnName, !!sortRule.descending);
@@ -1366,7 +1363,7 @@ function fhirOperatorToSqlOperator(fhirOperator: Operator): keyof typeof SQL {
 }
 
 function buildEqualityCondition(
-  impl: SearchParameterImplementation,
+  impl: ColumnSearchParameterImplementation,
   values: string[],
   column?: Column | string
 ): Condition {
@@ -1673,6 +1670,9 @@ function parseChainLink(param: string, currentResourceType: string): ChainedSear
     throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
   }
   const implementation = getSearchParameterImplementation(currentResourceType, searchParam);
+  if (implementation.searchStrategy !== 'column') {
+    throw new Error(`Invalid search parameter in chain: ${currentResourceType}?${code}`);
+  }
   return { originType: currentResourceType, targetType, code, implementation, direction: Direction.FORWARD };
 }
 
@@ -1687,6 +1687,9 @@ function parseReverseChainLink(param: string, targetResourceType: string): Chain
     );
   }
   const implementation = getSearchParameterImplementation(resourceType, searchParam);
+  if (implementation.searchStrategy !== 'column') {
+    throw new Error(`Invalid search parameter in chain: ${resourceType}?${code}`);
+  }
   return {
     originType: targetResourceType,
     targetType: resourceType,

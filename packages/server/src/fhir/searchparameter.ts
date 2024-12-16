@@ -1,5 +1,5 @@
 import { capitalize, getSearchParameterDetails, SearchParameterDetails } from '@medplum/core';
-import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
+import { SearchParameter } from '@medplum/fhirtypes';
 import { HumanNameTable } from './lookups/humanname';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
@@ -8,15 +8,21 @@ import { ReferenceTable } from './lookups/reference';
 import { TokenTable } from './lookups/token';
 import { ValueSetElementTable } from './lookups/valuesetelement';
 
-interface ImplementationBuilder extends SearchParameterDetails {
-  columnName: string;
-  searchStrategy: 'column' | 'lookup-table';
+type Writeable<T> = { -readonly [P in keyof T]: T[P] };
+
+export interface ColumnSearchParameterImplementation extends SearchParameterDetails {
+  readonly searchStrategy: 'column';
+  readonly columnName: string;
 }
 
-export interface SearchParameterImplementation extends SearchParameterDetails {
-  readonly columnName: string;
-  readonly searchStrategy: 'column' | 'lookup-table';
+export interface LookupTableSearchParameterImplementation extends SearchParameterDetails {
+  readonly searchStrategy: 'lookup-table';
+  readonly lookupTable: LookupTable;
 }
+
+export type SearchParameterImplementation =
+  | ColumnSearchParameterImplementation
+  | LookupTableSearchParameterImplementation;
 
 interface ResourceTypeSearchParameterInfo {
   searchParamsImplementations: Record<string, SearchParameterImplementation>;
@@ -58,22 +64,21 @@ function buildSearchParameterImplementation(
   searchParam: SearchParameter
 ): SearchParameterImplementation {
   const code = searchParam.code;
-  const builder = getSearchParameterDetails(resourceType, searchParam) as ImplementationBuilder;
+  const impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
 
-  const columnName = convertCodeToColumnName(code);
-  builder.columnName = columnName;
-
-  let searchStrategy: ImplementationBuilder['searchStrategy'] = 'column';
-  if (!searchParam.base?.includes(resourceType as ResourceType)) {
-    // TODO is ignoring this really the right behavior? When does this happen in practice?
-    // If the search parameter is not defined on the resource type itself, skip special implementations
-  } else if (getLookupTable(resourceType, searchParam)) {
-    searchStrategy = 'lookup-table';
+  const lookupTable = getLookupTable(resourceType, searchParam);
+  if (lookupTable) {
+    const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;
+    writeable.searchStrategy = 'lookup-table';
+    writeable.lookupTable = lookupTable;
+  } else {
+    const writeable = impl as Writeable<ColumnSearchParameterImplementation>;
+    writeable.searchStrategy = 'column';
+    writeable.columnName = convertCodeToColumnName(code);
   }
-  builder.searchStrategy = searchStrategy;
 
-  setSearchParameterImplementation(resourceType, code, builder);
-  return builder;
+  setSearchParameterImplementation(resourceType, code, impl);
+  return impl;
 }
 
 /**
@@ -97,7 +102,7 @@ export const lookupTables: LookupTable[] = [
   new CodingTable(),
 ];
 
-export function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable | undefined {
+function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable | undefined {
   for (const lookupTable of lookupTables) {
     if (lookupTable.isIndexed(searchParam, resourceType)) {
       return lookupTable;
