@@ -19,7 +19,7 @@ import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { getReindexQueue, ReindexJob, ReindexJobData } from '../workers/reindex';
-import { DATA_MIGRATION_LOCK_KEY, isValidTableName } from './super';
+import { isValidTableName, UPGRADE_LOCK_KEY } from './super';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -551,7 +551,7 @@ describe('Super Admin routes', () => {
 
     describe('Upgrade lock', () => {
       beforeEach(async () => {
-        await getRedis().del(DATA_MIGRATION_LOCK_KEY);
+        await getRedis().del(UPGRADE_LOCK_KEY);
       });
 
       test('Can take the lock when no one holds it', async () => {
@@ -566,7 +566,7 @@ describe('Super Admin routes', () => {
       });
 
       test('Can take the lock if the current user already holds it', async () => {
-        await getRedis().set(DATA_MIGRATION_LOCK_KEY, getReferenceString(practitioner1));
+        await getRedis().set(UPGRADE_LOCK_KEY, getReferenceString(practitioner1));
 
         const res1 = await request(app)
           .post('/admin/super/upgradelock')
@@ -579,7 +579,7 @@ describe('Super Admin routes', () => {
       });
 
       test('Cannot take the lock if the current user does NOT hold it', async () => {
-        await getRedis().set(DATA_MIGRATION_LOCK_KEY, getReferenceString(practitioner2));
+        await getRedis().set(UPGRADE_LOCK_KEY, getReferenceString(practitioner2));
 
         const res1 = await request(app)
           .post('/admin/super/upgradelock')
@@ -594,7 +594,7 @@ describe('Super Admin routes', () => {
       });
 
       test('Can release the lock if the current user is already holding it', async () => {
-        await getRedis().set(DATA_MIGRATION_LOCK_KEY, getReferenceString(practitioner1));
+        await getRedis().set(UPGRADE_LOCK_KEY, getReferenceString(practitioner1));
 
         const res1 = await request(app)
           .delete('/admin/super/upgradelock')
@@ -614,7 +614,7 @@ describe('Super Admin routes', () => {
         expect(res1.status).toStrictEqual(400);
         expect(res1.body).toMatchObject(badRequest('Unable to release lock; current user does not hold the lock'));
 
-        await getRedis().set(DATA_MIGRATION_LOCK_KEY, getReferenceString(practitioner2));
+        await getRedis().set(UPGRADE_LOCK_KEY, getReferenceString(practitioner2));
 
         const res2 = await request(app)
           .delete('/admin/super/upgradelock')

@@ -38,7 +38,7 @@ import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
 
-export const DATA_MIGRATION_LOCK_KEY = 'medplum:migration:data:lock';
+export const UPGRADE_LOCK_KEY = 'medplum:upgrade:lock';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_scale_factor: 'float',
@@ -230,16 +230,10 @@ superAdminRouter.post(
     const ctx = requireSuperAdmin();
     const profileRefStr = getReferenceString(ctx.profile);
 
-    const results = await getRedis()
-      .multi()
-      .set(DATA_MIGRATION_LOCK_KEY, profileRefStr, 'NX')
-      .get(DATA_MIGRATION_LOCK_KEY)
-      .exec();
+    const results = await getRedis().multi().set(UPGRADE_LOCK_KEY, profileRefStr, 'NX').get(UPGRADE_LOCK_KEY).exec();
     if (!results) {
       // This should only happen if Redis fails in some catastrophic way
-      throw new OperationOutcomeError(
-        serverError(new Error(`Failed to get value for ${DATA_MIGRATION_LOCK_KEY} from Redis`))
-      );
+      throw new OperationOutcomeError(serverError(new Error(`Failed to get value for ${UPGRADE_LOCK_KEY} from Redis`)));
     }
     const [error, result] = results?.[1] as [error: Error, result: string];
     if (error) {
@@ -263,13 +257,13 @@ superAdminRouter.delete(
     const ctx = requireSuperAdmin();
     const profileRefStr = getReferenceString(ctx.profile);
 
-    const result = await getRedis().get(DATA_MIGRATION_LOCK_KEY);
+    const result = await getRedis().get(UPGRADE_LOCK_KEY);
     if (result !== profileRefStr) {
       sendOutcome(res, badRequest('Unable to release lock; current user does not hold the lock'));
       return;
     }
 
-    await getRedis().del(DATA_MIGRATION_LOCK_KEY);
+    await getRedis().del(UPGRADE_LOCK_KEY);
     sendOutcome(res, allOk);
   })
 );
