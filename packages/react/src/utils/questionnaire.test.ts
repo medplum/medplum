@@ -1,5 +1,6 @@
-import { QuestionnaireItem, QuestionnaireItemEnableWhen } from '@medplum/fhirtypes';
+import { QuestionnaireItem, QuestionnaireItemEnableWhen, QuestionnaireResponse } from '@medplum/fhirtypes';
 import {
+  evaluateCalculatedExpressionsInQuestionnaire,
   formatReferenceString,
   getNewMultiSelectValues,
   isChoiceQuestion,
@@ -1373,4 +1374,164 @@ describe('isQuestionEnabled', () => {
       expect(result).toBeUndefined();
     });
   });
+
+  describe('evaluateCalculatedExpressionsInQuestionnaire', () => {
+    test('Boolean type with condition', () => {
+      const items: QuestionnaireItem[] = [
+        {
+          id: 'q1',
+          linkId: 'q1',
+          type: 'boolean',
+          text: 'Is Age Over 18?',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+              valueExpression: {
+                expression: "20 > 18",
+                language: 'text/fhirpath',
+              },
+            },
+          ],
+        },
+      ];
+
+      const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'in-progress' };
+      const result = evaluateCalculatedExpressionsInQuestionnaire(items, response);
+      expect(result).toEqual([
+        {
+          id: 'q1',
+          linkId: 'q1',
+          text: 'Is Age Over 18?',
+          answer: [{ valueBoolean: true }],
+        },
+      ]);
+    });
+
+    test('Date type with today() function', () => {
+      const items: QuestionnaireItem[] = [
+        {
+          id: 'q2',
+          linkId: 'q2',
+          type: 'date',
+          text: 'Today\'s Date',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+              valueExpression: {
+                expression: "today()",
+                language: 'text/fhirpath',
+              },
+            },
+          ],
+        },
+      ];
+
+      const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'in-progress' };
+      const result = evaluateCalculatedExpressionsInQuestionnaire(items, response);
+      const today = new Date().toISOString().split('T')[0]; // Get today's date in YYYY-MM-DD format
+      expect(result).toEqual([
+        {
+          id: 'q2',
+          linkId: 'q2',
+          text: 'Today\'s Date',
+          answer: [{ valueDate: today }],
+        },
+      ]);
+    });
+
+    test('Integer type with addition', () => {
+      const items: QuestionnaireItem[] = [
+        {
+          id: 'q3',
+          linkId: 'q3',
+          type: 'integer',
+          text: 'Age Next Year',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+              valueExpression: {
+                expression: "30 + 1",
+                language: 'text/fhirpath',
+              },
+            },
+          ],
+        },
+      ];
+
+      const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'in-progress' };
+      const result = evaluateCalculatedExpressionsInQuestionnaire(items, response);
+      expect(result).toEqual([
+        {
+          id: 'q3',
+          linkId: 'q3',
+          text: 'Age Next Year',
+          answer: [{ valueQuantity: 31 }],
+        },
+      ]);
+    });
+
+    test('Decimal type with division', () => {
+      const items: QuestionnaireItem[] = [
+        {
+          id: 'q4',
+          linkId: 'q4',
+          type: 'decimal',
+          text: 'Half of 98',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+              valueExpression: {
+                expression: "98 / 2",
+                language: 'text/fhirpath',
+              },
+            },
+          ],
+        },
+      ];
+
+      const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'in-progress' };
+      const result = evaluateCalculatedExpressionsInQuestionnaire(items, response);
+      expect(result).toEqual([
+        {
+          id: 'q4',
+          linkId: 'q4',
+          text: 'Half of 98',
+          answer: [{ valueQuantity: 49.0 }],
+        },
+      ]);
+    });
+
+    test('String type with concatenation', () => {
+      const items: QuestionnaireItem[] = [
+        {
+          id: 'q5',
+          linkId: 'q5',
+          type: 'string',
+          text: 'Full Name',
+          extension: [
+            {
+              url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+              valueExpression: {
+                expression: "'John' + ' ' + 'Doe'",
+                language: 'text/fhirpath',
+              },
+            },
+          ],
+        },
+      ];
+
+      const response: QuestionnaireResponse = { resourceType: 'QuestionnaireResponse', status: 'in-progress' };
+      const result = evaluateCalculatedExpressionsInQuestionnaire(items, response);
+      expect(result).toEqual([
+        {
+          id: 'q5',
+          linkId: 'q5',
+          text: 'Full Name',
+          answer: [{ valueQuantity: 'John Doe' }],
+        },
+      ]);
+    });
+    
+  });
+
 });
