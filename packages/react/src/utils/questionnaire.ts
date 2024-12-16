@@ -103,7 +103,6 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
   return items
     .map((item): QuestionnaireResponseItem | null => {
       if (item.item) {
-        console.log("is group")
         return {
           ...item,
           item: evaluateCalculatedExpressionsInQuestionnaire(item.item, response),
@@ -181,7 +180,6 @@ function evaluateCalculatedExpression(
 
   if (extension) {
     const expression = extension.valueExpression?.expression;
-    console.log(expression)
     if (expression) {
       const value = toTypedValue(response);
       const result = evalFhirPathTyped(expression, [value], { '%resource': value });
@@ -195,9 +193,6 @@ export function mergeUpdatedItems(
   mergedItems: QuestionnaireResponseItem[],
   updatedItems: QuestionnaireResponseItem[]
 ): QuestionnaireResponseItem[] {
-  console.log('Merged Items (Input):', JSON.stringify(mergedItems, null, 2));
-  console.log('Updated Items (Input):', JSON.stringify(updatedItems, null, 2));
-
   return mergedItems.map((mergedItem) => {
     const updatedItem = updatedItems.find((updated) => updated.linkId === mergedItem.linkId);
 

@@ -35,6 +35,7 @@ export function QuestionnairePageSequence(props: QuestionnairePageSequenceProps)
 
   const form = items.map((item) => {
     const itemResponse = response?.item?.filter((i) => i.linkId === item.linkId) ?? [];
+
     const repeatedItem =
       item.type === QuestionnaireItemType.group ? (
         <QuestionnaireRepeatedGroup

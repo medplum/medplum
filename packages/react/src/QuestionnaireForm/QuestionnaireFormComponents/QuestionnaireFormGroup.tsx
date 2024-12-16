@@ -82,7 +82,6 @@ export function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element 
       )}
       <Stack>
         {props.item.item?.map((item) => {
-          console.log(item.type)
           if (item.type === QuestionnaireItemType.group) {
             return item.repeats ? (
               <QuestionnaireRepeatedGroup
