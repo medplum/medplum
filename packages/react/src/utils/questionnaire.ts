@@ -103,21 +103,32 @@ export function evaluateCalculatedExpressionsInQuestionnaire(
   return items
     .map((item): QuestionnaireResponseItem | null => {
       if (item.item) {
+        console.log("is group")
         return {
           ...item,
           item: evaluateCalculatedExpressionsInQuestionnaire(item.item, response),
         };
       } else {
+        // console.log(response)
+        // console.log(item)
         const calculatedValue = evaluateCalculatedExpression(item, response);
+        // console.log(calculatedValue)
         if (!calculatedValue) {
           return null;
         }
 
         const answer = typedValueToResponseItem(item, calculatedValue);
+        
         if (!answer) {
           return null;
         }
 
+        console.log( {
+          id: item?.id,
+          linkId: item?.linkId,
+          text: item.text,
+          answer: [answer],
+        })
         return {
           id: item?.id,
           linkId: item?.linkId,
@@ -179,10 +190,11 @@ function evaluateCalculatedExpression(
 
   if (extension) {
     const expression = extension.valueExpression?.expression;
+    console.log(expression)
     if (expression) {
       const value = toTypedValue(response);
       const result = evalFhirPathTyped(expression, [value], { '%resource': value });
-      return result.length === 0 ? result[0] : undefined;
+      return result.length !== 0 ? result[0] : undefined;
     }
   }
   return undefined;
@@ -192,20 +204,25 @@ export function mergeUpdatedItems(
   mergedItems: QuestionnaireResponseItem[],
   updatedItems: QuestionnaireResponseItem[]
 ): QuestionnaireResponseItem[] {
+  console.log('Merged Items (Input):', JSON.stringify(mergedItems, null, 2));
+  console.log('Updated Items (Input):', JSON.stringify(updatedItems, null, 2));
+
   return mergedItems.map((mergedItem) => {
     const updatedItem = updatedItems.find((updated) => updated.linkId === mergedItem.linkId);
-
-    if (updatedItem?.item && mergedItem.item) {
+    if (updatedItem) {
       return {
         ...mergedItem,
-        item: mergeUpdatedItems(mergedItem.item, updatedItem.item),
-        answer: updatedItem.answer || mergedItem.answer, 
+        item: updatedItem.item 
+          ? mergeUpdatedItems(mergedItem.item || [], updatedItem.item)
+          : mergedItem.item,
+        answer: updatedItem.answer || mergedItem.answer,
       };
     }
-
-    return updatedItem || mergedItem;
+    return mergedItem;
   });
 }
+
+
 
 export function getNewMultiSelectValues(
   selected: string[],

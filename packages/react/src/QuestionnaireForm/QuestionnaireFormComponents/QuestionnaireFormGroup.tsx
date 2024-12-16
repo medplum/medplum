@@ -1,6 +1,6 @@
 import { Anchor, Stack, Title } from '@mantine/core';
 import { QuestionnaireItem, QuestionnaireResponseItem } from '@medplum/fhirtypes';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { QuestionnaireItemType, buildInitialResponseItem } from '../../utils/questionnaire';
 import { QuestionnaireRepeatableItem } from '../QuestionnaireFormItem/QuestionnaireRepeatableItem';
 
@@ -13,6 +13,10 @@ interface QuestionnaireRepeatableGroupProps {
 
 export function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupProps): JSX.Element | null {
   const [responses, setResponses] = useState(props.response);
+
+  useEffect(() => {
+    setResponses(props.response);
+  }, [props.response]);
 
   if (responses.length === 0) {
     return null;
@@ -54,6 +58,8 @@ interface QuestionnaireGroupProps {
 
 export function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element | null {
   const { response, checkForQuestionEnabled, onChange } = props;
+  console.log("==== QuestionnaireGroup =")
+  console.log(response)
   function onSetGroup(newResponseItem: QuestionnaireResponseItem[]): void {
     const newResponse = response.item?.map((current) => {
       const matchingItem = newResponseItem.find((newResponse) => newResponse.id === current.id);
@@ -68,7 +74,7 @@ export function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element 
   if (!props.checkForQuestionEnabled(props.item)) {
     return null;
   }
-
+  
   return (
     <div key={props.item.linkId}>
       {props.item.text && (
@@ -78,6 +84,7 @@ export function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element 
       )}
       <Stack>
         {props.item.item?.map((item) => {
+          console.log(item.type)
           if (item.type === QuestionnaireItemType.group) {
             return item.repeats ? (
               <QuestionnaireRepeatedGroup
@@ -97,11 +104,15 @@ export function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element 
               />
             );
           }
+
+          console.log("item")
+          const r = response.item?.find((i) => i.linkId === item.linkId)
+          console.log(r)
           return (
             <QuestionnaireRepeatableItem
               key={item.linkId}
               item={item}
-              response={response.item?.find((i) => i.linkId === item.linkId)}
+              response={r}
               onChange={onSetGroup}
               checkForQuestionEnabled={checkForQuestionEnabled}
             />

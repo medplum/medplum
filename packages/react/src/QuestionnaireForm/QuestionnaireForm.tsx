@@ -75,9 +75,14 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         item: mergedItems,
       };
 
-      const updatedItems = evaluateCalculatedExpressionsInQuestionnaire(questionnaire?.item ?? [], tempResponse);
-      const mergedItemsWithUpdates = mergeUpdatedItems(mergedItems, updatedItems);
+      console.log('New items (Input):', JSON.stringify(newResponseItems, null, 2));
 
+
+      const updatedItems = evaluateCalculatedExpressionsInQuestionnaire(questionnaire?.item ?? [], tempResponse);
+      console.log(mergedItems)
+      console.log(updatedItems)
+      const mergedItemsWithUpdates = mergeUpdatedItems(mergedItems, updatedItems);
+      console.log(mergedItemsWithUpdates)
       const newResponse: QuestionnaireResponse = {
         resourceType: 'QuestionnaireResponse',
         status: 'in-progress',

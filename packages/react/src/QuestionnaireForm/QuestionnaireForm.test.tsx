@@ -1743,4 +1743,89 @@ describe('QuestionnaireForm', () => {
     expect(params.get('subject')).toBe('Patient/123');
     expect(params.get('code')).toBe('Test');
   });
+
+
+  test('Questionnaire CalculatedExpression', async () => {
+    const onSubmit = jest.fn();
+  
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-conversion',
+        title: 'Temperature Conversion',
+        item: [
+          {
+            id: 'id-6',
+            linkId: 'g6',
+            type: 'group',
+            text: 'Temperature Group',
+            item: [
+              {
+                id: 'id-1',
+                linkId: 'q1',
+                type: 'string',
+                text: 'Fahrenheit',
+              },
+              {
+                id: 'id-2',
+                linkId: 'q2',
+                type: 'string',
+                text: 'Celsius',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                    valueExpression: {
+                      language: 'text/fhirpath',
+                      expression:
+                        "iif(%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value.empty(), '', ((%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value - 32) * 5 / 9).round(2))",
+                    },
+                  },
+                ],
+              },
+              {
+                id: 'id-3',
+                linkId: 'q3',
+                type: 'string',
+                text: 'Kelvin',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                    valueExpression: {
+                      language: 'text/fhirpath',
+                      expression:
+                        "iif(%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value.empty(), '', (((%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value - 32) * 5 / 9) + 273.15).round(2))",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+  
+    // Fill in the Fahrenheit input
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '100' } });
+    });
+  
+    // Submit the form
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+  
+    expect(onSubmit).toHaveBeenCalled();
+  
+    // Check the values in the response
+    const response = onSubmit.mock.calls[0][0];
+    const answers = getQuestionnaireAnswers(response);
+  
+    // expect(answers['q1']).toMatchObject({ valueString: '100' });
+    expect(answers['q2']).toMatchObject({ valueQuantity: 38 });
+    expect(answers['q3']).toMatchObject({ valueQuantity: 311 });
+  });
+  
+
 });
