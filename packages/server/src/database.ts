@@ -149,11 +149,13 @@ async function migrate(client: PoolClient): Promise<void> {
     "dataVersion" INTEGER NOT NULL
   )`);
 
-  const result = await client.query<{ version: number; dataVersion: number }>(
+  // This generic type is not technically correct, but leads to the desired forced checks for undefined `version` and `dataVersion`
+  // Technically pg should infer that rows could have zero length, but adding optionality to all fields forces handling the undefined case when the row is empty
+  const result = await client.query<{ version?: number; dataVersion?: number }>(
     'SELECT "version", "dataVersion" FROM "DatabaseMigration"'
   );
-  let version = result.rows[0].version ?? -1;
-  dataVersion = result.rows[0].dataVersion ?? -1;
+  let version = result.rows[0]?.version ?? -1;
+  dataVersion = result.rows[0]?.dataVersion ?? -1;
   const allDataVersions = getMigrationVersions(dataMigrations);
   pendingDataMigration = 0;
 
