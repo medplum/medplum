@@ -175,16 +175,11 @@ async function migrate(client: PoolClient): Promise<void> {
     // To ensure that the migration is applied before at a particular point in time before the version that requires it
     pendingDataMigration = dataVersion + 1;
 
-    // Since an outstanding data migration exists, we need to apply it. To apply it we need to check the corresponding server version
-    // There is a manifest that contains the required server version for a given data migration
-    // That we can check
     const manifest = JSON.parse(
       readFileSync(resolve(__dirname, 'migrations/data/data-version-manifest.json'), { encoding: 'utf-8' })
     ) as Record<string, { serverVersion: string }>;
     const requiredServerVersion = manifest['v' + pendingDataMigration].serverVersion;
 
-    // If the current server version is not the one we require for this data migration
-    // Then we should throw and abort the migration process
     const serverVersion = getServerVersion();
 
     // TODO(ThatOneBro 16 Dec 2024): Make this version strict after v4 (exact version only)
