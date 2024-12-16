@@ -1465,7 +1465,7 @@ describe('isQuestionEnabled', () => {
           id: 'q3',
           linkId: 'q3',
           text: 'Age Next Year',
-          answer: [{ valueQuantity: 31 }],
+          answer: [{ valueInteger: 31 }],
         },
       ]);
     });
@@ -1496,7 +1496,7 @@ describe('isQuestionEnabled', () => {
           id: 'q4',
           linkId: 'q4',
           text: 'Half of 98',
-          answer: [{ valueQuantity: 49.0 }],
+          answer: [{ valueDecimal: 49.0 }],
         },
       ]);
     });
@@ -1527,7 +1527,7 @@ describe('isQuestionEnabled', () => {
           id: 'q5',
           linkId: 'q5',
           text: 'Full Name',
-          answer: [{ valueQuantity: 'John Doe' }],
+          answer: [{ valueString: 'John Doe' }],
         },
       ]);
     });
