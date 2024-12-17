@@ -1,18 +1,41 @@
 import {
   createReference,
   deepClone,
+  getExtension,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
+  isReference,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Coverage, Patient, Practitioner, Reference, SearchParameter } from '@medplum/fhirtypes';
-import { DiagnosisCodeableConcept, LabOrganization, TestCoding } from '@medplum/health-gorilla-core';
+import {
+  Bundle,
+  Coverage,
+  Location,
+  Organization,
+  Patient,
+  Practitioner,
+  Reference,
+  SearchParameter,
+} from '@medplum/fhirtypes';
+import {
+  DiagnosisCodeableConcept,
+  HEALTH_GORILLA_AUTHORIZED_BY_EXT,
+  LabOrganization,
+  TestCoding,
+} from '@medplum/health-gorilla-core';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { act, renderHook } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { vi } from 'vitest';
+import {
+  getMockAutocompleteBot,
+  QUERY_FOR_TEST_WITHOUT_AOE,
+  REQUIRED_AOE_TEST,
+  RWS_AOE_TEST,
+} from './autocomplete-endpoint.test';
+import { HealthGorillaLabOrderProvider } from './HealthGorillaLabOrderProvider';
 import { expectToBeDefined } from './test-utils';
 import {
   HealthGorillaLabOrderState,
@@ -20,14 +43,7 @@ import {
   UseHealthGorillaLabOrderOptions,
   UseHealthGorillaLabOrderReturn,
 } from './useHealthGorillaLabOrder';
-import { HealthGorillaLabOrderProvider } from './HealthGorillaLabOrderProvider';
 import { useHealthGorillaLabOrderContext } from './useHealthGorillaLabOrderContext';
-import {
-  RWS_AOE_TEST,
-  REQUIRED_AOE_TEST,
-  getMockAutocompleteBot,
-  QUERY_FOR_TEST_WITHOUT_AOE,
-} from './autocomplete-endpoint.test';
 
 const DIAGNOSES = [
   {
@@ -86,8 +102,9 @@ describe('useHealthGorilla', () => {
   function setup({
     patient,
     requester,
+    requestingLocation,
   }: UseHealthGorillaLabOrderOptions): ReturnType<typeof renderHook<UseHealthGorillaLabOrderReturn, unknown>> {
-    return renderHook(() => useHealthGorillaLabOrder({ patient, requester }), {
+    return renderHook(() => useHealthGorillaLabOrder({ patient, requester, requestingLocation }), {
       wrapper: ({ children }) => (
         <MemoryRouter>
           <MedplumProvider medplum={medplum}>{children}</MedplumProvider>
@@ -213,6 +230,33 @@ describe('useHealthGorilla', () => {
       requester: createReference(requester) as Reference<Practitioner> & { reference: string },
     });
   });
+
+  test.each([
+    { resourceType: 'Location', id: 'L-123' } satisfies Location,
+    { reference: 'Location/L-123' } satisfies Reference<Location>,
+    { resourceType: 'Organization', id: 'O-123' } satisfies Organization,
+    { reference: 'Organization/O-123' } satisfies Reference<Organization>,
+  ])(
+    'Requesting Location set',
+    async (
+      requestingLocation: Location | Organization | (Reference<Location | Organization> & { reference: string })
+    ) => {
+      const { result } = setup({ patient, requester, requestingLocation });
+      // Make sure the order is valid
+      await act(async () => {
+        result.current.addTest(RWS_AOE_TEST);
+        result.current.setPerformingLab({ resourceType: 'Organization', id: 'Lab-123' });
+        result.current.updateBillingInformation({ billTo: 'patient' });
+      });
+
+      const { serviceRequest } = await result.current.createOrderBundle();
+
+      const expectedValue = isReference(requestingLocation) ? requestingLocation : createReference(requestingLocation);
+      expect(getExtension(serviceRequest, HEALTH_GORILLA_AUTHORIZED_BY_EXT)?.valueReference).toMatchObject(
+        expectedValue
+      );
+    }
+  );
 
   test('AOE required when specimen', async () => {
     const { result } = setup({ patient, requester });
