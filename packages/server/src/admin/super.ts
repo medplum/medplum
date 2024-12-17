@@ -3,12 +3,10 @@ import {
   allOk,
   badRequest,
   forbidden,
-  getReferenceString,
   getResourceTypes,
   OperationOutcomeError,
   parseSearchRequest,
   SearchRequest,
-  serverError,
   validateResourceType,
 } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
@@ -31,14 +29,11 @@ import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
-import { getRedis } from '../redis';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
-
-export const UPGRADE_LOCK_KEY = 'medplum:upgrade:lock';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
   autovacuum_vacuum_scale_factor: 'float',
@@ -218,53 +213,6 @@ superAdminRouter.post(
         );
       }
     });
-  })
-);
-
-// POST to /admin/super/upgradelock
-// to take the exclusive client upgrade lock.
-// This is used to prevent other clients from posting to the `/migrate` route while a client is actively stepping through an upgrade path.
-superAdminRouter.post(
-  '/upgradelock',
-  asyncWrap(async (_req: Request, res: Response) => {
-    const ctx = requireSuperAdmin();
-    const profileRefStr = getReferenceString(ctx.profile);
-
-    const results = await getRedis().multi().set(UPGRADE_LOCK_KEY, profileRefStr, 'NX').get(UPGRADE_LOCK_KEY).exec();
-    if (!results) {
-      // This should only happen if Redis fails in some catastrophic way
-      throw new OperationOutcomeError(serverError(new Error(`Failed to get value for ${UPGRADE_LOCK_KEY} from Redis`)));
-    }
-    const [error, result] = results?.[1] as [error: Error, result: string];
-    if (error) {
-      // This should only happen if Redis fails in some catastrophic way
-      throw new OperationOutcomeError(serverError(error));
-    }
-    if (result === profileRefStr) {
-      sendOutcome(res, allOk);
-      return;
-    }
-
-    sendOutcome(res, badRequest('Unable to acquire the exclusive data upgrade lock. Migration already in-progress'));
-  })
-);
-
-// DELETE to /admin/super/upgradelock
-// to release the exclusive client upgrade lock.
-superAdminRouter.delete(
-  '/upgradelock',
-  asyncWrap(async (_req: Request, res: Response) => {
-    const ctx = requireSuperAdmin();
-    const profileRefStr = getReferenceString(ctx.profile);
-
-    const result = await getRedis().get(UPGRADE_LOCK_KEY);
-    if (result !== profileRefStr) {
-      sendOutcome(res, badRequest('Unable to release lock; current user does not hold the lock'));
-      return;
-    }
-
-    await getRedis().del(UPGRADE_LOCK_KEY);
-    sendOutcome(res, allOk);
   })
 );
 

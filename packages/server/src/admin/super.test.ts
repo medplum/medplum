@@ -13,13 +13,12 @@ import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
-import { getRedis } from '../redis';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
 import { getReindexQueue, ReindexJob, ReindexJobData } from '../workers/reindex';
-import { isValidTableName, UPGRADE_LOCK_KEY } from './super';
+import { isValidTableName } from './super';
 
 jest.mock('../seeds/valuesets');
 jest.mock('../seeds/structuredefinitions');
@@ -547,83 +546,6 @@ describe('Super Admin routes', () => {
   describe('Data migrations', () => {
     beforeEach(() => {
       jest.resetAllMocks();
-    });
-
-    describe('Upgrade lock', () => {
-      beforeEach(async () => {
-        await getRedis().del(UPGRADE_LOCK_KEY);
-      });
-
-      test('Can take the lock when no one holds it', async () => {
-        const res1 = await request(app)
-          .post('/admin/super/upgradelock')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .type('json')
-          .send({});
-
-        expect(res1.status).toStrictEqual(200);
-        expect(res1.body).toMatchObject(allOk);
-      });
-
-      test('Can take the lock if the current user already holds it', async () => {
-        await getRedis().set(UPGRADE_LOCK_KEY, getReferenceString(practitioner1));
-
-        const res1 = await request(app)
-          .post('/admin/super/upgradelock')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .type('json')
-          .send({});
-
-        expect(res1.status).toStrictEqual(200);
-        expect(res1.body).toMatchObject(allOk);
-      });
-
-      test('Cannot take the lock if the current user does NOT hold it', async () => {
-        await getRedis().set(UPGRADE_LOCK_KEY, getReferenceString(practitioner2));
-
-        const res1 = await request(app)
-          .post('/admin/super/upgradelock')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .type('json')
-          .send({});
-
-        expect(res1.status).toStrictEqual(400);
-        expect(res1.body).toMatchObject(
-          badRequest('Unable to acquire the exclusive data upgrade lock. Migration already in-progress')
-        );
-      });
-
-      test('Can release the lock if the current user is already holding it', async () => {
-        await getRedis().set(UPGRADE_LOCK_KEY, getReferenceString(practitioner1));
-
-        const res1 = await request(app)
-          .delete('/admin/super/upgradelock')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .type('json');
-
-        expect(res1.status).toStrictEqual(200);
-        expect(res1.body).toMatchObject(allOk);
-      });
-
-      test('Cannot release the lock if the current user does NOT hold it', async () => {
-        const res1 = await request(app)
-          .delete('/admin/super/upgradelock')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .type('json');
-
-        expect(res1.status).toStrictEqual(400);
-        expect(res1.body).toMatchObject(badRequest('Unable to release lock; current user does not hold the lock'));
-
-        await getRedis().set(UPGRADE_LOCK_KEY, getReferenceString(practitioner2));
-
-        const res2 = await request(app)
-          .delete('/admin/super/upgradelock')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .type('json');
-
-        expect(res2.status).toStrictEqual(400);
-        expect(res2.body).toMatchObject(badRequest('Unable to release lock; current user does not hold the lock'));
-      });
     });
 
     test('Run data migrations -- Already up-to-date', async () => {
