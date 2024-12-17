@@ -1,0 +1,43 @@
+{
+  "name": "medplum-valueset-selector",
+  "version": "3.2.24",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "vite",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "singleQuote": true,
+    "trailingComma": "es5"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@medplum/eslint-config"
+    ]
+  },
+  "devDependencies": {
+    "@mantine/core": "7.14.3",
+    "@mantine/hooks": "7.14.3",
+    "@mantine/notifications": "7.14.3",
+    "@medplum/core": "3.2.24",
+    "@medplum/eslint-config": "3.2.24",
+    "@medplum/fhirtypes": "3.2.24",
+    "@medplum/react": "3.2.24",
+    "@tabler/icons-react": "3.17.0",
+    "@types/node": "22.10.1",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "postcss": "8.4.49",
+    "postcss-preset-mantine": "1.17.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "6.28.0",
+    "typescript": "5.7.2",
+    "vite": "6.0.3"
+  }
+}
