@@ -5,7 +5,6 @@ import {
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
-  isReference,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import {
@@ -232,14 +231,15 @@ describe('useHealthGorilla', () => {
   });
 
   test.each([
-    { resourceType: 'Location', id: 'L-123' } satisfies Location,
-    { reference: 'Location/L-123' } satisfies Reference<Location>,
-    { resourceType: 'Organization', id: 'O-123' } satisfies Organization,
-    { reference: 'Organization/O-123' } satisfies Reference<Organization>,
+    [{ resourceType: 'Location', id: 'L-123' } satisfies Location, { reference: 'Location/L-123' }],
+    [{ reference: 'Location/L-123' } satisfies Reference<Location>, { reference: 'Location/L-123' }],
+    [{ resourceType: 'Organization', id: 'O-123' } satisfies Organization, { reference: 'Organization/O-123' }],
+    [{ reference: 'Organization/O-123' } satisfies Reference<Organization>, { reference: 'Organization/O-123' }],
   ])(
     'Requesting Location set',
     async (
-      requestingLocation: Location | Organization | (Reference<Location | Organization> & { reference: string })
+      requestingLocation: Location | Organization | (Reference<Location | Organization> & { reference: string }),
+      expectedValue
     ) => {
       const { result } = setup({ patient, requester, requestingLocation });
       // Make sure the order is valid
@@ -251,7 +251,6 @@ describe('useHealthGorilla', () => {
 
       const { serviceRequest } = await result.current.createOrderBundle();
 
-      const expectedValue = isReference(requestingLocation) ? requestingLocation : createReference(requestingLocation);
       expect(getExtension(serviceRequest, HEALTH_GORILLA_AUTHORIZED_BY_EXT)?.valueReference).toMatchObject(
         expectedValue
       );
