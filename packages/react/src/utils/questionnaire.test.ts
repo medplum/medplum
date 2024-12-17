@@ -1,5 +1,5 @@
 import { QuestionnaireItem, QuestionnaireItemEnableWhen } from '@medplum/fhirtypes';
-import { formatReferenceString, getNewMultiSelectValues, isChoiceQuestion, isQuestionEnabled } from './questionnaire';
+import { getNewMultiSelectValues, isChoiceQuestion, isQuestionEnabled } from './questionnaire';
 
 describe('QuestionnaireUtils', () => {
   test('isChoiceQuestion', () => {
@@ -1223,7 +1223,7 @@ describe('isQuestionEnabled', () => {
 
     const result = getNewMultiSelectValues(selected, propertyName, item);
 
-    expect(result).toStrictEqual([{ valueString: undefined }]);
+    expect(result).toStrictEqual([]);
   });
 
   test('multi-select empty array', () => {
@@ -1258,34 +1258,5 @@ describe('isQuestionEnabled', () => {
 
     const result = getNewMultiSelectValues(selected, propertyName, item);
     expect(result).toStrictEqual([{ valueCoding: { code: 'code1' } }]);
-  });
-
-  test('multi-select with non existing values', () => {
-    const selected = ['value1'];
-    const propertyName = 'nonExistingProperty';
-    const item: QuestionnaireItem = {
-      linkId: 'q3',
-      type: 'string',
-      answerOption: [{ valueString: 'value1' }],
-    };
-
-    const result = getNewMultiSelectValues(selected, propertyName, item);
-
-    expect(result).toStrictEqual([{ nonExistingProperty: undefined }]);
-  });
-
-  test('Reference with display', () => {
-    const reference = { type: 'valueReference', value: { reference: 'Patient/123', display: 'Patient 123' } };
-    expect(formatReferenceString(reference)).toBe('Patient 123');
-  });
-
-  test('Reference with no display', () => {
-    const reference = { type: 'valueReference', value: { reference: 'Patient/123', display: undefined } };
-    expect(formatReferenceString(reference)).toBe('Patient/123');
-  });
-
-  test('Reference String with no display or reference', () => {
-    const reference = { type: 'valueReference', value: { reference: undefined, display: undefined, id: '123' } };
-    expect(formatReferenceString(reference)).toBe('{"id":"123"}');
   });
 });

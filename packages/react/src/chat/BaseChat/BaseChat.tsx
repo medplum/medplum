@@ -17,7 +17,7 @@ import { Bundle, Communication, Reference } from '@medplum/fhirtypes';
 import { useMedplum, useResource, useSubscription } from '@medplum/react-hooks';
 import { IconArrowRight } from '@tabler/icons-react';
 import cx from 'clsx';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { LegacyRef, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Form } from '../../Form/Form';
 import { ResourceAvatar } from '../../ResourceAvatar/ResourceAvatar';
 import classes from './BaseChat.module.css';
@@ -244,7 +244,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
       <Title order={2} className={classes.chatTitle}>
         {title}
       </Title>
-      <div className={classes.chatBody} ref={parentRef}>
+      <div className={classes.chatBody} ref={parentRef as LegacyRef<HTMLDivElement>}>
         {initialLoadRef.current ? (
           <Stack key="skeleton-chat-messages" align="stretch" mt="lg">
             <Group justify="flex-start" align="flex-end" gap="xs" mb="sm">
