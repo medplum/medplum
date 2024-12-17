@@ -5386,6 +5386,26 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "AsyncJob.type",
+            "path" : "AsyncJob.type",
+            "short" : "data-migration",
+            "definition" : "The type of the AsyncJob.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.type",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-type|4.0.1"
+            }
           }
         ]
       }

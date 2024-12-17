@@ -61091,6 +61091,10 @@
         "output": {
           "description": "Outputs resulting from the async job.",
           "$ref": "#/definitions/Parameters"
+        },
+        "type": {
+          "description": "The type of the AsyncJob.",
+          "enum": ["data-migration"]
         }
       },
       "additionalProperties": false,
