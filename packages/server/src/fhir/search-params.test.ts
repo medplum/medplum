@@ -295,4 +295,33 @@ describe('Medplum Custom Search Parameters', () => {
       expect(results.entry?.[0].resource?.resourceType).toStrictEqual('Flag');
       expect(results.entry?.[0].resource?.id as string).toStrictEqual(flag1.id as string);
     }));
+
+  test('Search by AsyncJob.type and AsyncJob.status', () =>
+    withTestContext(async () => {
+      const dataMigrationJob = await repo.createResource({
+        resourceType: 'AsyncJob',
+        type: 'data-migration',
+        status: 'accepted',
+        request: 'data-migration',
+        requestTime: new Date().toISOString(),
+      });
+      expect(dataMigrationJob).toBeDefined();
+
+      await repo.createResource({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        request: 'not-data-migration',
+        requestTime: new Date().toISOString(),
+      });
+
+      const result = await repo.search({
+        resourceType: 'AsyncJob',
+        filters: [
+          { code: 'type', operator: Operator.EQUALS, value: 'data-migration' },
+          { code: 'status', operator: Operator.EQUALS, value: 'accepted' },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(1);
+    }));
 });
