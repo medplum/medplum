@@ -239,6 +239,36 @@
       "definition": "Outputs resulting from the async job.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "type",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "code"
+        }
+      ],
+      "path": "AsyncJob.type",
+      "min": 0,
+      "max": "1",
+      "short": "data-migration",
+      "definition": "The type of the AsyncJob.",
+      "comment": "",
+      "inherited": false
+    }
+  ],
+  "searchParameters": [
+    {
+      "name": "type",
+      "type": "token",
+      "description": "Search for AsyncJob by type",
+      "expression": "AsyncJob.type"
+    },
+    {
+      "name": "type",
+      "type": "token",
+      "description": "Search for AsyncJob by status",
+      "expression": "AsyncJob.status"
     }
   ]
 }

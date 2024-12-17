@@ -1284,6 +1284,40 @@
         "type": "token",
         "expression": "Flag.category"
       }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-type",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AsyncJob-type",
+        "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-type",
+        "version": "4.0.1",
+        "name": "type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for AsyncJob by type",
+        "code": "type",
+        "base": ["AsyncJob"],
+        "type": "token",
+        "expression": "AsyncJob.type"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AsyncJob-status",
+        "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-status",
+        "version": "4.0.1",
+        "name": "type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for AsyncJob by status",
+        "code": "status",
+        "base": ["AsyncJob"],
+        "type": "token",
+        "expression": "AsyncJob.status"
+      }
     }
   ]
 }
