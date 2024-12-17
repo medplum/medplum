@@ -233,7 +233,6 @@ export function getNewMultiSelectValues(
   return result;
 }
 
-
 function getByLinkId(
   responseItems: QuestionnaireResponseItem[] | undefined,
   linkId: string
