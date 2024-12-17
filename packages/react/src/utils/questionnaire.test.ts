@@ -1229,7 +1229,7 @@ describe('isQuestionEnabled', () => {
 
     const result = getNewMultiSelectValues(selected, propertyName, item);
 
-    expect(result).toStrictEqual([{ valueString: undefined }]);
+    expect(result).toStrictEqual([]);
   });
 
   test('multi-select empty array', () => {
