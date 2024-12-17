@@ -107,6 +107,11 @@ export interface ProjectMembership {
   identifier?: Identifier[];
 
   /**
+   * Whether this project membership record is in active use.
+   */
+  active?: boolean;
+
+  /**
    * Project where the memberships are available.
    */
   project: Reference<Project>;
