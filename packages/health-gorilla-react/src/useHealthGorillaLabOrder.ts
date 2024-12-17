@@ -1,5 +1,15 @@
 import { ResourceArray, createReference, deepClone, getExtensionValue, getIdentifier, isResource } from '@medplum/core';
-import { Bundle, Coverage, Patient, Practitioner, Questionnaire, Reference, ServiceRequest } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  Coverage,
+  Location,
+  Organization,
+  Patient,
+  Practitioner,
+  Questionnaire,
+  Reference,
+  ServiceRequest,
+} from '@medplum/fhirtypes';
 import {
   BillingInformation,
   DiagnosisCodeableConcept,
@@ -28,6 +38,9 @@ export type UseHealthGorillaLabOrderOptions = {
    * The Practitioner MUST have an NPI identifier with the system http://hl7.org/fhir/sid/us-npi.
    */
   requester: Practitioner | (Reference<Practitioner> & { reference: string }) | undefined;
+
+  /** For multi-location practices, optionally specify the location from which the order is being placed */
+  requestingLocation?: Location | Organization | (Reference<Location | Organization> & { reference: string });
 };
 
 export type HealthGorillaLabOrderState = {
@@ -361,6 +374,21 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     }
   }, [opts.requester]);
 
+  const requestingLocationRef = useMemo<
+    (Reference<Location | Organization> & { reference: string }) | undefined
+  >(() => {
+    if (
+      isReferenceOfType('Location', opts.requestingLocation) ||
+      isReferenceOfType('Organization', opts.requestingLocation)
+    ) {
+      return opts.requestingLocation;
+    } else if (isResource(opts.requestingLocation)) {
+      return createReference(opts.requestingLocation) as Reference<Location | Organization> & { reference: string };
+    } else {
+      return undefined;
+    }
+  }, [opts.requestingLocation]);
+
   const state: HealthGorillaLabOrderState = useMemo(() => {
     const cloned = deepClone({
       performingLab,
@@ -514,6 +542,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
         const txn = createLabOrderBundle({
           patient: patientRef,
           requester: requesterRef,
+          requestingLocation: requestingLocationRef,
           performingLab: state.performingLab,
           performingLabAccountNumber: state.performingLabAccountNumber,
           selectedTests: state.selectedTests,
@@ -554,6 +583,7 @@ export function useHealthGorillaLabOrder(opts: UseHealthGorillaLabOrderOptions):
     medplum,
     patientRef,
     performingLab,
+    requestingLocationRef,
     requesterRef,
     state,
     updateBillingInformation,
