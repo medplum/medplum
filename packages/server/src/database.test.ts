@@ -1,12 +1,67 @@
 import { deepClone } from '@medplum/core';
-import pg, { PoolConfig } from 'pg';
+import { EventEmitter } from 'node:events';
+import { Duplex, Readable, Writable } from 'node:stream';
+import pg, { Pool, PoolClient, PoolConfig, QueryArrayResult } from 'pg';
 import { MedplumDatabaseConfig, MedplumDatabaseSslConfig, loadConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
-import { MockPool } from './database-utils';
 
 jest.mock('pg');
 
 const poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig) => {
+  class MockPoolClient extends Duplex implements PoolClient {
+    release(): void {}
+    async connect(): Promise<void> {}
+    async query(): Promise<QueryArrayResult<any>> {
+      return {
+        command: '',
+        rowCount: null,
+        oid: -1,
+        fields: [],
+        rows: [],
+      };
+    }
+    copyFrom(_queryText: string): Writable {
+      return new Writable();
+    }
+    copyTo(_queryText: string): Readable {
+      return new Readable();
+    }
+    pauseDrain(): void {}
+    resumeDrain(): void {}
+    escapeIdentifier(_str: string): string {
+      return '';
+    }
+    escapeLiteral(_str: string): string {
+      return '';
+    }
+    getTypeParser(): any {
+      return undefined;
+    }
+    setTypeParser(): void {}
+  }
+
+  class MockPool extends EventEmitter implements Pool {
+    totalCount = -1;
+    idleCount = -1;
+    waitingCount = -1;
+    async connect(): Promise<PoolClient> {
+      return new MockPoolClient();
+    }
+    on(): this {
+      return this;
+    }
+    async end(): Promise<void> {}
+    async query(): Promise<QueryArrayResult<any>> {
+      return {
+        command: '',
+        rowCount: null,
+        oid: -1,
+        fields: [],
+        rows: [],
+      };
+    }
+  }
+
   return new MockPool();
 });
 
