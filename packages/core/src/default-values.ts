@@ -201,17 +201,12 @@ class DefaultValueVisitor implements SchemaVisitor {
     const elementValues = this.value.values;
     const sliceValues: any[] = [];
 
-    for (const elementValue of elementValues) {
-      if (elementValue === undefined) {
-        continue;
+    for (const value of elementValues) {
+      if (value !== undefined) {
+        const elementValues = Array.isArray(value) ? value : [value];
+        const matchingItems: any[] = this.getMatchingSliceValues(elementValues, slice, slicing);
+        sliceValues.push(matchingItems);
       }
-
-      if (!Array.isArray(elementValue)) {
-        throw new Error('Expected array value for sliced element');
-      }
-
-      const matchingItems: any[] = this.getMatchingSliceValues(elementValue, slice, slicing);
-      sliceValues.push(matchingItems);
     }
 
     this.valueStack.push({

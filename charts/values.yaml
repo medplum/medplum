@@ -1,0 +1,29 @@
+# Default values for medplum.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  cloudProvider: gcp # Supported values: gcp. # roadmap: aws, azure
+  gcp:
+    projectId: [MY_PROJECT_ID] # Your Google Cloud Platform project ID
+    secretId: [MY_CONFIG_SECRET_ID] # The secret ID for configuration in Google Cloud Platform
+ 
+serviceAccount: 
+  annotations:
+    iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.i: medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com
+
+namespace: medplum
+
+deployment:
+  replicaCount: 1
+  image:
+    repository: medplum/medplum-server
+    tag: latest
+
+  autoscaling:
+    enabled: true
+
+ingress:
+  deploy: true
+  domain: [MY_DOMAIN] # Your domain name
+  

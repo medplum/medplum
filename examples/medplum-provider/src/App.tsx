@@ -20,6 +20,7 @@ import {
 import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
+import { hasDoseSpotIdentifier } from './components/utils';
 import { HomePage } from './pages/HomePage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { SearchPage } from './pages/SearchPage';
@@ -46,6 +47,9 @@ export function App(): JSX.Element | null {
   if (medplum.isLoading()) {
     return null;
   }
+
+  const membership = medplum.getProjectMembership();
+  const hasDoseSpot = hasDoseSpotIdentifier(membership);
 
   return (
     <AppShell
@@ -104,7 +108,7 @@ export function App(): JSX.Element | null {
                 )
               }
             />
-            <DoseSpotIcon />
+            {hasDoseSpot && <DoseSpotIcon />}
           </>
         )
       }
@@ -119,7 +123,7 @@ export function App(): JSX.Element | null {
                 <Route path="encounter" element={<EncounterTab />} />
                 <Route path="communication" element={<CommunicationTab />} />
                 <Route path="communication/:id" element={<CommunicationTab />} />
-                <Route path="dosespot" element={<DoseSpotTab />} />
+                {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="task/:id/*" element={<TaskTab />} />
                 <Route path="timeline" element={<TimelineTab />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />

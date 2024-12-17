@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "medplum.fullname" . }}-service
+  namespace: {{ include "medplum.namespace" . }}
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
+    cloud.google.com/backend-config: '{"default": "medplum-backendconfig"}'
+  labels:
+    {{- include "medplum.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      protocol: TCP
+      port: {{ .Values.service.port | default 80 }}
+      targetPort: {{ .Values.service.targetPort | default 8103 }}
+  selector:
+    {{- include "medplum.selectorLabels" . | nindent 4 }}

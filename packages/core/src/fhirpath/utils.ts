@@ -222,7 +222,6 @@ export function getTypedPropertyValueWithoutSchema(
     // value + valueDecimal = ok, because "decimal" is valid
     // id + identifier = not ok, because "entifier" is not a valid type
     // resource + resourceType = not ok, because "type" is not a valid type
-    //eslint-disable-next-line guard-for-in
     const trimmedPath = path.endsWith('[x]') ? path.substring(0, path.length - 3) : path;
     for (const propertyType of Object.values(PropertyType)) {
       const propertyName = trimmedPath + capitalize(propertyType);

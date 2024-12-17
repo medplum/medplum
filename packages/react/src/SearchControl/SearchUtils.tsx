@@ -68,6 +68,7 @@ const operatorNames: Record<Operator, string> = {
   sa: 'starts after',
   eb: 'ends before',
   ap: 'approximately',
+  sw: 'starts with',
   contains: 'contains',
   exact: 'exact',
   text: 'text',

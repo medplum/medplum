@@ -49,8 +49,21 @@ bulkDataRouter.delete('/export/:id', (req: Request, res: Response) => {
   res.sendStatus(202);
 });
 
-function extractOutputParameters(parameters: BulkDataExport | AsyncJob | undefined, name: string): unknown[] {
-  return flatMapFilter(parameters?.parameter, (param) => {
+function extractOutputParameters(input: BulkDataExport | AsyncJob | undefined, name: string): unknown[] {
+  if (input?.resourceType === 'BulkDataExport') {
+    switch (name) {
+      case 'output':
+        return input.output ?? [];
+      case 'error':
+        return input.error ?? [];
+      case 'deleted':
+        return input.deleted ?? [];
+      default:
+        return [];
+    }
+  }
+
+  return flatMapFilter(input?.output?.parameter, (param) => {
     if (param.name === name) {
       return {
         type: param.part?.find((part) => part.name === 'type')?.valueCode,

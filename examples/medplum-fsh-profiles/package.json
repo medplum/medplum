@@ -1,0 +1,15 @@
+{
+  "name": "medplum-fsh-profiles",
+  "version": "3.2.25",
+  "description": "Medplum FSH Profiles Example",
+  "private": true,
+  "scripts": {
+    "clean": "rimraf dist",
+    "dev": "npm run build:profiles",
+    "build": "npm run clean && npm run build:profiles",
+    "build:profiles": "sushi build src/profiles -o dist -s"
+  },
+  "devDependencies": {
+    "fsh-sushi": "^3.12.1"
+  }
+}

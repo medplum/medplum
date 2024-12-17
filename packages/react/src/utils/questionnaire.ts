@@ -1,13 +1,15 @@
 import {
+  HTTP_HL7_ORG,
   TypedValue,
   deepClone,
   evalFhirPathTyped,
-  formatCoding,
   getExtension,
   getReferenceString,
   getTypedPropertyValueWithoutSchema,
   splitN,
-  stringify,
+  toJsBoolean,
+  toTypedValue,
+  typedValueToString,
 } from '@medplum/core';
 import {
   Encounter,
@@ -47,15 +49,30 @@ export function isChoiceQuestion(item: QuestionnaireItem): boolean {
   return item.type === 'choice' || item.type === 'open-choice';
 }
 
-export function isQuestionEnabled(item: QuestionnaireItem, responseItems: QuestionnaireResponseItem[]): boolean {
+export function isQuestionEnabled(
+  item: QuestionnaireItem,
+  questionnaireResponse: QuestionnaireResponse | undefined
+): boolean {
+  const extension = getExtension(
+    item,
+    HTTP_HL7_ORG + '/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-enableWhenExpression'
+  );
+  if (questionnaireResponse && extension) {
+    const expression = extension.valueExpression?.expression;
+    if (expression) {
+      const value = toTypedValue(questionnaireResponse);
+      const result = evalFhirPathTyped(expression, [value], { '%resource': value });
+      return toJsBoolean(result);
+    }
+  }
+
   if (!item.enableWhen) {
     return true;
   }
 
   const enableBehavior = item.enableBehavior ?? 'any';
-
   for (const enableWhen of item.enableWhen) {
-    const actualAnswers = getByLinkId(responseItems, enableWhen.question as string);
+    const actualAnswers = getByLinkId(questionnaireResponse?.item, enableWhen.question as string);
 
     if (enableWhen.operator === 'exists' && !enableWhen.answerBoolean && !actualAnswers?.length) {
       if (enableBehavior === 'any') {
@@ -82,14 +99,21 @@ export function getNewMultiSelectValues(
   propertyName: string,
   item: QuestionnaireItem
 ): QuestionnaireResponseItemAnswer[] {
-  return selected.map((o) => {
+  const result: QuestionnaireResponseItemAnswer[] = [];
+
+  for (const selectedStr of selected) {
     const option = item.answerOption?.find(
-      (option) =>
-        formatCoding(option.valueCoding) === o || option[propertyName as keyof QuestionnaireItemAnswerOption] === o
+      (candidate) => typedValueToString(getItemAnswerOptionValue(candidate)) === selectedStr
     );
-    const optionValue = getItemAnswerOptionValue(option ?? {});
-    return { [propertyName]: optionValue?.value };
-  });
+    if (option) {
+      const optionValue = getItemAnswerOptionValue(option);
+      if (optionValue) {
+        result.push({ [propertyName]: optionValue.value });
+      }
+    }
+  }
+
+  return result;
 }
 
 function getByLinkId(
@@ -282,10 +306,6 @@ function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): Questionn
   // This works because QuestionnaireItemInitial and QuestionnaireResponseItemAnswer
   // have the same properties.
   return { ...answer };
-}
-
-export function formatReferenceString(typedValue: TypedValue): string {
-  return typedValue.value.display || typedValue.value.reference || stringify(typedValue.value);
 }
 
 /**

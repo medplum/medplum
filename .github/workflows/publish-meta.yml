@@ -1,0 +1,51 @@
+name: Publish meta
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  update-versions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Verify AWS CLI Installation
+        run: aws --version
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Download releases and create versions.json
+        run: |
+          # Download releases data
+          curl -s https://api.github.com/repos/medplum/medplum/releases > releases.json
+
+          # Process JSON with jq to create the desired structure
+          # including assets array with specified properties
+          jq '{
+            versions: [
+              .[] | {
+                tag_name,
+                version: (.tag_name | ltrimstr("v")),
+                published_at,
+                assets: [
+                  .assets[] | {
+                    name,
+                    browser_download_url
+                  }
+                ]
+              }
+            ]
+          }' releases.json > versions.json
+
+      - name: Upload to S3
+        run: |
+          aws s3 cp versions.json s3://meta.medplum.com/versions.json \
+            --content-type "application/json" \
+            --cache-control "no-cache"

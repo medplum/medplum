@@ -1,10 +1,11 @@
 /// <reference types="vite/client" />
 import react from '@vitejs/plugin-react';
 import { copyFileSync, existsSync } from 'fs';
+import path from 'path';
 import { defineConfig } from 'vite';
 
-if (!existsSync('.env')) {
-  copyFileSync('.env.defaults', '.env');
+if (!existsSync(path.join(__dirname, '.env'))) {
+  copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));
 }
 
 export default defineConfig({

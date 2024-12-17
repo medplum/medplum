@@ -1,6 +1,6 @@
 {
   "name": "medplum-client-external-idp-demo",
-  "version": "3.2.24",
+  "version": "3.2.25",
   "private": true,
   "type": "module",
   "scripts": {
@@ -14,15 +14,15 @@
     "singleQuote": true
   },
   "devDependencies": {
-    "@mantine/core": "7.14.3",
-    "@mantine/hooks": "7.14.3",
-    "@mantine/notifications": "7.14.3",
-    "@medplum/core": "3.2.24",
-    "@medplum/eslint-config": "3.2.24",
-    "@medplum/fhirtypes": "3.2.24",
-    "@medplum/react": "3.2.24",
+    "@mantine/core": "7.15.1",
+    "@mantine/hooks": "7.15.1",
+    "@mantine/notifications": "7.15.1",
+    "@medplum/core": "3.2.25",
+    "@medplum/eslint-config": "3.2.25",
+    "@medplum/fhirtypes": "3.2.25",
+    "@medplum/react": "3.2.25",
     "@tabler/icons-react": "3.17.0",
-    "@types/node": "22.10.1",
+    "@types/node": "22.10.2",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
@@ -36,6 +36,6 @@
     "react-router-dom": "6.28.0",
     "rimraf": "5.0.9",
     "typescript": "5.7.2",
-    "vite": "6.0.2"
+    "vite": "6.0.3"
   }
 }

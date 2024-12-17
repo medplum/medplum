@@ -139,4 +139,11 @@ describe('OAuthPage', () => {
     const logo = screen.getByAltText('Welcome Logo');
     expect(logo).toBeInTheDocument();
   });
+
+  test('Do not fetch client info when client_id is medplum-cli', async () => {
+    jest.spyOn(medplum, 'get').mockReset();
+    const mockGet = jest.spyOn(medplum, 'get');
+    await setup('/oauth?client_id=medplum-cli');
+    expect(mockGet).not.toHaveBeenCalled();
+  });
 });

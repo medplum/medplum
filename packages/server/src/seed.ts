@@ -74,9 +74,22 @@ export async function seedDatabase(): Promise<void> {
     admin: true,
   });
 
+  let startTime: number;
+
+  globalLogger.info('Building structure definitions...');
+  startTime = Date.now();
   await rebuildR4StructureDefinitions();
+  globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
+
+  globalLogger.info('Building value sets...');
+  startTime = Date.now();
   await rebuildR4ValueSets();
+  globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
+
+  globalLogger.info('Building search parameters...');
+  startTime = Date.now();
   await rebuildR4SearchParameters();
+  globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
 }
 
 /**
