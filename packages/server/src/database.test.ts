@@ -1,8 +1,7 @@
 import { deepClone } from '@medplum/core';
 import { EventEmitter } from 'node:events';
-import { Duplex } from 'node:stream';
+import { Duplex, Readable, Writable } from 'node:stream';
 import pg, { Pool, PoolClient, PoolConfig, QueryArrayResult } from 'pg';
-import { Readable, Writable } from 'stream';
 import { MedplumDatabaseConfig, MedplumDatabaseSslConfig, loadConfig } from './config';
 import { closeDatabase, initDatabase } from './database';
 
@@ -45,7 +44,7 @@ const poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig)
     totalCount = -1;
     idleCount = -1;
     waitingCount = -1;
-    async connect(): Promise<pg.PoolClient> {
+    async connect(): Promise<PoolClient> {
       return new MockPoolClient();
     }
     on(): this {

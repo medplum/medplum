@@ -81,6 +81,9 @@ export interface MedplumServerConfig {
   /** Temporary feature flag, to be removed */
   chainedSearchWithReferenceTables?: boolean;
 
+  /** Time for each AsyncJob-polling job to wait in queue before processing */
+  asyncJobPollRateMilliseconds?: number;
+
   /** @deprecated */
   auditEventLogGroup?: string;
 
@@ -208,6 +211,7 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
+  config.asyncJobPollRateMilliseconds = 1000;
 
   return config;
 }
