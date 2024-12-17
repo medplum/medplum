@@ -21,7 +21,6 @@ import {
   evalFhirPathTyped,
   forbidden,
   formatSearchQuery,
-  getSearchParameterDetails,
   getSearchParameters,
   getStatus,
   gone,
@@ -29,6 +28,7 @@ import {
   isNotFound,
   isObject,
   isOk,
+  isResource,
   normalizeErrorString,
   normalizeOperationOutcome,
   notFound,
@@ -67,7 +67,7 @@ import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { recordHistogramValue } from '../otel/otel';
+import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
 import {
@@ -78,21 +78,16 @@ import {
   HistoryInteraction,
   PatchInteraction,
   ReadInteraction,
+  RestfulOperationType,
   SearchInteraction,
   UpdateInteraction,
   VreadInteraction,
-  logRestfulEvent,
+  createAuditEvent,
+  logAuditEvent,
 } from '../util/auditevent';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
-import { AddressTable } from './lookups/address';
-import { CodingTable } from './lookups/coding';
-import { HumanNameTable } from './lookups/humanname';
-import { LookupTable } from './lookups/lookuptable';
-import { ReferenceTable } from './lookups/reference';
-import { TokenTable } from './lookups/token';
-import { ValueSetElementTable } from './lookups/valuesetelement';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
@@ -110,6 +105,7 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
+import { getSearchParameterImplementation, lookupTables } from './searchparameter';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -214,18 +210,6 @@ export interface ResendSubscriptionsOptions extends InteractionOptions {
 }
 
 /**
- * The lookup tables array includes a list of special tables for search indexing.
- */
-const lookupTables: LookupTable[] = [
-  new AddressTable(),
-  new HumanNameTable(),
-  new TokenTable(),
-  new ValueSetElementTable(),
-  new ReferenceTable(),
-  new CodingTable(),
-];
-
-/**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
@@ -282,7 +266,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, { resource: resourceWithId, durationMs });
+      this.logEvent(CreateInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
       throw err;
     }
   }
@@ -304,7 +288,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, err, {
+        resource: { reference: `${resourceType}/${id}` },
+        durationMs,
+      });
       throw err;
     }
   }
@@ -393,7 +380,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const durationMs = Date.now() - startTime;
 
       if (entryResult instanceof Error) {
-        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult, { durationMs });
+        const reference = references[i];
+        this.logEvent(ReadInteraction, AuditEventOutcome.MinorFailure, entryResult, {
+          resource: reference,
+          durationMs,
+        });
       } else {
         entryResult = this.removeHiddenFields(entryResult);
         this.logEvent(ReadInteraction, AuditEventOutcome.Success, undefined, { resource: entryResult, durationMs });
@@ -516,13 +507,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       };
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(HistoryInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(HistoryInteraction, AuditEventOutcome.MinorFailure, err, {
+        resource: { reference: `${resourceType}/${id}` },
+        durationMs,
+      });
       throw err;
     }
   }
 
   async readVersion<T extends Resource>(resourceType: T['resourceType'], id: string, vid: string): Promise<T> {
     const startTime = Date.now();
+    const versionReference = { reference: `${resourceType}/${id}/_history/${vid}` };
     try {
       if (!validator.isUUID(id) || !validator.isUUID(vid)) {
         throw new OperationOutcomeError(notFound);
@@ -548,11 +543,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
       const result = this.removeHiddenFields(JSON.parse(rows[0].content as string));
       const durationMs = Date.now() - startTime;
-      this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
+      this.logEvent(VreadInteraction, AuditEventOutcome.Success, undefined, { resource: versionReference, durationMs });
       return result;
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(VreadInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(VreadInteraction, AuditEventOutcome.MinorFailure, err, { resource: versionReference, durationMs });
       throw err;
     }
   }
@@ -560,7 +555,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async updateResource<T extends Resource>(resource: T, options?: UpdateResourceOptions): Promise<T> {
     const startTime = Date.now();
     try {
-      const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
+      let result: T;
+      if (options?.ifMatch) {
+        // Conditional update requires transaction
+        result = await this.withTransaction(() => this.updateResourceImpl(resource, false, options.ifMatch));
+      } else {
+        result = await this.updateResourceImpl(resource, false);
+      }
       const durationMs = Date.now() - startTime;
       await this.postCommit(async () => {
         this.logEvent(UpdateInteraction, AuditEventOutcome.Success, undefined, { resource: result, durationMs });
@@ -1037,7 +1038,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await addSubscriptionJobs(resource, resource, { interaction: 'delete' });
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(DeleteInteraction, AuditEventOutcome.MinorFailure, err, {
+        resource: { reference: `${resourceType}/${id}` },
+        durationMs,
+      });
       throw err;
     }
   }
@@ -1045,7 +1049,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   async patchResource<T extends Resource = Resource>(
     resourceType: T['resourceType'],
     id: string,
-    patch: Operation[]
+    patch: Operation[],
+    options?: UpdateResourceOptions
   ): Promise<T> {
     const startTime = Date.now();
     try {
@@ -1061,7 +1066,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
         patchObject(resource, patch);
 
-        const result = await this.updateResourceImpl(resource, false);
+        const result = await this.updateResourceImpl(resource, false, options?.ifMatch);
         const durationMs = Date.now() - startTime;
 
         await this.postCommit(async () => {
@@ -1071,7 +1076,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       });
     } catch (err) {
       const durationMs = Date.now() - startTime;
-      this.logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err, { durationMs });
+      this.logEvent(PatchInteraction, AuditEventOutcome.MinorFailure, err, {
+        resource: { reference: `${resourceType}/${id}` },
+        durationMs,
+      });
       throw err;
     }
   }
@@ -1399,29 +1407,30 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @param searchParam - The search parameter definition.
    */
   private buildColumn(resource: Resource, columns: Record<string, any>, searchParam: SearchParameter): void {
+    const impl = getSearchParameterImplementation(resource.resourceType, searchParam);
+
     if (
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment' ||
       searchParam.type === 'composite' ||
-      isIndexTable(resource.resourceType, searchParam)
+      impl.searchStrategy === 'lookup-table'
     ) {
       return;
     }
 
-    const details = getSearchParameterDetails(resource.resourceType, searchParam);
     const values = evalFhirPath(searchParam.expression as string, resource);
     let columnValue = null;
 
     if (values.length > 0) {
-      if (details.array) {
-        columnValue = values.map((v) => this.buildColumnValue(searchParam, details, v));
+      if (impl.array) {
+        columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
       } else {
-        columnValue = this.buildColumnValue(searchParam, details, values[0]);
+        columnValue = this.buildColumnValue(searchParam, impl, values[0]);
       }
     }
 
-    columns[details.columnName] = columnValue;
+    columns[impl.columnName] = columnValue;
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
@@ -2072,7 +2081,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     outcome: AuditEventOutcome,
     description?: unknown,
     options?: {
-      resource?: Resource;
+      resource?: Resource | Reference;
       searchRequest?: SearchRequest;
       durationMs?: number;
     }
@@ -2091,28 +2100,38 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
     const resource = options?.resource;
 
-    const auditEvent = logRestfulEvent(
+    const auditEvent = createAuditEvent(
+      RestfulOperationType,
       subtype,
       this.context.projects?.[0] as string,
       this.context.author,
       this.context.remoteAddress,
       outcome,
-      outcomeDesc,
-      resource,
-      query
+      {
+        description: outcomeDesc,
+        resource,
+        searchQuery: query,
+        durationMs: options?.durationMs,
+      }
     );
+    logAuditEvent(auditEvent);
 
-    if (options?.durationMs) {
+    if (options?.durationMs && outcome === AuditEventOutcome.Success) {
       const duration = options.durationMs / 1000; // Report duration in whole seconds
       recordHistogramValue('medplum.fhir.interaction.' + subtype.code, duration, {
         attributes: {
-          resourceType: resource?.resourceType,
-          result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
+          resourceType: isResource(resource) ? resource?.resourceType : undefined,
         },
       });
     }
+    incrementCounter(`medplum.fhir.interaction.${subtype.code}.count`, {
+      attributes: {
+        resourceType: isResource(resource) ? resource?.resourceType : undefined,
+        result: outcome === AuditEventOutcome.Success ? 'success' : 'failure',
+      },
+    });
 
-    if (getConfig().saveAuditEvents && resource?.resourceType !== 'AuditEvent') {
+    if (getConfig().saveAuditEvents && isResource(resource) && resource?.resourceType !== 'AuditEvent') {
       auditEvent.id = this.generateId();
       this.updateResourceImpl(auditEvent, true).catch(console.error);
     }
@@ -2441,19 +2460,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       throw new Error('Already closed');
     }
   }
-}
-
-export function isIndexTable(resourceType: string, searchParam: SearchParameter): boolean {
-  return !!getLookupTable(resourceType, searchParam);
-}
-
-export function getLookupTable(resourceType: string, searchParam: SearchParameter): LookupTable | undefined {
-  for (const lookupTable of lookupTables) {
-    if (lookupTable.isIndexed(searchParam, resourceType)) {
-      return lookupTable;
-    }
-  }
-  return undefined;
 }
 
 const REDIS_CACHE_EX_SECONDS = 24 * 60 * 60; // 24 hours in seconds

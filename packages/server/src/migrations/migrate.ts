@@ -1,14 +1,12 @@
 import {
   deepEquals,
+  FileBuilder,
   getAllDataTypes,
-  getSearchParameterDetails,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   InternalTypeSchema,
   isPopulated,
   isResourceTypeSchema,
-  PropertyType,
-  SearchParameterDetails,
   SearchParameterType,
 } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
@@ -16,9 +14,9 @@ import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { Client } from 'pg';
-import { FileBuilder } from './filebuilder';
+import { getSearchParameterImplementation, SearchParameterImplementation } from '../fhir/searchparameter';
 
-const SCHEMA_DIR = resolve(__dirname, '../../server/src/migrations/schema');
+const SCHEMA_DIR = resolve(__dirname, 'schema');
 let LOG_UNMATCHED_INDEXES = false;
 let DRY_RUN = false;
 
@@ -268,14 +266,14 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       continue;
     }
 
-    const details = getSearchParameterDetails(resourceType, searchParam);
-    if (isLookupTableParam(searchParam, details)) {
+    const impl = getSearchParameterImplementation(resourceType, searchParam);
+    if (impl.searchStrategy === 'lookup-table') {
       continue;
     }
 
-    const columnName = details.columnName;
-    tableDefinition.columns.push({ name: columnName, type: getColumnType(details) });
-    tableDefinition.indexes.push({ columns: [columnName], indexType: details.array ? 'gin' : 'btree' });
+    const columnName = impl.columnName;
+    tableDefinition.columns.push({ name: columnName, type: getColumnType(impl) });
+    tableDefinition.indexes.push({ columns: [columnName], indexType: impl.array ? 'gin' : 'btree' });
   }
   for (const add of additionalSearchColumns) {
     if (add.table !== tableDefinition.name) {
@@ -290,79 +288,9 @@ const additionalSearchColumns: { table: string; column: string; type: string; in
   { table: 'MeasureReport', column: 'period_range', type: 'TSTZRANGE', indexType: 'gist' },
 ];
 
-function isLookupTableParam(searchParam: SearchParameter, details: SearchParameterDetails): boolean {
-  // Identifier
-  if (searchParam.code === 'identifier' && searchParam.type === 'token') {
-    return true;
-  }
-
-  // HumanName
-  const nameParams = [
-    'individual-given',
-    'individual-family',
-    'Patient-name',
-    'Person-name',
-    'Practitioner-name',
-    'RelatedPerson-name',
-  ];
-  if (nameParams.includes(searchParam.id as string)) {
-    return true;
-  }
-
-  // Telecom
-  const telecomParams = [
-    'individual-telecom',
-    'individual-email',
-    'individual-phone',
-    'OrganizationAffiliation-telecom',
-    'OrganizationAffiliation-email',
-    'OrganizationAffiliation-phone',
-  ];
-  if (telecomParams.includes(searchParam.id as string)) {
-    return true;
-  }
-
-  // Address
-  const addressParams = ['individual-address', 'InsurancePlan-address', 'Location-address', 'Organization-address'];
-  if (addressParams.includes(searchParam.id as string)) {
-    return true;
-  }
-
-  // "address-"
-  if (searchParam.code?.startsWith('address-')) {
-    return true;
-  }
-
-  // Token
-  if (searchParam.type === 'token') {
-    if (searchParam.code?.endsWith(':identifier')) {
-      return true;
-    }
-
-    for (const elementDefinition of details.elementDefinitions ?? []) {
-      // Check for any "Identifier", "CodeableConcept", or "Coding"
-      // Any of those value types require the "Token" table for full system|value search semantics.
-      // The common case is that the "type" property only has one value,
-      // but we need to support arrays of types for the choice-of-type properties such as "value[x]".
-      for (const type of elementDefinition.type ?? []) {
-        if (
-          type.code === PropertyType.Identifier ||
-          type.code === PropertyType.CodeableConcept ||
-          type.code === PropertyType.Coding ||
-          type.code === PropertyType.ContactPoint
-        ) {
-          return true;
-        }
-      }
-    }
-  }
-
-  return false;
-}
-
-function getColumnType(details: SearchParameterDetails): string {
+function getColumnType(impl: SearchParameterImplementation): string {
   let baseColumnType: string;
-  switch (details.type) {
+  switch (impl.type) {
     case SearchParameterType.BOOLEAN:
       baseColumnType = 'BOOLEAN';
       break;
@@ -374,7 +302,7 @@ function getColumnType(details: SearchParameterDetails): string {
       break;
     case SearchParameterType.NUMBER:
     case SearchParameterType.QUANTITY:
-      if (details.columnName === 'priorityOrder') {
+      if ('columnName' in impl && impl.columnName === 'priorityOrder') {
         baseColumnType = 'INTEGER';
       } else {
         baseColumnType = 'DOUBLE PRECISION';
@@ -385,7 +313,7 @@ function getColumnType(details: SearchParameterDetails): string {
       break;
   }
 
-  return details.array ? baseColumnType + '[]' : baseColumnType;
+  return impl.array ? baseColumnType + '[]' : baseColumnType;
 }
 
 function buildSearchIndexes(result: TableDefinition, resourceType: string): void {

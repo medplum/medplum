@@ -63,8 +63,8 @@ async function processAttachment(repo: Repository, attachment: Mail.Attachment):
   // We only support HTTPS URLs and embedded content.
   // The most risky case is when the attachment is a file path,
   // because nodemailer will attempt to read the file from disk.
-  const path = attachment.path?.toString();
-  if (!path) {
+  const path = attachment.path;
+  if (!path || typeof path !== 'string') {
     // No path is specified, so this is probably embedded content.
     return;
   }

@@ -641,8 +641,8 @@ describe('Core Utils', () => {
   });
 
   test('Stringify', () => {
-    expect(stringify(null)).toBeUndefined();
-    expect(stringify(undefined)).toBeUndefined();
+    expect(stringify(null)).toStrictEqual('');
+    expect(stringify(undefined)).toStrictEqual('');
     expect(stringify('foo')).toStrictEqual('"foo"');
     expect(stringify({ x: 'y' })).toStrictEqual('{"x":"y"}');
     expect(stringify({ x: 123 })).toStrictEqual('{"x":123}');

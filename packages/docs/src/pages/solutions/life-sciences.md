@@ -1,6 +1,11 @@
 # Life Sciences
 
-Highly customizable and integrated data management solution for clinical trials and research. Collect data in a standards compliant and automated way, with great visibility into your workflow and status. This is a solution for teams that find themselves building software to enable their clinical research and find a traditional Electronic Data Capture (EDC) hard to customize.
+Highly customizable and integrated data management solution for clinical research and commercialization including:
+
+* Digital portal for patients to sign documents, import historical records and do assessments
+* Data management for research staff and clinicians
+* Ordering systems for diagnostics, equipment and medications
+* Assessment management and planning tools
 
 :::caution Note
 
@@ -10,12 +15,13 @@ This section is under construction. Check back frequently for updates.
 
 ## Overview and Problem Space
 
-Clinical Trials and clinical research projects require a high fidelity workflow and data management process. Traditional Electronic Data Capture (EDC) systems are difficult to customize and many teams end up writing software to execute their research. When customizability and integrations are important, Medplum can be a useful tool.
+Clinical research requires a high fidelity workflow and data management process. Traditional Electronic Data Capture (EDC) systems are difficult to customize and many teams end up writing software to execute their research. When customizability and integrations are important, Medplum can be a useful tool.
 
-At the end of the day, great standards compliant data management, specifically for assessments, has two major advantages:
+At the end of the day, great standards compliant data management, specifically for assessments, has the following advantages:
 
-1. A faster path to a high confidence clinical protocol that's well documented.
-2. High quality, conformant data (FHIR, SDTM, ADaM) that's structured well for submission or publication.
+1. Reuse of instruments, assessments and labs to reduce risk and speed implementation.
+2. High quality, conformant data (FHIR, SDTM, ADaM) that's structured well for investigative research or publication.
+3. Ability to incorporate historical data from EHRs
 
 Here is a summary of common limitations and problems areas as they relate to the workflow in life sciences.
 
@@ -24,7 +30,7 @@ Here is a summary of common limitations and problems areas as they relate to the
 | Assessment Management            | COA, Lab panels, medical device management                                                            | Maintaining data, version history, usage, provenance for instruments          |
 | Schedule of Assessments          | Building a schedule of assessments protocol                                                           | Feedback, documentation and protocol re-use                                   |
 | Protocol Documentation           | Creating a protocol document, with references                                                         | Building a protocol that can be read by people, and imported into tools       |
-| Standards adherence              | Ensuring that data is produced adheres to industry standards                                          | Data from tools, such as Mapi Trust or Actigraph is non-standard (CDISC/FHIR) |
+| Standards adherence              | Ensuring that data is produced adheres to industry standards                                          | Data from tools, such as NIH assessments or instruments |
 | User-facing software integration | COA, ePRO and other survey based instruments exist in many tools across platforms (iOS, Android, web) | Tracking versions and instruments across platforms, integrating responses     |
 | Media handling                   | Research often entails gathering images, videos, documents, binary files                              | EDC platforms have mixed support for binary data types                        |
 | EHR Integration                  | Clinical research often requires pulling medical history from existing EHRs, systems                  | Getting data out of the EHR, LIS or other systems                             |
@@ -41,14 +47,14 @@ Survey based instruments are modeled using the [FHIR Questionnaires](/docs/api/f
 
 To effectively manage your survey based instrument, you'll want to ensure that each is represented as a FHIR Questionnaire and is tagged with the appropriate Metadata, specifically:
 
-- `Questionnaire.url`: Link to the documentation of the instrument. For example, if it is from Mapi-Trust, include the URL.
-- Identifiers: add any relevant identifiers (from Mapi-Trust, internal systems, CDC, etc.) to the `Questionnaire.id` field. Multiple identifiers from different systems are supported and encouraged.
+- `Questionnaire.url`: Link to the documentation of the instrument.
+- Identifiers: add any relevant identifiers (internal systems, CDC, etc.) to the `Questionnaire.id` field. Multiple identifiers from different systems are supported and encouraged.
 - FDA ontology: Tag each instrument with PRO, ClinRo, PerfO, ObsRo as a CodableConcept in the `Questionnaire.code` field
 - Locale and Languages: Mark locales, such as `EN-US` in as a CodableConcept in `Questionnaire.jurisdiction`
 - Binary Files: Sometimes binary files such as Android APK files, or iOS binaries are required for a validated instrument. It is recommended to store these as [FHIR Media](/docs/api/fhir/resources/media) resources, with references to the original Questionnaire in `Media.basedOn` field, for appropriate indexing.
 - Questionnaire Level CDISC, LOINC and SNOMED tags: add the appropriate tags to the `Questionnaire.code` field.
 - Question level tags: for each `Questionnaire.item` add one or more CDISC, LOINC or SNOMED codes.
-- Tagging both the Questionnaire resources and the `Questionnaire.item` with other ontologies from Meddra, Mapi-Trust as suits your workflow.
+- Tagging both the Questionnaire resources and the `Questionnaire.item` with other ontologies from LOINC or others as suits your workflow.
 
 This setup and tagging will ensure that data collected is also properly tagged and can be exported readily to other systems or converted to document/PDF format.
 
@@ -72,6 +78,10 @@ You can see an example of a simple [ActivityDefinition for Lab in code](https://
 Here is an [ObservationDefinition for Lab in code](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/covid19.ts#L688) and [ObservationDefinition on Storybook](https://storybook.medplum.com/?path=/docs/medplum-resourcetable--observation-ignore-empty)
 
 Overall, the [COVID-19 Data model sample](https://github.com/medplum/medplum/blob/main/packages/react/src/stories/covid19.ts) can be useful to get a sense of how to represent labs in FHIR.
+
+#### Ontologies and Terminology
+
+Clinical data captured via diagnostics or assessments of various kinds is most useful when tagged with standard ontologies.  Nedplum supports both custom and standard terminology which can be used for this purpose.
 
 #### Digital Technologies
 
@@ -99,7 +109,7 @@ Data capture from legacy EHRs, LIS/LIMS, records request aggregators, COA tools,
 
 ### Patient-facing tools integration
 
-PRO data comes in from a multitude of systems like Qualtrics, custom mobile applications, and various form builder and survey tools. Integrate, normalize and tag the data using the [integration and interoperability engine](../products/integration) and [bots](/docs/bots).
+Medplum supports rapid development of patient facing applications, into which patient assessments can be surfaced to users. PRO data comes in from a multitude of systems like Qualtrics, custom mobile applications, and various form builder and survey tools. Integrate, normalize and tag the data using the [integration and interoperability engine](../products/integration) and [bots](/docs/bots).
 
 ## Dashboards and Reporting
 
@@ -130,8 +140,6 @@ Build a powerful dashboard that can track your workflow and get where you need t
 - [CDISC to FHIR Mapping on HL7.org](http://hl7.org/fhir/uv/cdisc-mapping/STU1/)
 - [CDISC Foundational Concepts](https://www.cdisc.org/standards/foundational)
 - [CDISC Controlled Terminology](https://www.cdisc.org/standards/terminology/controlled-terminology)
-- [Mapi Research Trust](https://mapi-trust.org/) COA library
-- [HumanFirst Atlas Measure Ontology](https://www.gohumanfirst.com/atlas/measure-ontologies)
 - [Clinical Research Measures that Matter](https://www.karger.com/Article/Fulltext/509725)
 - [LOINC Codes](https://loinc.org/)
 - [SNOMED](https://www.snomed.org/)

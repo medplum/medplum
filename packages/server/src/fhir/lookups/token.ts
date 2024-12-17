@@ -29,11 +29,11 @@ import {
   Condition,
   Conjunction,
   Disjunction,
+  escapeLikeString,
   Expression,
-  SqlFunction,
   Negation,
   SelectQuery,
-  escapeLikeString,
+  SqlFunction,
 } from '../sql';
 import { LookupTable } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
@@ -515,9 +515,10 @@ function buildWhereCondition(
   const parts = splitN(query, '|', 2);
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
-    const systemCondition = new Condition(new Column(tableName, 'system'), '=', parts[0]);
-    return parts[1]
-      ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, caseSensitive, parts[1])])
+    const [system, value] = parts;
+    const systemCondition = new Condition(new Column(tableName, 'system'), '=', system);
+    return value
+      ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, caseSensitive, value)])
       : systemCondition;
   } else {
     // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
@@ -598,7 +599,7 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
   // In plain english:
   //
   //   We want the Condition resources
-  //   with a fixed "code" column value (referring to the "code" column in the "Condition" table)
+  //   with a fixed "code" column value (referring to the "code" column in the "Condition_Token" table)
   //   where the "system" column value is in the "reference" column of the "ValueSet" table
   //
   // Now imagine the query for just "Condition_Token" and "ValueSet":
