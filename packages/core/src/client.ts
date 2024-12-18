@@ -2799,13 +2799,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * **NOTE: Does not check whether the auth token has been revoked server-side.**
    */
   isAuthenticated(gracePeriod?: number): boolean {
-    if (
-      this.accessTokenExpires !== undefined &&
-      Date.now() < this.accessTokenExpires - (gracePeriod ?? this.refreshGracePeriod)
-    ) {
-      return true;
-    }
-    return false;
+    return this.accessTokenExpires !== undefined &&
+      Date.now() < this.accessTokenExpires - (gracePeriod ?? this.refreshGracePeriod);
   }
 
   /**
