@@ -134,6 +134,7 @@ const unexportedResourceTypes = [
   'StructureDefinition',
   'ValueSet',
   'BulkDataExport',
+  'AsyncJob',
 ];
 
 function canBeExported(resourceType: string): boolean {
