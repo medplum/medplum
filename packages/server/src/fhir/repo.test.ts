@@ -30,7 +30,7 @@ import {
   StructureDefinition,
   User,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
@@ -396,13 +396,14 @@ describe('FHIR Repo', () => {
         },
       });
 
+      const description = randomBytes(2050).toString('base64');
+      const textEncoder = new TextEncoder();
+      expect(textEncoder.encode(description).length).toBeGreaterThan(2704);
       await repo.createResource<ResearchDefinition>({
         resourceType: 'ResearchDefinition',
         status: 'active',
         population: { reference: '123' },
-        // 10 * 50_000 = 500,000 which results in:
-        // index row size 5760 exceeds btree version 4 maximum 2704 for index "ResearchDefinition_description_idx"
-        description: '1234567890'.repeat(50000),
+        description,
       });
     }));
 
