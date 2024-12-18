@@ -2801,7 +2801,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   isAuthenticated(gracePeriod?: number): boolean {
     if (
       this.accessTokenExpires !== undefined &&
-      Date.now() > this.accessTokenExpires - (gracePeriod ?? this.refreshGracePeriod)
+      Date.now() < this.accessTokenExpires - (gracePeriod ?? this.refreshGracePeriod)
     ) {
       return true;
     }
@@ -3549,7 +3549,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   refreshIfExpired(gracePeriod?: number): Promise<void> {
     // If (1) not already refreshing, (2) we have an access token, and (3) the access token is expired,
     // then start a refresh.
-    if (!this.refreshPromise && !this.isAuthenticated(gracePeriod)) {
+    if (!this.refreshPromise && this.accessTokenExpires !== undefined && !this.isAuthenticated(gracePeriod)) {
       // The result of the `refresh()` function is cached in `this.refreshPromise`,
       // so we can safely ignore the return value here.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
