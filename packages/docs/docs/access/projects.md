@@ -23,8 +23,6 @@ Additionally, [`Projects`](/docs/api/fhir/medplum/project) each have their own u
 
 ## Project Linking
 
-Medplum super administrators can _link_ shared projects into a target project, providing users with a _read-only_ view of all resources in the linked projects.
-
 Sometimes it is useful to share a common set of resources with multiple projects.
 
 Medplum super administrators can create shared projects and _link_ them into multiple target project. Users of those target projects get a a _read-only_ view of all resources in the shared projects.
