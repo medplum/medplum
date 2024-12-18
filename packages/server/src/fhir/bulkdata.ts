@@ -40,6 +40,7 @@ bulkDataRouter.get(
       requiresAccessToken: false, // Rewritten attachments use presigned S3 URLs and do not require the access token
       output: extractOutputParameters(bulkDataExport, 'output'),
       error: extractOutputParameters(bulkDataExport, 'error'),
+      deleted: extractOutputParameters(bulkDataExport, 'deleted'),
     });
     res.status(200).type(ContentType.JSON).json(json);
   })

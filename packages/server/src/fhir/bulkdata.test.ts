@@ -31,7 +31,9 @@ describe('Binary', () => {
       status: 'completed',
       request: 'foo',
       requestTime: new Date().toISOString(),
-      output: [{ url: 'http://example.com/', type: 'Patient' }],
+      output: [{ url: 'http://example.com/output', type: 'Patient' }],
+      error: [{ url: 'http://example.com/error', type: 'Patient' }],
+      deleted: [{ url: 'http://example.com/deleted', type: 'Patient' }],
     });
 
     const initRes = await request(app)
@@ -43,6 +45,8 @@ describe('Binary', () => {
     expect(initRes.body).toMatchObject({
       request: exportResource.request,
       output: exportResource.output,
+      error: exportResource.error,
+      deleted: exportResource.deleted,
     });
   });
 });
