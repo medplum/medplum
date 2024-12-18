@@ -23,21 +23,35 @@ Additionally, [`Projects`](/docs/api/fhir/medplum/project) each have their own u
 
 ## Project Linking
 
+Sometimes it is useful to share a common set of resources with multiple projects.
+
+Medplum super administrators can create shared projects and _link_ them into multiple target projects. Users of those target projects get a a _read-only_ view of all resources in the shared projects.
+
+When a project is linked, all resources from the linked project appear alongside the target project's resources in search results and queries.
+
+### Common Use Cases
+
+- Sharing large [`CodeSystems`](/docs/api/fhir/resources/codesystem) and [`ValueSets`](/docs/api/fhir/resources/valueset) for standard terminology. For example the [Medplum UMLS integration](/pricing): [ICD-10](/docs/charting/representing-diagnoses), [RxNORM](/docs/medications/medication-codes#rxnorm), [LOINC](/docs/careplans/loinc), SNOMED
+- Sharing [FHIR profiles](/docs/fhir-datastore/profiles) (`StructureDefinition` resources) for a specific clincal domain
+- Sharing common data sets (e.g. Medplum Payor Directory, Medplum Lab Directory)
+- Sharing [Bots](/docs/bots)
+
 Certain Medplum features, including first-party integrations, require access to shared sets of resources, such as [`CodeSystem`](/docs/api/fhir/resources/codesystem), [`ValueSet`](/docs/api/fhir/resources/valueset), and [`Organization`](/docs/api/fhir/resources/organization).
 
-Medplum super administrators can _link_ shared projects into a target project, providing users with a _read-only_ view of all resources in the linked projects.
-
-A common use case for project linking is the Medplum terminology service. When enabled, Medplum links the shared UMLS Project, which contains [`CodeSystem`](/docs/api/fhir/resources/codesystem) resources for major UMLS code systems:
-
-- [ICD-10](/docs/charting/representing-diagnoses)
-- [RxNORM](/docs/medications/medication-codes#rxnorm)
-- [LOINC](/docs/careplans/loinc)
+### Viewing Linked Projects
 
 You can see linked Projects in the Medplum App by:
 
 - Navigating to [app.medplum.com/Project](https://app.medplum.com/Project)
 - Selecting your Project
 - Selecting the "Details" tab
+
+### Best Practices
+
+When working with linked projects:
+
+- Be aware that queries like `medplum.searchresources()` will return the first matching resource across all accessible projects (both local and linked)
+- If you need to distinguish between local and linked resources, consider adding additional search parameters, such as the `_compartment` search parameter.
 
 ## The SuperAdmin `Project` {#superadmin}
 
