@@ -131,4 +131,29 @@ describe('SMART on FHIR', () => {
       ],
     });
   });
+
+  test('Intersect with wildcard access policy', () => {
+    const startAccessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: '*',
+        },
+      ],
+    };
+
+    const scope = 'patient/Patient.cruds patient/ServiceRequest.cruds';
+
+    expect(applySmartScopes(startAccessPolicy, scope)).toMatchObject({
+      resourceType: 'AccessPolicy',
+      resource: [
+        {
+          resourceType: 'Patient',
+        },
+        {
+          resourceType: 'ServiceRequest',
+        },
+      ],
+    });
+  });
 });
