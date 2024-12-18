@@ -62,7 +62,7 @@ import {
 import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
-import { Operation, applyPatch } from 'rfc6902';
+import { Operation } from 'rfc6902';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { getLogger } from '../context';
@@ -85,6 +85,7 @@ import {
   createAuditEvent,
   logAuditEvent,
 } from '../util/auditevent';
+import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
@@ -93,6 +94,7 @@ import { replaceConditionalReferences, validateResourceReferences } from './refe
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
+import { getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
   DeleteQuery,
@@ -105,7 +107,6 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
-import { getSearchParameterImplementation, lookupTables } from './searchparameter';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -2552,15 +2553,4 @@ export function setTypedPropertyValue(target: TypedValue, path: string, replacem
     patchPath = patchPath.slice(0, -1);
   }
   patchObject(target.value, [{ op: 'replace', path: patchPath, value: replacement.value }]);
-}
-
-function patchObject(obj: any, patch: Operation[]): void {
-  try {
-    const patchErrors = applyPatch(obj, patch).filter(Boolean);
-    if (patchErrors.length) {
-      throw new OperationOutcomeError(badRequest(patchErrors.map((e) => (e as Error).message).join('\n')));
-    }
-  } catch (err) {
-    throw new OperationOutcomeError(normalizeOperationOutcome(err));
-  }
 }
