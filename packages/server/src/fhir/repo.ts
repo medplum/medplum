@@ -1462,19 +1462,25 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return this.buildDateTimeColumn(value);
     }
 
-    if (searchParam.type === 'reference') {
-      return this.buildReferenceColumns(value);
-    }
-
-    if (searchParam.type === 'token') {
-      return this.buildTokenColumn(value);
-    }
-
     if (searchParam.type === 'quantity') {
       return this.buildQuantityColumn(value);
     }
 
-    return typeof value === 'string' ? value : stringify(value);
+    // Handle all string values specially to ensure they are truncated to the correct length
+    let stringValue: string | undefined;
+    if (searchParam.type === 'reference') {
+      stringValue = this.buildReferenceColumns(value);
+    } else if (searchParam.type === 'token') {
+      stringValue = this.buildTokenColumn(value);
+    } else {
+      stringValue = typeof value === 'string' ? value : stringify(value);
+    }
+
+    if (!stringValue) {
+      return undefined;
+    }
+
+    return truncateTextColumn(stringValue);
   }
 
   /**
@@ -2563,4 +2569,22 @@ function patchObject(obj: any, patch: Operation[]): void {
   } catch (err) {
     throw new OperationOutcomeError(normalizeOperationOutcome(err));
   }
+}
+
+const textEncoder = new TextEncoder();
+
+/**
+ * Apply a maximum string length to ensure the value can accommodate the maximum
+ * size for a btree index entry: 2704 bytes. If the string is too large,
+ * be as conservative as possible to avoid write errors by truncating to 675 characters
+ * to accommodate the entire string being 4-byte UTF-8 code points.
+ * @param value - The column value to truncate.
+ * @returns The possibly truncated column value.
+ */
+function truncateTextColumn(value: string): string {
+  if (textEncoder.encode(value).length <= 2704) {
+    return value;
+  }
+
+  return Array.from(value).slice(0, 675).join('');
 }
