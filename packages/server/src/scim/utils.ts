@@ -312,19 +312,22 @@ export function convertToScimListResponse<T>(Resources: T[]): ScimListResponse<T
  * @returns The converted JSONPatch request.
  */
 export function convertScimToJsonPatch(scimPatch: ScimPatchRequest): Operation[] {
+  if (scimPatch.schemas?.[0] !== 'urn:ietf:params:scim:api:messages:2.0:PatchOp') {
+    throw new Error('Invalid SCIM patch: missing required schema');
+  }
+
   return scimPatch.Operations.flatMap((inputOperation) => {
     const { op, path, value } = inputOperation;
 
-    if (op !== 'add' && op !== 'remove' && op !== 'replace' && op !== 'copy' && op !== 'move' && op !== 'test') {
+    if (op !== 'add' && op !== 'remove' && op !== 'replace') {
       throw new Error('Invalid SCIM patch: unsupported operation');
     }
 
     if (path) {
-      // This is a normal JSONPatch operation
-      if (!path.startsWith('/')) {
-        return { ...inputOperation, path: `/${path}` } as Operation;
+      if (path.startsWith('/')) {
+        throw new Error('Invalid SCIM patch: path must not start with "/"');
       }
-      return inputOperation as Operation;
+      return { ...inputOperation, path: `/${path}` } as Operation;
     }
 
     if (op !== 'add' && op !== 'replace') {

@@ -31,27 +31,6 @@ describe('convertScimToJsonPatch', () => {
         Operations: [
           {
             op: 'add',
-            path: '/active',
-            value: true,
-          },
-        ],
-      })
-    ).toMatchObject([
-      {
-        op: 'add',
-        path: '/active',
-        value: true,
-      },
-    ]);
-  });
-
-  test('Adds path prefix', () => {
-    expect(
-      convertScimToJsonPatch({
-        schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
-        Operations: [
-          {
-            op: 'add',
             path: 'active',
             value: true,
           },
@@ -66,6 +45,36 @@ describe('convertScimToJsonPatch', () => {
     ]);
   });
 
+  test('Invalid schema', () => {
+    expect(() =>
+      convertScimToJsonPatch({
+        schemas: ['invalid'],
+        Operations: [
+          {
+            op: 'add',
+            path: 'active',
+            value: true,
+          },
+        ],
+      })
+    ).toThrow('Invalid SCIM patch: missing required schema');
+  });
+
+  test('Invalid path prefix', () => {
+    expect(() =>
+      convertScimToJsonPatch({
+        schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
+        Operations: [
+          {
+            op: 'add',
+            path: '/active',
+            value: true,
+          },
+        ],
+      })
+    ).toThrow('Invalid SCIM patch: path must not start with "/"');
+  });
+
   test('Invalid operation', () => {
     expect(() =>
       convertScimToJsonPatch({
@@ -73,7 +82,7 @@ describe('convertScimToJsonPatch', () => {
         Operations: [
           {
             op: 'invalid',
-            path: '/x',
+            path: 'x',
             value: 'x',
           },
         ],
@@ -81,14 +90,13 @@ describe('convertScimToJsonPatch', () => {
     ).toThrow('Invalid SCIM patch: unsupported operation');
   });
 
-  test('Test op requires path', () => {
+  test('Remove op requires path', () => {
     expect(() =>
       convertScimToJsonPatch({
         schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
         Operations: [
           {
-            op: 'test',
-            value: 'x',
+            op: 'remove',
           },
         ],
       })
