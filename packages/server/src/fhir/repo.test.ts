@@ -385,7 +385,7 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.lastUpdated).toStrictEqual(lastUpdated);
     }));
 
-  test.only('Create ResearchDefinition with very long description', () =>
+  test('Create ResearchDefinition with very long description', () =>
     withTestContext(async () => {
       const author = 'Practitioner/' + randomUUID();
 

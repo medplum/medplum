@@ -1480,7 +1480,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return undefined;
     }
 
-    // return stringValue;
     return truncateTextColumn(stringValue);
   }
 
