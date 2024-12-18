@@ -2792,6 +2792,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
+   * Returns whether the client has a valid access token or not.
+   * @param gracePeriod - Optional grace period in milliseconds. If not specified, uses the client configured grace period (default 5 minutes).
+   * @returns Boolean indicating whether or not the client is authenticated.
+   *
+   * **NOTE: Does not check whether the auth token has been revoked server-side.**
+   */
+  isAuthenticated(gracePeriod?: number): boolean {
+    return (
+      this.accessTokenExpires !== undefined &&
+      Date.now() < this.accessTokenExpires - (gracePeriod ?? this.refreshGracePeriod)
+    );
+  }
+
+  /**
    * Sets the current access token.
    * @param accessToken - The new access token.
    * @param refreshToken - Optional refresh token.
@@ -3530,16 +3544,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns Promise to refresh the access token.
    */
   refreshIfExpired(gracePeriod?: number): Promise<void> {
-    if (gracePeriod === undefined) {
-      gracePeriod = this.refreshGracePeriod;
-    }
     // If (1) not already refreshing, (2) we have an access token, and (3) the access token is expired,
     // then start a refresh.
-    if (
-      !this.refreshPromise &&
-      this.accessTokenExpires !== undefined &&
-      Date.now() > this.accessTokenExpires - gracePeriod
-    ) {
+    if (!this.refreshPromise && this.accessTokenExpires !== undefined && !this.isAuthenticated(gracePeriod)) {
       // The result of the `refresh()` function is cached in `this.refreshPromise`,
       // so we can safely ignore the return value here.
       // eslint-disable-next-line @typescript-eslint/no-floating-promises
