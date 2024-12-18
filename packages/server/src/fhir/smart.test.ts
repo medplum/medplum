@@ -8,6 +8,7 @@ describe('SMART on FHIR', () => {
     expect(parseSmartScopes('')).toStrictEqual([]);
     expect(parseSmartScopes('openid')).toStrictEqual([]);
     expect(parseSmartScopes('x/y.z')).toStrictEqual([]);
+    expect(parseSmartScopes('patient/Observation.chum')).toStrictEqual([]);
   });
 
   test('Parse scopes', () => {
@@ -23,6 +24,9 @@ describe('SMART on FHIR', () => {
       { permissionType: 'patient', resourceType: 'Observation', scope: 'c' },
     ]);
     expect(parseSmartScopes('patient/*.cruds')).toMatchObject([
+      { permissionType: 'patient', resourceType: '*', scope: 'cruds' },
+    ]);
+    expect(parseSmartScopes('patient/*.*')).toMatchObject([
       { permissionType: 'patient', resourceType: '*', scope: 'cruds' },
     ]);
 
@@ -136,23 +140,21 @@ describe('SMART on FHIR', () => {
     const startAccessPolicy: AccessPolicy = {
       resourceType: 'AccessPolicy',
       resource: [
-        {
-          resourceType: '*',
-        },
+        { resourceType: 'StructureDefinition', readonly: true },
+        { resourceType: 'SearchParameter', readonly: true },
+        { resourceType: '*' },
       ],
     };
 
-    const scope = 'patient/Patient.cruds patient/ServiceRequest.cruds';
+    const scope = 'patient/Patient.rs patient/StructureDefinition.* patient/Practitioner.rus';
 
-    expect(applySmartScopes(startAccessPolicy, scope)).toMatchObject({
+    expect(applySmartScopes(startAccessPolicy, scope)).toMatchObject<AccessPolicy>({
       resourceType: 'AccessPolicy',
       resource: [
-        {
-          resourceType: 'Patient',
-        },
-        {
-          resourceType: 'ServiceRequest',
-        },
+        { resourceType: 'StructureDefinition', readonly: true },
+        { resourceType: 'Patient', readonly: true },
+        { resourceType: 'StructureDefinition' }, // Expanded from *
+        { resourceType: 'Practitioner' },
       ],
     });
   });
