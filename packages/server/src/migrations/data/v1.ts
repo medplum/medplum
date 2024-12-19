@@ -3,9 +3,20 @@
  * Do not edit manually.
  */
 
+import { getResourceTypes } from '@medplum/core';
+import { AsyncJob } from '@medplum/fhirtypes';
+import { AsyncJobExecutor } from '../../fhir/operations/utils/asyncjobexecutor';
 import { Repository } from '../../fhir/repo';
+import { addReindexJob } from '../../workers/reindex';
 
-export async function run(_repo: Repository): Promise<void> {
-  // The first data migration is a no-op.
-  // This only exists to verify the data migration functionality.
+export async function run(repo: Repository): Promise<AsyncJob> {
+  const exec = new AsyncJobExecutor(repo);
+  const job = await exec.init('data-migration-v1');
+  await exec.run(async (asyncJob) => {
+    await addReindexJob(
+      getResourceTypes().filter((rt) => rt !== 'Binary'),
+      asyncJob
+    );
+  });
+  return job;
 }
