@@ -154,21 +154,17 @@ function intersectSmartScopes(accessPolicy: AccessPolicy, smartScope: SmartScope
   const result: AccessPolicy & { resource: AccessPolicyResource[] } = { ...accessPolicy, resource: [] };
   for (const policy of accessPolicy.resource) {
     const scope = getScopeForResourceType(smartScope, policy.resourceType);
-    if (!scope) {
-      if (policy.resourceType === '*') {
-        for (const scope of smartScope) {
-          const merged = mergeAccessPolicyWithScope(policy, scope);
-          merged.resourceType = scope.resourceType;
-          result.resource.push(merged);
-        }
+    if (scope) {
+      const merged = mergeAccessPolicyWithScope(policy, scope);
+      result.resource.push(merged);
+    } else if (policy.resourceType === '*') {
+      for (const scope of smartScope) {
+        const merged = mergeAccessPolicyWithScope(policy, scope);
+        merged.resourceType = scope.resourceType;
+        result.resource.push(merged);
       }
-      continue;
     }
-
-    const merged = mergeAccessPolicyWithScope(policy, scope);
-    result.resource.push(merged);
   }
-
   return result;
 }
 
