@@ -551,10 +551,6 @@ function buildSearchIndexes(result: TableDefinition, resourceType: string): void
     result.indexes.push({ columns: ['compartments', 'deleted', 'appointment'], indexType: 'gin', unique: false });
   }
 
-  if (resourceType === 'Observation') {
-    result.indexes.push({ columns: ['compartments', 'lastUpdated'], indexType: 'gin', unique: false });
-  }
-
   // uniqueness of SearchParameter-based indexes cannot be specified anywhere, so do it manually here
   // perhaps this should  also be moved to getSearchParameterDetails. Or preferably, where ever the
   // implementation-specific parts of SearchParameterDetails are moved to?
