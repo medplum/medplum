@@ -9,6 +9,9 @@ describe('SMART on FHIR', () => {
     expect(parseSmartScopes('openid')).toStrictEqual([]);
     expect(parseSmartScopes('x/y.z')).toStrictEqual([]);
     expect(parseSmartScopes('patient/Observation.chum')).toStrictEqual([]);
+    expect(parseSmartScopes('patient/Observation.sdurc')).toStrictEqual([]);
+    expect(parseSmartScopes('patient/Observation.c*')).toStrictEqual([]);
+    expect(parseSmartScopes('patient/Observation.*c')).toStrictEqual([]);
   });
 
   test('Parse scopes', () => {
