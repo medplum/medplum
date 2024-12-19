@@ -1,6 +1,14 @@
-import { indexSearchParameterBundle, indexStructureDefinitionBundle, RXNORM } from '@medplum/core';
+import { createReference, indexSearchParameterBundle, indexStructureDefinitionBundle, RXNORM } from '@medplum/core';
 import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Patient, Practitioner, Reference, SearchParameter } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  MedicationDispense,
+  MedicationRequest,
+  Patient,
+  Practitioner,
+  Reference,
+  SearchParameter,
+} from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { vi } from 'vitest';
 import { Fill, PhotonPatient, PhotonPatientAllergy, PhotonPrescription, PhotonProvider } from '../photon-types';
@@ -363,6 +371,45 @@ describe('Sync patients from Photon', async () => {
           note: [{ text: 'Additional notes' }],
         })
       );
+    });
+
+    test('Patient has an existing prescription', async () => {
+      const medplum = new MockClient();
+      const patient: Patient = await medplum.createResource({
+        resourceType: 'Patient',
+      });
+      const prescription: MedicationRequest = await medplum.createResource({
+        resourceType: 'MedicationRequest',
+        status: 'active',
+        intent: 'filler-order',
+        subject: createReference(patient),
+        identifier: [{ system: NEUTRON_HEALTH, value: 'mock-photon-id' }],
+      });
+
+      const fill = {
+        id: 'mock-fill-id',
+        state: 'SCHEDULED',
+        treatment: {
+          id: 'mock-treatment-id',
+          name: 'Mock Treatment',
+          codes: {
+            rxcui: '12345',
+          },
+        },
+      } as Fill;
+
+      const photonPrescription = {
+        id: 'mock-photon-id',
+        externalId: prescription.id as string,
+        fills: [fill],
+      } as PhotonPrescription;
+
+      const result = await createMedicationHistoryEntries(createReference(patient), medplum, [photonPrescription]);
+      expect(result).toBeDefined();
+      expect(result).toHaveLength(1);
+      expect(result?.[0].resource?.resourceType).toBe('MedicationDispense');
+      const dispense = result?.[0].resource as MedicationDispense;
+      expect(dispense.authorizingPrescription?.[0]).toStrictEqual(createReference(prescription));
     });
 
     test('Create a prescription without a provider', async () => {

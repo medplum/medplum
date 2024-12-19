@@ -330,18 +330,24 @@ export async function createMedicationHistoryEntries(
 
   const entries: BundleEntry<MedicationDispense | MedicationRequest>[] = [];
   for (const photonPrescription of photonPrescriptions) {
-    const prescription = await createPrescriptionResource(photonPrescription, medplum, patientReference);
-    const prescriptionUrl = 'urn:uuid:' + randomUUID();
-    const prescriptionReference: Reference<MedicationRequest> = {
-      reference: prescriptionUrl,
-      display: getDisplayString(prescription),
-    };
+    let prescription: MedicationRequest | undefined = await getExistingPrescription(photonPrescription, medplum);
+    let prescriptionReference: Reference<MedicationRequest> | undefined;
+    if (!prescription) {
+      prescription = await createPrescriptionResource(photonPrescription, medplum, patientReference);
+      const prescriptionUrl = 'urn:uuid:' + randomUUID();
+      prescriptionReference = {
+        reference: prescriptionUrl,
+        display: getDisplayString(prescription),
+      };
 
-    entries.push({
-      fullUrl: prescriptionUrl,
-      request: { method: 'POST', url: 'MedicationRequest' },
-      resource: prescription,
-    });
+      entries.push({
+        fullUrl: prescriptionUrl,
+        request: { method: 'PUT', url: `MedicationRequest?identifier=${NEUTRON_HEALTH}|${photonPrescription.id}` },
+        resource: prescription,
+      });
+    } else {
+      prescriptionReference = createReference(prescription);
+    }
 
     if (photonPrescription.fills) {
       for (const fill of photonPrescription.fills) {
@@ -356,6 +362,32 @@ export async function createMedicationHistoryEntries(
   }
 
   return entries;
+}
+
+async function getExistingPrescription(
+  photonPrescription: PhotonPrescription,
+  medplum: MedplumClient
+): Promise<MedicationRequest | undefined> {
+  const photonId = photonPrescription.id;
+  const id = photonPrescription.externalId;
+
+  try {
+    let prescription = await medplum.searchOne('MedicationRequest', {
+      identifier: NEUTRON_HEALTH + `|${photonId}`,
+    });
+
+    if (prescription) {
+      return prescription;
+    }
+
+    prescription = await medplum.searchOne('MedicationRequest', {
+      _id: id,
+    });
+
+    return prescription;
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
 }
 
 /**
