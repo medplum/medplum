@@ -14,7 +14,7 @@ import { readJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
 import { Bundle, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { readdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { Client } from 'pg';
+import { Client, Pool } from 'pg';
 import {
   ColumnSearchParameterImplementation,
   getSearchParameterImplementation,
@@ -24,7 +24,6 @@ import { deriveIdentifierSearchParameter } from '../fhir/lookups/util';
 import { doubleEscapeSingleQuotes, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
-let DROP_UNMATCHED_INDEXES = false;
 let DRY_RUN = false;
 
 export interface SchemaDefinition {
@@ -80,15 +79,27 @@ export function indexStructureDefinitionsAndSearchParameters(): void {
 }
 
 export async function main(): Promise<void> {
-  DROP_UNMATCHED_INDEXES = process.argv.includes('--dropUnmatchedIndexes');
   DRY_RUN = process.argv.includes('--dryRun');
 
   indexStructureDefinitionsAndSearchParameters();
 
-  const startDefinition = await buildStartDefinition();
-  const targetDefinition = buildTargetDefinition();
+  const dbClient = new Client({
+    host: 'localhost',
+    port: 5432,
+    database: 'medplum',
+    user: 'medplum',
+    password: 'medplum',
+  });
+  const options: BuildMigrationOptions = {
+    dbClient,
+    dropUnmatchedIndexes: process.argv.includes('--dropUnmatchedIndexes'),
+  };
+  await dbClient.connect();
+
   const b = new FileBuilder();
-  writeMigrations(b, startDefinition, targetDefinition);
+  await buildMigration(b, options);
+
+  await dbClient.end();
   if (DRY_RUN) {
     console.log(b.toString());
   } else {
@@ -97,16 +108,19 @@ export async function main(): Promise<void> {
   }
 }
 
-async function buildStartDefinition(): Promise<SchemaDefinition> {
-  const db = new Client({
-    host: 'localhost',
-    port: 5432,
-    database: 'medplum',
-    user: 'medplum',
-    password: 'medplum',
-  });
+export type BuildMigrationOptions = {
+  dbClient: Client | Pool;
+  dropUnmatchedIndexes?: boolean;
+};
 
-  await db.connect();
+export async function buildMigration(b: FileBuilder, options: BuildMigrationOptions): Promise<void> {
+  const startDefinition = await buildStartDefinition(options);
+  const targetDefinition = buildTargetDefinition();
+  writeMigrations(b, startDefinition, targetDefinition, options);
+}
+
+async function buildStartDefinition(options: BuildMigrationOptions): Promise<SchemaDefinition> {
+  const db = options.dbClient;
 
   const tableNames = await getTableNames(db);
   const tables: TableDefinition[] = [];
@@ -120,16 +134,15 @@ async function buildStartDefinition(): Promise<SchemaDefinition> {
     throw new Error('Unused special index parsers:\n' + unusedParsers.map((p) => p.toString()).join('\n'));
   }
 
-  await db.end();
   return { tables };
 }
 
-async function getTableNames(db: Client): Promise<string[]> {
+async function getTableNames(db: Client | Pool): Promise<string[]> {
   const rs = await db.query("SELECT * FROM information_schema.tables WHERE table_schema='public'");
   return rs.rows.map((row) => row.table_name);
 }
 
-async function getTableDefinition(db: Client, name: string): Promise<TableDefinition> {
+async function getTableDefinition(db: Client | Pool, name: string): Promise<TableDefinition> {
   return {
     name,
     columns: await getColumns(db, name),
@@ -137,7 +150,7 @@ async function getTableDefinition(db: Client, name: string): Promise<TableDefini
   };
 }
 
-async function getColumns(db: Client, tableName: string): Promise<ColumnDefinition[]> {
+async function getColumns(db: Client | Pool, tableName: string): Promise<ColumnDefinition[]> {
   // https://stackoverflow.com/questions/8146448/get-the-default-values-of-table-columns-in-postgres
   const rs = await db.query(`
     SELECT
@@ -169,7 +182,7 @@ async function getColumns(db: Client, tableName: string): Promise<ColumnDefiniti
   }));
 }
 
-async function getIndexes(db: Client, tableName: string): Promise<IndexDefinition[]> {
+async function getIndexes(db: Client | Pool, tableName: string): Promise<IndexDefinition[]> {
   const rs = await db.query(`SELECT indexdef FROM pg_indexes WHERE schemaname='public' AND tablename='${tableName}'`);
   return rs.rows.map((row) => parseIndexDefinition(row.indexdef));
 }
@@ -741,7 +754,12 @@ function buildCodingPropertyTable(result: SchemaDefinition): void {
   });
 }
 
-function writeMigrations(b: FileBuilder, startDefinition: SchemaDefinition, targetDefinition: SchemaDefinition): void {
+function writeMigrations(
+  b: FileBuilder,
+  startDefinition: SchemaDefinition,
+  targetDefinition: SchemaDefinition,
+  options: BuildMigrationOptions
+): void {
   b.append("import { PoolClient } from 'pg';");
   b.newLine();
   b.append('export async function run(client: PoolClient): Promise<void> {');
@@ -749,19 +767,24 @@ function writeMigrations(b: FileBuilder, startDefinition: SchemaDefinition, targ
 
   for (const targetTable of targetDefinition.tables) {
     const startTable = startDefinition.tables.find((t) => t.name === targetTable.name);
-    migrateTable(b, startTable, targetTable);
+    migrateTable(b, startTable, targetTable, options);
   }
 
   b.indentCount--;
   b.append('}');
 }
 
-function migrateTable(b: FileBuilder, startTable: TableDefinition | undefined, targetTable: TableDefinition): void {
+function migrateTable(
+  b: FileBuilder,
+  startTable: TableDefinition | undefined,
+  targetTable: TableDefinition,
+  options: BuildMigrationOptions
+): void {
   if (!startTable) {
     writeCreateTable(b, targetTable);
   } else {
     migrateColumns(b, startTable, targetTable);
-    migrateIndexes(b, startTable, targetTable);
+    migrateIndexes(b, startTable, targetTable, options);
   }
 }
 
@@ -859,7 +882,12 @@ function writeAddPrimaryKey(b: FileBuilder, tableDefinition: TableDefinition, pr
   );
 }
 
-function migrateIndexes(b: FileBuilder, startTable: TableDefinition, targetTable: TableDefinition): void {
+function migrateIndexes(
+  b: FileBuilder,
+  startTable: TableDefinition,
+  targetTable: TableDefinition,
+  options: BuildMigrationOptions
+): void {
   const matchedIndexes = new Set<IndexDefinition>();
   for (const targetIndex of targetTable.indexes) {
     const startIndex = startTable.indexes.find((i) => indexDefinitionsEqual(i, targetIndex));
@@ -876,7 +904,7 @@ function migrateIndexes(b: FileBuilder, startTable: TableDefinition, targetTable
         `[${startTable.name}] Existing index should not exist:`,
         startIndex.indexdef || JSON.stringify(startIndex)
       );
-      if (DROP_UNMATCHED_INDEXES) {
+      if (options?.dropUnmatchedIndexes) {
         const indexName = startIndex.indexdef?.match(/INDEX "?(.+)"? ON/)?.[1];
         if (!indexName) {
           throw new Error('Could not extract index name from ' + startIndex.indexdef);
