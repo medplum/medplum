@@ -1,6 +1,6 @@
 import { Button, Divider, Modal, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications, showNotification } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import {
@@ -44,22 +44,22 @@ export function SuperAdminPage(): JSX.Element {
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .then(() => notifications.show({ color: 'green', message: 'Done' }))
+      .catch((err) => notifications.show({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function purgeResources(formData: Record<string, string>): void {
     medplum
       .post('admin/super/purge', { ...formData, before: convertLocalToIso(formData.before) })
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .then(() => notifications.show({ color: 'green', message: 'Done' }))
+      .catch((err) => notifications.show({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function forceSetPassword(formData: Record<string, string>): void {
     medplum
       .post('admin/super/setpassword', formData)
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .then(() => notifications.show({ color: 'green', message: 'Done' }))
+      .catch((err) => notifications.show({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function getDatabaseStats(formData: Record<string, string>): void {
@@ -78,7 +78,7 @@ export function SuperAdminPage(): JSX.Element {
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
         open();
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .catch((err) => notifications.show({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function getSchemaDiff(): void {
@@ -252,7 +252,7 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, async
           });
           break;
         case 'cancelled': {
-          const notification = {
+          const cancelledNotif = {
             id: url,
             color: 'red',
             title,
@@ -262,8 +262,13 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, async
             autoClose: false,
             withCloseButton: true,
           };
-          if (!notifications.update(notification)) {
-            notifications.show(notification);
+          // If the signal has been aborted, it means we made the change via our X button
+          // That removes the notification so we have to show it again
+          if (controller.signal.aborted) {
+            notifications.show(cancelledNotif);
+          } else {
+            // Since the signal isn't aborted, the job was cancelled from elsewhere. We can just update the notification
+            notifications.update(cancelledNotif);
           }
           break;
         }
