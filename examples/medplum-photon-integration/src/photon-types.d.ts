@@ -1,7 +1,7 @@
 export type PhotonPatient = {
   id: string;
   externalId?: string;
-  name: PhotonNmae;
+  name: PhotonName;
   dateOfBirth: string;
   sex: PhotonSexType;
   gender?: string;
@@ -9,7 +9,7 @@ export type PhotonPatient = {
   phone: string;
   allergies?: PhotonPatientAllergy[];
   medicationHistory?: PhotonPatientMedication[];
-  address?: Address;
+  address?: PhotonAddress;
   prescriptions?: PhotonPrescription[];
   orders?: PhotonOrder[];
   preferredPharmacy?: PhotonPharmacy[];
@@ -97,7 +97,7 @@ export type Fill = {
   state: 'SCHEDULED' | 'NEW' | 'SENT' | 'CANCELED';
   requestedAt: string;
   filledAt?: string;
-  order: PhotonOrder;
+  order?: PhotonOrder;
 };
 
 export type PhotonPharmacy = {
@@ -123,11 +123,11 @@ export type PhotonDiagnosis = {
 export type PhotonProvider = {
   id: string;
   externalId?: string;
-  name: Name;
+  name: PhotonName;
   email: string;
   phone: string;
   fax?: string;
-  address: Address;
+  address: PhotonAddress;
   organizations: PhotonOrganization[];
   NPI?: string;
 };
