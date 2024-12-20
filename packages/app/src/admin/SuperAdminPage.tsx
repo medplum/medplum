@@ -192,11 +192,11 @@ export function SuperAdminPage(): JSX.Element {
         </Stack>
       </Form>
       <Divider my="lg" />
-      <Title order={2}>Database schema drift</Title>
+      <Title order={2}>Database Schema Drift</Title>
       <p>Show the schema migration needed to match the expected database schema.</p>
       <Form onSubmit={getSchemaDiff}>
         <Stack>
-          <Button type="submit">Get database schema diff</Button>
+          <Button type="submit">Get Database Schema Drift</Button>
         </Stack>
       </Form>
 
