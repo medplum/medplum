@@ -172,11 +172,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     // If there are allergies, create entries and add them to the bundle
     if (allergies) {
       const allergyEntries: BundleEntry[] = allergies.map((allergy) => {
+        const allergyCode = allergy.code?.coding?.find((code) => code.system === RXNORM)?.code;
         return {
           fullUrl: 'urn:uuid:' + randomUUID(),
           request: {
             method: 'PUT',
-            url: `AllergyIntolerance?_source=${NEUTRON_HEALTH}&code=${allergy.code}&patient.identifier=${NEUTRON_HEALTH_PATIENTS}|${photonPatient.id}`,
+            url: `AllergyIntolerance?_source=${NEUTRON_HEALTH}&code=${allergyCode}&patient.identifier=${NEUTRON_HEALTH_PATIENTS}|${photonPatient.id}`,
           },
           resource: allergy,
         };
