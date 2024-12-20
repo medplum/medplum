@@ -20,7 +20,7 @@ jobs:
       pull-requests: write
     strategy:
       matrix:
-        node-version: [18, 20]
+        node-version: [20, 22]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
       NODE_VERSION: ${{ matrix.node-version }}
@@ -155,8 +155,8 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        node-version: [18, 20]
-        pg-version: [12, 14, 16]
+        node-version: [20, 22]
+        pg-version: [14, 16]
         redis-version: [6, 7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
