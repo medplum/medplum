@@ -6,10 +6,10 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
-import { DatabaseMode, getDatabasePool } from '../../database';
 
 const app = express();
 let practitioner: Practitioner;
@@ -1080,6 +1080,53 @@ describe('GraphQL', () => {
         PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: null }] }],
       });
     });
+  });
+
+  test('Create Task with groupIdentifier', async () => {
+    const { accessToken } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'CodeSystem',
+            readonly: true,
+          },
+          {
+            resourceType: 'ValueSet',
+            readonly: true,
+          },
+          {
+            resourceType: 'Task',
+            criteria: 'Task?group-identifier=http://example.com/group-identifier-system|example',
+          },
+        ],
+      },
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `mutation {
+          TaskCreate(
+            res: {
+              resourceType: "Task"
+              status: "requested"
+              intent: "order"
+              groupIdentifier: {
+                system: "http://example.com/group-identifier-system"
+                value: "example"
+              }
+            }
+          )
+          { id }
+        }`,
+      });
+    expect('errors' in res.body).toStrictEqual(false);
+    expect(res.body?.data?.TaskCreate?.id).toBeDefined();
   });
 
   test('Uses reader instance when available', async () => {
