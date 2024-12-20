@@ -81,6 +81,17 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
+  function getSchemaDiff(): void {
+    medplum
+      .post('fhir/R4/$db-schema-diff')
+      .then((params: Parameters) => {
+        setModalTitle('Schema Diff');
+        setModalContent(<pre>{params.parameter?.find((p) => p.name === 'migrationString')?.valueString}</pre>);
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
   return (
     <Document width={600}>
       <Title order={1}>Super Admin</Title>
@@ -180,7 +191,16 @@ export function SuperAdminPage(): JSX.Element {
           <Button type="submit">Get Database Stats</Button>
         </Stack>
       </Form>
-      <Modal opened={opened} onClose={close} title={modalTitle} centered>
+      <Divider my="lg" />
+      <Title order={2}>Database Schema Drift</Title>
+      <p>Show the schema migration needed to match the expected database schema.</p>
+      <Form onSubmit={getSchemaDiff}>
+        <Stack>
+          <Button type="submit">Get Database Schema Drift</Button>
+        </Stack>
+      </Form>
+
+      <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>
     </Document>
