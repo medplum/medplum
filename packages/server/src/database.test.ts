@@ -157,7 +157,7 @@ describe('Database config', () => {
   });
 });
 
-describe.only('Advisory locks', () => {
+describe('Advisory locks', () => {
   let clientA: PoolClient;
   let clientB: PoolClient;
 
