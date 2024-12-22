@@ -103,13 +103,6 @@ async function runMigrations(pool: Pool): Promise<void> {
     await migrate(client);
   } catch (err: any) {
     globalLogger.error('Database schema migration error', err);
-    if (client) {
-      if (hasLock) {
-        await releaseAdvisoryLock(client, locks.migration);
-      }
-      client.release(err);
-      client = undefined;
-    }
   } finally {
     if (client) {
       if (hasLock) {
@@ -135,13 +128,9 @@ export async function acquireAdvisoryLock(
   const maxAttempts = options?.maxAttempts ?? 30;
   let attempts = 0;
   while (attempts < maxAttempts) {
-    try {
-      const result = await client.query<{ pg_try_advisory_lock: boolean }>('SELECT pg_try_advisory_lock($1)', [lockId]);
-      if (result.rows[0].pg_try_advisory_lock) {
-        return true;
-      }
-    } catch (err) {
-      globalLogger.error('acquireAdvisoryLock error', { err });
+    const result = await client.query<{ pg_try_advisory_lock: boolean }>('SELECT pg_try_advisory_lock($1)', [lockId]);
+    if (result.rows[0].pg_try_advisory_lock) {
+      return true;
     }
     attempts++;
     if (attempts === maxAttempts) {
