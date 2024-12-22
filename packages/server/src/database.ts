@@ -141,7 +141,7 @@ export async function acquireAdvisoryLock(
         return true;
       }
     } catch (err) {
-      console.log('acquireAdvisoryLock error', err);
+      globalLogger.error('acquireAdvisoryLock error', { err });
     }
     attempts++;
     if (attempts === maxAttempts) {
