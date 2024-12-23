@@ -35,7 +35,8 @@ EXCLUDE="@types/express @types/react @types/react-dom eslint node-fetch react re
 # --reject - Exclude packages matching the given string
 # --target - Determines the version to upgrade to
 # "minor" - Upgrade to the highest minor version without bumping the major version
-npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target minor
+# `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
+npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target minor --enginesNode
 
 # Commit and push before running NPM install
 git add -u .
@@ -54,7 +55,8 @@ gh pr ready
 
 # Next, optimistically upgrade to the latest versions
 # "latest" - Upgrade to whatever the package's "latest" git tag points to.
-npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target latest
+# `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
+npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target latest --enginesNode
 
 # Check for changes in the working directory
 if git diff --quiet; then

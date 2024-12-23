@@ -60,7 +60,7 @@
     "turbo": "2.3.3",
     "typescript": "5.7.2"
   },
-  "packageManager": "npm@11.0.0",
+  "packageManager": "npm@10.9.2",
   "engines": {
     "node": ">=18.0.0"
   },
