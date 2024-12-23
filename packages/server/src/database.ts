@@ -103,6 +103,7 @@ async function runMigrations(pool: Pool): Promise<void> {
     await migrate(client);
   } catch (err: any) {
     globalLogger.error('Database schema migration error', err);
+    throw err;
   } finally {
     if (client) {
       if (hasLock) {
