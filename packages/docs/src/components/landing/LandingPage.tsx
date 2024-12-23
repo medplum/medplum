@@ -62,7 +62,7 @@ export function LandingPage(): JSX.Element {
               </Card>
               <Card>
                 <div className={styles.cardImage}>
-                  <AnimatedCircle value={90} />
+                  <AnimatedCircle value={114} />
                 </div>
                 <h3>Elite healthcare dev contributors</h3>
                 <p>
