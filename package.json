@@ -70,6 +70,7 @@
     "formidable": "3.5.2",
     "got": "11.8.6",
     "react": "18.2.0",
+    "react-compiler-runtime": "latest",
     "react-dom": "18.2.0",
     "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@1.4.15",
     "trim": "0.0.3",
