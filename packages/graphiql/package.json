@@ -26,8 +26,8 @@
   "devDependencies": {
     "@graphiql/react": "0.28.2",
     "@graphiql/toolkit": "0.11.1",
-    "@mantine/core": "7.15.1",
-    "@mantine/hooks": "7.15.1",
+    "@mantine/core": "7.15.2",
+    "@mantine/hooks": "7.15.2",
     "@medplum/core": "3.2.26",
     "@medplum/fhirtypes": "3.2.26",
     "@medplum/react": "3.2.26",

@@ -26,9 +26,9 @@
     ]
   },
   "devDependencies": {
-    "@mantine/core": "7.15.1",
-    "@mantine/hooks": "7.15.1",
-    "@mantine/notifications": "7.15.1",
+    "@mantine/core": "7.15.2",
+    "@mantine/hooks": "7.15.2",
+    "@mantine/notifications": "7.15.2",
     "@medplum/core": "3.2.26",
     "@medplum/definitions": "3.2.26",
     "@medplum/eslint-config": "3.2.26",
