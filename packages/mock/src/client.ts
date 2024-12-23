@@ -523,6 +523,13 @@ export class MockFetchClient {
       return allOk;
     }
 
+    if (path.startsWith('auth/mfa/disable')) {
+      if (options.body && JSON.parse(options.body)?.token !== 'INVALID_TOKEN') {
+        return allOk;
+      }
+      return badRequest('Invalid token');
+    }
+
     return null;
   }
 
