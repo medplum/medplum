@@ -1,6 +1,9 @@
+import { Center } from '@mantine/core';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useRef, useState } from 'react';
 import { CcdaDisplay } from '../CcdaDisplay/CcdaDisplay';
+import { Document } from '../Document/Document';
+import { Loading } from '../Loading/Loading';
 
 export interface XmlDisplayProps {
   readonly url?: string;
@@ -30,9 +33,9 @@ export function XmlDisplay(props: XmlDisplayProps): JSX.Element | null {
       return;
     }
     // Both of these strings are required to be within a valid C-CDA document
-    // "2.16.840.1.113883.10.20.22.2.x" is the ID pattern for various Structure Definitions for C-CDA document elements
+    // The root element in a CDA document should be a "ClinicalDocument"
     // "urn:hl7-org:v3" is a required namespace to be referenced by all valid C-CDA documents as well
-    if (xml.includes('2.16.840.1.113883.10.20.22.2.') && xml.includes('urn:hl7-org:v3')) {
+    if (xml.includes('<ClinicalDocument') && xml.includes('xmlns="urn:hl7-org:v3"')) {
       setXmlIsCcda(true);
     } else {
       setXmlIsCcda(false);
@@ -41,6 +44,16 @@ export function XmlDisplay(props: XmlDisplayProps): JSX.Element | null {
 
   if (!url) {
     return null;
+  }
+
+  if (!xml) {
+    return (
+      <Document>
+        <Center>
+          <Loading />
+        </Center>
+      </Document>
+    );
   }
 
   return xmlIsCcda ? (

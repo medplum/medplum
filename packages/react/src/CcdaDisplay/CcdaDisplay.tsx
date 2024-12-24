@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { sendCommand } from '../utils/dom';
 
 const CCDA_VIEWER_URL = 'https://ccda.medplum.com';
 
@@ -41,26 +42,4 @@ export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
       />
     </div>
   );
-}
-
-export type Command = {
-  command: string;
-  value: string;
-};
-
-function sendCommand(frame: HTMLIFrameElement, command: Command): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const channel = new MessageChannel();
-
-    channel.port1.onmessage = ({ data }) => {
-      channel.port1.close();
-      if (data.error) {
-        reject(data.error);
-      } else {
-        resolve(data.result);
-      }
-    };
-
-    frame.contentWindow?.postMessage(command, CCDA_VIEWER_URL, [channel.port2]);
-  });
 }
