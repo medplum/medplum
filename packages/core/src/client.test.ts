@@ -1116,12 +1116,14 @@ describe('Client', () => {
         switch (type) {
           case 'json': {
             // Simulate parsing non-JSON
+            // This will always throw
             JSON.parse('EMPTY');
             break;
           }
           default:
             return '';
         }
+        throw new Error('UNREACHABLE');
       };
       return Promise.resolve({
         ok: true,
