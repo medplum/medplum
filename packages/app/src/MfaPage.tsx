@@ -1,6 +1,6 @@
 import { Button, Center, Group, Modal, TextInput, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { isOk, normalizeErrorString, OperationOutcomeError } from '@medplum/core';
+import { normalizeErrorString } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { Document, Form, useMedplum } from '@medplum/react';
 import { IconCircleCheck } from '@tabler/icons-react';
@@ -57,10 +57,8 @@ export function MfaPage(): JSX.Element | null {
         <Modal title="Disable MFA" opened={disabling} onClose={() => setDisabling(false)}>
           <MfaForm
             onSubmit={async (formData) => {
-              const outcome = await disableMfa(formData);
-              if (!isOk(outcome)) {
-                throw new OperationOutcomeError(outcome);
-              }
+              // This will throw if MFA failed to disable
+              await disableMfa(formData);
               setDisabling(false);
               setEnrolled(false);
               showNotification({
