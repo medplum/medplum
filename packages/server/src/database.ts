@@ -91,10 +91,9 @@ export async function closeDatabase(): Promise<void> {
 }
 
 async function runMigrations(pool: Pool): Promise<void> {
-  let client: PoolClient | undefined;
+  const client = await pool.connect();
   let hasLock = false;
   try {
-    client = await pool.connect();
     hasLock = await acquireAdvisoryLock(client, locks.migration);
     if (!hasLock) {
       throw new Error('Failed to acquire migration lock');
@@ -105,13 +104,10 @@ async function runMigrations(pool: Pool): Promise<void> {
     globalLogger.error('Database schema migration error', err);
     throw err;
   } finally {
-    if (client) {
-      if (hasLock) {
-        await releaseAdvisoryLock(client, locks.migration);
-      }
-      client.release(true); // Ensure migration connection is torn down and not re-used
-      client = undefined;
+    if (hasLock) {
+      await releaseAdvisoryLock(client, locks.migration);
     }
+    client.release(true); // Ensure migration connection is torn down and not re-used
   }
 }
 

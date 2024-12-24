@@ -108,9 +108,9 @@ describe('Database config', () => {
     poolSpy.mockClear();
   });
 
-  // afterEach(async () => {
-  //   await closeDatabase();
-  // });
+  afterEach(async () => {
+    await closeDatabase();
+  });
 
   test('SSL config', async () => {
     const config = await loadConfig('file:test.config.json');
