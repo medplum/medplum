@@ -1,9 +1,9 @@
 import { deepClone, sleep } from '@medplum/core';
 import { EventEmitter } from 'node:events';
 import { Duplex } from 'node:stream';
-import pg, { Pool, PoolClient, PoolConfig, QueryArrayResult } from 'pg';
+import pg, { Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, QueryResult, QueryResultRow } from 'pg';
 import { Readable, Writable } from 'stream';
-import { MedplumDatabaseConfig, MedplumDatabaseSslConfig, loadConfig, loadTestConfig } from './config';
+import { loadConfig, loadTestConfig, MedplumDatabaseConfig, MedplumDatabaseSslConfig } from './config';
 import {
   acquireAdvisoryLock,
   closeDatabase,
@@ -21,14 +21,19 @@ describe('Database config', () => {
       class MockPoolClient extends Duplex implements PoolClient {
         release(): void {}
         async connect(): Promise<void> {}
-        async query(): Promise<QueryArrayResult<any>> {
-          return {
+        async query<R extends QueryResultRow = any, I = any[]>(sql: string | QueryConfig<I>): Promise<QueryResult<R>> {
+          const result: QueryResult<R> = {
             command: '',
             rowCount: null,
             oid: -1,
             fields: [],
             rows: [],
           };
+          if (sql === 'SELECT pg_try_advisory_lock($1)') {
+            result.rows = [{ pg_try_advisory_lock: true } as unknown as R];
+          }
+
+          return result;
         }
         copyFrom(_queryText: string): Writable {
           return new Writable();
@@ -94,13 +99,18 @@ describe('Database config', () => {
       return new MockPool();
     });
   });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
   beforeEach(() => {
     poolSpy.mockClear();
   });
 
-  afterEach(async () => {
-    await closeDatabase();
-  });
+  // afterEach(async () => {
+  //   await closeDatabase();
+  // });
 
   test('SSL config', async () => {
     const config = await loadConfig('file:test.config.json');
