@@ -1104,6 +1104,44 @@ describe('Client', () => {
     expect(result).toStrictEqual({});
   });
 
+  test('HTTP CREATE with Content-Length 0', async () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error');
+    const fetch: FetchLike = async (_url: string, _options: RequestInit): Promise<any> => {
+      let streamRead = false;
+      const streamReader = async (type: 'json' | 'blob' | 'text'): Promise<any> => {
+        if (streamRead) {
+          throw new Error('Stream already read');
+        }
+        streamRead = true;
+        switch (type) {
+          case 'json': {
+            // Simulate parsing non-JSON
+            JSON.parse('EMPTY');
+            break;
+          }
+          default:
+            return '';
+        }
+      };
+      return Promise.resolve({
+        ok: true,
+        status: 201,
+        headers: new Map<string, string>([
+          ['content-type', 'application/json'],
+          ['content-length', '0'],
+        ]),
+        blob: () => streamReader('blob'),
+        json: () => streamReader('json'),
+        text: () => streamReader('text'),
+      });
+    };
+    const client = new MedplumClient({ fetch });
+    await expect(client.post('Practitioner/123', { resourceType: 'Practitioner' })).resolves.toStrictEqual(undefined);
+
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
   test('Read expired and refresh', async () => {
     let tokenExpired = true;
 

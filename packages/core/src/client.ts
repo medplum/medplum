@@ -3195,20 +3195,20 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       throw new OperationOutcomeError(notFound);
     }
 
-    const obj = await this.parseBody(response, isJson);
+    const body = await this.parseBody(response, isJson);
 
     if (
       (response.status === 200 && options.followRedirectOnOk) ||
       (response.status === 201 && options.followRedirectOnCreated)
     ) {
-      const contentLocation = await tryGetContentLocation(response, obj);
+      const contentLocation = await tryGetContentLocation(response, body);
       if (contentLocation) {
         return this.request('GET', contentLocation, { ...options, body: undefined });
       }
     }
 
     if (response.status === 202 && options.pollStatusOnAccepted) {
-      const contentLocation = await tryGetContentLocation(response, obj);
+      const contentLocation = await tryGetContentLocation(response, body);
       const statusUrl = contentLocation ?? state.statusUrl;
       if (statusUrl) {
         return this.pollStatus(statusUrl, options, state);
@@ -3216,25 +3216,32 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
 
     if (response.status >= 400) {
-      throw new OperationOutcomeError(normalizeOperationOutcome(obj));
+      throw new OperationOutcomeError(normalizeOperationOutcome(body));
     }
 
-    return obj;
+    return body as T;
   }
 
-  private async parseBody(response: Response, isJson: boolean | undefined): Promise<any> {
-    let obj: any = undefined;
+  private async parseBody(
+    response: Response,
+    isJson: boolean | undefined
+  ): Promise<Record<string, any> | string | undefined> {
+    let body: Record<string, string> | string | undefined = undefined;
+    // If there is no content length, don't attempt to parse the body
+    if (response.headers.get('content-length') === '0') {
+      return undefined;
+    }
     if (isJson) {
       try {
-        obj = await response.json();
+        body = await response.json();
       } catch (err) {
         console.error('Error parsing response', response.status, err);
         throw err;
       }
     } else {
-      obj = await response.text();
+      body = await response.text();
     }
-    return obj;
+    return body;
   }
 
   private async fetchWithRetry(url: string, options: MedplumRequestOptions): Promise<Response> {
@@ -4092,7 +4099,10 @@ function getWindowOrigin(): string {
  * @param body - The response body.
  * @returns A Promise that resolves to the content location string if it is found, or 'undefined' if the content location cannot be determined from the response.
  */
-async function tryGetContentLocation(response: Response, body: any): Promise<string | undefined> {
+async function tryGetContentLocation(
+  response: Response,
+  body: Record<string, string> | string | undefined
+): Promise<string | undefined> {
   // Accepted content location can come from multiple sources
   // The authoritative source is the "Content-Location" HTTP header.
   const contentLocation = response.headers.get('content-location');
