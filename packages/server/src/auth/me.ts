@@ -5,7 +5,6 @@ import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
-
 import Bowser from 'bowser';
 
 interface UserSession {
