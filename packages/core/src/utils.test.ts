@@ -28,6 +28,7 @@ import {
   findObservationInterval,
   findObservationReferenceRange,
   findResourceByCode,
+  findResourceById,
   flatMapFilter,
   getAllQuestionnaireAnswers,
   getCodeBySystem,
@@ -1260,6 +1261,49 @@ describe('Core Utils', () => {
 
     const result = findResourceByCode(observations, codeToFindAsString, system);
     expect(result).toStrictEqual(observations[0]);
+  });
+
+  describe('findResourceById', () => {
+    const bundle: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          resource: {
+            resourceType: 'Practitioner',
+            id: '1',
+            identifier: [{ system: 'http://example.com', value: '123' }],
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '1',
+            identifier: [{ system: 'http://example.com', value: '456' }],
+          },
+        },
+        {
+          resource: {
+            resourceType: 'Patient',
+            id: '2',
+            identifier: [{ system: 'http://example.com', value: '789' }],
+          },
+        },
+      ],
+    };
+    test('Should find an Patient by ID', () => {
+      const expectedResult = bundle.entry?.[2].resource;
+      const result = findResourceById(bundle, 'Patient', '2');
+      expect(result).toStrictEqual(expectedResult);
+    });
+    test('Result is undefined for not finding any matching ID', () => {
+      const resultNoIdMatch = findResourceById(bundle, 'Patient', '3');
+      const resultTypeMismatch = findResourceById(bundle, 'Practitioner', '2');
+      const resultNoTypeMatch = findResourceById(bundle, 'Observation', '1');
+      expect(resultNoIdMatch).toStrictEqual(undefined);
+      expect(resultTypeMismatch).toStrictEqual(undefined);
+      expect(resultNoTypeMatch).toStrictEqual(undefined);
+    });
   });
 
   test('splitN', () => {
