@@ -1024,11 +1024,28 @@ export function findResourceByCode(
  * 
  * The logical ID is unique wihin the space of all resources of the same type.
  * @param resourceBundle - The bundle of resources.
+ * @param resourceKey - String of the resource's type and logical ID delimited by a forward slash. E.g. "Patient/123".
+ * @returns The first resource in the input array that matches the key, or undefined if no such resource is found.
+ */
+export function findResourceById<T extends Resource = Resource>(
+  resourceBundle: Bundle<T>,
+  resourceKey: `${T['resourceType']}/${string}`
+): T | undefined {
+  return resourceBundle.entry?.find(
+    ({ resource }) => `${resource?.resourceType}/${resource?.id}` === resourceKey
+  )?.resource as T | undefined;
+}
+
+/**
+ * Tries to find the first resource in the bundle that matches a given resource type and logical ID.
+ * 
+ * The logical ID is unique wihin the space of all resources of the same type.
+ * @param resourceBundle - The bundle of resources.
  * @param resourceType - String of the resource type.
  * @param id - The logical ID of the resource to search for.
  * @returns The first resource in the input array that matches the specified type and ID, or undefined if no such resource is found.
  */
-export function findResourceById<T extends Resource = Resource>(
+export function findResourceByLogicalId<T extends Resource = Resource>(
   resourceBundle: Bundle<T>,
   resourceType: T['resourceType'],
   id: string
