@@ -1021,7 +1021,7 @@ export function findResourceByCode(
 
 /**
  * Tries to find the first resource in the bundle that matches a given resource type and logical ID.
- * 
+ *
  * The logical ID is unique wihin the space of all resources of the same type.
  * @param resourceBundle - The bundle of resources.
  * @param resourceKey - String of the resource's type and logical ID delimited by a forward slash. E.g. "Patient/123".
@@ -1031,14 +1031,13 @@ export function findResourceById<T extends Resource = Resource>(
   resourceBundle: Bundle<T>,
   resourceKey: `${T['resourceType']}/${string}`
 ): T | undefined {
-  return resourceBundle.entry?.find(
-    ({ resource }) => `${resource?.resourceType}/${resource?.id}` === resourceKey
-  )?.resource as T | undefined;
+  return resourceBundle.entry?.find(({ resource }) => `${resource?.resourceType}/${resource?.id}` === resourceKey)
+    ?.resource as T | undefined;
 }
 
 /**
  * Tries to find the first resource in the bundle that matches a given resource type and logical ID.
- * 
+ *
  * The logical ID is unique wihin the space of all resources of the same type.
  * @param resourceBundle - The bundle of resources.
  * @param resourceType - String of the resource type.
@@ -1050,9 +1049,8 @@ export function findResourceByLogicalId<T extends Resource = Resource>(
   resourceType: T['resourceType'],
   id: string
 ): T | undefined {
-  return resourceBundle.entry?.find(
-    ({ resource }) => resource?.resourceType === resourceType && resource?.id === id
-  )?.resource as T | undefined;
+  return resourceBundle.entry?.find(({ resource }) => resource?.resourceType === resourceType && resource?.id === id)
+    ?.resource as T | undefined;
 }
 
 export function arrayify<T>(value: T | T[] | undefined): T[] | undefined {
