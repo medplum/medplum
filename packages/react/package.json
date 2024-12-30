@@ -68,9 +68,9 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@mantine/core": "7.15.1",
-    "@mantine/hooks": "7.15.1",
-    "@mantine/notifications": "7.15.1",
+    "@mantine/core": "7.15.2",
+    "@mantine/hooks": "7.15.2",
+    "@mantine/notifications": "7.15.2",
     "@medplum/core": "3.2.26",
     "@medplum/definitions": "3.2.26",
     "@medplum/fhirtypes": "3.2.26",
@@ -105,7 +105,7 @@
     "rimraf": "5.0.9",
     "sinon": "19.0.2",
     "storybook": "8.4.7",
-    "storybook-addon-mantine": "4.0.2",
+    "storybook-addon-mantine": "4.1.0",
     "typescript": "5.7.2",
     "vite-plugin-turbosnap": "^1.0.3"
   },
