@@ -1,12 +1,13 @@
-import { Resource } from '@medplum/fhirtypes';
 import { BackgroundJobContext } from '@medplum/core';
+import { Resource } from '@medplum/fhirtypes';
 import { MedplumServerConfig } from '../config';
 import { globalLogger } from '../logger';
+import { initAsyncJobPollerWorker } from './asyncjobpoller';
+import { closeBatchWorker, initBatchWorker } from './batch';
 import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
 import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
-import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
 import { closeReindexWorker, initReindexWorker } from './reindex';
-import { closeBatchWorker, initBatchWorker } from './batch';
+import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
 
 /**
  * Initializes all background workers.
@@ -19,6 +20,7 @@ export function initWorkers(config: MedplumServerConfig): void {
   initCronWorker(config);
   initReindexWorker(config);
   initBatchWorker(config);
+  initAsyncJobPollerWorker(config);
   globalLogger.debug('Workers initialized');
 }
 
