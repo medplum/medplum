@@ -1,11 +1,11 @@
 import { getReferenceString, Operator, ProfileResource } from '@medplum/core';
 import { Login, Project, ProjectMembership, Reference, User, UserConfiguration } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
-import { UAParser } from 'ua-parser-js';
 import { getAuthenticatedContext } from '../context';
 import { getAccessPolicyForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import Bowser from 'bowser';
 
 interface UserSession {
   id: string;
@@ -145,18 +145,16 @@ async function getSessions(systemRepo: Repository, user: User): Promise<UserSess
       continue;
     }
 
-    let uaParser = undefined;
-    if (login.userAgent) {
-      uaParser = new UAParser(login.userAgent);
-    }
+    // Previously used ua-parser, but ultimately replaced due to incompatible licence
+    const browser = login.userAgent ? Bowser.getParser(login.userAgent) : undefined;
 
     result.push({
       id: login.id as string,
       lastUpdated: login.meta?.lastUpdated as string,
       authMethod: login.authMethod as string,
       remoteAddress: login.remoteAddress as string,
-      browser: uaParser?.getBrowser()?.name,
-      os: uaParser?.getOS()?.name,
+      browser: browser?.getBrowser()?.name,
+      os: browser?.getOS()?.name,
     });
   }
   return result;
