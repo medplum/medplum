@@ -35,3 +35,35 @@ export function isCheckboxCell(el: Element): boolean {
 function isCheckboxElement(el: Element): boolean {
   return el instanceof HTMLInputElement && el.type === 'checkbox';
 }
+
+export type Command<T = string> = {
+  command: string;
+  value?: T;
+};
+
+/**
+ * Sends a structured command to the iframe using postMessage.
+ *
+ * Normally postMessage implies global event listeners. This method uses
+ * MessageChannel to create a message channel between the iframe and the parent.
+ * @param frame - The receiving IFrame.
+ * @param command - The command to send.
+ * @returns Promise to the response from the IFrame.
+ * @see https://advancedweb.hu/how-to-use-async-await-with-postmessage/
+ */
+export async function sendCommand<T = string, R = unknown>(frame: HTMLIFrameElement, command: Command<T>): Promise<R> {
+  return new Promise((resolve, reject) => {
+    const channel = new MessageChannel();
+
+    channel.port1.onmessage = ({ data }) => {
+      channel.port1.close();
+      if (data.error) {
+        reject(data.error);
+      } else {
+        resolve(data.result);
+      }
+    };
+
+    frame.contentWindow?.postMessage(command, new URL(frame.src).origin, [channel.port2]);
+  });
+}

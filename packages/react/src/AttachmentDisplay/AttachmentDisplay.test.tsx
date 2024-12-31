@@ -3,6 +3,14 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '../test-utils/render';
 import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
 
+const EXAMPLE_XML = `
+<note>
+  <to>Tove</to>
+  <from>Jani</from>
+  <heading>Reminder</heading>
+  <body>Don't forget me this weekend!</body>
+</note>`;
+
 function mockFetch(url: string, options: any): Promise<any> {
   const result: any = {};
 
@@ -111,5 +119,25 @@ describe('AttachmentDisplay', () => {
     });
     expect(await screen.findByTestId('attachment-details')).toBeInTheDocument();
     expect(screen.getByText('Download')).toBeInTheDocument();
+  });
+
+  test('Renders XML', async () => {
+    jest.spyOn(medplum, 'download').mockImplementation(async (url: URL | string): Promise<Blob> => {
+      const urlString = url.toString();
+      if (urlString.endsWith('note.xml')) {
+        return {
+          text: () => Promise.resolve(EXAMPLE_XML),
+        } as unknown as Blob;
+      }
+      throw new Error('UNREACHABLE: Invalid url');
+    });
+    await setup({
+      value: {
+        contentType: 'text/xml',
+        url: 'https://example.com/note.xml',
+        title: 'note.xml',
+      },
+    });
+    expect(await screen.findByTestId('xml-display-iframe')).toBeInTheDocument();
   });
 });
