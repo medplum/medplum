@@ -12,6 +12,7 @@ import {
   Bundle,
   BundleEntry,
   ContactPoint,
+  MedicationDispense,
   MedicationRequest,
   Patient,
   Practitioner,
@@ -19,6 +20,7 @@ import {
 } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import {
+  Fill,
   PhotonAddress,
   PhotonPatient,
   PhotonPatientAllergy,
@@ -26,7 +28,7 @@ import {
   PhotonProvider,
 } from '../photon-types';
 import { NEUTRON_HEALTH, NEUTRON_HEALTH_PATIENTS } from './constants';
-import { getMedicationElement, handlePhotonAuth, photonGraphqlFetch } from './utils';
+import { getFillStatus, getMedicationElement, handlePhotonAuth, photonGraphqlFetch } from './utils';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<void> {
   const photonClientId = event.secrets['PHOTON_CLIENT_ID']?.valueString;
@@ -158,8 +160,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     // Create any allergies the patient has
     const allergies = createAllergies(patientReference, photonPatient.allergies);
 
-    // Create any prescriptions
-    const prescriptions = await createPrescriptions(patientReference, medplum, photonPatient.prescriptions);
+    // Create any MedicationRequest and MedicationDispense entries
+    const medicationHistoryEntries = await createMedicationHistoryEntries(
+      patientReference,
+      medplum,
+      photonPatient.prescriptions
+    );
 
     // Add the patient resource to a bundle
     const patientEntry: BundleEntry = {
@@ -186,16 +192,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     }
 
     // If there are prescriptions, create entries and add them to the bundle
-    if (prescriptions) {
-      const prescriptionEntries: BundleEntry[] = prescriptions.map((prescription) => {
-        const photonId = prescription.identifier?.find((id) => id.system === NEUTRON_HEALTH)?.value;
-        return {
-          fullUrl: 'urn:uuid:' + randomUUID(),
-          request: { method: 'PUT', url: `MedicationRequest?identifier=${NEUTRON_HEALTH}|${photonId}` },
-          resource: prescription,
-        };
-      });
-      batch.entry?.push(...prescriptionEntries);
+    if (medicationHistoryEntries) {
+      batch.entry?.push(...medicationHistoryEntries);
     }
   }
 
@@ -310,83 +308,172 @@ export function createAllergies(
   return allergies;
 }
 
-export async function createPrescriptions(
+/**
+ * Takes an array of Photon Prescription objects for a given patient and uses these to create the patient's medication
+ * history. This creates MedicationRequest resources to represent prescriptions and MedicationDispense resources to
+ * represent fills of these prescriptions. These are added to an array of Bundle entries that can be executed in a
+ * batch.
+ *
+ * @param patientReference - A reference to the Patient the MedicationRequests and MedicationDispenses are for
+ * @param medplum - Medplum Client used to get additional details from your project
+ * @param photonPrescriptions - An array of Photon Prescription objects used to create the medication history
+ * @returns An array of Bundle Entries containing the medication history of a patient
+ */
+export async function createMedicationHistoryEntries(
   patientReference: Reference<Patient>,
   medplum: MedplumClient,
   photonPrescriptions?: PhotonPrescription[]
-): Promise<MedicationRequest[] | undefined> {
+): Promise<BundleEntry<MedicationDispense | MedicationRequest>[] | undefined> {
   if (!photonPrescriptions || photonPrescriptions.length === 0) {
     return undefined;
   }
 
-  const prescriptions: MedicationRequest[] = [];
+  const entries: BundleEntry<MedicationDispense | MedicationRequest>[] = [];
   for (const photonPrescription of photonPrescriptions) {
-    if (await checkForExistingPrescription(medplum, photonPrescription)) {
-      continue;
+    let prescription: MedicationRequest | undefined = await getExistingPrescription(photonPrescription, medplum);
+    let prescriptionReference: Reference<MedicationRequest> | undefined;
+    if (!prescription) {
+      prescription = await createPrescriptionResource(photonPrescription, medplum, patientReference);
+      const prescriptionUrl = 'urn:uuid:' + randomUUID();
+      prescriptionReference = {
+        reference: prescriptionUrl,
+        display: getDisplayString(prescription),
+      };
+
+      entries.push({
+        fullUrl: prescriptionUrl,
+        request: { method: 'PUT', url: `MedicationRequest?identifier=${NEUTRON_HEALTH}|${photonPrescription.id}` },
+        resource: prescription,
+      });
+    } else {
+      prescriptionReference = createReference(prescription);
     }
 
-    const { codes, name } = photonPrescription.treatment;
-    const status = getStatusFromPhotonState(photonPrescription.state);
-    const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
-    const prescriber = await getPrescriber(medplum, photonPrescription.prescriber);
-    const requester: Reference<Practitioner> = prescriber
-      ? createReference(prescriber)
-      : { display: photonPrescription.prescriber.name.full };
-
-    const prescription: MedicationRequest = {
-      resourceType: 'MedicationRequest',
-      meta: {
-        source: NEUTRON_HEALTH,
-      },
-      status,
-      intent: 'order',
-      subject: patientReference,
-      identifier: [{ system: NEUTRON_HEALTH, value: photonPrescription.id }],
-      dispenseRequest: {
-        quantity: {
-          value: photonPrescription.dispenseQuantity,
-          unit: photonPrescription.dispenseUnit,
-        },
-        numberOfRepeatsAllowed: photonPrescription.refillsAllowed,
-        expectedSupplyDuration: { value: photonPrescription.daysSupply, unit: 'days' },
-        validityPeriod: {
-          start: photonPrescription.effectiveDate,
-          end: photonPrescription.expirationDate,
-        },
-      },
-      substitution: { allowedBoolean: !photonPrescription.dispenseAsWritten },
-      dosageInstruction: [{ patientInstruction: photonPrescription.instructions }],
-      authoredOn: photonPrescription.writtenAt,
-      medicationCodeableConcept: medicationElement,
-      requester,
-    };
-
-    if (photonPrescription.notes) {
-      prescription.note = [{ text: photonPrescription.notes }];
+    if (photonPrescription.fills) {
+      for (const fill of photonPrescription.fills) {
+        const dispense = await createDispenseResource(fill, medplum, prescriptionReference, patientReference);
+        entries.push({
+          fullUrl: 'urn:uuid:' + randomUUID(),
+          request: { method: 'PUT', url: `MedicationDispense?identifier=${NEUTRON_HEALTH}|${fill.id}` },
+          resource: dispense,
+        });
+      }
     }
-
-    prescriptions.push(prescription);
   }
-  return prescriptions;
+
+  return entries;
 }
 
-async function checkForExistingPrescription(
-  medplum: MedplumClient,
-  photonPrescription: PhotonPrescription
-): Promise<boolean> {
-  let prescription: MedicationRequest | undefined;
-  if (photonPrescription.externalId) {
-    prescription = await medplum.readResource('MedicationRequest', photonPrescription.externalId);
+async function getExistingPrescription(
+  photonPrescription: PhotonPrescription,
+  medplum: MedplumClient
+): Promise<MedicationRequest | undefined> {
+  const photonId = photonPrescription.id;
+  const id = photonPrescription.externalId;
+
+  try {
+    let prescription = await medplum.searchOne('MedicationRequest', {
+      identifier: NEUTRON_HEALTH + `|${photonId}`,
+    });
+
     if (prescription) {
-      return true;
+      return prescription;
     }
+
+    prescription = await medplum.searchOne('MedicationRequest', {
+      _id: id,
+    });
+
+    return prescription;
+  } catch (err) {
+    throw new Error(normalizeErrorString(err));
+  }
+}
+
+/**
+ * Takes a Photon Prescription object and uses it to create a corresponding MedicationRequest resource in FHIR. The resource is
+ * not created on the server, but returned so it can be added to a batch request.
+ *
+ * @param photonPrescription - The Photon Prescription object with the details used in the MedicationRequest
+ * @param medplum - Medplum Client to get additional details from your proeject
+ * @param patientReference - A reference to the Patient the prescription is for
+ * @returns A MedicationRequest resource to be created by adding to a batch request
+ */
+export async function createPrescriptionResource(
+  photonPrescription: PhotonPrescription,
+  medplum: MedplumClient,
+  patientReference: Reference<Patient>
+): Promise<MedicationRequest> {
+  const { codes, name } = photonPrescription.treatment;
+  const status = getStatusFromPhotonState(photonPrescription.state);
+  const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
+  const prescriber = await getPrescriber(medplum, photonPrescription.prescriber);
+  const requester: Reference<Practitioner> = prescriber
+    ? createReference(prescriber)
+    : { display: photonPrescription.prescriber.name.full };
+
+  const prescription: MedicationRequest = {
+    resourceType: 'MedicationRequest',
+    status,
+    intent: 'order',
+    subject: patientReference,
+    identifier: [{ system: NEUTRON_HEALTH, value: photonPrescription.id }],
+    dispenseRequest: {
+      quantity: {
+        value: photonPrescription.dispenseQuantity,
+        unit: photonPrescription.dispenseUnit,
+      },
+      numberOfRepeatsAllowed: photonPrescription.refillsAllowed,
+      expectedSupplyDuration: { value: photonPrescription.daysSupply, unit: 'days' },
+      validityPeriod: {
+        start: photonPrescription.effectiveDate,
+        end: photonPrescription.expirationDate,
+      },
+    },
+    substitution: { allowedBoolean: !photonPrescription.dispenseAsWritten },
+    dosageInstruction: [{ patientInstruction: photonPrescription.instructions }],
+    authoredOn: photonPrescription.writtenAt,
+    medicationCodeableConcept: medicationElement,
+    requester,
+  };
+
+  if (photonPrescription.notes) {
+    prescription.note = [{ text: photonPrescription.notes }];
   }
 
-  prescription = await medplum.searchOne('MedicationRequest', {
-    identifier: NEUTRON_HEALTH + `|${photonPrescription.id}`,
-  });
+  return prescription;
+}
 
-  return !!prescription;
+/**
+ * Takes a Photon Fill and uses it to create a MedicationDispense resource in FHIR. The resource is not created, but
+ * returned so it can be executed as part of a batch.
+ *
+ * @param fill - The Photon Fill resource that contains the details used to create the MedicationDispense
+ * @param medplum - Medplum Client used to get the code of the medication being dispensed
+ * @param authorizingPrescription - The MedicationRequest resource authorizing a dispense
+ * @param patientReference - The Patient the dispense is for
+ * @returns A MedicationDispense resource that is ready to be added to a bundle
+ */
+export async function createDispenseResource(
+  fill: Fill,
+  medplum: MedplumClient,
+  authorizingPrescription: Reference<MedicationRequest>,
+  patientReference: Reference<Patient>
+): Promise<MedicationDispense> {
+  const { codes, name } = fill.treatment;
+  const medicationElement = await getMedicationElement(medplum, codes.rxcui, name);
+  const medicationDispense: MedicationDispense = {
+    resourceType: 'MedicationDispense',
+    meta: {
+      source: NEUTRON_HEALTH + `|${fill.id}`,
+    },
+    identifier: [{ system: NEUTRON_HEALTH, value: fill.id }],
+    status: getFillStatus(fill.state),
+    authorizingPrescription: [authorizingPrescription],
+    subject: patientReference,
+    medicationCodeableConcept: medicationElement,
+  };
+  return medicationDispense;
 }
 
 export async function getPrescriber(
