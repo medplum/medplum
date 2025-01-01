@@ -6,7 +6,7 @@ import {
 } from '@aws-sdk/client-textract';
 import { ContentType, allOk, badRequest, getReferenceString, sleep } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Binary, Media } from '@medplum/fhirtypes';
+import { Binary, Media, Resource } from '@medplum/fhirtypes';
 import { Readable } from 'stream';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext, getLogger } from '../../context';
@@ -72,7 +72,7 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     subject: inputMedia.subject,
   };
 
-  const textractMedia = await createBinaryAndMedia(
+  await createBinaryAndMedia(
     repo,
     JSON.stringify(textractResult, null, 2),
     ContentType.JSON,
@@ -80,7 +80,8 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     mediaProps
   );
 
-  if (textractResult?.Blocks) {
+  const options = req.body as { comprehend?: boolean };
+  if (options.comprehend && textractResult?.Blocks) {
     const lines = textractResult.Blocks.map((b) => b.Text ?? '');
     const text = lines.join('\n');
     const comprehendMedicalClient = new ComprehendMedicalClient({ region: awsRegion });
@@ -94,7 +95,7 @@ export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse
     );
   }
 
-  return [allOk, textractMedia];
+  return [allOk, textractResult as unknown as Resource];
 }
 
 async function createBinaryAndMedia(
