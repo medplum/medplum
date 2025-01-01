@@ -1,6 +1,6 @@
 import { Notifications } from '@mantine/notifications';
 import { createReference, generateId, getReferenceString } from '@medplum/core';
-import { Communication, ProjectMembership } from '@medplum/fhirtypes';
+import { Communication, Media, ProjectMembership } from '@medplum/fhirtypes';
 import { HomerServiceRequest, HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -258,6 +258,43 @@ describe('TimelinePage', () => {
     const deleteButton = await screen.findByLabelText('Delete ' + getReferenceString(comment));
     await act(async () => {
       fireEvent.click(deleteButton);
+    });
+  });
+
+  test('Textract document', async () => {
+    const medplum = new MockClient();
+    const filename = 'test.pdf';
+
+    // Create a PDF attachment
+    const media = await medplum.createResource<Media>({
+      resourceType: 'Media',
+      status: 'completed',
+      basedOn: [createReference(HomerServiceRequest)],
+      subject: createReference(HomerSimpson),
+      content: {
+        contentType: 'application/pdf',
+        url: 'Binary/123',
+        title: filename,
+      },
+    });
+
+    await setup(`/${getReferenceString(HomerServiceRequest)}`, medplum);
+
+    // See if the Communication timeline item is loaded
+    expect(await screen.findByText(filename)).toBeInTheDocument();
+
+    // Check for the Actions menu icon
+    expect(screen.getByLabelText('Actions for ' + getReferenceString(media))).toBeInTheDocument();
+
+    // Click on the actions link
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Actions for ' + getReferenceString(media)));
+    });
+
+    // Click on the "AWS Textract" menu item
+    const textractButton = await screen.findByLabelText('AWS Textract ' + getReferenceString(media));
+    await act(async () => {
+      fireEvent.click(textractButton);
     });
   });
 });
