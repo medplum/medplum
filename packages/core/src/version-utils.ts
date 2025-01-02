@@ -47,7 +47,7 @@ export function assertReleaseManifest(candidate: unknown): asserts candidate is 
 export async function fetchVersionManifest(
   appName: string,
   version?: string,
-  params?: [string, string][]
+  params?: Record<string, string>
 ): Promise<ReleaseManifest> {
   let manifest = releaseManifests.get(version ?? 'latest');
   if (!manifest) {
@@ -56,7 +56,7 @@ export async function fetchVersionManifest(
     url.searchParams.set('a', appName);
     url.searchParams.set('c', MEDPLUM_VERSION);
     if (params) {
-      for (const [key, value] of params) {
+      for (const [key, value] of Object.entries(params)) {
         url.searchParams.set(key, value);
       }
     }
@@ -122,4 +122,24 @@ export async function fetchLatestVersionString(appName: string): Promise<string>
     throw new Error(`Invalid release name found. Release tag '${latest.tag_name}' did not start with 'v'`);
   }
   return latest.tag_name.slice(1);
+}
+
+/**
+ * Checks if a newer version of Medplum is available and logs a warning if so.
+ * @param appName - The name of the app to check the version for.
+ * @param params - An optional list of key-value pairs to be appended to the URL query string.
+ */
+export async function warnIfNewerVersionAvailable(appName: string, params?: Record<string, string>): Promise<void> {
+  try {
+    const current = MEDPLUM_VERSION.split('-')[0];
+    const manifest = await fetchVersionManifest(appName, undefined, params);
+    const latest = manifest.tag_name.slice(1);
+    if (current !== latest) {
+      console.warn(
+        `A new version (v${latest}) of Medplum is available. Your current version (v${current}) may be missing important updates and bug fixes.`
+      );
+    }
+  } catch (err) {
+    console.warn(`Failed to check for newer version: ${normalizeErrorString(err)}`);
+  }
 }

@@ -1,3 +1,4 @@
+import { MEDPLUM_VERSION } from './client';
 import {
   assertReleaseManifest,
   checkIfValidMedplumVersion,
@@ -7,6 +8,7 @@ import {
   isValidMedplumSemver,
   MEDPLUM_RELEASES_URL,
   ReleaseManifest,
+  warnIfNewerVersionAvailable,
 } from './version-utils';
 
 test('isValidMedplumSemver', () => {
@@ -256,6 +258,55 @@ describe('fetchLatestVersionString', () => {
     await expect(fetchLatestVersionString('test')).rejects.toThrow(
       "Invalid release name found. Release tag 'canary' did not start with 'v'"
     );
+    fetchSpy.mockRestore();
+  });
+});
+
+describe('warnIfNewerVersionAvailable', () => {
+  beforeEach(() => {
+    clearReleaseCache();
+  });
+
+  test('Newer version available', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+      jest.fn(async () => ({
+        status: 200,
+        json: async () => ({ tag_name: 'v100.0.0', assets: [{ name: 'x', browser_download_url: 'x' }] }),
+      })) as unknown as typeof globalThis.fetch
+    );
+
+    console.warn = jest.fn();
+    await warnIfNewerVersionAvailable('test', { foo: 'bar' });
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('A new version (v100.0.0) of Medplum is available.')
+    );
+    fetchSpy.mockRestore();
+  });
+
+  test('On current version', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+      jest.fn(async () => ({
+        status: 200,
+        json: async () => ({ tag_name: 'v' + MEDPLUM_VERSION, assets: [{ name: 'x', browser_download_url: 'x' }] }),
+      })) as unknown as typeof globalThis.fetch
+    );
+
+    console.warn = jest.fn();
+    await warnIfNewerVersionAvailable('test');
+    expect(console.warn).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  test('On current version', async () => {
+    const fetchSpy = jest.spyOn(globalThis, 'fetch').mockImplementation(
+      jest.fn(async () => {
+        throw new Error('Network error');
+      }) as unknown as typeof globalThis.fetch
+    );
+
+    console.warn = jest.fn();
+    await warnIfNewerVersionAvailable('test');
+    expect(console.warn).toHaveBeenCalledWith('Failed to check for newer version: Network error');
     fetchSpy.mockRestore();
   });
 });

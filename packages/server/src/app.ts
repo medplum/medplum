@@ -1,4 +1,4 @@
-import { badRequest, ContentType } from '@medplum/core';
+import { badRequest, ContentType, warnIfNewerVersionAvailable } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
@@ -9,6 +9,7 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 import { adminRouter } from './admin/routes';
 import { asyncWrap } from './async';
+import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
 import { getConfig, MedplumServerConfig } from './config';
 import {
@@ -34,6 +35,7 @@ import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
 import { initKeys } from './oauth/keys';
+import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { closeRateLimiter, getRateLimiter } from './ratelimit';
@@ -44,8 +46,6 @@ import { storageRouter } from './storage';
 import { closeWebSockets, initWebSockets } from './websockets';
 import { wellKnownRouter } from './wellknown';
 import { closeWorkers, initWorkers } from './workers';
-import { authenticateRequest } from './oauth/middleware';
-import { asyncBatchHandler } from './async-batch';
 
 let server: http.Server | undefined = undefined;
 
@@ -143,6 +143,8 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
 }
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
+  await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
+
   await initAppServices(config);
   server = http.createServer(app);
   initWebSockets(server);
