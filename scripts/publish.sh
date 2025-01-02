@@ -8,6 +8,7 @@ PACKAGES=(
   "cli"
   "core"
   "definitions"
+  "dosespot-react"
   "eslint-config"
   "expo-polyfills"
   "fhir-router"
