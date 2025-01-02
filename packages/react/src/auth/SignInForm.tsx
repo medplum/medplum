@@ -136,7 +136,6 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
                   login: login,
                   token: fields.token,
                 });
-                console.log({ res });
                 handleAuthResponse(res);
               }}
             />
