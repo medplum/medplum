@@ -1,4 +1,4 @@
-import { GITHUB_RELEASES_URL, ReleaseManifest, clearReleaseCache } from '@medplum/core';
+import { MEDPLUM_RELEASES_URL, ReleaseManifest, clearReleaseCache } from '@medplum/core';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { resolve } from 'node:path';
@@ -153,7 +153,7 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
       );
 
       await downloadRelease('3.1.6', resolve(__dirname, 'tmp', 'test-release-binary'));
-      expect(fetchSpy).toHaveBeenNthCalledWith(1, `${GITHUB_RELEASES_URL}/tags/v3.1.6`);
+      expect(fetchSpy).toHaveBeenNthCalledWith(1, `${MEDPLUM_RELEASES_URL}/v3.1.6.json`);
       expect(fetchSpy).toHaveBeenLastCalledWith(`https://example.com/${_platform}`);
       expect(readFileSync(resolve(__dirname, 'tmp', 'test-release-binary'), { encoding: 'utf-8' })).toStrictEqual(
         'Hello, Medplum!'

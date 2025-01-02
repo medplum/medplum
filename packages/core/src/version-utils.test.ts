@@ -4,8 +4,8 @@ import {
   clearReleaseCache,
   fetchLatestVersionString,
   fetchVersionManifest,
-  GITHUB_RELEASES_URL,
   isValidMedplumSemver,
+  MEDPLUM_RELEASES_URL,
   ReleaseManifest,
 } from './version-utils';
 
@@ -66,7 +66,7 @@ describe('checkIfValidMedplumVersion', () => {
   });
 
   test('Invalid version format', async () => {
-    await expect(checkIfValidMedplumVersion('3.1.6-alpha')).resolves.toStrictEqual(false);
+    await expect(checkIfValidMedplumVersion('test', '3.1.6-alpha')).resolves.toStrictEqual(false);
   });
 
   test('Version not found', async () => {
@@ -81,7 +81,7 @@ describe('checkIfValidMedplumVersion', () => {
       }) as unknown as typeof globalThis.fetch
     );
 
-    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toStrictEqual(false);
+    await expect(checkIfValidMedplumVersion('test', '3.1.8')).resolves.toStrictEqual(false);
     fetchSpy.mockRestore();
   });
 
@@ -96,7 +96,7 @@ describe('checkIfValidMedplumVersion', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toStrictEqual(false);
+    await expect(checkIfValidMedplumVersion('test', '3.1.8')).resolves.toStrictEqual(false);
     fetchSpy.mockRestore();
   });
 
@@ -106,7 +106,7 @@ describe('checkIfValidMedplumVersion', () => {
         return Promise.reject(new Error('Network error'));
       })
     );
-    await expect(checkIfValidMedplumVersion('3.1.8')).resolves.toStrictEqual(false);
+    await expect(checkIfValidMedplumVersion('test', '3.1.8')).resolves.toStrictEqual(false);
     fetchSpy.mockRestore();
   });
 });
@@ -136,12 +136,12 @@ describe('fetchVersionManifest', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchVersionManifest()).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test')).resolves.toMatchObject<ReleaseManifest>(manifest);
     // Should be called with latest
-    expect(fetchSpy).toHaveBeenLastCalledWith(`${GITHUB_RELEASES_URL}/latest`);
+    expect(fetchSpy).toHaveBeenLastCalledWith(`${MEDPLUM_RELEASES_URL}/latest.json`);
     // Call again to make sure we don't refetch
     fetchSpy.mockClear();
-    await expect(fetchVersionManifest()).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test')).resolves.toMatchObject<ReleaseManifest>(manifest);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
@@ -166,12 +166,12 @@ describe('fetchVersionManifest', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchVersionManifest('3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
     // Should be called with latest
-    expect(fetchSpy).toHaveBeenLastCalledWith(`${GITHUB_RELEASES_URL}/tags/v3.1.6`);
+    expect(fetchSpy).toHaveBeenLastCalledWith(`${MEDPLUM_RELEASES_URL}/v3.1.6.json`);
     // Call again to make sure we don't refetch
     fetchSpy.mockClear();
-    await expect(fetchVersionManifest('3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
+    await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
   });
@@ -182,7 +182,7 @@ describe('fetchVersionManifest', () => {
         return Promise.reject(new Error('Network request failed'));
       })
     );
-    await expect(fetchVersionManifest('3.1.6')).rejects.toThrow('Network request failed');
+    await expect(fetchVersionManifest('test', '3.1.6')).rejects.toThrow('Network request failed');
     fetchSpy.mockRestore();
   });
 
@@ -197,7 +197,7 @@ describe('fetchVersionManifest', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchVersionManifest('3.1.6')).rejects.toThrow(
+    await expect(fetchVersionManifest('test', '3.1.6')).rejects.toThrow(
       "Received status code 404 while fetching manifest for version '3.1.6'. Message: Not Found"
     );
     fetchSpy.mockRestore();
@@ -229,7 +229,7 @@ describe('fetchLatestVersionString', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchLatestVersionString()).resolves.toStrictEqual('3.1.6');
+    await expect(fetchLatestVersionString('test')).resolves.toStrictEqual('3.1.6');
     fetchSpy.mockRestore();
   });
 
@@ -253,7 +253,7 @@ describe('fetchLatestVersionString', () => {
         });
       }) as unknown as typeof globalThis.fetch
     );
-    await expect(fetchLatestVersionString()).rejects.toThrow(
+    await expect(fetchLatestVersionString('test')).rejects.toThrow(
       "Invalid release name found. Release tag 'canary' did not start with 'v'"
     );
     fetchSpy.mockRestore();

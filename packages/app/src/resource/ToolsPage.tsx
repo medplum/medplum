@@ -25,7 +25,7 @@ function UpgradeConfirmContent(props: UpgradeConfirmContentProps): JSX.Element {
   useEffect(() => {
     if (opened) {
       if (!latestVersionString) {
-        fetchLatestVersionString().then(setLatestVersionString).catch(console.error);
+        fetchLatestVersionString('app-tools-page').then(setLatestVersionString).catch(console.error);
       }
       handleStatus();
     }
