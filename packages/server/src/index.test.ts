@@ -29,6 +29,9 @@ jest.mock('pg', () => {
       if (sql === 'SELECT "User"."id", "User"."content" FROM "User" WHERE "User"."deleted" = $1 LIMIT 2') {
         return { rows: [{ id: '1', content: '{}' }] };
       }
+      if (sql === 'SELECT pg_try_advisory_lock($1)') {
+        return { rows: [{ pg_try_advisory_lock: true }] };
+      }
       return { rows: [] };
     }
 
