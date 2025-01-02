@@ -143,7 +143,9 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
 }
 
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
-  await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
+  if (process.env.NODE_ENV !== 'test') {
+    await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
+  }
 
   await initAppServices(config);
   server = http.createServer(app);

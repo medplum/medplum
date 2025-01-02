@@ -52,7 +52,7 @@ export async function fetchVersionManifest(
   let manifest = releaseManifests.get(version ?? 'latest');
   if (!manifest) {
     const versionTag = version ? `v${version}` : 'latest';
-    const url = new URL(`${versionTag}.json`, MEDPLUM_RELEASES_URL);
+    const url = new URL(`${MEDPLUM_RELEASES_URL}/${versionTag}.json`);
     url.searchParams.set('a', appName);
     url.searchParams.set('c', MEDPLUM_VERSION);
     if (params) {
@@ -60,7 +60,7 @@ export async function fetchVersionManifest(
         url.searchParams.set(key, value);
       }
     }
-    const res = await fetch(`${MEDPLUM_RELEASES_URL}/${versionTag}.json`);
+    const res = await fetch(url.toString());
     if (res.status !== 200) {
       let message: string | undefined;
       try {

@@ -140,7 +140,7 @@ describe('fetchVersionManifest', () => {
     );
     await expect(fetchVersionManifest('test')).resolves.toMatchObject<ReleaseManifest>(manifest);
     // Should be called with latest
-    expect(fetchSpy).toHaveBeenLastCalledWith(`${MEDPLUM_RELEASES_URL}/latest.json`);
+    expect(fetchSpy).toHaveBeenLastCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/latest.json`));
     // Call again to make sure we don't refetch
     fetchSpy.mockClear();
     await expect(fetchVersionManifest('test')).resolves.toMatchObject<ReleaseManifest>(manifest);
@@ -169,8 +169,8 @@ describe('fetchVersionManifest', () => {
       }) as unknown as typeof globalThis.fetch
     );
     await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
-    // Should be called with latest
-    expect(fetchSpy).toHaveBeenLastCalledWith(`${MEDPLUM_RELEASES_URL}/v3.1.6.json`);
+    // Should be called with version
+    expect(fetchSpy).toHaveBeenLastCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/v3.1.6.json`));
     // Call again to make sure we don't refetch
     fetchSpy.mockClear();
     await expect(fetchVersionManifest('test', '3.1.6')).resolves.toMatchObject<ReleaseManifest>(manifest);
@@ -277,6 +277,7 @@ describe('warnIfNewerVersionAvailable', () => {
 
     console.warn = jest.fn();
     await warnIfNewerVersionAvailable('test', { foo: 'bar' });
+    expect(fetchSpy).toHaveBeenCalledWith(expect.stringContaining(`${MEDPLUM_RELEASES_URL}/latest.json`));
     expect(console.warn).toHaveBeenCalledWith(
       expect.stringContaining('A new version (v100.0.0) of Medplum is available.')
     );
