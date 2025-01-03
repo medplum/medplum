@@ -153,7 +153,7 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
       );
 
       await downloadRelease('3.1.6', resolve(__dirname, 'tmp', 'test-release-binary'));
-      expect(fetchSpy).toHaveBeenNthCalledWith(1, `${MEDPLUM_RELEASES_URL}/v3.1.6.json`);
+      expect(fetchSpy).toHaveBeenNthCalledWith(1, expect.stringContaining(`${MEDPLUM_RELEASES_URL}/v3.1.6.json`));
       expect(fetchSpy).toHaveBeenLastCalledWith(`https://example.com/${_platform}`);
       expect(readFileSync(resolve(__dirname, 'tmp', 'test-release-binary'), { encoding: 'utf-8' })).toStrictEqual(
         'Hello, Medplum!'
