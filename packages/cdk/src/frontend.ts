@@ -72,7 +72,7 @@ export class FrontEnd extends Construct {
               `default-src 'none'`,
               `base-uri 'self'`,
               `child-src 'self'`,
-              `connect-src 'self' ${config.apiDomainName} *.google.com`,
+              `connect-src 'self' ${config.apiDomainName} ${config.storageDomainName} *.google.com`,
               `font-src 'self' fonts.gstatic.com`,
               `form-action 'self' *.gstatic.com *.google.com`,
               `frame-ancestors 'none'`,
