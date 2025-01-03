@@ -123,7 +123,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
 
     agentId = command.agentId;
 
-    const authState = await getLoginForAccessToken(command.accessToken);
+    const authState = await getLoginForAccessToken(undefined, command.accessToken);
     if (!authState) {
       sendError('Invalid access token');
       return;
@@ -176,7 +176,7 @@ export async function handleAgentConnection(socket: ws.WebSocket, request: Incom
       return;
     }
 
-    const authState = await getLoginForAccessToken(command.accessToken);
+    const authState = await getLoginForAccessToken(undefined, command.accessToken);
     if (!authState) {
       sendError('Invalid access token');
       return;

@@ -14,11 +14,11 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { getConfig, loadTestConfig } from '../../config';
+import * as oathKeysModule from '../../oauth/keys';
+import { getLoginForAccessToken } from '../../oauth/utils';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
-import * as oathKeysModule from '../../oauth/keys';
-import { getLoginForAccessToken } from '../../oauth/utils';
 
 const botCodes = [
   [
@@ -648,7 +648,7 @@ describe('Execute', () => {
 
       expect(generateAccessTokenSpy).toHaveBeenCalledTimes(1);
       const generatedAccessToken = (await generateAccessTokenSpy.mock.results[0].value) as string;
-      const authState = await getLoginForAccessToken(generatedAccessToken);
+      const authState = await getLoginForAccessToken(undefined, generatedAccessToken);
 
       const expectedProject = whichProject === 'own' ? project1 : project2;
       expect(authState?.project?.id).toBeDefined();
