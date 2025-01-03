@@ -13,7 +13,7 @@ export const UPGRADER_LOG_PATH = resolve(
 export const RELEASES_PATH = resolve(__dirname);
 
 export async function downloadRelease(version: string, path: string): Promise<void> {
-  const release = await fetchVersionManifest(version);
+  const release = await fetchVersionManifest('agent-upgrader', version);
 
   // Get download url
   const downloadUrl = parseDownloadUrl(release, platform());
