@@ -177,6 +177,22 @@
       "inherited": false
     },
     {
+      "name": "active",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "boolean"
+        }
+      ],
+      "path": "ProjectMembership.active",
+      "min": 0,
+      "max": "1",
+      "short": "Whether this patient's record is in active use",
+      "definition": "Whether this project membership record is in active use.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "project",
       "depth": 1,
       "types": [

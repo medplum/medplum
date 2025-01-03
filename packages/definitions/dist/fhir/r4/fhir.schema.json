@@ -59689,6 +59689,10 @@
           },
           "type": "array"
         },
+        "active": {
+          "description": "Whether this project membership record is in active use.",
+          "$ref": "#/definitions/boolean"
+        },
         "project": {
           "description": "Project where the memberships are available.",
           "$ref": "#/definitions/Reference"
