@@ -4,7 +4,11 @@ sidebar_position: 3
 
 # Install on Ubuntu
 
-This guide was last updated for Ubuntu 24.04, although it should work for most recent versions.
+This guide provides step-by-step instructions for deploying Medplum on Ubuntu using our official APT repository. The installation process is streamlined through package management while maintaining the robustness and security required for production environments. This guide was tested on Ubuntu 24.04 but is compatible with most recent Ubuntu versions.
+
+Using Medplum's APT repository offers several advantages: automated dependency management, simplified updates, and a standardized installation process. The guide covers all essential components including PostgreSQL database configuration, Redis setup, Node.js installation, and Nginx configuration with SSL/TLS support through Let's Encrypt.
+
+This installation method is well-suited for production deployments where you want to maintain direct control over your infrastructure while benefiting from streamlined package management. It provides a balance between ease of deployment and system control, making it an excellent choice for organizations that prefer traditional Linux server architectures.
 
 ## Prerequisites
 
