@@ -2,23 +2,31 @@
 sidebar_position: 1
 ---
 
-# Self-hosting
+# Self-hosting Medplum
 
-Medplum is a free and open source application. Use these guides to install Medplum in your own environment for self hosting.
+Medplum is an open source healthcare development platform that you can deploy in your own environment. This guide provides detailed instructions for self-hosting Medplum across various infrastructure options.
 
-These are advanced guides, and intended for developers and sys admins with experience running production services.
+These guides are designed for DevOps engineers and system administrators who have experience managing production healthcare systems.
 
-## Install options
+## Installation Options
 
-1. Install on Ubuntu - Run everything directly on a single Linux machine
-2. Install on AWS - Use our AWS CDK infra-as-code to setup your AWS environment
+### [Install on AWS](/docs/self-hosting/install-on-aws) (Recommended)
 
-## Running and maintenance
+Deploy Medplum on Amazon Web Services using our industrial-strength AWS CDK and CloudFormation templates. This deployment option, which we use for our own hosted service, provides enterprise-grade scalability with automated setup of VPCs, ECS clusters, load balancers, and other critical infrastructure components.
 
-1. Securing your environment - Follow this guide to ensure HIPAA compliance
-2. Logging and monitoring - Follow these best practices for optimal uptime
+### [Install on Ubuntu](/docs/self-hosting/install-on-ubuntu)
 
-## Reference
+Deploy Medplum directly on Ubuntu servers using our official APT repository ([apt.medplum.com](https://apt.medplum.com/)). This production-ready configuration offers a streamlined installation process while maintaining full control over your infrastructure.
 
-- See articles related to [self-hosting](/blog/tags/self-host) on the Medplum blog.
-- See [self-hosting features and fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aself-host) on Github.
+### [Install on GCP](/docs/self-hosting/install-on-gcp) (Beta)
+
+Deploy Medplum on Google Cloud Platform using our Terraform configurations. While in beta, this deployment option has been validated with production workloads and provides a robust foundation for GCP-based implementations.
+
+### [Install from Scratch](/docs/self-hosting/install-from-scratch)
+
+Learn how to build and deploy Medplum from source code on bare metal infrastructure. This option provides an in-depth understanding of Medplum's architecture and components, making it ideal for educational purposes or custom deployments.
+
+## Additional Resources
+
+- Explore [self-hosting articles](/blog/tags/self-host) on the Medplum blog
+- Track [self-hosting features and improvements](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Aself-host) on GitHub
