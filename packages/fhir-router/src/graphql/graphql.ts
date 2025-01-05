@@ -569,10 +569,10 @@ class QueryCostVisitor {
   OperationDefinition(node: OperationDefinitionNode): void {
     let cost = 0;
     for (const child of node.selectionSet.selections) {
-      const startTime = process.hrtime.bigint();
+      const startTime = performance.now();
       const childCost = this.calculateCost(child);
       cost += childCost;
-      this.log(child.kind, 'node has final cost', childCost, '(', process.hrtime.bigint() - startTime, 'ns)');
+      this.log(child.kind, 'node has final cost', childCost, '(', performance.now() - startTime, 'ms)');
 
       if (cost > this.maxCost) {
         // this.context.reportError(
