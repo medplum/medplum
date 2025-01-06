@@ -125,16 +125,14 @@ export async function acquireAdvisoryLock(
   const maxAttempts = options?.maxAttempts ?? 30;
   let attempts = 0;
   while (attempts < maxAttempts) {
+    attempts++;
     const result = await client.query<{ pg_try_advisory_lock: boolean }>('SELECT pg_try_advisory_lock($1)', [lockId]);
     if (result.rows[0].pg_try_advisory_lock) {
       return true;
     }
-    attempts++;
-    if (attempts === maxAttempts) {
-      return false;
+    if (attempts < maxAttempts) {
+      await sleep(retryDelayMs);
     }
-
-    await sleep(retryDelayMs);
   }
 
   return false;
