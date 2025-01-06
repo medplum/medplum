@@ -74,7 +74,7 @@ async function promptForConfig(): Promise<ProjectConfig> {
       const num = parseInt(str, 10);
       return num >= 1 && num <= STARTER_PROJECTS.length;
     },
-    'Please enter a number between 1 and 9'
+    'Please enter a number between 1 and ' + STARTER_PROJECTS.length
   );
   const starterProject = STARTER_PROJECTS[parseInt(answer, 10) - 1];
 
