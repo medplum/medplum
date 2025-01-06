@@ -7,6 +7,7 @@ PACKAGES=(
   "cdk"
   "cli"
   "core"
+  "create-medplum"
   "definitions"
   "dosespot-react"
   "eslint-config"
