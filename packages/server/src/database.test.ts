@@ -15,7 +15,10 @@ import {
 
 describe('Database config', () => {
   let poolSpy: jest.SpyInstance<pg.Pool, [config?: pg.PoolConfig | undefined]>;
+  let advisoryLockResponse = true;
+
   beforeAll(() => {
+    jest.useFakeTimers();
     jest.mock('pg');
     poolSpy = jest.spyOn(pg, 'Pool').mockImplementation((_config?: PoolConfig) => {
       class MockPoolClient extends Duplex implements PoolClient {
@@ -30,7 +33,7 @@ describe('Database config', () => {
             rows: [],
           };
           if (sql === 'SELECT pg_try_advisory_lock($1)') {
-            result.rows = [{ pg_try_advisory_lock: true } as unknown as R];
+            result.rows = [{ pg_try_advisory_lock: advisoryLockResponse } as unknown as R];
           }
 
           return result;
@@ -102,9 +105,11 @@ describe('Database config', () => {
 
   afterAll(() => {
     jest.restoreAllMocks();
+    jest.useRealTimers();
   });
 
   beforeEach(() => {
+    advisoryLockResponse = true;
     poolSpy.mockClear();
   });
 
@@ -164,6 +169,19 @@ describe('Database config', () => {
         ssl: { require: true },
       })
     );
+  });
+
+  test('Cannot acquire migration lock', async () => {
+    advisoryLockResponse = false;
+    const config = await loadTestConfig();
+    config.database.runMigrations = true;
+    const initDBPromise = initDatabase(config);
+
+    // Use `jest.runAllTimersAsync().catch(...)` instead of `await jest.runAllTimersAsync()` since
+    // we expect initDBPromise to reject. Based on https://github.com/jestjs/jest/issues/14120
+    jest.runAllTimersAsync().catch((reason) => console.error('Unexpected error in jest.runAllTimersAsync', reason));
+
+    await expect(initDBPromise).rejects.toThrow('Failed to acquire migration lock');
   });
 });
 
