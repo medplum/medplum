@@ -406,6 +406,10 @@ export async function setLoginMembership(login: Login, membershipId: string): Pr
     throw new OperationOutcomeError(badRequest('Invalid profile'));
   }
 
+  if (membership.active === false) {
+    throw new OperationOutcomeError(badRequest('Profile not active'));
+  }
+
   // Get the project
   const project = await systemRepo.readReference<Project>(membership.project as Reference<Project>);
 

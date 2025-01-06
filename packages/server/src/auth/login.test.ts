@@ -490,4 +490,39 @@ describe('Login', () => {
     expect(res.body.memberships).toBeUndefined();
     expect(res.body.issue[0].details.text).toBe('User not found');
   });
+
+  test('Inactive membership', async () => {
+    const email = `inactive-${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    // Create a test user
+    const { membership } = await withTestContext(() =>
+      inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Test',
+        lastName: 'User',
+        email,
+        password,
+      })
+    );
+
+    // Mark the membership as inactive
+    await getSystemRepo().updateResource({ ...membership, active: false });
+
+    // User should not be able to login
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      scope: 'openid offline',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      projectId: project.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.login).toBeUndefined();
+    expect(res.body.code).toBeUndefined();
+    expect(res.body.memberships).toBeUndefined();
+    expect(res.body.issue[0].details.text).toBe('Profile not active');
+  });
 });

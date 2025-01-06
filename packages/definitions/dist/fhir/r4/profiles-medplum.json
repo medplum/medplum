@@ -1435,6 +1435,23 @@
             }
           },
           {
+            "id" : "ProjectMembership.active",
+            "path" : "ProjectMembership.active",
+            "short" : "Whether this patient's record is in active use",
+            "definition" : "Whether this project membership record is in active use.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "ProjectMembership.active",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "meaningWhenMissing" : "This resource is generally assumed to be active if no value is provided for the active element"
+          },
+          {
             "id" : "ProjectMembership.project",
             "path" : "ProjectMembership.project",
             "definition" : "Project where the memberships are available.",
