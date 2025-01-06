@@ -105,7 +105,7 @@
     "rimraf": "5.0.9",
     "sinon": "19.0.2",
     "storybook": "8.4.7",
-    "storybook-addon-mantine": "4.1.0",
+    "storybook-addon-mantine": "4.0.2",
     "typescript": "5.7.2",
     "vite-plugin-turbosnap": "^1.0.3"
   },
