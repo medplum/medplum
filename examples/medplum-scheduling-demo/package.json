@@ -36,7 +36,7 @@
     "@medplum/mock": "3.2.27",
     "@medplum/react": "3.2.27",
     "@tabler/icons-react": "3.17.0",
-    "@types/node": "22.10.2",
+    "@types/node": "22.10.5",
     "@types/react": "18.3.12",
     "@types/react-big-calendar": "^1.16.0",
     "@types/react-dom": "18.3.1",
@@ -46,7 +46,7 @@
     "postcss": "8.4.49",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
-    "react-chartjs-2": "5.2.0",
+    "react-chartjs-2": "5.3.0",
     "react-dom": "18.2.0",
     "ts-node": "10.9.2",
     "vitest": "2.1.8",
@@ -54,6 +54,6 @@
     "react-big-calendar": "1.17.1",
     "react-router-dom": "6.28.0",
     "typescript": "5.7.2",
-    "vite": "6.0.5"
+    "vite": "6.0.7"
   }
 }

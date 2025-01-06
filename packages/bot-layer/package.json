@@ -27,7 +27,7 @@
     "form-data": "4.0.1",
     "jose": "5.9.6",
     "node-fetch": "2.7.0",
-    "pdfmake": "0.2.17",
+    "pdfmake": "0.2.18",
     "ssh2": "1.16.0",
     "ssh2-sftp-client": "11.0.0"
   },

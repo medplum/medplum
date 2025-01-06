@@ -51,7 +51,7 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.28.0",
     "rfc6902": "5.1.2",
-    "vite": "6.0.5"
+    "vite": "6.0.7"
   },
   "engines": {
     "node": ">=18.0.0"
