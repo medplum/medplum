@@ -657,8 +657,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.handleBinaryUpdate(existing, result);
       await addBackgroundJobs(result, existing, { interaction: create ? 'create' : 'update' });
     });
-    this.removeHiddenFields(result);
-    return result;
+
+    const output = deepClone(result);
+    return this.removeHiddenFields(output);
   }
 
   /**
