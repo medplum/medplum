@@ -20,7 +20,12 @@ export async function main(argv: string[]): Promise<void> {
     .option('--base-url <baseUrl>', 'FHIR server base URL, must be absolute')
     .option('--token-url <tokenUrl>', 'FHIR server token URL, absolute or relative to base URL')
     .option('--authorize-url <authorizeUrl>', 'FHIR server authorize URL, absolute or relative to base URL')
-    .option('--fhir-url, --fhir-url-path <fhirUrlPath>', 'FHIR server URL, absolute or relative to base URL')
+    .option('--fhir-url <fhirUrlPath>', 'Alias for --fhir-url-path')
+    .option(
+      '--fhir-url-path <fhirUrlPath>',
+      'FHIR server URL, absolute or relative to base URL',
+      (value, previous) => previous || value
+    )
     .option('--scope <scope>', 'JWT scope')
     .option('--access-token <accessToken>', 'Access token for token exchange authentication')
     .option('--callback-url <callbackUrl>', 'Callback URL for authorization code flow')
