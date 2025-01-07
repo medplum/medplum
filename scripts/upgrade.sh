@@ -65,12 +65,19 @@ echo "Last completed step: $LAST_STEP"
 # rimraf - version 6+ requires Node 20+, holding back until Medplum v4
 # supertest - version 7+ incompatible with superwstest, waiting for fix
 # @tabler/icons-react - to avoid bad interaction with vite https://github.com/tabler/tabler-icons/issues/1233
-# react-native - 0.76.x is broken with an error caused by flow parser breaking when using `expo-crypto`
+# react-native - 0.76.x is broken with an error caused by flow parser breaking when using `expo-crypto`: `SyntaxError: {..}/react-native/Libraries/vendor/emitter/EventEmitter.js: Unexpected token, expected "]" (39:5)`
 # storybook-addon-mantine - 4.1.0 seems to accidentally backported requirement for React 19 from v5: https://github.com/josiahayres/storybook-addon-mantine/issues/18
 EXCLUDE="@types/express @types/react @types/react-dom eslint node-fetch react react-dom react-router-dom rimraf supertest @tabler/icons-react react-native storybook-addon-mantine"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
+    # --workspaces - Run on all workspaces
+    # --root - Runs updates on the root project in addition to specified workspaces
+    # --upgrade - Overwrite package file with upgraded versions
+    # --reject - Exclude packages matching the given string
+    # --target - Determines the version to upgrade to
+    # "minor" - Upgrade to the highest minor version without bumping the major version
+    # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
     npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target minor --enginesNode
 
     # Commit and push before running NPM install
@@ -96,6 +103,8 @@ fi
 
 if [ "$LAST_STEP" -lt 3 ]; then
     # Next, optimistically upgrade to the latest versions
+    # "latest" - Upgrade to whatever the package's "latest" git tag points to.
+    # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
     npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target latest --enginesNode
 
     # Check for changes in the working directory
