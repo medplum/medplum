@@ -3,11 +3,15 @@ import { FileSystemStorage } from '../storage';
 import { Profile } from '../utils';
 
 export async function createMedplumClient(
-  options: MedplumClientOptions & { profile?: string },
+  options: MedplumClientOptions & { profile?: string; fhirUrl?: string },
   setupCredentials = true
 ): Promise<MedplumClient> {
   const profileName = options.profile ?? 'default';
-
+  // Both fhirUrlPath and fhirUrl refer to the same option
+  // Move fhirUrl to fhirUrlPath if it does not exist
+  if (!options.fhirUrlPath) {
+    options.fhirUrlPath = options.fhirUrl;
+  }
   const storage = new FileSystemStorage(profileName);
   const profile = storage.getObject('options') as Profile;
   if (profileName !== 'default' && !profile) {

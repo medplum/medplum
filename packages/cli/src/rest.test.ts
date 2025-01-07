@@ -91,7 +91,7 @@ describe('CLI rest', () => {
 
     expect(createMedplumClient).toHaveBeenCalledWith(
       expect.objectContaining({
-        fhirUrlPath: 'fhirulrtest',
+        fhirUrl: 'fhirulrtest',
       })
     );
   });
