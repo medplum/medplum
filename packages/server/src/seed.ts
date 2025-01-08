@@ -2,7 +2,7 @@ import { createReference } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { NIL as nullUuid, v5 } from 'uuid';
 import { bcryptHashPassword } from './auth/utils';
-import { getSystemRepo } from './fhir/repo';
+import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
@@ -22,6 +22,27 @@ export async function seedDatabase(): Promise<void> {
 
   const systemRepo = getSystemRepo();
 
+  await systemRepo.withTransaction(async () => {
+    await createSuperAdmin(systemRepo);
+
+    globalLogger.info('Building structure definitions...');
+    let startTime = Date.now();
+    await rebuildR4StructureDefinitions();
+    globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
+
+    globalLogger.info('Building value sets...');
+    startTime = Date.now();
+    await rebuildR4ValueSets();
+    globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
+
+    globalLogger.info('Building search parameters...');
+    startTime = Date.now();
+    await rebuildR4SearchParameters();
+    globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
+  });
+}
+
+async function createSuperAdmin(systemRepo: Repository): Promise<void> {
   const [firstName, lastName, email] = ['Medplum', 'Admin', 'admin@example.com'];
   const passwordHash = await bcryptHashPassword('medplum_admin');
   const superAdmin = await systemRepo.createResource<User>({
@@ -73,23 +94,6 @@ export async function seedDatabase(): Promise<void> {
     profile: createReference(practitioner),
     admin: true,
   });
-
-  let startTime: number;
-
-  globalLogger.info('Building structure definitions...');
-  startTime = Date.now();
-  await rebuildR4StructureDefinitions();
-  globalLogger.info('Finished building structure definitions', { durationMs: Date.now() - startTime });
-
-  globalLogger.info('Building value sets...');
-  startTime = Date.now();
-  await rebuildR4ValueSets();
-  globalLogger.info('Finished building value sets', { durationMs: Date.now() - startTime });
-
-  globalLogger.info('Building search parameters...');
-  startTime = Date.now();
-  await rebuildR4SearchParameters();
-  globalLogger.info('Finished building search parameters', { durationMs: Date.now() - startTime });
 }
 
 /**
