@@ -365,6 +365,14 @@ export interface MedplumRequestOptions extends RequestInit {
   maxRetries?: number;
 }
 
+export interface MedplumGetRequestOptions extends MedplumRequestOptions {
+  /**
+   * Optional flag to disable auto-batching for this specific request.
+   * Only applies when the client is configured with auto-batching enabled.
+   */
+  disableAutoBatch?: boolean;
+}
+
 export type FetchLike = (url: string, options?: any) => Promise<any>;
 
 /**
@@ -1063,7 +1071,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to the response content.
    */
-  get<T = any>(url: URL | string, options: MedplumRequestOptions = {}): ReadablePromise<T> {
+  get<T = any>(url: URL | string, options: MedplumGetRequestOptions = {}): ReadablePromise<T> {
     url = url.toString();
     const cached = this.getCacheEntry(url, options);
     if (cached) {
@@ -1072,7 +1080,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     let promise: Promise<T>;
 
-    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchQueue) {
+    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchQueue && !options.disableAutoBatch) {
       promise = new Promise<T>((resolve, reject) => {
         (this.autoBatchQueue as AutoBatchEntry[]).push({
           method: 'GET',
@@ -1502,7 +1510,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   search<K extends ResourceType>(
     resourceType: K,
     query?: QueryTypes,
-    options?: MedplumRequestOptions
+    options?: MedplumGetRequestOptions
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = 'search-' + url.toString();
@@ -1550,7 +1558,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   searchOne<K extends ResourceType>(
     resourceType: K,
     query?: QueryTypes,
-    options?: MedplumRequestOptions
+    options?: MedplumGetRequestOptions
   ): ReadablePromise<ExtractResource<K> | undefined> {
     const url = this.fhirSearchUrl(resourceType, query);
     url.searchParams.set('_count', '1');
@@ -1592,7 +1600,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   searchResources<K extends ResourceType>(
     resourceType: K,
     query?: QueryTypes,
-    options?: MedplumRequestOptions
+    options?: MedplumGetRequestOptions
   ): ReadablePromise<ResourceArray<ExtractResource<K>>> {
     const url = this.fhirSearchUrl(resourceType, query);
     const cacheKey = 'searchResources-' + url.toString();
@@ -1632,7 +1640,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   async *searchResourcePages<K extends ResourceType>(
     resourceType: K,
     query?: QueryTypes,
-    options?: MedplumRequestOptions
+    options?: MedplumGetRequestOptions
   ): AsyncGenerator<ResourceArray<ExtractResource<K>>> {
     let url: URL | undefined = this.fhirSearchUrl(resourceType, query);
 
@@ -1659,7 +1667,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns Promise to expanded ValueSet.
    * @deprecated Use `valueSetExpand()` instead.
    */
-  searchValueSet(system: string, filter: string, options?: MedplumRequestOptions): ReadablePromise<ValueSet> {
+  searchValueSet(system: string, filter: string, options?: MedplumGetRequestOptions): ReadablePromise<ValueSet> {
     return this.valueSetExpand({ url: system, filter }, options);
   }
 
@@ -1671,7 +1679,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns Promise to expanded ValueSet.
    */
-  valueSetExpand(params: ValueSetExpandParams, options?: MedplumRequestOptions): ReadablePromise<ValueSet> {
+  valueSetExpand(params: ValueSetExpandParams, options?: MedplumGetRequestOptions): ReadablePromise<ValueSet> {
     const url = this.fhirUrl('ValueSet', '$expand');
     url.search = new URLSearchParams(params as Record<string, string>).toString();
     return this.get(url.toString(), options);
@@ -1731,7 +1739,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   readResource<K extends ResourceType>(
     resourceType: K,
     id: string,
-    options?: MedplumRequestOptions
+    options?: MedplumGetRequestOptions
   ): ReadablePromise<ExtractResource<K>> {
     if (!id) {
       throw new Error('The "id" parameter cannot be null, undefined, or an empty string.');
@@ -1919,7 +1927,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   readHistory<K extends ResourceType>(
     resourceType: K,
     id: string,
-    options?: MedplumRequestOptions
+    options?: MedplumGetRequestOptions
   ): ReadablePromise<Bundle<ExtractResource<K>>> {
     return this.get(this.fhirUrl(resourceType, id, '_history'), options);
   }
@@ -1947,7 +1955,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     resourceType: K,
     id: string,
     vid: string,
-    options?: MedplumRequestOptions
+    options?: MedplumGetRequestOptions
   ): ReadablePromise<ExtractResource<K>> {
     return this.get(this.fhirUrl(resourceType, id, '_history', vid), options);
   }
@@ -1969,7 +1977,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param options - Optional fetch options.
    * @returns A Bundle of all Resources related to the Patient
    */
-  readPatientEverything(id: string, options?: MedplumRequestOptions): ReadablePromise<Bundle> {
+  readPatientEverything(id: string, options?: MedplumGetRequestOptions): ReadablePromise<Bundle> {
     return this.get(this.fhirUrl('Patient', id, '$everything'), options);
   }
 
