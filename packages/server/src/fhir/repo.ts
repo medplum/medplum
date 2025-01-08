@@ -215,7 +215,7 @@ export interface ResendSubscriptionsOptions extends InteractionOptions {
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository extends FhirRepository<PoolClient> {
+export class Repository extends FhirRepository<PoolClient> implements Disposable {
   private readonly context: RepositoryContext;
   private conn?: PoolClient;
   private readonly disposable: boolean = true;
@@ -2453,7 +2453,7 @@ export class Repository extends FhirRepository<PoolClient> {
     return this.context;
   }
 
-  close(): void {
+  [Symbol.dispose](): void {
     this.assertNotClosed();
     if (this.disposable) {
       if (this.transactionDepth > 0) {

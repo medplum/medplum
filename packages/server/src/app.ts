@@ -272,7 +272,7 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
     });
   });
 
-  ctx.close();
+  ctx[Symbol.dispose]();
   next();
 };
 
