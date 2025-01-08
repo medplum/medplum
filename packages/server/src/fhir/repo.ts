@@ -215,9 +215,10 @@ export interface ResendSubscriptionsOptions extends InteractionOptions {
  * It is a thin layer on top of the database.
  * Repository instances should be created per author and project.
  */
-export class Repository extends FhirRepository<PoolClient> implements Disposable {
+export class Repository extends FhirRepository<PoolClient> {
   private readonly context: RepositoryContext;
   private conn?: PoolClient;
+  private readonly disposable: boolean = true;
   private transactionDepth = 0;
   private closed = false;
   mode: RepositoryMode;
@@ -225,12 +226,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
 
-  constructor(context: RepositoryContext) {
+  constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
     this.context = context;
     this.context.projects?.push?.(r4ProjectId);
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
+    }
+
+    if (conn) {
+      this.conn = conn;
+      this.disposable = false;
     }
 
     // Default to writer mode
@@ -1791,8 +1797,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       }
     } else {
-      const systemRepo = getSystemRepo();
-      systemRepo.conn = this.conn; // Re-use DB connection to preserve transaction state
+      const systemRepo = getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
       const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
         if (patient instanceof Error) {
@@ -2450,19 +2455,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   close(): void {
     this.assertNotClosed();
-    if (this.transactionDepth > 0) {
-      // Bad state, remove connection from pool
-      getLogger().error('Closing Repository with active transaction');
-      this.releaseConnection(new Error('Closing Repository with active transaction'));
-    } else {
-      // Good state, return healthy connection to pool
-      this.releaseConnection();
+    if (this.disposable) {
+      if (this.transactionDepth > 0) {
+        // Bad state, remove connection from pool
+        getLogger().error('Closing Repository with active transaction');
+        this.releaseConnection(new Error('Closing Repository with active transaction'));
+      } else {
+        // Good state, return healthy connection to pool
+        this.releaseConnection();
+      }
     }
     this.closed = true;
-  }
-
-  [Symbol.dispose](): void {
-    this.close();
   }
 
   private assertNotClosed(): void {
@@ -2523,16 +2526,19 @@ function getProfileCacheKey(projectId: string, url: string): string {
   return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
-export function getSystemRepo(): Repository {
-  return new Repository({
-    superAdmin: true,
-    strictMode: true,
-    extendedMode: true,
-    author: {
-      reference: 'system',
+export function getSystemRepo(conn?: PoolClient): Repository {
+  return new Repository(
+    {
+      superAdmin: true,
+      strictMode: true,
+      extendedMode: true,
+      author: {
+        reference: 'system',
+      },
+      // System repo does not have an associated Project; it can write to any
     },
-    // System repo does not have an associated Project; it can write to any
-  });
+    conn
+  );
 }
 
 function lowercaseFirstLetter(str: string): string {
