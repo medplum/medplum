@@ -1791,7 +1791,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       }
     } else {
-      const patients = await getSystemRepo().readReferences(getPatients(updated));
+      const systemRepo = getSystemRepo();
+      systemRepo.conn = this.conn; // Re-use DB connection to preserve transaction state
+      const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
         if (patient instanceof Error) {
           getLogger().debug('Error setting patient compartment', patient);
