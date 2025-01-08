@@ -18,4 +18,6 @@ export const ContentType = {
   TEXT: 'text/plain',
   TYPESCRIPT: 'text/typescript',
   PING: 'x-application/ping',
+  XML: 'text/xml',
+  CDA_XML: 'application/cda+xml',
 } as const;
