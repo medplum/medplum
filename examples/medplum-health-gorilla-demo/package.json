@@ -29,8 +29,8 @@
     "@tabler/icons-react": "3.17.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
-    "@typescript-eslint/eslint-plugin": "8.18.2",
-    "@typescript-eslint/parser": "8.18.2",
+    "@typescript-eslint/eslint-plugin": "8.19.1",
+    "@typescript-eslint/parser": "8.19.1",
     "@vitejs/plugin-react": "4.3.4",
     "eslint": "8.57.0",
     "eslint-plugin-react-hooks": "5.1.0",
@@ -41,6 +41,6 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.28.0",
     "typescript": "5.7.2",
-    "vite": "6.0.5"
+    "vite": "6.0.7"
   }
 }
