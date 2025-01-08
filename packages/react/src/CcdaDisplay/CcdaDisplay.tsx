@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { sendCommand } from '../utils/dom';
 
-const CCDA_VIEWER_URL = 'http://127.0.0.1:3070';
+const CCDA_VIEWER_URL = 'https://ccda.medplum.com';
 
 export interface CcdaDisplayProps {
   readonly url?: string;
