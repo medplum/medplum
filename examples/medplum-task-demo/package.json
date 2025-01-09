@@ -36,7 +36,7 @@
     "@medplum/mock": "3.2.27",
     "@medplum/react": "3.2.27",
     "@tabler/icons-react": "3.17.0",
-    "@types/node": "22.10.2",
+    "@types/node": "22.10.5",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
@@ -48,7 +48,7 @@
     "rimraf": "5.0.9",
     "ts-node": "10.9.2",
     "typescript": "5.7.2",
-    "vite": "6.0.5",
+    "vite": "6.0.7",
     "vitest": "2.1.8"
   }
 }

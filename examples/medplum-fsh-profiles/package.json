@@ -10,6 +10,6 @@
     "build:profiles": "sushi build src/profiles -o dist -s"
   },
   "devDependencies": {
-    "fsh-sushi": "^3.13.1"
+    "fsh-sushi": "^3.14.0"
   }
 }
