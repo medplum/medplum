@@ -1,4 +1,5 @@
 import { badRequest, ContentType } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
@@ -119,6 +120,28 @@ describe('App', () => {
 
     expect(await shutdownApp()).toBeUndefined();
     process.stdout.write = originalWrite;
+  });
+
+  test('Authenticated request with logRequests enabled', async () => {
+    const app = express();
+    const config = await loadTestConfig();
+    config.logRequests = true;
+
+    await initApp(app, config);
+    const accessToken = await initTestAuth();
+
+    const res1 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ family: 'Simpson', given: ['Lisa'] }],
+      } as Patient);
+    expect(res1.status).toBe(201);
+    expect(res1.body.resourceType).toStrictEqual('Patient');
+    expect(res1.body.name.family).toStrictEqual('Simpson');
+    await shutdownApp();
   });
 
   test('Internal Server Error', async () => {
