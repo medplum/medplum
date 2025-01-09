@@ -93,9 +93,8 @@ export class Storage extends Construct {
           accessControlAllowOrigins: [config.appDomainName, 'https://ccda.medplum.com'],
           accessControlAllowHeaders: ['*'],
           accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS'],
-          accessControlExposeHeaders: ['ETag', 'x-amz-server-side-encryption', 'x-amz-request-id', 'x-amz-id-2'],
           accessControlMaxAge: Duration.seconds(600),
-          originOverride: true,
+          originOverride: false,
         },
         securityHeadersBehavior: {
           contentSecurityPolicy: {
