@@ -100,7 +100,7 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
-  describe.only('loggingMiddleware', () => {
+  describe('loggingMiddleware', () => {
     let app: express.Express;
     let originalWrite: any;
 
