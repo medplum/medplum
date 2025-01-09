@@ -88,9 +88,19 @@ export class Storage extends Construct {
             },
           ],
         },
+        corsBehavior: {
+          accessControlAllowCredentials: false,
+          accessControlAllowOrigins: [config.appDomainName, 'https://ccda.medplum.com'],
+          accessControlAllowHeaders: ['*'],
+          accessControlAllowMethods: ['GET', 'HEAD', 'OPTIONS'],
+          accessControlExposeHeaders: ['ETag', 'x-amz-server-side-encryption', 'x-amz-request-id', 'x-amz-id-2'],
+          accessControlMaxAge: Duration.seconds(600),
+          originOverride: true,
+        },
         securityHeadersBehavior: {
           contentSecurityPolicy: {
-            contentSecurityPolicy: "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors *;",
+            contentSecurityPolicy:
+              "default-src 'none'; connect-src: https://ccda.medplum.com; base-uri 'none'; form-action 'none'; frame-ancestors *;",
             override: true,
           },
           contentTypeOptions: { override: true },
