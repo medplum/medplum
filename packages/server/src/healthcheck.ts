@@ -77,6 +77,7 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   const subscriptionQueue = getSubscriptionQueue();
   if (subscriptionQueue) {
     setGauge('medplum.subscription.waitingCount', await subscriptionQueue.getWaitingCount());
+    setGauge('medplum.subscription.delayedCount', await subscriptionQueue.getDelayedCount());
   }
 
   res.json({
