@@ -8,13 +8,17 @@ const app = express();
 
 describe('Health check', () => {
   let setGaugeSpy: jest.SpyInstance;
+  const originalProcessEnv = process.env;
 
   beforeEach(() => {
+    process.env = { ...originalProcessEnv };
     setGaugeSpy = jest.spyOn(otel, 'setGauge');
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    process.env = originalProcessEnv;
     setGaugeSpy.mockRestore();
+    await shutdownApp();
   });
 
   test('Get /healthcheck', async () => {
@@ -23,13 +27,9 @@ describe('Health check', () => {
 
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
-
-    await shutdownApp();
   });
 
   test('Get /healthcheck when OTel is enabled', async () => {
-    const originalProcessEnv = process.env;
-    process.env = { ...originalProcessEnv };
     process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
 
     const config = await loadTestConfig();
@@ -38,15 +38,10 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
 
-    expect(setGaugeSpy).toHaveBeenCalledTimes(10);
-
-    await shutdownApp();
-    process.env = originalProcessEnv;
+    expect(setGaugeSpy).toHaveBeenCalledTimes(12);
   });
 
   test('Get /healthcheck when OTel is enabled and read and write instance are the same', async () => {
-    const originalProcessEnv = process.env;
-    process.env = { ...originalProcessEnv };
     process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
 
     const config = await loadTestConfig();
@@ -56,9 +51,6 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
 
-    expect(setGaugeSpy).toHaveBeenCalledTimes(7);
-
-    await shutdownApp();
-    process.env = originalProcessEnv;
+    expect(setGaugeSpy).toHaveBeenCalledTimes(9);
   });
 });

@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
 import { RecordMetricOptions, setGauge } from './otel/otel';
 import { getRedis } from './redis';
+import { getSubscriptionQueue } from './workers/subscription';
 
 const hostname = os.hostname();
 const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
@@ -72,6 +73,12 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
     heapSpaceStats.find((entry) => entry.space_name === 'new_space')?.space_used_size ?? -1,
     BASE_METRIC_OPTIONS
   );
+
+  const subscriptionQueue = getSubscriptionQueue();
+  if (subscriptionQueue) {
+    setGauge('medplum.subscription.waitingCount', await subscriptionQueue.getWaitingCount());
+    setGauge('medplum.subscription.delayedCount', await subscriptionQueue.getDelayedCount());
+  }
 
   res.json({
     ok: true,
