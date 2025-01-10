@@ -3307,8 +3307,10 @@ describe('Client', () => {
     const promise1 = client.readResource('Patient', '123', { disableAutoBatch: true });
 
     // Make normal requests that should be batched
-    void client.readResource('Patient', '456');
-    void client.readResource('Patient', '789');
+    const promise2 = client.readResource('Patient', '456');
+    expect(promise2).toBeDefined();
+    const promise3 = client.readResource('Patient', '789');
+    expect(promise3).toBeDefined();
 
     // The first request should complete immediately
     await promise1;
@@ -3324,7 +3326,9 @@ describe('Client', () => {
     expect(fetch).toHaveBeenCalledTimes(1);
 
     // Wait for the batch timeout
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
 
     // Now the second request should have been executed
     expect(fetch).toHaveBeenCalledTimes(2);
