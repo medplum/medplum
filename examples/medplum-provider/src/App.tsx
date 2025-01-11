@@ -28,7 +28,6 @@ import { SignInPage } from './pages/SignInPage';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
-import { EncounterTab } from './pages/patient/EncounterTab';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { TaskTab } from './pages/patient/TaskTab';
@@ -39,7 +38,7 @@ import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
-import { EncounterChart } from './pages/encounter/EcounterChart';
+import { EncounterChart } from './pages/encounter/EncounterChart';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
