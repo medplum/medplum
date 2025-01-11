@@ -16,28 +16,39 @@ export const EncounterModal = (): JSX.Element => {
   const [types, setTypes] = useState<ValueSetExpansionContains[]>([]);
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
   // Todo: create a resusable type
-  const [status, setStatus] = useState<'planned' | 'arrived' | 'triaged' | 'in-progress' | 'onleave' | 'finished' | 'cancelled' | 'entered-in-error' | 'unknown'>('planned');
+  const [status, setStatus] = useState<
+    | 'planned'
+    | 'arrived'
+    | 'triaged'
+    | 'in-progress'
+    | 'onleave'
+    | 'finished'
+    | 'cancelled'
+    | 'entered-in-error'
+    | 'unknown'
+  >('planned');
   const isOpen = location.pathname.endsWith('/Encounter/new');
 
   const handleClose = (): void => {
     navigate(-1);
   };
-  
-  const handleCreateEncounter = (): void => {
 
+  const handleCreateEncounter = (): void => {
     if (!patient || !encounterClass) {
       return;
     }
-    
+
     const encounterData: Encounter = {
       resourceType: 'Encounter',
       status: status,
       statusHistory: [],
       class: encounterClass,
       classHistory: [],
-      type: [{
-        coding: types
-      }],
+      type: [
+        {
+          coding: types,
+        },
+      ],
       subject: createReference(patient),
     };
 
@@ -78,18 +89,17 @@ export const EncounterModal = (): JSX.Element => {
     >
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          
           {/* TODO: Enable change of Patient */}
           <ResourceInput resourceType="Patient" name="Patient-id" defaultValue={patient} disabled={true} />
 
           <ValueSetAutocomplete
-            name='type'
+            name="type"
             label="Type"
             binding="http://hl7.org/fhir/ValueSet/service-type"
             withHelpText={true}
             onChange={(items: ValueSetExpansionContains[]) => {
-              console.log(items)
-              setTypes(items)
+              console.log(items);
+              setTypes(items);
             }}
           />
 
@@ -98,7 +108,7 @@ export const EncounterModal = (): JSX.Element => {
             label="Class"
             binding="http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
             onChange={(value) => {
-              setEncounterClass(value)
+              setEncounterClass(value);
             }}
             path="Encounter.type"
           />
