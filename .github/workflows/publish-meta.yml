@@ -1,9 +1,12 @@
 name: Publish meta
 
 on:
-  push:
-    tags:
-      - 'v*'
+  # We publish meta on workflow run since the release manifest requires artifacts of agent build steps
+  # to be present in the GitHub release manifest that are built and only present after the Publish step runs
+  workflow_run:
+    workflows: [Publish]
+    types:
+      - completed
   workflow_dispatch:
 
 jobs:
