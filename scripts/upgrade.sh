@@ -88,8 +88,9 @@ fi
 
 # Check if there is a PR for this branch already
 # Skip creation if there is, otherwise create the PR for this branch
-PR_VIEW_RESULT=$(gh pr view &>/dev/null)
-if [ "$PR_VIEW_RESULT" -ne 0 ]; then
+gh pr view &>/dev/null || true
+PR_VIEW_EXIT_CODE=$?
+if [ "$PR_VIEW_EXIT_CODE" -ne 0 ]; then
     echo "No existing PR found, creating PR..."
     gh pr create --title "Dependency upgrades $DATE" --body "Dependency upgrades" --draft
 else
