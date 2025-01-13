@@ -95,7 +95,7 @@ export const EncounterModal = (): JSX.Element => {
             label="Type"
             binding="http://hl7.org/fhir/ValueSet/service-type"
             withHelpText={true}
-            onChange={(items: ValueSetExpansionContains[]) => setTypes(items) }
+            onChange={(items: ValueSetExpansionContains[]) => setTypes(items)}
           />
 
           <CodingInput
