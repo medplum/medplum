@@ -25,9 +25,9 @@
     "@babel/preset-env": "7.26.0",
     "@babel/preset-react": "7.26.3",
     "@babel/preset-typescript": "7.26.0",
-    "@mantine/core": "7.15.2",
-    "@mantine/hooks": "7.15.2",
-    "@mantine/notifications": "7.15.2",
+    "@mantine/core": "7.15.3",
+    "@mantine/hooks": "7.15.3",
+    "@mantine/notifications": "7.15.3",
     "@medplum/core": "3.2.27",
     "@medplum/eslint-config": "3.2.27",
     "@medplum/fhirtypes": "3.2.27",
@@ -54,7 +54,7 @@
     "react-chartjs-2": "5.3.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.28.0",
-    "typescript": "5.7.2",
+    "typescript": "5.7.3",
     "vite": "6.0.7"
   }
 }
