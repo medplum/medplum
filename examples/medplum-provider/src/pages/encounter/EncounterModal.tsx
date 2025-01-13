@@ -61,7 +61,7 @@ export const EncounterModal = (): JSX.Element => {
           message: 'Encounter created',
         });
         // Redirect to actual chart
-        navigate(`/Patient/${patient.id}/Encounter/chart`);
+        navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`);
       })
       .catch((err) => {
         showNotification({
