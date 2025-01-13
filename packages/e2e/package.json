@@ -1,0 +1,31 @@
+{
+  "name": "@medplum/e2e",
+  "version": "3.2.27",
+  "description": "End-to-end tests for Medplum",
+  "keywords": [
+    "e2e",
+    "end-to-end",
+    "smoke",
+    "test"
+  ],
+  "homepage": "https://github.com/medplum/medplum#readme",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medplum/medplum.git",
+    "directory": "packages/e2e"
+  },
+  "scripts": {
+    "test:smoke": "playwright test smoke/medplum.smoke.test.ts --reporter=list,html"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "devDependencies": {
+    "@playwright/test": "1.49.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

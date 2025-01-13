@@ -15,8 +15,7 @@
     "lint": "turbo run lint --filter=!@medplum/docs",
     "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs,json}\"",
     "sort-package-json": "sort-package-json package.json \"packages/*/package.json\" \"examples/*/package.json\"",
-    "test": "turbo run test --filter=!@medplum/docs",
-    "test:smoke": "playwright test tests/medplum.smoke.test.ts --reporter=list,html"
+    "test": "turbo run test --filter=!@medplum/docs"
   },
   "prettier": {
     "printWidth": 120,
@@ -39,7 +38,6 @@
     "@babel/preset-typescript": "7.26.0",
     "@microsoft/api-documenter": "7.26.3",
     "@microsoft/api-extractor": "7.48.1",
-    "@playwright/test": "1.49.1",
     "@types/node": "22.10.5",
     "babel-jest": "29.7.0",
     "babel-preset-vite": "1.1.3",
