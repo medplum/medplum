@@ -16,7 +16,7 @@
     "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs,json}\"",
     "sort-package-json": "sort-package-json package.json \"packages/*/package.json\" \"examples/*/package.json\"",
     "test": "turbo run test --filter=!@medplum/docs",
-    "test:smoke": "playwright test medplum.smoke.test.ts --reporter=list,html"
+    "test:smoke": "playwright test tests/medplum.smoke.test.ts --reporter=list,html"
   },
   "prettier": {
     "printWidth": 120,

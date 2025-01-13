@@ -7,7 +7,7 @@ const config: PlaywrightTestConfig = {
     timeout: 5000,
   },
   use: {
-    baseURL: 'https://app.medplum.com',
+    baseURL: 'http://localhost:3000',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     trace: 'retain-on-failure',
