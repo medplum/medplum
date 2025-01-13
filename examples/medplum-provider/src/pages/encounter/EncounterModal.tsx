@@ -106,7 +106,7 @@ export const EncounterModal = (): JSX.Element => {
             name="class"
             label="Class"
             binding="http://terminology.hl7.org/ValueSet/v3-ActEncounterCode"
-            onChange={(value) => {
+            onChange={setEncounterClass}
               setEncounterClass(value);
             }}
             path="Encounter.type"
