@@ -157,13 +157,13 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     onDisconnect = async (): Promise<void> => {
       const subscriptionIds = wsToSubLookup.get(socket);
       if (!subscriptionIds) {
-        globalLogger.error('[WS] No entry for given WebSocket in subscription lookup');
+        globalLogger.warn('[WS] No entry for given WebSocket in subscription lookup');
         return;
       }
       unsubscribeWsFromAllSubscriptions(socket);
       const cacheEntryStr = (await redis.get(`Subscription/${subscriptionId}`)) as string | null;
       if (!cacheEntryStr) {
-        globalLogger.error('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect.');
+        globalLogger.warn('[WS] Failed to retrieve subscription cache entry on WebSocket disconnect');
         return;
       }
       const cacheEntry = JSON.parse(cacheEntryStr) as CacheEntry<Subscription>;
@@ -184,7 +184,7 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
     unsubscribeWsFromSubscription(socket, subscriptionId);
     const cacheEntryStr = (await redis.get(`Subscription/${subscriptionId}`)) as string | null;
     if (!cacheEntryStr) {
-      globalLogger.error('[WS] Failed to retrieve subscription cache entry when unbinding from token', {
+      globalLogger.warn('[WS] Failed to retrieve subscription cache entry when unbinding from token', {
         subscriptionId,
       });
       return;
@@ -211,7 +211,7 @@ export async function handleR4SubscriptionConnection(socket: ws.WebSocket): Prom
         const { payload } = await verifyJwt(token);
         tokenPayload = payload;
       } catch (err) {
-        globalLogger.error(`[WS]: Error occurred while verifying client message token: ${normalizeErrorString(err)}`);
+        globalLogger.warn(`[WS]: Error occurred while verifying client message token: ${normalizeErrorString(err)}`);
         socket.send(JSON.stringify(badRequest('Token failed to validate. Check token expiry.')));
         return;
       }

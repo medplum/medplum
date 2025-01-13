@@ -4,8 +4,8 @@ import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { loadAwsConfig } from './cloud/aws/config';
-import { loadGcpConfig } from './cloud/gcp/config';
 import { loadAzureConfig } from './cloud/azure/config';
+import { loadGcpConfig } from './cloud/gcp/config';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
