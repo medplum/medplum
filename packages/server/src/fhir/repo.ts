@@ -59,7 +59,6 @@ import {
   SearchParameter,
   StructureDefinition,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
@@ -107,6 +106,7 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
+import { v7 } from 'uuid';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -273,7 +273,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   generateId(): string {
-    return randomUUID();
+    return v7();
   }
 
   async readResource<T extends Resource>(
@@ -615,7 +615,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const resultMeta: Meta = {
       ...updated.meta,
-      versionId: randomUUID(),
+      versionId: this.generateId(),
       lastUpdated: this.getLastUpdated(existing, resource),
       author: this.getAuthor(resource),
       onBehalfOf: this.context.onBehalfOf,
@@ -1023,7 +1023,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         await new InsertQuery(resourceType + '_History', [
           {
             id,
-            versionId: randomUUID(),
+            versionId: this.generateId(),
             lastUpdated,
             content,
           },

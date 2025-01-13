@@ -1,7 +1,6 @@
 import { created, forbidden, getResourceTypes, isResourceType, Operator } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Project, Resource, ResourceType } from '@medplum/fhirtypes';
-import { randomUUID } from 'node:crypto';
 import { getAuthenticatedContext } from '../../context';
 import { Repository } from '../repo';
 import { getBinaryStorage } from '../storage';
@@ -65,7 +64,7 @@ class ProjectCloner {
         if (!entry.resource || !this.isAllowedResourceId(entry.resource.id as string)) {
           continue;
         }
-        this.idMap.set(entry.resource.id as string, randomUUID());
+        this.idMap.set(entry.resource.id as string, repo.generateId());
         buildBinaryIds(entry.resource, binaryIds);
         if (entry.resource.resourceType !== 'Project') {
           allResources.push(entry.resource);
@@ -77,7 +76,7 @@ class ProjectCloner {
     if (this.isAllowedResourceType('Binary')) {
       for (const binaryId of binaryIds) {
         const binary = await repo.readResource<Binary>('Binary', binaryId);
-        this.idMap.set(binary.id as string, randomUUID());
+        this.idMap.set(binary.id as string, repo.generateId());
         allResources.push(binary);
       }
     }
