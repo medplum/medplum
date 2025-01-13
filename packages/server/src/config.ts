@@ -5,6 +5,7 @@ import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { loadAwsConfig } from './cloud/aws/config';
 import { loadGcpConfig } from './cloud/gcp/config';
+import { loadAzureConfig } from './cloud/azure/config';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 
@@ -177,6 +178,9 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
       break;
     case 'gcp':
       cachedConfig = await loadGcpConfig(configPath);
+      break;
+    case 'azure':
+      cachedConfig = await loadAzureConfig(configPath);
       break;
     default:
       throw new Error('Unrecognized config type: ' + configType);
