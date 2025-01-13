@@ -3,14 +3,20 @@
 # Declare variables to be passed into your templates.
 
 global:
-  cloudProvider: gcp # Supported values: gcp. # roadmap: aws, azure
+  cloudProvider: gcp # Supported values: gcp, azure
+  # GCP required values
   gcp:
     projectId: [MY_PROJECT_ID] # Your Google Cloud Platform project ID
-    secretId: [MY_CONFIG_SECRET_ID] # The secret ID for configuration in Google Cloud Platform
+    secretId: [MY_CONFIG_SECRET_ID] # The configuration secret ID in Google Cloud Platform
+  # Azure required values
+  azure:
+    keyVaultURL: [MY_KEYVAULT_URL] # Your Azure Key Vault URL
+    secretName: [MY_CONFIG_SECRET_NAME] # The configuration secret Name in Azure
  
 serviceAccount: 
   annotations:
     iam.gke.io/gcp-service-account: [MY_GCP_SERVICE_ACCOUNT] # Your Google Cloud Platform service account e.i: medplum-server@[MY_PROJECT_ID].iam.gserviceaccount.com
+    # azure.workload.identity/client-id: "7f644391-4b27-4f76-8427-17bae90d7ee8" # Azure Managed Identity Client ID
 
 namespace: medplum
 
@@ -19,11 +25,21 @@ deployment:
   image:
     repository: medplum/medplum-server
     tag: latest
-
+  env:
+    # - name: SQL_DEBUG
+    #   value: '*'
+  resources:
+    requests:
+      memory: "1Gi"
+    limits:
+      memory: "2Gi"
   autoscaling:
     enabled: true
+
+service: {}
 
 ingress:
   deploy: true
   domain: [MY_DOMAIN] # Your domain name
+  tlsSecretName: [TLS_SECRET_NAME] # Azure only
   
