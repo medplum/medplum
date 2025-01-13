@@ -88,7 +88,6 @@ export const EncounterModal = (): JSX.Element => {
     >
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          {/* TODO: Enable change of Patient */}
           <ResourceInput resourceType="Patient" name="Patient-id" defaultValue={patient} disabled={true} />
 
           <ValueSetAutocomplete
@@ -96,10 +95,7 @@ export const EncounterModal = (): JSX.Element => {
             label="Type"
             binding="http://hl7.org/fhir/ValueSet/service-type"
             withHelpText={true}
-            onChange={(items: ValueSetExpansionContains[]) => {
-              console.log(items);
-              setTypes(items);
-            }}
+            onChange={(items: ValueSetExpansionContains[]) => setTypes(items) }
           />
 
           <CodingInput
