@@ -84,10 +84,16 @@ if [ "$LAST_STEP" -lt 1 ]; then
     git add -u .
     git commit -m "Dependency upgrades - step 1"
     git push origin "$BRANCH_NAME"
-    
-    if [ "$LAST_STEP" -eq 0 ]; then
-        gh pr create --title "Dependency upgrades $DATE" --body "Dependency upgrades" --draft
-    fi
+fi
+
+# Check if there is a PR for this branch already
+# Skip creation if there is, otherwise create the PR for this branch
+PR_VIEW_RESULT=$(gh pr view &>/dev/null)
+if [ "$PR_VIEW_RESULT" -ne 0 ]; then
+    echo "No existing PR found, creating PR..."
+    gh pr create --title "Dependency upgrades $DATE" --body "Dependency upgrades" --draft
+else
+    echo "Existing PR found, skipping create"
 fi
 
 if [ "$LAST_STEP" -lt 2 ]; then
