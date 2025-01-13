@@ -1,1 +1,16 @@
+# Medplum Code Owners
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#codeowners-syntax
+
+# This is a comment.
+# Each line is a file pattern followed by one or more owners.
+
+# Order is important; the last matching pattern takes the most precedence.
+
+# Dev is the default owner for everything in the repo.
 * @medplum/dev
+
+# FDE is the default owner for the "examples" directory.
+/examples/ @medplum/fde
+
+# Both Dev and FDE own the packages/docs directory.
+/packages/docs/ @medplum/dev @medplum/fde
