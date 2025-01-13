@@ -123,7 +123,6 @@ export function App(): JSX.Element | null {
                 <Route path="Encounter/new" element={<EncounterModal />} />
                 <Route path="Encounter/chart" element={<EncounterChart />} />
                 <Route path="edit" element={<EditTab />} />
-                {/* <Route path="encounter" element={<EncounterTab />} /> */}
                 <Route path="communication" element={<CommunicationTab />} />
                 <Route path="communication/:id" element={<CommunicationTab />} />
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
