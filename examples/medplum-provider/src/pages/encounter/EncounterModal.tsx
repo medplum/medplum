@@ -60,7 +60,6 @@ export const EncounterModal = (): JSX.Element => {
           title: 'Success',
           message: 'Encounter created',
         });
-        console.log('Encounter created:', encounter);
         // Redirect to actual chart
         navigate(`/Patient/${patient.id}/Encounter/chart`);
       })
