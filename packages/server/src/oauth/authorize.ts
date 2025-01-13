@@ -59,7 +59,18 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     return false;
   }
 
-  if (client.redirectUri !== params.redirect_uri) {
+  const redirectUri = client.redirectUri;
+  if (!redirectUri) {
+    res.status(400).send('Client has no redirect URI');
+    return false;
+  }
+
+  if (!URL.canParse(redirectUri)) {
+    res.status(400).send('Invalid redirect URI');
+    return false;
+  }
+
+  if (redirectUri !== params.redirect_uri) {
     res.status(400).send('Incorrect redirect_uri');
     return false;
   }
@@ -70,25 +81,25 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   // If these are invalid, redirect back to the redirect URI.
   const scope = params.scope as string | undefined;
   if (!scope) {
-    sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
+    sendErrorRedirect(res, redirectUri, 'invalid_request', state);
     return false;
   }
 
   const responseType = params.response_type;
   if (responseType !== 'code') {
-    sendErrorRedirect(res, client.redirectUri as string, 'unsupported_response_type', state);
+    sendErrorRedirect(res, redirectUri, 'unsupported_response_type', state);
     return false;
   }
 
   const requestObject = params.request as string | undefined;
   if (requestObject) {
-    sendErrorRedirect(res, client.redirectUri as string, 'request_not_supported', state);
+    sendErrorRedirect(res, redirectUri, 'request_not_supported', state);
     return false;
   }
 
   const aud = params.aud as string | undefined;
   if (!isValidAudience(aud)) {
-    sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
+    sendErrorRedirect(res, redirectUri, 'invalid_request', state);
     return false;
   }
 
@@ -96,7 +107,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
   if (codeChallenge) {
     const codeChallengeMethod = params.code_challenge_method;
     if (!codeChallengeMethod) {
-      sendErrorRedirect(res, client.redirectUri as string, 'invalid_request', state);
+      sendErrorRedirect(res, redirectUri, 'invalid_request', state);
       return false;
     }
   }
@@ -105,7 +116,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
 
   const prompt = params.prompt as string | undefined;
   if (prompt === 'none' && !existingLogin) {
-    sendErrorRedirect(res, client.redirectUri as string, 'login_required', state);
+    sendErrorRedirect(res, redirectUri, 'login_required', state);
     return false;
   }
 
