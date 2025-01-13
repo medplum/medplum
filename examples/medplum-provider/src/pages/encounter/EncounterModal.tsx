@@ -62,7 +62,7 @@ export const EncounterModal = (): JSX.Element => {
         });
         console.log('Encounter created:', encounter);
         // Redirect to actual chart
-        navigate(`/Patient/6d8f3e99-f763-422c-946d-68c95e394a82/Encounter/chart`);
+        navigate(`/Patient/${patient.id}/Encounter/chart`);
       })
       .catch((err) => {
         showNotification({
