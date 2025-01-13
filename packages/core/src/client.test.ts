@@ -3298,6 +3298,41 @@ describe('Client', () => {
     expect(fetchOptions.headers).not.toHaveProperty('X-Medplum');
     expect(fetchOptions.headers).not.toHaveProperty('x-medplum');
   });
+
+  test('Call-time auto-batch opt-out', async () => {
+    const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+    const client = new MedplumClient({ fetch, autoBatchTime: 50 });
+
+    // Make a request with disableAutoBatch=true
+    const promise1 = client.readResource('Patient', '123', { disableAutoBatch: true });
+
+    // Make normal requests that should be batched
+    const promise2 = client.readResource('Patient', '456');
+    expect(promise2).toBeDefined();
+    const promise3 = client.readResource('Patient', '789');
+    expect(promise3).toBeDefined();
+
+    // The first request should complete immediately
+    await promise1;
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient/123',
+      expect.objectContaining({
+        method: 'GET',
+      })
+    );
+
+    // The second request should be batched and not executed yet
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    // Wait for the batch timeout
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+
+    // Now the second request should have been executed
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('Passed in async-backed `ClientStorage`', () => {
