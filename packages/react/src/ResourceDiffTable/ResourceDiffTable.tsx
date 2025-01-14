@@ -50,9 +50,6 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
 
     // Next, convert the patch operations to a diff table
     for (const op of patch) {
-
-      console.log(original)
-
       const path = op.path;
       const fhirPath = jsonPathToFhirPath(path);
       const property = tryGetElementDefinition(original.resourceType, fhirPath);
@@ -88,84 +85,6 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
         <Table.Tbody>
           {diffTable.map((row) => (
             <ResourceDiffRow {...row} shouldToggleDisplay={shouldToggleDisplay} />
-            // // <>
-            //   {/* Main Row Content */}
-            //   <Table.Tr key={row.key}>
-            //     <Table.Td>
-            //       <Stack>
-            //         <span>{row.name}</span>
-            //       </Stack>
-            //     </Table.Td>
-            //     {shouldToggleDisplay ? (
-            //       <>
-            //         {!isCollapsed && (
-            //           <>
-            //             <Table.Td className={classes.removed}>
-            //               {row.originalValue && (
-            //                 <ResourcePropertyDisplay
-            //                   path={row.path}
-            //                   property={row.property}
-            //                   propertyType={row.originalValue.type}
-            //                   value={row.originalValue.value}
-            //                   ignoreMissingValues={true}
-            //                 />
-            //               )}
-            //             </Table.Td>
-            //             <Table.Td className={classes.added}>
-            //               {row.revisedValue && (
-            //                 <ResourcePropertyDisplay
-            //                   path={row.path}
-            //                   property={row.property}
-            //                   propertyType={row.revisedValue.type}
-            //                   value={row.revisedValue.value}
-            //                   ignoreMissingValues={true}
-            //                 />
-            //               )}
-            //             </Table.Td>
-            //           </>
-            //         )}
-            //       </>
-            //     ) : (
-            //       <>
-            //         <Table.Td className={classes.removed}>
-            //           {row.originalValue && (
-            //             <ResourcePropertyDisplay
-            //               path={row.path}
-            //               property={row.property}
-            //               propertyType={row.originalValue.type}
-            //               value={row.originalValue.value}
-            //               ignoreMissingValues={true}
-            //             />
-            //           )}
-            //         </Table.Td>
-            //         <Table.Td className={classes.added}>
-            //           {row.revisedValue && (
-            //             <ResourcePropertyDisplay
-            //               path={row.path}
-            //               property={row.property}
-            //               propertyType={row.revisedValue.type}
-            //               value={row.revisedValue.value}
-            //               ignoreMissingValues={true}
-            //             />
-            //           )}
-            //         </Table.Td>
-            //       </>
-            //     )}
-            //   </Table.Tr>
-            //   {/* Expand/Collapse Button Row */}
-            //   {shouldToggleDisplay && (
-            //     <Table.Tr key={`${row.key}-button`}>
-            //       <Table.Td colSpan={3} style={{ textAlign: 'right' }}>
-            //         <Button
-            //           onClick={() => setIsCollapsed(!isCollapsed)}
-            //           variant="light"
-            //         >
-            //           {isCollapsed ? 'Expand' : 'Collapse'}
-            //         </Button>
-            //       </Table.Td>
-            //     </Table.Tr>
-            //   )}
-            // </>
           ))}
         </Table.Tbody>
       </Table>
