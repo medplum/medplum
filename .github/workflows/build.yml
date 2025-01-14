@@ -321,18 +321,30 @@ jobs:
             sleep 2
           done
       - name: Run additional setup SQL
-        run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_e2e.sql
+        run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
         env:
           PGPASSWORD: medplum
       - name: Install playwright
         run: npx playwright install --with-deps chromium
+      - name: Build Medplum
+        run: npm run build:fast
+      - name: Start server and app
+        run: |
+          pushd packages/server
+          npm run start &
+          popd
+          push packages/app
+          npm run dev &
+          popd
+        env:
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Wait for deployment to be ready
         run: |
           # Add retry mechanism for deployment readiness check
           MAX_RETRIES=5
           RETRY_COUNT=0
 
-          until curl -s -f https://app.medplum.com/healthcheck > /dev/null; do
+          until curl -s -f http://localhost:8103/healthcheck > /dev/null; do
             if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
               echo "Max retries reached. Deployment not ready."
               exit 1
@@ -340,17 +352,19 @@ jobs:
             
             RETRY_COUNT=$((RETRY_COUNT + 1))
             echo "Waiting for deployment to be ready... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
-            sleep 30
+            sleep 10
           done
       - name: Run e2e tests
-        run: npm run test:e2e
+        # TODO: Later on, we can change this to test:e2e to run all e2e tests, when we have more
+        run: npm run test:smoke
       - name: Upload test results
+        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         uses: actions/upload-artifact@v4
         with:
-          name: smoke-test-results
+          name: e2e-test-results
           path: |
-            playwright-report/
-            test-results/
+            packages/e2e/playwright-report/
+            packages/e2e/test-results/
           retention-days: 30
 
   build-docs:
