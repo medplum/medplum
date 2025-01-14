@@ -1,4 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
+import path from 'node:path';
 
 test.describe('Medplum App Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
@@ -55,27 +56,38 @@ test.describe('Medplum App Smoke Tests', () => {
     await signIn(page, 'admin@example.com', 'medplum_admin');
 
     await page.getByPlaceholder('Search').fill('Frodo Baggins');
-    await page.getByPlaceholder('Search').press('Enter');
+    await expect(page.getByTestId('options')).toBeVisible();
     await page.getByText('FBFrodo Baggins').first().click();
 
     await page.getByTestId('timeline-item').getByText('Frodo Baggins').click();
-    await expect(page.getByTestId('search-control-row').locator('div')).toContainText('Frodo Baggins');
   });
 
   test('Search for patient via permalink', async ({ page }) => {
     await signIn(page, 'admin@example.com', 'medplum_admin');
 
-    await page.goto('http://localhost:3000/Patient?name=Frodo');
-    await page.getByTestId('timeline-item').getByText('Frodo Baggins').click();
-    await expect(page.getByTestId('search-control-row').locator('div')).toContainText('Frodo Baggins');
+    await page.goto('http://localhost:3000/Patient?name=Frodo&_sort=-_lastUpdated');
+    await expect(page.getByTestId('search-control-row').first().locator('div')).toContainText('Frodo Baggins');
   });
 
-  // test('Upload patient profile photo', async ({ page }) => {
-  //   await expect(page.getByTestId('attachment-image')).toBeVisible();
-  //   await page.getByRole('tab', { name: 'Details' }).click();
-  //   await expect(page.getByTestId('attachment-details')).toBeVisible();
-  //   await expect(page.getByTestId('attachment-details')).toContainText('frodo_baggins.png');
-  // });
+  test('Upload patient profile photo', async ({ page }) => {
+    await signIn(page, 'admin@example.com', 'medplum_admin');
+
+    await page.goto('http://localhost:3000/Patient?name=Frodo&_sort=-_lastUpdated');
+    await expect(page.getByTestId('search-control-row').first().locator('div')).toContainText('Frodo Baggins');
+
+    // Click on patient
+    await page.getByTestId('search-control-row').first().locator('div').click();
+
+    // Edit and upload image
+    await page.getByRole('tab', { name: 'Edit' }).click();
+    await page.getByTestId('upload-file-input').setInputFiles(path.resolve(__dirname, '../files', 'frodo_baggins.png'));
+    await page.getByRole('button', { name: 'Update' }).click();
+
+    await expect(page.getByTestId('attachment-image')).toBeVisible();
+    await page.getByRole('tab', { name: 'Details' }).click();
+    await expect(page.getByTestId('attachment-details')).toBeVisible();
+    await expect(page.getByTestId('attachment-details')).toContainText('frodo_baggins.png');
+  });
 });
 
 async function signIn(page: Page, email: string, password: string): Promise<void> {
