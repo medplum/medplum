@@ -90,7 +90,6 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
       </Table>
     </>
   );
-  
 }
 
 function mergePatchOperations(patch: Operation[]): Operation[] {

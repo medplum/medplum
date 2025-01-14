@@ -15,15 +15,7 @@ export interface ResourceDiffRowProps {
 }
 
 export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
-  
-  const {
-    name,
-    path,
-    property,
-    originalValue,
-    revisedValue,
-    shouldToggleDisplay,
-  } = props;
+  const { name, path, property, originalValue, revisedValue, shouldToggleDisplay } = props;
   const [isCollapsed, setIsCollapsed] = useState(true);
   const toggleCollapse = (): void => setIsCollapsed((prev) => !prev);
 

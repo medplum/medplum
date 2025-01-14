@@ -55,6 +55,5 @@ describe('ResourceDiffRow', () => {
     });
 
     expect(await screen.queryByText('Homer')).not.toBeInTheDocument();
-
   });
 });
