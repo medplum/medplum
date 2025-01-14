@@ -342,7 +342,7 @@ jobs:
       - name: Wait for deployment to be ready
         run: |
           # Add retry mechanism for deployment readiness check
-          MAX_RETRIES=5
+          MAX_RETRIES=10
           RETRY_COUNT=0
 
           until curl -s -f http://localhost:8103/healthcheck > /dev/null; do
@@ -353,7 +353,7 @@ jobs:
             
             RETRY_COUNT=$((RETRY_COUNT + 1))
             echo "Waiting for deployment to be ready... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
-            sleep 10
+            sleep 30
           done
       - name: Run e2e tests
         # TODO: Later on, we can change this to test:e2e to run all e2e tests, when we have more
