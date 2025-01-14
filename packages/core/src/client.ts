@@ -2162,7 +2162,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   ): Promise<Attachment> {
     let createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
 
-    if (createBinaryOptions.contentType === 'text/xml') {
+    if (createBinaryOptions.contentType === ContentType.XML) {
       const fileData = createBinaryOptions.data;
       let fileStr: string;
 
@@ -2178,7 +2178,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
           };
           reader.readAsText(fileData, 'utf-8');
         });
-      } else if (fileData instanceof Uint8Array) {
+      } else if (ArrayBuffer.isView(fileData)) {
         fileStr = new TextDecoder().decode(fileData);
       } else {
         fileStr = fileData;

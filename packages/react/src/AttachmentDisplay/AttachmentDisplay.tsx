@@ -41,7 +41,6 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
           />
         </div>
       )}
-      {/* See: https://www.iana.org/assignments/media-types/application/cda+xml */}
       {contentType === ContentType.CDA_XML && <CcdaDisplay url={url} />}
       <div data-testid="download-link" style={{ padding: '2px 16px 16px 16px' }}>
         <Anchor

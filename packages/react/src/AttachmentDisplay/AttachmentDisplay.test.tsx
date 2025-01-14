@@ -3,14 +3,6 @@ import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '../test-utils/render';
 import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
 
-const EXAMPLE_XML = `
-<note>
-  <to>Tove</to>
-  <from>Jani</from>
-  <heading>Reminder</heading>
-  <body>Don't forget me this weekend!</body>
-</note>`;
-
 function mockFetch(url: string, options: any): Promise<any> {
   const result: any = {};
 
