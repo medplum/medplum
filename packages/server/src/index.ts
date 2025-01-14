@@ -1,4 +1,3 @@
-import { parseLogLevel } from '@medplum/core';
 import express from 'express';
 import gracefulShutdown from 'http-graceful-shutdown';
 import { initApp, shutdownApp } from './app';
@@ -33,9 +32,6 @@ export async function main(configName: string): Promise<void> {
   globalLogger.info('Starting Medplum Server...', { configName });
 
   const config = await loadConfig(configName);
-  if (config.logLevel) {
-    globalLogger.level = parseLogLevel(config.logLevel);
-  }
 
   const app = await initApp(express(), config);
   const server = app.listen(config.port);
