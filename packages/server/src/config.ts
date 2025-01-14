@@ -212,7 +212,6 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
-
   return config;
 }
 

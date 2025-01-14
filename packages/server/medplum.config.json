@@ -38,6 +38,5 @@
     "removeOnComplete": { "count": 1 }
   },
   "shutdownTimeoutMilliseconds": 30000,
-  "chainedSearchWithReferenceTables": true,
-  "logRequests": true
+  "chainedSearchWithReferenceTables": true
 }
