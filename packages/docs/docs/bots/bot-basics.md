@@ -148,7 +148,7 @@ Alternatively, you can also write the code for a Bot and deploy from within your
 ```json
 {
   "name": "sample-account-setup",
-  "id": "aa3a0383-a97b-4172-b65d-430f6241646f",
+  "id": "<BOT_ID>",
   "source": "src/examples/sample-account-setup.ts",
   "dist": "dist/sample-account-setup.js"
 }
