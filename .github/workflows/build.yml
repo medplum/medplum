@@ -334,7 +334,7 @@ jobs:
           pushd packages/server
           npm run start &
           popd
-          push packages/app
+          pushd packages/app
           npm run dev &
           popd
         env:
