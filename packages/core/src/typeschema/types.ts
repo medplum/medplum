@@ -22,6 +22,7 @@ export interface InternalTypeSchema {
   path: string;
   title?: string;
   url?: string;
+  version?: string;
   kind?: string;
   description?: string;
   elements: Record<string, InternalSchemaElement>;
@@ -260,6 +261,7 @@ class StructureDefinitionParser {
       title: sd.title,
       type: sd.type,
       url: sd.url as string,
+      version: sd.version,
       kind: sd.kind,
       description: getDescription(sd),
       elements: {},

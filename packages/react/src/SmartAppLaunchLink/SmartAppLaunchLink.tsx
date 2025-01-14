@@ -25,7 +25,7 @@ export function SmartAppLaunchLink(props: SmartAppLaunchLinkProps): JSX.Element 
       })
       .then((result) => {
         const url = new URL(client.launchUri as string);
-        url.searchParams.set('iss', medplum.getBaseUrl() + 'fhir/R4');
+        url.searchParams.set('iss', medplum.getBaseUrl() + 'fhir/R4/');
         url.searchParams.set('launch', result.id as string);
         window.location.assign(url.toString());
       })
