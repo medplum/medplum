@@ -27,8 +27,6 @@ export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const toggleCollapse = (): void => setIsCollapsed((prev) => !prev);
 
-  console.log(props)
-
   return (
     <>
       <Table.Tr>
