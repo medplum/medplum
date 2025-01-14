@@ -3,7 +3,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      nodejs: 18
+      nodejs: 21
     commands:
       - echo "MEDPLUM_BASE_URL=https://devapi.medplum.lotuscares.ai/" >> .env
   pre_build:
@@ -13,6 +13,8 @@ phases:
       - npm install -g typescript
       - npm install -g jest
       - npm install --save-dev @types/jest
+      - cd ./packages/app/
+      - npm install
   build:
     commands:
       - npm run build --filter=@medplum/app
