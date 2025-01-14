@@ -4559,6 +4559,55 @@ describe('FHIR Search', () => {
           expect(bundleContains(bundle2, task)).toBeUndefined();
         }));
     });
+
+    describe('Quantity search', () => {
+      beforeAll(async () => {
+        for (const weight of [70, 75, 80, 85, 90]) {
+          await repo.createResource<Observation>({
+            resourceType: 'Observation',
+            status: 'final',
+            code: { coding: [{ code: '29463-7' }] },
+            valueQuantity: {
+              value: weight,
+              unit: 'kg',
+              system: 'http://unitsofmeasure.org',
+              code: 'kg',
+            },
+          });
+        }
+      });
+
+      test('Basic', async () =>
+        withTestContext(async () => {
+          const result = await repo.search(
+            parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=gt80')
+          );
+          expect(result.entry).toHaveLength(2);
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 90)).toBeDefined();
+        }));
+
+      test('With units', async () =>
+        withTestContext(async () => {
+          const result = await repo.search(
+            parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=gt80|http://unitsofmeasure.org|kg')
+          );
+          expect(result.entry).toHaveLength(2);
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 90)).toBeDefined();
+        }));
+
+      test('Approximately', async () =>
+        withTestContext(async () => {
+          const result = await repo.search(
+            parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=ap80|http://unitsofmeasure.org|kg')
+          );
+          expect(result.entry).toHaveLength(3);
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 75)).toBeDefined();
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 80)).toBeDefined();
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
+        }));
+    });
   });
 
   describe('systemRepo', () => {
