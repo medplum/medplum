@@ -1,4 +1,4 @@
-import { LogLevel, OperationOutcomeError, getReferenceString, sleep } from '@medplum/core';
+import { OperationOutcomeError, getReferenceString, sleep } from '@medplum/core';
 import {
   Bundle,
   BundleEntry,
@@ -15,7 +15,6 @@ import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { MedplumServerConfig, loadTestConfig } from '../config';
 import { Repository } from '../fhir/repo';
-import { globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 
@@ -31,11 +30,11 @@ describe('WebSockets Subscriptions', () => {
   let patientSubscription: Subscription;
 
   beforeAll(async () => {
-    globalLogger.level = LogLevel.WARN;
     console.log = jest.fn();
     app = express();
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
+    config.logLevel = 'warn';
     server = await initApp(app, config);
 
     const result = await withTestContext(() =>
@@ -397,10 +396,10 @@ describe('Subscription Heartbeat', () => {
   let accessToken: string;
 
   beforeAll(async () => {
-    globalLogger.level = LogLevel.WARN;
     app = express();
     config = await loadTestConfig();
     config.heartbeatMilliseconds = 25;
+    config.logLevel = 'warn';
     server = await initApp(app, config);
 
     const result = await withTestContext(() =>
