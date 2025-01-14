@@ -122,7 +122,6 @@ export default function AboutPage(): JSX.Element {
               linkedInUrl="https://www.linkedin.com/in/ianplunkett/"
               githubUrl="https://github.com/ianplunkett"
             />
-
           </CardContainer>
         </Section>
       </Container>
