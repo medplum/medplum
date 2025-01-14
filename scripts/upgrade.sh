@@ -67,7 +67,8 @@ echo "Last completed step: $LAST_STEP"
 # @tabler/icons-react - to avoid bad interaction with vite https://github.com/tabler/tabler-icons/issues/1233
 # react-native - 0.76.x is broken with an error caused by flow parser breaking when using `expo-crypto`: `SyntaxError: {..}/react-native/Libraries/vendor/emitter/EventEmitter.js: Unexpected token, expected "]" (39:5)`
 # storybook-addon-mantine - 4.1.0 seems to accidentally backported requirement for React 19 from v5: https://github.com/josiahayres/storybook-addon-mantine/issues/18
-EXCLUDE="@types/express @types/react @types/react-dom eslint node-fetch react react-dom react-router-dom rimraf supertest @tabler/icons-react react-native storybook-addon-mantine"
+# commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
+EXCLUDE="@types/express @types/react @types/react-dom eslint node-fetch react react-dom react-router-dom rimraf supertest @tabler/icons-react react-native storybook-addon-mantine commander"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions

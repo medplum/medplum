@@ -59,7 +59,7 @@
     "react-dom": "18.2.0",
     "react-intersection-observer": "9.14.1",
     "react-router-dom": "6.28.0",
-    "typescript": "5.7.2",
+    "typescript": "5.7.3",
     "url-loader": "4.1.1"
   },
   "engines": {
