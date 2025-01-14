@@ -52,7 +52,7 @@ npm t
 Deploy one bot:
 
 ```bash
-npx medplum deploy-bot sample-account-setup
+npx medplum bot deploy sample-account-setup
 ```
 
 You will see the following in your command prompt if all goes well:
