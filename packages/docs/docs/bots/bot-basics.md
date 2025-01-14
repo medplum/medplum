@@ -154,25 +154,8 @@ Alternatively, you can also write the code for a Bot and deploy from within your
 }
 ```
 
-- [Create a ClientApplication](https://app.medplum.com/ClientApplication/new) on Medplum. (All ClientApplications in your account can be found [here](https://app.medplum.com/ClientApplication))
-- Create a .env file locally by copying `.env.example` and putting the `ClientId` and `ClientSecret` from the `ClientApplication` into the file.
-- (Optional) Create an [AccessPolicy](https://app.medplum.com/AccessPolicy) on Medplum that can only read/write Bots and add it to the Bot in the [admin panel](https://app.medplum.com/admin/project).
+Then, you can [deploy your bot from command line](/docs/bots/bots-in-production#deploying-your-bot)
 
-
-Deploy your bot:
-
-```bash
-npx medplum deploy-bot sample-account-setup
-```
-
-You will see the following in your command prompt if all goes well:
-
-```bash
-Update bot code.....
-Success! New bot version: 7fcbc375-4192-471c-b874-b3f0d4676226
-Deploying bot...
-Deploy result: All OK
-```
 ## Executing a Bot
 
 Once your bot has been [saved](#editing-a-bot) and [deployed](#deploying-a-bot), it is time to execute the bot.
