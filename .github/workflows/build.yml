@@ -357,7 +357,10 @@ jobs:
           done
       - name: Run e2e tests
         # TODO: Later on, we can change this to test:e2e to run all e2e tests, when we have more
-        run: npm run test:smoke
+        run: |
+          pushd packages/e2e
+          npm run test:smoke
+          popd
       - name: Upload test results
         if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         uses: actions/upload-artifact@v4
