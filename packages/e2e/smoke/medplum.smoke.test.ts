@@ -80,7 +80,9 @@ test.describe('Medplum App Smoke Tests', () => {
 
     // Edit and upload image
     await page.getByRole('tab', { name: 'Edit' }).click();
-    await page.getByTestId('upload-file-input').setInputFiles(path.resolve(__dirname, '../files', 'frodo_baggins.png'));
+    await page
+      .getByTestId('upload-file-input')
+      .setInputFiles(path.resolve(__dirname, '../content', 'frodo_baggins.png'));
     await page.getByRole('button', { name: 'Update' }).click();
 
     await expect(page.getByTestId('attachment-image')).toBeVisible();
