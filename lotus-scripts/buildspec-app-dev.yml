@@ -16,7 +16,8 @@ phases:
   build:
     commands:
       - npm run build -- --filter=@medplum/app
+      - cp -r packages/app/dist ./app-dist
   post_build:
     commands:
-      - aws s3 sync ./packages/app/dist s3://lotus-medplum-app-bucket-dev
+      - aws s3 sync app-dist s3://lotus-medplum-app-bucket-dev
       - aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
