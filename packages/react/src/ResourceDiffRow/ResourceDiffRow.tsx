@@ -22,9 +22,7 @@ export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
     <>
       <Table.Tr>
         <Table.Td>
-          <Stack>
-            <span>{name}</span>
-          </Stack>
+          {name}
         </Table.Td>
         {(shouldToggleDisplay && !isCollapsed) || !shouldToggleDisplay ? (
           <>
