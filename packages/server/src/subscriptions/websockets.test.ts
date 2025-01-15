@@ -34,6 +34,7 @@ describe('WebSockets Subscriptions', () => {
     app = express();
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
+    config.logLevel = 'warn';
     server = await initApp(app, config);
 
     const result = await withTestContext(() =>
@@ -398,6 +399,7 @@ describe('Subscription Heartbeat', () => {
     app = express();
     config = await loadTestConfig();
     config.heartbeatMilliseconds = 25;
+    config.logLevel = 'warn';
     server = await initApp(app, config);
 
     const result = await withTestContext(() =>

@@ -20,6 +20,7 @@ import {
 import {
   DiagnosisCodeableConcept,
   HEALTH_GORILLA_AUTHORIZED_BY_EXT,
+  HEALTH_GORILLA_SYSTEM,
   LabOrganization,
   TestCoding,
 } from '@medplum/health-gorilla-core';
@@ -305,6 +306,102 @@ describe('useHealthGorilla', () => {
 
     coverage = await result.current.getActivePatientCoverages();
     expect(coverage).toHaveLength(2);
+  });
+
+  test('Kitchen sink', async () => {
+    // A bunch of tests to try all the various permutations of the API
+
+    const requestingLocation = { resourceType: 'Location', id: 'L-123' } satisfies Location;
+    const expectedValue = { reference: 'Location/L-123' };
+    const { result } = setup({ patient, requester, requestingLocation });
+
+    expect(await result.current.searchAvailableTests('')).toEqual([]);
+    expect(await result.current.searchAvailableLabs('')).toEqual([]);
+
+    await act(async () => {
+      result.current.addTest(RWS_AOE_TEST);
+      result.current.removeTest(RWS_AOE_TEST);
+      result.current.setTests([RWS_AOE_TEST]);
+      result.current.setPerformingLab({ resourceType: 'Organization', id: 'Lab-123' });
+      result.current.setPerformingLabAccountNumber('123');
+      result.current.updateBillingInformation({ billTo: 'patient' });
+      result.current.setDiagnoses(DIAGNOSES);
+      result.current.addDiagnosis(DIAGNOSES[0]);
+      result.current.removeDiagnosis(DIAGNOSES[0]);
+      result.current.removeDiagnosis({
+        coding: [{ system: 'http://hl7.org/fhir/sid/icd-10-cm', code: 'fake' }],
+      } satisfies DiagnosisCodeableConcept);
+    });
+
+    // The current performing lab does not have a Health Gorilla identifier, so this will fail
+    await expect(async () => result.current.searchAvailableTests('')).rejects.toThrow(
+      'No Health Gorilla identifier found for performing lab'
+    );
+
+    // Set a performing lab with a Health Gorilla identifier
+    await act(async () => {
+      result.current.setPerformingLab({
+        resourceType: 'Organization',
+        id: 'Lab-123',
+        identifier: [{ system: HEALTH_GORILLA_SYSTEM, value: '123' }],
+      });
+    });
+
+    expect(await result.current.searchAvailableTests('')).toEqual([]);
+    expect(await result.current.searchAvailableLabs('')).toEqual([]);
+
+    const { serviceRequest } = await result.current.createOrderBundle();
+    expect(getExtension(serviceRequest, HEALTH_GORILLA_AUTHORIZED_BY_EXT)?.valueReference).toMatchObject(expectedValue);
+  });
+
+  test('Error creating service request', async () => {
+    const requestingLocation = { resourceType: 'Location', id: 'L-123' } satisfies Location;
+    const { result } = setup({ patient, requester, requestingLocation });
+
+    await act(async () => {
+      result.current.addTest(RWS_AOE_TEST);
+      result.current.setPerformingLab({ resourceType: 'Organization', id: 'Lab-123' });
+      result.current.updateBillingInformation({ billTo: 'patient' });
+    });
+
+    // Mock the case of returning a Bundle with a non-2XX status code
+    medplum.executeBatch = vi.fn(
+      async () =>
+        ({
+          resourceType: 'Bundle',
+          type: 'transaction-response',
+          entry: [{ response: { status: '400' } }],
+        }) as Bundle
+    );
+
+    await expect(() => result.current.createOrderBundle()).rejects.toThrow(
+      'Error creating lab order: Non-2XX status code in response entry'
+    );
+  });
+
+  test('Missing service request', async () => {
+    const requestingLocation = { resourceType: 'Location', id: 'L-123' } satisfies Location;
+    const { result } = setup({ patient, requester, requestingLocation });
+
+    await act(async () => {
+      result.current.addTest(RWS_AOE_TEST);
+      result.current.setPerformingLab({ resourceType: 'Organization', id: 'Lab-123' });
+      result.current.updateBillingInformation({ billTo: 'patient' });
+    });
+
+    // Mock the case of returning a Bundle without a ServiceRequest
+    medplum.executeBatch = vi.fn(
+      async () =>
+        ({
+          resourceType: 'Bundle',
+          type: 'transaction-response',
+          entry: [],
+        }) as Bundle
+    );
+
+    await expect(() => result.current.createOrderBundle()).rejects.toThrow(
+      'Error creating lab order: Lab Order Service Request not found in response entries'
+    );
   });
 });
 

@@ -1,4 +1,4 @@
-import { badRequest, ContentType, warnIfNewerVersionAvailable } from '@medplum/core';
+import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
@@ -34,6 +34,7 @@ import { healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
+import { globalLogger } from './logger';
 import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
@@ -145,6 +146,10 @@ function errorHandler(err: any, req: Request, res: Response, next: NextFunction)
 export async function initApp(app: Express, config: MedplumServerConfig): Promise<http.Server> {
   if (process.env.NODE_ENV !== 'test') {
     await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
+  }
+
+  if (config.logLevel) {
+    globalLogger.level = parseLogLevel(config.logLevel);
   }
 
   await initAppServices(config);

@@ -359,10 +359,17 @@ export interface MedplumRequestOptions extends RequestInit {
    * Default value is 1000 (1 second).
    */
   pollStatusPeriod?: number;
+
   /**
    * Optional max number of retries that should be made in the case of a failed request. Default is `2`.
    */
   maxRetries?: number;
+
+  /**
+   * Optional flag to disable auto-batching for this specific request.
+   * Only applies when the client is configured with auto-batching enabled.
+   */
+  disableAutoBatch?: boolean;
 }
 
 export type FetchLike = (url: string, options?: any) => Promise<any>;
@@ -1072,7 +1079,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     let promise: Promise<T>;
 
-    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchQueue) {
+    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchQueue && !options.disableAutoBatch) {
       promise = new Promise<T>((resolve, reject) => {
         (this.autoBatchQueue as AutoBatchEntry[]).push({
           method: 'GET',

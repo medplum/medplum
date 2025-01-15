@@ -1,4 +1,5 @@
 import { badRequest, ContentType } from '@medplum/core';
+import { Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
@@ -99,26 +100,55 @@ describe('App', () => {
     expect(await shutdownApp()).toBeUndefined();
   });
 
-  test('X-Forwarded-For spoofing', async () => {
-    const app = express();
-    const config = await loadTestConfig();
-    config.logLevel = 'info';
-    config.logRequests = true;
+  describe('loggingMiddleware', () => {
+    let app: express.Express;
+    let originalWrite: any;
 
-    const originalWrite = process.stdout.write;
-    process.stdout.write = jest.fn();
+    beforeEach(async () => {
+      app = express();
+      const config = await loadTestConfig();
+      config.logLevel = 'info';
+      config.logRequests = true;
+      originalWrite = process.stdout.write;
+      process.stdout.write = jest.fn();
+      await initApp(app, config);
+    });
 
-    await initApp(app, config);
-    const res = await request(app).get('/').set('X-Forwarded-For', '1.1.1.1, 2.2.2.2');
-    expect(res.status).toBe(200);
-    expect(process.stdout.write).toHaveBeenCalledTimes(1);
+    afterEach(async () => {
+      await shutdownApp();
+      process.stdout.write = originalWrite;
+    });
 
-    const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
-    const logObj = JSON.parse(logLine);
-    expect(logObj.ip).toBe('2.2.2.2');
+    test('X-Forwarded-For spoofing', async () => {
+      const res = await request(app).get('/').set('X-Forwarded-For', '1.1.1.1, 2.2.2.2');
+      expect(res.status).toBe(200);
+      expect(process.stdout.write).toHaveBeenCalledTimes(1);
 
-    expect(await shutdownApp()).toBeUndefined();
-    process.stdout.write = originalWrite;
+      const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
+      const logObj = JSON.parse(logLine);
+      expect(logObj.ip).toBe('2.2.2.2');
+    });
+
+    test('Authenticated request with logRequests enabled', async () => {
+      const accessToken = await initTestAuth();
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        name: [{ family: 'Simpson', given: ['Lisa'] }],
+      };
+      const res1 = await request(app)
+        .post(`/fhir/R4/Patient`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('Content-Type', ContentType.FHIR_JSON)
+        .send(patient);
+      expect(res1.status).toBe(201);
+      expect(res1.body).toMatchObject(patient);
+      expect(process.stdout.write).toHaveBeenCalledTimes(1);
+
+      const logLine = (process.stdout.write as jest.Mock).mock.calls[0][0];
+      const logObj = JSON.parse(logLine);
+      expect(logObj).toMatchObject({ method: 'POST', path: '/fhir/R4/Patient', status: 201 });
+    });
   });
 
   test('Internal Server Error', async () => {
