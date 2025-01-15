@@ -15,6 +15,7 @@ phases:
       - npm install --save-dev @types/jest
   build:
     commands:
+      - echo "MEDPLUM_BASE_URL=https://devapi.medplum.lotuscares.ai/" >> packages/app/.env.defaults
       - npm run build -- --filter=@medplum/app
       - cp -r packages/app/dist ./app-dist
   post_build:
