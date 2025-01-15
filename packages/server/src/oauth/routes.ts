@@ -14,3 +14,4 @@ oauthRouter.get('/userinfo', authenticateRequest, userInfoHandler);
 oauthRouter.post('/userinfo', authenticateRequest, userInfoHandler);
 oauthRouter.get('/logout', authenticateRequest, logoutHandler);
 oauthRouter.post('/logout', authenticateRequest, logoutHandler);
+oauthRouter.post('/introspect');
