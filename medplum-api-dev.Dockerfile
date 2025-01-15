@@ -22,10 +22,10 @@ RUN npm install
 
 RUN npm install -g @microsoft/api-extractor @microsoft/api-documenter @testing-library/jest-dom rimraf turbo
 
-RUN npx turbo run build --filter=@medplum/server
+RUN npm run build -- --filter=@medplum/server
 
 EXPOSE 5000 8103
 
 USER medplum
 
-ENTRYPOINT [ "node", "--require", "./packages/server/dist/otel/instrumentation.js", "packages/server/dist/index.js" ]
+ENTRYPOINT [ "node", "--require", "./packages/server/dist/otel/instrumentation.js", "packages/server/dist/index.js" , "aws:us-east-2:/medplum/dev/"]
