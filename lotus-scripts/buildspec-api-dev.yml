@@ -10,7 +10,7 @@ phases:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
-      - docker build -t medplum -f Dockerfile-medplum-dev .
+      - docker build -t medplum -f medplum-api-dev.Dockerfile .
       - docker tag medplum 505216426364.dkr.ecr.us-east-2.amazonaws.com/lotus_medplum
   post_build:
     commands:
