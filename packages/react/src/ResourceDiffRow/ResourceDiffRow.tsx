@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Button, Stack } from '@mantine/core';
+import { Table, Button } from '@mantine/core';
 import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
 import { InternalSchemaElement, TypedValue } from '@medplum/core';
 import classes from './ResourceDiffRow.module.css';
