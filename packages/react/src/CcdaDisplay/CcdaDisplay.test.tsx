@@ -42,7 +42,7 @@ describe('XmlDisplay', () => {
 
   test('Renders C-CDA', async () => {
     const sendCommandSpy = jest.spyOn(domUtils, 'sendCommand').mockImplementation(jest.fn(async () => {}));
-    setup(EXAMPLE_CCDA);
+    setup(EXAMPLE_CCDA_URL);
     expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
     await act(async () => {
       fireEvent.load(screen.getByTitle('C-CDA Viewer'));
