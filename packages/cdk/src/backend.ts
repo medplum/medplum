@@ -194,16 +194,19 @@ export class BackEnd extends Construct {
         this.rdsClusterParameterGroup = new ParameterGroup(this, `${idPrefix}ClusterParameterGroup`, {
           engine,
           parameters: clusterParameters,
+          removalPolicy: RemovalPolicy.RETAIN,
         });
         this.rdsClusterParameterGroup.bindToCluster({});
 
         this.rdsWriterParameterGroup = new ParameterGroup(this, `${idPrefix}WriterInstanceParameterGroup`, {
           engine,
+          removalPolicy: RemovalPolicy.RETAIN,
         });
         this.rdsWriterParameterGroup.bindToInstance({});
 
         this.rdsReaderParameterGroup = new ParameterGroup(this, `${idPrefix}ReaderInstanceParameterGroup`, {
           engine,
+          removalPolicy: RemovalPolicy.RETAIN,
         });
         this.rdsReaderParameterGroup.bindToInstance({});
 
@@ -215,16 +218,19 @@ export class BackEnd extends Construct {
           this.rdsNewClusterParameterGroup = new ParameterGroup(this, `${newIdPrefix}ClusterParameterGroup`, {
             engine: newEngine,
             parameters: clusterParameters,
+            removalPolicy: RemovalPolicy.RETAIN,
           });
           this.rdsNewClusterParameterGroup.bindToCluster({});
 
           this.rdsNewWriterParameterGroup = new ParameterGroup(this, `${newIdPrefix}WriterInstanceParameterGroup`, {
             engine: newEngine,
+            removalPolicy: RemovalPolicy.RETAIN,
           });
           this.rdsNewWriterParameterGroup.bindToInstance({});
 
           this.rdsNewReaderParameterGroup = new ParameterGroup(this, `${newIdPrefix}ReaderInstanceParameterGroup`, {
             engine: newEngine,
+            removalPolicy: RemovalPolicy.RETAIN,
           });
           this.rdsNewReaderParameterGroup.bindToInstance({});
         }
