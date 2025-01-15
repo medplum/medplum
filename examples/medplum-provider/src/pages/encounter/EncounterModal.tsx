@@ -93,7 +93,7 @@ export const EncounterModal = (): JSX.Element => {
           <ValueSetAutocomplete
             name="type"
             label="Type"
-            binding="http://hl7.org/fhir/ValueSet/service-type"
+            binding="http://hl7.org/fhir/ValueSet/encounter-type"
             withHelpText={true}
             onChange={(items: ValueSetExpansionContains[]) => setTypes(items)}
           />
@@ -116,6 +116,7 @@ export const EncounterModal = (): JSX.Element => {
               }
             }}
           />
+
         </div>
 
         <Card padding="lg" radius="md" style={{ backgroundColor: '#F8F9FA' }}>
@@ -131,35 +132,8 @@ export const EncounterModal = (): JSX.Element => {
             .
           </Text>
 
-          <Select
-            label="Template Plan definition"
-            placeholder="Initial encounter template"
-            data={['Initial encounter template', 'Follow-up template']}
-            value=""
-            styles={{
-              label: {
-                marginBottom: '0.5rem',
-              },
-            }}
-          />
+          <ResourceInput name="foo" resourceType="PlanDefinition" />
 
-          <Text size="sm" fw={500} mt="md" mb="xs">
-            Initial encounter plan (these tasks to be added to encounter):
-          </Text>
-
-          <Stack gap="xs">
-            <Card padding="sm" radius="sm" withBorder>
-              <Text size="sm" style={{ textTransform: 'uppercase' }}>
-                CHECK INSURANCE STATUS
-              </Text>
-            </Card>
-
-            <Card padding="sm" radius="sm" withBorder>
-              <Text size="sm" style={{ textTransform: 'uppercase' }}>
-                ORDER BASELINE LAB TESTS
-              </Text>
-            </Card>
-          </Stack>
         </Card>
       </div>
 
