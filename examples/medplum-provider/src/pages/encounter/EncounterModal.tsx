@@ -95,6 +95,7 @@ export const EncounterModal = (): JSX.Element => {
             label="Type"
             binding="http://hl7.org/fhir/ValueSet/encounter-type"
             withHelpText={true}
+            maxValues={1}
             onChange={(items: ValueSetExpansionContains[]) => setTypes(items)}
           />
 
@@ -133,7 +134,6 @@ export const EncounterModal = (): JSX.Element => {
           </Text>
 
           <ResourceInput name="foo" resourceType="PlanDefinition" />
-
         </Card>
       </div>
 
