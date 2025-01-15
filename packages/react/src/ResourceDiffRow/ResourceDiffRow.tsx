@@ -21,9 +21,7 @@ export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
   return (
     <>
       <Table.Tr>
-        <Table.Td>
-          {name}
-        </Table.Td>
+        <Table.Td>{name}</Table.Td>
         {(shouldToggleDisplay && !isCollapsed) || !shouldToggleDisplay ? (
           <>
             <Table.Td className={classes.removed}>
