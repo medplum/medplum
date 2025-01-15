@@ -73,22 +73,20 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
   }
 
   return (
-    <>
-      <Table className={classes.root}>
-        <Table.Thead>
-          <Table.Tr>
-            <Table.Th />
-            <Table.Th>Before</Table.Th>
-            <Table.Th>After</Table.Th>
-          </Table.Tr>
-        </Table.Thead>
-        <Table.Tbody>
-          {diffTable.map((row) => (
-            <ResourceDiffRow {...row} shouldToggleDisplay={shouldToggleDisplay} />
-          ))}
-        </Table.Tbody>
-      </Table>
-    </>
+    <Table className={classes.root}>
+      <Table.Thead>
+        <Table.Tr>
+          <Table.Th />
+          <Table.Th>Before</Table.Th>
+          <Table.Th>After</Table.Th>
+        </Table.Tr>
+      </Table.Thead>
+      <Table.Tbody>
+        {diffTable.map((row) => (
+          <ResourceDiffRow {...row} shouldToggleDisplay={shouldToggleDisplay} />
+        ))}
+      </Table.Tbody>
+    </Table>
   );
 }
 

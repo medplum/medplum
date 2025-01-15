@@ -14,7 +14,6 @@ describe('ResourceDiffRow', () => {
   test('Text diff', async () => {
     await act(async () => {
       setup({
-        key: 'key1',
         name: 'Add name',
         path: 'given',
         property: undefined,
@@ -30,7 +29,6 @@ describe('ResourceDiffRow', () => {
   test('Text Expand/Collapse', async () => {
     await act(async () => {
       setup({
-        key: 'key1',
         name: 'Add name',
         path: 'given',
         property: undefined,

@@ -5,7 +5,6 @@ import { InternalSchemaElement, TypedValue } from '@medplum/core';
 import classes from './ResourceDiffRow.module.css';
 
 export interface ResourceDiffRowProps {
-  key: string;
   name: string;
   path: string;
   property: InternalSchemaElement | undefined;
