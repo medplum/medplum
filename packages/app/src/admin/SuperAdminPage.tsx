@@ -89,7 +89,7 @@ export function SuperAdminPage(): JSX.Element {
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'migrationString')?.valueString}</pre>);
         open();
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .catch((err) => notifications.show({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   return (

@@ -255,7 +255,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Database Schema Drift', async () => {
-    setup();
+    setup(medplum);
 
     const returnValue = 'This is a fake return value';
     medplum.router.add('POST', '$db-schema-diff', async () => {
