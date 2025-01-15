@@ -15,7 +15,7 @@ phases:
       - npm install --save-dev @types/jest
   build:
     commands:
-      - npm run build --filter=@medplum/app
+      - npm run build -- --filter=@medplum/app
   post_build:
     commands:
       - aws s3 sync ./packages/app/dist s3://lotus-medplum-app-bucket-dev
