@@ -20,5 +20,5 @@ phases:
       - cp -r packages/app/dist ./app-dist
   post_build:
     commands:
-      - aws s3 sync ./dist s3://lotus-medplum-app-bucket-prod
+      - aws s3 sync packages/app/dist s3://lotus-medplum-app-bucket-prod
       - aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
