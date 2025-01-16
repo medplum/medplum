@@ -1,0 +1,24 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - echo "MEDPLUM_BASE_URL=https://api.medplum.lotuscares.ai/" >> .env
+  pre_build:
+    commands:
+      - npm install
+      - npm install -g rimraf
+      - npm install -g typescript
+      - npm install -g jest
+      - npm install @types/jest
+  build:
+    commands:
+      - echo "MEDPLUM_BASE_URL=https://api.medplum.lotuscares.ai/" >> packages/app/.env.defaults
+      - npm run build -- --filter=@medplum/app
+      - cp -r packages/app/dist ./app-dist
+  post_build:
+    commands:
+      - aws s3 sync ./dist s3://lotus-medplum-app-bucket-prod
+      - aws cloudfront create-invalidation --distribution-id $DISTRIBUTION_ID --paths "/*"
