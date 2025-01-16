@@ -4,10 +4,10 @@ import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { getConfig, MedplumServerConfig } from '../config';
-import { getLogger, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';
-import { globalLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import { parseTraceparent } from '../traceparent';
 
 /*

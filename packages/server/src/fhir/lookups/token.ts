@@ -23,7 +23,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { getLogger } from '../../context';
+import { getLogger } from '../../logger';
 import {
   Column,
   Condition,

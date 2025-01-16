@@ -10,8 +10,9 @@ import {
   Resource,
   Subscription,
 } from '@medplum/fhirtypes';
-import { buildTracingExtension, getLogger } from '../context';
+import { buildTracingExtension } from '../context';
 import { getSystemRepo } from '../fhir/repo';
+import { getLogger } from '../logger';
 import { AuditEventOutcome } from '../util/auditevent';
 
 export function findProjectMembership(project: string, profile: Reference): Promise<ProjectMembership | undefined> {

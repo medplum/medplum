@@ -3,10 +3,9 @@ import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { MedplumServerConfig } from '../config';
-import { getLogger } from '../context';
 import { executeBot } from '../fhir/operations/execute';
 import { getSystemRepo } from '../fhir/repo';
-import { globalLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import { findProjectMembership } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
