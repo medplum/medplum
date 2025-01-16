@@ -32,7 +32,7 @@ To deploy Medplum in Azure, the process is divided into two parts:
 This division allows a fully customizable deployment, for example: if a customer wants to use an existing K8s cluster, they can just deploy the helm chart to it.
 
 The Medplum application is configured using a secret in Azure KeyVault.  
-See [Generate Configuration Secret](#3---generate-configuration-secret)
+See [Generate Configuration Secret](#generate-configuration-secret)
 
 ### Azure Architecture {#azure-architecture}
 
@@ -309,7 +309,7 @@ global:
 ```
 
 Replace `[MY_KEYVAULT_URL]` with the key vault URL where the configuration secret is.  
-Replace [`[`](#3---generate-configuration-secret)`MY_CONFIG_SECRET_NAME]` with the secret name created in the step before.
+Replace [`[`](#generate-configuration-secret)`MY_CONFIG_SECRET_NAME]` with the secret name created in the step before.
 
 #### Edit service account values {#edit-service-account-values}
 
