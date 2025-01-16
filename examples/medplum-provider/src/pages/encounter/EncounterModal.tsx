@@ -117,7 +117,6 @@ export const EncounterModal = (): JSX.Element => {
               }
             }}
           />
-
         </div>
 
         <Card padding="lg" radius="md" style={{ backgroundColor: '#F8F9FA' }}>
