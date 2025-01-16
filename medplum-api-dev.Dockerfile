@@ -1,7 +1,7 @@
 FROM public.ecr.aws/docker/library/node:20-slim
 
 RUN apt update
-RUN apt install -y git
+RUN apt install -y git curl
 
 ENV NODE_ENV development
 
@@ -22,5 +22,9 @@ RUN npm install -g @microsoft/api-extractor @microsoft/api-documenter @testing-l
 RUN npm run build -- --filter=@medplum/server
 
 EXPOSE 5000 8103
+
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8103/api/healthcheck || exit 1
 
 ENTRYPOINT [ "node", "--require", "./packages/server/dist/otel/instrumentation.js", "packages/server/dist/index.js" , "aws:us-east-2:/medplum/dev/"]
