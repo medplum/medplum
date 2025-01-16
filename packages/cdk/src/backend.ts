@@ -104,18 +104,21 @@ export class BackEnd extends Construct {
     // RDS
     /*
 
-    # Steps for replacing the RDS Aurora cluster after performing a major version upgrade:
+    Steps for replacing an RDS Aurora cluster after performing a major version upgrade.
+    WARNING: Some steps may result in your production database rebooting. It is highly
+    recommended to test this process in a non-production environment first.
 
     ## Step 1.
 
-    Create parameter groups for the new cluster and the old cluster, RemovalPolicy.RETAIN to the RDS cluster
-    to prevent accidental deletion of the existing RDS cluster during the upgrade process
+    Create parameter groups for the new cluster and the old cluster, add RemovalPolicy.RETAIN
+    to the RDS cluster to prevent accidental deletion of the existing RDS cluster during
+    the upgrade process.
 
-    Config changes:
+    CDK config changes:
     ```
-    rdsPersistentParameterGroups = true
-    rdsNewInstanceVersion = '16.4'
-    rdsReplaceClusterStep = 1
+    ADD rdsPersistentParameterGroups = true
+    ADD rdsNewInstanceVersion = '16.4'
+    ADD rdsReplaceClusterStep = 1
     ```
 
     Execute
@@ -127,15 +130,17 @@ export class BackEnd extends Construct {
     ## Step 2.
     To perform the `cdk import` of the new RDS cluster resources
 
-    Config changes:
+    CDK config changes:
     ```
-    rdsReplaceClusterStep = 2
+    UPDATE rdsReplaceClusterStep = 2
     ```
 
     Execute
     ```
     cdk diff
     cdk import
+    # provide the newly create RDS cluster ARN and any other resources that you are prompted for
+
     cdk diff
     cdk deploy
     ```
@@ -146,7 +151,7 @@ export class BackEnd extends Construct {
 
     Config changes:
     ```
-    rdsReplaceClusterStep = 3
+    UPDATE rdsReplaceClusterStep = 3
     ```
 
     Execute
@@ -156,17 +161,26 @@ export class BackEnd extends Construct {
     ```
 
     ## Step 4.
-    Establish the new steady state configuration.
-    Both `rdsIdsMajorVersionSuffix` and `rdsPersistentParameterGroups` should remain true indefinitely.
+    Establish the new steady state configuration. Removes (should orphan, not destroy) most resources
+    from the old cluster.
 
-    Config changes:
+
+    CDK config changes:
     ```
     DELETE rdsReplaceClusterStep
     DELETE rdsNewInstanceVersion
-    rdsInstanceVersion = '16.4'
-    rdsIdsMajorVersionSuffix = true
-    rdsPersistentParameterGroups = true
+    UPDATE rdsInstanceVersion = '16.4'
+    ADD rdsIdsMajorVersionSuffix = true
     ```
+
+    Execute
+    ```
+    cdk diff
+    cdk import
+    ```
+
+    Both `rdsIdsMajorVersionSuffix` and `rdsPersistentParameterGroups` should remain true indefinitely
+    in your CDK configuration.
     */
 
     this.rdsSecretsArn = config.rdsSecretsArn;
