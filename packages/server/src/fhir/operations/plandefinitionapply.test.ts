@@ -20,14 +20,14 @@ describe('PlanDefinition apply', () => {
     await shutdownApp();
   });
 
+  
   test('Happy path', async () => {
     // 1. Create a Questionnaire
     // 2. Create a PlanDefinition
     // 3. Create a Patient
-    // 4. Create an Encounter
-    // 5. Apply the PlanDefinition to create the Task and RequestGroup
-    // 6. Verify the RequestGroup
-    // 7. Verify the Task
+    // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    // 5. Verify the RequestGroup
+    // 6. Verify the Task
 
     // 1. Create a Questionnaire
     const res1 = await request(app)
@@ -79,6 +79,105 @@ describe('PlanDefinition apply', () => {
       });
     expect(res3.status).toBe(201);
 
+    // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    const res4 = await request(app)
+      .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'subject',
+            valueString: getReferenceString(res3.body as Patient),
+          },
+        ],
+      });
+    expect(res4.status).toBe(200);
+    expect(res4.body.resourceType).toStrictEqual('RequestGroup');
+    expect((res4.body as RequestGroup).action).toHaveLength(1);
+    expect((res4.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
+
+    // 5. Verify the RequestGroup
+    const res5 = await request(app)
+      .get(`/fhir/R4/RequestGroup/${res4.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res5.status).toBe(200);
+
+    // 6. Verify the Task
+    const res6 = await request(app)
+      .get(`/fhir/R4/${(res4.body as RequestGroup).action?.[0]?.resource?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res6.status).toBe(200);
+    expect(res6.body.resourceType).toStrictEqual('Task');
+
+    const resultTask = res6.body as Task;
+    expect(resultTask.for).toMatchObject(createReference(res3.body as Patient));
+    expect(resultTask.focus).toMatchObject(createReference(res1.body as Questionnaire));
+    expect(resultTask.input).toHaveLength(1);
+    expect(resultTask.input?.[0]?.valueReference?.reference).toStrictEqual(
+      getReferenceString(res1.body as Questionnaire)
+    );
+  });
+
+  test('Happy path - Encounter', async () => {
+    // 1. Create a Questionnaire
+    // 2. Create a PlanDefinition
+    // 3. Create a Patient
+    // 4. Create an Encounter
+    // 5. Apply the PlanDefinition to create the Task and RequestGroup
+    // 6. Verify the Task
+
+    // 1. Create a Questionnaire
+    const res1 = await request(app)
+      .post(`/fhir/R4/Questionnaire`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Questionnaire',
+        status: 'active',
+        name: 'Patient Registration',
+        title: 'Patient Registration',
+        subjectType: ['Patient'],
+        item: [
+          {
+            linkId: '1',
+            text: 'First question',
+            type: 'string',
+          },
+        ],
+      });
+    expect(res1.status).toBe(201);
+
+    // 2. Create a PlanDefinition
+    const res2 = await request(app)
+      .post(`/fhir/R4/PlanDefinition`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+        status: 'active',
+        action: [
+          {
+            title: res1.body.title,
+            definitionCanonical: getReferenceString(res1.body as Questionnaire),
+          },
+        ],
+      });
+    expect(res2.status).toBe(201);
+
+    // 3. Create a Patient
+    const res3 = await request(app)
+      .post(`/fhir/R4/Patient`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Patient',
+        name: [{ given: ['Workflow'], family: 'Test' }],
+      });
+    expect(res3.status).toBe(201);
+
     // 4. Create an Encounter
     const res4 = await request(app)
       .post(`/fhir/R4/Encounter`)
@@ -118,20 +217,12 @@ describe('PlanDefinition apply', () => {
     expect((res5.body as RequestGroup).action).toHaveLength(1);
     expect((res5.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
 
-    // 6. Verify the RequestGroup
+    // 6. Verify the Task
     const res6 = await request(app)
-      .get(`/fhir/R4/RequestGroup/${res5.body.id}`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toBe(200);
-
-    // 7. Verify the Task
-    const res7 = await request(app)
       .get(`/fhir/R4/${(res5.body as RequestGroup).action?.[0]?.resource?.reference}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res7.status).toBe(200);
-    expect(res7.body.resourceType).toStrictEqual('Task');
 
-    const resultTask = res7.body as Task;
+    const resultTask = res6.body as Task;
     expect(resultTask.for).toMatchObject(createReference(res3.body as Patient));
     expect(resultTask.focus).toMatchObject(createReference(res1.body as Questionnaire));
     expect(resultTask.encounter).toMatchObject(createReference(res4.body as Encounter));
