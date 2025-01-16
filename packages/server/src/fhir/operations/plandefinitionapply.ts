@@ -60,7 +60,7 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
     status: 'active',
     intent: 'order',
     action: actions,
-    encounter: encounterRef
+    encounter: encounterRef,
   });
 
   return [allOk, requestGroup];
