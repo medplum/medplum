@@ -2,7 +2,7 @@ import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, ser
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
-import { getLogger } from '../context';
+import { getLogger } from '../logger';
 
 const DEBUG = env['SQL_DEBUG'];
 

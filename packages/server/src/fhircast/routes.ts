@@ -12,8 +12,9 @@ import { body, oneOf, validationResult } from 'express-validator';
 import assert from 'node:assert';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { getAuthenticatedContext, getLogger } from '../context';
+import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { getRedis } from '../redis';
 

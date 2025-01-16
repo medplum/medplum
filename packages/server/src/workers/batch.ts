@@ -1,9 +1,3 @@
-import { AsyncJob, Bundle, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
-import { MedplumServerConfig } from '../config';
-import { getAuthenticatedContext, getLogger, tryRunInRequestContext } from '../context';
-import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
-import { getRepoForLogin } from '../fhir/accesspolicy';
 import {
   ContentType,
   createReference,
@@ -12,9 +6,16 @@ import {
   OperationOutcomeError,
   serverError,
 } from '@medplum/core';
-import { getSystemRepo } from '../fhir/repo';
-import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
+import { AsyncJob, Bundle, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
+import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { MedplumServerConfig } from '../config';
+import { getAuthenticatedContext, tryRunInRequestContext } from '../context';
+import { getRepoForLogin } from '../fhir/accesspolicy';
 import { uploadBinaryData } from '../fhir/binary';
+import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
+import { getSystemRepo } from '../fhir/repo';
+import { getLogger } from '../logger';
 
 /*
  * The batch worker runs a batch asynchronously,

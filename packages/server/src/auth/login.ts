@@ -2,7 +2,7 @@ import { ResourceType } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { getLogger } from '../context';
+import { getLogger } from '../logger';
 import { tryLogin } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
 import { getProjectIdByClientId, sendLoginResult } from './utils';
