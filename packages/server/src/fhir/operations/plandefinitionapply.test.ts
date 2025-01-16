@@ -192,7 +192,7 @@ describe('PlanDefinition apply', () => {
           display: 'emergency',
         },
       });
-    expect(res4.status).toBe(201); 
+    expect(res4.status).toBe(201);
 
     // 5. Apply the PlanDefinition to create the Task and RequestGroup
     const res5 = await request(app)
@@ -209,7 +209,7 @@ describe('PlanDefinition apply', () => {
           {
             name: 'encounter',
             valueString: getReferenceString(res4.body as Encounter),
-          }
+          },
         ],
       });
     expect(res5.status).toBe(200);
@@ -230,7 +230,6 @@ describe('PlanDefinition apply', () => {
     expect(resultTask.input?.[0]?.valueReference?.reference).toStrictEqual(
       getReferenceString(res1.body as Questionnaire)
     );
-
   });
 
   test('Unsupported content type', async () => {
