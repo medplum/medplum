@@ -56,15 +56,9 @@ export class BackEnd extends Construct {
   databaseProxyEndpointParameter?: ssm.StringParameter;
   redisSecretsParameter: ssm.StringParameter;
   botLambdaRoleParameter: ssm.StringParameter;
-
   rdsClusterParameterGroup?: rds.ParameterGroup;
   rdsWriterParameterGroup?: rds.ParameterGroup;
   rdsReaderParameterGroup?: rds.ParameterGroup;
-
-  rdsNewCluster?: rds.DatabaseCluster;
-  rdsNewClusterParameterGroup?: rds.ParameterGroup;
-  rdsNewWriterParameterGroup?: rds.ParameterGroup;
-  rdsNewReaderParameterGroup?: rds.ParameterGroup;
 
   constructor(scope: Construct, config: MedplumInfraConfig) {
     super(scope, 'BackEnd');
@@ -102,98 +96,12 @@ export class BackEnd extends Construct {
     });
 
     // RDS
-    /*
-
-    Steps for replacing an RDS Aurora cluster after performing a major version upgrade.
-    WARNING: Some steps may result in your production database rebooting. It is highly
-    recommended to test this process in a non-production environment first.
-
-    ## Step 1.
-
-    Create parameter groups for the new cluster and the old cluster, add RemovalPolicy.RETAIN
-    to the RDS cluster to prevent accidental deletion of the existing RDS cluster during
-    the upgrade process.
-
-    CDK config changes:
-    ```
-    ADD rdsPersistentParameterGroups = true
-    ADD rdsNewInstanceVersion = '16.4'
-    ADD rdsReplaceClusterStep = 1
-    ```
-
-    Execute
-    ```
-    cdk diff
-    cdk deploy
-    ```
-
-    ## Step 2.
-    To perform the `cdk import` of the new RDS cluster resources
-
-    CDK config changes:
-    ```
-    UPDATE rdsReplaceClusterStep = 2
-    ```
-
-    Execute
-    ```
-    cdk diff
-    cdk import
-    # provide the newly create RDS cluster ARN and any other resources that you are prompted for
-
-    cdk diff
-    cdk deploy
-    ```
-
-    ## Step 3.
-
-    To swap the new cluster to be the current cluster
-
-    Config changes:
-    ```
-    UPDATE rdsReplaceClusterStep = 3
-    ```
-
-    Execute
-    ```
-    cdk diff
-    cdk import
-    ```
-
-    ## Step 4.
-    Establish the new steady state configuration. Removes (should orphan, not destroy) most resources
-    from the old cluster.
-
-
-    CDK config changes:
-    ```
-    DELETE rdsReplaceClusterStep
-    DELETE rdsNewInstanceVersion
-    UPDATE rdsInstanceVersion = '16.4'
-    ADD rdsIdsMajorVersionSuffix = true
-    ```
-
-    Execute
-    ```
-    cdk diff
-    cdk import
-    ```
-
-    Both `rdsIdsMajorVersionSuffix` and `rdsPersistentParameterGroups` should remain true indefinitely
-    in your CDK configuration.
-    */
-
     this.rdsSecretsArn = config.rdsSecretsArn;
     if (!this.rdsSecretsArn) {
       const { engine, majorVersion } = getPostgresEngine(
         config.rdsInstanceVersion,
         rds.AuroraPostgresEngineVersion.VER_12_9
       );
-      const newEngineInfo = config.rdsNewInstanceVersion ? getPostgresEngine(config.rdsNewInstanceVersion) : undefined;
-
-      if (newEngineInfo && parseInt(newEngineInfo.majorVersion, 10) <= parseInt(majorVersion, 10)) {
-        throw new Error('rdsNewInstanceVersion must have a greater major version than rdsInstanceVersion');
-      }
 
       const clusterParameters: NonNullable<rds.ParameterGroupProps['parameters']> = {
         statement_timeout: '60000',
@@ -223,31 +131,6 @@ export class BackEnd extends Construct {
           removalPolicy: RemovalPolicy.RETAIN,
         });
         this.rdsReaderParameterGroup.bindToInstance({});
-
-        if (newEngineInfo) {
-          const newEngine = newEngineInfo.engine;
-          const newMajorVersion = newEngineInfo.majorVersion;
-          const newIdPrefix = `MedplumPG${newMajorVersion}`;
-
-          this.rdsNewClusterParameterGroup = new ParameterGroup(this, `${newIdPrefix}ClusterParameterGroup`, {
-            engine: newEngine,
-            parameters: clusterParameters,
-            removalPolicy: RemovalPolicy.RETAIN,
-          });
-          this.rdsNewClusterParameterGroup.bindToCluster({});
-
-          this.rdsNewWriterParameterGroup = new ParameterGroup(this, `${newIdPrefix}WriterInstanceParameterGroup`, {
-            engine: newEngine,
-            removalPolicy: RemovalPolicy.RETAIN,
-          });
-          this.rdsNewWriterParameterGroup.bindToInstance({});
-
-          this.rdsNewReaderParameterGroup = new ParameterGroup(this, `${newIdPrefix}ReaderInstanceParameterGroup`, {
-            engine: newEngine,
-            removalPolicy: RemovalPolicy.RETAIN,
-          });
-          this.rdsNewReaderParameterGroup.bindToInstance({});
-        }
       }
 
       if (config.rdsIdsMajorVersionSuffix) {
@@ -275,7 +158,6 @@ export class BackEnd extends Construct {
       const legacyClusterParams = new ParameterGroup(this, 'MedplumDatabaseClusterParams', {
         engine,
         parameters: clusterParameters,
-        removalPolicy: config.rdsReplaceClusterStep ? RemovalPolicy.RETAIN : undefined,
       });
 
       const readerInstanceType = config.rdsReaderInstanceType ?? config.rdsInstanceType;
@@ -325,57 +207,8 @@ export class BackEnd extends Construct {
         writer: ClusterInstance.provisioned('Instance1', writerInstanceProps),
         readers,
         parameterGroup: this.rdsClusterParameterGroup ?? legacyClusterParams,
-        removalPolicy:
-          config.rdsReplaceClusterStep || config.rdsIdsMajorVersionSuffix ? RemovalPolicy.RETAIN : undefined,
+        removalPolicy: config.rdsIdsMajorVersionSuffix ? RemovalPolicy.RETAIN : undefined,
       });
-
-      if (config.rdsReplaceClusterStep === 2 || config.rdsReplaceClusterStep === 3) {
-        if (!newEngineInfo) {
-          throw new Error('rdsNewInstanceVersion is required when replacing an existing RDS cluster');
-        }
-
-        if (!this.rdsNewClusterParameterGroup) {
-          throw new Error('rdsNewClusterParameterGroup must be true when replacing an existing RDS cluster');
-        }
-
-        if (!this.rdsNewWriterParameterGroup) {
-          throw new Error('rdsNewWriterParameterGroup must be true when replacing an existing RDS cluster');
-        }
-
-        if (!this.rdsNewReaderParameterGroup) {
-          throw new Error('rdsNewReaderParameterGroup must be true when replacing an existing RDS cluster');
-        }
-
-        let newReaders: rds.IClusterInstance[] | undefined;
-        if (config.rdsInstances > 1) {
-          newReaders = [];
-          for (let i = 1; i < config.rdsInstances; i++) {
-            newReaders.push(
-              ClusterInstance.provisioned('Instance' + (i + 1), {
-                ...readerInstanceProps,
-                parameterGroup: this.rdsNewReaderParameterGroup,
-              })
-            );
-          }
-        }
-
-        const rdsNewClusterId = getDatabaseClusterId(newEngineInfo.majorVersion);
-        this.rdsNewCluster = new rds.DatabaseCluster(this, rdsNewClusterId, {
-          ...defaultClusterProps,
-          engine: newEngineInfo.engine,
-          writer: ClusterInstance.provisioned('Instance1', {
-            ...writerInstanceProps,
-            parameterGroup: this.rdsNewWriterParameterGroup,
-          }),
-          readers: newReaders,
-          parameterGroup: this.rdsNewClusterParameterGroup,
-        });
-
-        if (config.rdsReplaceClusterStep === 3) {
-          this.rdsCluster = this.rdsNewCluster;
-          this.rdsNewCluster = undefined;
-        }
-      }
 
       this.rdsSecretsArn = (this.rdsCluster.secret as secretsmanager.ISecret).secretArn;
 

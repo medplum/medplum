@@ -90,6 +90,9 @@ export interface MedplumSourceInfraConfig {
     scaleOutCooldown: ValueOrExternalSecret<number>;
   };
   environment?: StringMap;
+
+  rdsIdsMajorVersionSuffix?: boolean;
+  rdsPersistentParameterGroups?: boolean;
 }
 
 export interface MedplumInfraConfig {
@@ -170,6 +173,4 @@ export interface MedplumInfraConfig {
 
   rdsIdsMajorVersionSuffix?: boolean;
   rdsPersistentParameterGroups?: boolean;
-  rdsNewInstanceVersion?: string;
-  rdsReplaceClusterStep?: 1 | 2 | 3;
 }

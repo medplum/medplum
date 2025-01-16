@@ -1,6 +1,9 @@
 import { unlinkSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { main } from './index';
+import { main, MedplumStack } from './index';
+import { App } from 'aws-cdk-lib';
+import { normalizeInfraConfig } from './config';
+import { MedplumSourceInfraConfig } from '@medplum/core';
 
 function writeConfig(filename: string, config: any): string {
   const resolvedPath = resolve(filename);
@@ -293,54 +296,46 @@ describe('Infra', () => {
     unlinkSync(filename);
   });
 
-  describe('PG Major Version upgrade steps', () => {
-    test('PG Cluster Upgrade Step 1', () => {
-      const filename = writeConfig('./medplum.pgstep1.config.json', {
-        ...baseConfig,
-        stackName: 'MedplumPGStep1Stack',
-        rdsPersistentParameterGroups: true,
-        rdsNewInstanceVersion: '16.4',
-        rdsReplaceClusterStep: 1,
-      });
-
-      expect(() => main({ config: filename })).not.toThrow();
-      unlinkSync(filename);
+  test('rdsPersistentParameterGroups', () => {
+    const filename = writeConfig('./medplum.pgpersistentparams.config.json', {
+      ...baseConfig,
+      stackName: 'MedplumPGStep1Stack',
+      rdsPersistentParameterGroups: true,
     });
-    test('PG Cluster Upgrade Step 2', () => {
-      const filename = writeConfig('./medplum.pgstep2.config.json', {
-        ...baseConfig,
-        stackName: 'MedplumPGStep1Stack',
-        rdsPersistentParameterGroups: true,
-        rdsNewInstanceVersion: '16.4',
-        rdsReplaceClusterStep: 2,
-      });
 
-      expect(() => main({ config: filename })).not.toThrow();
-      unlinkSync(filename);
-    });
-    test('PG Cluster Upgrade Step 3', () => {
-      const filename = writeConfig('./medplum.pgstep3.config.json', {
-        ...baseConfig,
-        stackName: 'MedplumPGStep1Stack',
-        rdsPersistentParameterGroups: true,
-        rdsNewInstanceVersion: '16.4',
-        rdsReplaceClusterStep: 3,
-      });
+    expect(() => main({ config: filename })).not.toThrow();
+    unlinkSync(filename);
+  });
 
-      expect(() => main({ config: filename })).not.toThrow();
-      unlinkSync(filename);
-    });
-    test('PG Cluster Upgrade Step 4', () => {
-      const filename = writeConfig('./medplum.pgstep4.config.json', {
-        ...baseConfig,
-        stackName: 'MedplumPGStep1Stack',
-        rdsPersistentParameterGroups: true,
-        rdsIdsMajorVersionSuffix: true,
-        rdsInstanceVersion: '16.4',
-      });
+  test('rdsIdsMajorVersionSuffix without rdsPersistentParameterGroups fails', async () => {
+    const config: MedplumSourceInfraConfig = {
+      ...baseConfig,
+      stackName: 'MedplumPGStep1Stack',
+      rdsIdsMajorVersionSuffix: true,
+      vpcId: '',
+      apiWafIpSetArn: '',
+      appWafIpSetArn: '',
+      signingKeyId: '',
+      storageWafIpSetArn: '',
+      baseUrl: '',
+      rdsInstanceType: '',
+    };
+    const app = new App();
+    const normalizedConifg = await normalizeInfraConfig(config);
+    expect(() => new MedplumStack(app, normalizedConifg)).toThrow(
+      'rdsPersistentParameterGroups must be true when rdsIdsMajorVersionSuffix is true'
+    );
+  });
 
-      expect(() => main({ config: filename })).not.toThrow();
-      unlinkSync(filename);
+  test('rdsPersistentParameterGroups and rdsIdsMajorVersionSuffix', () => {
+    const filename = writeConfig('./medplum.PersistentAndIds.config.json', {
+      ...baseConfig,
+      stackName: 'MedplumPGStep1Stack',
+      rdsPersistentParameterGroups: true,
+      rdsIdsMajorVersionSuffix: true,
     });
+
+    expect(() => main({ config: filename })).not.toThrow();
+    unlinkSync(filename);
   });
 });
