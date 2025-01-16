@@ -1,5 +1,5 @@
 import { ContentType, createReference, getReferenceString } from '@medplum/core';
-import { OperationOutcome, Patient, Questionnaire, RequestGroup, Task } from '@medplum/fhirtypes';
+import { Encounter, OperationOutcome, Patient, Questionnaire, RequestGroup, Task } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -24,9 +24,10 @@ describe('PlanDefinition apply', () => {
     // 1. Create a Questionnaire
     // 2. Create a PlanDefinition
     // 3. Create a Patient
-    // 4. Apply the PlanDefinition to create the Task and RequestGroup
-    // 5. Verify the RequestGroup
-    // 6. Verify the Task
+    // 4. Create an Encounter
+    // 5. Apply the PlanDefinition to create the Task and RequestGroup
+    // 6. Verify the RequestGroup
+    // 7. Verify the Task
 
     // 1. Create a Questionnaire
     const res1 = await request(app)
@@ -78,8 +79,24 @@ describe('PlanDefinition apply', () => {
       });
     expect(res3.status).toBe(201);
 
-    // 4. Apply the PlanDefinition to create the Task and RequestGroup
+    // 4. Create an Encounter
     const res4 = await request(app)
+      .post(`/fhir/R4/Encounter`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send({
+        resourceType: 'Encounter',
+        status: 'active',
+        class: {
+          system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+          code: 'EMER',
+          display: 'emergency',
+        },
+      });
+    expect(res4.status).toBe(201); 
+
+    // 5. Apply the PlanDefinition to create the Task and RequestGroup
+    const res5 = await request(app)
       .post(`/fhir/R4/PlanDefinition/${res2.body.id}/$apply`)
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON)
@@ -90,33 +107,39 @@ describe('PlanDefinition apply', () => {
             name: 'subject',
             valueString: getReferenceString(res3.body as Patient),
           },
+          {
+            name: 'encounter',
+            valueString: getReferenceString(res4.body as Encounter),
+          }
         ],
       });
-    expect(res4.status).toBe(200);
-    expect(res4.body.resourceType).toStrictEqual('RequestGroup');
-    expect((res4.body as RequestGroup).action).toHaveLength(1);
-    expect((res4.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
-
-    // 5. Verify the RequestGroup
-    const res5 = await request(app)
-      .get(`/fhir/R4/RequestGroup/${res4.body.id}`)
-      .set('Authorization', 'Bearer ' + accessToken);
     expect(res5.status).toBe(200);
+    expect(res5.body.resourceType).toStrictEqual('RequestGroup');
+    expect((res5.body as RequestGroup).action).toHaveLength(1);
+    expect((res5.body as RequestGroup).action?.[0]?.resource?.reference).toBeDefined();
 
-    // 6. Verify the Task
+    // 6. Verify the RequestGroup
     const res6 = await request(app)
-      .get(`/fhir/R4/${(res4.body as RequestGroup).action?.[0]?.resource?.reference}`)
+      .get(`/fhir/R4/RequestGroup/${res5.body.id}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
-    expect(res6.body.resourceType).toStrictEqual('Task');
 
-    const resultTask = res6.body as Task;
+    // 7. Verify the Task
+    const res7 = await request(app)
+      .get(`/fhir/R4/${(res5.body as RequestGroup).action?.[0]?.resource?.reference}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res7.status).toBe(200);
+    expect(res7.body.resourceType).toStrictEqual('Task');
+
+    const resultTask = res7.body as Task;
     expect(resultTask.for).toMatchObject(createReference(res3.body as Patient));
     expect(resultTask.focus).toMatchObject(createReference(res1.body as Questionnaire));
+    expect(resultTask.encounter).toMatchObject(createReference(res4.body as Encounter));
     expect(resultTask.input).toHaveLength(1);
     expect(resultTask.input?.[0]?.valueReference?.reference).toStrictEqual(
       getReferenceString(res1.body as Questionnaire)
     );
+
   });
 
   test('Unsupported content type', async () => {

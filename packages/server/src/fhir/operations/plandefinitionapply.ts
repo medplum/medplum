@@ -20,7 +20,7 @@ const operation = getOperationDefinition('PlanDefinition', 'apply');
 
 interface PlanDefinitionApplyParameters {
   readonly subject: string[];
-  readonly encounter?: string[];
+  readonly encounter?: string;
 }
 
 /**
@@ -41,8 +41,8 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
   const subjectRef = createReference(subject);
 
   let encounterRef: Reference<Encounter> | undefined = undefined;
-  if (params.encounter?.[0]) {
-    const encounter = await ctx.repo.readReference<Encounter>({ reference: params.encounter[0] });
+  if (params.encounter) {
+    const encounter = await ctx.repo.readReference<Encounter>({ reference: params.encounter });
     encounterRef = createReference(encounter);
   }
 

@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button, Select, Modal, Text, Card, Stack } from '@mantine/core';
+import { Button, Modal, Text, Card } from '@mantine/core';
 import { useState } from 'react';
 import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
