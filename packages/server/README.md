@@ -37,7 +37,7 @@ npm run dev
 
 ## Running tests
 
-To run the tests, first you need to seed your test database with the required foundational resources, such as `StructureDefinition`s, `ValueSet`s, `SearchParameter`s, and the default admin account resources. To do this run the command:
+Before running tests for the first time on a clean database, you first need to seed your test database with the required foundational resources, such as `StructureDefinition`s, `ValueSet`s, `SearchParameter`s, and the default admin account resources. To do this run the command:
 
 ```bash
 npm run test:seed
