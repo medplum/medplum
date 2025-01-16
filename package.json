@@ -15,7 +15,7 @@
     "lint": "turbo run lint --filter=!@medplum/docs",
     "prettier": "prettier --write \"**/*.{ts,tsx,cts,mts,js,jsx,cjs,mjs,json}\"",
     "sort-package-json": "sort-package-json package.json \"packages/*/package.json\" \"examples/*/package.json\"",
-    "test": "turbo run test --filter=!@medplum/docs -- --silent=false"
+    "test": "turbo run test --filter=!@medplum/docs"
   },
   "prettier": {
     "printWidth": 120,
