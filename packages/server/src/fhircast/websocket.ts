@@ -17,7 +17,19 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
 
   const projectAndTopic = await getRedis().get(endpointTopicKey);
   if (!projectAndTopic) {
-    throw new Error('No topic associated with this endpoint');
+    globalLogger.error(`[FHIRcast]: No topic associated with the endpoint '${topicEndpoint}'`);
+    // Close the socket since this endpoint is not valid
+    socket.send(
+      JSON.stringify({
+        'hub.mode': 'denied',
+        'hub.topic': '',
+        'hub.events': '',
+        'hub.reason': 'invalid endpoint',
+      }),
+      { binary: false }
+    );
+    socket.close();
+    return;
   }
 
   // Create a redis client for this connection.

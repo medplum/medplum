@@ -5,6 +5,7 @@ import { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
+import { globalLogger } from '../logger';
 import { initTestAuth, withTestContext } from '../test.setup';
 
 describe('FHIRcast WebSocket', () => {
@@ -15,6 +16,7 @@ describe('FHIRcast WebSocket', () => {
     let accessToken: string;
 
     beforeAll(async () => {
+      console.log = jest.fn();
       app = express();
       config = await loadTestConfig();
       config.heartbeatEnabled = false;
@@ -90,6 +92,26 @@ describe('FHIRcast WebSocket', () => {
           })
           .sendJson({ ok: true })
           .close()
+          .expectClosed();
+      }));
+
+    test('Invalid endpoint', () =>
+      withTestContext(async () => {
+        const globalLoggerErrorSpy = jest.spyOn(globalLogger, 'error');
+        const topic = randomUUID();
+        await request(server)
+          .ws(`/ws/fhircast/${topic}`)
+          .expectJson({
+            'hub.mode': 'denied',
+            'hub.topic': '',
+            'hub.events': '',
+            'hub.reason': 'invalid endpoint',
+          })
+          .exec(() => {
+            expect(globalLoggerErrorSpy).toHaveBeenCalledWith(
+              expect.stringMatching(/^\[FHIRcast\]: No topic associated with the endpoint '/)
+            );
+          })
           .expectClosed();
       }));
   });
