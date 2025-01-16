@@ -243,6 +243,134 @@ jobs:
           name: medplum-code-coverage
           path: coverage/lcov.info
 
+  e2e:
+    name: Run e2e tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [build]
+    strategy:
+      matrix:
+        node-version: [20, 22]
+        pg-version: [14, 16]
+        redis-version: [6, 7]
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+      NODE_VERSION: ${{ matrix.node-version }}
+      PG_VERSION: ${{ matrix.pg-version }}
+      REDIS_VERSION: ${{ matrix.redis-version }}
+      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+    services:
+      postgres:
+        image: postgres:${{ matrix.pg-version }}
+        env:
+          POSTGRES_DB: medplum
+          POSTGRES_USER: medplum
+          POSTGRES_PASSWORD: medplum
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:${{ matrix.redis-version }}
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          registry-url: 'https://registry.npmjs.org'
+      - name: Cache node modules
+        uses: actions/cache@v4
+        env:
+          cache-name: cache-node-modules
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - id: install
+        name: Install deps
+        run: npm ci --maxsockets 1
+      - name: Setup TurboRepo
+        # Conditionally setup turborepo
+        # In the past, turborepo would silently ignore empty environment variables
+        # This is no longer the case, so we need to check if the secret is set
+        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
+        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
+        run: |
+          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
+          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
+          echo "TURBO_REMOTE_ONLY=${{ secrets.TURBO_REMOTE_ONLY }}" >> $GITHUB_ENV
+      - name: Wait for PostgreSQL
+        run: |
+          until pg_isready -h localhost -p 5432; do
+            echo "Waiting for postgres..."
+            sleep 2
+          done
+      - name: Run additional setup SQL
+        run: PGPASSWORD=medplum psql -h localhost -U medplum -d medplum -f ./postgres/init_test.sql
+        env:
+          PGPASSWORD: medplum
+      - name: Install playwright
+        run: npx playwright install --with-deps chromium
+      - name: Build Medplum
+        run: npm run build:fast
+      - name: Start server and app
+        run: |
+          pushd packages/server
+          npm run start &
+          popd
+          pushd packages/app
+          npm run dev &
+          popd
+        env:
+          REDIS_PASSWORD_DISABLED_IN_TESTS: 1
+      - name: Wait for deployment to be ready
+        run: |
+          # Add retry mechanism for deployment readiness check
+          MAX_RETRIES=10
+          RETRY_COUNT=0
+
+          until curl -s -f http://localhost:8103/healthcheck > /dev/null; do
+            if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+              echo "Max retries reached. Deployment not ready."
+              exit 1
+            fi
+            
+            RETRY_COUNT=$((RETRY_COUNT + 1))
+            echo "Waiting for deployment to be ready... (Attempt $RETRY_COUNT/$MAX_RETRIES)"
+            sleep 30
+          done
+      - name: Run e2e tests
+        # TODO: Later on, we can change this to test:e2e to run all e2e tests, when we have more
+        run: |
+          pushd packages/e2e
+          npm run test:smoke
+          popd
+      - name: Upload test results
+        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: |
+            packages/e2e/playwright-report/
+            packages/e2e/test-results/
+          retention-days: 30
+
   build-docs:
     name: Build the docs
     runs-on: ubuntu-latest
