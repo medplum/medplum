@@ -9,7 +9,7 @@ import { Repository, getSystemRepo } from './fhir/repo';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
 import { parseTraceparent } from './traceparent';
 
-export class RequestContext {
+export class RequestContext implements Disposable {
   readonly requestId: string;
   readonly traceId: string;
   readonly logger: Logger;
@@ -20,7 +20,7 @@ export class RequestContext {
     this.logger = logger ?? new Logger(write, { requestId, traceId }, parseLogLevel(getConfig().logLevel ?? 'info'));
   }
 
-  close(): void {
+  [Symbol.dispose](): void {
     // No-op, descendants may override
   }
 
@@ -56,8 +56,8 @@ export class AuthenticatedRequestContext extends RequestContext {
     return this.authState.membership.profile as Reference<ProfileResource>;
   }
 
-  close(): void {
-    this.repo.close();
+  [Symbol.dispose](): void {
+    this.repo[Symbol.dispose]();
   }
 
   static system(ctx?: { requestId?: string; traceId?: string }): AuthenticatedRequestContext {
@@ -112,7 +112,7 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
 export function closeRequestContext(): void {
   const ctx = requestContextStore.getStore();
   if (ctx) {
-    ctx.close();
+    ctx[Symbol.dispose]();
   }
 }
 
