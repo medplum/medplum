@@ -1,10 +1,55 @@
 import { generateId } from '@medplum/core';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { IncomingMessage } from 'node:http';
+import os from 'node:os';
 import ws from 'ws';
 import { DEFAULT_HEARTBEAT_MS, heartbeat } from '../heartbeat';
 import { globalLogger } from '../logger';
+import { setGauge } from '../otel/otel';
 import { getRedis, getRedisSubscriber } from '../redis';
+
+const hostname = os.hostname();
+const METRIC_OPTIONS = { attributes: { hostname } };
+let heartbeatHandler: (() => void) | undefined;
+
+const websocketMap = new Map<ws.WebSocket, string>();
+const topicRefCountMap = new Map<string, number>();
+
+function initHeartbeatHandler(): void {
+  if (!heartbeatHandler) {
+    heartbeatHandler = (): void => {
+      const baseHeartbeatPayload = {
+        timestamp: new Date().toISOString(),
+        id: generateId(),
+        event: {
+          context: [{ key: 'period', decimal: `${Math.ceil(DEFAULT_HEARTBEAT_MS / 1000)}` }],
+          'hub.event': 'heartbeat',
+        },
+      };
+
+      const redis = getRedis();
+      for (const projectAndTopic of topicRefCountMap.keys()) {
+        redis
+          .publish(
+            projectAndTopic as string,
+            JSON.stringify({
+              ...baseHeartbeatPayload,
+              event: { ...baseHeartbeatPayload.event, 'hub.topic': projectAndTopic.split(':')[1] },
+            })
+          )
+          .catch(console.error);
+      }
+
+      setGauge('medplum.fhircast.websocketCount', websocketMap.size, METRIC_OPTIONS);
+      setGauge('medplum.fhircast.topicCount', topicRefCountMap.size, METRIC_OPTIONS);
+    };
+
+    heartbeat.addEventListener('heartbeat', heartbeatHandler);
+  }
+}
+
+// We always init heartbeat handler early so we get our metrics being tracked at server startup
+initHeartbeatHandler();
 
 /**
  * Handles a new WebSocket connection to the FHIRCast hub.
@@ -36,28 +81,14 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   // According to Redis documentation: http://redis.io/commands/subscribe
   // Once the client enters the subscribed state it is not supposed to issue any other commands,
   // except for additional SUBSCRIBE, PSUBSCRIBE, UNSUBSCRIBE and PUNSUBSCRIBE commands.
-  const redis = getRedis();
   const redisSubscriber = getRedisSubscriber();
 
   // Subscribe to the topic
   await redisSubscriber.subscribe(projectAndTopic);
 
   const topic = projectAndTopic?.split(':')[1] ?? 'invalid topic';
-
-  // Subscribe to heartbeat events
-  function heartbeatHandler(): void {
-    const heartbeatPayload = {
-      timestamp: new Date().toISOString(),
-      id: generateId(),
-      event: {
-        context: [{ key: 'period', decimal: `${Math.ceil(DEFAULT_HEARTBEAT_MS / 1000)}` }],
-        'hub.topic': topic,
-        'hub.event': 'heartbeat',
-      },
-    };
-    redis.publish(projectAndTopic as string, JSON.stringify(heartbeatPayload)).catch(console.error);
-  }
-  heartbeat.addEventListener('heartbeat', heartbeatHandler);
+  // Increment ref count for the specified topic
+  topicRefCountMap.set(projectAndTopic, (topicRefCountMap.get(projectAndTopic) ?? 0) + 1);
 
   redisSubscriber.on('message', (_channel: string, message: string) => {
     // Forward the message to the client
@@ -73,7 +104,18 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   );
 
   socket.on('close', () => {
-    heartbeat.removeEventListener('heartbeat', heartbeatHandler);
+    const topic = websocketMap.get(socket);
+    if (topic) {
+      websocketMap.delete(socket);
+      const topicRefCount = topicRefCountMap.get(topic);
+      if (!topicRefCount) {
+        globalLogger.error('[FHIRcast]: No topic ref count for this topic');
+      } else if (topicRefCount === 1) {
+        topicRefCountMap.delete(topic);
+      } else {
+        topicRefCountMap.set(topic, topicRefCount - 1);
+      }
+    }
     redisSubscriber.disconnect();
   });
 
