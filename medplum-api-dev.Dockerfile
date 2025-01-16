@@ -5,9 +5,6 @@ RUN apt install -y git
 
 ENV NODE_ENV development
 
-
-RUN useradd -u 8877 medplum
-
 WORKDIR /usr/src/medplum
 
 COPY package.json .
@@ -26,6 +23,8 @@ RUN npm run build -- --filter=@medplum/server
 
 EXPOSE 5000 8103
 
-USER medplum
+# Add healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8103/healthcheck || exit 1
 
 ENTRYPOINT [ "node", "--require", "./packages/server/dist/otel/instrumentation.js", "packages/server/dist/index.js" , "aws:us-east-2:/medplum/dev/"]
