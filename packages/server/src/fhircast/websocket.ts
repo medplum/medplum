@@ -12,8 +12,13 @@ import { getRedis, getRedisSubscriber } from '../redis';
  * @param request - The HTTP request.
  */
 export async function handleFhircastConnection(socket: ws.WebSocket, request: IncomingMessage): Promise<void> {
-  // TODO: Map URL slug to topic ID
-  const topic = (request.url as string).split('/').filter(Boolean)[2];
+  const topicEndpoint = (request.url as string).split('/').filter(Boolean)[2];
+  const endpointTopicKey = `medplum:fhircast:endpoint:${topicEndpoint}:topic`;
+
+  const projectAndTopic = await getRedis().get(endpointTopicKey);
+  if (!projectAndTopic) {
+    throw new Error('No topic associated with this endpoint');
+  }
 
   // Create a redis client for this connection.
   // According to Redis documentation: http://redis.io/commands/subscribe
@@ -23,7 +28,9 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   const redisSubscriber = getRedisSubscriber();
 
   // Subscribe to the topic
-  await redisSubscriber.subscribe(topic);
+  await redisSubscriber.subscribe(projectAndTopic);
+
+  const topic = projectAndTopic?.split(':')[1] ?? 'invalid topic';
 
   // Subscribe to heartbeat events
   function heartbeatHandler(): void {
@@ -36,7 +43,7 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
         'hub.event': 'heartbeat',
       },
     };
-    redis.publish(topic, JSON.stringify(heartbeatPayload)).catch(console.error);
+    redis.publish(projectAndTopic as string, JSON.stringify(heartbeatPayload)).catch(console.error);
   }
   heartbeat.addEventListener('heartbeat', heartbeatHandler);
 

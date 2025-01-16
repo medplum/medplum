@@ -1,10 +1,10 @@
-import { ContentType } from '@medplum/core';
-import { randomUUID } from 'crypto';
+import { ContentType, serializeFhircastSubscriptionRequest } from '@medplum/core';
 import express, { Express } from 'express';
-import { Server } from 'http';
+import { randomUUID } from 'node:crypto';
+import { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
-import { MedplumServerConfig, loadTestConfig } from '../config';
+import { loadTestConfig, MedplumServerConfig } from '../config';
 import { initTestAuth, withTestContext } from '../test.setup';
 
 describe('FHIRcast WebSocket', () => {
@@ -34,14 +34,32 @@ describe('FHIRcast WebSocket', () => {
         const topic = randomUUID();
         const patient = randomUUID();
 
+        const res1 = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open'],
+            })
+          );
+
+        const endpoint = res1.body['hub.channel.endpoint'];
+        expect(endpoint).not.toContain(`/ws/fhircast/${topic}`);
+
+        const pathname = new URL(endpoint).pathname;
+
         await request(server)
-          .ws('/ws/fhircast/' + topic)
+          .ws(pathname)
           .expectJson((obj) => {
             // Connection verification message
             expect(obj['hub.topic']).toBe(topic);
           })
           .exec(async () => {
-            const res = await request(server)
+            const res2 = await request(server)
               .post(`/fhircast/STU3/${topic}`)
               .set('Content-Type', ContentType.JSON)
               .set('Authorization', 'Bearer ' + accessToken)
@@ -62,8 +80,8 @@ describe('FHIRcast WebSocket', () => {
                   ],
                 },
               });
-            expect(res.status).toBe(201);
-            expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
+            expect(res2.status).toBe(201);
+            expect(res2.headers['content-type']).toBe('application/json; charset=utf-8');
           })
           .expectJson((obj) => {
             // Event message
@@ -80,12 +98,14 @@ describe('FHIRcast WebSocket', () => {
     let app: Express;
     let config: MedplumServerConfig;
     let server: Server;
+    let accessToken: string;
 
     beforeAll(async () => {
       app = express();
       config = await loadTestConfig();
       config.heartbeatMilliseconds = 25;
       server = await initApp(app, config);
+      accessToken = await initTestAuth({ membership: { admin: true } });
       await new Promise<void>((resolve) => {
         server.listen(0, 'localhost', 511, resolve);
       });
@@ -98,8 +118,27 @@ describe('FHIRcast WebSocket', () => {
     test('Check that we get a heartbeat', () =>
       withTestContext(async () => {
         const topic = randomUUID();
+
+        const res1 = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open'],
+            })
+          );
+
+        const endpoint = res1.body['hub.channel.endpoint'];
+        expect(endpoint).not.toContain(`/ws/fhircast/${topic}`);
+
+        const pathname = new URL(endpoint).pathname;
+
         await request(server)
-          .ws('/ws/fhircast/' + topic)
+          .ws(pathname)
           .expectJson((obj) => {
             // Connection verification message
             expect(obj['hub.topic']).toBe(topic);
@@ -117,8 +156,27 @@ describe('FHIRcast WebSocket', () => {
     test('Check that timer and promises are cleaned up after no topics active', () =>
       withTestContext(async () => {
         const topic = randomUUID();
+
+        const res1 = await request(server)
+          .post('/fhircast/STU3')
+          .set('Content-Type', ContentType.FORM_URL_ENCODED)
+          .set('Authorization', 'Bearer ' + accessToken)
+          .send(
+            serializeFhircastSubscriptionRequest({
+              mode: 'subscribe',
+              channelType: 'websocket',
+              topic,
+              events: ['Patient-open'],
+            })
+          );
+
+        const endpoint = res1.body['hub.channel.endpoint'];
+        expect(endpoint).not.toContain(`/ws/fhircast/${topic}`);
+
+        const pathname = new URL(endpoint).pathname;
+
         await request(server)
-          .ws('/ws/fhircast/' + topic)
+          .ws(pathname)
           .expectJson((obj) => {
             // Connection verification message
             expect(obj['hub.topic']).toBe(topic);
