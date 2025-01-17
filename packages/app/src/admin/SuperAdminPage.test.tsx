@@ -1,8 +1,9 @@
 import { Notifications, notifications } from '@mantine/notifications';
-import { allOk, MedplumClient } from '@medplum/core';
+import { allOk, MedplumClient, MedplumRequestOptions, OperationOutcomeError, serverError } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import { within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
@@ -113,14 +114,24 @@ describe('SuperAdminPage', () => {
   test('Cancel reindex via toast', async () => {
     setup(medplum);
 
-    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
-      return {
-        resourceType: 'AsyncJob',
-        status: 'cancelled',
-        request: 'mock-job',
-        requestTime: new Date().toISOString(),
-      } satisfies AsyncJob;
-    });
+    jest
+      .spyOn(medplum, 'startAsyncRequest')
+      .mockImplementation(async (_url: string | URL, options?: MedplumRequestOptions) => {
+        return new Promise<AsyncJob>((resolve) => {
+          const abortSignal = options?.asyncReqCancelSignal;
+          if (!abortSignal) {
+            throw new Error('No abort signal in options');
+          }
+          abortSignal.addEventListener('abort', () => {
+            resolve({
+              resourceType: 'AsyncJob',
+              status: 'cancelled',
+              request: 'mock-job',
+              requestTime: new Date().toISOString(),
+            });
+          });
+        });
+      });
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Reindex Resource Type'), { target: { value: 'Patient' } });
@@ -128,6 +139,12 @@ describe('SuperAdminPage', () => {
 
     await act(async () => {
       fireEvent.click(screen.getByText('Reindex'));
+    });
+
+    const alert = screen.getByRole('alert');
+
+    await act(async () => {
+      fireEvent.click(within(alert).getByRole('button'));
     });
 
     expect(screen.getByText('Job cancelled')).toBeInTheDocument();
@@ -154,6 +171,47 @@ describe('SuperAdminPage', () => {
     });
 
     await expect(screen.findByText('Job cancelled')).resolves.toBeInTheDocument();
+  });
+
+  test('Error during reindex', async () => {
+    setup(medplum);
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      return {
+        resourceType: 'AsyncJob',
+        status: 'error',
+        request: 'mock-job',
+        requestTime: new Date().toISOString(),
+      } satisfies AsyncJob;
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Reindex Resource Type'), { target: { value: 'Patient' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Reindex'));
+    });
+
+    await expect(screen.findByText('Error while processing job')).resolves.toBeInTheDocument();
+  });
+
+  test('Error thrown from startAsyncRequest', async () => {
+    setup(medplum);
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      throw new OperationOutcomeError(serverError(new Error('Error while polling job')));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Reindex Resource Type'), { target: { value: 'Patient' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Reindex'));
+    });
+
+    expect(screen.getByText('Internal server error (Error: Error while polling job)')).toBeInTheDocument();
   });
 
   test('Purge resources', async () => {
