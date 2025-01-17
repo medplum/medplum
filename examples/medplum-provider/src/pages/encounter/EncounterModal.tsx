@@ -5,7 +5,7 @@ import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { createReference, normalizeErrorString } from '@medplum/core';
-import { Coding, Encounter, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { usePatient } from '../../hooks/usePatient';
 
 export const EncounterModal = (): JSX.Element => {
@@ -15,6 +15,7 @@ export const EncounterModal = (): JSX.Element => {
   const patient = usePatient();
   const [types, setTypes] = useState<ValueSetExpansionContains[]>([]);
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
+  const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   // Todo: create a resusable type
   const [status, setStatus] = useState<
     | 'planned'
@@ -33,8 +34,8 @@ export const EncounterModal = (): JSX.Element => {
     navigate(-1);
   };
 
-  const handleCreateEncounter = (): void => {
-    if (!patient || !encounterClass) {
+  const handleCreateEncounter = async (): Promise<void> => {
+    if (!patient || !encounterClass || !planDefinitionData) {
       return;
     }
 
@@ -52,25 +53,25 @@ export const EncounterModal = (): JSX.Element => {
       subject: createReference(patient),
     };
 
-    medplum
-      .createResource(encounterData)
-      .then((encounter) => {
-        showNotification({
-          icon: <IconCircleCheck />,
-          title: 'Success',
-          message: 'Encounter created',
-        });
-        // Redirect to actual chart
-        navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`);
-      })
-      .catch((err) => {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
+    try {
+      const encounter = await medplum.createResource(encounterData);
+      await medplum.createResource(planDefinitionData);
+  
+      showNotification({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Encounter created',
       });
+  
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`);
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
   };
 
   return (
@@ -132,7 +133,11 @@ export const EncounterModal = (): JSX.Element => {
             .
           </Text>
 
-          <ResourceInput name="foo" resourceType="PlanDefinition" />
+          <ResourceInput
+            name="plandefinition"
+            resourceType="PlanDefinition"
+            onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
+          />
         </Card>
       </div>
 
