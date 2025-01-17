@@ -1,6 +1,7 @@
 import { ContentType, serializeFhircastSubscriptionRequest } from '@medplum/core';
 import express, { Express } from 'express';
 import { randomUUID } from 'node:crypto';
+import { once } from 'node:events';
 import { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
@@ -125,7 +126,7 @@ describe('FHIRcast WebSocket', () => {
     beforeAll(async () => {
       app = express();
       config = await loadTestConfig();
-      config.heartbeatMilliseconds = 25;
+      config.heartbeatMilliseconds = 100;
       server = await initApp(app, config);
       accessToken = await initTestAuth({ membership: { admin: true } });
       await new Promise<void>((resolve) => {
@@ -166,16 +167,21 @@ describe('FHIRcast WebSocket', () => {
             expect(obj['hub.topic']).toBe(topic);
           })
           .expectJson((obj) => {
-            // Event message
-            expect(obj.event['hub.topic']).toBe(topic);
-            expect(obj.event['hub.event']).toBe('heartbeat');
+            expect(obj).toMatchObject({
+              id: expect.any(String),
+              timestamp: expect.any(String),
+              event: {
+                context: [{ key: 'period', decimal: '10' }],
+                'hub.event': 'heartbeat',
+              },
+            });
           })
           .sendJson({ ok: true })
           .close()
           .expectClosed();
       }));
 
-    test('Check that timer and promises are cleaned up after no topics active', () =>
+    test('Make sure that we only get one heartbeat per tick for a given topic', () =>
       withTestContext(async () => {
         const topic = randomUUID();
 
@@ -207,6 +213,43 @@ describe('FHIRcast WebSocket', () => {
             // Event message
             expect(obj.event['hub.topic']).toBe(topic);
             expect(obj.event['hub.event']).toBe('heartbeat');
+          })
+          .exec(async () => {
+            // Now open up a second connection in order to test that we don't get duplicate heartbeats with multiple clients
+            await request(server)
+              .ws(pathname)
+              .expectJson((obj) => {
+                // Connection verification message
+                expect(obj['hub.topic']).toBe(topic);
+              })
+              .expectJson((obj) => {
+                // Event message
+                expect(obj.event['hub.topic']).toBe(topic);
+                expect(obj.event['hub.event']).toBe('heartbeat');
+              })
+              .exec(async (ws) => {
+                await once(ws, 'message');
+                // We check that the time between two heartbeats is greater than expected minimum time
+                const startTime = Date.now();
+                await once(ws, 'message');
+                const endTime = Date.now();
+
+                // setInterval doesn't guarantee a minimum time between executions, so we give a little leniency for the 100ms
+                expect(endTime - startTime).toBeGreaterThanOrEqual(90);
+              })
+              // We're just expecting the two calls we already caught in the above exec
+              .expectJson((obj) => {
+                // Event message
+                expect(obj.event['hub.topic']).toBe(topic);
+                expect(obj.event['hub.event']).toBe('heartbeat');
+              })
+              .expectJson((obj) => {
+                // Event message
+                expect(obj.event['hub.topic']).toBe(topic);
+                expect(obj.event['hub.event']).toBe('heartbeat');
+              })
+              .close()
+              .expectClosed();
           })
           .sendJson({ ok: true })
           .close()
