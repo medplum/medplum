@@ -43,6 +43,37 @@ import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
 import { ProfileResource, createReference, sleep } from './utils';
 
+const EXAMPLE_XML = `
+<note>
+  <to>Frodo</to>
+  <from>Gandalf</from>
+  <heading>Reminder</heading>
+  <body>Don't forget the ring in Gondor!</body>
+</note>`;
+
+const EXAMPLE_CCDA = `
+<ClinicalDocument xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc" xmlns:sdtc="urn:hl7-org:sdtc">
+  <!-- ** CDA Header ** -->
+  <realmCode code="US"/>
+  <typeId extension="POCD_HD000040" root="2.16.840.1.113883.1.3"/>
+  <!-- CCD document template within C-CDA 2.0-->
+  <templateId root="2.16.840.1.113883.10.20.22.1.2" extension="2014-06-09"/>
+  <!-- Globally unique identifier for the document. Can only be [1..1] -->
+  <id extension="EHRVersion2.0" root="be84a8e4-a22e-4210-a4a6-b3c48273e84c"/>
+  <code code="34133-9" displayName="Summary of episode note" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+  <!-- Title of this document -->
+  <title>Summary of Patient Chart</title>
+  <!-- This is the time of document generation -->
+  <effectiveTime value="20141015103026-0500"/>
+  <confidentialityCode code="N" displayName="normal" codeSystem="2.16.840.1.113883.5.25" codeSystemName="Confidentiality"/>
+  <!-- This is the document language code which uses internet standard RFC 4646. This often differs from patient language within recordTarget -->
+  <languageCode code="en-US"/>
+  <setId extension="sTT988" root="2.16.840.1.113883.19.5.99999.19"/>
+  <!-- Version of this document -->
+  <versionNumber value="1"/>
+</ClinicalDocument>
+`;
+
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
   url: 'http://hl7.org/fhir/StructureDefinition/Patient',
@@ -1613,6 +1644,95 @@ describe('Client', () => {
         },
       })
     );
+  });
+
+  describe('Create attachment -- XML', () => {
+    test('Non-CDA XML', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+      const result = await client.createAttachment({
+        data: EXAMPLE_XML,
+        contentType: ContentType.XML,
+      });
+      expect(result).toBeDefined();
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhir/R4/Binary',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: DEFAULT_ACCEPT,
+            'Content-Type': ContentType.XML,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+    });
+
+    test('C-CDA -- String', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+      const result = await client.createAttachment({
+        data: EXAMPLE_CCDA,
+        contentType: ContentType.XML,
+      });
+      expect(result).toBeDefined();
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhir/R4/Binary',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: DEFAULT_ACCEPT,
+            // Make sure the content type is updated
+            'Content-Type': ContentType.CDA_XML,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+    });
+
+    test('C-CDA -- Encoded bytes', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+      const result = await client.createAttachment({
+        data: new TextEncoder().encode(EXAMPLE_CCDA),
+        contentType: ContentType.XML,
+      });
+      expect(result).toBeDefined();
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhir/R4/Binary',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: DEFAULT_ACCEPT,
+            // Make sure the content type is updated
+            'Content-Type': ContentType.CDA_XML,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+    });
+
+    test('C-CDA -- File', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+      const result = await client.createAttachment({
+        data: new File([EXAMPLE_CCDA], 'cda.xml'),
+        contentType: ContentType.XML,
+      });
+      expect(result).toBeDefined();
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhir/R4/Binary',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: DEFAULT_ACCEPT,
+            // Make sure the content type is updated
+            'Content-Type': ContentType.CDA_XML,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+    });
   });
 
   test('Create attachment (deprecated legacy version)', async () => {
