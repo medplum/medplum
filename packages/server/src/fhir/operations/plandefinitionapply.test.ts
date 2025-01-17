@@ -20,7 +20,6 @@ describe('PlanDefinition apply', () => {
     await shutdownApp();
   });
 
-  
   test('Happy path', async () => {
     // 1. Create a Questionnaire
     // 2. Create a PlanDefinition
