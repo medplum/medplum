@@ -5423,6 +5423,21 @@
               "strength" : "required",
               "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-type|4.0.1"
             }
+          },
+          {
+            "id" : "AsyncJob.dataVersion",
+            "path" : "AsyncJob.dataVersion",
+            "definition" : "The data version of the migration this job represents.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.dataVersion",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "integer"
+            }]
           }
         ]
       }
