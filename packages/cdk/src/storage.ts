@@ -99,7 +99,7 @@ export class Storage extends Construct {
         securityHeadersBehavior: {
           contentSecurityPolicy: {
             contentSecurityPolicy:
-              "default-src 'none'; connect-src: https://ccda.medplum.com; base-uri 'none'; form-action 'none'; frame-ancestors *;",
+              "default-src 'none'; connect-src https://ccda.medplum.com; base-uri 'none'; form-action 'none'; frame-ancestors *;",
             override: true,
           },
           contentTypeOptions: { override: true },
