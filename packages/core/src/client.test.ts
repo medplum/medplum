@@ -3313,6 +3313,66 @@ describe('Client', () => {
       expect(fetch).toHaveBeenCalledTimes(4);
       expect((response as any).resourceType).toStrictEqual('Patient');
     });
+
+    test('Cancel polling via abort controller', async () => {
+      const fetch = jest.fn();
+      const controller = new AbortController();
+
+      // First time, return 202 Accepted with Content-Location
+      fetch.mockImplementationOnce(async () =>
+        mockFetchResponse(
+          202,
+          {},
+          {
+            'content-location': 'https://example.com/content-location/1',
+          }
+        )
+      );
+
+      const client = new MedplumClient({ fetch });
+      const promise = client.startAsyncRequest('/test', {
+        method: 'POST',
+        body: '{}',
+        pollStatusOnAccepted: true,
+        followRedirectOnCreated: true,
+        asyncReqCancelSignal: controller.signal,
+      });
+
+      controller.abort();
+
+      fetch.mockImplementationOnce(async (_url, options) => {
+        if (options.method === 'DELETE') {
+          return mockFetchResponse(202, {
+            resourceType: 'OperationOutcome',
+            id: 'accepted',
+            issue: [
+              {
+                severity: 'information',
+                code: 'informational',
+                details: {
+                  text: 'Accepted',
+                },
+              },
+            ],
+          });
+        }
+
+        throw new Error('Unexpected request');
+      });
+
+      fetch.mockImplementationOnce(async (_url, options) => {
+        if (options.method === 'GET') {
+          return mockFetchResponse(200, {
+            resourceType: 'AsyncJob',
+          });
+        }
+
+        throw new Error('Unexpected request');
+      });
+
+      const response = (await promise) as { resourceType: string };
+      expect(response.resourceType).toStrictEqual('AsyncJob');
+    });
   });
 
   describe('Token refresh', () => {
