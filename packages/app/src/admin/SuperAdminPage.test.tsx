@@ -1,5 +1,5 @@
 import { Notifications, notifications } from '@mantine/notifications';
-import { allOk, MedplumClient, MedplumRequestOptions, OperationOutcomeError, serverError } from '@medplum/core';
+import { allOk, MedplumClient, OperationOutcomeError, serverError } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -114,24 +114,24 @@ describe('SuperAdminPage', () => {
   test('Cancel reindex via toast', async () => {
     setup(medplum);
 
-    jest
-      .spyOn(medplum, 'startAsyncRequest')
-      .mockImplementation(async (_url: string | URL, options?: MedplumRequestOptions) => {
-        return new Promise<AsyncJob>((resolve) => {
-          const abortSignal = options?.asyncReqCancelSignal;
-          if (!abortSignal) {
-            throw new Error('No abort signal in options');
-          }
-          abortSignal.addEventListener('abort', () => {
-            resolve({
-              resourceType: 'AsyncJob',
-              status: 'cancelled',
-              request: 'mock-job',
-              requestTime: new Date().toISOString(),
-            });
-          });
-        });
-      });
+    let resolve!: () => void;
+    const deferredPromise = new Promise<void>((_resolve) => {
+      resolve = _resolve;
+    });
+
+    jest.spyOn(medplum, 'delete').mockImplementationOnce(async () => {
+      resolve();
+    });
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      await deferredPromise;
+      return {
+        resourceType: 'AsyncJob',
+        status: 'cancelled',
+        request: 'mock-job',
+        requestTime: new Date().toISOString(),
+      } satisfies AsyncJob;
+    });
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Reindex Resource Type'), { target: { value: 'Patient' } });
@@ -170,7 +170,7 @@ describe('SuperAdminPage', () => {
       fireEvent.click(screen.getByText('Reindex'));
     });
 
-    await expect(screen.findByText('Job cancelled')).resolves.toBeInTheDocument();
+    expect(screen.getByText('Job cancelled')).toBeInTheDocument();
   });
 
   test('Error during reindex', async () => {
@@ -193,7 +193,7 @@ describe('SuperAdminPage', () => {
       fireEvent.click(screen.getByText('Reindex'));
     });
 
-    await expect(screen.findByText('Error while processing job')).resolves.toBeInTheDocument();
+    expect(screen.getByText('Error while processing job')).toBeInTheDocument();
   });
 
   test('Error thrown from startAsyncRequest', async () => {

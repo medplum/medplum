@@ -213,7 +213,8 @@ type AsyncJobOptions = {
 };
 
 function startAsyncJob(medplum: MedplumClient, title: string, url: string, asyncJobOptions?: AsyncJobOptions): void {
-  const controller = new AbortController();
+  let cancelledViaToast = false;
+
   notifications.show({
     id: url,
     loading: true,
@@ -221,14 +222,19 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, async
     message: 'Running...',
     autoClose: false,
     ...(asyncJobOptions?.cancellable
-      ? { withCloseButton: true, onClose: () => controller.abort() }
+      ? {
+          withCloseButton: true,
+          onClose: () => {
+            cancelledViaToast = true;
+            medplum.delete(url).catch(console.error);
+          },
+        }
       : { withCloseButton: false }),
   });
 
   const options: MedplumRequestOptions = {
     method: 'POST',
     pollStatusOnAccepted: true,
-    ...(asyncJobOptions?.cancellable ? { asyncReqCancelSignal: controller.signal } : undefined),
   };
 
   if (asyncJobOptions?.body) {
@@ -262,12 +268,9 @@ function startAsyncJob(medplum: MedplumClient, title: string, url: string, async
             autoClose: false,
             withCloseButton: true,
           };
-          // If the signal has been aborted, it means we made the change via our X button
-          // That removes the notification so we have to show it again
-          if (controller.signal.aborted) {
+          if (cancelledViaToast) {
             notifications.show(cancelledNotif);
           } else {
-            // Since the signal isn't aborted, the job was cancelled from elsewhere. We can just update the notification
             notifications.update(cancelledNotif);
           }
           break;

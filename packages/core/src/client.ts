@@ -361,10 +361,6 @@ export interface MedplumRequestOptions extends RequestInit {
   pollStatusPeriod?: number;
 
   /**
-   * Optional AbortSignal for cancelling an async request.
-   */
-  asyncReqCancelSignal?: AbortSignal;
-  /**
    * Optional max number of retries that should be made in the case of a failed request. Default is `2`.
    */
   maxRetries?: number;
@@ -3348,11 +3344,6 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
   private async pollStatus<T>(statusUrl: string, options: MedplumRequestOptions, state: RequestState): Promise<T> {
     const statusOptions: MedplumRequestOptions = { ...options, method: 'GET', body: undefined, redirect: 'follow' };
-    if (options?.asyncReqCancelSignal?.aborted) {
-      // Need to unset the body for DELETE request, same as above
-      await this.delete(statusUrl, { ...options, body: undefined });
-      return this.get(statusUrl, statusOptions);
-    }
     if (state.pollCount === undefined) {
       // First request - try request immediately
       if (options.headers && typeof options.headers === 'object' && 'Prefer' in options.headers) {
