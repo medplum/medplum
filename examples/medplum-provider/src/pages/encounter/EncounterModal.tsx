@@ -55,13 +55,13 @@ export const EncounterModal = (): JSX.Element => {
 
     try {
       const encounter = await medplum.createResource(encounterData);
-  
+      
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',
         message: 'Encounter created',
       });
-  
+
       navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`);
     } catch (err) {
       showNotification({
