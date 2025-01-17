@@ -89,6 +89,7 @@ export async function handleFhircastConnection(socket: ws.WebSocket, request: In
   const topic = projectAndTopic?.split(':')[1] ?? 'invalid topic';
   // Increment ref count for the specified topic
   topicRefCountMap.set(projectAndTopic, (topicRefCountMap.get(projectAndTopic) ?? 0) + 1);
+  websocketMap.set(socket, projectAndTopic);
 
   redisSubscriber.on('message', (_channel: string, message: string) => {
     // Forward the message to the client
