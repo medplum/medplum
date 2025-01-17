@@ -3340,6 +3340,7 @@ describe('Client', () => {
 
       controller.abort();
 
+      // Return accepted when delete (cancel) is called
       fetch.mockImplementationOnce(async (_url, options) => {
         if (options.method === 'DELETE') {
           return mockFetchResponse(202, {
@@ -3360,6 +3361,7 @@ describe('Client', () => {
         throw new Error('Unexpected request');
       });
 
+      // Return the content from one last get on the status URL
       fetch.mockImplementationOnce(async (_url, options) => {
         if (options.method === 'GET') {
           return mockFetchResponse(200, {
