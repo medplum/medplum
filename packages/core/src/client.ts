@@ -3349,8 +3349,9 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private async pollStatus<T>(statusUrl: string, options: MedplumRequestOptions, state: RequestState): Promise<T> {
     const statusOptions: MedplumRequestOptions = { ...options, method: 'GET', body: undefined, redirect: 'follow' };
     if (options?.asyncReqCancelSignal?.aborted) {
-      await this.request('DELETE', statusUrl, { ...options, method: 'DELETE', body: undefined });
-      return this.request('GET', statusUrl, statusOptions);
+      // Need to unset the body for DELETE request, same as above
+      await this.delete(statusUrl, { ...options, body: undefined });
+      return this.get(statusUrl, statusOptions);
     }
     if (state.pollCount === undefined) {
       // First request - try request immediately
