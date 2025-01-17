@@ -21,7 +21,6 @@
     "generate": "npm run valuesets && npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient && npm run docs",
     "jsonschema": "ts-node src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",
     "lint": "eslint .",
-    "migrate": "ts-node src/migrate.ts",
     "mockclient": "ts-node src/mockclient.ts && npx prettier ../mock/src/mocks/*.json --write",
     "test": "jest",
     "valuesets": "ts-node src/valuesets.ts"
