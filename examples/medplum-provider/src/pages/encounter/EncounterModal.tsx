@@ -55,7 +55,6 @@ export const EncounterModal = (): JSX.Element => {
 
     try {
       const encounter = await medplum.createResource(encounterData);
-      await medplum.createResource(planDefinitionData);
   
       showNotification({
         icon: <IconCircleCheck />,
