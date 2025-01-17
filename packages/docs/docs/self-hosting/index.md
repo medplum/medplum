@@ -24,7 +24,7 @@ Deploy Medplum on Google Cloud Platform using our Terraform configurations. Whil
 
 ### [Install on Azure](/docs/self-hosting/install-on-azure) (Beta)
 
-Deploy Medplum on Assure using our Terraform configurations. While in beta, this deployment option has been validated with production workloads and provides a robust foundation for Azure-based implementations.  Medplum also supports Azure SSO.
+Deploy Medplum on Azure using our Terraform configurations. While in beta, this deployment option has been validated with production workloads and provides a robust foundation for Azure-based implementations.
 
 ### [Install from Scratch](/docs/self-hosting/install-from-scratch)
 
