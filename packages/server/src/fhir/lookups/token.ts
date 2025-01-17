@@ -34,15 +34,18 @@ import {
   Negation,
   SelectQuery,
   SqlFunction,
+  TypedCondition,
 } from '../sql';
 import { LookupTable } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
 
-interface Token {
+export interface Token {
   readonly code: string;
   readonly system: string | undefined;
   readonly value: string | undefined;
 }
+
+export const USE_TOKEN_TABLE = false;
 
 /**
  * The TokenTable class is used to index and search "token" properties.
@@ -75,6 +78,10 @@ export class TokenTable extends LookupTable {
    * @returns True if the search parameter is an "token" parameter.
    */
   isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
+    return TokenTable.isIndexed(searchParam, resourceType);
+  }
+
+  static isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
     return Boolean(getTokenIndexType(searchParam, resourceType));
   }
 
@@ -97,7 +104,7 @@ export class TokenTable extends LookupTable {
     const values = tokens.map((token) => ({
       resourceId,
       code: token.code,
-      system: token.system?.trim(),
+      system: token.system?.trim?.(),
       value: token.value?.trim?.(),
     }));
 
@@ -123,12 +130,11 @@ export class TokenTable extends LookupTable {
     const lookupTableName = this.getTableName(resourceType);
 
     const conjunction = new Conjunction([
-      new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
-      new Condition(new Column(lookupTableName, 'code'), '=', filter.code),
+      new TypedCondition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+      new TypedCondition(new Column(lookupTableName, 'code'), '=', filter.code),
     ]);
 
     const caseSensitive = isCaseSensitiveSearchParameter(param, resourceType);
-
     const whereExpression = buildWhereExpression(lookupTableName, caseSensitive, filter);
     if (whereExpression) {
       conjunction.expressions.push(whereExpression);
@@ -152,14 +158,18 @@ export class TokenTable extends LookupTable {
   addOrderBy(selectQuery: SelectQuery, resourceType: ResourceType, sortRule: SortRule): void {
     const lookupTableName = this.getTableName(resourceType);
     const joinName = selectQuery.getNextJoinAlias();
-    const joinOnExpression = new Condition(new Column(resourceType, 'id'), '=', new Column(joinName, 'resourceId'));
+    const joinOnExpression = new TypedCondition(
+      new Column(resourceType, 'id'),
+      '=',
+      new Column(joinName, 'resourceId')
+    );
     selectQuery.join(
       'INNER JOIN',
       new SelectQuery(lookupTableName)
         .distinctOn('resourceId')
         .column('resourceId')
         .column('value')
-        .whereExpr(new Condition(new Column(lookupTableName, 'code'), '=', sortRule.code)),
+        .whereExpr(new TypedCondition(new Column(lookupTableName, 'code'), '=', sortRule.code)),
       joinName,
       joinOnExpression
     );
@@ -173,7 +183,7 @@ export class TokenTable extends LookupTable {
  * @param resourceType - The resource type.
  * @returns True if the search parameter is an "token" parameter.
  */
-function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
+export function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
   if (searchParam.type !== 'token') {
     return undefined;
   }
@@ -237,7 +247,7 @@ type TokenIndexType = (typeof TokenIndexTypes)[keyof typeof TokenIndexTypes];
  * @param operator - Filter operator applied to the token field
  * @returns True if the filter value should be compared to the "value" column.
  */
-function shouldCompareTokenValue(operator: FhirOperator): boolean {
+export function shouldCompareTokenValue(operator: FhirOperator): boolean {
   switch (operator) {
     case FhirOperator.MISSING:
     case FhirOperator.PRESENT:
@@ -255,7 +265,7 @@ function shouldCompareTokenValue(operator: FhirOperator): boolean {
  * @param filter - Filter applied to the token field
  * @returns True if the filter requires a token row to exist AFTER the join has been performed
  */
-function shouldTokenRowExist(filter: Filter): boolean {
+export function shouldTokenRowExist(filter: Filter): boolean {
   if (shouldCompareTokenValue(filter.operator)) {
     // If the filter is "not equals", then we're looking for ID=null
     // If the filter is "equals", then we're looking for ID!=null
@@ -301,7 +311,7 @@ function getTableName(resourceType: ResourceType): string {
  * @param resource - The resource being indexed.
  * @returns An array of all tokens from the resource to be inserted into the database.
  */
-function getTokens(resource: Resource): Token[] {
+export function getTokens(resource: Resource): Token[] {
   const searchParams = getSearchParameters(resource.resourceType);
   const result: Token[] = [];
   if (searchParams) {
@@ -323,7 +333,7 @@ function getTokens(resource: Resource): Token[] {
  * @param resource - The resource.
  * @param searchParam - The search parameter.
  */
-function buildTokensForSearchParameter(result: Token[], resource: Resource, searchParam: SearchParameter): void {
+export function buildTokensForSearchParameter(result: Token[], resource: Resource, searchParam: SearchParameter): void {
   const typedValues = evalFhirPathTyped(searchParam.expression as string, [toTypedValue(resource)]);
   for (const typedValue of typedValues) {
     buildTokens(result, searchParam, resource, typedValue);
@@ -484,7 +494,7 @@ function buildSimpleToken(
 function buildWhereExpression(tableName: string, caseSensitive: boolean, filter: Filter): Expression | undefined {
   const subExpressions = [];
   for (const option of splitSearchOnComma(filter.value)) {
-    const expression = buildWhereCondition(tableName, filter.operator, caseSensitive, option);
+    const expression = buildWhereCondition(tableName, filter, caseSensitive, option);
     if (expression) {
       subExpressions.push(expression);
     }
@@ -501,14 +511,14 @@ function buildWhereExpression(tableName: string, caseSensitive: boolean, filter:
  * Returns a WHERE Condition for a specific search query value, if applicable based on the `operator`
  *
  * @param tableName - The token table name
- * @param operator - The SearchRequest operator being performed on the token
+ * @param filter - The SearchRequest filter being performed on the token
  * @param caseSensitive - If the query value should be case sensitive.
  * @param query - The query value of the operator
  * @returns A WHERE Condition on the token table, if applicable, else undefined
  */
 function buildWhereCondition(
   tableName: string,
-  operator: FhirOperator,
+  filter: Filter,
   caseSensitive: boolean,
   query: string
 ): Expression | undefined {
@@ -516,19 +526,19 @@ function buildWhereCondition(
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
     const [system, value] = parts;
-    const systemCondition = new Condition(new Column(tableName, 'system'), '=', system);
+    const systemCondition = new TypedCondition(new Column(tableName, 'system'), '=', system || null);
     return value
-      ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, caseSensitive, value)])
+      ? new Conjunction([systemCondition, buildValueCondition(tableName, filter, caseSensitive, value)])
       : systemCondition;
   } else {
     // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
-    if (operator === FhirOperator.IN) {
+    if (filter.operator === FhirOperator.IN) {
       return buildInValueSetCondition(tableName, query);
     }
     // If we we are searching for a particular token value, build a Condition that filters the lookup table on that
     //value
-    if (shouldCompareTokenValue(operator)) {
-      return buildValueCondition(tableName, operator, caseSensitive, query);
+    if (shouldCompareTokenValue(filter.operator)) {
+      return buildValueCondition(tableName, filter, caseSensitive, query);
     }
     // Otherwise we are just looking for the presence / absence of a token (e.g. when using the FhirOperator.MISSING)
     // so we don't need to construct a filter Condition on the token table.
@@ -536,30 +546,24 @@ function buildWhereCondition(
   }
 }
 
-function buildValueCondition(
-  tableName: string,
-  operator: FhirOperator,
-  caseSensitive: boolean,
-  value: string
-): Expression {
-  const column = new Column(tableName, 'value');
+function buildValueCondition(tableName: string, filter: Filter, caseSensitive: boolean, value: string): Expression {
   value = value.trim();
-
-  if (operator === FhirOperator.TEXT) {
-    getLogger().warn('Potentially expensive token lookup query', { operator });
+  const column = new Column(tableName, 'value');
+  if (filter.operator === FhirOperator.TEXT) {
+    getLogger().warn('Potentially expensive token lookup query', { operator: filter.operator });
     return new Conjunction([
-      new Condition(new Column(tableName, 'system'), '=', 'text'),
-      new Condition(column, 'TSVECTOR_SIMPLE', value + ':*'),
+      new TypedCondition(new Column(tableName, 'system'), '=', 'text'),
+      new TypedCondition(column, 'TSVECTOR_SIMPLE', value + ':*'),
     ]);
-  } else if (operator === FhirOperator.CONTAINS) {
-    getLogger().warn('Potentially expensive token lookup query', { operator });
-    return new Condition(column, 'LIKE', escapeLikeString(value) + '%');
+  } else if (filter.operator === FhirOperator.CONTAINS) {
+    getLogger().warn('Potentially expensive token lookup query', { operator: filter.operator });
+    return new TypedCondition(column, 'LIKE', escapeLikeString(value) + '%');
   } else if (caseSensitive) {
-    return new Condition(column, '=', value);
+    return new TypedCondition(column, '=', value);
   } else {
     // In Medplum v4, or when there is a guarantee all resources have been reindexed, the IN (...) can be
     // switched to an '=' of just the lower-cased value for a simplified query and potentially better performance.
-    return new Condition(column, 'IN', [value, value.toLocaleLowerCase()]);
+    return new TypedCondition(column, 'IN', [value, value.toLocaleLowerCase()]);
   }
 }
 
@@ -635,7 +639,7 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
   //     )
   //   )
   //
-  return new Condition(
+  return new TypedCondition(
     new Column(tableName, 'system'),
     'IN_SUBQUERY',
     new SelectQuery('ValueSet').column('reference').where('url', '=', value).limit(1),
@@ -649,6 +653,6 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
  * @param resourceType - The resource type being searched.
  * @returns True if the search parameter should be considered case-sensitive when searching for tokens.
  */
-function isCaseSensitiveSearchParameter(param: SearchParameter, resourceType: ResourceType): boolean {
+export function isCaseSensitiveSearchParameter(param: SearchParameter, resourceType: ResourceType): boolean {
   return getTokenIndexType(param, resourceType) === TokenIndexTypes.CASE_SENSITIVE;
 }

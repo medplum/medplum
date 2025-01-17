@@ -62,6 +62,7 @@ import {
 import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
+import { v7 } from 'uuid';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -88,12 +89,14 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { Token, buildTokensForSearchParameter } from './lookups/token';
+import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
-import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
   DeleteQuery,
@@ -106,7 +109,6 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
-import { v7 } from 'uuid';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -1283,6 +1285,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (searchParams) {
       for (const searchParam of Object.values(searchParams)) {
         this.buildColumn(resource, row, searchParam);
+        if (searchParam.type === 'reference') {
+          const derived = deriveIdentifierSearchParameter(searchParam);
+          this.buildColumn(resource, row, derived);
+        }
       }
     }
     return row;
@@ -1415,6 +1421,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment' ||
+      searchParam.code === '_compartment:identifier' ||
       searchParam.type === 'composite' ||
       impl.searchStrategy === 'lookup-table'
     ) {
@@ -1422,17 +1429,65 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const values = evalFhirPath(searchParam.expression as string, resource);
-    let columnValue = null;
 
-    if (values.length > 0) {
-      if (impl.array) {
-        columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
-      } else {
-        columnValue = this.buildColumnValue(searchParam, impl, values[0]);
+    if (impl.searchStrategy === 'token-column') {
+      // TODO [Search by logical references](https://github.com/medplum/medplum/issues/1630) needs
+      // to be addressed again. Hmm...
+
+      const allTokens: Token[] = [];
+      buildTokensForSearchParameter(allTokens, resource, searchParam);
+
+      const rowTokens = new Set<string>();
+      for (const t of allTokens) {
+        const code = t.code;
+
+        const system = t.system?.trim?.();
+        const value = t.value?.trim?.();
+        if (!code || (!system && !value)) {
+          continue;
+        }
+
+        // sanity check
+        if (code !== searchParam.code) {
+          throw new Error(`Invalid token code ${code} for search parameter with code ${searchParam.code}`);
+        }
+
+        // MISSING/PRESENT - any entries in the column at all
+
+        const tokenSet = rowTokens;
+        if (system) {
+          // [parameter]=[system]|
+          tokenSet.add(system);
+
+          if (value) {
+            // [parameter]=[system]|[code]
+            tokenSet.add(system + DELIM + value);
+          }
+        }
+
+        if (value) {
+          // [parameter]=[code]
+          tokenSet.add(DELIM + value);
+
+          if (!system) {
+            // [parameter]=|[code]
+            tokenSet.add(NULL_SYSTEM + DELIM + value);
+          }
+        }
       }
+      columns[impl.columnName] = Array.from(rowTokens);
+    } else {
+      impl satisfies ColumnSearchParameterImplementation;
+      let columnValue = null;
+      if (values.length > 0) {
+        if (impl.array) {
+          columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
+        } else {
+          columnValue = this.buildColumnValue(searchParam, impl, values[0]);
+        }
+      }
+      columns[impl.columnName] = columnValue;
     }
-
-    columns[impl.columnName] = columnValue;
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
@@ -2579,3 +2634,6 @@ function truncateTextColumn(value: string): string {
 
   return Array.from(value).slice(0, 675).join('');
 }
+
+const DELIM = '\x01';
+const NULL_SYSTEM = '\x02';

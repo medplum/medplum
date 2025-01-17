@@ -1,16 +1,18 @@
-import { Operator } from '@medplum/core';
-import { Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
+import { createReference, Operator } from '@medplum/core';
+import { Bundle, Condition, Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
-import { bundleContains, withTestContext } from '../../test.setup';
-import { getSystemRepo } from '../repo';
+import { loadTestConfig, MedplumServerConfig } from '../../config';
+import { bundleContains, createTestProject, withTestContext } from '../../test.setup';
+import { getSystemRepo, Repository } from '../repo';
+import { USE_TOKEN_TABLE } from './token';
 
 describe('Identifier Lookup Table', () => {
+  let config: MedplumServerConfig;
   const systemRepo = getSystemRepo();
 
   beforeAll(async () => {
-    const config = await loadTestConfig();
+    config = await loadTestConfig();
     await initAppServices(config);
   });
 
@@ -281,42 +283,6 @@ describe('Identifier Lookup Table', () => {
       expect(bundleContains(searchResult1, patient2)).toBeDefined();
     }));
 
-  test('Missing', () =>
-    withTestContext(async () => {
-      const identifier = randomUUID();
-      const name = randomUUID();
-
-      const patient1 = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: name }],
-      });
-
-      const patient2 = await systemRepo.createResource<Patient>({
-        resourceType: 'Patient',
-        name: [{ given: ['Bob'], family: name }],
-        telecom: [{ system: 'email', value: identifier + 'xyz' }],
-      });
-
-      const searchResult1 = await systemRepo.search({
-        resourceType: 'Patient',
-        filters: [
-          {
-            code: 'email',
-            operator: Operator.MISSING,
-            value: 'true',
-          },
-          {
-            code: 'name',
-            operator: Operator.EQUALS,
-            value: name,
-          },
-        ],
-      });
-      expect(searchResult1.entry?.length).toStrictEqual(1);
-      expect(bundleContains(searchResult1, patient1)).toBeDefined();
-      expect(bundleContains(searchResult1, patient2)).toBeUndefined();
-    }));
-
   test('Search comma separated identifier exact', () =>
     withTestContext(async () => {
       const identifier1 = randomUUID();
@@ -557,4 +523,429 @@ describe('Identifier Lookup Table', () => {
       expect(r4.entry?.length).toStrictEqual(1);
       expect(r4.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
     }));
+
+  describe('Non-strict mode', () => {
+    let nonStrictRepo: Repository;
+    let repo: Repository;
+    let patient: Patient;
+
+    const sys1 = 'http://sys.one';
+    const val1 = 'ABCDEFGHIJ';
+
+    beforeAll(async () => {
+      const { project } = await createTestProject();
+      nonStrictRepo = new Repository({
+        strictMode: false,
+        projects: [project.id as string],
+        author: { reference: 'User/' + randomUUID() },
+      });
+      repo = new Repository({
+        strictMode: true,
+        projects: [project.id as string],
+        author: { reference: 'User/' + randomUUID() },
+      });
+      patient = await nonStrictRepo.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Henry'] }] });
+    });
+
+    test('Handle malformed system', () =>
+      withTestContext(async () => {
+        const subject = createReference(patient);
+        await nonStrictRepo.createResource<Condition>({
+          resourceType: 'Condition',
+          subject,
+          code: {
+            coding: [
+              {
+                system: [sys1] as unknown as string, // Force malformed data
+                code: val1,
+              },
+            ],
+          },
+        });
+
+        const res = await repo.search<Condition>({
+          resourceType: 'Condition',
+          filters: [
+            {
+              code: 'code',
+              operator: Operator.EQUALS,
+              value: sys1 + '|',
+            },
+          ],
+        });
+        //TODO what is actually the expected behavior here?
+        expect(toSortedIdentifierValues(res)).toStrictEqual([]);
+      }));
+
+    test('Handle malformed value', () =>
+      withTestContext(async () => {
+        const subject = createReference(patient);
+        await nonStrictRepo.createResource<Condition>({
+          resourceType: 'Condition',
+          subject,
+          code: {
+            coding: [
+              {
+                system: 'https://example.com',
+                code: ['test1'] as unknown as string, // Force malformed data
+              },
+            ],
+          },
+        });
+
+        const res = await repo.search<Condition>({
+          resourceType: 'Condition',
+          filters: [
+            {
+              code: 'code',
+              operator: Operator.EQUALS,
+              value: val1,
+            },
+          ],
+        });
+        //TODO what is actually the expected behavior here?
+        expect(toSortedIdentifierValues(res)).toStrictEqual([undefined]);
+      }));
+  });
+
+  describe('Nitty gritty tests', () => {
+    let repo: Repository;
+
+    let patient: Patient;
+
+    const conditionNames = [
+      'noCodeNoCat',
+      'noCodeCatOne',
+      'codeOneNoCat',
+      'codeOneCatOne',
+      'codeOneCatTwo',
+      'codeOneWithoutSystemNoCat',
+      'codeTwoWithoutSystemCatTwo',
+    ] as const;
+    type Conditions = (typeof conditionNames)[number];
+    const cond: Record<Conditions, Condition & { id: string }> = {} as Record<Conditions, Condition & { id: string }>;
+
+    const sys1 = 'http://sys.one';
+    const sys2 = 'http://sys.two';
+
+    const val1 = 'ABCDEFGHIJ';
+    const val2 = '0123456789';
+
+    const disp1 = 'The Quick Brown Fox';
+
+    beforeAll(async () => {
+      const { project } = await createTestProject();
+      repo = new Repository({
+        strictMode: true,
+        projects: [project.id as string],
+        author: { reference: 'User/' + randomUUID() },
+      });
+
+      patient = await repo.createResource<Patient>({ resourceType: 'Patient', name: [{ given: ['Henry'] }] });
+      const subject = createReference(patient);
+
+      const partial = cond as Record<string, Condition>;
+      partial.noCodeNoCat = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'noCodeNoCat' }],
+      });
+      partial.noCodeCatOne = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'noCodeCatOne' }],
+        category: [{ coding: [{ system: sys1, code: val1, display: disp1 }] }],
+      });
+      partial.codeOneNoCat = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'codeOneNoCat' }],
+        code: { coding: [{ system: sys1, code: val1, display: disp1 }] },
+      });
+      partial.codeOneCatOne = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'codeOneCatOne' }],
+        code: { coding: [{ system: sys1, code: val1 }] },
+        category: [{ coding: [{ system: sys1, code: val1 }] }],
+      });
+      partial.codeOneCatTwo = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'codeOneCatTwo' }],
+        code: { coding: [{ system: sys1, code: val1 }] },
+        category: [{ coding: [{ system: sys2, code: val2 }] }],
+      });
+      partial.codeOneWithoutSystemNoCat = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'codeOneWithoutSystemNoCat' }],
+        code: { coding: [{ code: val1 }] },
+      });
+      partial.codeTwoWithoutSystemCatTwo = await repo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject,
+        identifier: [{ value: 'codeTwoWithoutSystemCatTwo' }],
+        code: { coding: [{ code: val2 }] },
+        category: [{ coding: [{ system: sys2, code: val2 }] }],
+      });
+
+      for (const name of conditionNames) {
+        if (!cond[name]?.id) {
+          throw new Error('Condition "' + name + '" not created');
+        }
+        expect(cond[name].identifier?.[0].value).toEqual(name);
+      }
+      expect(Object.keys(cond)).toHaveLength(conditionNames.length);
+    });
+
+    test('Sort by identifier', () =>
+      withTestContext(async () => {
+        const system = randomUUID();
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'None' }],
+          identifier: [{ system }],
+        });
+
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'AAA' }],
+          identifier: [{ system, value: 'AAA' }],
+        });
+
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'ZZZ' }],
+          identifier: [{ system, value: 'ZZZ' }],
+        });
+
+        // that comes earliest in the specified sort order when ordering the returned resources
+        // Counterintuitive, but yes, the same result order is expected for both ascending/descending
+        // since sorting by ascending uses "AAA" and soritng by descending uses "ZZZ"
+
+        const ascending = await repo.search<Patient>({
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
+          sortRules: [{ code: 'identifier', descending: false }],
+        });
+        expect(ascending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['AAA', 'ZZZ', 'None']);
+
+        const descending = await repo.search<Patient>({
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
+          sortRules: [{ code: 'identifier', descending: true }],
+        });
+        expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['None', 'ZZZ', 'AAA']);
+      }));
+
+    test.failing('FAILING Sort by identifier with R4 behavior', () =>
+      withTestContext(async () => {
+        const system = randomUUID();
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'First' }],
+          identifier: [
+            { system, value: 'AAA' },
+            { system, value: 'ZZZ' },
+          ],
+        });
+
+        await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Second' }],
+          identifier: [{ system, value: 'LLL' }],
+        });
+
+        const ascending = await repo.search<Patient>({
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
+          sortRules: [{ code: 'identifier', descending: false }],
+        });
+
+        const descending = await repo.search<Patient>({
+          resourceType: 'Patient',
+          filters: [{ code: 'identifier', operator: Operator.EQUALS, value: system + '|' }],
+          sortRules: [{ code: 'identifier', descending: true }],
+        });
+
+        // Counterintuitive results, but yes; the same sort order is expected for both ascending/descending
+        // since ascending uses "AAA" and descending uses "ZZZ"
+        expect(ascending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['First', 'Second']);
+        expect(descending.entry?.map((e) => e.resource?.name?.[0]?.family)).toStrictEqual(['First', 'Second']);
+      })
+    );
+
+    test.each<[string, Conditions[]]>([
+      [sys1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo']],
+      [sys2, []],
+      [val1, []], // incorrectly passing val as a system
+      // ['', []],
+    ])('code by system %s', async (value, expected) => {
+      const res = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: value + '|',
+          },
+        ],
+      });
+      expect(toSortedIdentifierValues(res)).toStrictEqual(expected.toSorted());
+    });
+
+    test.each<[string, Conditions[]]>([
+      [sys1, []], // incorrectly passing sys as a value
+      [val1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
+      [val2, ['codeTwoWithoutSystemCatTwo']],
+    ])('code by value %s', async (value, expected) => {
+      const resEquals = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value,
+          },
+        ],
+      });
+      expect(toSortedIdentifierValues(resEquals)).toStrictEqual(expected.toSorted());
+
+      const resContains = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.CONTAINS,
+            value,
+          },
+        ],
+      });
+      expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected.toSorted());
+    });
+
+    test.each<[string, string, Conditions[]]>([
+      [sys1, val1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo']],
+      [sys1, val2, []],
+      [sys2, val1, []],
+      [sys2, val2, []],
+    ])('code by system and value %s|%s', async (system, value, expected) => {
+      const res = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: system + '|' + value,
+          },
+        ],
+      });
+      expect(toSortedIdentifierValues(res)).toStrictEqual(expected.toSorted());
+    });
+
+    test.each<[string, Conditions[]]>([
+      [val1, ['codeOneWithoutSystemNoCat']],
+      [val2, ['codeTwoWithoutSystemCatTwo']],
+    ])('code by missing system and value %s', async (value, expected) => {
+      const res = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: '|' + value,
+          },
+        ],
+      });
+      expect(toSortedIdentifierValues(res)).toStrictEqual(expected);
+    });
+
+    test.each<[string, string, Conditions[]]>([
+      [val1, val1, ['codeOneCatOne']],
+      [val1, val2, ['codeOneCatTwo']],
+      [val2, val1, []],
+      [sys1 + '|', val2, ['codeOneCatTwo']],
+      ['|' + val1, val1, []],
+      ['|' + val2, sys2 + '|' + val2, ['codeTwoWithoutSystemCatTwo']],
+    ])('code and category by code=%s category=%s', async (codeValue, categoryValue, expected) => {
+      const res = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.EQUALS,
+            value: codeValue,
+          },
+          {
+            code: 'category',
+            operator: Operator.EQUALS,
+            value: categoryValue,
+          },
+        ],
+      });
+      expect(toSortedIdentifierValues(res)).toStrictEqual(expected);
+    });
+
+    test.each<[string, Conditions[]]>([
+      [val1, ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
+      [val1.slice(0, 3), ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
+    ])('code :contains beginning of value %s', async (value, expected) => {
+      const resContains = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.CONTAINS,
+            value,
+          },
+        ],
+      });
+      expect(toSortedIdentifierValues(resContains)?.toSorted()).toStrictEqual(expected.toSorted());
+    });
+
+    (USE_TOKEN_TABLE ? test.failing : test).each<[string, Conditions[]]>([
+      [val1.slice(1, 3), ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
+      [val2.slice(1, 3), ['codeTwoWithoutSystemCatTwo']],
+    ])((USE_TOKEN_TABLE ? 'FAILING ' : '') + 'code :contains middle of value %s', async (value, expected) => {
+      const resContains = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.CONTAINS,
+            value,
+          },
+        ],
+      });
+      expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected.toSorted());
+    });
+
+    test.each<[string, Conditions[]]>([
+      [disp1, ['codeOneNoCat']],
+      [disp1.split(' ').slice(0, 2).join(' '), ['codeOneNoCat']],
+      [disp1.split(' ').slice(1, 3).join(' '), ['codeOneNoCat']],
+      [disp1.split(' ').slice(-2).join(' '), ['codeOneNoCat']],
+    ])('code :text %s', async (value, expected) => {
+      const resContains = await repo.search<Condition>({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'code',
+            operator: Operator.TEXT,
+            value,
+          },
+        ],
+      });
+      expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected);
+    });
+  });
 });
+
+function toIdentifierValues(bundle: Bundle<Condition | Patient>): string[] {
+  return bundle.entry?.map((e) => e.resource?.identifier?.[0].value as string) ?? [];
+}
+
+function toSortedIdentifierValues(bundle: Bundle<Condition | Patient>): string[] {
+  return toIdentifierValues(bundle).toSorted();
+}

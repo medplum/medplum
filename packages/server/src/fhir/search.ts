@@ -47,7 +47,11 @@ import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { Repository } from './repo';
 import { getFullUrl } from './response';
-import { ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
+import {
+  ColumnSearchParameterImplementation,
+  getSearchParameterImplementation,
+  SearchParameterImplementation,
+} from './searchparameter';
 import {
   ArraySubquery,
   Column,
@@ -62,10 +66,13 @@ import {
   periodToRangeString,
   SelectQuery,
   Operator as SQL,
+  SqlBuilder,
   SqlFunction,
   Union,
   ValuesQuery,
 } from './sql';
+import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
+import { getLogger } from '../logger';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -279,6 +286,7 @@ function getSelectQueryForSearch<T extends Resource>(
   return builder;
 }
 
+const DO_EXPLAIN = true;
 /**
  * Returns the bundle entries for a search request.
  * @param repo - The repository.
@@ -291,7 +299,9 @@ async function getSearchEntries<T extends Resource>(
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
 ): Promise<{ entry: BundleEntry<T>[]; rowCount: number; nextResource?: T }> {
+  const startTime = Date.now();
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+  const endTime = Date.now();
   const rowCount = rows.length;
   const resources = rows.map((row) => JSON.parse(row.content as string)) as T[];
   let nextResource: T | undefined;
@@ -315,6 +325,18 @@ async function getSearchEntries<T extends Resource>(
       continue;
     }
     removeResourceFields(entry.resource, repo, searchRequest);
+  }
+
+  const duration = endTime - startTime;
+  if (DO_EXPLAIN) {
+    builder.explain = true;
+    builder.analyzeBuffers = true;
+    const sqlBuilder = new SqlBuilder();
+    builder.buildSql(sqlBuilder);
+    const sql = sqlBuilder.toString();
+    const explainRows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
+    const explain = explainRows.map((row) => row['QUERY PLAN']).join('\n');
+    getLogger().info('Explain search query', { duration, searchRequest, sql, explain });
   }
 
   return {
@@ -939,12 +961,20 @@ function buildSearchFilterExpression(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'lookup-table') {
-    return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+  switch (impl.searchStrategy) {
+    case 'lookup-table': {
+      return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+    }
+    case 'token-column': {
+      return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+    }
+    case 'column': {
+      return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
+    }
+    default:
+      impl satisfies never;
+      throw new Error('Unknown search strategy: ' + (impl as SearchParameterImplementation)?.searchStrategy);
   }
-
-  // Not any special cases, just a normal search parameter.
-  return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
 }
 
 /**
@@ -1354,12 +1384,23 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'lookup-table') {
-    impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
-    return;
+  switch (impl.searchStrategy) {
+    case 'lookup-table': {
+      impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
+      break;
+    }
+    case 'token-column': {
+      addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
+      break;
+    }
+    case 'column': {
+      builder.orderBy(impl.columnName, !!sortRule.descending);
+      break;
+    }
+    default:
+      impl satisfies never;
+      throw new Error('Unknown search strategy: ' + (impl as SearchParameterImplementation)?.searchStrategy);
   }
-
-  builder.orderBy(impl.columnName, !!sortRule.descending);
 }
 
 /**
