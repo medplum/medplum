@@ -12,8 +12,9 @@ import { body, oneOf, validationResult } from 'express-validator';
 import assert from 'node:assert';
 import { asyncWrap } from '../async';
 import { getConfig } from '../config';
-import { getAuthenticatedContext, getLogger } from '../context';
+import { getAuthenticatedContext } from '../context';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
+import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { getRedis } from '../redis';
 
@@ -174,6 +175,8 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
       throw err;
     }
     subscriptionEndpoint = result as string;
+    const endpointTopicKey = `medplum:fhircast:endpoint:${subscriptionEndpoint}:topic`;
+    await getRedis().setnx(endpointTopicKey, `${ctx.project.id as string}:${topic}`);
   } catch (err) {
     sendOutcome(res, serverError(new Error('Failed to get endpoint for topic')));
     getLogger().error(`[FHIRcast]: Received error while retrieving endpoint for topic`, {
@@ -196,7 +199,7 @@ async function handleSubscriptionRequest(req: Request, res: Response): Promise<v
       });
       getRedis()
         .publish(
-          topic,
+          `${ctx.project.id as string}:${topic}`,
           JSON.stringify({
             'hub.mode': 'denied',
             'hub.topic': topic,
@@ -238,7 +241,8 @@ async function handleContextChangeRequest(req: Request, res: Response): Promise<
     // TODO: Make sure this is actually supposed to be stored / overwrite open context? (ambiguous from docs, see: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html)
     await getRedis().set(topicContextKey, stringifiedBody);
   }
-  await getRedis().publish(event['hub.topic'], stringifiedBody);
+  await getRedis().publish(`${ctx.project.id}:${event['hub.topic']}`, stringifiedBody);
+
   res.status(201).json({ success: true, event: body });
 }
 

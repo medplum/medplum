@@ -9,8 +9,9 @@ import {
   ValueSetComposeIncludeFilter,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
-import { getAuthenticatedContext, getLogger } from '../../context';
+import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { getLogger } from '../../logger';
 import {
   Column,
   Condition,

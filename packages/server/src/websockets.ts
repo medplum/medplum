@@ -5,10 +5,11 @@ import http, { IncomingMessage } from 'http';
 import ws from 'ws';
 import { handleAgentConnection } from './agent/websockets';
 import { getConfig } from './config';
-import { RequestContext, requestContextStore } from './context';
+import { RequestContext } from './context';
 import { handleFhircastConnection } from './fhircast/websocket';
 import { globalLogger } from './logger';
 import { getRedis, getRedisSubscriber } from './redis';
+import { requestContextStore } from './request-context-store';
 import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
