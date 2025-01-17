@@ -427,7 +427,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
       for (const column of getSearchParameterColumns(impl)) {
         const existing = tableDefinition.columns.find((c) => c.name === column.name);
         if (existing) {
-          if (!deepEquals(existing, column)) {
+          if (!columnDefinitionsEqual(existing, column)) {
             throw new Error(
               `Search Parameter ${searchParam.id ?? searchParam.code} attempting to define the same column on ${tableDefinition.name} with conflicting types: ${existing.type} vs ${column.type}`
             );
@@ -437,7 +437,7 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
         tableDefinition.columns.push(column);
       }
       for (const index of getSearchParameterIndexes(impl)) {
-        const existing = tableDefinition.indexes.find((i) => deepEquals(i, index));
+        const existing = tableDefinition.indexes.find((i) => indexDefinitionsEqual(i, index));
         if (existing) {
           continue;
         }
