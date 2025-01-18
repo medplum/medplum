@@ -16,12 +16,17 @@ import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { DatabaseMode, getDatabasePool } from '../database';
+import {
+  DatabaseMode,
+  getCurrentDataVersion,
+  getDatabasePool,
+  getPendingDataMigration,
+  maybeStartDataMigration,
+} from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import * as dataMigrations from '../migrations/data';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -217,24 +222,60 @@ superAdminRouter.post(
 // because it will be run automatically by the server upgrade process.
 superAdminRouter.post(
   '/migrate',
+  [body('dataMigration').isInt().withMessage('dataMigration must be an integer').optional()],
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => {
-      const systemRepo = getSystemRepo();
-      const client = getDatabasePool(DatabaseMode.WRITER);
-      const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
-      const version = result.rows[0]?.dataVersion as number;
-      const migrationKeys = Object.keys(dataMigrations);
-      for (let i = version + 1; i <= migrationKeys.length; i++) {
-        const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
-        const start = Date.now();
-        await migration.run(systemRepo);
-        ctx.logger.info('Data migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
-        await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const pendingDataMigration = getPendingDataMigration();
+    if (pendingDataMigration === -1) {
+      sendOutcome(
+        res,
+        badRequest(
+          'Cannot run data migration; config.runMigrations may be false and has prevented schema migrations from running'
+        )
+      );
+      return;
+    }
+
+    // Conditional validation when dataMigration assertion is passed
+    if (req.body.dataMigration !== undefined) {
+      // Assert that we are on the right version of the server
+      const currentDataVersion = getCurrentDataVersion();
+
+      // If asserted data migration is <= the data version we have, we can skip it
+      if (req.body.dataMigration <= currentDataVersion) {
+        sendOutcome(res, allOk);
+        return;
       }
-    });
+
+      // If the asserted version is greater than the pending migration, we can bail
+      if (req.body.dataMigration > pendingDataMigration) {
+        sendOutcome(
+          res,
+          badRequest(
+            `Data migration assertion failed. Expected pending migration to be migration ${req.body.dataMigration}, server has ${pendingDataMigration > 0 ? `current pending data migration ${pendingDataMigration}` : 'no pending data migration'}`
+          )
+        );
+        return;
+      }
+    }
+
+    const { baseUrl } = getConfig();
+    const dataMigrationJob = await maybeStartDataMigration();
+    // If there is no migration job to run, return allOk
+    if (!dataMigrationJob) {
+      sendOutcome(res, allOk);
+      return;
+    }
+    const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
   })
 );
 
