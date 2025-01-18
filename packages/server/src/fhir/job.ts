@@ -10,13 +10,14 @@ import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
 import { sendOutcome } from './outcomes';
 import { sendFhirResponse } from './response';
 
-// Asychronous Job Status API
+// Asynchronous Job Status API
 // https://hl7.org/fhir/async-bundle.html
 
 export const jobRouter = Router();
 
-const finalJobStatusCodes = ['completed', 'error'];
+const finalJobStatusCodes = ['completed', 'error', 'cancelled'];
 
+// Poll job status
 jobRouter.get(
   '/:id/status',
   asyncWrap(async (req: Request, res: Response) => {
@@ -36,6 +37,7 @@ jobRouter.get(
   })
 );
 
+// Cancel job
 jobRouter.delete(
   '/:id/status',
   asyncWrap(async (req: Request, res: Response) => {

@@ -1,30 +1,29 @@
-import { MantineProvider } from '@mantine/core';
 import { Notifications, notifications } from '@mantine/notifications';
-import { allOk } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import { allOk, MedplumClient, OperationOutcomeError, serverError } from '@medplum/core';
+import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
+import { within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { AppRoutes } from '../AppRoutes';
 import { act, fireEvent, render, screen } from '../test-utils/render';
 
-const medplum = new MockClient();
-
-function setup(): void {
+function setup(medplum: MedplumClient): void {
   render(
-    <MedplumProvider medplum={medplum}>
-      <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
-        <MantineProvider>
-          <Notifications />
-          <AppRoutes />
-        </MantineProvider>
-      </MemoryRouter>
-    </MedplumProvider>
+    <MemoryRouter initialEntries={['/admin/super']} initialIndex={0}>
+      <Notifications />
+      <MedplumProvider medplum={medplum}>
+        <AppRoutes />
+      </MedplumProvider>
+    </MemoryRouter>
   );
 }
 
 describe('SuperAdminPage', () => {
+  let medplum: MockClient;
+
   beforeEach(() => {
+    medplum = new MockClient();
     jest.spyOn(medplum, 'isSuperAdmin').mockImplementation(() => true);
   });
 
@@ -33,7 +32,16 @@ describe('SuperAdminPage', () => {
   });
 
   test('Rebuild StructureDefinitions', async () => {
-    setup();
+    setup(medplum);
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      return {
+        resourceType: 'AsyncJob',
+        status: 'completed',
+        request: 'mock-job',
+        requestTime: new Date().toISOString(),
+      } satisfies AsyncJob;
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild StructureDefinitions'));
@@ -43,7 +51,16 @@ describe('SuperAdminPage', () => {
   });
 
   test('Rebuild SearchParameters', async () => {
-    setup();
+    setup(medplum);
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      return {
+        resourceType: 'AsyncJob',
+        status: 'completed',
+        request: 'mock-job',
+        requestTime: new Date().toISOString(),
+      } satisfies AsyncJob;
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild SearchParameters'));
@@ -53,7 +70,16 @@ describe('SuperAdminPage', () => {
   });
 
   test('Rebuild ValueSets', async () => {
-    setup();
+    setup(medplum);
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      return {
+        resourceType: 'AsyncJob',
+        status: 'completed',
+        request: 'mock-job',
+        requestTime: new Date().toISOString(),
+      } satisfies AsyncJob;
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByText('Rebuild ValueSets'));
@@ -63,7 +89,16 @@ describe('SuperAdminPage', () => {
   });
 
   test('Reindex resource type', async () => {
-    setup();
+    setup(medplum);
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      return {
+        resourceType: 'AsyncJob',
+        status: 'completed',
+        request: 'mock-job',
+        requestTime: new Date().toISOString(),
+      } satisfies AsyncJob;
+    });
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Reindex Resource Type'), { target: { value: 'Patient' } });
@@ -76,8 +111,111 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
+  test('Cancel reindex via toast', async () => {
+    setup(medplum);
+
+    let resolve!: () => void;
+    const deferredPromise = new Promise<void>((_resolve) => {
+      resolve = _resolve;
+    });
+
+    jest.spyOn(medplum, 'delete').mockImplementationOnce(async () => {
+      resolve();
+    });
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      await deferredPromise;
+      return {
+        resourceType: 'AsyncJob',
+        status: 'cancelled',
+        request: 'mock-job',
+        requestTime: new Date().toISOString(),
+      } satisfies AsyncJob;
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Reindex Resource Type'), { target: { value: 'Patient' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Reindex'));
+    });
+
+    const alert = screen.getByRole('alert');
+
+    await act(async () => {
+      fireEvent.click(within(alert).getByRole('button'));
+    });
+
+    expect(screen.getByText('Job cancelled')).toBeInTheDocument();
+  });
+
+  test('Reindex cancelled elsewhere', async () => {
+    setup(medplum);
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      return {
+        resourceType: 'AsyncJob',
+        status: 'cancelled',
+        request: 'mock-job',
+        requestTime: new Date().toISOString(),
+      } satisfies AsyncJob;
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Reindex Resource Type'), { target: { value: 'Patient' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Reindex'));
+    });
+
+    expect(screen.getByText('Job cancelled')).toBeInTheDocument();
+  });
+
+  test('Error during reindex', async () => {
+    setup(medplum);
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      return {
+        resourceType: 'AsyncJob',
+        status: 'error',
+        request: 'mock-job',
+        requestTime: new Date().toISOString(),
+      } satisfies AsyncJob;
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Reindex Resource Type'), { target: { value: 'Patient' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Reindex'));
+    });
+
+    expect(screen.getByText('Error while processing job')).toBeInTheDocument();
+  });
+
+  test('Error thrown from startAsyncRequest', async () => {
+    setup(medplum);
+
+    jest.spyOn(medplum, 'startAsyncRequest').mockImplementationOnce(async () => {
+      throw new OperationOutcomeError(serverError(new Error('Error while polling job')));
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Reindex Resource Type'), { target: { value: 'Patient' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Reindex'));
+    });
+
+    expect(screen.getByText('Internal server error (Error: Error while polling job)')).toBeInTheDocument();
+  });
+
   test('Purge resources', async () => {
-    setup();
+    setup(medplum);
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Purge Resource Type'), { target: { value: 'AuditEvent' } });
@@ -95,7 +233,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Remove Bot ID Jobs from Queue', async () => {
-    setup();
+    setup(medplum);
 
     await act(async () => {
       fireEvent.change(screen.getByPlaceholderText('Bot Id'), { target: { value: 'BotId' } });
@@ -109,7 +247,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Force set password', async () => {
-    setup();
+    setup(medplum);
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText('Email *'), { target: { value: 'alice@example.com' } });
@@ -127,7 +265,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Database Stats', async () => {
-    setup();
+    setup(medplum);
 
     medplum.router.add('POST', '$db-stats', async () => {
       return [
@@ -144,7 +282,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Database Stats - Specified table names', async () => {
-    setup();
+    setup(medplum);
 
     medplum.router.add('POST', '$db-stats', async () => {
       return [
@@ -175,7 +313,7 @@ describe('SuperAdminPage', () => {
   });
 
   test('Database Schema Drift', async () => {
-    setup();
+    setup(medplum);
 
     const returnValue = 'This is a fake return value';
     medplum.router.add('POST', '$db-schema-diff', async () => {
@@ -197,7 +335,7 @@ describe('SuperAdminPage', () => {
 
   test('Access denied', async () => {
     jest.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
-    setup();
+    setup(medplum);
     expect(screen.getByText('Forbidden')).toBeInTheDocument();
   });
 });
