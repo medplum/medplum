@@ -54,4 +54,19 @@ describe('ResourceDiffRow', () => {
 
     expect(await screen.queryByText('Homer')).not.toBeInTheDocument();
   });
+
+  test('No code diff - No Expand', async () => {
+    await act(async () => {
+      setup({
+        name: 'Add name',
+        path: 'given',
+        property: undefined,
+        originalValue: { type: 'string', value: 'Bart' },
+        revisedValue: { type: 'string', value: 'Homer' },
+        shouldToggleDisplay: false,
+      });
+    });
+
+    expect(await screen.queryByText('Expand')).not.toBeInTheDocument();
+  });
 });

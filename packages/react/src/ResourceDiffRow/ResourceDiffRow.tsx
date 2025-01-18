@@ -20,10 +20,10 @@ export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
 
   return (
     <>
-      <Table.Tr>
-        <Table.Td>{name}</Table.Td>
-        {(shouldToggleDisplay && !isCollapsed) || !shouldToggleDisplay ? (
-          <>
+      {(shouldToggleDisplay && !isCollapsed) || !shouldToggleDisplay ? (
+        <>
+          <Table.Tr>
+            <Table.Td>{name}</Table.Td>
             <Table.Td className={classes.removed}>
               {originalValue && (
                 <ResourcePropertyDisplay
@@ -46,19 +46,24 @@ export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
                 />
               )}
             </Table.Td>
-          </>
-        ) : (
-          <>
-            <Table.Td />
-            <Table.Td />
-          </>
-        )}
-      </Table.Tr>
-      {shouldToggleDisplay && (
-        <Table.Tr>
-          <Table.Td colSpan={3} style={{ textAlign: 'right' }}>
+          </Table.Tr>
+          {shouldToggleDisplay && (
+            <Table.Tr>
+              <Table.Td></Table.Td>
+              <Table.Td colSpan={2} style={{ textAlign: 'right' }}>
+                <Button onClick={toggleCollapse} variant="light">
+                  Collapse
+                </Button>
+              </Table.Td>
+            </Table.Tr>
+          )}
+        </>
+      ) : (
+        <Table.Tr className={classes.nobordertop}>
+          <Table.Td>{name}</Table.Td>
+          <Table.Td colSpan={2} style={{ textAlign: 'right' }}>
             <Button onClick={toggleCollapse} variant="light">
-              {isCollapsed ? 'Expand' : 'Collapse'}
+              Expand
             </Button>
           </Table.Td>
         </Table.Tr>
