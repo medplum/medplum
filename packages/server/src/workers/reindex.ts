@@ -23,7 +23,6 @@ export type ReindexJobData = {
   readonly results: Record<string, ReindexResult>;
   readonly requestId?: string;
   readonly traceId?: string;
-  readonly version?: string;
 };
 
 type ReindexResult =
