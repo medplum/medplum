@@ -1,8 +1,16 @@
-import { Pool, PoolClient } from 'pg';
-import { MedplumDatabaseConfig, MedplumServerConfig } from './config';
-import { globalLogger } from './logger';
-import * as migrations from './migrations/schema';
 import { sleep } from '@medplum/core';
+import { AsyncJob } from '@medplum/fhirtypes';
+import assert from 'node:assert';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { Pool, PoolClient } from 'pg';
+import * as semver from 'semver';
+import { MedplumDatabaseConfig, MedplumServerConfig } from './config';
+import { getSystemRepo } from './fhir/repo';
+import { globalLogger } from './logger';
+import * as dataMigrations from './migrations/data';
+import * as migrations from './migrations/schema';
+import { getServerVersion } from './util/version';
 
 export enum DatabaseMode {
   READER = 'reader',
@@ -11,6 +19,24 @@ export enum DatabaseMode {
 
 let pool: Pool | undefined;
 let readonlyPool: Pool | undefined;
+let dataVersion = -1;
+let pendingDataMigration = -1;
+
+export function getCurrentDataVersion(): number {
+  return dataVersion;
+}
+
+export function getPendingDataMigration(): number {
+  return pendingDataMigration;
+}
+
+export async function markPendingDataMigrationCompleted(job: AsyncJob): Promise<void> {
+  assert(job.dataVersion);
+  await getDatabasePool(DatabaseMode.WRITER).query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [
+    job.dataVersion,
+  ]);
+  pendingDataMigration = 0;
+}
 
 export function getDatabasePool(mode: DatabaseMode): Pool {
   if (!pool) {
@@ -149,11 +175,53 @@ async function migrate(client: PoolClient): Promise<void> {
     "dataVersion" INTEGER NOT NULL
   )`);
 
-  const result = await client.query('SELECT "version" FROM "DatabaseMigration"');
-  const version = result.rows[0]?.version ?? -1;
+  // This generic type is not technically correct, but leads to the desired forced checks for undefined `version` and `dataVersion`
+  // Technically pg should infer that rows could have zero length, but adding optionality to all fields forces handling the undefined case when the row is empty
+  const result = await client.query<{ version?: number; dataVersion?: number }>(
+    'SELECT "version", "dataVersion" FROM "DatabaseMigration"'
+  );
+  let version = result.rows[0]?.version ?? -1;
+  dataVersion = result.rows[0]?.dataVersion ?? -1;
+  const allDataVersions = getMigrationVersions(dataMigrations);
+  pendingDataMigration = 0;
 
+  // If this is the first time the server has been started up (version < 0)
+  // We need to initialize our migrations table
+  // This also opts us into the fast path for data migrations, so we can skip all checks for server version and go straight to the latest data version
   if (version < 0) {
-    await client.query('INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, 0)');
+    const latestDataVersion = allDataVersions[allDataVersions.length - 1] ?? 0;
+    await client.query(`INSERT INTO "DatabaseMigration" ("id", "version", "dataVersion") VALUES (1, 0, $1)`, [
+      latestDataVersion,
+    ]);
+    version = 0;
+    dataVersion = latestDataVersion;
+  } else if (allDataVersions.includes(dataVersion + 1)) {
+    // Before migrating, check if we have pending data migrations to apply
+    // We have to check these first since they depend on particular versions of the server code to be present in order
+    // To ensure that the migration is applied before at a particular point in time before the version that requires it
+    pendingDataMigration = dataVersion + 1;
+
+    const manifest = JSON.parse(
+      readFileSync(resolve(__dirname, 'migrations/data/data-version-manifest.json'), { encoding: 'utf-8' })
+    ) as Record<string, { serverVersion: string }>;
+    const requiredServerVersion = manifest['v' + pendingDataMigration].serverVersion;
+
+    const serverVersion = getServerVersion();
+
+    // TODO(ThatOneBro 16 Dec 2024): Make this version strict after v4 (exact version only)
+    // ----  We made this requirement looser so that self-hosters can run first migration on any version within the minor version before v4
+
+    // We allow any version where the data migration is present and it less than the required version
+    // To run the migration, as we can assume that after the data migration is added, any version between the migration being present
+    // And the minor release that it is supposed to be run in will have the capacity to safely run the migration
+    if (!semver.satisfies(serverVersion, `<${semver.inc(requiredServerVersion, 'minor')}`)) {
+      throw new Error(
+        `Unable to run data migration against the current server version. Migration requires server at version ${requiredServerVersion}, but current server version is ${serverVersion}`
+      );
+    }
+
+    globalLogger.info('Data migration ready to run', { dataVersion: pendingDataMigration });
+    // If we make it here, we have a pending migration, but we don't want to apply it until we make sure we apply all the schema migrations first
   }
 
   const migrationKeys = Object.keys(migrations);
@@ -166,4 +234,19 @@ async function migrate(client: PoolClient): Promise<void> {
       await client.query('UPDATE "DatabaseMigration" SET "version"=$1', [i]);
     }
   }
+}
+
+function getMigrationVersions(migrationModule: Record<string, any>): number[] {
+  const prefixedVersions = Object.keys(migrationModule).filter((key) => key.startsWith('v'));
+  const migrationVersions = prefixedVersions.map((key) => Number.parseInt(key.slice(1), 10)).sort((a, b) => a - b);
+  return migrationVersions;
+}
+
+export async function maybeStartDataMigration(): Promise<AsyncJob | undefined> {
+  const systemRepo = getSystemRepo();
+  if (!pendingDataMigration) {
+    return undefined;
+  }
+  const dataMigration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
+  return dataMigration.run(systemRepo);
 }
