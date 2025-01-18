@@ -1,5 +1,6 @@
 import {
   createReference,
+  Filter,
   getReferenceString,
   LOINC,
   normalizeErrorString,
@@ -3128,10 +3129,14 @@ describe('FHIR Search', () => {
         expect(bundleContains(bundle2, task2)).not.toBeTruthy();
       }));
 
-    test('Resource search params', () =>
-      withTestContext(async () => {
-        const patientIdentifier = randomUUID();
-        const patient = await repo.createResource<Patient>({
+    describe('Resource meta search params', () => {
+      let patientIdentifier: string;
+      let patient: Patient;
+      let identifierFilter: Filter;
+
+      beforeAll(async () => {
+        patientIdentifier = randomUUID();
+        patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
           identifier: [{ system: 'http://example.com', value: patientIdentifier }],
           meta: {
@@ -3141,64 +3146,77 @@ describe('FHIR Search', () => {
             tag: [{ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' }],
           },
         });
-        const identifierFilter = {
+        identifierFilter = {
           code: 'identifier',
           operator: Operator.EQUALS,
           value: patientIdentifier,
         };
+      });
 
-        const bundle1 = await repo.search({
-          resourceType: 'Patient',
-          filters: [
-            identifierFilter,
-            {
-              code: '_profile',
-              operator: Operator.EQUALS,
-              value: 'http://example.com/fhir/a-patient-profile',
-            },
-          ],
-        });
-        expect(bundleContains(bundle1, patient)).toBeTruthy();
+      test('Search by identifier', () =>
+        withTestContext(async () => {
+          const bundle1 = await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              identifierFilter,
+              {
+                code: '_profile',
+                operator: Operator.EQUALS,
+                value: 'http://example.com/fhir/a-patient-profile',
+              },
+            ],
+          });
+          expect(bundleContains(bundle1, patient)).toBeTruthy();
+        }));
 
-        const bundle2 = await repo.search({
-          resourceType: 'Patient',
-          filters: [
-            identifierFilter,
-            {
-              code: '_security',
-              operator: Operator.EQUALS,
-              value: 'http://hl7.org/fhir/v3/Confidentiality|N',
-            },
-          ],
-        });
-        expect(bundleContains(bundle2, patient)).toBeTruthy();
+      test('Search by _security', () =>
+        withTestContext(async () => {
+          const bundle2 = await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              identifierFilter,
+              {
+                code: '_security',
+                operator: Operator.EQUALS,
+                value: 'http://hl7.org/fhir/v3/Confidentiality|N',
+              },
+            ],
+          });
+          expect(bundleContains(bundle2, patient)).toBeTruthy();
+        }));
 
-        const bundle3 = await repo.search({
-          resourceType: 'Patient',
-          filters: [
-            identifierFilter,
-            {
-              code: '_source',
-              operator: Operator.EQUALS,
-              value: 'http://example.org',
-            },
-          ],
-        });
-        expect(bundleContains(bundle3, patient)).toBeTruthy();
+      test('Search by _source', () =>
+        withTestContext(async () => {
+          const bundle3 = await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              identifierFilter,
+              {
+                code: '_source',
+                operator: Operator.EQUALS,
+                value: 'http://example.org',
+              },
+            ],
+          });
+          expect(bundleContains(bundle3, patient)).toBeTruthy();
+        }));
 
-        const bundle4 = await repo.search({
-          resourceType: 'Patient',
-          filters: [
-            identifierFilter,
-            {
-              code: '_tag',
-              operator: Operator.EQUALS,
-              value: 'http://hl7.org/fhir/v3/ObservationValue|SUBSETTED',
-            },
-          ],
-        });
-        expect(bundleContains(bundle4, patient)).toBeTruthy();
-      }));
+      test('Search by _tag', () =>
+        withTestContext(async () => {
+          const bundle4 = await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              identifierFilter,
+              {
+                code: '_tag',
+                operator: Operator.EQUALS,
+                value: 'http://hl7.org/fhir/v3/ObservationValue|SUBSETTED',
+              },
+            ],
+          });
+          expect(bundleContains(bundle4, patient)).toBeTruthy();
+        }));
+    });
 
     test('Token :text search', () =>
       withTestContext(async () => {
@@ -4557,6 +4575,55 @@ describe('FHIR Search', () => {
             parseSearchRequest(`Task?identifier=${identifier}&_sort=_lastUpdated&_cursor=${v2Cursor}`)
           );
           expect(bundleContains(bundle2, task)).toBeUndefined();
+        }));
+    });
+
+    describe('Quantity search', () => {
+      beforeAll(async () => {
+        for (const weight of [70, 75, 80, 85, 90]) {
+          await repo.createResource<Observation>({
+            resourceType: 'Observation',
+            status: 'final',
+            code: { coding: [{ code: '29463-7' }] },
+            valueQuantity: {
+              value: weight,
+              unit: 'kg',
+              system: 'http://unitsofmeasure.org',
+              code: 'kg',
+            },
+          });
+        }
+      });
+
+      test('Basic', async () =>
+        withTestContext(async () => {
+          const result = await repo.search(
+            parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=gt80')
+          );
+          expect(result.entry).toHaveLength(2);
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 90)).toBeDefined();
+        }));
+
+      test('With units', async () =>
+        withTestContext(async () => {
+          const result = await repo.search(
+            parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=gt80|http://unitsofmeasure.org|kg')
+          );
+          expect(result.entry).toHaveLength(2);
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 90)).toBeDefined();
+        }));
+
+      test('Approximately', async () =>
+        withTestContext(async () => {
+          const result = await repo.search(
+            parseSearchRequest<Observation>('Observation?code=29463-7&value-quantity=ap80|http://unitsofmeasure.org|kg')
+          );
+          expect(result.entry).toHaveLength(3);
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 75)).toBeDefined();
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 80)).toBeDefined();
+          expect(result.entry?.find((e) => e.resource?.valueQuantity?.value === 85)).toBeDefined();
         }));
     });
   });

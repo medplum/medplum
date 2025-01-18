@@ -23,6 +23,9 @@ spec:
         {{- with .Values.podLabels }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
+        {{- if (eq .Values.global.cloudProvider "azure") }}
+        azure.workload.identity/use: "true"
+        {{- end }}
     spec:
       {{- with .Values.deployment.imagePullSecrets }}
       imagePullSecrets:
@@ -45,6 +48,9 @@ spec:
             {{- if (eq .Values.global.cloudProvider "gcp") }}
             - "gcp:{{ .Values.global.gcp.projectId }}:{{ .Values.global.gcp.secretId }}"
             {{- end }}
+            {{- if (eq .Values.global.cloudProvider "azure") }}
+            - "azure:{{ .Values.global.azure.keyVaultURL }}:{{ .Values.global.azure.secretName }}"
+            {{- end }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort | default 8103 }}
@@ -53,15 +59,15 @@ spec:
             httpGet:
               path: /healthcheck
               port: {{ .Values.service.targetPort | default 8103 }}
+              initialDelaySeconds: 60
           readinessProbe:
             httpGet:
               path: /healthcheck
               port: {{ .Values.service.targetPort | default 8103 }}
+          env:
+            {{- toYaml .Values.deployment.env | nindent 12 }}
           resources:
-            limits:
-              memory: "512Mi"
-            requests:
-              memory: "256Mi"
+            {{- toYaml .Values.deployment.resources | nindent 12 }}
           {{- with .Values.volumeMounts }}
           volumeMounts:
             {{- toYaml . | nindent 12 }}

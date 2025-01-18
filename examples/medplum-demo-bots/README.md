@@ -25,6 +25,8 @@ To set up your bot deployment you will need to do the following:
 - Create a .env file locally by copying `.env.example` and putting the `ClientId` and `ClientSecret` from the `ClientApplication` into the file.
 - (Optional) Create an [AccessPolicy](<(https://app.medplum.com/AccessPolicy)>) on Medplum that can only read/write Bots and add it to the Bot in the [admin panel](https://app.medplum.com/admin/project).
 
+Medplum bots can also be created, edited, and deployed entirely from the medplum app. See [creating a bot](https://www.medplum.com/docs/bots/bot-basics#creating-a-bot)
+
 ## Installation
 
 To run and deploy your Bot do the following steps:
@@ -50,7 +52,7 @@ npm t
 Deploy one bot:
 
 ```bash
-npx medplum deploy-bot sample-account-setup
+npx medplum bot deploy sample-account-setup
 ```
 
 You will see the following in your command prompt if all goes well:

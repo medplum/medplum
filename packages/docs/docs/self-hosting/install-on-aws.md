@@ -193,6 +193,10 @@ If you are using Route 53 as your DNS service, we recommend you select `dns` met
 
 Then, follow [these instructions](https://docs.aws.amazon.com/acm/latest/userguide/dns-validation.html#setting-up-dns-validation) from AWS to finish the validation process.
 
+:::tip
+After creating records in Route 53, you may have to wait for your certificate in AWS Certificate Manager to change from `Pending validation` to `Issued` state before deploying. If the state doesn't change to `Issued` in 30 minutes, check on the status of your domain. AWS will reject your deploy without a fully-qualified domain for the certificate.
+:::
+
 ### CDK Bootstrap
 
 Bootstrapping is the process of provisioning resources for the AWS CDK before you can deploy AWS CDK apps into an AWS environment.

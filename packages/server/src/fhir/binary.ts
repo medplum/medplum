@@ -4,12 +4,13 @@ import { Request, Response, Router } from 'express';
 import { Readable } from 'stream';
 import zlib from 'zlib';
 import { asyncWrap } from '../async';
-import { getAuthenticatedContext, getLogger } from '../context';
+import { getAuthenticatedContext } from '../context';
+import { getLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { sendOutcome } from './outcomes';
+import { Repository } from './repo';
 import { sendFhirResponse } from './response';
 import { BinarySource, getBinaryStorage } from './storage';
-import { Repository } from './repo';
 
 const DEFAULT_CONTENT_TYPE = 'application/octet-stream';
 

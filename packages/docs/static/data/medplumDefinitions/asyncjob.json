@@ -255,6 +255,22 @@
       "definition": "The type of the AsyncJob.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "dataVersion",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "integer"
+        }
+      ],
+      "path": "AsyncJob.dataVersion",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The data version of the migration this job represents.",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [

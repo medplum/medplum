@@ -2,7 +2,7 @@ import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, ser
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
-import { getLogger } from '../context';
+import { getLogger } from '../logger';
 
 const DEBUG = env['SQL_DEBUG'];
 
@@ -450,6 +450,9 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
       // Statement timeout -> 504 Gateway Timeout
       getLogger().warn('Database statement timeout', { error: err.message, stack: err.stack, code: err.code });
       return new OperationOutcomeError(serverTimeout(err.message));
+    case '25P02': // in_failed_sql_transaction
+      getLogger().warn('Statement in failed transaction', { stack: err.stack });
+      return new OperationOutcomeError(normalizeOperationOutcome(err));
   }
 
   getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });

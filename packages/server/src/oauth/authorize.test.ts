@@ -56,6 +56,7 @@ describe('OAuth Authorize', () => {
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(400);
+    expect(res.text).toBe('Client not found');
   });
 
   test('Wrong redirect', async () => {
@@ -69,6 +70,7 @@ describe('OAuth Authorize', () => {
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(400);
+    expect(res.text).toBe('Incorrect redirect_uri');
   });
 
   test('Invalid response_type', async () => {
@@ -422,5 +424,48 @@ describe('OAuth Authorize', () => {
 
     const res = await request(app).post('/oauth2/authorize').send(params.toString());
     expect(res.status).toBe(400);
+  });
+
+  test('Missing ClientApplication.redirectUri', async () => {
+    const client = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      secret: randomUUID(),
+      meta: { project: project.id as string },
+      name: 'Test Client Application',
+    });
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: 'https://example2.com',
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+    });
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Client has no redirect URI');
+  });
+
+  test('Invalid ClientApplication.redirectUri', async () => {
+    const client = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      secret: randomUUID(),
+      meta: { project: project.id as string },
+      name: 'Test Client Application',
+      redirectUri: 'invalid',
+    });
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: 'https://example2.com',
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+    });
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Invalid redirect URI');
   });
 });

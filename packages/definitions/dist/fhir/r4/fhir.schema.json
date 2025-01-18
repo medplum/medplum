@@ -61099,6 +61099,10 @@
         "type": {
           "description": "The type of the AsyncJob.",
           "enum": ["data-migration"]
+        },
+        "dataVersion": {
+          "description": "The data version of the migration this job represents.",
+          "$ref": "#/definitions/integer"
         }
       },
       "additionalProperties": false,
