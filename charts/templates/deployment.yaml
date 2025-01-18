@@ -7,7 +7,7 @@ metadata:
     {{- include "medplum.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.deployment.autoscaling.enabled }}
-  replicas: {{ default 1 .Values.replicaCount }}
+  replicas: {{ default 1 .Values.deployment.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
@@ -40,17 +40,8 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.deployment.image.repository }}:{{ .Values.deployment.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: IfNotPresent
-          command:
-            - "node"
-            - "--require"
-            - "./packages/server/dist/otel/instrumentation.js"
-            - "packages/server/dist/index.js"
-            {{- if (eq .Values.global.cloudProvider "gcp") }}
-            - "gcp:{{ .Values.global.gcp.projectId }}:{{ .Values.global.gcp.secretId }}"
-            {{- end }}
-            {{- if (eq .Values.global.cloudProvider "azure") }}
-            - "azure:{{ .Values.global.azure.keyVaultURL }}:{{ .Values.global.azure.secretName }}"
-            {{- end }}
+          args:
+            - {{ .Values.medplum.configSource.type | quote }}
           ports:
             - name: http
               containerPort: {{ .Values.service.targetPort | default 8103 }}
