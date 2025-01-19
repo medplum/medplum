@@ -1,5 +1,7 @@
 
 # Azure 
+project             = "medplum"
+environment         = "codytest"
 resource_group_name = "medplum"
 location            = "eastus2"
 tags = {

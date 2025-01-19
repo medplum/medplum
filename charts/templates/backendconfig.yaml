@@ -9,10 +9,6 @@ metadata:
 spec:
   securityPolicy:
     name: ingress-security-policy
-  cdn:
-    enabled: true
-    cachePolicy:
-      includeHost: true
   healthCheck:
     checkIntervalSec: 30
     timeoutSec: 10

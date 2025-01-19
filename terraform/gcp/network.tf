@@ -6,7 +6,6 @@
 # - Adjust the subnet configurations as needed to fit the specific requirements of your environment.
 # - Apply the Terraform configuration to create and manage the VPC network.
 
-
 ## VPC
 module "vpc" {
   source  = "terraform-google-modules/network/google"

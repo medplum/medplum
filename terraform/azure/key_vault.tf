@@ -38,7 +38,6 @@ resource "azurerm_key_vault_access_policy" "current_user" {
   ]
 }
 
-
 resource "azurerm_key_vault" "medplum_vault" {
   location                      = var.location
   name                          = "${random_string.key_vault_prefix.result}-medplum-keyvault"
