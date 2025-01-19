@@ -1,10 +1,8 @@
-resource "random_id" "cdn_random_id" {
-  byte_length = 2
-}
+# Azure Storage Account configuration for Medplum app.
 
 # Storage Account to host static content
-resource "azurerm_storage_account" "sa" {
-  name                     = "medplumapp${random_id.cdn_random_id.hex}"
+resource "azurerm_storage_account" "frontend" {
+  name                     = "${var.project}${var.environment}frontend"
   resource_group_name      = var.resource_group_name
   location                 = var.location
   account_tier             = "Standard"
@@ -14,22 +12,18 @@ resource "azurerm_storage_account" "sa" {
     index_document     = "index.html"
     error_404_document = "index.html"
   }
-
-  depends_on = [
-    azurerm_resource_group.rg,
-  ]
 }
 
 # Front Door Profile
 resource "azurerm_cdn_frontdoor_profile" "fd_profile" {
-  name                = "${azurerm_storage_account.sa.name}-fdprofile"
+  name                = "${var.project}${var.environment}fd"
   resource_group_name = var.resource_group_name
   sku_name            = "Standard_AzureFrontDoor"
 }
 
 # Front Door Origin Group
 resource "azurerm_cdn_frontdoor_origin_group" "fd_origin_group" {
-  name                     = "${azurerm_storage_account.sa.name}-origingroup"
+  name                     = "${var.project}${var.environment}origingroup"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd_profile.id
 
   load_balancing {
@@ -47,24 +41,23 @@ resource "azurerm_cdn_frontdoor_origin_group" "fd_origin_group" {
 
 # Front Door Origin
 resource "azurerm_cdn_frontdoor_origin" "fd_storage_origin" {
-  name                           = "${azurerm_storage_account.sa.name}-origin"
+  name                           = "${var.project}${var.environment}origin"
   cdn_frontdoor_origin_group_id  = azurerm_cdn_frontdoor_origin_group.fd_origin_group.id
-  host_name                      = azurerm_storage_account.sa.primary_web_host
-  origin_host_header             = azurerm_storage_account.sa.primary_web_host
+  host_name                      = azurerm_storage_account.frontend.primary_web_host
+  origin_host_header             = azurerm_storage_account.frontend.primary_web_host
   certificate_name_check_enabled = false
   enabled                        = true
 }
 
 # Front Door Endpoint
 resource "azurerm_cdn_frontdoor_endpoint" "fd_endpoint" {
-  name                     = "${azurerm_storage_account.sa.name}-endpoint"
+  name                     = "${var.project}${var.environment}endpoint"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd_profile.id
 }
 
-
 # Front Door Route
 resource "azurerm_cdn_frontdoor_route" "fd_route" {
-  name                          = "${azurerm_storage_account.sa.name}-route"
+  name                          = "${var.project}${var.environment}route"
   cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.fd_endpoint.id
   cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.fd_origin_group.id
   cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.fd_storage_origin.id]
@@ -80,30 +73,16 @@ resource "azurerm_cdn_frontdoor_route" "fd_route" {
   }
 
   cdn_frontdoor_custom_domain_ids = [azurerm_cdn_frontdoor_custom_domain.fd_custom_domain.id]
-
-  depends_on = [azurerm_cdn_frontdoor_origin_group.fd_origin_group]
 }
 
 resource "azurerm_cdn_frontdoor_custom_domain" "fd_custom_domain" {
-  name                     = "${azurerm_storage_account.sa.name}-domain"
+  name                     = "${var.project}${var.environment}domain"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd_profile.id
   host_name                = var.app_domain
 
   tls {
-    cdn_frontdoor_secret_id = azurerm_cdn_frontdoor_secret.fd_custom_secret.id
-    certificate_type        = "CustomerCertificate"
-    minimum_tls_version     = "TLS12"
-  }
-}
-
-resource "azurerm_cdn_frontdoor_secret" "fd_custom_secret" {
-  name                     = "${azurerm_storage_account.sa.name}-secret"
-  cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd_profile.id
-
-  secret {
-    customer_certificate {
-      key_vault_certificate_id = var.app_certificate_secret_id
-    }
+    certificate_type    = "ManagedCertificate" # This is the key change
+    minimum_tls_version = "TLS12"
   }
 }
 

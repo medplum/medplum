@@ -1,0 +1,11 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "medplum.fullname" . }}-cert
+spec:
+  secretName: medplum-cert  # This matches ssl_certificate_name in Application Gateway
+  dnsNames:
+    - {{ .Values.ingress.domain }}
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer

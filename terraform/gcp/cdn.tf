@@ -31,7 +31,6 @@ module "medplum-lb-https" {
   address                         = google_compute_global_address.elb_external_ip.address
   create_address                  = false
 
-
   backends = {
     default = {
       protocol    = "HTTP"
@@ -125,7 +124,6 @@ resource "google_compute_backend_bucket" "apps_bucket" {
   # Attach the security policy
   edge_security_policy = google_compute_security_policy.edge_security_policy.self_link
 }
-
 
 resource "google_compute_global_address" "elb_external_ip" {
   name         = "medplum-cdn-ip"

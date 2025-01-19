@@ -26,13 +26,10 @@ If you have any questions, please [contact us](mailto:hello@medplum.com) or [joi
 
 To deploy Medplum in Azure, the process is divided into two parts:
 
-- Static Infrastructure (using terraform)
-- Medplum App (helm chart)
+- Static Infrastructure (using Terraform)
+- Medplum App (using Helm chart)
 
-This division allows a fully customizable deployment, for example: if a customer wants to use an existing K8s cluster, they can just deploy the helm chart to it.
-
-The Medplum application is configured using a secret in Azure KeyVault.  
-See [Generate Configuration Secret](#generate-configuration-secret)
+This division allows a fully customizable deployment, for example: if a customer wants to use an existing Kubernetes cluster, they can just deploy the Helm chart to it.
 
 ### Azure Architecture {#azure-architecture}
 

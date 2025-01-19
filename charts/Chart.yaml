@@ -33,14 +33,12 @@ maintainers:
     url: https://www.medplum.com
     email: support@medplum.com
 
-# Optional dependencies would go here
-# dependencies:
-#   - name: cert-manager
-#     version: "^1.0.0"
-#     repository: https://charts.jetstack.io
-#     condition: certificates.useCertManager
-#     tags:
-#       - optional
+dependencies:
+  - name: cert-manager
+    version: v1.16.2
+    repository: https://charts.jetstack.io
+    alias: cert-manager
+    condition: cert-manager.enabled
 
 annotations:
   artifacthub.io/license: Apache-2.0

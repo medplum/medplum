@@ -25,7 +25,6 @@ labels = {
   owner   = "your-owner"       # e.g., "team-name", "project-owner"
 }
 
-
 ## Default Buckets configuration
 gcs_buckets = {
   medplum-storage = { # Bucket name

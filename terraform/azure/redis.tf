@@ -1,11 +1,13 @@
+# Azure Redis Cache configuration for Medplum.
+# Sets up a private Redis instance required for:
+# - FHIR resource caching
+# - BullMQ job queue management
+# Includes private DNS and endpoints for secure access.
 
 resource "azurerm_private_dns_zone" "redis" {
   name                = "redis.private.redis.cache.azure.com"
   resource_group_name = var.resource_group_name
-
-  depends_on = [
-    azurerm_resource_group.rg,
-  ]
+  depends_on          = [azurerm_resource_group.rg]
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "redis-medplum-vnet" {
@@ -16,21 +18,21 @@ resource "azurerm_private_dns_zone_virtual_network_link" "redis-medplum-vnet" {
 }
 
 resource "azurerm_redis_cache" "medplum_cache" {
-  name                 = "medplum-redis-cache"
-  location             = var.location
-  resource_group_name  = var.resource_group_name
-  capacity             = 2
-  family               = "C"
-  sku_name             = "Standard"
+  name                = "medplum-redis-cache"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+
+  # Performance settings
+  capacity = var.redis_capacity
+  family   = var.redis_family
+  sku_name = var.redis_sku_name
+
+  # Security settings
   non_ssl_port_enabled = false
   minimum_tls_version  = "1.2"
-
-  redis_configuration {
-  }
 }
 
 resource "azurerm_private_endpoint" "redis" {
-  count               = 1
   name                = "medplum-redis"
   resource_group_name = var.resource_group_name
   location            = var.location
@@ -49,10 +51,10 @@ resource "azurerm_private_dns_a_record" "redis_record" {
   zone_name           = azurerm_private_dns_zone.redis.name
   resource_group_name = var.resource_group_name
   ttl                 = 300
-  records             = [azurerm_private_endpoint.redis[0].private_service_connection[0].private_ip_address]
+  records             = [azurerm_private_endpoint.redis.private_service_connection[0].private_ip_address]
 }
 
 output "redis_hostname" {
-  description = "The hostname of the Redis Cache"
+  description = "Redis Cache hostname for Medplum server configuration"
   value       = azurerm_redis_cache.medplum_cache.hostname
 }

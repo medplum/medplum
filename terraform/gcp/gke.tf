@@ -8,7 +8,6 @@
 # - Apply the Terraform configuration to create and manage the GKE cluster.
 # - Monitor the cluster's performance and adjust settings as needed to optimize resource usage and security.
 
-
 # google_client_config and kubernetes provider must be explicitly specified like the following.
 data "google_client_config" "default" {}
 

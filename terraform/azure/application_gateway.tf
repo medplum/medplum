@@ -1,3 +1,6 @@
+# Application Gateway configuration for Medplum API server.
+# Provides HTTPS termination and load balancing for the AKS cluster.
+
 resource "azurerm_public_ip" "medplum_app" {
   name                = "medplum-app-ip"
   resource_group_name = var.resource_group_name
@@ -26,9 +29,16 @@ resource "azurerm_application_gateway" "medplum_appgw" {
     subnet_id = azurerm_subnet.medplum_appgw_subnet.id
   }
 
+  # HTTP port (for redirect)
   frontend_port {
-    name = "medplum-frontend-port"
+    name = "http"
     port = 80
+  }
+
+  # HTTPS port
+  frontend_port {
+    name = "https"
+    port = 443
   }
 
   frontend_ip_configuration {
@@ -42,31 +52,59 @@ resource "azurerm_application_gateway" "medplum_appgw" {
 
   backend_http_settings {
     name                  = "medplum-http-settings"
-    cookie_based_affinity = "Enabled"
-    # path                  = "/path1/"
-    port            = 80
-    protocol        = "Http"
-    request_timeout = 60
+    cookie_based_affinity = "Disabled" # Medplum is stateless
+    port                  = 80
+    protocol              = "Http"
+    request_timeout       = 60
   }
 
+  # HTTP Listener
   http_listener {
-    name                           = "medplum-listener"
+    name                           = "http-listener"
     frontend_ip_configuration_name = "medplum-frontend-ip"
-    frontend_port_name             = "medplum-frontend-port"
+    frontend_port_name             = "http"
     protocol                       = "Http"
   }
 
+  # HTTPS Listener
+  http_listener {
+    name                           = "https-listener"
+    frontend_ip_configuration_name = "medplum-frontend-ip"
+    frontend_port_name             = "https"
+    protocol                       = "Https"
+    ssl_certificate_name           = "medplum-cert" # Will be managed by cert-manager
+  }
+
+  # Redirect HTTP to HTTPS
+  redirect_configuration {
+    name                 = "http-to-https"
+    redirect_type        = "Permanent"
+    target_listener_name = "https-listener"
+    include_path         = true
+    include_query_string = true
+  }
+
+  # HTTP to HTTPS redirect rule
   request_routing_rule {
-    name                       = "medplum-rule"
-    priority                   = 9
+    name                        = "http-to-https-rule"
+    priority                    = 1
+    rule_type                   = "Basic"
+    http_listener_name          = "http-listener"
+    redirect_configuration_name = "http-to-https"
+  }
+
+  # Main routing rule for HTTPS
+  request_routing_rule {
+    name                       = "https-rule"
+    priority                   = 2
     rule_type                  = "Basic"
-    http_listener_name         = "medplum-listener"
+    http_listener_name         = "https-listener"
     backend_address_pool_name  = "medplum-backend-pool"
     backend_http_settings_name = "medplum-http-settings"
   }
 
   lifecycle {
-    # these are properties managed by Kubernetes
+    # these are properties managed by Kubernetes/cert-manager
     ignore_changes = [
       tags,
       backend_address_pool,
@@ -76,7 +114,8 @@ resource "azurerm_application_gateway" "medplum_appgw" {
       request_routing_rule,
       url_path_map,
       frontend_port,
-      ssl_certificate
+      ssl_certificate,
+      redirect_configuration
     ]
   }
 }
