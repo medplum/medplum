@@ -1,11 +1,14 @@
+import { getStatus, OperationOutcomeError } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
+import * as semver from 'semver';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo, Repository } from '../fhir/repo';
-import { getStatus, OperationOutcomeError } from '@medplum/core';
+import { getServerVersion } from '../util/version';
 
 export interface LongJobData {
   asyncJob: AsyncJob;
+  minServerVersion?: string;
 }
 
 const inProgressJobStatus: AsyncJob['status'][] = ['accepted', 'active'];
@@ -52,6 +55,13 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
   }
 
   async execute(job: Job<TData>): Promise<void> {
+    // When version is asserted, we should check that we are on a version greater than or equal to that version
+    if (job.data.minServerVersion && semver.lt(getServerVersion(), job.data.minServerVersion)) {
+      // Since we can't handle this ourselves, re-enqueue the job for another worker that can
+      await this.enqueueJob(job.data);
+      return;
+    }
+
     const canStart = await this.checkJobStatus(job);
     if (!canStart) {
       // Job is not in-progress, terminate early

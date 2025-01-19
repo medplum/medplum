@@ -271,6 +271,22 @@
       "definition": "The data version of the migration this job represents.",
       "comment": "",
       "inherited": false
+    },
+    {
+      "name": "minServerVersion",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "AsyncJob.minServerVersion",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The minimum Medplum server version required to run this job.",
+      "comment": "",
+      "inherited": false
     }
   ],
   "searchParameters": [

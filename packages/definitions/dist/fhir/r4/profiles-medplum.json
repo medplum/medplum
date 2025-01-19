@@ -5438,6 +5438,21 @@
             "type" : [{
               "code" : "integer"
             }]
+          },
+          {
+            "id" : "AsyncJob.minServerVersion",
+            "path" : "AsyncJob.minServerVersion",
+            "definition" : "The minimum Medplum server version required to run this job.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.minServerVersion",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
+            }]
           }
         ]
       }

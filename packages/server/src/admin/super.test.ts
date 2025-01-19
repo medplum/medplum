@@ -1,13 +1,15 @@
-import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
-import { Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { accepted, allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
+import { AsyncJob, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
-import { randomUUID } from 'crypto';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { AuthenticatedRequestContext } from '../context';
+import * as database from '../database';
+import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
@@ -540,17 +542,199 @@ describe('Super Admin routes', () => {
     await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
   });
 
-  test('Run data migrations', async () => {
-    const res1 = await request(app)
-      .post('/admin/super/migrate')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .set('Prefer', 'respond-async')
-      .type('json')
-      .send({});
+  describe('Data migrations', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
 
-    expect(res1.status).toStrictEqual(202);
-    expect(res1.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+    test('Run data migrations -- Already up-to-date', async () => {
+      // 0 means no pending migration
+      const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => 0);
+      const maybeStartDataMigrationSpy = jest
+        .spyOn(database, 'maybeStartDataMigration')
+        .mockImplementation(async () => undefined);
+
+      const res1 = await request(app)
+        .post('/admin/super/migrate')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({});
+
+      expect(res1.status).toStrictEqual(200);
+      expect(res1.headers['content-location']).not.toBeDefined();
+      expect(res1.body).toMatchObject(allOk);
+      expect(maybeStartDataMigrationSpy).toHaveBeenCalledTimes(1);
+      expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
+    });
+
+    test('Run data migrations -- Migrate fn did not run', async () => {
+      // We return -1 from `getPendingDataMigration` only when `migrate` didn't run (`config.runMigrations` === false, presumably), which initializes it to 0
+      const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => -1);
+
+      const res1 = await request(app)
+        .post('/admin/super/migrate')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({});
+
+      expect(res1.status).toStrictEqual(400);
+      expect(res1.headers['content-location']).not.toBeDefined();
+      expect(res1.body).toMatchObject(
+        badRequest(
+          'Cannot run data migration; config.runMigrations may be false and has prevented schema migrations from running'
+        )
+      );
+      expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
+    });
+
+    test('Run data migrations -- Migrations to run or already running', async () => {
+      const res1 = await request(app)
+        .post('/fhir/R4/AsyncJob')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .type('json')
+        .send({
+          resourceType: 'AsyncJob',
+          status: 'accepted',
+          request: 'mock-job',
+          requestTime: new Date().toISOString(),
+        } satisfies AsyncJob);
+
+      expect(res1.status).toStrictEqual(201);
+      expect(res1.body).toBeDefined();
+
+      const asyncJob: AsyncJob = res1.body;
+
+      const maybeStartDataMigrationSpy = jest
+        .spyOn(database, 'maybeStartDataMigration')
+        .mockImplementation(async () => asyncJob);
+
+      const res2 = await request(app)
+        .post('/admin/super/migrate')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({});
+
+      expect(res2.status).toStrictEqual(202);
+      expect(res2.headers['content-location']).toBeDefined();
+
+      setTimeout(async () => {
+        const exec = new AsyncJobExecutor(getSystemRepo(), asyncJob);
+        await exec.completeJob(getSystemRepo());
+      }, 250);
+
+      await waitForAsyncJob(res2.headers['content-location'], app, adminAccessToken);
+      expect(maybeStartDataMigrationSpy).toHaveBeenCalledTimes(1);
+    });
+
+    describe('Data version asserted', () => {
+      test('Run data migrations -- invalid dataMigration asserted', async () => {
+        const res1 = await request(app)
+          .post('/admin/super/migrate')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ dataMigration: true });
+
+        expect(res1.status).toStrictEqual(400);
+        expect(res1.headers['content-location']).not.toBeDefined();
+        expect(res1.body).toMatchObject(badRequest('dataMigration must be an integer'));
+      });
+
+      test('Run data migrations -- Matching data version', async () => {
+        const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => 1);
+        const maybeStartDataMigrationSpy = jest
+          .spyOn(database, 'maybeStartDataMigration')
+          .mockImplementation(async () => ({
+            resourceType: 'AsyncJob',
+            status: 'accepted',
+            requestTime: new Date().toISOString(),
+            request: 'mock-job',
+          }));
+
+        const res1 = await request(app)
+          .post('/admin/super/migrate')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ dataMigration: 1 });
+
+        expect(res1.status).toStrictEqual(202);
+        expect(res1.headers['content-location']).toBeDefined();
+        expect(res1.body).toMatchObject(accepted(res1.headers['content-location']));
+        expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
+        expect(maybeStartDataMigrationSpy).toHaveBeenCalledTimes(1);
+      });
+
+      test('Run data migrations -- Asserted version is less than or equal to current version', async () => {
+        const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => 0);
+        const getCurrentDataVersionSpy = jest.spyOn(database, 'getCurrentDataVersion').mockImplementation(() => 1);
+        const maybeStartDataMigrationSpy = jest.spyOn(database, 'maybeStartDataMigration');
+
+        const res1 = await request(app)
+          .post('/admin/super/migrate')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ dataMigration: 1 });
+
+        expect(res1.status).toStrictEqual(200);
+        expect(res1.headers['content-location']).not.toBeDefined();
+        expect(res1.body).toMatchObject(allOk);
+        expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
+        expect(getCurrentDataVersionSpy).toHaveBeenCalledTimes(1);
+        expect(maybeStartDataMigrationSpy).not.toHaveBeenCalled();
+      });
+
+      test('Run data migrations -- Asserted version is greater than current data version AND not the pending version', async () => {
+        const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => 0);
+        const getCurrentDataVersionSpy = jest.spyOn(database, 'getCurrentDataVersion').mockImplementation(() => 1);
+        const maybeStartDataMigrationSpy = jest.spyOn(database, 'maybeStartDataMigration');
+
+        const res1 = await request(app)
+          .post('/admin/super/migrate')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ dataMigration: 2 });
+
+        expect(res1.status).toStrictEqual(400);
+        expect(res1.headers['content-location']).not.toBeDefined();
+        expect(res1.body).toMatchObject(
+          badRequest(
+            'Data migration assertion failed. Expected pending migration to be migration 2, server has no pending data migration'
+          )
+        );
+        expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
+        expect(getCurrentDataVersionSpy).toHaveBeenCalledTimes(1);
+        expect(maybeStartDataMigrationSpy).not.toHaveBeenCalled();
+
+        jest.clearAllMocks();
+
+        getPendingDataMigrationSpy.mockImplementation(() => 1);
+        getCurrentDataVersionSpy.mockImplementation(() => 0);
+
+        const res2 = await request(app)
+          .post('/admin/super/migrate')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ dataMigration: 2 });
+
+        expect(res2.status).toStrictEqual(400);
+        expect(res2.headers['content-location']).not.toBeDefined();
+        expect(res2.body).toMatchObject(
+          badRequest(
+            'Data migration assertion failed. Expected pending migration to be migration 2, server has current pending data migration 1'
+          )
+        );
+        expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
+        expect(getCurrentDataVersionSpy).toHaveBeenCalledTimes(1);
+        expect(maybeStartDataMigrationSpy).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe('Table settings', () => {
