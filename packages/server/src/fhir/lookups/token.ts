@@ -97,7 +97,7 @@ export class TokenTable extends LookupTable {
     const values = tokens.map((token) => ({
       resourceId,
       code: token.code,
-      system: token.system?.trim(),
+      system: token.system?.trim?.(),
       value: token.value?.trim?.(),
     }));
 
