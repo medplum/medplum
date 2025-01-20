@@ -26,7 +26,6 @@ export const EncounterChart = (): JSX.Element => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
         <Paper p="lg" radius="md" withBorder>
           <Stack gap="md">
-            
             <Stack gap="md">
               <Text size="xl" fw={500}>
                 FILL CHART NOTE
@@ -86,14 +85,15 @@ export const EncounterChart = (): JSX.Element => {
                   >
                     <Stack gap={0}>
                       <Text color="black">Current status</Text>
-                      <Text fw="bold" color="black">Completed</Text>
+                      <Text fw="bold" color="black">
+                        Completed
+                      </Text>
                     </Stack>
 
                     <Group gap={8}>
-                      <Button 
-                      variant="transparent"
-                      color={theme.colors.blue[6]}
-                      >Task details</Button>
+                      <Button variant="transparent" color={theme.colors.blue[6]}>
+                        Task details
+                      </Button>
                       <Menu>
                         <Menu.Target>
                           <Button>Edit task ▾</Button>
@@ -111,15 +111,15 @@ export const EncounterChart = (): JSX.Element => {
               <Card withBorder shadow="sm" p={0}>
                 <Stack gap="xs">
                   <Stack gap="xs" p="md">
-                  <Text fw={500} size="lg">
-                    ORDER LAB TESTS
-                  </Text>
-                  <Text>
-                    Create new lab order in <Anchor href="#">Labs section</Anchor>, then complete this task
-                  </Text>
-                  <Text fw={500} color="green">
-                    Lab order created successfully
-                  </Text>
+                    <Text fw={500} size="lg">
+                      ORDER LAB TESTS
+                    </Text>
+                    <Text>
+                      Create new lab order in <Anchor href="#">Labs section</Anchor>, then complete this task
+                    </Text>
+                    <Text fw={500} color="green">
+                      Lab order created successfully
+                    </Text>
                   </Stack>
 
                   <Group
@@ -130,14 +130,15 @@ export const EncounterChart = (): JSX.Element => {
                   >
                     <Stack gap={0}>
                       <Text color="black">Current status</Text>
-                      <Text fw="bold" color="black">In progress</Text>
+                      <Text fw="bold" color="black">
+                        In progress
+                      </Text>
                     </Stack>
 
                     <Group gap={8}>
-                      <Button 
-                      variant="transparent"
-                      color={theme.colors.blue[6]}
-                      >Task details</Button>
+                      <Button variant="transparent" color={theme.colors.blue[6]}>
+                        Task details
+                      </Button>
                       <Menu>
                         <Menu.Target>
                           <Button>Edit task ▾</Button>
@@ -152,7 +153,6 @@ export const EncounterChart = (): JSX.Element => {
                 </Stack>
               </Card>
             </Stack>
-
           </Stack>
         </Paper>
 
@@ -186,7 +186,7 @@ export const EncounterChart = (): JSX.Element => {
             <Select placeholder="1 hour" data={['30 minutes', '1 hour', '2 hours']} />
           </div>
 
-          <Stack gap="md" >
+          <Stack gap="md">
             <Button color="blue" fullWidth>
               Save changes
             </Button>
