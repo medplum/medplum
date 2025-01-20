@@ -16,9 +16,42 @@ FHIR allows users to create batch requests to bundle multiple API calls into a s
 If you want to create a copy of a project, say for a new environment, this can be done using the `$clone` operation rather than by creating a batch request. For more details [see the Projects guide](/docs/access/projects#cloning-and-expunging-projects).
 :::
 
-## How to Perform a Batch Request
+## Batches vs Transactions
 
-Batch requests are modeled using the `Bundle` resource by setting `Bundle.type` to `"batch"`.
+When bundling multiple operations together, FHIR provides two modes of operation controlled by the `Bundle.type` field:
+
+- `batch`: Each operation in the bundle is processed independently. Some operations may succeed while others fail. This is useful when the operations are not dependent on each other.
+- `transaction`: All operations in the bundle are processed atomically - either all operations succeed, or none of them do. This ensures data consistency when operations are dependent on each other.
+
+Here's a simple example showing the difference:
+
+```typescript
+// Batch example - operations processed independently
+const batchBundle = {
+  resourceType: 'Bundle',
+  type: 'batch',
+  entry: [
+    /* operations */
+  ],
+};
+
+// Transaction example - operations processed atomically
+const transactionBundle = {
+  resourceType: 'Bundle',
+  type: 'transaction',
+  entry: [
+    /* operations */
+  ],
+};
+```
+
+:::caution Transaction Support
+Transaction support requires the `transaction-bundles` feature flag to be enabled on your project. Contact Medplum to enable this feature.
+
+The transaction feature is currently in beta. You may experience `429 conflict` errors when attempting transactions. If this occurs, implement retry logic in your client to handle these errors and retry the transaction until it succeeds.
+:::
+
+## How to Perform a Batch Request
 
 Batch requests are performed by sending a POST request to `[baseURL]/` with a FHIR Bundle. The Medplum SDK provides the `executeBatch` helper function to simplify this operation.
 
@@ -66,10 +99,6 @@ The details of your request will be in the `entry` field of the `Bundle`, which 
     {ExampleCode}
   </MedplumCodeBlock>
 </details>
-
-:::danger Batch vs Transaction
-Medplum does not currently distinguish between `'batch'` and `'transaction'` type [`Bundle`](/docs/api/fhir/resources/bundle) resources and does not provide atomic transactions. This is currently being worked on, and you can track progress on the issue [here](https://github.com/medplum/medplum/issues/1369).
-:::
 
 ### Asynchronous Batch Requests
 
