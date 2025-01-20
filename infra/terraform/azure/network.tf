@@ -15,14 +15,14 @@ resource "azurerm_subnet" "medplum_aks_nodes_snet_01" {
   name                 = "${local.resource_prefix}-aks-nodes-sn"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.server_vnet.name
-  address_prefixes     = [var.subnet_prefixes.aks_nodes]
+  address_prefixes     = [var.aks_nodes_subnet_cidr]
 }
 
 resource "azurerm_subnet" "medplum_aks_pods_snet_01" {
   name                 = "${local.resource_prefix}-aks-pods-sn"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.server_vnet.name
-  address_prefixes     = [var.subnet_prefixes.aks_pods]
+  address_prefixes     = [var.aks_pods_subnet_cidr]
   delegation {
     name = "aks-delegation"
     service_delegation {
@@ -38,7 +38,7 @@ resource "azurerm_subnet" "medplum_db_snet_01" {
   name                 = "${local.resource_prefix}-db-sn"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.server_vnet.name
-  address_prefixes     = [var.subnet_prefixes.db]
+  address_prefixes     = [var.db_subnet_cidr]
   service_endpoints    = ["Microsoft.Storage"]
   delegation {
     name = "fs"
@@ -55,6 +55,6 @@ resource "azurerm_subnet" "medplum_redis_snet_01" {
   name                 = "${local.resource_prefix}-redis-sn"
   resource_group_name  = azurerm_resource_group.rg.name
   virtual_network_name = azurerm_virtual_network.server_vnet.name
-  address_prefixes     = [var.subnet_prefixes.redis]
+  address_prefixes     = [var.redis_subnet_cidr]
 }
 
