@@ -2,9 +2,9 @@
 # Creates a general-purpose v2 storage account and container for storing
 # binary content (documents, images, videos, etc.)
 
-resource "azurerm_storage_account" "app_storage_account" {
-  name                = "medplum${random_id.prefix.hex}"
-  resource_group_name = var.resource_group_name
+resource "azurerm_storage_account" "storage_account" {
+  name                = "${local.account_name_prefix}storage"
+  resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
 
   account_kind             = "StorageV2"
@@ -27,19 +27,19 @@ resource "azurerm_storage_account" "app_storage_account" {
 resource "azurerm_storage_container" "content" {
   name                  = "content"
   container_access_type = "private"
-  storage_account_id    = azurerm_storage_account.app_storage_account.id
+  storage_account_id    = azurerm_storage_account.storage_account.id
 }
 
 # Private networking configuration
 resource "azurerm_private_endpoint" "storage" {
   name                = "medplum-storage"
-  resource_group_name = var.resource_group_name
+  resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
   subnet_id           = azurerm_subnet.medplum_db_snet_01.id
 
   private_service_connection {
     name                           = "medplum-storage"
-    private_connection_resource_id = azurerm_storage_account.app_storage_account.id
+    private_connection_resource_id = azurerm_storage_account.storage_account.id
     is_manual_connection           = false
     subresource_names              = ["blob"]
   }

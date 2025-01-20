@@ -6,21 +6,20 @@
 
 resource "azurerm_private_dns_zone" "redis" {
   name                = "redis.private.redis.cache.azure.com"
-  resource_group_name = var.resource_group_name
-  depends_on          = [azurerm_resource_group.rg]
+  resource_group_name = azurerm_resource_group.rg.name
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "redis-medplum-vnet" {
-  name                  = "medplum-redis"
+resource "azurerm_private_dns_zone_virtual_network_link" "redis" {
+  name                  = "${local.resource_prefix}-redis-vnet-link"
   private_dns_zone_name = azurerm_private_dns_zone.redis.name
-  resource_group_name   = var.resource_group_name
-  virtual_network_id    = azurerm_virtual_network.medplum_vnet.id
+  resource_group_name   = azurerm_resource_group.rg.name
+  virtual_network_id    = azurerm_virtual_network.server_vnet.id
 }
 
-resource "azurerm_redis_cache" "medplum_cache" {
-  name                = "medplum-redis-cache"
+resource "azurerm_redis_cache" "redis" {
+  name                = "${local.resource_prefix}-redis-cache"
   location            = var.location
-  resource_group_name = var.resource_group_name
+  resource_group_name = azurerm_resource_group.rg.name
 
   # Performance settings
   capacity = var.redis_capacity
@@ -33,28 +32,28 @@ resource "azurerm_redis_cache" "medplum_cache" {
 }
 
 resource "azurerm_private_endpoint" "redis" {
-  name                = "medplum-redis"
-  resource_group_name = var.resource_group_name
+  name                = "${local.resource_prefix}-redis"
+  resource_group_name = azurerm_resource_group.rg.name
   location            = var.location
   subnet_id           = azurerm_subnet.medplum_redis_snet_01.id
 
   private_service_connection {
-    name                           = "medplum-redis"
-    private_connection_resource_id = azurerm_redis_cache.medplum_cache.id
+    name                           = "${local.resource_prefix}-redis-connection"
+    private_connection_resource_id = azurerm_redis_cache.redis.id
     is_manual_connection           = false
     subresource_names              = ["redisCache"]
   }
 }
 
 resource "azurerm_private_dns_a_record" "redis_record" {
-  name                = azurerm_redis_cache.medplum_cache.name
+  name                = "${local.resource_prefix}-redis-record"
   zone_name           = azurerm_private_dns_zone.redis.name
-  resource_group_name = var.resource_group_name
+  resource_group_name = azurerm_resource_group.rg.name
   ttl                 = 300
   records             = [azurerm_private_endpoint.redis.private_service_connection[0].private_ip_address]
 }
 
 output "redis_hostname" {
   description = "Redis Cache hostname for Medplum server configuration"
-  value       = azurerm_redis_cache.medplum_cache.hostname
+  value       = azurerm_redis_cache.redis.hostname
 }

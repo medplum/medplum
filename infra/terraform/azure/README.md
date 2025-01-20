@@ -55,3 +55,14 @@ terraform apply
 - `redis_host`: The hostname for the Redis cache
 - `storage_account_name`: The name of the storage account
 - `app_gateway_fqdn`: The fully qualified domain name for the Application Gateway
+
+## Azure Provider Version
+
+This implementation uses Azure Provider (azurerm) version 4.x, which was released in June 2023. While version 3.x is still supported, we chose 4.x for new deployments because it:
+
+- Aligns with current Azure best practices
+- Provides access to newer Azure features
+- Offers longer future support
+- Is fully production-ready
+
+We use the v4-compatible versions of modules (for example, `Azure/aks/azurerm//v4`) to ensure proper compatibility with the provider version.
