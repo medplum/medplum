@@ -6,6 +6,7 @@ import { Pool } from 'pg';
 import { DatabaseMode, getDatabasePool } from './database';
 import { RecordMetricOptions, setGauge } from './otel/otel';
 import { getRedis } from './redis';
+import { getCronQueue } from './workers/cron';
 import { getSubscriptionQueue } from './workers/subscription';
 
 const hostname = os.hostname();
@@ -78,6 +79,12 @@ export async function healthcheckHandler(_req: Request, res: Response): Promise<
   if (subscriptionQueue) {
     setGauge('medplum.subscription.waitingCount', await subscriptionQueue.getWaitingCount());
     setGauge('medplum.subscription.delayedCount', await subscriptionQueue.getDelayedCount());
+  }
+
+  const cronQueue = getCronQueue();
+  if (cronQueue) {
+    setGauge('medplum.cron.waitingCount', await cronQueue.getWaitingCount());
+    setGauge('medplum.cron.delayedCount', await cronQueue.getDelayedCount());
   }
 
   res.json({
