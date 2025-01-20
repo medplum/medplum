@@ -7,15 +7,15 @@
 
 resource "azurerm_private_dns_zone" "db" {
   name                = "db.private.postgres.database.azure.com"
-  resource_group_name = var.resource_group_name
+  resource_group_name = azurerm_resource_group.rg.name
   depends_on          = [azurerm_resource_group.rg]
 }
 
-resource "azurerm_private_dns_zone_virtual_network_link" "db-medplum-vnet" {
-  name                  = "medplum-db"
+resource "azurerm_private_dns_zone_virtual_network_link" "db" {
+  name                  = "${local.resource_prefix}-db-vnet-link"
   private_dns_zone_name = azurerm_private_dns_zone.db.name
-  resource_group_name   = var.resource_group_name
-  virtual_network_id    = azurerm_virtual_network.medplum_vnet.id
+  resource_group_name   = azurerm_resource_group.rg.name
+  virtual_network_id    = azurerm_virtual_network.server_vnet.id
 }
 
 resource "random_password" "postgresql_password" {
@@ -25,14 +25,14 @@ resource "random_password" "postgresql_password" {
 }
 
 resource "azurerm_postgresql_flexible_server" "db" {
-  name                = "medplum-db"
+  name                = "${local.resource_prefix}-db"
   location            = var.location
-  resource_group_name = var.resource_group_name
+  resource_group_name = azurerm_resource_group.rg.name
 
   # Network settings
   delegated_subnet_id           = azurerm_subnet.medplum_db_snet_01.id
   private_dns_zone_id           = azurerm_private_dns_zone.db.id
-  public_network_access_enabled = false
+  public_network_access_enabled = true
 
   # Performance settings
   sku_name          = var.postgresql_sku_name

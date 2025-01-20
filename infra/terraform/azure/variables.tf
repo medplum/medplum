@@ -33,10 +33,10 @@ variable "app_domain" {
   default = null
 }
 
-variable "app_certificate_secret_id" {
-  type    = string
-  default = null
-}
+# variable "app_certificate_secret_id" {
+#   type    = string
+#   default = null
+# }
 
 variable "vnet_address_space" {
   description = "Address space for the Virtual Network"
@@ -54,6 +54,18 @@ variable "subnet_prefixes" {
     db        = "10.52.4.0/24"
     redis     = "10.52.6.0/24"
   }
+}
+
+variable "service_cidr" {
+  description = "CIDR for Kubernetes Services"
+  type        = string
+  default     = "10.52.8.0/24"
+}
+
+variable "dns_service_ip" {
+  description = "IP address for Kubernetes DNS inside the service_cidr"
+  type        = string
+  default     = "10.52.8.10"
 }
 
 variable "postgresql_sku_name" {
@@ -118,11 +130,29 @@ variable "storage_allowed_origins" {
 
 output "storage_account_name" {
   description = "Storage account name for configuration"
-  value       = azurerm_storage_account.app_storage_account.name
+  value       = azurerm_storage_account.frontend_account.name
 }
 
 output "storage_account_key" {
   description = "Primary access key for storage account"
-  value       = azurerm_storage_account.app_storage_account.primary_access_key
+  value       = azurerm_storage_account.frontend_account.primary_access_key
   sensitive   = true
+}
+
+variable "aks_node_size" {
+  description = "The size of the AKS nodes (e.g., Standard_D2_v2, Standard_D4_v2)"
+  type        = string
+  default     = "Standard_D2_v2"
+}
+
+variable "aks_node_count" {
+  description = "The number of nodes in the AKS cluster"
+  type        = number
+  default     = 1
+}
+
+variable "aks_default_pool_name" {
+  description = "The name of the default node pool"
+  type        = string
+  default     = "default"
 }

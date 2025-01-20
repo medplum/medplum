@@ -1,29 +1,29 @@
 # Azure Storage Account configuration for Medplum app.
 
 # Storage Account to host static content
-resource "azurerm_storage_account" "frontend" {
-  name                     = "${var.project}${var.environment}frontend"
-  resource_group_name      = var.resource_group_name
+resource "azurerm_storage_account" "frontend_account" {
+  name                     = "${local.account_name_prefix}frontend"
+  resource_group_name      = azurerm_resource_group.rg.name
   location                 = var.location
   account_tier             = "Standard"
   account_replication_type = "LRS"
 
-  static_website {
-    index_document     = "index.html"
-    error_404_document = "index.html"
-  }
+  # static_website {
+  #   index_document     = "index.html"
+  #   error_404_document = "index.html"
+  # }
 }
 
 # Front Door Profile
 resource "azurerm_cdn_frontdoor_profile" "fd_profile" {
-  name                = "${var.project}${var.environment}fd"
-  resource_group_name = var.resource_group_name
+  name                = "${local.resource_prefix}-frontend-profile"
+  resource_group_name = azurerm_resource_group.rg.name
   sku_name            = "Standard_AzureFrontDoor"
 }
 
 # Front Door Origin Group
 resource "azurerm_cdn_frontdoor_origin_group" "fd_origin_group" {
-  name                     = "${var.project}${var.environment}origingroup"
+  name                     = "${local.resource_prefix}-frontend-origin-group"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd_profile.id
 
   load_balancing {
@@ -41,23 +41,23 @@ resource "azurerm_cdn_frontdoor_origin_group" "fd_origin_group" {
 
 # Front Door Origin
 resource "azurerm_cdn_frontdoor_origin" "fd_storage_origin" {
-  name                           = "${var.project}${var.environment}origin"
+  name                           = "${local.resource_prefix}-frontend-origin"
   cdn_frontdoor_origin_group_id  = azurerm_cdn_frontdoor_origin_group.fd_origin_group.id
-  host_name                      = azurerm_storage_account.frontend.primary_web_host
-  origin_host_header             = azurerm_storage_account.frontend.primary_web_host
+  host_name                      = azurerm_storage_account.frontend_account.primary_web_host
+  origin_host_header             = azurerm_storage_account.frontend_account.primary_web_host
   certificate_name_check_enabled = false
   enabled                        = true
 }
 
 # Front Door Endpoint
 resource "azurerm_cdn_frontdoor_endpoint" "fd_endpoint" {
-  name                     = "${var.project}${var.environment}endpoint"
+  name                     = "${local.resource_prefix}-frontend-endpoint"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd_profile.id
 }
 
 # Front Door Route
 resource "azurerm_cdn_frontdoor_route" "fd_route" {
-  name                          = "${var.project}${var.environment}route"
+  name                          = "${local.resource_prefix}-frontend-route"
   cdn_frontdoor_endpoint_id     = azurerm_cdn_frontdoor_endpoint.fd_endpoint.id
   cdn_frontdoor_origin_group_id = azurerm_cdn_frontdoor_origin_group.fd_origin_group.id
   cdn_frontdoor_origin_ids      = [azurerm_cdn_frontdoor_origin.fd_storage_origin.id]
@@ -76,13 +76,12 @@ resource "azurerm_cdn_frontdoor_route" "fd_route" {
 }
 
 resource "azurerm_cdn_frontdoor_custom_domain" "fd_custom_domain" {
-  name                     = "${var.project}${var.environment}domain"
+  name                     = "${local.resource_prefix}-frontend-domain"
   cdn_frontdoor_profile_id = azurerm_cdn_frontdoor_profile.fd_profile.id
   host_name                = var.app_domain
 
   tls {
-    certificate_type    = "ManagedCertificate" # This is the key change
-    minimum_tls_version = "TLS12"
+    certificate_type = "ManagedCertificate"
   }
 }
 

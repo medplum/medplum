@@ -2,26 +2,26 @@
 # with separate subnets for: AKS nodes, AKS pods, Application Gateway,
 # PostgreSQL database, and Redis cache.
 
-resource "azurerm_virtual_network" "medplum_vnet" {
+resource "azurerm_virtual_network" "server_vnet" {
+  name                = "${local.resource_prefix}-server-vnet"
   address_space       = var.vnet_address_space
   location            = var.location
-  name                = "medplum-vnet"
-  resource_group_name = var.resource_group_name
+  resource_group_name = azurerm_resource_group.rg.name
 
   depends_on = [azurerm_resource_group.rg]
 }
 
 resource "azurerm_subnet" "medplum_aks_nodes_snet_01" {
-  name                 = "medplum-aks-nodes-sn"
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.medplum_vnet.name
+  name                 = "${local.resource_prefix}-aks-nodes-sn"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.server_vnet.name
   address_prefixes     = [var.subnet_prefixes.aks_nodes]
 }
 
 resource "azurerm_subnet" "medplum_aks_pods_snet_01" {
-  name                 = "medplum-aks-pods-sn"
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.medplum_vnet.name
+  name                 = "${local.resource_prefix}-aks-pods-sn"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.server_vnet.name
   address_prefixes     = [var.subnet_prefixes.aks_pods]
   delegation {
     name = "aks-delegation"
@@ -34,18 +34,10 @@ resource "azurerm_subnet" "medplum_aks_pods_snet_01" {
   }
 }
 
-resource "azurerm_subnet" "medplum_appgw_subnet" {
-  name                 = "medplum-appgw-sn"
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.medplum_vnet.name
-  address_prefixes     = [var.subnet_prefixes.appgw]
-
-}
-
 resource "azurerm_subnet" "medplum_db_snet_01" {
-  name                 = "medplum-db-sn"
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.medplum_vnet.name
+  name                 = "${local.resource_prefix}-db-sn"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.server_vnet.name
   address_prefixes     = [var.subnet_prefixes.db]
   service_endpoints    = ["Microsoft.Storage"]
   delegation {
@@ -60,9 +52,9 @@ resource "azurerm_subnet" "medplum_db_snet_01" {
 }
 
 resource "azurerm_subnet" "medplum_redis_snet_01" {
-  name                 = "medplum-redis-sn"
-  resource_group_name  = var.resource_group_name
-  virtual_network_name = azurerm_virtual_network.medplum_vnet.name
+  name                 = "${local.resource_prefix}-redis-sn"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.server_vnet.name
   address_prefixes     = [var.subnet_prefixes.redis]
 }
 
