@@ -1,6 +1,6 @@
-import { allOk, getReferenceString, Operator, sortStringArray } from '@medplum/core';
+import { allOk, getReferenceString, Operator, sortStringArray, findReferences } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Bundle, CompartmentDefinitionResource, Patient, ResourceType } from '@medplum/fhirtypes';
+import { Bundle, CompartmentDefinitionResource, Patient, ResourceType, Resource } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
@@ -53,6 +53,7 @@ export async function getPatientEverything(
   patient: Patient,
   params?: PatientEverythingParameters
 ): Promise<Bundle> {
+  // First get all compartment resources
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
   const types = resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
   types.push('Patient');
@@ -74,11 +75,76 @@ export async function getPatientEverything(
     });
   }
 
-  return repo.search({
+  // Get initial bundle of compartment resources
+  const initialBundle = await repo.search({
     resourceType: 'Patient',
     types,
     filters,
     count: params?._count ?? defaultMaxResults,
     offset: params?._offset,
   });
+
+  // Get all resources from the bundle
+  const resources = initialBundle.entry?.map(e => e.resource) ?? [];
+  
+  // Recursively resolve all references
+  const resolvedResources = await resolveReferences(repo, resources);
+  
+  // Create new bundle with all resolved resources
+  return {
+    resourceType: 'Bundle',
+    type: 'searchset',
+    entry: resolvedResources.map(resource => ({
+      resource,
+      fullUrl: `${resource.resourceType}/${resource.id}`,
+    })),
+    total: resolvedResources.length,
+  };
+}
+
+/**
+ * Recursively resolves all references in the given resources.
+ * @param repo - The repository.
+ * @param resources - The initial resources to process.
+ * @param processedRefs - Set of already processed reference strings (internal use).
+ * @returns Array of all resolved resources.
+ */
+async function resolveReferences(
+  repo: Repository,
+  resources: Resource[],
+  processedRefs: Set<string> = new Set()
+): Promise<Resource[]> {
+  const result = new Set<Resource>();
+  const toProcess = [...resources];
+
+  while (toProcess.length > 0) {
+    const resource = toProcess.pop()!;
+    const refString = getReferenceString(resource);
+    
+    if (processedRefs.has(refString)) {
+      continue;
+    }
+    
+    result.add(resource);
+    processedRefs.add(refString);
+
+    // Find all references in the resource
+    const references = findReferences(resource);
+    
+    // Resolve each reference
+    for (const ref of references) {
+      if (ref.reference && !processedRefs.has(ref.reference)) {
+        try {
+          const [resourceType, id] = ref.reference.split('/');
+          const referencedResource = await repo.readResource(resourceType as ResourceType, id);
+          toProcess.push(referencedResource);
+        } catch (error) {
+          // Skip references that can't be resolved
+          console.warn('Failed to resolve reference:', ref.reference);
+        }
+      }
+    }
+  }
+
+  return Array.from(result);
 }
