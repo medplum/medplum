@@ -44,16 +44,52 @@ variable "vnet_address_space" {
   default     = ["10.52.0.0/16"]
 }
 
-variable "subnet_prefixes" {
-  description = "Address prefixes for subnets"
-  type        = map(string)
-  default = {
-    aks_nodes = "10.52.1.0/24"
-    aks_pods  = "10.52.200.0/22"
-    appgw     = "10.52.0.0/24"
-    db        = "10.52.4.0/24"
-    redis     = "10.52.6.0/24"
-  }
+# variable "subnet_prefixes" {
+#   description = "Address prefixes for subnets"
+#   type        = map(string)
+#   default = {
+#     aks_nodes = "10.52.1.0/24"
+#     aks_pods  = "10.52.200.0/22"
+#     appgw     = "10.52.0.0/24"
+#     db        = "10.52.4.0/24"
+#     redis     = "10.52.6.0/24"
+#   }
+# }
+
+variable "aks_nodes_subnet_cidr" {
+  description = "CIDR for AKS nodes subnet"
+  type        = string
+  default     = "10.52.1.0/24"
+}
+
+variable "aks_pods_subnet_cidr" {
+  description = "CIDR for AKS pods subnet"
+  type        = string
+  default     = "10.52.200.0/22"
+}
+
+variable "appgw_subnet_cidr" {
+  description = "CIDR for Application Gateway subnet"
+  type        = string
+  default     = "10.52.0.0/24"
+}
+
+variable "db_subnet_cidr" {
+  description = "CIDR for Database subnet"
+  type        = string
+  default     = "10.52.4.0/24"
+}
+
+variable "redis_subnet_cidr" {
+  description = "CIDR for Redis subnet"
+  type        = string
+  default     = "10.52.6.0/24"
+}
+
+variable "pod_cidr" {
+  description = "CIDR for Kubernetes Pods (overlay network)"
+  type        = string
+  default     = "192.168.0.0/16"
 }
 
 variable "service_cidr" {
@@ -63,10 +99,22 @@ variable "service_cidr" {
 }
 
 variable "dns_service_ip" {
-  description = "IP address for Kubernetes DNS inside the service_cidr"
+  description = "IP address for Kubernetes DNS service"
   type        = string
   default     = "10.52.8.10"
 }
+
+# variable "service_cidr" {
+#   description = "CIDR for Kubernetes Services"
+#   type        = string
+#   default     = "10.52.8.0/24"
+# }
+
+# variable "dns_service_ip" {
+#   description = "IP address for Kubernetes DNS inside the service_cidr"
+#   type        = string
+#   default     = "10.52.8.10"
+# }
 
 variable "postgresql_sku_name" {
   description = "SKU name for PostgreSQL server"

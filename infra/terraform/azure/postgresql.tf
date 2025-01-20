@@ -82,7 +82,7 @@ output "postgresql_password" {
   sensitive = true
 }
 
-output "postgresql_fqdn" {
+output "postgresql_host" {
   description = "PostgreSQL server fully qualified domain name"
   value       = format("%s.postgres.database.azure.com", azurerm_postgresql_flexible_server.db.name)
 }
