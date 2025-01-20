@@ -126,7 +126,7 @@ describe('Cron Worker', () => {
       });
 
       expect(bot).toBeDefined();
-      expect(queue.getRepeatableJobs).toHaveBeenCalled();
+      expect(queue.removeJobScheduler).toHaveBeenCalled();
       expect(queue.add).toHaveBeenCalledTimes(2);
     }));
 
@@ -140,15 +140,9 @@ describe('Cron Worker', () => {
       });
 
       expect(bot).toBeDefined();
-      expect(queue.getRepeatableJobs).toHaveBeenCalled();
+      expect(queue.removeJobScheduler).toHaveBeenCalled();
       expect(queue.add).toHaveBeenCalled();
 
-      queue.getRepeatableJobs.mockImplementation(() => [
-        {
-          key: `CronJobData:${bot.id}:::* * * * *`,
-          id: bot.id,
-        },
-      ]);
       await botRepo.updateResource({
         resourceType: 'Bot',
         id: bot.id,
@@ -160,7 +154,7 @@ describe('Cron Worker', () => {
         },
       });
 
-      expect(queue.removeRepeatableByKey).toHaveBeenCalled();
+      expect(queue.removeJobScheduler).toHaveBeenCalled();
     }));
 
   test('Job should not be in queue if cron is not enabled', () =>
