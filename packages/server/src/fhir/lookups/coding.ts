@@ -1,9 +1,9 @@
 import { append } from '@medplum/core';
-import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
 import { CodeSystem, CodeSystemConcept, CodeSystemConceptProperty, Coding, Resource } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
+import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
-import { DeleteQuery } from '../sql';
+import { Column, DeleteQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 
 /**
@@ -44,22 +44,18 @@ export class CodingTable extends LookupTable {
    * @param resource - The resource to delete.
    */
   async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
-    const deletedCodes = await new DeleteQuery('Coding')
-      .where('system', '=', resource.id)
-      .returnColumn('id')
-      .execute(client);
+    // Delete CodeSystem_Property entries
     await new DeleteQuery('CodeSystem_Property').where('system', '=', resource.id).execute(client);
-    if (deletedCodes.length) {
-      for (let i = 0; i < deletedCodes.length; i += 500) {
-        await new DeleteQuery('Coding_Property')
-          .where(
-            'coding',
-            'IN',
-            deletedCodes.slice(i, i + 500).map((c) => c.id)
-          )
-          .execute(client);
-      }
-    }
+
+    // Delete Coding_Property entries with a join
+    await new DeleteQuery('Coding_Property')
+      .using('Coding')
+      .where(new Column('Coding_Property', 'coding'), '=', new Column('Coding', 'id'))
+      .where(new Column('Coding', 'system'), '=', resource.id)
+      .execute(client);
+
+    // Delete Coding entries
+    await new DeleteQuery('Coding').where('system', '=', resource.id).execute(client);
   }
 
   private getCodeSystemElements(codeSystem: CodeSystem): { concepts: Coding[]; properties: ImportedProperty[] } {
