@@ -97,7 +97,7 @@ export class TokenTable extends LookupTable {
     const values = tokens.map((token) => ({
       resourceId,
       code: token.code,
-      system: token.system?.trim(),
+      system: token.system?.trim?.(),
       value: token.value?.trim?.(),
     }));
 
@@ -516,7 +516,7 @@ function buildWhereCondition(
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
     const [system, value] = parts;
-    const systemCondition = new Condition(new Column(tableName, 'system'), '=', system);
+    const systemCondition = new Condition(new Column(tableName, 'system'), '=', system || null);
     return value
       ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, caseSensitive, value)])
       : systemCondition;
