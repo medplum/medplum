@@ -33,9 +33,9 @@ import fetch from 'node-fetch';
 import assert from 'node:assert/strict';
 import { timingSafeEqual } from 'node:crypto';
 import { authenticator } from 'otplib';
-import { getLogger } from '../context';
 import { getAccessPolicyForLogin, getRepoForLogin } from '../fhir/accesspolicy';
 import { getSystemRepo } from '../fhir/repo';
+import { getLogger } from '../logger';
 import {
   AuditEventOutcome,
   createAuditEvent,

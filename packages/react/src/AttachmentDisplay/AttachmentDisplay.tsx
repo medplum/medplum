@@ -1,7 +1,8 @@
 import { Anchor } from '@mantine/core';
+import { ContentType } from '@medplum/core';
 import { Attachment } from '@medplum/fhirtypes';
 import { useCachedBinaryUrl } from '@medplum/react-hooks';
-import { XmlDisplay } from '../XmlDisplay/XmlDisplay';
+import { CcdaDisplay } from '../CcdaDisplay/CcdaDisplay';
 
 export interface AttachmentDisplayProps {
   readonly value?: Attachment;
@@ -26,7 +27,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
           <source type={contentType} src={url} />
         </video>
       )}
-      {((contentType?.startsWith('text/') && contentType !== 'text/xml') ||
+      {(contentType?.startsWith('text/') ||
         contentType === 'application/json' ||
         contentType === 'application/pdf') && (
         <div data-testid="attachment-iframe" style={{ maxWidth: props.maxWidth, minHeight: 400 }}>
@@ -40,7 +41,7 @@ export function AttachmentDisplay(props: AttachmentDisplayProps): JSX.Element | 
           />
         </div>
       )}
-      {contentType === 'text/xml' && <XmlDisplay url={url} />}
+      {contentType === ContentType.CDA_XML && <CcdaDisplay url={url} />}
       <div data-testid="download-link" style={{ padding: '2px 16px 16px 16px' }}>
         <Anchor
           // use the `uncachedUrl` to download the file as the cached URL may expire by the time the user clicks the download link

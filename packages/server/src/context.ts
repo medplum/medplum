@@ -1,15 +1,16 @@
-import { LogLevel, Logger, ProfileResource, isUUID, parseLogLevel } from '@medplum/core';
+import { Logger, ProfileResource, isUUID, parseLogLevel } from '@medplum/core';
 import { Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
+import { IRequestContext, requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
+import { systemLogger } from './logger';
 
-export class RequestContext {
+export class RequestContext implements IRequestContext {
   readonly requestId: string;
   readonly traceId: string;
   readonly logger: Logger;
@@ -28,8 +29,6 @@ export class RequestContext {
     return new RequestContext('', '');
   }
 }
-
-const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
 
 export class AuthenticatedRequestContext extends RequestContext {
   constructor(
@@ -69,13 +68,11 @@ export class AuthenticatedRequestContext extends RequestContext {
   }
 }
 
-export const requestContextStore = new AsyncLocalStorage<RequestContext>();
-
-export function tryGetRequestContext(): RequestContext | undefined {
+export function tryGetRequestContext(): IRequestContext | undefined {
   return requestContextStore.getStore();
 }
 
-export function getRequestContext(): RequestContext {
+export function getRequestContext(): IRequestContext {
   const ctx = requestContextStore.getStore();
   if (!ctx) {
     throw new Error('No request context available');
@@ -114,11 +111,6 @@ export function closeRequestContext(): void {
   if (ctx) {
     ctx.close();
   }
-}
-
-export function getLogger(): Logger {
-  const ctx = requestContextStore.getStore();
-  return ctx ? ctx.logger : systemLogger;
 }
 
 export function tryRunInRequestContext<T>(requestId: string | undefined, traceId: string | undefined, fn: () => T): T {

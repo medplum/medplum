@@ -22,6 +22,10 @@ Deploy Medplum directly on Ubuntu servers using our official APT repository ([ap
 
 Deploy Medplum on Google Cloud Platform using our Terraform configurations. While in beta, this deployment option has been validated with production workloads and provides a robust foundation for GCP-based implementations.
 
+### [Install on Azure](/docs/self-hosting/install-on-azure) (Beta)
+
+Deploy Medplum on Azure using our Terraform configurations. While in beta, this deployment option has been validated with production workloads and provides a robust foundation for Azure-based implementations.
+
 ### [Install from Scratch](/docs/self-hosting/install-from-scratch)
 
 Learn how to build and deploy Medplum from source code on bare metal infrastructure. This option provides an in-depth understanding of Medplum's architecture and components, making it ideal for educational purposes or custom deployments.

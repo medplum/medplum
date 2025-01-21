@@ -123,4 +123,9 @@ export interface AsyncJob {
    * The type of the AsyncJob.
    */
   type?: 'data-migration';
+
+  /**
+   * The data version of the migration this job represents.
+   */
+  dataVersion?: number;
 }

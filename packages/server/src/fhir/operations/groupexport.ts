@@ -2,7 +2,8 @@ import { accepted, concatUrls, parseReference, singularize } from '@medplum/core
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Group, Patient, Project } from '@medplum/fhirtypes';
 import { getConfig } from '../../config';
-import { getAuthenticatedContext, getLogger } from '../../context';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { Repository } from '../repo';
 import { getPatientEverything } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';

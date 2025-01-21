@@ -4,14 +4,13 @@
 
 global:
   cloudProvider: gcp # Supported values: gcp, azure
-  # GCP required values
-  gcp:
-    projectId: [MY_PROJECT_ID] # Your Google Cloud Platform project ID
-    secretId: [MY_CONFIG_SECRET_ID] # The configuration secret ID in Google Cloud Platform
-  # Azure required values
-  azure:
-    keyVaultURL: [MY_KEYVAULT_URL] # Your Azure Key Vault URL
-    secretName: [MY_CONFIG_SECRET_NAME] # The configuration secret Name in Azure
+  configSource:
+    # Examples:
+    # type: "env"
+    # type: "aws:region:parameterName"
+    # type: "gcp:projectId:secretId"
+    # type: "azure:keyVaultURL:secretName"
+    type: "env"  # Default to env
  
 serviceAccount: 
   annotations:

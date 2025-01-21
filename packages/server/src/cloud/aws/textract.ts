@@ -9,9 +9,10 @@ import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Binary, Media, Resource } from '@medplum/fhirtypes';
 import { Readable } from 'stream';
 import { getConfig } from '../../config';
-import { getAuthenticatedContext, getLogger } from '../../context';
+import { getAuthenticatedContext } from '../../context';
 import { Repository } from '../../fhir/repo';
 import { getBinaryStorage } from '../../fhir/storage';
+import { getLogger } from '../../logger';
 import { S3Storage } from './storage';
 
 export async function awsTextractHandler(req: FhirRequest): Promise<FhirResponse> {

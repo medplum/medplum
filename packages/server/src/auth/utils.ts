@@ -11,10 +11,10 @@ import bcrypt from 'bcryptjs';
 import { Handler, NextFunction, Request, Response } from 'express';
 import fetch from 'node-fetch';
 import { getConfig } from '../config';
-import { getLogger } from '../context';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { rewriteAttachments, RewriteMode } from '../fhir/rewrite';
+import { getLogger } from '../logger';
 import { getClientApplication, getMembershipsForLogin } from '../oauth/utils';
 
 export async function createProfile(
