@@ -22,7 +22,6 @@ export interface CronJobData {
 }
 
 const queueName = 'CronQueue';
-const jobName = 'CronJobData';
 
 let queue: Queue<CronJobData> | undefined = undefined;
 let worker: Worker<CronJobData> | undefined = undefined;
@@ -120,26 +119,23 @@ export async function addCronJobs(resource: Resource, previousVersion: Resource 
     return;
   }
 
-  if (previousVersion) {
-    logger.info('Removing cron job for bot', { botId: bot.id });
-    await queue.removeJobScheduler(bot.id as string);
-  }
-
   if (newCronStr) {
-    logger.info('Adding cron job for bot', { botId: bot.id });
-    if (queue) {
-      await queue.add(
-        jobName,
-        {
+    logger.info('Upsert cron job for bot', { botId: bot.id });
+    await queue.upsertJobScheduler(
+      bot.id as string,
+      {
+        pattern: newCronStr,
+      },
+      {
+        data: {
           resourceType: bot.resourceType,
           botId: bot.id as string,
         },
-        {
-          jobId: bot.id,
-          repeat: { pattern: newCronStr },
-        }
-      );
-    }
+      }
+    );
+  } else {
+    logger.info('Removing cron job for bot', { botId: bot.id });
+    await queue.removeJobScheduler(bot.id as string);
   }
 }
 
