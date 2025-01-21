@@ -1,5 +1,12 @@
 import { append } from '@medplum/core';
-import { CodeSystem, CodeSystemConcept, CodeSystemConceptProperty, Coding, Resource } from '@medplum/fhirtypes';
+import {
+  CodeSystem,
+  CodeSystemConcept,
+  CodeSystemConceptProperty,
+  Coding,
+  Resource,
+  ResourceType,
+} from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { ImportedProperty, importCodeSystem } from '../operations/codesystemimport';
 import { parentProperty } from '../operations/utils/terminology';
@@ -44,6 +51,10 @@ export class CodingTable extends LookupTable {
    * @param resource - The resource to delete.
    */
   async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
+    if (resource.resourceType !== 'CodeSystem') {
+      return;
+    }
+
     // Delete CodeSystem_Property entries
     await new DeleteQuery('CodeSystem_Property').where('system', '=', resource.id).execute(client);
 
@@ -56,6 +67,41 @@ export class CodingTable extends LookupTable {
 
     // Delete Coding entries
     await new DeleteQuery('Coding').where('system', '=', resource.id).execute(client);
+  }
+
+  /**
+   * Purges resources of the specified type that were last updated before the specified date.
+   * This is only available to the system and super admin accounts.
+   * @param client - The database client.
+   * @param resourceType - The FHIR resource type.
+   * @param before - The date before which resources should be purged.
+   */
+  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+    if (resourceType !== 'CodeSystem') {
+      return;
+    }
+
+    // Delete CodeSystem_Property entries
+    await new DeleteQuery('CodeSystem_Property')
+      .using('CodeSystem')
+      .where(new Column('CodeSystem_Property', 'system'), '=', new Column('CodeSystem', 'id'))
+      .where(new Column('CodeSystem', 'lastUpdated'), '<', before)
+      .execute(client);
+
+    // Delete Coding_Property entries with a join
+    await new DeleteQuery('Coding_Property')
+      .using('CodeSystem', 'Coding')
+      .where(new Column('Coding_Property', 'coding'), '=', new Column('Coding', 'id'))
+      .where(new Column('Coding', 'system'), '=', new Column('CodeSystem', 'id'))
+      .where(new Column('CodeSystem', 'lastUpdated'), '<', before)
+      .execute(client);
+
+    // Delete Coding entries
+    await new DeleteQuery('Coding')
+      .using('CodeSystem')
+      .where(new Column('Coding', 'system'), '=', new Column('CodeSystem', 'id'))
+      .where(new Column('CodeSystem', 'lastUpdated'), '<', before)
+      .execute(client);
   }
 
   private getCodeSystemElements(codeSystem: CodeSystem): { concepts: Coding[]; properties: ImportedProperty[] } {

@@ -861,10 +861,10 @@ export class InsertQuery extends BaseQuery {
 }
 
 export class DeleteQuery extends BaseQuery {
-  usingTable?: string;
+  usingTables?: string[];
 
-  using(tableName: string): this {
-    this.usingTable = tableName;
+  using(...tableNames: string[]): this {
+    this.usingTables = tableNames;
     return this;
   }
 
@@ -872,10 +872,19 @@ export class DeleteQuery extends BaseQuery {
     const sql = new SqlBuilder();
     sql.append('DELETE FROM ');
     sql.appendIdentifier(this.tableName);
-    if (this.usingTable) {
+
+    if (this.usingTables) {
       sql.append(' USING ');
-      sql.appendIdentifier(this.usingTable);
+      let first = true;
+      for (const tableName of this.usingTables) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendIdentifier(tableName);
+        first = false;
+      }
     }
+
     this.buildConditions(sql);
     return (await sql.execute(conn)).rows;
   }
