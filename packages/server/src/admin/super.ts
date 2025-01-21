@@ -27,7 +27,7 @@ import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { removeBullMQJobByKey } from '../workers/cron';
+import { getBullMQJobs, removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
@@ -344,6 +344,15 @@ superAdminRouter.post(
         parameter: [{ name: 'outcome', resource: allOk }],
       };
     });
+  })
+);
+
+superAdminRouter.get(
+  '/cronjobs',
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+    const cronjobs = await getBullMQJobs();
+    res.json(cronjobs);
   })
 );
 

@@ -1,6 +1,6 @@
 import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
 import { Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { Job } from 'bullmq';
+import { Job, Queue } from 'bullmq';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
@@ -16,6 +16,7 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { getCronQueue } from '../workers/cron';
 import { getReindexQueue, ReindexJob, ReindexJobData } from '../workers/reindex';
 import { isValidTableName } from './super';
 
@@ -492,6 +493,9 @@ describe('Super Admin routes', () => {
   });
 
   test('Remove Bot Id from Jobs Queue access denied', async () => {
+    const queue = getCronQueue() as Queue;
+    (queue.getJobSchedulers as unknown as jest.Mock).mockClear();
+
     const res = await request(app)
       .post('/admin/super/removebotidjobsfromqueue')
       .set('Authorization', 'Bearer ' + nonAdminAccessToken)
@@ -501,9 +505,19 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toBe(403);
+    expect(queue.getJobSchedulers).not.toHaveBeenCalled();
   });
 
   test('Remove Bot Id from Jobs Queue success', async () => {
+    const queue = getCronQueue() as Queue;
+    (queue.removeJobScheduler as unknown as jest.Mock).mockClear();
+    (queue.removeRepeatableByKey as unknown as jest.Mock).mockClear();
+    (queue.getJobSchedulers as unknown as jest.Mock).mockClear();
+    (queue.getJobSchedulers as unknown as jest.Mock).mockImplementationOnce(() => [
+      { id: 'test-id', template: { data: { botId: 'TestBotId' } } },
+      { key: 'test-key', template: { data: { botId: 'TestBotId' } } },
+    ]);
+
     const res = await request(app)
       .post('/admin/super/removebotidjobsfromqueue')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -513,9 +527,14 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toBe(200);
+    expect(queue.removeJobScheduler).toHaveBeenCalledWith('test-id');
+    expect(queue.removeRepeatableByKey).toHaveBeenCalledWith('test-key');
   });
 
   test('Remove Bot Id from Jobs Queue missing bot id', async () => {
+    const queue = getCronQueue() as Queue;
+    (queue.getJobSchedulers as unknown as jest.Mock).mockClear();
+
     const res = await request(app)
       .post('/admin/super/removebotidjobsfromqueue')
       .set('Authorization', 'Bearer ' + adminAccessToken)
@@ -525,6 +544,7 @@ describe('Super Admin routes', () => {
       });
 
     expect(res.status).toBe(400);
+    expect(queue.getJobSchedulers).not.toHaveBeenCalled();
   });
 
   test('Rebuild projectId as super admin with respond-async', async () => {
@@ -881,6 +901,13 @@ describe('Super Admin routes', () => {
       expect(res1.status).toStrictEqual(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Operation requires "Prefer: respond-async"'));
+    });
+
+    test('Get Cron Jobs', async () => {
+      const res = await request(app)
+        .get('/admin/super/cronjobs')
+        .set('Authorization', 'Bearer ' + adminAccessToken);
+      expect(res.status).toBe(200);
     });
   });
 });

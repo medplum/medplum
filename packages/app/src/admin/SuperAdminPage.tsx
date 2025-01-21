@@ -92,6 +92,17 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
+  function getCronJobs(): void {
+    medplum
+      .get('admin/super/cronjobs', { cache: 'reload' })
+      .then((jobs) => {
+        setModalTitle('Cron Jobs');
+        setModalContent(<pre>{JSON.stringify(jobs, null, 2)}</pre>);
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
   return (
     <Document width={600}>
       <Title order={1}>Super Admin</Title>
@@ -197,6 +208,14 @@ export function SuperAdminPage(): JSX.Element {
       <Form onSubmit={getSchemaDiff}>
         <Stack>
           <Button type="submit">Get Database Schema Drift</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Cron Jobs</Title>
+      <p>Show a list of active cron jobs</p>
+      <Form onSubmit={getCronJobs}>
+        <Stack>
+          <Button type="submit">Get Cron Jobs</Button>
         </Stack>
       </Form>
 

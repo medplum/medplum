@@ -1,6 +1,6 @@
 import { ContentType, createReference } from '@medplum/core';
 import { Bot, Project, Resource, Timing } from '@medplum/fhirtypes';
-import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
+import { Job, JobSchedulerJson, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { isValidCron } from 'cron-validator';
 import { MedplumServerConfig } from '../config';
 import { executeBot } from '../fhir/operations/execute';
@@ -40,11 +40,7 @@ export function initCronWorker(config: MedplumServerConfig): void {
   queue = new Queue<CronJobData>(queueName, {
     ...defaultOptions,
     defaultJobOptions: {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 1000,
-      },
+      attempts: 1,
     },
   });
 
@@ -211,8 +207,34 @@ export async function execBot(job: Job<CronJobData>): Promise<void> {
   await executeBot({ bot, runAs, input: bot, contentType: ContentType.FHIR_JSON });
 }
 
+export async function getBullMQJobs(): Promise<JobSchedulerJson<CronJobData>[]> {
+  if (!queue) {
+    return [];
+  }
+
+  return queue.getJobSchedulers();
+}
+
 export async function removeBullMQJobByKey(botId: string): Promise<void> {
-  if (queue) {
-    await queue.removeJobScheduler(botId);
+  if (!queue) {
+    return;
+  }
+
+  // Remove the job scheduler by key
+  await queue.removeJobScheduler(botId);
+
+  // Unfortunately, in an older version of this cron implementation, the job did not have a deterministic key.
+  // Therefore, we need to remove the job by iterating over all jobs and removing the ones that match the botId.
+  // We should be able to remove this code once we are confident that all installations have been updated
+  const allSchedulers = await queue.getJobSchedulers();
+  for (const scheduler of allSchedulers) {
+    if (scheduler.template?.data?.botId === botId) {
+      if (scheduler.id) {
+        await queue.removeJobScheduler(scheduler.id);
+      } else if (scheduler.key) {
+        // This method is deprecated, but we need to support it for now
+        await queue.removeRepeatableByKey(scheduler.key);
+      }
+    }
   }
 }

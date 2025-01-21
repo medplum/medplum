@@ -195,6 +195,18 @@ describe('SuperAdminPage', () => {
     expect(await screen.findByText(returnValue)).toBeInTheDocument();
   });
 
+  test('Get Cron Jobs', async () => {
+    setup();
+
+    jest.spyOn(medplum, 'get').mockImplementationOnce((async () => [{ key: 'test-job' }]) as any);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Get Cron Jobs' }));
+    });
+
+    expect(await screen.findByText('test-job', { exact: false })).toBeInTheDocument();
+  });
+
   test('Access denied', async () => {
     jest.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
     setup();
