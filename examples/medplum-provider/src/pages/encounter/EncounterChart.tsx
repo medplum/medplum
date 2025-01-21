@@ -6,10 +6,7 @@ import { useParams } from 'react-router-dom';
 export const EncounterChart = (): JSX.Element => {
   const theme = useMantineTheme();
   const { encounterId } = useParams();
-  console.log('Encounter ID:', encounterId);
-
   const [tasks] = useSearchResources('Task', `encounter=Encounter/${encounterId}`);
-  console.log('Task:', tasks);
 
   return (
     <Box p="md">
