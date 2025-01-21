@@ -62,6 +62,7 @@ import {
 import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
+import { v7 } from 'uuid';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { DatabaseMode, getDatabasePool } from '../database';
@@ -106,7 +107,6 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
-import { v7 } from 'uuid';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -1128,16 +1128,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await this.withTransaction(async (client) => {
-      const ids = await new DeleteQuery(resourceType)
-        .where('lastUpdated', '<=', before)
-        .returnColumn('id')
-        .execute(client);
-      await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
-      for (const { id } of ids) {
-        await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
-      }
-    });
+
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
+
+    // Delete from lookup tables first
+    // These operations use the main resource table for lastUpdated, so must come first
+    for (const lookupTable of lookupTables) {
+      await lookupTable.purgeValuesBefore(client, resourceType, before);
+    }
+
+    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(client);
+    await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
