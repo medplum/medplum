@@ -8,9 +8,7 @@ export function LandingPage(): JSX.Element {
       <Stack align="center">
         <Title order={2}>Welcome!</Title>
         <Text>
-          This "Hello World" example demonstrates how to build a simple React application that fetches Patient data from
-          Medplum. If you haven't already done so, <Anchor href="https://app.medplum.com/register">register</Anchor> for
-          Medplum Project. After that you can sign into your project by clicking the link below.
+          <p>This demo shows how to work with FHIR ValueSets. You can either search for existing ValueSets on the left, or create your own custom ValueSet on the right. Once a ValueSet is selected or created, you can use it for typeaheads.</p>
         </Text>
         <Button component={Link} to="/signin">
           Sign in

@@ -1,129 +1,210 @@
-import { Title, Group, Radio } from '@mantine/core';
+import { Title, Group, TextInput, Box, Textarea, Button, Alert, Grid } from '@mantine/core';
 import {
   CodingInput,
   Document,
-  ResourceForm,
   ResourceName,
   useMedplum,
 } from '@medplum/react';
-import { useState, useEffect } from 'react';
-import { ValueSet, AllergyIntolerance } from '@medplum/fhirtypes';
-
-const valueSetUrls = [
-  'http://hl7.org/fhir/ValueSet/allergyintolerance-code',
-  'http://hl7.org/fhir/ValueSet/clinical-findings',
-  'http://snomed.info/sct?fhir_vs=ecl/<<418038007' // Substance for allergy
-];
+import { useState } from 'react';
+import { ValueSet } from '@medplum/fhirtypes';
 
 export function HomePage(): JSX.Element {
   const medplum = useMedplum();
 
-  const [selectedValueSet, setSelectedValueSet] = useState(valueSetUrls[0]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [customValueSet, setCustomValueSet] = useState(`{
+  "resourceType": "ValueSet",
+  "url": "http://example.org/custom-allergies",
+  "name": "CustomAllergies",
+  "title": "Custom Allergies Value Set",
+  "status": "active",
+  "expansion": {
+    "identifier": "http://example.org/custom-allergies",
+    "timestamp": "2024-01-21T00:00:00Z",
+    "contains": [
+      {
+        "system": "http://example.org/custom-allergies",
+        "code": "apple",
+        "display": "Apple"
+      },
+      {
+        "system": "http://example.org/custom-allergies",
+        "code": "banana",
+        "display": "Banana"
+      },
+      {
+        "system": "http://example.org/custom-allergies",
+        "code": "peanut",
+        "display": "Peanut"
+      },
+      {
+        "system": "http://example.org/custom-allergies",
+        "code": "shellfish",
+        "display": "Shellfish"
+      }
+    ]
+  }
+}`);
   const [currentValueSet, setCurrentValueSet] = useState<ValueSet>();
-  const [valueSetResources, setValueSetResources] = useState<Map<string, ValueSet>>(new Map());
+  const [selectedValueSet, setSelectedValueSet] = useState('');
+  const [error, setError] = useState<string>();
+  const [successMessage, setSuccessMessage] = useState<string>();
 
-  // Fetch all ValueSets on component mount
-  useEffect(() => {
-    const fetchAllValueSets = async () => {
-      const valueSetsMap = new Map<string, ValueSet>();
-
-      for (const url of valueSetUrls) {
-        try {
-          const result = await medplum.search('ValueSet', {
-            url: url
-          });
-
-          if (result.entry?.[0]?.resource) {
-            const valueSet = result.entry[0].resource as ValueSet;
-            valueSetsMap.set(url, valueSet);
-          }
-        } catch (error) {
-          console.error(`Error fetching ValueSet ${url}:`, error);
-        }
-      }
-
-      setValueSetResources(valueSetsMap);
-      // Set the current ValueSet to the first one
-      const firstValueSet = valueSetsMap.get(valueSetUrls[0]);
-      if (firstValueSet) {
-        setCurrentValueSet(firstValueSet);
-      }
-    };
-
-    fetchAllValueSets();
-  }, [medplum]);
-
-  // Update current ValueSet when selection changes
-  useEffect(() => {
-    const valueSet = valueSetResources.get(selectedValueSet);
-    if (valueSet) {
-      setCurrentValueSet(valueSet);
+  // Search function
+  const searchValueSet = async (term: string) => {
+    if (!term) {
+      setCurrentValueSet(undefined);
+      setError(undefined);
+      return;
     }
-  }, [selectedValueSet, valueSetResources]);
 
-  const handleSubmit = (formData: AllergyIntolerance) => {
-    console.log('Submitting allergy intolerance:', formData);
-    // Handle the submission here
-    return medplum.createResource(formData);
+    setError(undefined);
+    setSuccessMessage(undefined);
+
+    try {
+      // First try to parse if it's a custom ValueSet
+      try {
+        const customVS = JSON.parse(customValueSet);
+        if (customVS.url === term) {
+          setCurrentValueSet(customVS);
+          setSelectedValueSet(term);
+          return;
+        }
+      } catch (e) {
+        // If parsing fails, continue with normal search
+      }
+
+      const result = await medplum.search('ValueSet', {
+        url: term
+      });
+
+      if (result.entry?.[0]?.resource) {
+        const valueSet = result.entry[0].resource as ValueSet;
+        setCurrentValueSet(valueSet);
+        setSelectedValueSet(term);
+      } else {
+        setCurrentValueSet(undefined);
+        setError('No ValueSet found');
+      }
+    } catch (error) {
+      console.error('Error searching ValueSet:', error);
+      setError('Error searching ValueSet');
+      setCurrentValueSet(undefined);
+    }
   };
 
-  // Create a default AllergyIntolerance resource
-  // Define your profile URL
-  const profileUrl = 'http://example.org/StructureDefinition/my-allergy-profile';
+  const handleCreateValueSet = async () => {
+    try {
+      setError(undefined);
+      setSuccessMessage(undefined);
 
-  const defaultResource: Partial<AllergyIntolerance> = {
-    meta: {
-      profile: [profileUrl]
-    },
-    resourceType: 'AllergyIntolerance',
-    clinicalStatus: {
-      coding: [{
-        system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
-        code: 'active'
-      }]
-    },
-    verificationStatus: {
-      coding: [{
-        system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-verification',
-        code: 'confirmed'
-      }]
-    },
-    type: 'allergy',
-    category: ['food'],
-    criticality: 'low'
+      // Parse the JSON to validate it
+      const valueSetData = JSON.parse(customValueSet);
+
+      // Check if a ValueSet with this URL already exists
+      const existingValueSet = await medplum.search('ValueSet', {
+        url: valueSetData.url
+      });
+
+      if (existingValueSet.entry?.[0]?.resource) {
+        setError(`A ValueSet with URL "${valueSetData.url}" already exists`);
+        return;
+      }
+
+      // Create the ValueSet resource
+      const newValueSet = await medplum.createResource(valueSetData as ValueSet);
+      setSuccessMessage('ValueSet created successfully');
+
+      // Update the search if the current search term matches the new ValueSet's URL
+      if (searchTerm === valueSetData.url) {
+        setCurrentValueSet(newValueSet);
+        setSelectedValueSet(valueSetData.url);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create ValueSet');
+    }
+  };
+
+  // Handle input changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    searchValueSet(value);
   };
 
   return (
     <Document>
-      <Title>Allergy Intolerance Form</Title>
-      <ResourceForm
-        defaultValue={defaultResource}
-        onSubmit={handleSubmit}
-        profile={profileUrl}
-      >
-        <Group>
-          <Radio.Group
-            value={selectedValueSet}
-            onChange={(value) => setSelectedValueSet(value)}
-            name="valueSetOption"
-            label="Select Allergy/Intolerance Coding System"
-          >
-            {Array.from(valueSetResources.entries()).map(([url, valueSet]) => (
-              <Radio
-                key={url}
-                label={<ResourceName value={valueSet} link />}
-                value={url}
+      <Title>ValueSet Demo</Title>
+
+      <Box mb="xl">
+        <p>This demo shows how to work with FHIR ValueSets. You can either search for existing ValueSets on the left, or create your own custom ValueSet on the right. Once a ValueSet is selected or created, you can use it for typeaheads.</p>
+      </Box>
+
+      <Grid mt="md">
+        <Grid.Col span={6}>
+          <Title order={2}>Search Existing ValueSets</Title>
+          <p style={{ marginBottom: '1rem' }}>Search for standard ValueSets that are already available in the system. Enter a ValueSet URL below to search.</p>
+          <ul>
+            <li>http://hl7.org/fhir/ValueSet/allergyintolerance-code</li>
+            <li>http://hl7.org/fhir/ValueSet/clinical-findings</li>
+            <li>http://snomed.info/sct?fhir_vs=ecl/&lt;&lt;418038007</li>
+            <li>http://example.org/custom-allergies (matches custom ValueSet on right)</li>
+          </ul>
+          <Group>
+            <TextInput
+              label="Search ValueSet URL"
+              placeholder="Enter ValueSet URL..."
+              value={searchTerm}
+              onChange={(event) => handleSearchChange(event.currentTarget.value)}
+              error={error}
+              style={{ width: '100%' }}
+            />
+            {currentValueSet && (
+              <div>
+                Selected ValueSet: <ResourceName value={currentValueSet} link />
+              </div>
+            )}
+          </Group>
+
+          {selectedValueSet && (
+            <Box mt="md">
+              <CodingInput
+                name="code"
+                path="code"
+                binding={selectedValueSet}
+                required
               />
-            ))}
-          </Radio.Group>
-        </Group>
-        <CodingInput
-          name="code"
-          path="code"
-          binding={selectedValueSet}
-          required
-        />
-      </ResourceForm>
+            </Box>
+          )}
+        </Grid.Col>
+
+        <Grid.Col span={6}>
+          <Title order={2}>Create Custom ValueSet</Title>
+          <p style={{ marginBottom: '1rem' }}>Define your own ValueSet by editing the JSON below. The example shows a ValueSet for common allergies.</p>
+          <Textarea
+            label="Custom ValueSet (JSON)"
+            placeholder="Enter custom ValueSet JSON..."
+            value={customValueSet}
+            onChange={(event) => setCustomValueSet(event.currentTarget.value)}
+            error={error}
+            autosize={false}
+            minRows={30}
+            styles={{
+              input: {
+                height: '500px',
+                overflowY: 'auto',
+              },
+            }}
+          />
+          <Box mt="md">
+            <Button onClick={handleCreateValueSet}>Create ValueSet</Button>
+          </Box>
+          {successMessage && (
+            <Alert color="green" mt="md">
+              {successMessage}
+            </Alert>
+          )}
+        </Grid.Col>
+      </Grid>
     </Document>
   );
 }
