@@ -146,7 +146,6 @@ export function HomePage(): JSX.Element {
           <ul>
             <li>http://hl7.org/fhir/ValueSet/allergyintolerance-code</li>
             <li>http://hl7.org/fhir/ValueSet/clinical-findings</li>
-            <li>http://snomed.info/sct?fhir_vs=ecl/&lt;&lt;418038007</li>
             <li>http://example.org/custom-allergies (matches custom ValueSet on right)</li>
           </ul>
           <Group>
