@@ -326,8 +326,10 @@ describe('FHIRCast routes', () => {
       expect(subRes.status).toBe(202);
       expect(subRes.body['hub.channel.endpoint']).toBeDefined();
 
+      const pathname = new URL(subRes.body['hub.channel.endpoint']).pathname;
+
       await request(server)
-        .ws('/ws/fhircast/topic')
+        .ws(pathname)
         .expectJson((obj) => {
           // Connection verification message
           expect(obj['hub.topic']).toBe('topic');

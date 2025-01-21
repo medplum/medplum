@@ -1,5 +1,6 @@
 import {
   createReference,
+  Filter,
   getReferenceString,
   LOINC,
   normalizeErrorString,
@@ -3128,10 +3129,14 @@ describe('FHIR Search', () => {
         expect(bundleContains(bundle2, task2)).not.toBeTruthy();
       }));
 
-    test('Resource search params', () =>
-      withTestContext(async () => {
-        const patientIdentifier = randomUUID();
-        const patient = await repo.createResource<Patient>({
+    describe('Resource meta search params', () => {
+      let patientIdentifier: string;
+      let patient: Patient;
+      let identifierFilter: Filter;
+
+      beforeAll(async () => {
+        patientIdentifier = randomUUID();
+        patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
           identifier: [{ system: 'http://example.com', value: patientIdentifier }],
           meta: {
@@ -3141,64 +3146,77 @@ describe('FHIR Search', () => {
             tag: [{ system: 'http://hl7.org/fhir/v3/ObservationValue', code: 'SUBSETTED' }],
           },
         });
-        const identifierFilter = {
+        identifierFilter = {
           code: 'identifier',
           operator: Operator.EQUALS,
           value: patientIdentifier,
         };
+      });
 
-        const bundle1 = await repo.search({
-          resourceType: 'Patient',
-          filters: [
-            identifierFilter,
-            {
-              code: '_profile',
-              operator: Operator.EQUALS,
-              value: 'http://example.com/fhir/a-patient-profile',
-            },
-          ],
-        });
-        expect(bundleContains(bundle1, patient)).toBeTruthy();
+      test('Search by identifier', () =>
+        withTestContext(async () => {
+          const bundle1 = await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              identifierFilter,
+              {
+                code: '_profile',
+                operator: Operator.EQUALS,
+                value: 'http://example.com/fhir/a-patient-profile',
+              },
+            ],
+          });
+          expect(bundleContains(bundle1, patient)).toBeTruthy();
+        }));
 
-        const bundle2 = await repo.search({
-          resourceType: 'Patient',
-          filters: [
-            identifierFilter,
-            {
-              code: '_security',
-              operator: Operator.EQUALS,
-              value: 'http://hl7.org/fhir/v3/Confidentiality|N',
-            },
-          ],
-        });
-        expect(bundleContains(bundle2, patient)).toBeTruthy();
+      test('Search by _security', () =>
+        withTestContext(async () => {
+          const bundle2 = await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              identifierFilter,
+              {
+                code: '_security',
+                operator: Operator.EQUALS,
+                value: 'http://hl7.org/fhir/v3/Confidentiality|N',
+              },
+            ],
+          });
+          expect(bundleContains(bundle2, patient)).toBeTruthy();
+        }));
 
-        const bundle3 = await repo.search({
-          resourceType: 'Patient',
-          filters: [
-            identifierFilter,
-            {
-              code: '_source',
-              operator: Operator.EQUALS,
-              value: 'http://example.org',
-            },
-          ],
-        });
-        expect(bundleContains(bundle3, patient)).toBeTruthy();
+      test('Search by _source', () =>
+        withTestContext(async () => {
+          const bundle3 = await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              identifierFilter,
+              {
+                code: '_source',
+                operator: Operator.EQUALS,
+                value: 'http://example.org',
+              },
+            ],
+          });
+          expect(bundleContains(bundle3, patient)).toBeTruthy();
+        }));
 
-        const bundle4 = await repo.search({
-          resourceType: 'Patient',
-          filters: [
-            identifierFilter,
-            {
-              code: '_tag',
-              operator: Operator.EQUALS,
-              value: 'http://hl7.org/fhir/v3/ObservationValue|SUBSETTED',
-            },
-          ],
-        });
-        expect(bundleContains(bundle4, patient)).toBeTruthy();
-      }));
+      test('Search by _tag', () =>
+        withTestContext(async () => {
+          const bundle4 = await repo.search({
+            resourceType: 'Patient',
+            filters: [
+              identifierFilter,
+              {
+                code: '_tag',
+                operator: Operator.EQUALS,
+                value: 'http://hl7.org/fhir/v3/ObservationValue|SUBSETTED',
+              },
+            ],
+          });
+          expect(bundleContains(bundle4, patient)).toBeTruthy();
+        }));
+    });
 
     test('Token :text search', () =>
       withTestContext(async () => {

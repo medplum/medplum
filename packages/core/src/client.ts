@@ -2160,7 +2160,38 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     arg4?: (e: ProgressEvent) => void,
     arg5?: MedplumRequestOptions
   ): Promise<Attachment> {
-    const createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
+    let createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
+
+    if (createBinaryOptions.contentType === ContentType.XML) {
+      const fileData = createBinaryOptions.data;
+      let fileStr: string;
+
+      if (fileData instanceof Blob) {
+        fileStr = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (!reader.result) {
+              reject(new Error('Failed to load file'));
+              return;
+            }
+            resolve(reader.result as string);
+          };
+          reader.readAsText(fileData, 'utf-8');
+        });
+      } else if (ArrayBuffer.isView(fileData)) {
+        fileStr = new TextDecoder().decode(fileData);
+      } else {
+        fileStr = fileData;
+      }
+
+      // Both of the above strings are required to be within a valid C-CDA document
+      // The root element in a CDA document should be a "ClinicalDocument"
+      // "urn:hl7-org:v3" is a required namespace to be referenced by all valid C-CDA documents as well
+      if (fileStr.includes('<ClinicalDocument') && fileStr.includes('xmlns="urn:hl7-org:v3"')) {
+        createBinaryOptions = { ...createBinaryOptions, contentType: ContentType.CDA_XML };
+      }
+    }
+
     const requestOptions = arg5 ?? (typeof arg2 === 'object' ? arg2 : {});
     const binary = await this.createBinary(createBinaryOptions, requestOptions);
     return {

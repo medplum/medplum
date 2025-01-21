@@ -4,26 +4,26 @@ import { sendCommand } from '../utils/dom';
 const CCDA_VIEWER_URL = 'https://ccda.medplum.com';
 
 export interface CcdaDisplayProps {
-  readonly xml?: string;
+  readonly url?: string;
   readonly maxWidth?: number;
 }
 
 export function CcdaDisplay(props: CcdaDisplayProps): JSX.Element | null {
-  const { xml } = props;
+  const { url } = props;
   const [shouldSend, setShouldSend] = useState(false);
   const iframeRef = useRef(null);
 
   useEffect(() => {
-    if (!xml) {
+    if (!url) {
       return;
     }
     if (shouldSend && iframeRef.current) {
-      sendCommand(iframeRef.current, { command: 'setCcdaXml', value: xml }).catch(console.error);
+      sendCommand(iframeRef.current, { command: 'loadCcdaXml', value: url }).catch(console.error);
       setShouldSend(false);
     }
-  }, [xml, shouldSend]);
+  }, [url, shouldSend]);
 
-  if (!xml) {
+  if (!url) {
     return null;
   }
 

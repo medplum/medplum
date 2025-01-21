@@ -51,6 +51,9 @@ sed -i'' -E -e "s/\"version\": \"[^\"]+\"/\"version\": \"$NEW_VERSION\"/g" packa
 find examples -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g"
 find packages -name 'package.json' -print0 | xargs -0 sed -i'' -E -e "s/(\"@medplum\/[^\"]+\"): \"[^\"]+\"/\1: \"$NEW_VERSION\"/g"
 
+# Set version in charts/Chart.yaml (Helm)
+sed -i'' -E -e "s/appVersion: \"[^\"]+\"/appVersion: \"$NEW_VERSION\"/g" charts/Chart.yaml
+
 # Run `npm version $version --workspaces`
 npm version "$NEW_VERSION" --workspaces
 

@@ -1,15 +1,7 @@
-import { MedplumClient } from '@medplum/core';
+import { ContentType, MedplumClient } from '@medplum/core';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { act, render, screen } from '../test-utils/render';
 import { AttachmentDisplay, AttachmentDisplayProps } from './AttachmentDisplay';
-
-const EXAMPLE_XML = `
-<note>
-  <to>Tove</to>
-  <from>Jani</from>
-  <heading>Reminder</heading>
-  <body>Don't forget me this weekend!</body>
-</note>`;
 
 function mockFetch(url: string, options: any): Promise<any> {
   const result: any = {};
@@ -122,22 +114,26 @@ describe('AttachmentDisplay', () => {
   });
 
   test('Renders XML', async () => {
-    jest.spyOn(medplum, 'download').mockImplementation(async (url: URL | string): Promise<Blob> => {
-      const urlString = url.toString();
-      if (urlString.endsWith('note.xml')) {
-        return {
-          text: () => Promise.resolve(EXAMPLE_XML),
-        } as unknown as Blob;
-      }
-      throw new Error('UNREACHABLE: Invalid url');
-    });
     await setup({
       value: {
-        contentType: 'text/xml',
+        contentType: ContentType.XML,
         url: 'https://example.com/note.xml',
         title: 'note.xml',
       },
     });
-    expect(await screen.findByTestId('xml-display-iframe')).toBeInTheDocument();
+    expect(await screen.findByTestId('attachment-iframe')).toBeInTheDocument();
+    expect(screen.getByText('note.xml')).toBeInTheDocument();
+  });
+
+  test('Renders C-CDA', async () => {
+    await setup({
+      value: {
+        contentType: ContentType.CDA_XML,
+        url: 'https://example.com/c-cda.xml',
+        title: 'c-cda.xml',
+      },
+    });
+    expect(await screen.findByTestId('ccda-iframe')).toBeInTheDocument();
+    expect(screen.getByText('c-cda.xml')).toBeInTheDocument();
   });
 });
