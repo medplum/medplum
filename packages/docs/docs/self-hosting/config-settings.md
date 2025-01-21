@@ -227,7 +227,7 @@ __Fargate__ is an AWS serverless compute engine for containers, meaning you don'
 
 Example: 
 ```ts   
-  fargateAutoScaling: {
+fargateAutoScaling: {
   minCapacity: 1,
   maxCapacity: 10,
   targetUtilizationPercent: 50,
