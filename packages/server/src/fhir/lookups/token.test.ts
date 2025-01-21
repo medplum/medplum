@@ -821,7 +821,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(res)).toStrictEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(res)).toStrictEqual(toSorted(expected));
     });
 
     test.each<[string, Conditions[]]>([
@@ -839,7 +839,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(resEquals)).toStrictEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(resEquals)).toStrictEqual(toSorted(expected));
 
       const resContains = await repo.search<Condition>({
         resourceType: 'Condition',
@@ -851,7 +851,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
     });
 
     test.each<[string, string, Conditions[]]>([
@@ -870,7 +870,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(res)).toStrictEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(res)).toStrictEqual(toSorted(expected));
     });
 
     test.each<[string, Conditions[]]>([
@@ -930,7 +930,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(resContains)?.toSorted()).toStrictEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
     });
 
     //TODO{mattlong} these tests should pass in new token implementation
@@ -948,7 +948,7 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(resContains)).toStrictEqual(expected.toSorted());
+      expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
     });
 
     test.each<[string, Conditions[]]>([
@@ -977,5 +977,12 @@ function toIdentifierValues(bundle: Bundle<Condition | Patient>): string[] {
 }
 
 function toSortedIdentifierValues(bundle: Bundle<Condition | Patient>): string[] {
-  return toIdentifierValues(bundle).toSorted();
+  return toSorted(toIdentifierValues(bundle));
+}
+
+// Array.prototype.toSorted isn't available in Node 18, so write our own
+function toSorted<T extends string>(array: T[]): T[] {
+  const newArray = Array.from(array);
+  newArray.sort((a, b) => a.localeCompare(b));
+  return newArray;
 }
