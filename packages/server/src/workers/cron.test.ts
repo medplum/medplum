@@ -36,7 +36,7 @@ describe('Cron Worker', () => {
   test('should add a job to the queue when a bot with cronTiming is created', async () => {
     // Add the bot and check that a job was added to the queue.
     const queue = getCronQueue() as any;
-    queue.add.mockClear();
+    queue.upsertJobScheduler.mockClear();
     const bot = await withTestContext(() =>
       botRepo.createResource<Bot>({
         resourceType: 'Bot',
@@ -50,13 +50,13 @@ describe('Cron Worker', () => {
       })
     );
     expect(bot).toBeDefined();
-    expect(queue.add).toHaveBeenCalled();
+    expect(queue.upsertJobScheduler).toHaveBeenCalled();
   });
 
   test('should add a job to the queue when a bot with cronString added', async () => {
     // Add the bot and check that a job was added to the queue.
     const queue = getCronQueue() as any;
-    queue.add.mockClear();
+    queue.upsertJobScheduler.mockClear();
     const bot = await withTestContext(() =>
       botRepo.createResource<Bot>({
         resourceType: 'Bot',
@@ -65,13 +65,13 @@ describe('Cron Worker', () => {
       })
     );
     expect(bot).toBeDefined();
-    expect(queue.add).toHaveBeenCalled();
+    expect(queue.upsertJobScheduler).toHaveBeenCalled();
   });
 
   test('should not add a job to the queue when a bot with cronString', async () => {
     // Add the bot and check that a job was added to the queue.
     const queue = getCronQueue() as any;
-    queue.add.mockClear();
+    queue.upsertJobScheduler.mockClear();
     const bot = await withTestContext(() =>
       botRepo.createResource<Bot>({
         resourceType: 'Bot',
@@ -80,13 +80,13 @@ describe('Cron Worker', () => {
       })
     );
     expect(bot).toBeDefined();
-    expect(queue.add).not.toHaveBeenCalled();
+    expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
   });
 
   test('should not have added a job to the queue due to a cron not created', async () => {
     // Add the bot and check that a job was added to the queue.
     const queue = getCronQueue() as any;
-    queue.add.mockClear();
+    queue.upsertJobScheduler.mockClear();
     const bot = await withTestContext(() =>
       botRepo.createResource<Bot>({
         resourceType: 'Bot',
@@ -95,14 +95,14 @@ describe('Cron Worker', () => {
     );
     // Bot should have still been created
     expect(bot).toBeDefined();
-    expect(queue.add).not.toHaveBeenCalled();
+    expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
   });
 
   test('Update queue after updating bot', () =>
     withTestContext(async () => {
       // Add the bot and check that a job was added to the queue.
       const queue = getCronQueue() as any;
-      queue.add.mockClear();
+      queue.upsertJobScheduler.mockClear();
       const bot = await botRepo.createResource<Bot>({
         resourceType: 'Bot',
         name: 'bot-1',
@@ -126,8 +126,7 @@ describe('Cron Worker', () => {
       });
 
       expect(bot).toBeDefined();
-      expect(queue.getRepeatableJobs).toHaveBeenCalled();
-      expect(queue.add).toHaveBeenCalledTimes(2);
+      expect(queue.upsertJobScheduler).toHaveBeenCalledTimes(2);
     }));
 
   test('Find a previous job to remove after updating bot', () =>
@@ -140,15 +139,8 @@ describe('Cron Worker', () => {
       });
 
       expect(bot).toBeDefined();
-      expect(queue.getRepeatableJobs).toHaveBeenCalled();
-      expect(queue.add).toHaveBeenCalled();
+      expect(queue.upsertJobScheduler).toHaveBeenCalled();
 
-      queue.getRepeatableJobs.mockImplementation(() => [
-        {
-          key: `CronJobData:${bot.id}:::* * * * *`,
-          id: bot.id,
-        },
-      ]);
       await botRepo.updateResource({
         resourceType: 'Bot',
         id: bot.id,
@@ -160,14 +152,14 @@ describe('Cron Worker', () => {
         },
       });
 
-      expect(queue.removeRepeatableByKey).toHaveBeenCalled();
+      expect(queue.upsertJobScheduler).toHaveBeenCalled();
     }));
 
   test('Job should not be in queue if cron is not enabled', () =>
     withTestContext(async () => {
       // Create a simple project with no advanced features enabled
       const queue = getCronQueue() as any;
-      queue.add.mockClear();
+      queue.upsertJobScheduler.mockClear();
 
       // Create one simple project with no advanced features enabled
       const testProject = await systemRepo.createResource<Project>({
@@ -197,13 +189,13 @@ describe('Cron Worker', () => {
         },
       });
       expect(bot).toBeDefined();
-      expect(queue.add).not.toHaveBeenCalled();
+      expect(queue.upsertJobScheduler).not.toHaveBeenCalled();
     }));
 
   test('Bot should execute successfully', () =>
     withTestContext(async () => {
       const queue = getCronQueue() as any;
-      queue.add.mockClear();
+      queue.upsertJobScheduler.mockClear();
 
       const bot = await botRepo.createResource<Bot>({
         resourceType: 'Bot',
