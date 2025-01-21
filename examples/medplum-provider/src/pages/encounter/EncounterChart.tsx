@@ -12,9 +12,12 @@ import {
   Anchor,
   useMantineTheme,
 } from '@mantine/core';
+import { useParams } from 'react-router-dom';
 
 export const EncounterChart = (): JSX.Element => {
   const theme = useMantineTheme();
+  const { encounterId } = useParams();
+  console.log('Encounter ID:', encounterId);
 
   return (
     <Box p="md">
