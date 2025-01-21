@@ -1,0 +1,60 @@
+# Network configuration for Medplum on Azure. Creates a Virtual Network (VNet)
+# with separate subnets for: AKS nodes, AKS pods, Application Gateway,
+# PostgreSQL database, and Redis cache.
+
+resource "azurerm_virtual_network" "server_vnet" {
+  name                = "${local.resource_prefix}-server-vnet"
+  address_space       = var.vnet_address_space
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+
+  depends_on = [azurerm_resource_group.rg]
+}
+
+resource "azurerm_subnet" "medplum_aks_nodes_snet_01" {
+  name                 = "${local.resource_prefix}-aks-nodes-sn"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.server_vnet.name
+  address_prefixes     = [var.aks_nodes_subnet_cidr]
+}
+
+resource "azurerm_subnet" "medplum_aks_pods_snet_01" {
+  name                 = "${local.resource_prefix}-aks-pods-sn"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.server_vnet.name
+  address_prefixes     = [var.aks_pods_subnet_cidr]
+  delegation {
+    name = "aks-delegation"
+    service_delegation {
+      name = "Microsoft.ContainerService/managedClusters"
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action",
+      ]
+    }
+  }
+}
+
+resource "azurerm_subnet" "medplum_db_snet_01" {
+  name                 = "${local.resource_prefix}-db-sn"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.server_vnet.name
+  address_prefixes     = [var.db_subnet_cidr]
+  service_endpoints    = ["Microsoft.Storage"]
+  delegation {
+    name = "fs"
+    service_delegation {
+      name = "Microsoft.DBforPostgreSQL/flexibleServers"
+      actions = [
+        "Microsoft.Network/virtualNetworks/subnets/join/action",
+      ]
+    }
+  }
+}
+
+resource "azurerm_subnet" "medplum_redis_snet_01" {
+  name                 = "${local.resource_prefix}-redis-sn"
+  resource_group_name  = azurerm_resource_group.rg.name
+  virtual_network_name = azurerm_virtual_network.server_vnet.name
+  address_prefixes     = [var.redis_subnet_cidr]
+}
+
