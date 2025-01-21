@@ -105,15 +105,19 @@ export class BulkExporter {
 
     // Update the AsyncJob
     const systemRepo = getSystemRepo();
-    return systemRepo.updateResource<AsyncJob>({
-      ...this.resource,
-      meta: {
-        project: project.id,
-      },
-      status: 'completed',
-      transactionTime: new Date().toISOString(),
-      output: this.formatOutput(),
-    });
+    const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', this.resource.id as string);
+    if (asyncJob.status !== 'cancelled') {
+      return systemRepo.updateResource<AsyncJob>({
+        ...this.resource,
+        meta: {
+          project: project.id,
+        },
+        status: 'completed',
+        transactionTime: new Date().toISOString(),
+        output: this.formatOutput(),
+      });
+    }
+    return this.resource;
   }
 
   formatOutput(): Parameters {

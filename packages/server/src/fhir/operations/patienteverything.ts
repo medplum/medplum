@@ -80,5 +80,9 @@ export async function getPatientEverything(
     filters,
     count: params?._count ?? defaultMaxResults,
     offset: params?._offset,
+    include: [{ resourceType: 'Patient', searchParam: 'organization' }],
+    revInclude: [
+      { resourceType: 'Location', searchParam: 'organization', targetType: 'Organization', modifier: Operator.ITERATE },
+    ],
   });
 }
