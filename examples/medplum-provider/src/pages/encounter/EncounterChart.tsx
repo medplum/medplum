@@ -9,7 +9,6 @@ import {
   Box,
   Menu,
   Card,
-  Badge,
   Anchor,
   useMantineTheme,
 } from '@mantine/core';
