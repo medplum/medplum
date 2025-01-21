@@ -79,6 +79,7 @@ describe('OAuth2 Token', () => {
     // Create a 2nd client with PKCE optional
     pkceOptionalClient = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
+      secret: randomUUID(),
       pkceOptional: true,
     });
 
@@ -478,7 +479,7 @@ describe('OAuth2 Token', () => {
 
   test('Authorization code token with wrong client secret', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: client.id,
+      clientId: pkceOptionalClient.id,
       email,
       password,
     });
@@ -487,7 +488,7 @@ describe('OAuth2 Token', () => {
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
-      client_id: client.id,
+      client_id: pkceOptionalClient.id,
       client_secret: 'wrong',
     });
     expect(res2.status).toBe(400);
