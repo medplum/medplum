@@ -221,6 +221,7 @@ export function validateLoginRequest(request: LoginRequest): void {
   }
 }
 
+const allowedChallengeMethods = ['plain', 'S256'];
 export function validatePkce(request: LoginRequest, client: ClientApplication | undefined): void {
   if (client?.pkceOptional) {
     return;
@@ -229,16 +230,7 @@ export function validatePkce(request: LoginRequest, client: ClientApplication | 
   if (!request.codeChallenge && request.codeChallengeMethod) {
     throw new OperationOutcomeError(badRequest('Invalid code challenge', 'code_challenge'));
   }
-
-  if (request.codeChallenge && !request.codeChallengeMethod) {
-    throw new OperationOutcomeError(badRequest('Invalid code challenge method', 'code_challenge_method'));
-  }
-
-  if (
-    request.codeChallengeMethod &&
-    request.codeChallengeMethod !== 'plain' &&
-    request.codeChallengeMethod !== 'S256'
-  ) {
+  if (request.codeChallenge && !allowedChallengeMethods.includes(request.codeChallengeMethod as string)) {
     throw new OperationOutcomeError(badRequest('Invalid code challenge method', 'code_challenge_method'));
   }
 }
