@@ -92,6 +92,13 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
+  function reloadCron(): void {
+    medplum
+      .post('admin/super/reloadcron')
+      .then(() => showNotification({ color: 'green', message: 'Done' }))
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
   return (
     <Document width={600}>
       <Title order={1}>Super Admin</Title>
@@ -197,6 +204,14 @@ export function SuperAdminPage(): JSX.Element {
       <Form onSubmit={getSchemaDiff}>
         <Stack>
           <Button type="submit">Get Database Schema Drift</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Reload Cron Resources</Title>
+      <p>Obliterates the cron queue and rebuilds all the cron job schedulers for cron resources (eg. cron bots).</p>
+      <Form onSubmit={reloadCron}>
+        <Stack>
+          <Button type="submit">Reload Cron Resources</Button>
         </Stack>
       </Form>
 

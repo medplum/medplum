@@ -27,7 +27,7 @@ import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
-import { removeBullMQJobByKey } from '../workers/cron';
+import { reloadCronBots, removeBullMQJobByKey } from '../workers/cron';
 import { addReindexJob } from '../workers/reindex';
 
 export const OVERRIDABLE_TABLE_SETTINGS = {
@@ -344,6 +344,22 @@ superAdminRouter.post(
         parameter: [{ name: 'outcome', resource: allOk }],
       };
     });
+  })
+);
+
+// POST to /admin/super/reloadcron
+// to clear out the cron queue and reload all cron strings from cron bots
+superAdminRouter.post(
+  '/reloadcron',
+  asyncWrap(async (_req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const startTime = Date.now();
+    await reloadCronBots();
+    globalLogger.info('[Super Admin]: Cron bots reloaded', {
+      durationMs: Date.now() - startTime,
+    });
+    sendOutcome(res, allOk);
   })
 );
 

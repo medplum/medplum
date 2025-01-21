@@ -216,3 +216,19 @@ export async function removeBullMQJobByKey(botId: string): Promise<void> {
     await queue.removeJobScheduler(botId);
   }
 }
+
+export async function reloadCronBots(): Promise<void> {
+  if (queue) {
+    // Clears all jobs from the cron queue, including active ones
+    await queue.obliterate({ force: true });
+
+    const allBots = await getSystemRepo().searchResources<Bot>({ resourceType: 'Bot' });
+    for (const bot of allBots) {
+      // If the bot has a cron, then add a scheduler for it
+      if (bot.cronString || bot.cronTiming) {
+        // We pass `undefined` as previous version to make sure that the latest cron string is used
+        await addCronJobs(bot, undefined);
+      }
+    }
+  }
+}
