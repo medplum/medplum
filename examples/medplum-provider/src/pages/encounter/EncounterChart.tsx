@@ -1,23 +1,15 @@
-import {
-  Textarea,
-  Select,
-  Button,
-  Text,
-  Paper,
-  Stack,
-  Group,
-  Box,
-  Menu,
-  Card,
-  Anchor,
-  useMantineTheme,
-} from '@mantine/core';
+import { Textarea, Select, Button, Text, Paper, Stack, Group, Box, Menu, Card, useMantineTheme } from '@mantine/core';
+import { Task } from '@medplum/fhirtypes';
+import { useSearchResources } from '@medplum/react';
 import { useParams } from 'react-router-dom';
 
 export const EncounterChart = (): JSX.Element => {
   const theme = useMantineTheme();
   const { encounterId } = useParams();
   console.log('Encounter ID:', encounterId);
+
+  const [tasks] = useSearchResources('Task', `encounter=Encounter/${encounterId}`);
+  console.log('Task:', tasks);
 
   return (
     <Box p="md">
@@ -68,92 +60,53 @@ export const EncounterChart = (): JSX.Element => {
             </Stack>
 
             <Stack gap="md">
-              <Card withBorder shadow="sm" p={0}>
-                <Stack gap="xs">
-                  <Stack gap="xs" p="md">
-                    <Text fw={500} size="lg">
-                      CHECK INSURANCE STATUS
-                    </Text>
-                    <Text>
-                      Check user insurance <Anchor href="#">here</Anchor>, then confirm it is active
-                    </Text>
-                  </Stack>
+              {tasks &&
+                tasks.map((task: Task) => (
+                  <Card withBorder shadow="sm" p={0}>
+                    <Stack gap="xs">
+                      <Stack gap="xs" p="md">
+                        {task.code?.text && (
+                          <Text fw={500} size="lg">
+                            {task.code.text}
+                          </Text>
+                        )}
+                        <Text>{task.description}</Text>
+                      </Stack>
 
-                  <Group
-                    justify="space-between"
-                    align="center"
-                    style={{ height: 70, backgroundColor: theme.colors.green[0] }}
-                    p="md"
-                  >
-                    <Stack gap={0}>
-                      <Text color="black">Current status</Text>
-                      <Text fw="bold" color="black">
-                        Completed
-                      </Text>
+                      <Group
+                        justify="space-between"
+                        align="center"
+                        style={{
+                          height: 70,
+                          backgroundColor: task.status === 'completed' ? theme.colors.green[0] : theme.colors.gray[1],
+                        }}
+                        p="md"
+                      >
+                        <Stack gap={0}>
+                          <Text color="black">Current status</Text>
+                          <Text fw="bold" color="black">
+                            {task.status}
+                          </Text>
+                        </Stack>
+
+                        <Group gap={8}>
+                          <Button variant="transparent" color={theme.colors.blue[6]}>
+                            Task details
+                          </Button>
+                          <Menu>
+                            <Menu.Target>
+                              <Button>Edit task ▾</Button>
+                            </Menu.Target>
+                            <Menu.Dropdown>
+                              <Menu.Item>Edit</Menu.Item>
+                              <Menu.Item>Delete</Menu.Item>
+                            </Menu.Dropdown>
+                          </Menu>
+                        </Group>
+                      </Group>
                     </Stack>
-
-                    <Group gap={8}>
-                      <Button variant="transparent" color={theme.colors.blue[6]}>
-                        Task details
-                      </Button>
-                      <Menu>
-                        <Menu.Target>
-                          <Button>Edit task ▾</Button>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                          <Menu.Item>Edit</Menu.Item>
-                          <Menu.Item>Delete</Menu.Item>
-                        </Menu.Dropdown>
-                      </Menu>
-                    </Group>
-                  </Group>
-                </Stack>
-              </Card>
-
-              <Card withBorder shadow="sm" p={0}>
-                <Stack gap="xs">
-                  <Stack gap="xs" p="md">
-                    <Text fw={500} size="lg">
-                      ORDER LAB TESTS
-                    </Text>
-                    <Text>
-                      Create new lab order in <Anchor href="#">Labs section</Anchor>, then complete this task
-                    </Text>
-                    <Text fw={500} color="green">
-                      Lab order created successfully
-                    </Text>
-                  </Stack>
-
-                  <Group
-                    justify="space-between"
-                    align="center"
-                    style={{ height: 70, backgroundColor: theme.colors.gray[1] }}
-                    p="md"
-                  >
-                    <Stack gap={0}>
-                      <Text color="black">Current status</Text>
-                      <Text fw="bold" color="black">
-                        In progress
-                      </Text>
-                    </Stack>
-
-                    <Group gap={8}>
-                      <Button variant="transparent" color={theme.colors.blue[6]}>
-                        Task details
-                      </Button>
-                      <Menu>
-                        <Menu.Target>
-                          <Button>Edit task ▾</Button>
-                        </Menu.Target>
-                        <Menu.Dropdown>
-                          <Menu.Item>Edit</Menu.Item>
-                          <Menu.Item>Delete</Menu.Item>
-                        </Menu.Dropdown>
-                      </Menu>
-                    </Group>
-                  </Group>
-                </Stack>
-              </Card>
+                  </Card>
+                ))}
             </Stack>
           </Stack>
         </Paper>
