@@ -16,10 +16,9 @@ resource "azurerm_kubernetes_cluster" "server_cluster" {
   network_profile {
     network_plugin      = "azure"
     network_plugin_mode = "overlay"
-    pod_cidr            = azurerm_subnet.medplum_aks_pods_snet_01.address_prefixes[0]
-    #service_cidr        = azurerm_subnet.medplum_aks_nodes_snet_01.address_prefixes[0]
-    service_cidr   = var.service_cidr
-    dns_service_ip = var.dns_service_ip
+    pod_cidr            = var.aks_pods_subnet_cidr
+    service_cidr        = var.service_cidr
+    dns_service_ip      = var.dns_service_ip
   }
 
   private_cluster_enabled = false
