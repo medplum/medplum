@@ -1,12 +1,12 @@
-import { Resource } from '@medplum/fhirtypes';
 import { BackgroundJobContext } from '@medplum/core';
+import { Resource } from '@medplum/fhirtypes';
 import { MedplumServerConfig } from '../config';
 import { globalLogger } from '../logger';
+import { closeBatchWorker, initBatchWorker } from './batch';
 import { addCronJobs, closeCronWorker, initCronWorker } from './cron';
 import { addDownloadJobs, closeDownloadWorker, initDownloadWorker } from './download';
-import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
 import { closeReindexWorker, initReindexWorker } from './reindex';
-import { closeBatchWorker, initBatchWorker } from './batch';
+import { addSubscriptionJobs, closeSubscriptionWorker, initSubscriptionWorker } from './subscription';
 
 /**
  * Initializes all background workers.
@@ -46,5 +46,5 @@ export async function addBackgroundJobs(
 ): Promise<void> {
   await addSubscriptionJobs(resource, previousVersion, context);
   await addDownloadJobs(resource);
-  await addCronJobs(resource);
+  await addCronJobs(resource, previousVersion);
 }
