@@ -225,6 +225,7 @@ Optional Route 53 Hosted Zone name for DNS entries. By default, the CDK will use
 ### fargateAutoScaling
 __Fargate__ is an AWS serverless compute engine for containers, meaning you don't have to manage any underlying infrastructure
 
+Example: 
 ```ts   
   fargateAutoScaling: {
   minCapacity: 1,
