@@ -1,10 +1,5 @@
 import { Title, Group, TextInput, Box, Textarea, Button, Alert, Grid } from '@mantine/core';
-import {
-  CodingInput,
-  Document,
-  ResourceName,
-  useMedplum,
-} from '@medplum/react';
+import { CodingInput, Document, ResourceName, useMedplum } from '@medplum/react';
 import { useState } from 'react';
 import { ValueSet } from '@medplum/fhirtypes';
 
@@ -75,7 +70,7 @@ export function HomePage(): JSX.Element {
       }
 
       const result = await medplum.search('ValueSet', {
-        url: term
+        url: term,
       });
 
       if (result.entry?.[0]?.resource) {
@@ -103,7 +98,7 @@ export function HomePage(): JSX.Element {
 
       // Check if a ValueSet with this URL already exists
       const existingValueSet = await medplum.search('ValueSet', {
-        url: valueSetData.url
+        url: valueSetData.url,
       });
 
       if (existingValueSet.entry?.[0]?.resource) {
@@ -136,13 +131,20 @@ export function HomePage(): JSX.Element {
       <Title>ValueSet Demo</Title>
 
       <Box mb="xl">
-        <p>This demo shows how to work with FHIR ValueSets. You can either search for existing ValueSets on the left, or create your own custom ValueSet on the right. Once a ValueSet is selected or created, you can use it for typeaheads.</p>
+        <p>
+          This demo shows how to work with FHIR ValueSets. You can either search for existing ValueSets on the left, or
+          create your own custom ValueSet on the right. Once a ValueSet is selected or created, you can use it for
+          typeaheads.
+        </p>
       </Box>
 
       <Grid mt="md">
         <Grid.Col span={6}>
           <Title order={2}>Search Existing ValueSets</Title>
-          <p style={{ marginBottom: '1rem' }}>Search for standard ValueSets that are already available in the system. Enter a ValueSet URL below to search.</p>
+          <p style={{ marginBottom: '1rem' }}>
+            Search for standard ValueSets that are already available in the system. Enter a ValueSet URL below to
+            search.
+          </p>
           <ul>
             <li>http://hl7.org/fhir/ValueSet/allergyintolerance-code</li>
             <li>http://hl7.org/fhir/ValueSet/clinical-findings</li>
@@ -166,19 +168,16 @@ export function HomePage(): JSX.Element {
 
           {selectedValueSet && (
             <Box mt="md">
-              <CodingInput
-                name="code"
-                path="code"
-                binding={selectedValueSet}
-                required
-              />
+              <CodingInput name="code" path="code" binding={selectedValueSet} required />
             </Box>
           )}
         </Grid.Col>
 
         <Grid.Col span={6}>
           <Title order={2}>Create Custom ValueSet</Title>
-          <p style={{ marginBottom: '1rem' }}>Define your own ValueSet by editing the JSON below. The example shows a ValueSet for common allergies.</p>
+          <p style={{ marginBottom: '1rem' }}>
+            Define your own ValueSet by editing the JSON below. The example shows a ValueSet for common allergies.
+          </p>
           <Textarea
             label="Custom ValueSet (JSON)"
             placeholder="Enter custom ValueSet JSON..."
