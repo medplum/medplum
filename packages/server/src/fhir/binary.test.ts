@@ -1,5 +1,5 @@
 import { ContentType } from '@medplum/core';
-import { Binary, Bundle, DocumentReference } from '@medplum/fhirtypes';
+import { Binary, Bundle, DocumentReference, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import express from 'express';
 import { Duplex, Readable } from 'stream';
 import request from 'supertest';
@@ -294,6 +294,25 @@ describe('Binary', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.text).toStrictEqual('{"resourceType":"Patient"}');
+  });
+
+  test('Error for disallowed file type', async () => {
+    const res = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/zip')
+      .send('Hello world');
+    expect(res.status).toBe(400);
+    expect(res.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
+
+    const res2 = await request(app)
+      .post('/fhir/R4/Binary')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', 'application/octet-stream')
+      .query({ _filename: 'foo.exe' })
+      .send('Hello world');
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue[0]).toMatchObject<OperationOutcomeIssue>({ severity: 'error', code: 'invalid' });
   });
 });
 
