@@ -8,11 +8,11 @@ import {
   getSearchParameterDetails,
   toTypedValue,
 } from '@medplum/core';
-import { Resource, SearchParameter } from '@medplum/fhirtypes';
+import { Bot, Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { Operation, createPatch } from 'rfc6902';
-import { ResourcePropertyDisplay } from '../ResourcePropertyDisplay/ResourcePropertyDisplay';
+import { ResourceDiffRow } from '../ResourceDiffRow/ResourceDiffRow';
 import classes from './ResourceDiffTable.module.css';
 
 export interface ResourceDiffTableProps {
@@ -24,6 +24,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
   const medplum = useMedplum();
   const { original, revised } = props;
   const [schemaLoaded, setSchemaLoaded] = useState(false);
+  const shouldToggleDisplay = (original as Bot).sourceCode?.contentType === 'text/typescript';
 
   useEffect(() => {
     medplum
@@ -82,31 +83,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
       </Table.Thead>
       <Table.Tbody>
         {diffTable.map((row) => (
-          <Table.Tr key={row.key}>
-            <Table.Td>{row.name}</Table.Td>
-            <Table.Td className={classes.removed}>
-              {row.originalValue && (
-                <ResourcePropertyDisplay
-                  path={row.path}
-                  property={row.property}
-                  propertyType={row.originalValue.type}
-                  value={row.originalValue.value}
-                  ignoreMissingValues={true}
-                />
-              )}
-            </Table.Td>
-            <Table.Td className={classes.added}>
-              {row.revisedValue && (
-                <ResourcePropertyDisplay
-                  path={row.path}
-                  property={row.property}
-                  propertyType={row.revisedValue.type}
-                  value={row.revisedValue.value}
-                  ignoreMissingValues={true}
-                />
-              )}
-            </Table.Td>
-          </Table.Tr>
+          <ResourceDiffRow {...row} shouldToggleDisplay={shouldToggleDisplay} />
         ))}
       </Table.Tbody>
     </Table>
