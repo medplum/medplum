@@ -79,7 +79,6 @@ describe('OAuth2 Token', () => {
     // Create a 2nd client with PKCE optional
     pkceOptionalClient = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
-      secret: randomUUID(),
       pkceOptional: true,
     });
 
@@ -479,7 +478,7 @@ describe('OAuth2 Token', () => {
 
   test('Authorization code token with wrong client secret', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: pkceOptionalClient.id,
+      clientId: client.id,
       email,
       password,
     });
@@ -488,7 +487,7 @@ describe('OAuth2 Token', () => {
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
-      client_id: pkceOptionalClient.id,
+      client_id: client.id,
       client_secret: 'wrong',
     });
     expect(res2.status).toBe(400);
@@ -498,7 +497,7 @@ describe('OAuth2 Token', () => {
 
   test('Authorization code token with client secret success', async () => {
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: pkceOptionalClient.id,
+      clientId: client.id,
       email,
       password,
     });
@@ -507,8 +506,8 @@ describe('OAuth2 Token', () => {
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
-      client_id: pkceOptionalClient.id,
-      client_secret: pkceOptionalClient.secret,
+      client_id: client.id,
+      client_secret: client.secret,
     });
     expect(res2.status).toBe(200);
     expect(res2.body.token_type).toBe('Bearer');
@@ -1578,7 +1577,7 @@ describe('OAuth2 Token', () => {
     );
 
     const res = await request(app).post('/auth/login').type('json').send({
-      clientId: pkceOptionalClient.id,
+      clientId: client.id,
       launch: launch.id,
       email,
       password,
@@ -1588,8 +1587,8 @@ describe('OAuth2 Token', () => {
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
-      client_id: pkceOptionalClient.id,
-      client_secret: pkceOptionalClient.secret,
+      client_id: client.id,
+      client_secret: client.secret,
     });
     expect(res2.status).toBe(200);
     expect(res2.body.patient).toBeDefined();
@@ -1598,7 +1597,7 @@ describe('OAuth2 Token', () => {
 
   test('IP address allow', async () => {
     const res = await request(app).post('/auth/login').set('X-Forwarded-For', '5.5.5.5').type('json').send({
-      clientId: pkceOptionalClient.id,
+      clientId: client.id,
       email,
       password,
     });
@@ -1607,8 +1606,8 @@ describe('OAuth2 Token', () => {
     const res2 = await request(app).post('/oauth2/token').type('form').send({
       grant_type: 'authorization_code',
       code: res.body.code,
-      client_id: pkceOptionalClient.id,
-      client_secret: pkceOptionalClient.secret,
+      client_id: client.id,
+      client_secret: client.secret,
     });
     expect(res2.status).toBe(200);
   });
