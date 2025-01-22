@@ -69,7 +69,7 @@ The following criteria are required for CHPL listing: d12, d13, [g4](/docs/compl
 
 ## Real World Testing
 
-Download [Real World Testing Plan](https://drive.google.com/file/d/1hepC2n74zVZt8jr5jR4Eye3zGw0pnYJ7/view?usp=sharing) 2024
-Download [Real World Testing Plan](https://drive.google.com/file/d/1JpxYdPgtNmda7gPHsfRIMLfzNfEPTJGl/view?usp=drive_link) 2025
+* Download [Real World Testing Plan](https://drive.google.com/file/d/1hepC2n74zVZt8jr5jR4Eye3zGw0pnYJ7/view?usp=sharing) 2024 ([Results](https://drive.google.com/file/d/1qR9vM3XYZ2ABl806W7HI8z6Und5GkEIz/view?usp=drive_link))
+* Download [Real World Testing Plan](https://drive.google.com/file/d/1JpxYdPgtNmda7gPHsfRIMLfzNfEPTJGl/view?usp=drive_link) 2025
 
 ![ONC 2015 Edition Cures](/img/compliance/onc-2015-edition-cures.png)
