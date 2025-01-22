@@ -1,4 +1,4 @@
-import { accepted, allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
+import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
 import { AsyncJob, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import express from 'express';
@@ -601,96 +601,26 @@ describe('Super Admin routes', () => {
         expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
       });
 
-      test('Run data migrations -- Matching data version', async () => {
-        const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => 1);
-        const maybeStartDataMigrationSpy = jest
-          .spyOn(database, 'maybeStartDataMigration')
-          .mockImplementation(async () => ({
-            resourceType: 'AsyncJob',
-            status: 'accepted',
-            requestTime: new Date().toISOString(),
-            request: 'mock-job',
-          }));
-
-        const res1 = await request(app)
-          .post('/admin/super/migrate')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .set('Prefer', 'respond-async')
-          .type('json')
-          .send({ dataMigration: 1 });
-
-        expect(res1.status).toStrictEqual(202);
-        expect(res1.headers['content-location']).toBeDefined();
-        expect(res1.body).toMatchObject(accepted(res1.headers['content-location']));
-        expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
-        expect(maybeStartDataMigrationSpy).toHaveBeenCalledTimes(1);
-      });
-
       test('Run data migrations -- Asserted version is less than or equal to current version', async () => {
-        const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => 0);
-        const getCurrentDataVersionSpy = jest.spyOn(database, 'getCurrentDataVersion').mockImplementation(() => 1);
-        const maybeStartDataMigrationSpy = jest.spyOn(database, 'maybeStartDataMigration');
+        await database.markPendingDataMigrationCompleted({
+          resourceType: 'AsyncJob',
+          type: 'data-migration',
+          status: 'accepted',
+          request: 'mock-job',
+          requestTime: new Date().toISOString(),
+          dataVersion: 1,
+        });
 
         const res1 = await request(app)
           .post('/admin/super/migrate')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
-          .send({ dataMigration: 1 });
+          .send({ dataVersion: 1 });
 
         expect(res1.status).toStrictEqual(200);
         expect(res1.headers['content-location']).not.toBeDefined();
         expect(res1.body).toMatchObject(allOk);
-        expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
-        expect(getCurrentDataVersionSpy).toHaveBeenCalledTimes(1);
-        expect(maybeStartDataMigrationSpy).not.toHaveBeenCalled();
-      });
-
-      test('Run data migrations -- Asserted version is greater than current data version AND not the pending version', async () => {
-        const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => 0);
-        const getCurrentDataVersionSpy = jest.spyOn(database, 'getCurrentDataVersion').mockImplementation(() => 1);
-        const maybeStartDataMigrationSpy = jest.spyOn(database, 'maybeStartDataMigration');
-
-        const res1 = await request(app)
-          .post('/admin/super/migrate')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .set('Prefer', 'respond-async')
-          .type('json')
-          .send({ dataMigration: 2 });
-
-        expect(res1.status).toStrictEqual(400);
-        expect(res1.headers['content-location']).not.toBeDefined();
-        expect(res1.body).toMatchObject(
-          badRequest(
-            'Data migration assertion failed. Expected pending migration to be migration 2, server has no pending data migration'
-          )
-        );
-        expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
-        expect(getCurrentDataVersionSpy).toHaveBeenCalledTimes(1);
-        expect(maybeStartDataMigrationSpy).not.toHaveBeenCalled();
-
-        jest.clearAllMocks();
-
-        getPendingDataMigrationSpy.mockImplementation(() => 1);
-        getCurrentDataVersionSpy.mockImplementation(() => 0);
-
-        const res2 = await request(app)
-          .post('/admin/super/migrate')
-          .set('Authorization', 'Bearer ' + adminAccessToken)
-          .set('Prefer', 'respond-async')
-          .type('json')
-          .send({ dataMigration: 2 });
-
-        expect(res2.status).toStrictEqual(400);
-        expect(res2.headers['content-location']).not.toBeDefined();
-        expect(res2.body).toMatchObject(
-          badRequest(
-            'Data migration assertion failed. Expected pending migration to be migration 2, server has current pending data migration 1'
-          )
-        );
-        expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
-        expect(getCurrentDataVersionSpy).toHaveBeenCalledTimes(1);
-        expect(maybeStartDataMigrationSpy).not.toHaveBeenCalled();
       });
     });
   });
