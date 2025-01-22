@@ -1,4 +1,4 @@
-import { sleep } from '@medplum/core';
+import { badRequest, created, OperationOutcomeError, parseSearchRequest, sleep } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
@@ -32,7 +32,7 @@ export function getPendingDataMigration(): number {
 
 export async function markPendingDataMigrationCompleted(job: AsyncJob): Promise<void> {
   assert(job.dataVersion);
-  await getDatabasePool(DatabaseMode.WRITER).query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [
+  await getDatabasePool(DatabaseMode.WRITER).query('UPDATE "DatabaseMigration" SET "dataVersion" = $1', [
     job.dataVersion,
   ]);
   pendingDataMigration = 0;
@@ -56,6 +56,9 @@ export const locks = {
 
 export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
   pool = await initPool(serverConfig.database, serverConfig.databaseProxyEndpoint);
+
+  dataVersion = -1;
+  pendingDataMigration = -1;
 
   if (serverConfig.database.runMigrations !== false) {
     await runMigrations(pool);
@@ -185,6 +188,8 @@ async function migrate(client: PoolClient): Promise<void> {
   const allDataVersions = getMigrationVersions(dataMigrations);
   pendingDataMigration = 0;
 
+  globalLogger.error('dataVersion', { dataVersion });
+
   // If this is the first time the server has been started up (version < 0)
   // We need to initialize our migrations table
   // This also opts us into the fast path for data migrations, so we can skip all checks for server version and go straight to the latest data version
@@ -207,6 +212,9 @@ async function migrate(client: PoolClient): Promise<void> {
     const requiredServerVersion = manifest['v' + pendingDataMigration].serverVersion;
 
     const serverVersion = getServerVersion();
+
+    globalLogger.error('required', { requiredServerVersion });
+    globalLogger.error('current', { serverVersion });
 
     // TODO(ThatOneBro 16 Dec 2024): Make this version strict after v4 (exact version only)
     // ----  We made this requirement looser so that self-hosters can run first migration on any version within the minor version before v4
@@ -242,11 +250,70 @@ function getMigrationVersions(migrationModule: Record<string, any>): number[] {
   return migrationVersions;
 }
 
-export async function maybeStartDataMigration(): Promise<AsyncJob | undefined> {
-  const systemRepo = getSystemRepo();
-  if (!pendingDataMigration) {
+/**
+ * Attempts to run current outstanding data migration.
+ *
+ * If pending data migrations were no assessed due to `config.runMigrations` being false,
+ * this function will throw.
+ *
+ * @param assertedDataVersion - The asserted data version that we expect to run.
+ * @returns An `AsyncJob` if migration is started or already running, otherwise returns `undefined` if no migration to run.
+ */
+export async function maybeStartDataMigration(assertedDataVersion?: number): Promise<AsyncJob | undefined> {
+  if (pendingDataMigration === 0) {
     return undefined;
   }
-  const dataMigration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
-  return dataMigration.run(systemRepo);
+
+  // If `config.runMigrations` was false, `pendingDataMigration` will be -1, and we should throw
+  if (pendingDataMigration === -1) {
+    throw new OperationOutcomeError(
+      badRequest(
+        'Cannot run data migration; config.runMigrations may be false and has prevented schema migrations from running'
+      )
+    );
+  }
+
+  // If a version has been asserted, check if we have that version pending
+  // Or if we have already applied it
+  if (assertedDataVersion) {
+    // We have already applied this data version, there is no migration to run
+    if (assertedDataVersion <= dataVersion) {
+      return undefined;
+    }
+    // The data version is higher than the version we expect to apply next, we cannot apply this migration
+    if (assertedDataVersion > pendingDataMigration) {
+      throw new OperationOutcomeError(
+        badRequest(
+          `Data migration assertion failed. Expected pending migration to be migration ${assertedDataVersion}, server has ${pendingDataMigration > 0 ? `current pending data migration ${pendingDataMigration}` : 'no pending data migration'}`
+        )
+      );
+    }
+  }
+
+  const systemRepo = getSystemRepo();
+  // Check if there is already a migration job in progress
+  // If there isn't, create a new one
+  const { resource: dataMigrationJob, outcome } = await systemRepo.conditionalCreate<AsyncJob>(
+    {
+      resourceType: 'AsyncJob',
+      type: 'data-migration',
+      status: 'accepted',
+      request: `data-migration-v${pendingDataMigration}`,
+      requestTime: new Date().toISOString(),
+      dataVersion: pendingDataMigration,
+      // We know that because we were able to start the migration on this server instance,
+      // That we must be on the right version to run this migration
+      minServerVersion: getServerVersion(),
+    },
+    parseSearchRequest('AsyncJob', { status: 'accepted', type: 'data-migration' })
+  );
+  // If the job was just created, then run the pending migration
+  if (outcome === created) {
+    const dataMigration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
+    // Don't await the migration, since it could be blocking
+    dataMigration
+      .run(systemRepo, dataMigrationJob)
+      .catch((err) => globalLogger.error('Error while running data migration', { err }));
+  }
+  return dataMigrationJob;
 }

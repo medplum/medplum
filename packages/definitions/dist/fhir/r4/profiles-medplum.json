@@ -5197,7 +5197,15 @@
               "path" : "AsyncJob",
               "min" : 0,
               "max" : "*"
-            }
+            },
+            "constraint": [
+              {
+                "key" : "ajb-1",
+                "severity" : "error",
+                "human" : "Async jobs of type 'data-migration' require a 'dataVersion' and 'minServerVersion'.",
+                "expression" : "type.exists() and type = 'data-migration' implies dataVersion.exists() and minServerVersion.exists()"
+              }
+            ]
           },
           {
             "id" : "AsyncJob.id",
