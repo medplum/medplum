@@ -60,16 +60,13 @@ export const EncounterChart = (): JSX.Element => {
             </Stack>
 
             <Stack gap="md">
-              {tasks?.map((task: Task) => (
+              {tasks?.map((task: Task) =>
                 task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-                  <TaskQuestionnaireForm
-                    task={task}
-                  />
-                  ) : (
-                  <SimpleTask
-                    task={task} />
-                  )
-              ))}
+                  <TaskQuestionnaireForm task={task} />
+                ) : (
+                  <SimpleTask task={task} />
+                )
+              )}
             </Stack>
           </Stack>
         </Paper>
