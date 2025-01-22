@@ -111,7 +111,6 @@ describe('PlanDefinition apply', () => {
     expect(res6.body.resourceType).toStrictEqual('Task');
     expect(res6.body.code.text).toStrictEqual(res1.body.title);
 
-
     const resultTask = res6.body as Task;
     expect(resultTask.for).toMatchObject(createReference(res3.body as Patient));
     expect(resultTask.focus).toMatchObject(createReference(res1.body as Questionnaire));
