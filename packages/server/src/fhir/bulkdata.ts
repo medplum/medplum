@@ -15,15 +15,18 @@ export const bulkDataRouter = Router();
 
 async function getExportResource(id: string): Promise<AsyncJob | BulkDataExport> {
   const { repo } = getAuthenticatedContext();
+  let resource: AsyncJob | BulkDataExport;
   try {
-    return repo.readResource<AsyncJob>('AsyncJob', id);
+    resource = await repo.readResource<AsyncJob>('AsyncJob', id);
   } catch (err: unknown) {
     if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
-      return repo.readResource<BulkDataExport>('BulkDataExport', id);
+      resource = await repo.readResource<BulkDataExport>('BulkDataExport', id);
     } else {
       throw err;
     }
   }
+
+  return resource;
 }
 
 bulkDataRouter.get(
