@@ -109,6 +109,8 @@ describe('PlanDefinition apply', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     expect(res6.body.resourceType).toStrictEqual('Task');
+    expect(res6.body.code.text).toStrictEqual(res1.body.title);
+
 
     const resultTask = res6.body as Task;
     expect(resultTask.for).toMatchObject(createReference(res3.body as Patient));
