@@ -547,48 +547,6 @@ describe('Super Admin routes', () => {
       jest.resetAllMocks();
     });
 
-    test('Run data migrations -- Already up-to-date', async () => {
-      // 0 means no pending migration
-      const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => 0);
-      const maybeStartDataMigrationSpy = jest
-        .spyOn(database, 'maybeStartDataMigration')
-        .mockImplementation(async () => undefined);
-
-      const res1 = await request(app)
-        .post('/admin/super/migrate')
-        .set('Authorization', 'Bearer ' + adminAccessToken)
-        .set('Prefer', 'respond-async')
-        .type('json')
-        .send({});
-
-      expect(res1.status).toStrictEqual(200);
-      expect(res1.headers['content-location']).not.toBeDefined();
-      expect(res1.body).toMatchObject(allOk);
-      expect(maybeStartDataMigrationSpy).toHaveBeenCalledTimes(1);
-      expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
-    });
-
-    test('Run data migrations -- Migrate fn did not run', async () => {
-      // We return -1 from `getPendingDataMigration` only when `migrate` didn't run (`config.runMigrations` === false, presumably), which initializes it to 0
-      const getPendingDataMigrationSpy = jest.spyOn(database, 'getPendingDataMigration').mockImplementation(() => -1);
-
-      const res1 = await request(app)
-        .post('/admin/super/migrate')
-        .set('Authorization', 'Bearer ' + adminAccessToken)
-        .set('Prefer', 'respond-async')
-        .type('json')
-        .send({});
-
-      expect(res1.status).toStrictEqual(400);
-      expect(res1.headers['content-location']).not.toBeDefined();
-      expect(res1.body).toMatchObject(
-        badRequest(
-          'Cannot run data migration; config.runMigrations may be false and has prevented schema migrations from running'
-        )
-      );
-      expect(getPendingDataMigrationSpy).toHaveBeenCalledTimes(1);
-    });
-
     test('Run data migrations -- Migrations to run or already running', async () => {
       const res1 = await request(app)
         .post('/fhir/R4/AsyncJob')
@@ -630,17 +588,17 @@ describe('Super Admin routes', () => {
     });
 
     describe('Data version asserted', () => {
-      test('Run data migrations -- invalid dataMigration asserted', async () => {
+      test('Run data migrations -- invalid dataVersion asserted', async () => {
         const res1 = await request(app)
           .post('/admin/super/migrate')
           .set('Authorization', 'Bearer ' + adminAccessToken)
           .set('Prefer', 'respond-async')
           .type('json')
-          .send({ dataMigration: true });
+          .send({ dataVersion: true });
 
         expect(res1.status).toStrictEqual(400);
         expect(res1.headers['content-location']).not.toBeDefined();
-        expect(res1.body).toMatchObject(badRequest('dataMigration must be an integer'));
+        expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
       });
 
       test('Run data migrations -- Matching data version', async () => {

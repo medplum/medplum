@@ -8,7 +8,6 @@ import { getServerVersion } from '../util/version';
 
 export interface LongJobData {
   asyncJob: AsyncJob;
-  minServerVersion?: string;
 }
 
 const inProgressJobStatus: AsyncJob['status'][] = ['accepted', 'active'];
@@ -56,7 +55,7 @@ export abstract class LongJob<TResult extends {}, TData extends LongJobData> {
 
   async execute(job: Job<TData>): Promise<void> {
     // When version is asserted, we should check that we are on a version greater than or equal to that version
-    if (job.data.minServerVersion && semver.lt(getServerVersion(), job.data.minServerVersion)) {
+    if (job.data.asyncJob.minServerVersion && semver.lt(getServerVersion(), job.data.asyncJob.minServerVersion)) {
       // Since we can't handle this ourselves, re-enqueue the job for another worker that can
       await this.enqueueJob(job.data);
       return;

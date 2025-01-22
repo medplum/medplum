@@ -3,38 +3,18 @@
  * Do not edit manually.
  */
 
-import { created, getResourceTypes, parseSearchRequest } from '@medplum/core';
+import { getResourceTypes } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { AsyncJobExecutor } from '../../fhir/operations/utils/asyncjobexecutor';
 import { Repository } from '../../fhir/repo';
-import { getServerVersion } from '../../util/version';
 import { addReindexJob } from '../../workers/reindex';
 
-export async function run(repo: Repository): Promise<AsyncJob> {
-  // Check if there is already a migration job in progress
-  // If there isn't, create a new one
-  const { resource: dataMigrationJob, outcome } = await repo.conditionalCreate<AsyncJob>(
-    {
-      resourceType: 'AsyncJob',
-      status: 'accepted',
-      request: 'data-migration-v1',
-      requestTime: new Date().toISOString(),
-      dataVersion: 1,
-      // We know that because we were able to start the migration on this server instance,
-      // That we must be on the right version to run this migration
-      minServerVersion: getServerVersion(),
-    },
-    parseSearchRequest('AsyncJob', { status: 'accepted', type: 'data-migration' })
-  );
-  // If the job was just created, then initialize the index job
-  if (outcome === created) {
-    const exec = new AsyncJobExecutor(repo, dataMigrationJob);
-    await exec.run(async (asyncJob) => {
-      await addReindexJob(
-        getResourceTypes().filter((rt) => rt !== 'Binary'),
-        asyncJob
-      );
-    });
-  }
-  return dataMigrationJob;
+export async function run(repo: Repository, asyncJob: AsyncJob): Promise<void> {
+  const exec = new AsyncJobExecutor(repo, asyncJob);
+  await exec.run(async (asyncJob) => {
+    await addReindexJob(
+      getResourceTypes().filter((rt) => rt !== 'Binary'),
+      asyncJob
+    );
+  });
 }
