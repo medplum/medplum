@@ -1,14 +1,6 @@
-import {
-  allOk,
-  getReferenceString,
-  Operator,
-  sortStringArray,
-  findReferences,
-  isReference,
-  splitN,
-} from '@medplum/core';
+import { allOk, getReferenceString, Operator, sortStringArray, isReference, splitN } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Bundle, CompartmentDefinitionResource, Patient, ResourceType, Resource } from '@medplum/fhirtypes';
+import { Bundle, CompartmentDefinitionResource, Patient, ResourceType, Resource, Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
@@ -93,7 +85,7 @@ export async function getPatientEverything(
   });
 
   // Get all resources from the bundle
-  const resources = initialBundle.entry?.map((e) => e.resource) ?? [];
+  const resources = initialBundle.entry?.map((e) => e.resource as Resource) ?? [];
 
   // Recursively resolve all references
   const resolvedResources = await resolveReferences(repo, resources);
@@ -137,7 +129,12 @@ async function resolveReferences(
     processedRefs.add(refString);
 
     // Find all references in the resource
-    const references = collectReferences(resource);
+    const candidateRefs = collectReferences(resource);
+
+    const references: Reference[] = [];
+    for (const ref of candidateRefs) {
+      // if ()
+    }
 
     // Resolve each reference
     for (const ref of references) {
