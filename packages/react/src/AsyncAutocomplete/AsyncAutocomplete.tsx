@@ -11,9 +11,9 @@ import {
 } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { normalizeErrorString } from '@medplum/core';
+import { IconCheck } from '@tabler/icons-react';
 import { KeyboardEvent, ReactNode, SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { killEvent } from '../utils/dom';
-import { IconCheck } from '@tabler/icons-react';
 import { AsyncAutocompleteTestIds } from './AsyncAutocomplete.utils';
 
 export interface AsyncAutocompleteOption<T> extends ComboboxItem {
@@ -231,6 +231,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
       }
       lastValueRef.current = undefined;
       if (val === '$create') {
+        setSearch('');
         addSelected(search);
       } else {
         addSelected(val);
@@ -286,6 +287,9 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     />
   );
 
+  const createVisible = creatable && search.trim().length > 0;
+  const comboboxVisible = options.length > 0 || createVisible;
+
   return (
     <Combobox store={combobox} onOptionSubmit={handleValueSelect} withinPortal={true} shadow="xl" {...rest}>
       <Combobox.DropdownTarget>
@@ -329,7 +333,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
         </PillsInput>
       </Combobox.DropdownTarget>
 
-      <Combobox.Dropdown hidden={options.length === 0} data-testid={AsyncAutocompleteTestIds.options}>
+      <Combobox.Dropdown hidden={!comboboxVisible} data-testid={AsyncAutocompleteTestIds.options}>
         <Combobox.Options>
           <ScrollAreaAutosize type="scroll" mah={optionsDropdownMaxHeight}>
             {options.map((item) => {
@@ -341,9 +345,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
               );
             })}
 
-            {creatable && search.trim().length > 0 && (
-              <Combobox.Option value="$create">+ Create {search}</Combobox.Option>
-            )}
+            {createVisible && <Combobox.Option value="$create">+ Create {search}</Combobox.Option>}
 
             {!creatable && search.trim().length > 0 && options.length === 0 && <EmptyComponent search={search} />}
           </ScrollAreaAutosize>
