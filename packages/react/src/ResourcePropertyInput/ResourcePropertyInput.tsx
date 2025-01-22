@@ -295,7 +295,14 @@ export function ElementDefinitionTypeInput(props: ElementDefinitionTypeInputProp
     case PropertyType.code:
       // overwrite getPrimitiveInputProps().error since FormSection already shows errors
       return (
-        <CodeInput {...getPrimitiveInputProps()} error={undefined} onChange={onChange} binding={binding?.valueSet} />
+        <CodeInput
+          {...getPrimitiveInputProps()}
+          error={undefined}
+          onChange={onChange}
+          binding={binding?.valueSet}
+          creatable
+          maxValues={1}
+        />
       );
     case PropertyType.boolean:
       return (
