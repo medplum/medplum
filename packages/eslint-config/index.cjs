@@ -49,7 +49,6 @@ module.exports = {
     'no-octal-escape': 'error',
     'no-proto': 'error',
     'no-return-assign': 'error',
-    'no-return-await': 'error',
     'no-sequences': 'error',
     'no-unneeded-ternary': 'error',
     'no-unused-expressions': 'error',
@@ -103,6 +102,7 @@ module.exports = {
     '@typescript-eslint/prefer-return-this-type': 'error',
     '@typescript-eslint/prefer-string-starts-ends-with': 'error',
     '@typescript-eslint/prefer-ts-expect-error': 'off', // We must use @ts-ignore for optional dependencies in type definitions
+    '@typescript-eslint/return-await': ['error', 'in-try-catch'],
     '@typescript-eslint/switch-exhaustiveness-check': [
       'error',
       {
