@@ -6,7 +6,7 @@ import ws from 'ws';
 import { handleAgentConnection } from './agent/websockets';
 import { getConfig } from './config';
 import { RequestContext } from './context';
-import { handleFhircastConnection, initHeartbeatHandler, stopFhircastHeartbeat } from './fhircast/websocket';
+import { handleFhircastConnection, stopFhircastHeartbeat } from './fhircast/websocket';
 import { globalLogger } from './logger';
 import { getRedis, getRedisSubscriber } from './redis';
 import { requestContextStore } from './request-context-store';
@@ -89,8 +89,6 @@ export function initWebSockets(server: http.Server): void {
       socket.destroy();
     }
   });
-
-  initHeartbeatHandler();
 }
 
 function getWebSocketPath(path: string): string {
