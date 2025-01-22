@@ -174,7 +174,7 @@ function topologicalSortWithCycles(graph: AdjacencyList): { sorted: string[]; cy
   return { sorted, cycles };
 }
 
-export function findReferences(resource: any, callback: (reference: string) => void): void {
+function findReferences(resource: any, callback: (reference: string) => void): void {
   for (const key in resource) {
     if (resource[key] && typeof resource[key] === 'object') {
       const value = resource[key];

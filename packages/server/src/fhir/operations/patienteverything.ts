@@ -1,4 +1,12 @@
-import { allOk, getReferenceString, Operator, sortStringArray, findReferences } from '@medplum/core';
+import {
+  allOk,
+  getReferenceString,
+  Operator,
+  sortStringArray,
+  findReferences,
+  isReference,
+  splitN,
+} from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Bundle, CompartmentDefinitionResource, Patient, ResourceType, Resource } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -85,16 +93,16 @@ export async function getPatientEverything(
   });
 
   // Get all resources from the bundle
-  const resources = initialBundle.entry?.map(e => e.resource) ?? [];
-  
+  const resources = initialBundle.entry?.map((e) => e.resource) ?? [];
+
   // Recursively resolve all references
   const resolvedResources = await resolveReferences(repo, resources);
-  
+
   // Create new bundle with all resolved resources
   return {
     resourceType: 'Bundle',
     type: 'searchset',
-    entry: resolvedResources.map(resource => ({
+    entry: resolvedResources.map((resource) => ({
       resource,
       fullUrl: `${resource.resourceType}/${resource.id}`,
     })),
@@ -112,39 +120,56 @@ export async function getPatientEverything(
 async function resolveReferences(
   repo: Repository,
   resources: Resource[],
-  processedRefs: Set<string> = new Set()
+  processedRefs = new Set<string>()
 ): Promise<Resource[]> {
   const result = new Set<Resource>();
   const toProcess = [...resources];
 
   while (toProcess.length > 0) {
-    const resource = toProcess.pop()!;
+    const resource = toProcess.pop() as Resource;
     const refString = getReferenceString(resource);
-    
+
     if (processedRefs.has(refString)) {
       continue;
     }
-    
+
     result.add(resource);
     processedRefs.add(refString);
 
     // Find all references in the resource
-    const references = findReferences(resource);
-    
+    const references = collectReferences(resource);
+
     // Resolve each reference
     for (const ref of references) {
-      if (ref.reference && !processedRefs.has(ref.reference)) {
+      if (ref && !processedRefs.has(ref)) {
         try {
-          const [resourceType, id] = ref.reference.split('/');
+          const [resourceType, id] = splitN(ref, '/', 2);
           const referencedResource = await repo.readResource(resourceType as ResourceType, id);
           toProcess.push(referencedResource);
         } catch (error) {
           // Skip references that can't be resolved
-          console.warn('Failed to resolve reference:', ref.reference);
+          console.warn('Failed to resolve reference', ref, error);
         }
       }
     }
   }
 
   return Array.from(result);
+}
+
+function collectReferences(resource: any, foundReferences = new Set<string>()): Set<string> {
+  for (const key in resource) {
+    if (resource[key] && typeof resource[key] === 'object') {
+      const value = resource[key];
+
+      if (isReference(value)) {
+        if (value.reference) {
+          foundReferences.add(value.reference);
+        }
+      } else {
+        collectReferences(value, foundReferences);
+      }
+    }
+  }
+  return foundReferences;
 }
