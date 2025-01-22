@@ -1,5 +1,5 @@
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, UserConfig } from 'vite';
 import dns from 'dns';
 
 dns.setDefaultResultOrder('verbatim');
@@ -11,4 +11,4 @@ export default defineConfig({
     host: 'localhost',
     port: 3000,
   },
-});
+} as UserConfig);
