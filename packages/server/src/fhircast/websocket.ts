@@ -15,7 +15,7 @@ let heartbeatHandler: (() => void) | undefined;
 const websocketMap = new Map<ws.WebSocket, string>();
 const topicRefCountMap = new Map<string, number>();
 
-function initHeartbeatHandler(): void {
+export function initFhircastHeartbeat(): void {
   if (!heartbeatHandler) {
     heartbeatHandler = (): void => {
       const baseHeartbeatPayload = {
@@ -48,8 +48,12 @@ function initHeartbeatHandler(): void {
   }
 }
 
-// We always init heartbeat handler early so we get our metrics being tracked at server startup
-initHeartbeatHandler();
+export function stopFhircastHeartbeat(): void {
+  if (heartbeatHandler) {
+    heartbeat.removeEventListener('heartbeat', heartbeatHandler);
+    heartbeatHandler = undefined;
+  }
+}
 
 /**
  * Handles a new WebSocket connection to the FHIRCast hub.
