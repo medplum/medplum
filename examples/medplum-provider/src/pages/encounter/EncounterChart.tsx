@@ -1,12 +1,15 @@
-import { Textarea, Select, Button, Text, Paper, Stack, Group, Box, Menu, Card, useMantineTheme } from '@mantine/core';
+import { Textarea, Select, Button, Text, Paper, Stack, Group, Box } from '@mantine/core';
 import { Task } from '@medplum/fhirtypes';
 import { useSearchResources } from '@medplum/react';
 import { useParams } from 'react-router-dom';
+import { TaskQuestionnaireForm } from '../components/TaskQuestionnaireForm';
+import { SimpleTask } from '../components/SimpleTask';
 
 export const EncounterChart = (): JSX.Element => {
-  const theme = useMantineTheme();
   const { encounterId } = useParams();
   const [tasks] = useSearchResources('Task', `encounter=Encounter/${encounterId}`);
+
+  console.log(tasks);
 
   return (
     <Box p="md">
@@ -57,53 +60,16 @@ export const EncounterChart = (): JSX.Element => {
             </Stack>
 
             <Stack gap="md">
-              {tasks &&
-                tasks.map((task: Task) => (
-                  <Card withBorder shadow="sm" p={0}>
-                    <Stack gap="xs">
-                      <Stack gap="xs" p="md">
-                        {task.code?.text && (
-                          <Text fw={500} size="lg">
-                            {task.code.text}
-                          </Text>
-                        )}
-                        <Text>{task.description}</Text>
-                      </Stack>
-
-                      <Group
-                        justify="space-between"
-                        align="center"
-                        style={{
-                          height: 70,
-                          backgroundColor: task.status === 'completed' ? theme.colors.green[0] : theme.colors.gray[1],
-                        }}
-                        p="md"
-                      >
-                        <Stack gap={0}>
-                          <Text color="black">Current status</Text>
-                          <Text fw="bold" color="black">
-                            {task.status}
-                          </Text>
-                        </Stack>
-
-                        <Group gap={8}>
-                          <Button variant="transparent" color={theme.colors.blue[6]}>
-                            Task details
-                          </Button>
-                          <Menu>
-                            <Menu.Target>
-                              <Button>Edit task ▾</Button>
-                            </Menu.Target>
-                            <Menu.Dropdown>
-                              <Menu.Item>Edit</Menu.Item>
-                              <Menu.Item>Delete</Menu.Item>
-                            </Menu.Dropdown>
-                          </Menu>
-                        </Group>
-                      </Group>
-                    </Stack>
-                  </Card>
-                ))}
+              {tasks?.map((task: Task) => (
+                task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
+                  <TaskQuestionnaireForm
+                    task={task}
+                  />
+                  ) : (
+                  <SimpleTask
+                    task={task} />
+                  )
+              ))}
             </Stack>
           </Stack>
         </Paper>
