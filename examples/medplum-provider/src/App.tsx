@@ -39,7 +39,6 @@ import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { EncounterChart } from './pages/encounter/EncounterChart';
-import { EncounterTab } from './pages/patient/EncounterTab';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
