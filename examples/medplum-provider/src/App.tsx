@@ -39,6 +39,7 @@ import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { EncounterModal } from './pages/encounter/EncounterModal';
 import { EncounterChart } from './pages/encounter/EncounterChart';
+import { EncounterTab } from './pages/patient/EncounterTab';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -120,6 +121,7 @@ export function App(): JSX.Element | null {
             <>
               <Route path="/" element={<HomePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
+                <Route path="encounter" element={<EncounterTab />} />
                 <Route path="Encounter/new" element={<EncounterModal />} />
                 <Route path="Encounter/:encounterId/chart" element={<EncounterChart />} />
                 <Route path="edit" element={<EditTab />} />

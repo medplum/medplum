@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
+import { Questionnaire, Reference, Task } from '@medplum/fhirtypes';
 import { useMedplum, QuestionnaireForm } from '@medplum/react';
 import { Box, Card, Stack } from '@mantine/core';
 import { TaskStatusPanel } from './TaskStatusPanel';
@@ -10,8 +10,7 @@ interface ActionQuestionnaireFormProps {
 
 export const TaskQuestionnaireForm = ({ task }: ActionQuestionnaireFormProps): JSX.Element => {
   const medplum = useMedplum();
-  const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
-  const [response, setResponse] = useState<QuestionnaireResponse>();
+  const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
 
   useEffect(() => {
     const fetchQuestionnaire = async (): Promise<void> => {
@@ -27,10 +26,6 @@ export const TaskQuestionnaireForm = ({ task }: ActionQuestionnaireFormProps): J
     fetchQuestionnaire().catch(console.error);
   }, [medplum, task]);
 
-  useEffect(() => {
-    console.log('Response', response);
-  }, [response]);
-
   if (!questionnaire) {
     return <div>Loading...</div>;
   }
@@ -39,7 +34,7 @@ export const TaskQuestionnaireForm = ({ task }: ActionQuestionnaireFormProps): J
     <Card withBorder shadow="sm" p={0}>
       <Stack gap="xs">
         <Box p="md">
-          <QuestionnaireForm questionnaire={questionnaire} excludeButtons={true} onChange={setResponse} />
+          <QuestionnaireForm questionnaire={questionnaire} excludeButtons={true} />
         </Box>
         <TaskStatusPanel task={task} />
       </Stack>

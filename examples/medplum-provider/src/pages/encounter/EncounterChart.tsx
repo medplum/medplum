@@ -9,8 +9,6 @@ export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
   const [tasks] = useSearchResources('Task', `encounter=Encounter/${encounterId}`);
 
-  console.log(tasks);
-
   return (
     <Box p="md">
       <Text size="lg" color="dimmed" mb="lg">
