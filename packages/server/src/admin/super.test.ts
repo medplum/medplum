@@ -907,9 +907,12 @@ describe('Super Admin routes', () => {
       const res2 = await request(app)
         .post('/admin/super/reloadcron')
         .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
         .type('json');
 
-      expect(res2.status).toStrictEqual(200);
+      expect(res2.status).toStrictEqual(202);
+      expect(res2.headers['content-location']).toBeDefined();
+      await waitForAsyncJob(res2.headers['content-location'], app, adminAccessToken);
 
       expect(obliterateSpy).toHaveBeenCalledWith({ force: true });
       expect(upsertJobSchedulerSpy).toHaveBeenCalledWith(
