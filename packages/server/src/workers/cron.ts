@@ -222,13 +222,14 @@ export async function reloadCronBots(): Promise<void> {
     // Clears all jobs from the cron queue, including active ones
     await queue.obliterate({ force: true });
 
-    const allBots = await getSystemRepo().searchResources<Bot>({ resourceType: 'Bot' });
-    for (const bot of allBots) {
-      // If the bot has a cron, then add a scheduler for it
-      if (bot.cronString || bot.cronTiming) {
-        // We pass `undefined` as previous version to make sure that the latest cron string is used
-        await addCronJobs(bot, undefined);
+    await getSystemRepo().processAllResources<Bot>({ resourceType: 'Bot' }, async (bots: Bot[]) => {
+      for (const bot of bots) {
+        // If the bot has a cron, then add a scheduler for it
+        if (bot.cronString || bot.cronTiming) {
+          // We pass `undefined` as previous version to make sure that the latest cron string is used
+          await addCronJobs(bot, undefined);
+        }
       }
-    }
+    });
   }
 }

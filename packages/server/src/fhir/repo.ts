@@ -1156,6 +1156,35 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
+  async processAllResources<T extends Resource>(
+    initialSearchRequest: SearchRequest<T>,
+    processPage: (resources: T[]) => Promise<void>
+  ): Promise<void> {
+    let searchRequest: SearchRequest<T> | undefined = initialSearchRequest;
+    while (searchRequest) {
+      const bundle: Bundle<T> = await this.search<T>(searchRequest);
+      console.log({ bundle });
+      if (!bundle.entry?.length) {
+        break;
+      }
+      const resources: T[] = [];
+      for (const entry of bundle.entry) {
+        if (entry.resource?.id) {
+          resources.push(entry.resource);
+        }
+      }
+      console.log(resources);
+      await processPage(resources);
+      const nextLink = bundle.link?.find((b) => b.relation === 'next');
+      if (nextLink) {
+        searchRequest = parseSearchRequest<T>(nextLink.url);
+        console.log(searchRequest);
+      } else {
+        searchRequest = undefined;
+      }
+    }
+  }
+
   async searchByReference<T extends Resource>(
     searchRequest: SearchRequest<T>,
     referenceField: string,

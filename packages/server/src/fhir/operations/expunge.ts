@@ -59,6 +59,10 @@ export class Expunger {
     }
 
     const repo = this.repo;
+    // NOTE(ThatOneBro 23/01/2025): Attempted to convert this to using `repo.processAllResources`,
+    // But it doesn't quite fit the pattern since the "next" links are not usable
+    // As the expunge process is destructive and the "cursor" essentially is always at the beginning of the table
+    // We delete the next N resources over and over and use the "next" link as a signal if there are more resources to delete
     let hasNext = true;
     while (hasNext) {
       const bundle = await repo.search({
@@ -80,9 +84,7 @@ export class Expunger {
           buildBinaryIds(entry.resource, binaryIds);
         }
       }
-
       await repo.expungeResources(resourceType, resourcesToExpunge);
-
       if (binaryIds.size > 0) {
         await repo.expungeResources('Binary', Array.from(binaryIds));
       }
