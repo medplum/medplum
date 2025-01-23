@@ -32,6 +32,7 @@ import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
+import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
 import { closeRateLimiter, getRateLimiter } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
@@ -218,10 +219,12 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
     initHeartbeat(config);
+    initOtelHeartbeat();
   });
 }
 
 export async function shutdownApp(): Promise<void> {
+  cleanupOtelHeartbeat();
   cleanupHeartbeat();
   await closeWebSockets();
   if (server) {
