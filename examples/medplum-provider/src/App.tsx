@@ -121,7 +121,6 @@ export function App(): JSX.Element | null {
             <>
               <Route path="/" element={<HomePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
-                <Route path="encounter" element={<EncounterTab />} />
                 <Route path="Encounter/new" element={<EncounterModal />} />
                 <Route path="Encounter/:encounterId/chart" element={<EncounterChart />} />
                 <Route path="edit" element={<EditTab />} />
