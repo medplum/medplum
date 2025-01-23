@@ -49,4 +49,30 @@ describe('Binary', () => {
       deleted: exportResource.deleted,
     });
   });
+
+  test('Cancellation', async () => {
+    const exportResource = await repo.createResource<BulkDataExport>({
+      resourceType: 'BulkDataExport',
+      status: 'completed',
+      request: 'foo',
+      requestTime: new Date().toISOString(),
+      output: [{ url: 'http://example.com/output', type: 'Patient' }],
+      error: [{ url: 'http://example.com/error', type: 'Patient' }],
+      deleted: [{ url: 'http://example.com/deleted', type: 'Patient' }],
+    });
+
+    const cancelRes = await request(app)
+      .delete('/fhir/R4/bulkdata/export/' + exportResource.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended');
+    expect(cancelRes.status).toBe(202);
+
+    const initRes = await request(app)
+      .get('/fhir/R4/bulkdata/export/' + exportResource.id)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended');
+    expect(initRes.status).toBe(404);
+  });
 });
