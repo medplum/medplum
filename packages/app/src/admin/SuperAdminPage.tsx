@@ -41,6 +41,10 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
   }
 
+  function reloadCron(): void {
+    startAsyncJob(medplum, 'Reload Cron Resources', 'admin/super/reloadcron');
+  }
+
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
@@ -89,13 +93,6 @@ export function SuperAdminPage(): JSX.Element {
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'migrationString')?.valueString}</pre>);
         open();
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
-  }
-
-  function reloadCron(): void {
-    medplum
-      .post('admin/super/reloadcron')
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 

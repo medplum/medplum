@@ -351,15 +351,21 @@ superAdminRouter.post(
 // to clear out the cron queue and reload all cron strings from cron bots
 superAdminRouter.post(
   '/reloadcron',
-  asyncWrap(async (_req: Request, res: Response) => {
+  asyncWrap(async (req: Request, res: Response) => {
     requireSuperAdmin();
+    requireAsync(req);
 
-    const startTime = Date.now();
-    await reloadCronBots();
-    globalLogger.info('[Super Admin]: Cron bots reloaded', {
-      durationMs: Date.now() - startTime,
+    await sendAsyncResponse(req, res, async () => {
+      const startTime = Date.now();
+      await reloadCronBots();
+      globalLogger.info('[Super Admin]: Cron bots reloaded', {
+        durationMs: Date.now() - startTime,
+      });
+      return {
+        resourceType: 'Parameters',
+        parameter: [{ name: 'outcome', resource: allOk }],
+      };
     });
-    sendOutcome(res, allOk);
   })
 );
 

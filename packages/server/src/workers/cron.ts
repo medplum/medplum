@@ -9,6 +9,7 @@ import { getLogger, globalLogger } from '../logger';
 import { findProjectMembership } from './utils';
 
 const daysOfWeekConversion = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+const MAX_BOTS_PER_PAGE = 500;
 
 /*
  * The Cron worker inspects resources takes a bot,
@@ -222,14 +223,18 @@ export async function reloadCronBots(): Promise<void> {
     // Clears all jobs from the cron queue, including active ones
     await queue.obliterate({ force: true });
 
-    await getSystemRepo().processAllResources<Bot>({ resourceType: 'Bot' }, async (bots: Bot[]) => {
-      for (const bot of bots) {
-        // If the bot has a cron, then add a scheduler for it
-        if (bot.cronString || bot.cronTiming) {
-          // We pass `undefined` as previous version to make sure that the latest cron string is used
-          await addCronJobs(bot, undefined);
+    await getSystemRepo().processAllResources<Bot>(
+      { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },
+      async (bots: Bot[]) => {
+        for (const bot of bots) {
+          // If the bot has a cron, then add a scheduler for it
+          if (bot.cronString || bot.cronTiming) {
+            // We pass `undefined` as previous version to make sure that the latest cron string is used
+            await addCronJobs(bot, undefined);
+          }
         }
-      }
-    });
+      },
+      { delayBetweenPagesMs: 1000 }
+    );
   }
 }

@@ -39,6 +39,7 @@ import {
   resolveId,
   satisfiedAccessPolicy,
   serverError,
+  sleep,
   stringify,
   toPeriod,
   validateResource,
@@ -208,6 +209,10 @@ export interface ReadResourceOptions extends InteractionOptions {
 export interface ResendSubscriptionsOptions extends InteractionOptions {
   interaction?: BackgroundJobInteraction;
   subscription?: string;
+}
+
+export interface ProcessAllResourcesOptions {
+  delayBetweenPagesMs?: number;
 }
 
 /**
@@ -1158,12 +1163,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async processAllResources<T extends Resource>(
     initialSearchRequest: SearchRequest<T>,
-    processPage: (resources: T[]) => Promise<void>
+    processPage: (resources: T[]) => Promise<void>,
+    options?: ProcessAllResourcesOptions
   ): Promise<void> {
     let searchRequest: SearchRequest<T> | undefined = initialSearchRequest;
     while (searchRequest) {
       const bundle: Bundle<T> = await this.search<T>(searchRequest);
-      console.log({ bundle });
       if (!bundle.entry?.length) {
         break;
       }
@@ -1173,12 +1178,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
           resources.push(entry.resource);
         }
       }
-      console.log(resources);
       await processPage(resources);
       const nextLink = bundle.link?.find((b) => b.relation === 'next');
       if (nextLink) {
         searchRequest = parseSearchRequest<T>(nextLink.url);
-        console.log(searchRequest);
+        if (options?.delayBetweenPagesMs) {
+          await sleep(options.delayBetweenPagesMs);
+        }
       } else {
         searchRequest = undefined;
       }
