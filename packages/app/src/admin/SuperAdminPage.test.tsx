@@ -62,17 +62,7 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
-  test('Start data migration -- received job to poll', async () => {
-    setup();
-
-    await act(async () => {
-      fireEvent.click(screen.getByText('Start Migration'));
-    });
-
-    expect(screen.getByText('Done')).toBeInTheDocument();
-  });
-
-  test('Start data migration -- no migration to run', async () => {
+  test('Start data migration', async () => {
     setup();
 
     await act(async () => {
