@@ -213,9 +213,6 @@ async function migrate(client: PoolClient): Promise<void> {
 
     const serverVersion = getServerVersion();
 
-    globalLogger.error('required', { requiredServerVersion });
-    globalLogger.error('current', { serverVersion });
-
     // TODO(ThatOneBro 16 Dec 2024): Make this version strict after v4 (exact version only)
     // ----  We made this requirement looser so that self-hosters can run first migration on any version within the minor version before v4
 
