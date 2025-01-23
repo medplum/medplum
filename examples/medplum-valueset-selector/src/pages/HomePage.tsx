@@ -46,7 +46,7 @@ export function HomePage(): JSX.Element {
   const [successMessage, setSuccessMessage] = useState<string>();
 
   // Search function
-  const searchValueSet = async (term: string) => {
+  const searchValueSet = async (term: string): Promise<void> => {
     if (!term) {
       setCurrentValueSet(undefined);
       setError(undefined);
@@ -67,6 +67,7 @@ export function HomePage(): JSX.Element {
         }
       } catch (e) {
         // If parsing fails, continue with normal search
+        console.log(e);
       }
 
       const result = await medplum.search('ValueSet', {
@@ -88,7 +89,7 @@ export function HomePage(): JSX.Element {
     }
   };
 
-  const handleCreateValueSet = async () => {
+  const handleCreateValueSet = async (): Promise<void> => {
     try {
       setError(undefined);
       setSuccessMessage(undefined);
@@ -121,9 +122,9 @@ export function HomePage(): JSX.Element {
   };
 
   // Handle input changes
-  const handleSearchChange = (value: string) => {
+  const handleSearchChange = async (value: string): Promise<void> => {
     setSearchTerm(value);
-    searchValueSet(value);
+    await searchValueSet(value);
   };
 
   return (
