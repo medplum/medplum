@@ -244,6 +244,7 @@ async function migrate(client: PoolClient): Promise<void> {
 function getMigrationVersions(migrationModule: Record<string, any>): number[] {
   const prefixedVersions = Object.keys(migrationModule).filter((key) => key.startsWith('v'));
   const migrationVersions = prefixedVersions.map((key) => Number.parseInt(key.slice(1), 10)).sort((a, b) => a - b);
+  console.log({ migrationVersions });
   return migrationVersions;
 }
 
