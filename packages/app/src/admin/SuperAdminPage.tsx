@@ -13,13 +13,18 @@ import {
   useMedplum,
 } from '@medplum/react';
 import { IconCheck, IconX } from '@tabler/icons-react';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 export function SuperAdminPage(): JSX.Element {
   const medplum = useMedplum();
   const [opened, { open, close }] = useDisclosure(false);
   const [modalTitle, setModalTitle] = useState('');
   const [modalContent, setModalContent] = useState<ReactNode | undefined>();
+  const [dataVersion, setDataVersion] = useState<number>();
+
+  useEffect(() => {
+    getDataVersion();
+  });
 
   if (!medplum.isLoading() && !medplum.isSuperAdmin()) {
     return <OperationOutcomeAlert outcome={forbidden} />;
@@ -96,6 +101,15 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
+  function getDataVersion(): void {
+    medplum
+      .get('/admin/super/dataversion')
+      .then((params: Parameters) => {
+        setDataVersion(params.parameter?.find((param) => param.name === 'dataVersion')?.valueInteger ?? undefined);
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
   return (
     <Document width={600}>
       <Title order={1}>Super Admin</Title>
@@ -134,6 +148,7 @@ export function SuperAdminPage(): JSX.Element {
         When a Medplum version releases with data migrations to apply, you can run them here. Press this button to kick
         off the background data migration process.
       </p>
+      <p>Current data version: {dataVersion ?? 'unknown'}</p>
       <Form onSubmit={runPendingDataMigration}>
         <Stack>
           <Button type="submit">Start Migration</Button>

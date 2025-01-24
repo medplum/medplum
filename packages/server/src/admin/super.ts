@@ -16,10 +16,11 @@ import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { DatabaseMode, getDatabasePool, maybeStartDataMigration } from '../database';
+import { DatabaseMode, getCurrentDataVersion, getDatabasePool, maybeStartDataMigration } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
+import { sendFhirResponse } from '../fhir/response';
 import { globalLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
@@ -236,6 +237,18 @@ superAdminRouter.post(
     }
     const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);
     sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  })
+);
+
+// GET to /admin/super/dataversion
+superAdminRouter.get(
+  '/dataversion',
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+    await sendFhirResponse(req, res, allOk, {
+      resourceType: 'Parameters',
+      parameter: [{ name: 'dataVersion', valueInteger: getCurrentDataVersion() }],
+    });
   })
 );
 
