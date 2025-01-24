@@ -144,10 +144,10 @@ function processReferencesFromResources(toProcess: BundleEntry[], processedRefs:
 
     // Find all references in the resource
     const candidateRefs = collectReferences(resource);
-    for (const ref of candidateRefs) {
-      if (!processedRefs.has(ref) && shouldResolveReference(ref)) {
-        references.push({ reference: ref });
-        processedRefs.add(ref);
+    for (const reference of candidateRefs) {
+      if (!processedRefs.has(reference) && shouldResolveReference(reference)) {
+        references.push({ reference });
+        processedRefs.add(reference);
       }
     }
   }
@@ -165,11 +165,8 @@ function collectReferences(resource: any, foundReferences = new Set<string>()): 
   for (const key in resource) {
     if (resource[key] && typeof resource[key] === 'object') {
       const value = resource[key];
-
       if (isReference(value)) {
-        if (value.reference) {
-          foundReferences.add(value.reference);
-        }
+        foundReferences.add(value.reference);
       } else {
         collectReferences(value, foundReferences);
       }
