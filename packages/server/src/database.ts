@@ -188,8 +188,6 @@ async function migrate(client: PoolClient): Promise<void> {
   const allDataVersions = getMigrationVersions(dataMigrations);
   pendingDataMigration = 0;
 
-  globalLogger.error('dataVersion', { dataVersion });
-
   // If this is the first time the server has been started up (version < 0)
   // We need to initialize our migrations table
   // This also opts us into the fast path for data migrations, so we can skip all checks for server version and go straight to the latest data version
