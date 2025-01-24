@@ -29,7 +29,6 @@ export function App(): JSX.Element | null {
         <Suspense fallback={<Loading />}>
           <Routes>
             <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
-            <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/:resourceType/:id" element={<ResourcePage />} />
           </Routes>
