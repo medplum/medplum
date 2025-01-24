@@ -132,7 +132,7 @@ async function resolveReferences(
 }
 
 function processReferencesFromResources(toProcess: BundleEntry[], processedRefs: Set<string>): Reference[] {
-  const references: Reference[] = [];
+  const references = new Set<string>();
   for (const entry of toProcess) {
     const resource = entry.resource as Resource;
     const refString = getReferenceString(resource);
@@ -146,12 +146,16 @@ function processReferencesFromResources(toProcess: BundleEntry[], processedRefs:
     const candidateRefs = collectReferences(resource);
     for (const reference of candidateRefs) {
       if (!processedRefs.has(reference) && shouldResolveReference(reference)) {
-        references.push({ reference });
-        processedRefs.add(reference);
+        references.add(reference);
       }
     }
   }
-  return references;
+
+  const result: Reference[] = [];
+  for (const reference of references) {
+    result.push({ reference });
+  }
+  return result;
 }
 
 // Most relevant resource types are already included in the Patient compartment, so
