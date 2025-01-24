@@ -137,6 +137,9 @@ async function createTask(
 ): Promise<RequestGroupAction> {
   const task = await repo.createResource<Task>({
     resourceType: 'Task',
+    code: {
+      text: action.title,
+    },
     intent: 'order',
     status: 'requested',
     authoredOn: new Date().toISOString(),

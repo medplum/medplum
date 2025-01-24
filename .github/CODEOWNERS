@@ -10,7 +10,7 @@
 * @medplum/dev
 
 # FDE is the default owner for the "examples" directory.
-/examples/ @medplum/fde
+/examples/ @medplum/dev @medplum/fde
 
 # Both Dev and FDE own the packages/docs directory.
 /packages/docs/ @medplum/dev @medplum/fde

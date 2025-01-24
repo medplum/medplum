@@ -31,7 +31,7 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
 
   // Start the exporter
   const exporter = new BulkExporter(ctx.repo, since, types);
-  const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
+  const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4/' + req.pathname));
 
   groupExportResources(exporter, ctx.project, group, ctx.repo)
     .then(() => ctx.logger.info('Group export completed', { id: ctx.project.id }))

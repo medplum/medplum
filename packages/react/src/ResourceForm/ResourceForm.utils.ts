@@ -17,7 +17,9 @@ export function setPropertyValue(
       }
     }
   }
-  obj[propName] = value;
+  if (!isEmpty(value)) {
+    obj[propName] = value;
+  }
   return obj;
 }
 

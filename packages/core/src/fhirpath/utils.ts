@@ -446,7 +446,7 @@ export function fhirPathIs(typedValue: TypedValue, desiredType: string): boolean
     case 'Quantity':
       return isQuantity(value);
     default:
-      return typeof value === 'object' && value?.resourceType === desiredType;
+      return typedValue.type === desiredType || (typeof value === 'object' && value?.resourceType === desiredType);
   }
 }
 

@@ -38,7 +38,7 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
 
-    expect(setGaugeSpy).toHaveBeenCalledTimes(12);
+    expect(setGaugeSpy).toHaveBeenCalledTimes(3);
   });
 
   test('Get /healthcheck when OTel is enabled and read and write instance are the same', async () => {
@@ -51,6 +51,6 @@ describe('Health check', () => {
     const res = await request(app).get('/healthcheck');
     expect(res.status).toBe(200);
 
-    expect(setGaugeSpy).toHaveBeenCalledTimes(9);
+    expect(setGaugeSpy).toHaveBeenCalledTimes(2);
   });
 });

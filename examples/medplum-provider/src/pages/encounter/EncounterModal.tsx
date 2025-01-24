@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { createReference, normalizeErrorString } from '@medplum/core';
+import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { usePatient } from '../../hooks/usePatient';
 
@@ -55,6 +55,19 @@ export const EncounterModal = (): JSX.Element => {
 
     try {
       const encounter = await medplum.createResource(encounterData);
+      await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinitionData.id as string, '$apply'), {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'subject',
+            valueString: getReferenceString(patient),
+          },
+          {
+            name: 'encounter',
+            valueString: getReferenceString(encounter),
+          },
+        ],
+      });
 
       showNotification({
         icon: <IconCircleCheck />,
@@ -111,6 +124,7 @@ export const EncounterModal = (): JSX.Element => {
             name="status"
             label="Status"
             binding="http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
+            maxValues={1}
             onChange={(value) => {
               if (value) {
                 setStatus(value as typeof status);
