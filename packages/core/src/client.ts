@@ -2187,7 +2187,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       // Both of the above strings are required to be within a valid C-CDA document
       // The root element in a CDA document should be a "ClinicalDocument"
       // "urn:hl7-org:v3" is a required namespace to be referenced by all valid C-CDA documents as well
-      if (fileStr.includes('<ClinicalDocument') && fileStr.includes('xmlns="urn:hl7-org:v3"')) {
+      if (fileStr.includes('<ClinicalDocument') && fileStr.includes('urn:hl7-org:v3')) {
         createBinaryOptions = { ...createBinaryOptions, contentType: ContentType.CDA_XML };
       }
     }
