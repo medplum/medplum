@@ -95,12 +95,14 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
     const result = res4.body as Bundle;
-    expect(result.entry?.map((e) => getReferenceString(e.resource as Resource)).sort()).toStrictEqual([
-      getReferenceString(condition),
-      getReferenceString(observation),
-      getReferenceString(organization),
-      getReferenceString(patient),
-      getReferenceString(practitioner),
+    expect(
+      result.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`).sort()
+    ).toStrictEqual([
+      'include:' + getReferenceString(organization),
+      'include:' + getReferenceString(practitioner),
+      'match:' + getReferenceString(condition),
+      'match:' + getReferenceString(observation),
+      'match:' + getReferenceString(patient),
     ]);
 
     // Create another observation
@@ -124,10 +126,12 @@ describe('Patient Everything Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res6.status).toBe(200);
     const sinceResult = res6.body as Bundle;
-    expect(sinceResult.entry?.map((e) => getReferenceString(e.resource as Resource)).sort()).toStrictEqual([
-      getReferenceString(newObservation),
-      getReferenceString(organization),
-      getReferenceString(practitioner),
+    expect(
+      sinceResult.entry?.map((e) => `${e.search?.mode}:${getReferenceString(e.resource as Resource)}`).sort()
+    ).toStrictEqual([
+      'include:' + getReferenceString(organization),
+      'include:' + getReferenceString(practitioner),
+      'match:' + getReferenceString(newObservation),
     ]);
 
     // Execute the operation with _count and _offset

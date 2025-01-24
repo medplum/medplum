@@ -1,6 +1,22 @@
-import { allOk, getReferenceString, Operator, sortStringArray, isReference, isResource } from '@medplum/core';
+import {
+  allOk,
+  getReferenceString,
+  Operator,
+  sortStringArray,
+  isReference,
+  isResource,
+  flatMapFilter,
+} from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Bundle, CompartmentDefinitionResource, Patient, ResourceType, Resource, Reference } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  CompartmentDefinitionResource,
+  Patient,
+  ResourceType,
+  Resource,
+  Reference,
+  BundleEntry,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
@@ -75,7 +91,7 @@ export async function getPatientEverything(
   }
 
   // Get initial bundle of compartment resources
-  const initialBundle = await repo.search({
+  const bundle = await repo.search({
     resourceType: 'Patient',
     types,
     filters,
@@ -83,67 +99,55 @@ export async function getPatientEverything(
     offset: params?._offset,
   });
 
-  // Get all resources from the bundle
-  const resources = initialBundle.entry?.map((e) => e.resource as Resource) ?? [];
-
   // Recursively resolve references
-  const resolvedResources = await resolveReferences(repo, resources);
+  const resolvedEntries = await resolveReferences(repo, bundle.entry);
 
-  // Create new bundle with all resolved resources
-  return {
-    resourceType: 'Bundle',
-    type: 'searchset',
-    entry: resolvedResources.map((resource) => ({
-      resource,
-      fullUrl: `${resource.resourceType}/${resource.id}`,
-    })),
-    link: initialBundle.link,
-    total: resolvedResources.length,
-  };
+  // Update bundle with all resolved resources
+  bundle.entry?.push(...resolvedEntries);
+  return bundle;
 }
 
 /**
  * Recursively resolves references in the given resources.
  * @param repo - The repository.
- * @param resources - The initial resources to process.
+ * @param entries - The initial resources to process.
  * @param processedRefs - Set of already processed reference strings (internal use).
  * @returns Array of all resolved resources.
  */
 async function resolveReferences(
   repo: Repository,
-  resources: Resource[],
+  entries: BundleEntry[] | undefined,
   processedRefs = new Set<string>()
-): Promise<Resource[]> {
-  let toProcess = [...resources];
-  const result: Resource[] = [];
-  while (toProcess.length) {
-    const references = processReferencesFromResources(toProcess, result, processedRefs);
+): Promise<BundleEntry[]> {
+  const result: BundleEntry[] = [];
+  while (entries?.length) {
+    const references = processReferencesFromResources(entries, processedRefs);
     const resolved = await repo.readReferences(references);
-    toProcess = resolved.filter((r) => isResource(r));
+    entries = flatMapFilter(resolved, (resource) =>
+      isResource(resource) ? { resource, search: { mode: 'include' } } : undefined
+    );
+    result.push(...entries);
   }
   return result;
 }
 
-function processReferencesFromResources(
-  toProcess: Resource[],
-  result: Resource[],
-  processedRefs: Set<string>
-): Reference[] {
+function processReferencesFromResources(toProcess: BundleEntry[], processedRefs: Set<string>): Reference[] {
   const references: Reference[] = [];
-  for (const resource of toProcess) {
+  for (const entry of toProcess) {
+    const resource = entry.resource as Resource;
     const refString = getReferenceString(resource);
     if (processedRefs.has(refString)) {
       continue;
     } else {
       processedRefs.add(refString);
-      result.push(resource);
     }
 
     // Find all references in the resource
     const candidateRefs = collectReferences(resource);
     for (const ref of candidateRefs) {
-      if (!processedRefs.has(ref) && shouldResolveReference(refString)) {
+      if (!processedRefs.has(ref) && shouldResolveReference(ref)) {
         references.push({ reference: ref });
+        processedRefs.add(ref);
       }
     }
   }
