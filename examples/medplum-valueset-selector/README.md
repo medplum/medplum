@@ -5,6 +5,8 @@ This demo project showcases how to work with FHIR ValueSets in a React applicati
 1. Searching and using existing ValueSets
 2. Creating and registering custom ValueSets
 
+![ValueSet Search Demo](./assets/value-set.gif)
+
 ## Features
 
 ### ValueSet Search
