@@ -4,9 +4,10 @@ import { Task } from '@medplum/fhirtypes';
 
 interface TaskStatusPanelProps {
   task: Task;
+  onSubmit: () => void;
 }
 
-export const TaskStatusPanel = ({ task }: TaskStatusPanelProps): JSX.Element => {
+export const TaskStatusPanel = ({ task, onSubmit }: TaskStatusPanelProps): JSX.Element => {
   const theme = useMantineTheme();
 
   return (
@@ -32,7 +33,7 @@ export const TaskStatusPanel = ({ task }: TaskStatusPanelProps): JSX.Element => 
         </Button>
         <Menu>
           <Menu.Target>
-            <Button>Edit task ▾</Button>
+            <Button onClick={onSubmit}>Edit task ▾</Button>
           </Menu.Target>
           <Menu.Dropdown>
             <Menu.Item>Edit</Menu.Item>
