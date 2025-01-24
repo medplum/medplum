@@ -4,7 +4,7 @@ import { Task } from '@medplum/fhirtypes';
 
 interface TaskStatusPanelProps {
   task: Task;
-  onSubmit: () => void;
+  onSubmit?: () => void;
 }
 
 export const TaskStatusPanel = ({ task, onSubmit }: TaskStatusPanelProps): JSX.Element => {
