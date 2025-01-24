@@ -100,10 +100,7 @@ export async function getPatientEverything(
   });
 
   // Recursively resolve references
-  const resolvedEntries = await resolveReferences(repo, bundle.entry);
-
-  // Update bundle with all resolved resources
-  bundle.entry?.push(...resolvedEntries);
+  await addResolvedReferences(repo, bundle.entry);
   return bundle;
 }
 
@@ -114,21 +111,20 @@ export async function getPatientEverything(
  * @param processedRefs - Set of already processed reference strings (internal use).
  * @returns Array of all resolved resources.
  */
-async function resolveReferences(
+async function addResolvedReferences(
   repo: Repository,
   entries: BundleEntry[] | undefined,
   processedRefs = new Set<string>()
-): Promise<BundleEntry[]> {
-  const result: BundleEntry[] = [];
-  while (entries?.length) {
-    const references = processReferencesFromResources(entries, processedRefs);
+): Promise<void> {
+  let page = entries;
+  while (page?.length) {
+    const references = processReferencesFromResources(page, processedRefs);
     const resolved = await repo.readReferences(references);
-    entries = flatMapFilter(resolved, (resource) =>
+    page = flatMapFilter(resolved, (resource) =>
       isResource(resource) ? { resource, search: { mode: 'include' } } : undefined
     );
-    result.push(...entries);
+    entries?.push(...page);
   }
-  return result;
 }
 
 function processReferencesFromResources(toProcess: BundleEntry[], processedRefs: Set<string>): Reference[] {
