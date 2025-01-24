@@ -118,25 +118,7 @@ async function resolveReferences(
   let toProcess = [...resources];
 
   while (toProcess.length) {
-    const references: Reference[] = [];
-    for (const resource of toProcess) {
-      const refString = getReferenceString(resource);
-      if (processedRefs.has(refString)) {
-        continue;
-      } else {
-        processedRefs.add(refString);
-        result.push(resource);
-      }
-
-      // Find all references in the resource
-      const candidateRefs = collectReferences(resource);
-      for (const ref of candidateRefs) {
-        if (!processedRefs.has(ref) && ref.match(/^(Organization|Location|Practitioner|Medication)\//)) {
-          references.push({ reference: ref });
-        }
-      }
-    }
-
+    const references = processReferencesFromResources(toProcess, result, processedRefs);
     const results = await repo.readReferences(references);
     const nextPage = [];
     for (const result of results) {
@@ -148,6 +130,32 @@ async function resolveReferences(
   }
 
   return result;
+}
+
+function processReferencesFromResources(
+  toProcess: Resource[],
+  result: Resource[],
+  processedRefs: Set<string>
+): Reference[] {
+  const references: Reference[] = [];
+  for (const resource of toProcess) {
+    const refString = getReferenceString(resource);
+    if (processedRefs.has(refString)) {
+      continue;
+    } else {
+      processedRefs.add(refString);
+      result.push(resource);
+    }
+
+    // Find all references in the resource
+    const candidateRefs = collectReferences(resource);
+    for (const ref of candidateRefs) {
+      if (!processedRefs.has(ref) && /^(Organization|Location|Practitioner|Medication)\//.exec(refString)) {
+        references.push({ reference: ref });
+      }
+    }
+  }
+  return references;
 }
 
 function collectReferences(resource: any, foundReferences = new Set<string>()): Set<string> {
