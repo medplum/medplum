@@ -114,7 +114,7 @@ async function resolveReferences(
   resources: Resource[],
   processedRefs = new Set<string>()
 ): Promise<Resource[]> {
-  const result = new Set<Resource>();
+  const result: Resource[] = [];
   let toProcess = [...resources];
 
   while (toProcess.length) {
@@ -125,7 +125,7 @@ async function resolveReferences(
         continue;
       } else {
         processedRefs.add(refString);
-        result.add(resource);
+        result.push(resource);
       }
 
       // Find all references in the resource
@@ -147,7 +147,7 @@ async function resolveReferences(
     toProcess = nextPage;
   }
 
-  return Array.from(result);
+  return result;
 }
 
 function collectReferences(resource: any, foundReferences = new Set<string>()): Set<string> {
