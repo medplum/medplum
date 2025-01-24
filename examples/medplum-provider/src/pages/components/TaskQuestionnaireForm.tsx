@@ -15,7 +15,7 @@ export const TaskQuestionnaireForm = ({ task }: ActionQuestionnaireFormProps): J
   const medplum = useMedplum();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
-  
+
   useEffect(() => {
     const fetchQuestionnaire = async (): Promise<void> => {
       const questionnaireReference = task.input?.[0]?.valueReference as Reference<Questionnaire>;
@@ -35,29 +35,28 @@ export const TaskQuestionnaireForm = ({ task }: ActionQuestionnaireFormProps): J
   }
 
   const handleSubmitChanges = async (): Promise<void> => {
-
     if (!questionnaireResponse) {
       return;
     }
 
     medplum
-        .createResource<QuestionnaireResponse>(questionnaireResponse)
-        .then(() => {
-          showNotification({
-            icon: <IconCircleCheck />,
-            title: 'Success',
-            message: 'Answers recorded',
-          });
-        })
-        .catch((err) => {
-          showNotification({
-            color: 'red',
-            icon: <IconCircleOff />,
-            title: 'Error',
-            message: normalizeErrorString(err),
-          });
+      .createResource<QuestionnaireResponse>(questionnaireResponse)
+      .then(() => {
+        showNotification({
+          icon: <IconCircleCheck />,
+          title: 'Success',
+          message: 'Answers recorded',
         });
-  }
+      })
+      .catch((err) => {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      });
+  };
 
   return (
     <Card withBorder shadow="sm" p={0}>
