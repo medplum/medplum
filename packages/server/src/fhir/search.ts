@@ -874,7 +874,7 @@ export function buildSearchExpression(
     for (const filter of searchRequest.filters) {
       let expr: Expression | undefined;
       if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
-        const chain = parseChainedParameter(searchRequest.resourceType, filter.code, filter.value);
+        const chain = parseChainedParameter(searchRequest.resourceType, filter);
         expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
       } else {
         expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
@@ -915,7 +915,7 @@ function buildSearchFilterExpression(
   }
 
   if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
-    const chain = parseChainedParameter(resourceType, filter.code, filter.value);
+    const chain = parseChainedParameter(resourceType, filter);
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
   }
 
@@ -1651,9 +1651,9 @@ function buildSearchLinkCondition(
   }
 }
 
-function parseChainedParameter(resourceType: string, key: string, value: string): ChainedSearchParameter {
+function parseChainedParameter(resourceType: string, searchFilter: Filter): ChainedSearchParameter {
   let currentResourceType = resourceType;
-  const parts = splitChainedSearch(key);
+  const parts = splitChainedSearch(searchFilter.code);
 
   const chain: ChainedSearchLink[] = [];
   let filter: Filter | undefined;
@@ -1669,7 +1669,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       if (!searchParam) {
         throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
       }
-      filter = parseParameter(searchParam, modifier, value);
+      filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
     } else {
       const link = parseChainLink(part, currentResourceType);
       chain.push(link);
