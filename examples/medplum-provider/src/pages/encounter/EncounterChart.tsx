@@ -14,9 +14,11 @@ export const EncounterChart = (): JSX.Element => {
   const medplum = useMedplum();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
-  const [chartQuestionnaire, setChartQuestionnaire] = useState<Reference<Questionnaire>| undefined>(undefined);
-  const [chartQuestionnaireResponse, setChartQuestionnaireResponse] = useState<Reference<QuestionnaireResponse> | undefined>(undefined);
-  const questionnaireReference = "Questionnaire/0194903a-74f5-72e9-9063-e38b8276a855";
+  const [chartQuestionnaire, setChartQuestionnaire] = useState<Reference<Questionnaire> | undefined>(undefined);
+  const [chartQuestionnaireResponse, setChartQuestionnaireResponse] = useState<
+    Reference<QuestionnaireResponse> | undefined
+  >(undefined);
+  const questionnaireReference = 'Questionnaire/0194903a-74f5-72e9-9063-e38b8276a855';
 
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
@@ -24,7 +26,7 @@ export const EncounterChart = (): JSX.Element => {
       console.log(result);
       setTasks(result);
     };
-  
+
     fetchTasks().catch((err) => {
       showNotification({
         color: 'red',
@@ -34,7 +36,7 @@ export const EncounterChart = (): JSX.Element => {
       });
     });
   }, [medplum, encounterId]);
-  
+
   const { filteredTasks, chartNoteTasks } = useMemo(() => {
     if (!tasks) {
       return { filteredTasks: [] as Task[], chartNoteTasks: [] as Task[] };
@@ -63,12 +65,12 @@ export const EncounterChart = (): JSX.Element => {
       { filteredTasks: [] as Task[], chartNoteTasks: [] as Task[] }
     );
   }, [tasks]);
-  
+
   const handleSaveChanges = async (): Promise<void> => {
     if (!questionnaireResponse) {
       return;
     }
-  
+
     try {
       const response = await medplum.createResource<QuestionnaireResponse>(questionnaireResponse);
       const updatedTask = {
@@ -84,13 +86,9 @@ export const EncounterChart = (): JSX.Element => {
           },
         ],
       };
-  
 
       const task = await medplum.updateResource<Task>(updatedTask);
-      setTasks((prevTasks) =>
-        prevTasks.map((t) => (t.id === task.id ? task : t))
-      );
-      
+      setTasks((prevTasks) => prevTasks.map((t) => (t.id === task.id ? task : t)));
     } catch (err) {
       showNotification({
         color: 'red',
@@ -108,37 +106,35 @@ export const EncounterChart = (): JSX.Element => {
       </Text>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
-          <Stack gap="md">
-            <Card withBorder shadow="sm">
-      
-              <Stack gap="md">
+        <Stack gap="md">
+          <Card withBorder shadow="sm">
+            <Stack gap="md">
               {chartQuestionnaireResponse ? (
                 <Text size="sm" color="dimmed">
                   Chart note saved.
                 </Text>
               ) : null}
 
-    
               {!chartQuestionnaireResponse && chartQuestionnaire ? (
-                <QuestionnaireForm  
-                  questionnaire={chartQuestionnaire} 
-                  excludeButtons={true} 
+                <QuestionnaireForm
+                  questionnaire={chartQuestionnaire}
+                  excludeButtons={true}
                   onChange={setQuestionnaireResponse}
                 />
               ) : null}
-              </Stack>
-            </Card>
-
-            <Stack gap="md">
-              {filteredTasks?.map((task: Task) =>
-                task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-                  <TaskQuestionnaireForm key={task.id} task={task} />
-                ) : (
-                  <SimpleTask key={task.id} task={task} />
-                )
-              )}
             </Stack>
+          </Card>
+
+          <Stack gap="md">
+            {filteredTasks?.map((task: Task) =>
+              task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
+                <TaskQuestionnaireForm key={task.id} task={task} />
+              ) : (
+                <SimpleTask key={task.id} task={task} />
+              )
+            )}
           </Stack>
+        </Stack>
 
         <Stack gap="lg">
           <Button variant="outline" color="blue" fullWidth>
