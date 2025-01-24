@@ -86,7 +86,7 @@ export async function getPatientEverything(
   // Get all resources from the bundle
   const resources = initialBundle.entry?.map((e) => e.resource as Resource) ?? [];
 
-  // Recursively resolve all references
+  // Recursively resolve references
   const resolvedResources = await resolveReferences(repo, resources);
 
   // Create new bundle with all resolved resources
@@ -103,7 +103,7 @@ export async function getPatientEverything(
 }
 
 /**
- * Recursively resolves all references in the given resources.
+ * Recursively resolves references in the given resources.
  * @param repo - The repository.
  * @param resources - The initial resources to process.
  * @param processedRefs - Set of already processed reference strings (internal use).
@@ -142,12 +142,19 @@ function processReferencesFromResources(
     // Find all references in the resource
     const candidateRefs = collectReferences(resource);
     for (const ref of candidateRefs) {
-      if (!processedRefs.has(ref) && /^(Organization|Location|Practitioner|Medication)\//.exec(refString)) {
+      if (!processedRefs.has(ref) && shouldResolveReference(refString)) {
         references.push({ reference: ref });
       }
     }
   }
   return references;
+}
+
+// Most relevant resource types are already included in the Patient compartment, so
+// only references of select other types need to be resolved
+const allowedReferenceTypes = /^(Organization|Location|Practitioner|Medication)\//;
+function shouldResolveReference(refString: string): boolean {
+  return Boolean(allowedReferenceTypes.exec(refString));
 }
 
 function collectReferences(resource: any, foundReferences = new Set<string>()): Set<string> {
