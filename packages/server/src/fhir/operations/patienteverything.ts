@@ -114,21 +114,13 @@ async function resolveReferences(
   resources: Resource[],
   processedRefs = new Set<string>()
 ): Promise<Resource[]> {
-  const result: Resource[] = [];
   let toProcess = [...resources];
-
+  const result: Resource[] = [];
   while (toProcess.length) {
     const references = processReferencesFromResources(toProcess, result, processedRefs);
-    const results = await repo.readReferences(references);
-    const nextPage = [];
-    for (const result of results) {
-      if (isResource(result)) {
-        nextPage.push(result);
-      }
-    }
-    toProcess = nextPage;
+    const resolved = await repo.readReferences(references);
+    toProcess = resolved.filter((r) => isResource(r));
   }
-
   return result;
 }
 
