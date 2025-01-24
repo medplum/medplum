@@ -109,7 +109,6 @@ export async function getPatientEverything(
  * @param repo - The repository.
  * @param entries - The initial resources to process.
  * @param processedRefs - Set of already processed reference strings (internal use).
- * @returns Array of all resolved resources.
  */
 async function addResolvedReferences(
   repo: Repository,
