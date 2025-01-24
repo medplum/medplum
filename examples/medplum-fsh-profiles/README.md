@@ -27,11 +27,11 @@ The project includes custom vocabularies for healthcare service classification:
 
 ```text
 ├── src/
-│   └── profiles/         # FSH profile definitions
-│       ├── patient.fsh   # Patient profile
-│       └── service.fsh   # HealthcareService profile and vocabularies
-├── dist/                 # Built FHIR artifacts (generated)
-├── sushi-config.yaml     # SUSHI configuration
+│   └── profiles/                   # FSH profile definitions
+│       ├── patient-test.fsh        # Patient profile
+│       └── health-care-service.fsh # HealthcareService profile and vocabularies
+├── dist/                           # Built FHIR artifacts (generated)
+├── sushi-config.yaml               # SUSHI configuration
 └── package.json
 ```
 
