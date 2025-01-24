@@ -108,13 +108,9 @@ export async function getPatientEverything(
  * Recursively resolves references in the given resources.
  * @param repo - The repository.
  * @param entries - The initial resources to process.
- * @param processedRefs - Set of already processed reference strings (internal use).
  */
-async function addResolvedReferences(
-  repo: Repository,
-  entries: BundleEntry[] | undefined,
-  processedRefs = new Set<string>()
-): Promise<void> {
+async function addResolvedReferences(repo: Repository, entries: BundleEntry[] | undefined): Promise<void> {
+  const processedRefs = new Set<string>();
   let page = entries;
   while (page?.length) {
     const references = processReferencesFromResources(page, processedRefs);
