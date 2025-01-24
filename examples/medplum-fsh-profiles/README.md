@@ -1,6 +1,6 @@
 # Medplum FSH Profiles
 
-This project contains FHIR Shorthand (FSH) definitions for custom FHIR profiles used with Medplum. It includes patient and healthcare service profiles with custom vocabularies.
+This project contains FHIR Shorthand (FSH) definitions for custom FHIR profiles used with Medplum. It includes `Patient` and `HealthcareService` profiles with custom vocabularies.
 
 ## Overview
 
