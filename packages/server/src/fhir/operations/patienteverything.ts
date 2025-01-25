@@ -153,7 +153,7 @@ function processReferencesFromResources(toProcess: BundleEntry[], processedRefs:
 // only references of select other types need to be resolved
 const allowedReferenceTypes = /^(Organization|Location|Practitioner|Medication)\//;
 function shouldResolveReference(refString: string): boolean {
-  return Boolean(allowedReferenceTypes.exec(refString));
+  return allowedReferenceTypes.test(refString);
 }
 
 function collectReferences(resource: any, foundReferences = new Set<string>()): Set<string> {
