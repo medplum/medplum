@@ -23,7 +23,6 @@ export const EncounterChart = (): JSX.Element => {
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
       const result = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
-      console.log(result);
       setTasks(result);
     };
 
