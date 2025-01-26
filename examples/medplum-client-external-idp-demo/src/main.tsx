@@ -14,7 +14,7 @@ import { MEDPLUM_BASE_URL } from './SignInPage';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
-  baseUrl: MEDPLUM_BASE_URL, // Uncomment this to run against the server on your localhost
+  baseUrl: MEDPLUM_BASE_URL,
   cacheTime: 600,
   autoBatchTime: 100,
 });
