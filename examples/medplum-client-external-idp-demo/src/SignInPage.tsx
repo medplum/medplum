@@ -7,8 +7,8 @@ import { useCallback, useEffect } from 'react';
  * The default value for Medplum's hosted API server is "https://api.medplum.com/".
  * If you are using your own Medplum server, then you can set this value to your server URL.
  */
-const MEDPLUM_BASE_URL = 'https://api.medplum.com/';
-// const MEDPLUM_BASE_URL = 'http://localhost:8103/';
+export const MEDPLUM_BASE_URL = 'https://api.medplum.com/';
+// export const MEDPLUM_BASE_URL = 'http://localhost:8103/';
 
 /**
  * Your Medplum project ID.
