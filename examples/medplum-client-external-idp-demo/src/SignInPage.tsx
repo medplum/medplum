@@ -87,11 +87,13 @@ export function SignInPage(): JSX.Element {
   }, [medplum]);
 
   return (
-    <Document width={500}>
-      <Stack align="center">
-        <Title order={2}>Welcome!</Title>
-        <Button onClick={handleClick}>Sign In</Button>
-      </Stack>
-    </Document>
+    <div style={{ width: '100%' }}>
+      <Document py="1rem" width={300}>
+        <Stack align="center">
+          <Title order={2}>Welcome!</Title>
+          <Button onClick={handleClick}>Sign In</Button>
+        </Stack>
+      </Document>
+    </div>
   );
 }
