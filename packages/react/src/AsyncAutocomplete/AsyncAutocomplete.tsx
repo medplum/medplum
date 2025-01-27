@@ -277,7 +277,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
   const clearButton = !disabled && clearable && selected.length > 0 && (
     <Combobox.ClearButton
       title="Clear all"
-      size={16}
+      size="sm"
       onClear={() => {
         setSearch('');
         setSelected([]);

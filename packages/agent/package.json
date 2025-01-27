@@ -34,7 +34,7 @@
     "@medplum/fhirtypes": "3.2.28",
     "@medplum/mock": "3.2.28",
     "@types/async-eventemitter": "0.2.4",
-    "@types/ws": "8.5.13",
+    "@types/ws": "8.5.14",
     "mock-socket": "9.3.1",
     "postject": "1.0.0-alpha.6"
   },
