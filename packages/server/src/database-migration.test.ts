@@ -245,6 +245,23 @@ describe('Database migrations', () => {
         await expect(maybeStartDataMigration(1)).resolves.toBeUndefined();
       }));
 
+    test.only('Asserted version is greater than current version AND there is NO pending migration', () =>
+      withTestContext(async () => {
+        await markPendingDataMigrationCompleted({
+          resourceType: 'AsyncJob',
+          type: 'data-migration',
+          status: 'accepted',
+          request: 'mock-data-job',
+          requestTime: new Date().toISOString(),
+          dataVersion: 1,
+          minServerVersion: '3.3.0',
+        });
+
+        await expect(maybeStartDataMigration(2)).rejects.toThrow(
+          'Data migration assertion failed. Expected pending migration to be migration 2, server has no pending data migration'
+        );
+      }));
+
     test('Asserted version is greater than current data version AND not the pending version', () =>
       withTestContext(async () => {
         await expect(

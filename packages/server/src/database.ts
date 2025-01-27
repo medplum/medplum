@@ -258,10 +258,6 @@ function getMigrationVersions(migrationModule: Record<string, any>): number[] {
  * @returns An `AsyncJob` if migration is started or already running, otherwise returns `undefined` if no migration to run.
  */
 export async function maybeStartDataMigration(assertedDataVersion?: number): Promise<AsyncJob | undefined> {
-  if (pendingDataMigration === NONE) {
-    return undefined;
-  }
-
   // If `config.runMigrations` was false, `pendingDataMigration` will be -1, and we should throw
   if (pendingDataMigration === UNKNOWN) {
     throw new OperationOutcomeError(
@@ -286,6 +282,9 @@ export async function maybeStartDataMigration(assertedDataVersion?: number): Pro
         )
       );
     }
+  } else if (pendingDataMigration === NONE) {
+    // If there is no asserted version, and no pending migration to run, then we can no-op
+    return undefined;
   }
 
   const systemRepo = getSystemRepo();
