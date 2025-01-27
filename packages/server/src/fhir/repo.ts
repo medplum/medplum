@@ -1163,7 +1163,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   async processAllResources<T extends Resource>(
     initialSearchRequest: SearchRequest<T>,
-    processPage: (resources: T[]) => Promise<void>,
+    process: (resource: T) => Promise<void>,
     options?: ProcessAllResourcesOptions
   ): Promise<void> {
     let searchRequest: SearchRequest<T> | undefined = initialSearchRequest;
@@ -1172,13 +1172,11 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       if (!bundle.entry?.length) {
         break;
       }
-      const resources: T[] = [];
       for (const entry of bundle.entry) {
         if (entry.resource?.id) {
-          resources.push(entry.resource);
+          await process(entry.resource);
         }
       }
-      await processPage(resources);
       const nextLink = bundle.link?.find((b) => b.relation === 'next');
       if (nextLink) {
         searchRequest = parseSearchRequest<T>(nextLink.url);

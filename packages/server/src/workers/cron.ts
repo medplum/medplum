@@ -225,13 +225,11 @@ export async function reloadCronBots(): Promise<void> {
 
     await getSystemRepo().processAllResources<Bot>(
       { resourceType: 'Bot', count: MAX_BOTS_PER_PAGE },
-      async (bots: Bot[]) => {
-        for (const bot of bots) {
-          // If the bot has a cron, then add a scheduler for it
-          if (bot.cronString || bot.cronTiming) {
-            // We pass `undefined` as previous version to make sure that the latest cron string is used
-            await addCronJobs(bot, undefined);
-          }
+      async (bot: Bot) => {
+        // If the bot has a cron, then add a scheduler for it
+        if (bot.cronString || bot.cronTiming) {
+          // We pass `undefined` as previous version to make sure that the latest cron string is used
+          await addCronJobs(bot, undefined);
         }
       },
       { delayBetweenPagesMs: 1000 }
