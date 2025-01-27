@@ -73,7 +73,7 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "rimraf": "5.0.9",
-    "vitest": "2.1.8"
+    "vitest": "3.0.4"
   },
   "peerDependencies": {
     "@medplum/core": "3.2.28",
