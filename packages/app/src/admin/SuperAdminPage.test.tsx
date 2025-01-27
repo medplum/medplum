@@ -195,6 +195,16 @@ describe('SuperAdminPage', () => {
     expect(await screen.findByText(returnValue)).toBeInTheDocument();
   });
 
+  test('Reload cron resources', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Reload Cron Resources' }));
+    });
+
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
   test('Access denied', async () => {
     jest.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
     setup();
