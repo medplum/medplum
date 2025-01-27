@@ -1,4 +1,4 @@
-import { createReference, Operator } from '@medplum/core';
+import { createReference, getReferenceString, Operator, SNOMED } from '@medplum/core';
 import { Bundle, Condition, Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
@@ -557,6 +557,53 @@ describe('Identifier Lookup Table', () => {
       expect(r4.entry?.length).toStrictEqual(1);
       expect(r4.entry?.[0]?.resource?.id).toStrictEqual(p1.id);
     }));
+  test.each([
+    [Operator.IN, true, false],
+    [Operator.NOT_IN, false, true],
+  ])('Condition.code :%s search', (operator, cond1, cond2) =>
+    withTestContext(async () => {
+      // ValueSet: http://hl7.org/fhir/ValueSet/condition-code
+      // compose includes codes from http://snomed.info/sct
+      // but does not include codes from https://example.com
+
+      const p = await systemRepo.createResource({
+        resourceType: 'Patient',
+        name: [{ family: randomUUID() }],
+      });
+
+      const c1 = await systemRepo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: createReference(p),
+        code: { coding: [{ system: SNOMED, code: '165002' }] },
+      });
+
+      const c2 = await systemRepo.createResource<Condition>({
+        resourceType: 'Condition',
+        subject: createReference(p),
+        code: { coding: [{ system: 'https://example.com', code: 'test' }] },
+      });
+
+      const bundle = await systemRepo.search({
+        resourceType: 'Condition',
+        filters: [
+          {
+            code: 'subject',
+            operator: Operator.EQUALS,
+            value: getReferenceString(p),
+          },
+          {
+            code: 'code',
+            operator: operator,
+            value: 'http://hl7.org/fhir/ValueSet/condition-code',
+          },
+        ],
+      });
+
+      expect(bundle.entry?.length).toStrictEqual(1);
+      expect(Boolean(bundleContains(bundle, c1))).toBe(cond1);
+      expect(Boolean(bundleContains(bundle, c2))).toBe(cond2);
+    })
+  );
 
   describe('Non-strict mode', () => {
     let nonStrictRepo: Repository;
