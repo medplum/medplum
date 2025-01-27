@@ -7,6 +7,7 @@ import { Extension } from './Extension';
 import { Organization } from './Organization';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 
@@ -21,6 +22,12 @@ export interface Annotation {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -43,17 +50,32 @@ export interface Annotation {
   authorString?: string;
 
   /**
+   * The individual responsible for making the annotation.
+   */
+  _authorString?: PrimitiveExtension;
+
+  /**
    * Indicates when this particular annotation was made.
    */
   time?: string;
 
   /**
+   * Indicates when this particular annotation was made.
+   */
+  _time?: PrimitiveExtension;
+
+  /**
    * The text of the annotation in markdown format.
    */
   text: string;
+
+  /**
+   * The text of the annotation in markdown format.
+   */
+  _text?: PrimitiveExtension;
 }
 
 /**
  * The individual responsible for making the annotation.
  */
-export type AnnotationAuthor = Reference<Practitioner | Patient | RelatedPerson | Organization> | string;
+export type AnnotationAuthor = PrimitiveExtension | Reference<Practitioner | Patient | RelatedPerson | Organization> | string;

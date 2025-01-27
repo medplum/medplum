@@ -27,6 +27,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
@@ -53,6 +54,12 @@ export interface Procedure {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -68,9 +75,22 @@ export interface Procedure {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -132,11 +152,25 @@ export interface Procedure {
   instantiatesCanonical?: string[];
 
   /**
+   * The URL pointing to a FHIR-defined protocol, guideline, order set or
+   * other definition that is adhered to in whole or in part by this
+   * Procedure.
+   */
+  _instantiatesCanonical?: (PrimitiveExtension | null)[];
+
+  /**
    * The URL pointing to an externally maintained protocol, guideline,
    * order set or other definition that is adhered to in whole or in part
    * by this Procedure.
    */
   instantiatesUri?: string[];
+
+  /**
+   * The URL pointing to an externally maintained protocol, guideline,
+   * order set or other definition that is adhered to in whole or in part
+   * by this Procedure.
+   */
+  _instantiatesUri?: (PrimitiveExtension | null)[];
 
   /**
    * A reference to a resource that contains details of the request for
@@ -155,6 +189,12 @@ export interface Procedure {
    * the in-progress or completed state.
    */
   status: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
+
+  /**
+   * A code specifying the state of the procedure. Generally, this will be
+   * the in-progress or completed state.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * Captures the reason for the current state of the procedure.
@@ -198,6 +238,14 @@ export interface Procedure {
    * span more than one date, and also allows for the length of the
    * procedure to be captured.
    */
+  _performedDateTime?: PrimitiveExtension;
+
+  /**
+   * Estimated or actual date, date-time, period, or age when the procedure
+   * was performed.  Allows a period to support complex procedures that
+   * span more than one date, and also allows for the length of the
+   * procedure to be captured.
+   */
   performedPeriod?: Period;
 
   /**
@@ -207,6 +255,14 @@ export interface Procedure {
    * procedure to be captured.
    */
   performedString?: string;
+
+  /**
+   * Estimated or actual date, date-time, period, or age when the procedure
+   * was performed.  Allows a period to support complex procedures that
+   * span more than one date, and also allows for the length of the
+   * procedure to be captured.
+   */
+  _performedString?: PrimitiveExtension;
 
   /**
    * Estimated or actual date, date-time, period, or age when the procedure
@@ -327,7 +383,7 @@ export interface Procedure {
  * span more than one date, and also allows for the length of the
  * procedure to be captured.
  */
-export type ProcedurePerformed = Age | Period | Range | string;
+export type ProcedurePerformed = Age | Period | PrimitiveExtension | Range | string;
 
 /**
  * A device that is implanted, removed or otherwise manipulated
@@ -341,6 +397,12 @@ export interface ProcedureFocalDevice {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -392,6 +454,12 @@ export interface ProcedurePerformer {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

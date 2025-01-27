@@ -9,6 +9,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 import { Timing } from './Timing';
 
@@ -29,6 +30,12 @@ export interface Bot {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -44,9 +51,22 @@ export interface Bot {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -104,9 +124,19 @@ export interface Bot {
   name?: string;
 
   /**
+   * A name associated with the Bot.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A summary, characterization or explanation of the Bot.
    */
   description?: string;
+
+  /**
+   * A summary, characterization or explanation of the Bot.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The identifier of the bot runtime environment (i.e., vmcontext,
@@ -115,9 +145,20 @@ export interface Bot {
   runtimeVersion?: 'awslambda' | 'vmcontext';
 
   /**
+   * The identifier of the bot runtime environment (i.e., vmcontext,
+   * awslambda, etc).
+   */
+  _runtimeVersion?: PrimitiveExtension;
+
+  /**
    * The maximum allowed execution time of the bot in seconds.
    */
   timeout?: number;
+
+  /**
+   * The maximum allowed execution time of the bot in seconds.
+   */
+  _timeout?: PrimitiveExtension;
 
   /**
    * Image of the bot.
@@ -135,6 +176,11 @@ export interface Bot {
   cronString?: string;
 
   /**
+   * A schedule for the bot to be executed.
+   */
+  _cronString?: PrimitiveExtension;
+
+  /**
    * A code that classifies the service for searching, sorting and display
    * purposes (e.g. &quot;Surgical Procedure&quot;).
    */
@@ -147,9 +193,20 @@ export interface Bot {
   system?: boolean;
 
   /**
+   * Optional flag to indicate that the bot is a system bot and therefore
+   * has access to system secrets.
+   */
+  _system?: PrimitiveExtension;
+
+  /**
    * Optional flag to indicate that the bot should be run as the user.
    */
   runAsUser?: boolean;
+
+  /**
+   * Optional flag to indicate that the bot should be run as the user.
+   */
+  _runAsUser?: PrimitiveExtension;
 
   /**
    * Criteria for creating an AuditEvent as a result of the bot invocation.
@@ -159,10 +216,23 @@ export interface Bot {
   auditEventTrigger?: 'always' | 'never' | 'on-error' | 'on-output';
 
   /**
+   * Criteria for creating an AuditEvent as a result of the bot invocation.
+   * Possible values are 'always', 'never', 'on-error', or 'on-output'.
+   * Default value is 'always'.
+   */
+  _auditEventTrigger?: PrimitiveExtension;
+
+  /**
    * The destination system in which the AuditEvent is to be sent. Possible
    * values are 'log' or 'resource'. Default value is 'resource'.
    */
   auditEventDestination?: ('log' | 'resource')[];
+
+  /**
+   * The destination system in which the AuditEvent is to be sent. Possible
+   * values are 'log' or 'resource'. Default value is 'resource'.
+   */
+  _auditEventDestination?: (PrimitiveExtension | null)[];
 
   /**
    * Bot logic in original source code form written by developers.
@@ -180,9 +250,15 @@ export interface Bot {
    * instead.
    */
   code?: string;
+
+  /**
+   * @deprecated Bot logic script. Use Bot.sourceCode or Bot.executableCode
+   * instead.
+   */
+  _code?: PrimitiveExtension;
 }
 
 /**
  * A schedule for the bot to be executed.
  */
-export type BotCron = string | Timing;
+export type BotCron = PrimitiveExtension | string | Timing;

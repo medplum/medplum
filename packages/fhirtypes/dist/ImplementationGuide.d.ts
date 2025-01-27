@@ -9,6 +9,7 @@ import { ContactDetail } from './ContactDetail';
 import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 import { ResourceType } from './ResourceType';
@@ -35,6 +36,12 @@ export interface ImplementationGuide {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -50,9 +57,22 @@ export interface ImplementationGuide {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -112,6 +132,18 @@ export interface ImplementationGuide {
   url: string;
 
   /**
+   * An absolute URI that is used to identify this implementation guide
+   * when it is referenced in a specification, model, design or an
+   * instance; also called its canonical identifier. This SHOULD be
+   * globally unique and SHOULD be a literal address at which at which an
+   * authoritative instance of this implementation guide is (or will be)
+   * published. This URL can be the target of a canonical reference. It
+   * SHALL remain the same when the implementation guide is stored on
+   * different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * The identifier that is used to identify this version of the
    * implementation guide when it is referenced in a specification, model,
    * design or instance. This is an arbitrary value managed by the
@@ -123,11 +155,29 @@ export interface ImplementationGuide {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the
+   * implementation guide when it is referenced in a specification, model,
+   * design or instance. This is an arbitrary value managed by the
+   * implementation guide author and is not expected to be globally unique.
+   * For example, it might be a timestamp (e.g. yyyymmdd) if a managed
+   * version is not available. There is also no expectation that versions
+   * can be placed in a lexicographical sequence.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the implementation guide. This
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
   name: string;
+
+  /**
+   * A natural language name identifying the implementation guide. This
+   * name should be usable as an identifier for the module by machine
+   * processing applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * A short, descriptive, user-friendly title for the implementation
@@ -136,10 +186,22 @@ export interface ImplementationGuide {
   title?: string;
 
   /**
+   * A short, descriptive, user-friendly title for the implementation
+   * guide.
+   */
+  _title?: PrimitiveExtension;
+
+  /**
    * The status of this implementation guide. Enables tracking the
    * life-cycle of the content.
    */
   status: 'draft' | 'active' | 'retired' | 'unknown';
+
+  /**
+   * The status of this implementation guide. Enables tracking the
+   * life-cycle of the content.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * A Boolean value to indicate that this implementation guide is authored
@@ -147,6 +209,13 @@ export interface ImplementationGuide {
    * intended to be used for genuine usage.
    */
   experimental?: boolean;
+
+  /**
+   * A Boolean value to indicate that this implementation guide is authored
+   * for testing purposes (or education/evaluation/marketing) and is not
+   * intended to be used for genuine usage.
+   */
+  _experimental?: PrimitiveExtension;
 
   /**
    * The date  (and optionally time) when the implementation guide was
@@ -158,10 +227,25 @@ export interface ImplementationGuide {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the implementation guide was
+   * published. The date must change when the business version changes and
+   * it must change if the status code changes. In addition, it should
+   * change when the substantive content of the implementation guide
+   * changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the
    * implementation guide.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the
+   * implementation guide.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -174,6 +258,12 @@ export interface ImplementationGuide {
    * from a consumer's perspective.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the implementation guide
+   * from a consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -198,12 +288,27 @@ export interface ImplementationGuide {
   copyright?: string;
 
   /**
+   * A copyright statement relating to the implementation guide and/or its
+   * contents. Copyright statements are generally legal restrictions on the
+   * use and publishing of the implementation guide.
+   */
+  _copyright?: PrimitiveExtension;
+
+  /**
    * The NPM package name for this Implementation Guide, used in the NPM
    * package distribution, which is the primary mechanism by which FHIR
    * based tooling manages IG dependencies. This value must be globally
    * unique, and should be assigned with care.
    */
   packageId: string;
+
+  /**
+   * The NPM package name for this Implementation Guide, used in the NPM
+   * package distribution, which is the primary mechanism by which FHIR
+   * based tooling manages IG dependencies. This value must be globally
+   * unique, and should be assigned with care.
+   */
+  _packageId?: PrimitiveExtension;
 
   /**
    * The license that applies to this Implementation Guide, using an SPDX
@@ -255,6 +360,12 @@ export interface ImplementationGuide {
       'Zlib' | 'ZPL-1.1' | 'ZPL-2.0' | 'ZPL-2.1';
 
   /**
+   * The license that applies to this Implementation Guide, using an SPDX
+   * license code, or 'not-open-source'.
+   */
+  _license?: PrimitiveExtension;
+
+  /**
    * The version(s) of the FHIR specification that this ImplementationGuide
    * targets - e.g. describes how to use. The value of this element is the
    * formal version of the specification, without the revision number, e.g.
@@ -263,6 +374,14 @@ export interface ImplementationGuide {
   fhirVersion: ('0.01' | '0.05' | '0.06' | '0.11' | '0.0.80' | '0.0.81' | '0.0.82' | '0.4.0' | '0.5.0' | '1.0.0' |
       '1.0.1' | '1.0.2' | '1.1.0' | '1.4.0' | '1.6.0' | '1.8.0' | '3.0.0' | '3.0.1' | '3.3.0' | '3.5.0' | '4.0.0' |
       '4.0.1')[];
+
+  /**
+   * The version(s) of the FHIR specification that this ImplementationGuide
+   * targets - e.g. describes how to use. The value of this element is the
+   * formal version of the specification, without the revision number, e.g.
+   * [publication].[major].[minor], which is 4.0.1. for this version.
+   */
+  _fhirVersion?: (PrimitiveExtension | null)[];
 
   /**
    * Another implementation guide that this implementation depends on.
@@ -301,6 +420,12 @@ export interface ImplementationGuideDefinition {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -375,6 +500,12 @@ export interface ImplementationGuideDefinitionGrouping {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -410,9 +541,20 @@ export interface ImplementationGuideDefinitionGrouping {
   name: string;
 
   /**
+   * The human-readable title to display for the package of resources when
+   * rendering the implementation guide.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Human readable text describing the package.
    */
   description?: string;
+
+  /**
+   * Human readable text describing the package.
+   */
+  _description?: PrimitiveExtension;
 }
 
 /**
@@ -426,6 +568,12 @@ export interface ImplementationGuideDefinitionPage {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -464,6 +612,11 @@ export interface ImplementationGuideDefinitionPage {
   /**
    * The source address for the page.
    */
+  _nameUrl?: PrimitiveExtension;
+
+  /**
+   * The source address for the page.
+   */
   nameReference?: Reference<Binary>;
 
   /**
@@ -473,9 +626,20 @@ export interface ImplementationGuideDefinitionPage {
   title: string;
 
   /**
+   * A short title used to represent this page in navigational structures
+   * such as table of contents, bread crumbs, etc.
+   */
+  _title?: PrimitiveExtension;
+
+  /**
    * A code that indicates how the page is generated.
    */
   generation: 'html' | 'markdown' | 'xml' | 'generated';
+
+  /**
+   * A code that indicates how the page is generated.
+   */
+  _generation?: PrimitiveExtension;
 
   /**
    * Nested Pages/Sections under this page.
@@ -486,7 +650,7 @@ export interface ImplementationGuideDefinitionPage {
 /**
  * The source address for the page.
  */
-export type ImplementationGuideDefinitionPageName = Reference<Binary> | string;
+export type ImplementationGuideDefinitionPageName = PrimitiveExtension | Reference<Binary> | string;
 
 /**
  * Defines how IG is built by tools.
@@ -498,6 +662,12 @@ export interface ImplementationGuideDefinitionParameter {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -537,9 +707,21 @@ export interface ImplementationGuideDefinitionParameter {
       'generate-xml' | 'generate-json' | 'generate-turtle' | 'html-template';
 
   /**
+   * apply | path-resource | path-pages | path-tx-cache |
+   * expansion-parameter | rule-broken-links | generate-xml | generate-json
+   * | generate-turtle | html-template.
+   */
+  _code?: PrimitiveExtension;
+
+  /**
    * Value for named type.
    */
   value: string;
+
+  /**
+   * Value for named type.
+   */
+  _value?: PrimitiveExtension;
 }
 
 /**
@@ -555,6 +737,12 @@ export interface ImplementationGuideDefinitionResource {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -600,6 +788,13 @@ export interface ImplementationGuideDefinitionResource {
       '4.0.1')[];
 
   /**
+   * Indicates the FHIR Version(s) this artifact is intended to apply to.
+   * If no versions are specified, the resource is assumed to apply to all
+   * the versions stated in ImplementationGuide.fhirVersion.
+   */
+  _fhirVersion?: (PrimitiveExtension | null)[];
+
+  /**
    * A human assigned name for the resource. All resources SHOULD have a
    * name, but the name may be extracted from the resource (e.g.
    * ValueSet.name).
@@ -607,10 +802,23 @@ export interface ImplementationGuideDefinitionResource {
   name?: string;
 
   /**
+   * A human assigned name for the resource. All resources SHOULD have a
+   * name, but the name may be extracted from the resource (e.g.
+   * ValueSet.name).
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A description of the reason that a resource has been included in the
    * implementation guide.
    */
   description?: string;
+
+  /**
+   * A description of the reason that a resource has been included in the
+   * implementation guide.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * If true or a reference, indicates the resource is an example instance.
@@ -624,12 +832,31 @@ export interface ImplementationGuideDefinitionResource {
    * If a reference is present, indicates that the example is an example
    * of the specified profile.
    */
+  _exampleBoolean?: PrimitiveExtension;
+
+  /**
+   * If true or a reference, indicates the resource is an example instance.
+   * If a reference is present, indicates that the example is an example
+   * of the specified profile.
+   */
   exampleCanonical?: string;
+
+  /**
+   * If true or a reference, indicates the resource is an example instance.
+   * If a reference is present, indicates that the example is an example
+   * of the specified profile.
+   */
+  _exampleCanonical?: PrimitiveExtension;
 
   /**
    * Reference to the id of the grouping this resource appears in.
    */
   groupingId?: string;
+
+  /**
+   * Reference to the id of the grouping this resource appears in.
+   */
+  _groupingId?: PrimitiveExtension;
 }
 
 /**
@@ -637,7 +864,7 @@ export interface ImplementationGuideDefinitionResource {
  * If a reference is present, indicates that the example is an example
  * of the specified profile.
  */
-export type ImplementationGuideDefinitionResourceExample = boolean | string;
+export type ImplementationGuideDefinitionResourceExample = boolean | PrimitiveExtension | string;
 
 /**
  * A template for building resources.
@@ -649,6 +876,12 @@ export interface ImplementationGuideDefinitionTemplate {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -685,14 +918,29 @@ export interface ImplementationGuideDefinitionTemplate {
   code: string;
 
   /**
+   * Type of template specified.
+   */
+  _code?: PrimitiveExtension;
+
+  /**
    * The source location for the template.
    */
   source: string;
 
   /**
+   * The source location for the template.
+   */
+  _source?: PrimitiveExtension;
+
+  /**
    * The scope in which the template applies.
    */
   scope?: string;
+
+  /**
+   * The scope in which the template applies.
+   */
+  _scope?: PrimitiveExtension;
 }
 
 /**
@@ -707,6 +955,12 @@ export interface ImplementationGuideDependsOn {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -743,16 +997,33 @@ export interface ImplementationGuideDependsOn {
   uri: string;
 
   /**
+   * A canonical reference to the Implementation guide for the dependency.
+   */
+  _uri?: PrimitiveExtension;
+
+  /**
    * The NPM package name for the Implementation Guide that this IG depends
    * on.
    */
   packageId?: string;
 
   /**
+   * The NPM package name for the Implementation Guide that this IG depends
+   * on.
+   */
+  _packageId?: PrimitiveExtension;
+
+  /**
    * The version of the IG that is depended on, when the correct version is
    * required to understand the IG correctly.
    */
   version?: string;
+
+  /**
+   * The version of the IG that is depended on, when the correct version is
+   * required to understand the IG correctly.
+   */
+  _version?: PrimitiveExtension;
 }
 
 /**
@@ -766,6 +1037,12 @@ export interface ImplementationGuideGlobal {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -802,9 +1079,19 @@ export interface ImplementationGuideGlobal {
   type: ResourceType;
 
   /**
+   * The type of resource that all instances must conform to.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * A reference to the profile that all instances must conform to.
    */
   profile: string;
+
+  /**
+   * A reference to the profile that all instances must conform to.
+   */
+  _profile?: PrimitiveExtension;
 }
 
 /**
@@ -818,6 +1105,12 @@ export interface ImplementationGuideManifest {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -855,6 +1148,12 @@ export interface ImplementationGuideManifest {
   rendering?: string;
 
   /**
+   * A pointer to official web page, PDF or other rendering of the
+   * implementation guide.
+   */
+  _rendering?: PrimitiveExtension;
+
+  /**
    * A resource that is part of the implementation guide. Conformance
    * resources (value set, structure definition, capability statements
    * etc.) are obvious candidates for inclusion, but any kind of resource
@@ -873,11 +1172,23 @@ export interface ImplementationGuideManifest {
   image?: string[];
 
   /**
+   * Indicates a relative path to an image that exists within the IG.
+   */
+  _image?: (PrimitiveExtension | null)[];
+
+  /**
    * Indicates the relative path of an additional non-page, non-image file
    * that is part of the IG - e.g. zip, jar and similar files that could be
    * the target of a hyperlink in a derived IG.
    */
   other?: string[];
+
+  /**
+   * Indicates the relative path of an additional non-page, non-image file
+   * that is part of the IG - e.g. zip, jar and similar files that could be
+   * the target of a hyperlink in a derived IG.
+   */
+  _other?: (PrimitiveExtension | null)[];
 }
 
 /**
@@ -890,6 +1201,12 @@ export interface ImplementationGuideManifestPage {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -926,14 +1243,29 @@ export interface ImplementationGuideManifestPage {
   name: string;
 
   /**
+   * Relative path to the page.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Label for the page intended for human display.
    */
   title?: string;
 
   /**
+   * Label for the page intended for human display.
+   */
+  _title?: PrimitiveExtension;
+
+  /**
    * The name of an anchor available on the page.
    */
   anchor?: string[];
+
+  /**
+   * The name of an anchor available on the page.
+   */
+  _anchor?: (PrimitiveExtension | null)[];
 }
 
 /**
@@ -949,6 +1281,12 @@ export interface ImplementationGuideManifestResource {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -996,12 +1334,31 @@ export interface ImplementationGuideManifestResource {
    * If a reference is present, indicates that the example is an example
    * of the specified profile.
    */
+  _exampleBoolean?: PrimitiveExtension;
+
+  /**
+   * If true or a reference, indicates the resource is an example instance.
+   * If a reference is present, indicates that the example is an example
+   * of the specified profile.
+   */
   exampleCanonical?: string;
+
+  /**
+   * If true or a reference, indicates the resource is an example instance.
+   * If a reference is present, indicates that the example is an example
+   * of the specified profile.
+   */
+  _exampleCanonical?: PrimitiveExtension;
 
   /**
    * The relative path for primary page for this resource within the IG.
    */
   relativePath?: string;
+
+  /**
+   * The relative path for primary page for this resource within the IG.
+   */
+  _relativePath?: PrimitiveExtension;
 }
 
 /**
@@ -1009,4 +1366,4 @@ export interface ImplementationGuideManifestResource {
  * If a reference is present, indicates that the example is an example
  * of the specified profile.
  */
-export type ImplementationGuideManifestResourceExample = boolean | string;
+export type ImplementationGuideManifestResourceExample = boolean | PrimitiveExtension | string;

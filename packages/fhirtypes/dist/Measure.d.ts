@@ -12,6 +12,7 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { Resource } from './Resource';
@@ -34,6 +35,12 @@ export interface Measure {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -49,9 +56,22 @@ export interface Measure {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -110,6 +130,17 @@ export interface Measure {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this measure when it is
+   * referenced in a specification, model, design or an instance; also
+   * called its canonical identifier. This SHOULD be globally unique and
+   * SHOULD be a literal address at which at which an authoritative
+   * instance of this measure is (or will be) published. This URL can be
+   * the target of a canonical reference. It SHALL remain the same when the
+   * measure is stored on different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this measure when it is
    * represented in other formats, or referenced in a specification, model,
    * design or an instance.
@@ -132,6 +163,21 @@ export interface Measure {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the measure
+   * when it is referenced in a specification, model, design or instance.
+   * This is an arbitrary value managed by the measure author and is not
+   * expected to be globally unique. For example, it might be a timestamp
+   * (e.g. yyyymmdd) if a managed version is not available. There is also
+   * no expectation that versions can be placed in a lexicographical
+   * sequence. To provide a version consistent with the Decision Support
+   * Service specification, use the format Major.Minor.Revision (e.g.
+   * 1.0.0). For more information on versioning knowledge assets, refer to
+   * the Decision Support Service specification. Note that a version is
+   * required for non-experimental active artifacts.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the measure. This name should be
    * usable as an identifier for the module by machine processing
    * applications such as code generation.
@@ -139,9 +185,21 @@ export interface Measure {
   name?: string;
 
   /**
+   * A natural language name identifying the measure. This name should be
+   * usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A short, descriptive, user-friendly title for the measure.
    */
   title?: string;
+
+  /**
+   * A short, descriptive, user-friendly title for the measure.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * An explanatory or alternate title for the measure giving additional
@@ -150,10 +208,22 @@ export interface Measure {
   subtitle?: string;
 
   /**
+   * An explanatory or alternate title for the measure giving additional
+   * information about its content.
+   */
+  _subtitle?: PrimitiveExtension;
+
+  /**
    * The status of this measure. Enables tracking the life-cycle of the
    * content.
    */
   status: 'draft' | 'active' | 'retired' | 'unknown';
+
+  /**
+   * The status of this measure. Enables tracking the life-cycle of the
+   * content.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * A Boolean value to indicate that this measure is authored for testing
@@ -161,6 +231,13 @@ export interface Measure {
    * used for genuine usage.
    */
   experimental?: boolean;
+
+  /**
+   * A Boolean value to indicate that this measure is authored for testing
+   * purposes (or education/evaluation/marketing) and is not intended to be
+   * used for genuine usage.
+   */
+  _experimental?: PrimitiveExtension;
 
   /**
    * The intended subjects for the measure. If this element is not
@@ -185,9 +262,22 @@ export interface Measure {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the measure was published. The
+   * date must change when the business version changes and it must change
+   * if the status code changes. In addition, it should change when the
+   * substantive content of the measure changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the measure.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the measure.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -200,6 +290,12 @@ export interface Measure {
    * consumer's perspective.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the measure from a
+   * consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -223,10 +319,22 @@ export interface Measure {
   purpose?: string;
 
   /**
+   * Explanation of why this measure is needed and why it has been designed
+   * as it has.
+   */
+  _purpose?: PrimitiveExtension;
+
+  /**
    * A detailed description, from a clinical perspective, of how the
    * measure is used.
    */
   usage?: string;
+
+  /**
+   * A detailed description, from a clinical perspective, of how the
+   * measure is used.
+   */
+  _usage?: PrimitiveExtension;
 
   /**
    * A copyright statement relating to the measure and/or its contents.
@@ -236,6 +344,13 @@ export interface Measure {
   copyright?: string;
 
   /**
+   * A copyright statement relating to the measure and/or its contents.
+   * Copyright statements are generally legal restrictions on the use and
+   * publishing of the measure.
+   */
+  _copyright?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
@@ -243,11 +358,25 @@ export interface Measure {
   approvalDate?: string;
 
   /**
+   * The date on which the resource content was approved by the publisher.
+   * Approval happens once when the content is officially approved for
+   * usage.
+   */
+  _approvalDate?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
   lastReviewDate?: string;
+
+  /**
+   * The date on which the resource content was last reviewed. Review
+   * happens periodically after approval but does not change the original
+   * approval date.
+   */
+  _lastReviewDate?: PrimitiveExtension;
 
   /**
    * The period during which the measure content was or is planned to be in
@@ -299,11 +428,24 @@ export interface Measure {
   library?: string[];
 
   /**
+   * A reference to a Library resource containing the formal logic used by
+   * the measure.
+   */
+  _library?: (PrimitiveExtension | null)[];
+
+  /**
    * Notices and disclaimers regarding the use of the measure or related to
    * intellectual property (such as code systems) referenced by the
    * measure.
    */
   disclaimer?: string;
+
+  /**
+   * Notices and disclaimers regarding the use of the measure or related to
+   * intellectual property (such as code systems) referenced by the
+   * measure.
+   */
+  _disclaimer?: PrimitiveExtension;
 
   /**
    * Indicates how the calculation is performed for the measure, including
@@ -334,10 +476,23 @@ export interface Measure {
   riskAdjustment?: string;
 
   /**
+   * A description of the risk adjustment factors that may impact the
+   * resulting score for the measure and how they may be accounted for when
+   * computing and reporting measure results.
+   */
+  _riskAdjustment?: PrimitiveExtension;
+
+  /**
    * Describes how to combine the information calculated, based on logic in
    * each of several populations, into one summarized result.
    */
   rateAggregation?: string;
+
+  /**
+   * Describes how to combine the information calculated, based on logic in
+   * each of several populations, into one summarized result.
+   */
+  _rateAggregation?: PrimitiveExtension;
 
   /**
    * Provides a succinct statement of the need for the measure. Usually
@@ -347,10 +502,23 @@ export interface Measure {
   rationale?: string;
 
   /**
+   * Provides a succinct statement of the need for the measure. Usually
+   * includes statements pertaining to importance criterion: impact, gap in
+   * care, and evidence.
+   */
+  _rationale?: PrimitiveExtension;
+
+  /**
    * Provides a summary of relevant clinical guidelines or other clinical
    * recommendations supporting the measure.
    */
   clinicalRecommendationStatement?: string;
+
+  /**
+   * Provides a summary of relevant clinical guidelines or other clinical
+   * recommendations supporting the measure.
+   */
+  _clinicalRecommendationStatement?: PrimitiveExtension;
 
   /**
    * Information on whether an increase or decrease in score is the
@@ -365,10 +533,21 @@ export interface Measure {
   definition?: string[];
 
   /**
+   * Provides a description of an individual term used within the measure.
+   */
+  _definition?: (PrimitiveExtension | null)[];
+
+  /**
    * Additional guidance for the measure including how it can be used in a
    * clinical context, and the intent of the measure.
    */
   guidance?: string;
+
+  /**
+   * Additional guidance for the measure including how it can be used in a
+   * clinical context, and the intent of the measure.
+   */
+  _guidance?: PrimitiveExtension;
 
   /**
    * A group of population criteria for the measure.
@@ -400,6 +579,12 @@ export interface MeasureGroup {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -444,6 +629,11 @@ export interface MeasureGroup {
   description?: string;
 
   /**
+   * The human readable description of this population group.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * A population criteria for the measure.
    */
   population?: MeasureGroupPopulation[];
@@ -466,6 +656,12 @@ export interface MeasureGroupPopulation {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -507,6 +703,11 @@ export interface MeasureGroupPopulation {
   description?: string;
 
   /**
+   * The human readable description of this population criteria.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * An expression that specifies the criteria for the population,
    * typically the name of an expression in a library.
    */
@@ -525,6 +726,12 @@ export interface MeasureGroupStratifier {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -569,6 +776,11 @@ export interface MeasureGroupStratifier {
   description?: string;
 
   /**
+   * The human readable description of this stratifier criteria.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * An expression that specifies the criteria for the stratifier. This is
    * typically the name of an expression defined within a referenced
    * library, but it may also be a path to a stratifier element.
@@ -595,6 +807,12 @@ export interface MeasureGroupStratifierComponent {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -639,6 +857,11 @@ export interface MeasureGroupStratifierComponent {
   description?: string;
 
   /**
+   * The human readable description of this stratifier criteria component.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * An expression that specifies the criteria for this component of the
    * stratifier. This is typically the name of an expression defined within
    * a referenced library, but it may also be a path to a stratifier
@@ -659,6 +882,12 @@ export interface MeasureSupplementalData {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -711,6 +940,11 @@ export interface MeasureSupplementalData {
    * The human readable description of this supplemental data.
    */
   description?: string;
+
+  /**
+   * The human readable description of this supplemental data.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The criteria for the supplemental data. This is typically the name of

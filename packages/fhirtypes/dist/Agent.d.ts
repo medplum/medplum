@@ -10,6 +10,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -31,6 +32,12 @@ export interface Agent {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -46,9 +53,22 @@ export interface Agent {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -106,9 +126,19 @@ export interface Agent {
   name: string;
 
   /**
+   * The human readable friendly name of the agent.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The status of the agent.
    */
   status: 'active' | 'off' | 'error';
+
+  /**
+   * The status of the agent.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * Optional device resource representing the device running the agent.
@@ -139,6 +169,11 @@ export interface AgentChannel {
   name: string;
 
   /**
+   * The channel name.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The channel endpoint definition including protocol and network binding
    * details.
    */
@@ -153,12 +188,17 @@ export interface AgentChannel {
    * The target resource where channel messages will be delivered.
    */
   targetUrl?: string;
+
+  /**
+   * The target resource where channel messages will be delivered.
+   */
+  _targetUrl?: PrimitiveExtension;
 }
 
 /**
  * The target resource where channel messages will be delivered.
  */
-export type AgentChannelTarget = Reference<Bot> | string;
+export type AgentChannelTarget = PrimitiveExtension | Reference<Bot> | string;
 
 /**
  * The settings for the agent.
@@ -171,9 +211,19 @@ export interface AgentSetting {
   name: string;
 
   /**
+   * The setting name.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The setting value.
    */
   valueString?: string;
+
+  /**
+   * The setting value.
+   */
+  _valueString?: PrimitiveExtension;
 
   /**
    * The setting value.
@@ -183,15 +233,30 @@ export interface AgentSetting {
   /**
    * The setting value.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * The setting value.
+   */
   valueDecimal?: number;
 
   /**
    * The setting value.
    */
+  _valueDecimal?: PrimitiveExtension;
+
+  /**
+   * The setting value.
+   */
   valueInteger?: number;
+
+  /**
+   * The setting value.
+   */
+  _valueInteger?: PrimitiveExtension;
 }
 
 /**
  * The setting value.
  */
-export type AgentSettingValue = boolean | number | string;
+export type AgentSettingValue = boolean | number | PrimitiveExtension | string;

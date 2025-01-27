@@ -20,6 +20,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -42,6 +43,12 @@ export interface ClaimResponse {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -57,9 +64,22 @@ export interface ClaimResponse {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -117,6 +137,11 @@ export interface ClaimResponse {
   status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
+   * The status of the resource instance.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A finer grained suite of claim type codes which may convey additional
    * information such as Inpatient vs Outpatient and/or a specialty
    * service.
@@ -140,6 +165,15 @@ export interface ClaimResponse {
   use: 'claim' | 'preauthorization' | 'predetermination';
 
   /**
+   * A code to indicate whether the nature of the request is: to request
+   * adjudication of products and services previously rendered; or
+   * requesting authorization and adjudication for provision in the future;
+   * or requesting the non-binding adjudication of the listed products and
+   * services which could be provided in the future.
+   */
+  _use?: PrimitiveExtension;
+
+  /**
    * The party to whom the professional services and/or products have been
    * supplied or are being considered and for whom actual for facast
    * reimbursement is sought.
@@ -150,6 +184,11 @@ export interface ClaimResponse {
    * The date this resource was created.
    */
   created: string;
+
+  /**
+   * The date this resource was created.
+   */
+  _created?: PrimitiveExtension;
 
   /**
    * The party responsible for authorization, adjudication and
@@ -175,15 +214,32 @@ export interface ClaimResponse {
   outcome: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
+   * The outcome of the claim, predetermination, or preauthorization
+   * processing.
+   */
+  _outcome?: PrimitiveExtension;
+
+  /**
    * A human readable description of the status of the adjudication.
    */
   disposition?: string;
+
+  /**
+   * A human readable description of the status of the adjudication.
+   */
+  _disposition?: PrimitiveExtension;
 
   /**
    * Reference from the Insurer which is used in later communications which
    * refers to this adjudication.
    */
   preAuthRef?: string;
+
+  /**
+   * Reference from the Insurer which is used in later communications which
+   * refers to this adjudication.
+   */
+  _preAuthRef?: PrimitiveExtension;
 
   /**
    * The time frame during which this authorization is effective.
@@ -276,6 +332,12 @@ export interface ClaimResponseAddItem {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -310,16 +372,33 @@ export interface ClaimResponseAddItem {
   itemSequence?: number[];
 
   /**
+   * Claim items which this service line is intended to replace.
+   */
+  _itemSequence?: (PrimitiveExtension | null)[];
+
+  /**
    * The sequence number of the details within the claim item which this
    * line is intended to replace.
    */
   detailSequence?: number[];
 
   /**
+   * The sequence number of the details within the claim item which this
+   * line is intended to replace.
+   */
+  _detailSequence?: (PrimitiveExtension | null)[];
+
+  /**
    * The sequence number of the sub-details within the details within the
    * claim item which this line is intended to replace.
    */
   subdetailSequence?: number[];
+
+  /**
+   * The sequence number of the sub-details within the details within the
+   * claim item which this line is intended to replace.
+   */
+  _subdetailSequence?: (PrimitiveExtension | null)[];
 
   /**
    * The providers who are authorized for the services rendered to the
@@ -350,6 +429,12 @@ export interface ClaimResponseAddItem {
    * or completed.
    */
   servicedDate?: string;
+
+  /**
+   * The date or dates when the service or product was supplied, performed
+   * or completed.
+   */
+  _servicedDate?: PrimitiveExtension;
 
   /**
    * The date or dates when the service or product was supplied, performed
@@ -393,6 +478,14 @@ export interface ClaimResponseAddItem {
   factor?: number;
 
   /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  _factor?: PrimitiveExtension;
+
+  /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
@@ -416,6 +509,12 @@ export interface ClaimResponseAddItem {
   noteNumber?: number[];
 
   /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
+
+  /**
    * The adjudication results.
    */
   adjudication: ClaimResponseItemAdjudication[];
@@ -430,7 +529,7 @@ export interface ClaimResponseAddItem {
  * The date or dates when the service or product was supplied, performed
  * or completed.
  */
-export type ClaimResponseAddItemServiced = Period | string;
+export type ClaimResponseAddItemServiced = Period | PrimitiveExtension | string;
 
 /**
  * Where the product or service was provided.
@@ -447,6 +546,12 @@ export interface ClaimResponseAddItemDetail {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -511,6 +616,14 @@ export interface ClaimResponseAddItemDetail {
   factor?: number;
 
   /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  _factor?: PrimitiveExtension;
+
+  /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
@@ -521,6 +634,12 @@ export interface ClaimResponseAddItemDetail {
    * adjudication of this item.
    */
   noteNumber?: number[];
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
 
   /**
    * The adjudication results.
@@ -545,6 +664,12 @@ export interface ClaimResponseAddItemDetailSubDetail {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -607,6 +732,14 @@ export interface ClaimResponseAddItemDetailSubDetail {
   factor?: number;
 
   /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  _factor?: PrimitiveExtension;
+
+  /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
@@ -617,6 +750,12 @@ export interface ClaimResponseAddItemDetailSubDetail {
    * adjudication of this item.
    */
   noteNumber?: number[];
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
 
   /**
    * The adjudication results.
@@ -634,6 +773,12 @@ export interface ClaimResponseError {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -672,6 +817,13 @@ export interface ClaimResponseError {
   itemSequence?: number;
 
   /**
+   * The sequence number of the line item submitted which contains the
+   * error. This value is omitted when the error occurs outside of the item
+   * structure.
+   */
+  _itemSequence?: PrimitiveExtension;
+
+  /**
    * The sequence number of the detail within the line item submitted which
    * contains the error. This value is omitted when the error occurs
    * outside of the item structure.
@@ -679,11 +831,25 @@ export interface ClaimResponseError {
   detailSequence?: number;
 
   /**
+   * The sequence number of the detail within the line item submitted which
+   * contains the error. This value is omitted when the error occurs
+   * outside of the item structure.
+   */
+  _detailSequence?: PrimitiveExtension;
+
+  /**
    * The sequence number of the sub-detail within the detail within the
    * line item submitted which contains the error. This value is omitted
    * when the error occurs outside of the item structure.
    */
   subDetailSequence?: number;
+
+  /**
+   * The sequence number of the sub-detail within the detail within the
+   * line item submitted which contains the error. This value is omitted
+   * when the error occurs outside of the item structure.
+   */
+  _subDetailSequence?: PrimitiveExtension;
 
   /**
    * An error code, from a specified code system, which details why the
@@ -703,6 +869,12 @@ export interface ClaimResponseInsurance {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -740,10 +912,22 @@ export interface ClaimResponseInsurance {
   sequence: number;
 
   /**
+   * A number to uniquely identify insurance entries and provide a sequence
+   * of coverages to convey coordination of benefit order.
+   */
+  _sequence?: PrimitiveExtension;
+
+  /**
    * A flag to indicate that this Coverage is to be used for adjudication
    * of this claim when set to true.
    */
   focal: boolean;
+
+  /**
+   * A flag to indicate that this Coverage is to be used for adjudication
+   * of this claim when set to true.
+   */
+  _focal?: PrimitiveExtension;
 
   /**
    * Reference to the insurance card level information contained in the
@@ -758,6 +942,12 @@ export interface ClaimResponseInsurance {
    * insurer for special business processing purposes.
    */
   businessArrangement?: string;
+
+  /**
+   * A business agreement number established between the provider and the
+   * insurer for special business processing purposes.
+   */
+  _businessArrangement?: PrimitiveExtension;
 
   /**
    * The result of the adjudication of the line items for the Coverage
@@ -777,6 +967,12 @@ export interface ClaimResponseItem {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -813,10 +1009,21 @@ export interface ClaimResponseItem {
   itemSequence: number;
 
   /**
+   * A number to uniquely reference the claim item entries.
+   */
+  _itemSequence?: PrimitiveExtension;
+
+  /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
   noteNumber?: number[];
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
 
   /**
    * If this item is a group then the values here are a summary of the
@@ -844,6 +1051,12 @@ export interface ClaimResponseItemAdjudication {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -900,6 +1113,12 @@ export interface ClaimResponseItemAdjudication {
    * to the amount element above.
    */
   value?: number;
+
+  /**
+   * A non-monetary value associated with the category. Mutually exclusive
+   * to the amount element above.
+   */
+  _value?: PrimitiveExtension;
 }
 
 /**
@@ -913,6 +1132,12 @@ export interface ClaimResponseItemDetail {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -949,10 +1174,21 @@ export interface ClaimResponseItemDetail {
   detailSequence: number;
 
   /**
+   * A number to uniquely reference the claim detail entry.
+   */
+  _detailSequence?: PrimitiveExtension;
+
+  /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
   noteNumber?: number[];
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
 
   /**
    * The adjudication results.
@@ -975,6 +1211,12 @@ export interface ClaimResponseItemDetailSubDetail {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1011,10 +1253,21 @@ export interface ClaimResponseItemDetailSubDetail {
   subDetailSequence: number;
 
   /**
+   * A number to uniquely reference the claim sub-detail entry.
+   */
+  _subDetailSequence?: PrimitiveExtension;
+
+  /**
    * The numbers associated with notes below which apply to the
    * adjudication of this item.
    */
   noteNumber?: number[];
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
 
   /**
    * The adjudication results.
@@ -1032,6 +1285,12 @@ export interface ClaimResponsePayment {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1086,6 +1345,12 @@ export interface ClaimResponsePayment {
   date?: string;
 
   /**
+   * Estimated date the payment will be issued or the actual issue date of
+   * payment.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * Benefits payable less any payment adjustment.
    */
   amount: Money;
@@ -1107,6 +1372,12 @@ export interface ClaimResponseProcessNote {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1143,14 +1414,29 @@ export interface ClaimResponseProcessNote {
   number?: number;
 
   /**
+   * A number to uniquely identify a note entry.
+   */
+  _number?: PrimitiveExtension;
+
+  /**
    * The business purpose of the note text.
    */
   type?: 'display' | 'print' | 'printoper';
 
   /**
+   * The business purpose of the note text.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * The explanation or description associated with the processing.
    */
   text: string;
+
+  /**
+   * The explanation or description associated with the processing.
+   */
+  _text?: PrimitiveExtension;
 
   /**
    * A code to define the language used in the text of the note.
@@ -1168,6 +1454,12 @@ export interface ClaimResponseTotal {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

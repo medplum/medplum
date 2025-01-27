@@ -8,6 +8,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 import { ResourceType } from './ResourceType';
@@ -30,6 +31,12 @@ export interface Project {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -45,9 +52,22 @@ export interface Project {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -105,9 +125,19 @@ export interface Project {
   name?: string;
 
   /**
+   * A name associated with the Project.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A summary, characterization or explanation of the Project.
    */
   description?: string;
+
+  /**
+   * A summary, characterization or explanation of the Project.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Whether this project is the super administrator project. A super
@@ -117,16 +147,35 @@ export interface Project {
   superAdmin?: boolean;
 
   /**
+   * Whether this project is the super administrator project. A super
+   * administrator is a user who has complete access to all resources in
+   * all projects.
+   */
+  _superAdmin?: PrimitiveExtension;
+
+  /**
    * Whether this project uses strict FHIR validation.  This setting has
    * been deprecated, and can only be set by a super admin.
    */
   strictMode?: boolean;
 
   /**
+   * Whether this project uses strict FHIR validation.  This setting has
+   * been deprecated, and can only be set by a super admin.
+   */
+  _strictMode?: PrimitiveExtension;
+
+  /**
    * Whether this project uses referential integrity on write operations
    * such as 'create' and 'update'.
    */
   checkReferencesOnWrite?: boolean;
+
+  /**
+   * Whether this project uses referential integrity on write operations
+   * such as 'create' and 'update'.
+   */
+  _checkReferencesOnWrite?: PrimitiveExtension;
 
   /**
    * The user who owns the project.
@@ -138,6 +187,11 @@ export interface Project {
    */
   features?: ('aws-comprehend' | 'aws-textract' | 'bots' | 'cron' | 'email' | 'google-auth-required' |
       'graphql-introspection' | 'terminology' | 'websocket-subscriptions' | 'reference-lookups' | 'transaction-bundles')[];
+
+  /**
+   * A list of optional features that are enabled for the project.
+   */
+  _features?: (PrimitiveExtension | null)[];
 
   /**
    * The default access policy for patients using open registration.
@@ -197,9 +251,19 @@ export interface ProjectDefaultProfile {
   resourceType: ResourceType;
 
   /**
+   * The resource type onto which to apply the default profiles
+   */
+  _resourceType?: PrimitiveExtension;
+
+  /**
    * The profiles to add by default
    */
   profile: string[];
+
+  /**
+   * The profiles to add by default
+   */
+  _profile?: (PrimitiveExtension | null)[];
 }
 
 /**
@@ -225,9 +289,19 @@ export interface ProjectSetting {
   name: string;
 
   /**
+   * The secret name.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The secret value.
    */
   valueString?: string;
+
+  /**
+   * The secret value.
+   */
+  _valueString?: PrimitiveExtension;
 
   /**
    * The secret value.
@@ -237,18 +311,33 @@ export interface ProjectSetting {
   /**
    * The secret value.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * The secret value.
+   */
   valueDecimal?: number;
 
   /**
    * The secret value.
    */
+  _valueDecimal?: PrimitiveExtension;
+
+  /**
+   * The secret value.
+   */
   valueInteger?: number;
+
+  /**
+   * The secret value.
+   */
+  _valueInteger?: PrimitiveExtension;
 }
 
 /**
  * The secret value.
  */
-export type ProjectSettingValue = boolean | number | string;
+export type ProjectSettingValue = boolean | number | PrimitiveExtension | string;
 
 /**
  * Web application or web site that is associated with the project.
@@ -262,6 +351,12 @@ export interface ProjectSite {
   name: string;
 
   /**
+   * Friendly name that will make it easy for you to identify the site in
+   * the future.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The list of domain names associated with the site. User authentication
    * will be restricted to the domains you enter here, plus any subdomains.
    * In other words, a registration for example.com also registers
@@ -271,6 +366,15 @@ export interface ProjectSite {
   domain: string[];
 
   /**
+   * The list of domain names associated with the site. User authentication
+   * will be restricted to the domains you enter here, plus any subdomains.
+   * In other words, a registration for example.com also registers
+   * subdomain.example.com. A valid domain requires a host and must not
+   * include any path, port, query or fragment.
+   */
+  _domain?: (PrimitiveExtension | null)[];
+
+  /**
    * The publicly visible Google Client ID for the site. This is used to
    * authenticate users with Google. This value is available in the Google
    * Developer Console.
@@ -278,10 +382,23 @@ export interface ProjectSite {
   googleClientId?: string;
 
   /**
+   * The publicly visible Google Client ID for the site. This is used to
+   * authenticate users with Google. This value is available in the Google
+   * Developer Console.
+   */
+  _googleClientId?: PrimitiveExtension;
+
+  /**
    * The private Google Client Secret for the site. This value is available
    * in the Google Developer Console.
    */
   googleClientSecret?: string;
+
+  /**
+   * The private Google Client Secret for the site. This value is available
+   * in the Google Developer Console.
+   */
+  _googleClientSecret?: PrimitiveExtension;
 
   /**
    * The publicly visible reCAPTCHA site key. This value is generated when
@@ -291,11 +408,25 @@ export interface ProjectSite {
   recaptchaSiteKey?: string;
 
   /**
+   * The publicly visible reCAPTCHA site key. This value is generated when
+   * you create a new reCAPTCHA site in the reCAPTCHA admin console. Use
+   * this site key in the HTML code your site serves to users.
+   */
+  _recaptchaSiteKey?: PrimitiveExtension;
+
+  /**
    * The private reCAPTCHA secret key. This value is generated when you
    * create a new reCAPTCHA site in the reCAPTCHA admin console. Use this
    * secret key for communication between your site and reCAPTCHA.
    */
   recaptchaSecretKey?: string;
+
+  /**
+   * The private reCAPTCHA secret key. This value is generated when you
+   * create a new reCAPTCHA site in the reCAPTCHA admin console. Use this
+   * secret key for communication between your site and reCAPTCHA.
+   */
+  _recaptchaSecretKey?: PrimitiveExtension;
 }
 
 /**

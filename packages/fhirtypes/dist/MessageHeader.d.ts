@@ -14,6 +14,7 @@ import { OperationOutcome } from './OperationOutcome';
 import { Organization } from './Organization';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -38,6 +39,12 @@ export interface MessageHeader {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -53,9 +60,22 @@ export interface MessageHeader {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -121,6 +141,15 @@ export interface MessageHeader {
   eventUri?: string;
 
   /**
+   * Code that identifies the event this message represents and connects it
+   * with its definition. Events defined as part of the FHIR specification
+   * have the system value
+   * &quot;http://terminology.hl7.org/CodeSystem/message-events&quot;.  Alternatively
+   * uri to the EventDefinition.
+   */
+  _eventUri?: PrimitiveExtension;
+
+  /**
    * The destination application which the message is intended for.
    */
   destination?: MessageHeaderDestination[];
@@ -180,6 +209,11 @@ export interface MessageHeader {
    * Permanent link to the MessageDefinition for this message.
    */
   definition?: string;
+
+  /**
+   * Permanent link to the MessageDefinition for this message.
+   */
+  _definition?: PrimitiveExtension;
 }
 
 /**
@@ -189,7 +223,7 @@ export interface MessageHeader {
  * &quot;http://terminology.hl7.org/CodeSystem/message-events&quot;.  Alternatively
  * uri to the EventDefinition.
  */
-export type MessageHeaderEvent = Coding | string;
+export type MessageHeaderEvent = Coding | PrimitiveExtension | string;
 
 /**
  * The destination application which the message is intended for.
@@ -201,6 +235,12 @@ export interface MessageHeaderDestination {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -237,6 +277,11 @@ export interface MessageHeaderDestination {
   name?: string;
 
   /**
+   * Human-readable name for the target system.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Identifies the target end system in situations where the initial
    * message transmission is to an intermediary system.
    */
@@ -246,6 +291,11 @@ export interface MessageHeaderDestination {
    * Indicates where the message should be routed to.
    */
   endpoint: string;
+
+  /**
+   * Indicates where the message should be routed to.
+   */
+  _endpoint?: PrimitiveExtension;
 
   /**
    * Allows data conveyed by a message to be addressed to a particular
@@ -266,6 +316,12 @@ export interface MessageHeaderResponse {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -303,10 +359,22 @@ export interface MessageHeaderResponse {
   identifier: string;
 
   /**
+   * The MessageHeader.id of the message to which this message is a
+   * response.
+   */
+  _identifier?: PrimitiveExtension;
+
+  /**
    * Code that identifies the type of response to the message - whether it
    * was successful or not, and whether it should be resent or not.
    */
   code: 'ok' | 'transient-error' | 'fatal-error';
+
+  /**
+   * Code that identifies the type of response to the message - whether it
+   * was successful or not, and whether it should be resent or not.
+   */
+  _code?: PrimitiveExtension;
 
   /**
    * Full details of any issues found in the message.
@@ -324,6 +392,12 @@ export interface MessageHeaderSource {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -360,15 +434,31 @@ export interface MessageHeaderSource {
   name?: string;
 
   /**
+   * Human-readable name for the source system.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * May include configuration or other information useful in debugging.
    */
   software?: string;
+
+  /**
+   * May include configuration or other information useful in debugging.
+   */
+  _software?: PrimitiveExtension;
 
   /**
    * Can convey versions of multiple systems in situations where a message
    * passes through multiple hands.
    */
   version?: string;
+
+  /**
+   * Can convey versions of multiple systems in situations where a message
+   * passes through multiple hands.
+   */
+  _version?: PrimitiveExtension;
 
   /**
    * An e-mail, phone, website or other contact point to use to resolve
@@ -380,4 +470,9 @@ export interface MessageHeaderSource {
    * Identifies the routing target to send acknowledgements to.
    */
   endpoint: string;
+
+  /**
+   * Identifies the routing target to send acknowledgements to.
+   */
+  _endpoint?: PrimitiveExtension;
 }

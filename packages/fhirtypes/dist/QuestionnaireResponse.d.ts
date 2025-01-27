@@ -17,6 +17,7 @@ import { Organization } from './Organization';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Procedure } from './Procedure';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
@@ -43,6 +44,12 @@ export interface QuestionnaireResponse {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -58,9 +65,22 @@ export interface QuestionnaireResponse {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -135,10 +155,22 @@ export interface QuestionnaireResponse {
   questionnaire?: string;
 
   /**
+   * The Questionnaire that defines and organizes the questions for which
+   * answers are being provided.
+   */
+  _questionnaire?: PrimitiveExtension;
+
+  /**
    * The position of the questionnaire response within its overall
    * lifecycle.
    */
   status: 'in-progress' | 'completed' | 'amended' | 'entered-in-error' | 'stopped';
+
+  /**
+   * The position of the questionnaire response within its overall
+   * lifecycle.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * The subject of the questionnaire response.  This could be a patient,
@@ -157,6 +189,11 @@ export interface QuestionnaireResponse {
    * The date and/or time that this set of answers were last changed.
    */
   authored?: string;
+
+  /**
+   * The date and/or time that this set of answers were last changed.
+   */
+  _authored?: PrimitiveExtension;
 
   /**
    * Person who received the answers to the questions in the
@@ -187,6 +224,12 @@ export interface QuestionnaireResponseItem {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -224,16 +267,34 @@ export interface QuestionnaireResponseItem {
   linkId: string;
 
   /**
+   * The item from the Questionnaire that corresponds to this item in the
+   * QuestionnaireResponse resource.
+   */
+  _linkId?: PrimitiveExtension;
+
+  /**
    * A reference to an [ElementDefinition](elementdefinition.html) that
    * provides the details for the item.
    */
   definition?: string;
 
   /**
+   * A reference to an [ElementDefinition](elementdefinition.html) that
+   * provides the details for the item.
+   */
+  _definition?: PrimitiveExtension;
+
+  /**
    * Text that is displayed above the contents of the group or as the text
    * of the question being answered.
    */
   text?: string;
+
+  /**
+   * Text that is displayed above the contents of the group or as the text
+   * of the question being answered.
+   */
+  _text?: PrimitiveExtension;
 
   /**
    * The respondent's answer(s) to the question.
@@ -256,6 +317,12 @@ export interface QuestionnaireResponseItemAnswer {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -296,7 +363,19 @@ export interface QuestionnaireResponseItemAnswer {
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * The answer (or one of the answers) provided by the respondent to the
+   * question.
+   */
   valueDecimal?: number;
+
+  /**
+   * The answer (or one of the answers) provided by the respondent to the
+   * question.
+   */
+  _valueDecimal?: PrimitiveExtension;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
@@ -308,7 +387,19 @@ export interface QuestionnaireResponseItemAnswer {
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
+  _valueInteger?: PrimitiveExtension;
+
+  /**
+   * The answer (or one of the answers) provided by the respondent to the
+   * question.
+   */
   valueDate?: string;
+
+  /**
+   * The answer (or one of the answers) provided by the respondent to the
+   * question.
+   */
+  _valueDate?: PrimitiveExtension;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
@@ -320,7 +411,19 @@ export interface QuestionnaireResponseItemAnswer {
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
+  _valueDateTime?: PrimitiveExtension;
+
+  /**
+   * The answer (or one of the answers) provided by the respondent to the
+   * question.
+   */
   valueTime?: string;
+
+  /**
+   * The answer (or one of the answers) provided by the respondent to the
+   * question.
+   */
+  _valueTime?: PrimitiveExtension;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
@@ -332,7 +435,19 @@ export interface QuestionnaireResponseItemAnswer {
    * The answer (or one of the answers) provided by the respondent to the
    * question.
    */
+  _valueString?: PrimitiveExtension;
+
+  /**
+   * The answer (or one of the answers) provided by the respondent to the
+   * question.
+   */
   valueUri?: string;
+
+  /**
+   * The answer (or one of the answers) provided by the respondent to the
+   * question.
+   */
+  _valueUri?: PrimitiveExtension;
 
   /**
    * The answer (or one of the answers) provided by the respondent to the
@@ -368,4 +483,4 @@ export interface QuestionnaireResponseItemAnswer {
  * The answer (or one of the answers) provided by the respondent to the
  * question.
  */
-export type QuestionnaireResponseItemAnswerValue = Attachment | boolean | Coding | number | Quantity | Reference<Resource> | string;
+export type QuestionnaireResponseItemAnswerValue = Attachment | boolean | Coding | number | PrimitiveExtension | Quantity | Reference<Resource> | string;

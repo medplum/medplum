@@ -12,6 +12,7 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { Resource } from './Resource';
@@ -36,6 +37,12 @@ export interface RiskEvidenceSynthesis {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -51,9 +58,22 @@ export interface RiskEvidenceSynthesis {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -113,6 +133,18 @@ export interface RiskEvidenceSynthesis {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this risk evidence synthesis
+   * when it is referenced in a specification, model, design or an
+   * instance; also called its canonical identifier. This SHOULD be
+   * globally unique and SHOULD be a literal address at which at which an
+   * authoritative instance of this risk evidence synthesis is (or will be)
+   * published. This URL can be the target of a canonical reference. It
+   * SHALL remain the same when the risk evidence synthesis is stored on
+   * different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this risk evidence
    * synthesis when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
@@ -131,11 +163,29 @@ export interface RiskEvidenceSynthesis {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the risk
+   * evidence synthesis when it is referenced in a specification, model,
+   * design or instance. This is an arbitrary value managed by the risk
+   * evidence synthesis author and is not expected to be globally unique.
+   * For example, it might be a timestamp (e.g. yyyymmdd) if a managed
+   * version is not available. There is also no expectation that versions
+   * can be placed in a lexicographical sequence.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the risk evidence synthesis. This
    * name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
   name?: string;
+
+  /**
+   * A natural language name identifying the risk evidence synthesis. This
+   * name should be usable as an identifier for the module by machine
+   * processing applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * A short, descriptive, user-friendly title for the risk evidence
@@ -144,10 +194,22 @@ export interface RiskEvidenceSynthesis {
   title?: string;
 
   /**
+   * A short, descriptive, user-friendly title for the risk evidence
+   * synthesis.
+   */
+  _title?: PrimitiveExtension;
+
+  /**
    * The status of this risk evidence synthesis. Enables tracking the
    * life-cycle of the content.
    */
   status: 'draft' | 'active' | 'retired' | 'unknown';
+
+  /**
+   * The status of this risk evidence synthesis. Enables tracking the
+   * life-cycle of the content.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * The date  (and optionally time) when the risk evidence synthesis was
@@ -159,10 +221,25 @@ export interface RiskEvidenceSynthesis {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the risk evidence synthesis was
+   * published. The date must change when the business version changes and
+   * it must change if the status code changes. In addition, it should
+   * change when the substantive content of the risk evidence synthesis
+   * changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the risk
    * evidence synthesis.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the risk
+   * evidence synthesis.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -175,6 +252,12 @@ export interface RiskEvidenceSynthesis {
    * synthesis from a consumer's perspective.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the risk evidence
+   * synthesis from a consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * A human-readable string to clarify or explain concepts about the
@@ -206,6 +289,13 @@ export interface RiskEvidenceSynthesis {
   copyright?: string;
 
   /**
+   * A copyright statement relating to the risk evidence synthesis and/or
+   * its contents. Copyright statements are generally legal restrictions on
+   * the use and publishing of the risk evidence synthesis.
+   */
+  _copyright?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
@@ -213,11 +303,25 @@ export interface RiskEvidenceSynthesis {
   approvalDate?: string;
 
   /**
+   * The date on which the resource content was approved by the publisher.
+   * Approval happens once when the content is officially approved for
+   * usage.
+   */
+  _approvalDate?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
   lastReviewDate?: string;
+
+  /**
+   * The date on which the resource content was last reviewed. Review
+   * happens periodically after approval but does not change the original
+   * approval date.
+   */
+  _lastReviewDate?: PrimitiveExtension;
 
   /**
    * The period during which the risk evidence synthesis content was or is
@@ -319,6 +423,12 @@ export interface RiskEvidenceSynthesisCertainty {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -374,6 +484,12 @@ export interface RiskEvidenceSynthesisCertaintyCertaintySubcomponent {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -433,6 +549,12 @@ export interface RiskEvidenceSynthesisRiskEstimate {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -467,6 +589,11 @@ export interface RiskEvidenceSynthesisRiskEstimate {
   description?: string;
 
   /**
+   * Human-readable summary of risk estimate.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * Examples include proportion and mean.
    */
   type?: CodeableConcept;
@@ -475,6 +602,11 @@ export interface RiskEvidenceSynthesisRiskEstimate {
    * The point estimate of the risk estimate.
    */
   value?: number;
+
+  /**
+   * The point estimate of the risk estimate.
+   */
+  _value?: PrimitiveExtension;
 
   /**
    * Specifies the UCUM unit for the outcome.
@@ -488,9 +620,20 @@ export interface RiskEvidenceSynthesisRiskEstimate {
   denominatorCount?: number;
 
   /**
+   * The sample size for the group that was measured for this risk
+   * estimate.
+   */
+  _denominatorCount?: PrimitiveExtension;
+
+  /**
    * The number of group members with the outcome of interest.
    */
   numeratorCount?: number;
+
+  /**
+   * The number of group members with the outcome of interest.
+   */
+  _numeratorCount?: PrimitiveExtension;
 
   /**
    * A description of the precision of the estimate for the effect.
@@ -508,6 +651,12 @@ export interface RiskEvidenceSynthesisRiskEstimatePrecisionEstimate {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -549,14 +698,29 @@ export interface RiskEvidenceSynthesisRiskEstimatePrecisionEstimate {
   level?: number;
 
   /**
+   * Use 95 for a 95% confidence interval.
+   */
+  _level?: PrimitiveExtension;
+
+  /**
    * Lower bound of confidence interval.
    */
   from?: number;
 
   /**
+   * Lower bound of confidence interval.
+   */
+  _from?: PrimitiveExtension;
+
+  /**
    * Upper bound of confidence interval.
    */
   to?: number;
+
+  /**
+   * Upper bound of confidence interval.
+   */
+  _to?: PrimitiveExtension;
 }
 
 /**
@@ -569,6 +733,12 @@ export interface RiskEvidenceSynthesisSampleSize {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -605,12 +775,27 @@ export interface RiskEvidenceSynthesisSampleSize {
   description?: string;
 
   /**
+   * Human-readable summary of sample size.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * Number of studies included in this evidence synthesis.
    */
   numberOfStudies?: number;
 
   /**
+   * Number of studies included in this evidence synthesis.
+   */
+  _numberOfStudies?: PrimitiveExtension;
+
+  /**
    * Number of participants included in this evidence synthesis.
    */
   numberOfParticipants?: number;
+
+  /**
+   * Number of participants included in this evidence synthesis.
+   */
+  _numberOfParticipants?: PrimitiveExtension;
 }

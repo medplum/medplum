@@ -9,6 +9,7 @@ import { Duration } from './Duration';
 import { Extension } from './Extension';
 import { Group } from './Group';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 
 /**
@@ -22,6 +23,12 @@ export interface DataRequirement {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -41,10 +48,23 @@ export interface DataRequirement {
   type: string;
 
   /**
+   * The type of the required data, specified as the type name of a
+   * resource. For profiles, this value is set to the type of the base
+   * resource of the profile.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * The profile of the required data, specified as the uri of the profile
    * definition.
    */
   profile?: string[];
+
+  /**
+   * The profile of the required data, specified as the uri of the profile
+   * definition.
+   */
+  _profile?: (PrimitiveExtension | null)[];
 
   /**
    * The intended subjects of the data requirement. If this element is not
@@ -74,6 +94,21 @@ export interface DataRequirement {
   mustSupport?: string[];
 
   /**
+   * Indicates that specific elements of the type are referenced by the
+   * knowledge module and must be supported by the consumer in order to
+   * obtain an effective evaluation. This does not mean that a value is
+   * required for this element, only that the consuming system must
+   * understand the element and be able to provide values for it if they
+   * are available.
+   *
+   * The value of mustSupport SHALL be a FHIRPath resolveable on the type
+   * of the DataRequirement. The path SHALL consist only of identifiers,
+   * constant indexers, and .resolve() (see the [Simple FHIRPath
+   * Profile](fhirpath.html#simple) for full details).
+   */
+  _mustSupport?: (PrimitiveExtension | null)[];
+
+  /**
    * Code filters specify additional constraints on the data, specifying
    * the value set of interest for a particular element of the data. Each
    * code filter defines an additional constraint on the data, i.e. code
@@ -94,6 +129,12 @@ export interface DataRequirement {
    * _count search parameter).
    */
   limit?: number;
+
+  /**
+   * Specifies a maximum number of results that are required (uses the
+   * _count search parameter).
+   */
+  _limit?: PrimitiveExtension;
 
   /**
    * Specifies the order of the results to be returned.
@@ -122,6 +163,12 @@ export interface DataRequirementCodeFilter {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -145,11 +192,31 @@ export interface DataRequirementCodeFilter {
   path?: string;
 
   /**
+   * The code-valued attribute of the filter. The specified path SHALL be a
+   * FHIRPath resolveable on the specified type of the DataRequirement, and
+   * SHALL consist only of identifiers, constant indexers, and .resolve().
+   * The path is allowed to contain qualifiers (.) to traverse
+   * sub-elements, as well as indexers ([x]) to traverse
+   * multiple-cardinality sub-elements (see the [Simple FHIRPath
+   * Profile](fhirpath.html#simple) for full details). Note that the index
+   * must be an integer constant. The path must resolve to an element of
+   * type code, Coding, or CodeableConcept.
+   */
+  _path?: PrimitiveExtension;
+
+  /**
    * A token parameter that refers to a search parameter defined on the
    * specified type of the DataRequirement, and which searches on elements
    * of type code, Coding, or CodeableConcept.
    */
   searchParam?: string;
+
+  /**
+   * A token parameter that refers to a search parameter defined on the
+   * specified type of the DataRequirement, and which searches on elements
+   * of type code, Coding, or CodeableConcept.
+   */
+  _searchParam?: PrimitiveExtension;
 
   /**
    * The valueset for the code filter. The valueSet and code elements are
@@ -158,6 +225,14 @@ export interface DataRequirementCodeFilter {
    * the path is a member of the specified valueset.
    */
   valueSet?: string;
+
+  /**
+   * The valueset for the code filter. The valueSet and code elements are
+   * additive. If valueSet is specified, the filter will return only those
+   * data items for which the value of the code-valued element specified in
+   * the path is a member of the specified valueset.
+   */
+  _valueSet?: PrimitiveExtension;
 
   /**
    * The codes for the code filter. If values are given, the filter will
@@ -184,6 +259,12 @@ export interface DataRequirementDateFilter {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -207,11 +288,31 @@ export interface DataRequirementDateFilter {
   path?: string;
 
   /**
+   * The date-valued attribute of the filter. The specified path SHALL be a
+   * FHIRPath resolveable on the specified type of the DataRequirement, and
+   * SHALL consist only of identifiers, constant indexers, and .resolve().
+   * The path is allowed to contain qualifiers (.) to traverse
+   * sub-elements, as well as indexers ([x]) to traverse
+   * multiple-cardinality sub-elements (see the [Simple FHIRPath
+   * Profile](fhirpath.html#simple) for full details). Note that the index
+   * must be an integer constant. The path must resolve to an element of
+   * type date, dateTime, Period, Schedule, or Timing.
+   */
+  _path?: PrimitiveExtension;
+
+  /**
    * A date parameter that refers to a search parameter defined on the
    * specified type of the DataRequirement, and which searches on elements
    * of type date, dateTime, Period, Schedule, or Timing.
    */
   searchParam?: string;
+
+  /**
+   * A date parameter that refers to a search parameter defined on the
+   * specified type of the DataRequirement, and which searches on elements
+   * of type date, dateTime, Period, Schedule, or Timing.
+   */
+  _searchParam?: PrimitiveExtension;
 
   /**
    * The value of the filter. If period is specified, the filter will
@@ -222,6 +323,16 @@ export interface DataRequirementDateFilter {
    * return only those data items that fall within Duration before now.
    */
   valueDateTime?: string;
+
+  /**
+   * The value of the filter. If period is specified, the filter will
+   * return only those data items that fall within the bounds determined by
+   * the Period, inclusive of the period boundaries. If dateTime is
+   * specified, the filter will return only those data items that are equal
+   * to the specified dateTime. If a Duration is specified, the filter will
+   * return only those data items that fall within Duration before now.
+   */
+  _valueDateTime?: PrimitiveExtension;
 
   /**
    * The value of the filter. If period is specified, the filter will
@@ -252,7 +363,7 @@ export interface DataRequirementDateFilter {
  * to the specified dateTime. If a Duration is specified, the filter will
  * return only those data items that fall within Duration before now.
  */
-export type DataRequirementDateFilterValue = Duration | Period | string;
+export type DataRequirementDateFilterValue = Duration | Period | PrimitiveExtension | string;
 
 /**
  * Specifies the order of the results to be returned.
@@ -264,6 +375,12 @@ export interface DataRequirementSort {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -285,7 +402,21 @@ export interface DataRequirementSort {
   path: string;
 
   /**
+   * The attribute of the sort. The specified path must be resolvable from
+   * the type of the required data. The path is allowed to contain
+   * qualifiers (.) to traverse sub-elements, as well as indexers ([x]) to
+   * traverse multiple-cardinality sub-elements. Note that the index must
+   * be an integer constant.
+   */
+  _path?: PrimitiveExtension;
+
+  /**
    * The direction of the sort, ascending or descending.
    */
   direction: 'ascending' | 'descending';
+
+  /**
+   * The direction of the sort, ascending or descending.
+   */
+  _direction?: PrimitiveExtension;
 }

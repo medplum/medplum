@@ -16,6 +16,7 @@ import { Money } from './Money';
 import { Narrative } from './Narrative';
 import { ObservationDefinition } from './ObservationDefinition';
 import { Organization } from './Organization';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
@@ -39,6 +40,12 @@ export interface MedicationKnowledge {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -54,9 +61,22 @@ export interface MedicationKnowledge {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -120,6 +140,13 @@ export interface MedicationKnowledge {
   status?: 'active' | 'inactive' | 'entered-in-error';
 
   /**
+   * A code to indicate if the medication is in active use.  The status
+   * refers to the validity about the information of the medication and not
+   * to its medicinal properties.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Describes the details of the manufacturer of the medication product.
    * This is not intended to represent the distributor of a medication
    * product.
@@ -146,6 +173,13 @@ export interface MedicationKnowledge {
    * paracetamol or salbutamol and albuterol.
    */
   synonym?: string[];
+
+  /**
+   * Additional names for a medication, for example, the name(s) given to a
+   * medication in different countries.  For example, acetaminophen and
+   * paracetamol or salbutamol and albuterol.
+   */
+  _synonym?: (PrimitiveExtension | null)[];
 
   /**
    * Associated or related knowledge about a medication.
@@ -180,6 +214,11 @@ export interface MedicationKnowledge {
    * The instructions for preparing the medication.
    */
   preparationInstruction?: string;
+
+  /**
+   * The instructions for preparing the medication.
+   */
+  _preparationInstruction?: PrimitiveExtension;
 
   /**
    * The intended or approved route of administration.
@@ -247,6 +286,12 @@ export interface MedicationKnowledgeAdministrationGuidelines {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -319,6 +364,12 @@ export interface MedicationKnowledgeAdministrationGuidelinesDosage {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -372,6 +423,12 @@ export interface MedicationKnowledgeAdministrationGuidelinesPatientCharacteristi
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -416,6 +473,11 @@ export interface MedicationKnowledgeAdministrationGuidelinesPatientCharacteristi
    * The specific characteristic (e.g. height, weight, gender, etc.).
    */
   value?: string[];
+
+  /**
+   * The specific characteristic (e.g. height, weight, gender, etc.).
+   */
+  _value?: (PrimitiveExtension | null)[];
 }
 
 /**
@@ -434,6 +496,12 @@ export interface MedicationKnowledgeCost {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -476,6 +544,11 @@ export interface MedicationKnowledgeCost {
   source?: string;
 
   /**
+   * The source or owner that assigns the price to the medication.
+   */
+  _source?: PrimitiveExtension;
+
+  /**
    * The price of the medication.
    */
   cost: Money;
@@ -492,6 +565,12 @@ export interface MedicationKnowledgeDrugCharacteristic {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -541,18 +620,28 @@ export interface MedicationKnowledgeDrugCharacteristic {
   /**
    * Description of the characteristic.
    */
+  _valueString?: PrimitiveExtension;
+
+  /**
+   * Description of the characteristic.
+   */
   valueQuantity?: Quantity;
 
   /**
    * Description of the characteristic.
    */
   valueBase64Binary?: string;
+
+  /**
+   * Description of the characteristic.
+   */
+  _valueBase64Binary?: PrimitiveExtension;
 }
 
 /**
  * Description of the characteristic.
  */
-export type MedicationKnowledgeDrugCharacteristicValue = CodeableConcept | Quantity | string;
+export type MedicationKnowledgeDrugCharacteristicValue = CodeableConcept | PrimitiveExtension | Quantity | string;
 
 /**
  * Identifies a particular constituent of interest in the product.
@@ -564,6 +653,12 @@ export interface MedicationKnowledgeIngredient {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -613,6 +708,12 @@ export interface MedicationKnowledgeIngredient {
   isActive?: boolean;
 
   /**
+   * Indication of whether this ingredient affects the therapeutic action
+   * of the drug.
+   */
+  _isActive?: PrimitiveExtension;
+
+  /**
    * Specifies how many (or how much) of the items there are in this
    * Medication.  For example, 250 mg per tablet.  This is expressed as a
    * ratio where the numerator is 250mg and the denominator is 1 tablet.
@@ -637,6 +738,12 @@ export interface MedicationKnowledgeKinetics {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -697,6 +804,12 @@ export interface MedicationKnowledgeMedicineClassification {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -750,6 +863,12 @@ export interface MedicationKnowledgeMonitoringProgram {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -787,6 +906,11 @@ export interface MedicationKnowledgeMonitoringProgram {
    * Name of the reviewing program.
    */
   name?: string;
+
+  /**
+   * Name of the reviewing program.
+   */
+  _name?: PrimitiveExtension;
 }
 
 /**
@@ -799,6 +923,12 @@ export interface MedicationKnowledgeMonograph {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -853,6 +983,12 @@ export interface MedicationKnowledgePackaging {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -903,6 +1039,12 @@ export interface MedicationKnowledgeRegulatory {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -969,6 +1111,12 @@ export interface MedicationKnowledgeRegulatoryMaxDispense {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -1020,6 +1168,12 @@ export interface MedicationKnowledgeRegulatorySchedule {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -1067,6 +1221,12 @@ export interface MedicationKnowledgeRegulatorySubstitution {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -1105,6 +1265,12 @@ export interface MedicationKnowledgeRegulatorySubstitution {
    * dispensing.
    */
   allowed: boolean;
+
+  /**
+   * Specifies if regulation allows for changes in the medication when
+   * dispensing.
+   */
+  _allowed?: PrimitiveExtension;
 }
 
 /**
@@ -1117,6 +1283,12 @@ export interface MedicationKnowledgeRelatedMedicationKnowledge {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

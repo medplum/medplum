@@ -13,6 +13,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 import { ServiceRequest } from './ServiceRequest';
@@ -37,6 +38,12 @@ export interface BiologicallyDerivedProduct {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -52,9 +59,22 @@ export interface BiologicallyDerivedProduct {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -116,6 +136,11 @@ export interface BiologicallyDerivedProduct {
   productCategory?: 'organ' | 'tissue' | 'fluid' | 'cells' | 'biologicalAgent';
 
   /**
+   * Broad category of this product.
+   */
+  _productCategory?: PrimitiveExtension;
+
+  /**
    * A code that identifies the kind of this biologically derived product
    * (SNOMED Ctcode).
    */
@@ -127,6 +152,11 @@ export interface BiologicallyDerivedProduct {
   status?: 'available' | 'unavailable';
 
   /**
+   * Whether the product is currently available.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Procedure request to obtain this biologically derived product.
    */
   request?: Reference<ServiceRequest>[];
@@ -135,6 +165,11 @@ export interface BiologicallyDerivedProduct {
    * Number of discrete units within this product.
    */
   quantity?: number;
+
+  /**
+   * Number of discrete units within this product.
+   */
+  _quantity?: PrimitiveExtension;
 
   /**
    * Parent product (if any).
@@ -176,6 +211,12 @@ export interface BiologicallyDerivedProductCollection {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -225,13 +266,18 @@ export interface BiologicallyDerivedProductCollection {
   /**
    * Time of product collection.
    */
+  _collectedDateTime?: PrimitiveExtension;
+
+  /**
+   * Time of product collection.
+   */
   collectedPeriod?: Period;
 }
 
 /**
  * Time of product collection.
  */
-export type BiologicallyDerivedProductCollectionCollected = Period | string;
+export type BiologicallyDerivedProductCollectionCollected = Period | PrimitiveExtension | string;
 
 /**
  * Any manipulation of product post-collection that is intended to alter
@@ -245,6 +291,12 @@ export interface BiologicallyDerivedProductManipulation {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -281,9 +333,19 @@ export interface BiologicallyDerivedProductManipulation {
   description?: string;
 
   /**
+   * Description of manipulation.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * Time of manipulation.
    */
   timeDateTime?: string;
+
+  /**
+   * Time of manipulation.
+   */
+  _timeDateTime?: PrimitiveExtension;
 
   /**
    * Time of manipulation.
@@ -294,7 +356,7 @@ export interface BiologicallyDerivedProductManipulation {
 /**
  * Time of manipulation.
  */
-export type BiologicallyDerivedProductManipulationTime = Period | string;
+export type BiologicallyDerivedProductManipulationTime = Period | PrimitiveExtension | string;
 
 /**
  * Any processing of the product during collection that does not change
@@ -308,6 +370,12 @@ export interface BiologicallyDerivedProductProcessing {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -344,6 +412,11 @@ export interface BiologicallyDerivedProductProcessing {
   description?: string;
 
   /**
+   * Description of of processing.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * Procesing code.
    */
   procedure?: CodeableConcept;
@@ -361,13 +434,18 @@ export interface BiologicallyDerivedProductProcessing {
   /**
    * Time of processing.
    */
+  _timeDateTime?: PrimitiveExtension;
+
+  /**
+   * Time of processing.
+   */
   timePeriod?: Period;
 }
 
 /**
  * Time of processing.
  */
-export type BiologicallyDerivedProductProcessingTime = Period | string;
+export type BiologicallyDerivedProductProcessingTime = Period | PrimitiveExtension | string;
 
 /**
  * Product storage.
@@ -379,6 +457,12 @@ export interface BiologicallyDerivedProductStorage {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -415,14 +499,29 @@ export interface BiologicallyDerivedProductStorage {
   description?: string;
 
   /**
+   * Description of storage.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * Storage temperature.
    */
   temperature?: number;
 
   /**
+   * Storage temperature.
+   */
+  _temperature?: PrimitiveExtension;
+
+  /**
    * Temperature scale used.
    */
   scale?: 'farenheit' | 'celsius' | 'kelvin';
+
+  /**
+   * Temperature scale used.
+   */
+  _scale?: PrimitiveExtension;
 
   /**
    * Storage timeperiod.

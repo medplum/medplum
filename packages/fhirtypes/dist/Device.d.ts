@@ -14,6 +14,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Organization } from './Organization';
 import { Patient } from './Patient';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -37,6 +38,12 @@ export interface Device {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -52,9 +59,22 @@ export interface Device {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -126,6 +146,11 @@ export interface Device {
   status?: 'active' | 'inactive' | 'entered-in-error' | 'unknown';
 
   /**
+   * Status of the Device availability.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Reason for the dtatus of the Device availability.
    */
   statusReason?: CodeableConcept[];
@@ -137,14 +162,30 @@ export interface Device {
   distinctIdentifier?: string;
 
   /**
+   * The distinct identification string as required by regulation for a
+   * human cell, tissue, or cellular and tissue-based product.
+   */
+  _distinctIdentifier?: PrimitiveExtension;
+
+  /**
    * A name of the manufacturer.
    */
   manufacturer?: string;
 
   /**
+   * A name of the manufacturer.
+   */
+  _manufacturer?: PrimitiveExtension;
+
+  /**
    * The date and time when the device was manufactured.
    */
   manufactureDate?: string;
+
+  /**
+   * The date and time when the device was manufactured.
+   */
+  _manufactureDate?: PrimitiveExtension;
 
   /**
    * The date and time beyond which this device is no longer valid or
@@ -153,15 +194,32 @@ export interface Device {
   expirationDate?: string;
 
   /**
+   * The date and time beyond which this device is no longer valid or
+   * should not be used (if applicable).
+   */
+  _expirationDate?: PrimitiveExtension;
+
+  /**
    * Lot number assigned by the manufacturer.
    */
   lotNumber?: string;
+
+  /**
+   * Lot number assigned by the manufacturer.
+   */
+  _lotNumber?: PrimitiveExtension;
 
   /**
    * The serial number assigned by the organization when the device was
    * manufactured.
    */
   serialNumber?: string;
+
+  /**
+   * The serial number assigned by the organization when the device was
+   * manufactured.
+   */
+  _serialNumber?: PrimitiveExtension;
 
   /**
    * This represents the manufacturer's name of the device as provided by
@@ -178,9 +236,19 @@ export interface Device {
   modelNumber?: string;
 
   /**
+   * The model number for the device.
+   */
+  _modelNumber?: PrimitiveExtension;
+
+  /**
    * The part number of the device.
    */
   partNumber?: string;
+
+  /**
+   * The part number of the device.
+   */
+  _partNumber?: PrimitiveExtension;
 
   /**
    * The kind or type of device.
@@ -234,6 +302,11 @@ export interface Device {
   url?: string;
 
   /**
+   * A network address on which the device may be contacted directly.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * Descriptive information, usage information or implantation information
    * that is not captured in an existing element.
    */
@@ -265,6 +338,12 @@ export interface DeviceDeviceName {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -301,11 +380,23 @@ export interface DeviceDeviceName {
   name: string;
 
   /**
+   * The name of the device.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The type of deviceName.
    * UDILabelName | UserFriendlyName | PatientReportedName |
    * ManufactureDeviceName | ModelName.
    */
   type: 'udi-label-name' | 'user-friendly-name' | 'patient-reported-name' | 'manufacturer-name' | 'model-name' | 'other';
+
+  /**
+   * The type of deviceName.
+   * UDILabelName | UserFriendlyName | PatientReportedName |
+   * ManufactureDeviceName | ModelName.
+   */
+  _type?: PrimitiveExtension;
 }
 
 /**
@@ -319,6 +410,12 @@ export interface DeviceProperty {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -380,6 +477,12 @@ export interface DeviceSpecialization {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -417,6 +520,11 @@ export interface DeviceSpecialization {
    * The version of the standard that is used to operate and communicate.
    */
   version?: string;
+
+  /**
+   * The version of the standard that is used to operate and communicate.
+   */
+  _version?: PrimitiveExtension;
 }
 
 /**
@@ -432,6 +540,12 @@ export interface DeviceUdiCarrier {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -469,6 +583,12 @@ export interface DeviceUdiCarrier {
   deviceIdentifier?: string;
 
   /**
+   * The device identifier (DI) is a mandatory, fixed portion of a UDI that
+   * identifies the labeler and the specific version or model of a device.
+   */
+  _deviceIdentifier?: PrimitiveExtension;
+
+  /**
    * Organization that is charged with issuing UDIs for devices.  For
    * example, the US FDA issuers include :
    * 1) GS1:
@@ -483,6 +603,20 @@ export interface DeviceUdiCarrier {
   issuer?: string;
 
   /**
+   * Organization that is charged with issuing UDIs for devices.  For
+   * example, the US FDA issuers include :
+   * 1) GS1:
+   * http://hl7.org/fhir/NamingSystem/gs1-di,
+   * 2) HIBCC:
+   * http://hl7.org/fhir/NamingSystem/hibcc-dI,
+   * 3) ICCBBA for blood containers:
+   * http://hl7.org/fhir/NamingSystem/iccbba-blood-di,
+   * 4) ICCBA for other devices:
+   * http://hl7.org/fhir/NamingSystem/iccbba-other-di.
+   */
+  _issuer?: PrimitiveExtension;
+
+  /**
    * The identity of the authoritative source for UDI generation within a
    * jurisdiction.  All UDIs are globally unique within a single namespace
    * with the appropriate repository uri as the system.  For example,  UDIs
@@ -490,6 +624,15 @@ export interface DeviceUdiCarrier {
    * http://hl7.org/fhir/NamingSystem/fda-udi.
    */
   jurisdiction?: string;
+
+  /**
+   * The identity of the authoritative source for UDI generation within a
+   * jurisdiction.  All UDIs are globally unique within a single namespace
+   * with the appropriate repository uri as the system.  For example,  UDIs
+   * of devices managed in the U.S. by the FDA, the value is
+   * http://hl7.org/fhir/NamingSystem/fda-udi.
+   */
+  _jurisdiction?: PrimitiveExtension;
 
   /**
    * The full UDI carrier of the Automatic Identification and Data Capture
@@ -501,15 +644,35 @@ export interface DeviceUdiCarrier {
   carrierAIDC?: string;
 
   /**
+   * The full UDI carrier of the Automatic Identification and Data Capture
+   * (AIDC) technology representation of the barcode string as printed on
+   * the packaging of the device - e.g., a barcode or RFID.   Because of
+   * limitations on character sets in XML and the need to round-trip JSON
+   * data through XML, AIDC Formats *SHALL* be base64 encoded.
+   */
+  _carrierAIDC?: PrimitiveExtension;
+
+  /**
    * The full UDI carrier as the human readable form (HRF) representation
    * of the barcode string as printed on the packaging of the device.
    */
   carrierHRF?: string;
 
   /**
+   * The full UDI carrier as the human readable form (HRF) representation
+   * of the barcode string as printed on the packaging of the device.
+   */
+  _carrierHRF?: PrimitiveExtension;
+
+  /**
    * A coded entry to indicate how the data was entered.
    */
   entryType?: 'barcode' | 'rfid' | 'manual' | 'card' | 'self-reported' | 'unknown';
+
+  /**
+   * A coded entry to indicate how the data was entered.
+   */
+  _entryType?: PrimitiveExtension;
 }
 
 /**
@@ -523,6 +686,12 @@ export interface DeviceVersion {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -567,4 +736,9 @@ export interface DeviceVersion {
    * The version text.
    */
   value: string;
+
+  /**
+   * The version text.
+   */
+  _value?: PrimitiveExtension;
 }

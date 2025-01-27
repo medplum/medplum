@@ -6,6 +6,7 @@
 import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 
 /**
@@ -26,6 +27,12 @@ export interface JsonWebKey {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -41,9 +48,22 @@ export interface JsonWebKey {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -96,9 +116,19 @@ export interface JsonWebKey {
   active?: boolean;
 
   /**
+   * Whether this key is in active use.
+   */
+  _active?: PrimitiveExtension;
+
+  /**
    * The specific cryptographic algorithm used with the key.
    */
   alg?: string;
+
+  /**
+   * The specific cryptographic algorithm used with the key.
+   */
+  _alg?: PrimitiveExtension;
 
   /**
    * The family of cryptographic algorithms used with the key.
@@ -106,14 +136,29 @@ export interface JsonWebKey {
   kty?: string;
 
   /**
+   * The family of cryptographic algorithms used with the key.
+   */
+  _kty?: PrimitiveExtension;
+
+  /**
    * How the key was meant to be used; sig represents the signature.
    */
   use?: string;
 
   /**
+   * How the key was meant to be used; sig represents the signature.
+   */
+  _use?: PrimitiveExtension;
+
+  /**
    * The operation(s) for which the key is intended to be used.
    */
   key_ops?: string[];
+
+  /**
+   * The operation(s) for which the key is intended to be used.
+   */
+  _key_ops?: (PrimitiveExtension | null)[];
 
   /**
    * The x.509 certificate chain. The first entry in the array is the
@@ -123,9 +168,21 @@ export interface JsonWebKey {
   x5c?: string[];
 
   /**
+   * The x.509 certificate chain. The first entry in the array is the
+   * certificate to use for token verification; the other certificates can
+   * be used to verify this first certificate.
+   */
+  _x5c?: (PrimitiveExtension | null)[];
+
+  /**
    * The modulus for the RSA public key.
    */
   n?: string;
+
+  /**
+   * The modulus for the RSA public key.
+   */
+  _n?: PrimitiveExtension;
 
   /**
    * The exponent for the RSA public key.
@@ -133,9 +190,19 @@ export interface JsonWebKey {
   e?: string;
 
   /**
+   * The exponent for the RSA public key.
+   */
+  _e?: PrimitiveExtension;
+
+  /**
    * The unique identifier for the key.
    */
   kid?: string;
+
+  /**
+   * The unique identifier for the key.
+   */
+  _kid?: PrimitiveExtension;
 
   /**
    * The thumbprint of the x.509 cert (SHA-1 thumbprint).
@@ -143,9 +210,19 @@ export interface JsonWebKey {
   x5t?: string;
 
   /**
+   * The thumbprint of the x.509 cert (SHA-1 thumbprint).
+   */
+  _x5t?: PrimitiveExtension;
+
+  /**
    * The exponent for the RSA private key.
    */
   d?: string;
+
+  /**
+   * The exponent for the RSA private key.
+   */
+  _d?: PrimitiveExtension;
 
   /**
    * The first prime factor.
@@ -153,9 +230,19 @@ export interface JsonWebKey {
   p?: string;
 
   /**
+   * The first prime factor.
+   */
+  _p?: PrimitiveExtension;
+
+  /**
    * The second prime factor.
    */
   q?: string;
+
+  /**
+   * The second prime factor.
+   */
+  _q?: PrimitiveExtension;
 
   /**
    * The first factor CRT exponent.
@@ -163,12 +250,27 @@ export interface JsonWebKey {
   dp?: string;
 
   /**
+   * The first factor CRT exponent.
+   */
+  _dp?: PrimitiveExtension;
+
+  /**
    * The second factor CRT exponent.
    */
   dq?: string;
 
   /**
+   * The second factor CRT exponent.
+   */
+  _dq?: PrimitiveExtension;
+
+  /**
    * The first CRT coefficient.
    */
   qi?: string;
+
+  /**
+   * The first CRT coefficient.
+   */
+  _qi?: PrimitiveExtension;
 }

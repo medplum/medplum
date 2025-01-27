@@ -8,6 +8,7 @@ import { ContactDetail } from './ContactDetail';
 import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 import { ResourceType } from './ResourceType';
 import { UsageContext } from './UsageContext';
@@ -32,6 +33,12 @@ export interface GraphDefinition {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -47,9 +54,22 @@ export interface GraphDefinition {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -108,6 +128,17 @@ export interface GraphDefinition {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this graph definition when it
+   * is referenced in a specification, model, design or an instance; also
+   * called its canonical identifier. This SHOULD be globally unique and
+   * SHOULD be a literal address at which at which an authoritative
+   * instance of this graph definition is (or will be) published. This URL
+   * can be the target of a canonical reference. It SHALL remain the same
+   * when the graph definition is stored on different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * The identifier that is used to identify this version of the graph
    * definition when it is referenced in a specification, model, design or
    * instance. This is an arbitrary value managed by the graph definition
@@ -119,11 +150,29 @@ export interface GraphDefinition {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the graph
+   * definition when it is referenced in a specification, model, design or
+   * instance. This is an arbitrary value managed by the graph definition
+   * author and is not expected to be globally unique. For example, it
+   * might be a timestamp (e.g. yyyymmdd) if a managed version is not
+   * available. There is also no expectation that versions can be placed in
+   * a lexicographical sequence.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the graph definition. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
   name: string;
+
+  /**
+   * A natural language name identifying the graph definition. This name
+   * should be usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * The status of this graph definition. Enables tracking the life-cycle
@@ -132,11 +181,24 @@ export interface GraphDefinition {
   status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
+   * The status of this graph definition. Enables tracking the life-cycle
+   * of the content.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A Boolean value to indicate that this graph definition is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
   experimental?: boolean;
+
+  /**
+   * A Boolean value to indicate that this graph definition is authored for
+   * testing purposes (or education/evaluation/marketing) and is not
+   * intended to be used for genuine usage.
+   */
+  _experimental?: PrimitiveExtension;
 
   /**
    * The date  (and optionally time) when the graph definition was
@@ -147,10 +209,24 @@ export interface GraphDefinition {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the graph definition was
+   * published. The date must change when the business version changes and
+   * it must change if the status code changes. In addition, it should
+   * change when the substantive content of the graph definition changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the graph
    * definition.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the graph
+   * definition.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -163,6 +239,12 @@ export interface GraphDefinition {
    * a consumer's perspective.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the graph definition from
+   * a consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -186,14 +268,30 @@ export interface GraphDefinition {
   purpose?: string;
 
   /**
+   * Explanation of why this graph definition is needed and why it has been
+   * designed as it has.
+   */
+  _purpose?: PrimitiveExtension;
+
+  /**
    * The type of FHIR resource at which instances of this graph start.
    */
   start: ResourceType;
 
   /**
+   * The type of FHIR resource at which instances of this graph start.
+   */
+  _start?: PrimitiveExtension;
+
+  /**
    * The profile that describes the use of the base resource.
    */
   profile?: string;
+
+  /**
+   * The profile that describes the use of the base resource.
+   */
+  _profile?: PrimitiveExtension;
 
   /**
    * Links this graph makes rules about.
@@ -211,6 +309,12 @@ export interface GraphDefinitionLink {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -248,9 +352,20 @@ export interface GraphDefinitionLink {
   path?: string;
 
   /**
+   * A FHIR expression that identifies one of FHIR References to other
+   * resources.
+   */
+  _path?: PrimitiveExtension;
+
+  /**
    * Which slice (if profiled).
    */
   sliceName?: string;
+
+  /**
+   * Which slice (if profiled).
+   */
+  _sliceName?: PrimitiveExtension;
 
   /**
    * Minimum occurrences for this link.
@@ -258,15 +373,31 @@ export interface GraphDefinitionLink {
   min?: number;
 
   /**
+   * Minimum occurrences for this link.
+   */
+  _min?: PrimitiveExtension;
+
+  /**
    * Maximum occurrences for this link.
    */
   max?: string;
+
+  /**
+   * Maximum occurrences for this link.
+   */
+  _max?: PrimitiveExtension;
 
   /**
    * Information about why this link is of interest in this graph
    * definition.
    */
   description?: string;
+
+  /**
+   * Information about why this link is of interest in this graph
+   * definition.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Potential target for the link.
@@ -284,6 +415,12 @@ export interface GraphDefinitionLinkTarget {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -320,14 +457,29 @@ export interface GraphDefinitionLinkTarget {
   type: ResourceType;
 
   /**
+   * Type of resource this link refers to.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * A set of parameters to look up.
    */
   params?: string;
 
   /**
+   * A set of parameters to look up.
+   */
+  _params?: PrimitiveExtension;
+
+  /**
    * Profile for the target resource.
    */
   profile?: string;
+
+  /**
+   * Profile for the target resource.
+   */
+  _profile?: PrimitiveExtension;
 
   /**
    * Compartment Consistency Rules.
@@ -350,6 +502,12 @@ export interface GraphDefinitionLinkTargetCompartment {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -388,9 +546,21 @@ export interface GraphDefinitionLinkTargetCompartment {
   use: 'condition' | 'requirement';
 
   /**
+   * Defines how the compartment rule is used - whether it it is used to
+   * test whether resources are subject to the rule, or whether it is a
+   * rule that must be followed.
+   */
+  _use?: PrimitiveExtension;
+
+  /**
    * Identifies the compartment.
    */
   code: 'Patient' | 'Encounter' | 'RelatedPerson' | 'Practitioner' | 'Device';
+
+  /**
+   * Identifies the compartment.
+   */
+  _code?: PrimitiveExtension;
 
   /**
    * identical | matching | different | no-rule | custom.
@@ -398,12 +568,27 @@ export interface GraphDefinitionLinkTargetCompartment {
   rule: 'identical' | 'matching' | 'different' | 'custom';
 
   /**
+   * identical | matching | different | no-rule | custom.
+   */
+  _rule?: PrimitiveExtension;
+
+  /**
    * Custom rule, as a FHIRPath expression.
    */
   expression?: string;
 
   /**
+   * Custom rule, as a FHIRPath expression.
+   */
+  _expression?: PrimitiveExtension;
+
+  /**
    * Documentation for FHIRPath expression.
    */
   description?: string;
+
+  /**
+   * Documentation for FHIRPath expression.
+   */
+  _description?: PrimitiveExtension;
 }

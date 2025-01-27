@@ -21,6 +21,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
@@ -47,6 +48,12 @@ export interface SupplyRequest {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -62,9 +69,22 @@ export interface SupplyRequest {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -124,6 +144,11 @@ export interface SupplyRequest {
   status?: 'draft' | 'active' | 'suspended' | 'cancelled' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
+   * Status of the supply request.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Category of supply, e.g.  central, non-stock, etc. This is used to
    * support work flows associated with the supply process.
    */
@@ -134,6 +159,12 @@ export interface SupplyRequest {
    * respect to other requests.
    */
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
+
+  /**
+   * Indicates how quickly this SupplyRequest should be addressed with
+   * respect to other requests.
+   */
+  _priority?: PrimitiveExtension;
 
   /**
    * The item that is requested to be supplied. This is either a link to a
@@ -168,6 +199,11 @@ export interface SupplyRequest {
   /**
    * When the request should be fulfilled.
    */
+  _occurrenceDateTime?: PrimitiveExtension;
+
+  /**
+   * When the request should be fulfilled.
+   */
   occurrencePeriod?: Period;
 
   /**
@@ -179,6 +215,11 @@ export interface SupplyRequest {
    * When the request was made.
    */
   authoredOn?: string;
+
+  /**
+   * When the request was made.
+   */
+  _authoredOn?: PrimitiveExtension;
 
   /**
    * The device, practitioner, etc. who initiated the request.
@@ -221,7 +262,7 @@ export type SupplyRequestItem = CodeableConcept | Reference<Medication | Substan
 /**
  * When the request should be fulfilled.
  */
-export type SupplyRequestOccurrence = Period | string | Timing;
+export type SupplyRequestOccurrence = Period | PrimitiveExtension | string | Timing;
 
 /**
  * Specific parameters for the ordered item.  For example, the size of
@@ -234,6 +275,12 @@ export interface SupplyRequestParameter {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -288,9 +335,14 @@ export interface SupplyRequestParameter {
    * The value of the device detail.
    */
   valueBoolean?: boolean;
+
+  /**
+   * The value of the device detail.
+   */
+  _valueBoolean?: PrimitiveExtension;
 }
 
 /**
  * The value of the device detail.
  */
-export type SupplyRequestParameterValue = boolean | CodeableConcept | Quantity | Range;
+export type SupplyRequestParameterValue = boolean | CodeableConcept | PrimitiveExtension | Quantity | Range;

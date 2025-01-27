@@ -14,6 +14,7 @@ import { Narrative } from './Narrative';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Ratio } from './Ratio';
 import { Reference } from './Reference';
@@ -38,6 +39,12 @@ export interface NutritionOrder {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -53,9 +60,22 @@ export interface NutritionOrder {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -116,11 +136,25 @@ export interface NutritionOrder {
   instantiatesCanonical?: string[];
 
   /**
+   * The URL pointing to a FHIR-defined protocol, guideline, orderset or
+   * other definition that is adhered to in whole or in part by this
+   * NutritionOrder.
+   */
+  _instantiatesCanonical?: (PrimitiveExtension | null)[];
+
+  /**
    * The URL pointing to an externally maintained protocol, guideline,
    * orderset or other definition that is adhered to in whole or in part by
    * this NutritionOrder.
    */
   instantiatesUri?: string[];
+
+  /**
+   * The URL pointing to an externally maintained protocol, guideline,
+   * orderset or other definition that is adhered to in whole or in part by
+   * this NutritionOrder.
+   */
+  _instantiatesUri?: (PrimitiveExtension | null)[];
 
   /**
    * The URL pointing to a protocol, guideline, orderset or other
@@ -130,15 +164,33 @@ export interface NutritionOrder {
   instantiates?: string[];
 
   /**
+   * The URL pointing to a protocol, guideline, orderset or other
+   * definition that is adhered to in whole or in part by this
+   * NutritionOrder.
+   */
+  _instantiates?: (PrimitiveExtension | null)[];
+
+  /**
    * The workflow status of the nutrition order/request.
    */
   status: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
+
+  /**
+   * The workflow status of the nutrition order/request.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * Indicates the level of authority/intentionality associated with the
    * NutrionOrder and where the request fits into the workflow chain.
    */
   intent: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+
+  /**
+   * Indicates the level of authority/intentionality associated with the
+   * NutrionOrder and where the request fits into the workflow chain.
+   */
+  _intent?: PrimitiveExtension;
 
   /**
    * The person (patient) who needs the nutrition order for an oral diet,
@@ -156,6 +208,11 @@ export interface NutritionOrder {
    * The date and time that this nutrition order was requested.
    */
   dateTime: string;
+
+  /**
+   * The date and time that this nutrition order was requested.
+   */
+  _dateTime?: PrimitiveExtension;
 
   /**
    * The practitioner that holds legal responsibility for ordering the
@@ -231,6 +288,12 @@ export interface NutritionOrderEnteralFormula {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -272,6 +335,12 @@ export interface NutritionOrderEnteralFormula {
   baseFormulaProductName?: string;
 
   /**
+   * The product or brand name of the enteral or infant formula product
+   * such as &quot;ACME Adult Standard Formula&quot;.
+   */
+  _baseFormulaProductName?: PrimitiveExtension;
+
+  /**
    * Indicates the type of modular component such as protein, carbohydrate,
    * fat or fiber to be provided in addition to or mixed with the base
    * formula.
@@ -283,6 +352,12 @@ export interface NutritionOrderEnteralFormula {
    * to the formula.
    */
   additiveProductName?: string;
+
+  /**
+   * The product or brand name of the type of modular component to be added
+   * to the formula.
+   */
+  _additiveProductName?: PrimitiveExtension;
 
   /**
    * The amount of energy (calories) that the formula should provide per
@@ -320,6 +395,12 @@ export interface NutritionOrderEnteralFormula {
    * instructions or information.
    */
   administrationInstruction?: string;
+
+  /**
+   * Free text formula administration, feeding instructions or additional
+   * instructions or information.
+   */
+  _administrationInstruction?: PrimitiveExtension;
 }
 
 /**
@@ -336,6 +417,12 @@ export interface NutritionOrderEnteralFormulaAdministration {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -409,6 +496,12 @@ export interface NutritionOrderOralDiet {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -474,6 +567,12 @@ export interface NutritionOrderOralDiet {
    * oral diet.
    */
   instruction?: string;
+
+  /**
+   * Free text or additional instructions or information pertaining to the
+   * oral diet.
+   */
+  _instruction?: PrimitiveExtension;
 }
 
 /**
@@ -488,6 +587,12 @@ export interface NutritionOrderOralDietNutrient {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -540,6 +645,12 @@ export interface NutritionOrderOralDietTexture {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -596,6 +707,12 @@ export interface NutritionOrderSupplement {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -637,6 +754,12 @@ export interface NutritionOrderSupplement {
   productName?: string;
 
   /**
+   * The product or brand name of the nutritional supplement such as &quot;Acme
+   * Protein Shake&quot;.
+   */
+  _productName?: PrimitiveExtension;
+
+  /**
    * The time period and frequency at which the supplement(s) should be
    * given.  The supplement should be given for the combination of all
    * schedules if more than one schedule is present.
@@ -653,4 +776,10 @@ export interface NutritionOrderSupplement {
    * oral supplement.
    */
   instruction?: string;
+
+  /**
+   * Free text or additional instructions or information pertaining to the
+   * oral supplement.
+   */
+  _instruction?: PrimitiveExtension;
 }

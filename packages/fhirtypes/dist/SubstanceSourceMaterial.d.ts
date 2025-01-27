@@ -8,6 +8,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 
 /**
@@ -41,6 +42,12 @@ export interface SubstanceSourceMaterial {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -56,9 +63,22 @@ export interface SubstanceSourceMaterial {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -136,6 +156,12 @@ export interface SubstanceSourceMaterial {
   organismName?: string;
 
   /**
+   * The organism accepted Scientific name shall be provided based on the
+   * organism taxonomy.
+   */
+  _organismName?: PrimitiveExtension;
+
+  /**
    * The parent of the herbal drug Ginkgo biloba, Leaf is the substance ID
    * of the substance (fresh) of Ginkgo biloba L. or Ginkgo biloba L.
    * (Whole plant).
@@ -146,6 +172,11 @@ export interface SubstanceSourceMaterial {
    * The parent substance of the Herbal Drug, or Herbal preparation.
    */
   parentSubstanceName?: string[];
+
+  /**
+   * The parent substance of the Herbal Drug, or Herbal preparation.
+   */
+  _parentSubstanceName?: (PrimitiveExtension | null)[];
 
   /**
    * The country where the plant material is harvested or the countries
@@ -161,6 +192,12 @@ export interface SubstanceSourceMaterial {
    * where the animal source material has its habitat.
    */
   geographicalLocation?: string[];
+
+  /**
+   * The place/region where the plant is harvested or the places/regions
+   * where the animal source material has its habitat.
+   */
+  _geographicalLocation?: (PrimitiveExtension | null)[];
 
   /**
    * Stage of life for animals, plants, insects and microorganisms. This
@@ -216,6 +253,12 @@ export interface SubstanceSourceMaterialFractionDescription {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -251,6 +294,12 @@ export interface SubstanceSourceMaterialFractionDescription {
   fraction?: string;
 
   /**
+   * This element is capturing information about the fraction of a plant
+   * part, or human plasma for fractionation.
+   */
+  _fraction?: PrimitiveExtension;
+
+  /**
    * The specific type of the material constituting the component. For
    * Herbal preparations the particulars of the extracts (liquid/dry) is
    * described in Specified Substance Group 1.
@@ -271,6 +320,12 @@ export interface SubstanceSourceMaterialOrganism {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -334,6 +389,14 @@ export interface SubstanceSourceMaterialOrganism {
   intraspecificDescription?: string;
 
   /**
+   * The intraspecific description of an organism shall be specified based
+   * on a controlled vocabulary. For Influenza Vaccine, the intraspecific
+   * description shall contain the syntax of the antigen in line with the
+   * WHO convention.
+   */
+  _intraspecificDescription?: PrimitiveExtension;
+
+  /**
    * 4.9.13.6.1 Author type (Conditional).
    */
   author?: SubstanceSourceMaterialOrganismAuthor[];
@@ -359,6 +422,12 @@ export interface SubstanceSourceMaterialOrganismAuthor {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -405,6 +474,14 @@ export interface SubstanceSourceMaterialOrganismAuthor {
    * plant/animal name (of any rank).
    */
   authorDescription?: string;
+
+  /**
+   * The author of an organism species shall be specified. The author year
+   * of an organism shall also be specified when applicable; refers to the
+   * year in which the first author(s) published the infraspecific
+   * plant/animal name (of any rank).
+   */
+  _authorDescription?: PrimitiveExtension;
 }
 
 /**
@@ -417,6 +494,12 @@ export interface SubstanceSourceMaterialOrganismHybrid {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -456,6 +539,14 @@ export interface SubstanceSourceMaterialOrganismHybrid {
   maternalOrganismId?: string;
 
   /**
+   * The identifier of the maternal species constituting the hybrid
+   * organism shall be specified based on a controlled vocabulary. For
+   * plants, the parents aren&rsquo;t always known, and it is unlikely that it
+   * will be known which is maternal and which is paternal.
+   */
+  _maternalOrganismId?: PrimitiveExtension;
+
+  /**
    * The name of the maternal species constituting the hybrid organism
    * shall be specified. For plants, the parents aren&rsquo;t always known, and
    * it is unlikely that it will be known which is maternal and which is
@@ -464,16 +555,36 @@ export interface SubstanceSourceMaterialOrganismHybrid {
   maternalOrganismName?: string;
 
   /**
+   * The name of the maternal species constituting the hybrid organism
+   * shall be specified. For plants, the parents aren&rsquo;t always known, and
+   * it is unlikely that it will be known which is maternal and which is
+   * paternal.
+   */
+  _maternalOrganismName?: PrimitiveExtension;
+
+  /**
    * The identifier of the paternal species constituting the hybrid
    * organism shall be specified based on a controlled vocabulary.
    */
   paternalOrganismId?: string;
 
   /**
+   * The identifier of the paternal species constituting the hybrid
+   * organism shall be specified based on a controlled vocabulary.
+   */
+  _paternalOrganismId?: PrimitiveExtension;
+
+  /**
    * The name of the paternal species constituting the hybrid organism
    * shall be specified.
    */
   paternalOrganismName?: string;
+
+  /**
+   * The name of the paternal species constituting the hybrid organism
+   * shall be specified.
+   */
+  _paternalOrganismName?: PrimitiveExtension;
 
   /**
    * The hybrid type of an organism shall be specified.
@@ -491,6 +602,12 @@ export interface SubstanceSourceMaterialOrganismOrganismGeneral {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -552,6 +669,12 @@ export interface SubstanceSourceMaterialPartDescription {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

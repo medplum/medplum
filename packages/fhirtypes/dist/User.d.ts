@@ -7,6 +7,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Project } from './Project';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -28,6 +29,12 @@ export interface User {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -43,9 +50,22 @@ export interface User {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -104,10 +124,22 @@ export interface User {
   firstName: string;
 
   /**
+   * The first name or given name of the user. This is the value as entered
+   * when the user is created. It is used to populate the profile resource.
+   */
+  _firstName?: PrimitiveExtension;
+
+  /**
    * The last name or family name of the user. This is the value as entered
    * when the user is created. It is used to populate the profile resource.
    */
   lastName: string;
+
+  /**
+   * The last name or family name of the user. This is the value as entered
+   * when the user is created. It is used to populate the profile resource.
+   */
+  _lastName?: PrimitiveExtension;
 
   /**
    * @deprecated Replaced by ProjectMembership.externalId.
@@ -115,9 +147,19 @@ export interface User {
   externalId?: string;
 
   /**
+   * @deprecated Replaced by ProjectMembership.externalId.
+   */
+  _externalId?: PrimitiveExtension;
+
+  /**
    * The email address that uniquely identifies the user.
    */
   email?: string;
+
+  /**
+   * The email address that uniquely identifies the user.
+   */
+  _email?: PrimitiveExtension;
 
   /**
    * Whether the system has verified that the user has access to the email
@@ -126,9 +168,20 @@ export interface User {
   emailVerified?: boolean;
 
   /**
+   * Whether the system has verified that the user has access to the email
+   * address.
+   */
+  _emailVerified?: PrimitiveExtension;
+
+  /**
    * @deprecated
    */
   admin?: boolean;
+
+  /**
+   * @deprecated
+   */
+  _admin?: PrimitiveExtension;
 
   /**
    * Encrypted hash of the user's password.
@@ -136,14 +189,29 @@ export interface User {
   passwordHash?: string;
 
   /**
+   * Encrypted hash of the user's password.
+   */
+  _passwordHash?: PrimitiveExtension;
+
+  /**
    * Shared secret for MFA authenticator applications.
    */
   mfaSecret?: string;
 
   /**
+   * Shared secret for MFA authenticator applications.
+   */
+  _mfaSecret?: PrimitiveExtension;
+
+  /**
    * Whether the user has completed MFA enrollment.
    */
   mfaEnrolled?: boolean;
+
+  /**
+   * Whether the user has completed MFA enrollment.
+   */
+  _mfaEnrolled?: PrimitiveExtension;
 
   /**
    * Optional project if the user only exists for the project. This is used

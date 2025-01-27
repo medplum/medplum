@@ -19,6 +19,7 @@ import { Period } from './Period';
 import { PlanDefinition } from './PlanDefinition';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { Resource } from './Resource';
@@ -46,6 +47,12 @@ export interface ResearchStudy {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -61,9 +68,22 @@ export interface ResearchStudy {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -122,9 +142,19 @@ export interface ResearchStudy {
   name?: string;
 
   /**
+   * Name for this study (computer friendly).
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The human readable name of the research study.
    */
   title?: string;
+
+  /**
+   * The human readable name of the research study.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * Additional names for the study.
@@ -149,6 +179,11 @@ export interface ResearchStudy {
   status: 'active' | 'administratively-completed' | 'approved' | 'closed-to-accrual' |
       'closed-to-accrual-and-intervention' | 'completed' | 'disapproved' | 'in-review' | 'temporarily-closed-to-accrual' |
       'temporarily-closed-to-accrual-and-intervention' | 'withdrawn';
+
+  /**
+   * The current state of the study.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * The type of study based upon the intent of the study's activities. A
@@ -229,10 +264,21 @@ export interface ResearchStudy {
   descriptionSummary?: string;
 
   /**
+   * A brief text for explaining the study.
+   */
+  _descriptionSummary?: PrimitiveExtension;
+
+  /**
    * A detailed and human-readable narrative of the study. E.g., study
    * abstract.
    */
   description?: string;
+
+  /**
+   * A detailed and human-readable narrative of the study. E.g., study
+   * abstract.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Reference to a Group that defines the criteria for and quantity of
@@ -362,6 +408,12 @@ export interface ResearchStudyArm {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -396,6 +448,11 @@ export interface ResearchStudyArm {
   name: string;
 
   /**
+   * Unique, human-readable label for this arm of the study.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Categorization of study arm, e.g. experimental, active comparator,
    * placebo comparater.
    */
@@ -406,6 +463,12 @@ export interface ResearchStudyArm {
    * followed by a subject adhering to this arm.
    */
   description?: string;
+
+  /**
+   * A succinct description of the path through the study that would be
+   * followed by a subject adhering to this arm.
+   */
+  _description?: PrimitiveExtension;
 }
 
 /**
@@ -418,6 +481,12 @@ export interface ResearchStudyAssociatedParty {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -452,6 +521,11 @@ export interface ResearchStudyAssociatedParty {
    * Name of associated party.
    */
   name?: string;
+
+  /**
+   * Name of associated party.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * Type of association.
@@ -492,6 +566,12 @@ export interface ResearchStudyComparisonGroup {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and managable, there is a strict set of governance applied to the
@@ -527,9 +607,20 @@ export interface ResearchStudyComparisonGroup {
   linkId?: string;
 
   /**
+   * Allows the comparisonGroup for the study and the comparisonGroup for
+   * the subject to be linked easily.
+   */
+  _linkId?: PrimitiveExtension;
+
+  /**
    * Unique, human-readable label for this comparisonGroup of the study.
    */
   name: string;
+
+  /**
+   * Unique, human-readable label for this comparisonGroup of the study.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * Categorization of study comparisonGroup, e.g. experimental, active
@@ -542,6 +633,12 @@ export interface ResearchStudyComparisonGroup {
    * followed by a subject adhering to this comparisonGroup.
    */
   description?: string;
+
+  /**
+   * A succinct description of the path through the study that would be
+   * followed by a subject adhering to this comparisonGroup.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Interventions or exposures in this comparisonGroup or cohort.
@@ -564,6 +661,12 @@ export interface ResearchStudyLabel {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -603,6 +706,11 @@ export interface ResearchStudyLabel {
    * The name.
    */
   value?: string;
+
+  /**
+   * The name.
+   */
+  _value?: PrimitiveExtension;
 }
 
 /**
@@ -617,6 +725,12 @@ export interface ResearchStudyObjective {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -653,6 +767,11 @@ export interface ResearchStudyObjective {
   name?: string;
 
   /**
+   * Unique, human-readable label for this objective of the study.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The kind of study objective.
    */
   type?: CodeableConcept;
@@ -663,6 +782,13 @@ export interface ResearchStudyObjective {
    * (see ResearchStudy.description).
    */
   description?: string;
+
+  /**
+   * Free text description of the objective of the study.  This is what the
+   * study is trying to achieve rather than how it is going to achieve it
+   * (see ResearchStudy.description).
+   */
+  _description?: PrimitiveExtension;
 }
 
 /**
@@ -679,6 +805,12 @@ export interface ResearchStudyOutcomeMeasure {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -715,6 +847,11 @@ export interface ResearchStudyOutcomeMeasure {
   name?: string;
 
   /**
+   * Label for the outcome.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The parameter or characteristic being assessed as one of the values by
    * which the study is assessed.
    */
@@ -724,6 +861,11 @@ export interface ResearchStudyOutcomeMeasure {
    * Description of the outcome.
    */
   description?: string;
+
+  /**
+   * Description of the outcome.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Structured outcome definition.
@@ -741,6 +883,12 @@ export interface ResearchStudyProgressStatus {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -784,6 +932,13 @@ export interface ResearchStudyProgressStatus {
   actual?: boolean;
 
   /**
+   * An indication of whether or not the date is a known date when the
+   * state changed or will change. A value of true indicates a known date.
+   * A value of false indicates an estimated date.
+   */
+  _actual?: PrimitiveExtension;
+
+  /**
    * Date range.
    */
   period?: Period;
@@ -799,6 +954,12 @@ export interface ResearchStudyRecruitment {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -835,9 +996,19 @@ export interface ResearchStudyRecruitment {
   targetNumber?: number;
 
   /**
+   * Estimated total number of participants to be enrolled.
+   */
+  _targetNumber?: PrimitiveExtension;
+
+  /**
    * Actual total number of participants enrolled in study.
    */
   actualNumber?: number;
+
+  /**
+   * Actual total number of participants enrolled in study.
+   */
+  _actualNumber?: PrimitiveExtension;
 
   /**
    * Inclusion and exclusion criteria.

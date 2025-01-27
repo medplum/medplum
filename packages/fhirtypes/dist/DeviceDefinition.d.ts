@@ -11,6 +11,7 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Organization } from './Organization';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { ProdCharacteristic } from './ProdCharacteristic';
 import { ProductShelfLife } from './ProductShelfLife';
 import { Quantity } from './Quantity';
@@ -36,6 +37,12 @@ export interface DeviceDefinition {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -51,9 +58,22 @@ export interface DeviceDefinition {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -122,6 +142,11 @@ export interface DeviceDefinition {
   /**
    * A name of the manufacturer.
    */
+  _manufacturerString?: PrimitiveExtension;
+
+  /**
+   * A name of the manufacturer.
+   */
   manufacturerReference?: Reference<Organization>;
 
   /**
@@ -133,6 +158,11 @@ export interface DeviceDefinition {
    * The model number for the device.
    */
   modelNumber?: string;
+
+  /**
+   * The model number for the device.
+   */
+  _modelNumber?: PrimitiveExtension;
 
   /**
    * What kind of device or device system this is.
@@ -150,6 +180,11 @@ export interface DeviceDefinition {
    * The available versions of the device, e.g., software versions.
    */
   version?: string[];
+
+  /**
+   * The available versions of the device, e.g., software versions.
+   */
+  _version?: (PrimitiveExtension | null)[];
 
   /**
    * Safety characteristics of the device.
@@ -201,9 +236,19 @@ export interface DeviceDefinition {
   url?: string;
 
   /**
+   * A network address on which the device may be contacted directly.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * Access to on-line information about the device.
    */
   onlineInformation?: string;
+
+  /**
+   * Access to on-line information about the device.
+   */
+  _onlineInformation?: PrimitiveExtension;
 
   /**
    * Descriptive information, usage information or implantation information
@@ -244,7 +289,7 @@ export interface DeviceDefinition {
 /**
  * A name of the manufacturer.
  */
-export type DeviceDefinitionManufacturer = Reference<Organization> | string;
+export type DeviceDefinitionManufacturer = PrimitiveExtension | Reference<Organization> | string;
 
 /**
  * Device capabilities.
@@ -256,6 +301,12 @@ export interface DeviceDefinitionCapability {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -307,6 +358,12 @@ export interface DeviceDefinitionClassification {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -361,6 +418,12 @@ export interface DeviceDefinitionDeviceName {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -395,11 +458,23 @@ export interface DeviceDefinitionDeviceName {
   name: string;
 
   /**
+   * The name of the device.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The type of deviceName.
    * UDILabelName | UserFriendlyName | PatientReportedName |
    * ManufactureDeviceName | ModelName.
    */
   type: 'udi-label-name' | 'user-friendly-name' | 'patient-reported-name' | 'manufacturer-name' | 'model-name' | 'other';
+
+  /**
+   * The type of deviceName.
+   * UDILabelName | UserFriendlyName | PatientReportedName |
+   * ManufactureDeviceName | ModelName.
+   */
+  _type?: PrimitiveExtension;
 }
 
 /**
@@ -413,6 +488,12 @@ export interface DeviceDefinitionMaterial {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -454,9 +535,19 @@ export interface DeviceDefinitionMaterial {
   alternate?: boolean;
 
   /**
+   * Indicates an alternative material of the device.
+   */
+  _alternate?: PrimitiveExtension;
+
+  /**
    * Whether the substance is a known or suspected allergen.
    */
   allergenicIndicator?: boolean;
+
+  /**
+   * Whether the substance is a known or suspected allergen.
+   */
+  _allergenicIndicator?: PrimitiveExtension;
 }
 
 /**
@@ -470,6 +561,12 @@ export interface DeviceDefinitionProperty {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -531,6 +628,12 @@ export interface DeviceDefinitionSpecialization {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -565,9 +668,19 @@ export interface DeviceDefinitionSpecialization {
   systemType: string;
 
   /**
+   * The standard that is used to operate and communicate.
+   */
+  _systemType?: PrimitiveExtension;
+
+  /**
    * The version of the standard that is used to operate and communicate.
    */
   version?: string;
+
+  /**
+   * The version of the standard that is used to operate and communicate.
+   */
+  _version?: PrimitiveExtension;
 }
 
 /**
@@ -583,6 +696,12 @@ export interface DeviceDefinitionUdiDeviceIdentifier {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -621,12 +740,29 @@ export interface DeviceDefinitionUdiDeviceIdentifier {
   deviceIdentifier: string;
 
   /**
+   * The identifier that is to be associated with every Device that
+   * references this DeviceDefintiion for the issuer and jurisdication
+   * porvided in the DeviceDefinition.udiDeviceIdentifier.
+   */
+  _deviceIdentifier?: PrimitiveExtension;
+
+  /**
    * The organization that assigns the identifier algorithm.
    */
   issuer: string;
 
   /**
+   * The organization that assigns the identifier algorithm.
+   */
+  _issuer?: PrimitiveExtension;
+
+  /**
    * The jurisdiction to which the deviceIdentifier applies.
    */
   jurisdiction: string;
+
+  /**
+   * The jurisdiction to which the deviceIdentifier applies.
+   */
+  _jurisdiction?: PrimitiveExtension;
 }

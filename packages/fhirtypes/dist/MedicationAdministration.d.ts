@@ -22,6 +22,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Procedure } from './Procedure';
 import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
@@ -51,6 +52,12 @@ export interface MedicationAdministration {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -66,9 +73,22 @@ export interface MedicationAdministration {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -132,6 +152,12 @@ export interface MedicationAdministration {
   instantiates?: string[];
 
   /**
+   * A protocol, guideline, orderset, or other definition that was adhered
+   * to in whole or in part by this event.
+   */
+  _instantiates?: (PrimitiveExtension | null)[];
+
+  /**
    * A larger event of which this particular event is a component or step.
    */
   partOf?: Reference<MedicationAdministration | Procedure>[];
@@ -143,6 +169,14 @@ export interface MedicationAdministration {
    * or it may be paused while some other process is under way.
    */
   status: 'in-progress' | 'not-done' | 'on-hold' | 'completed' | 'entered-in-error' | 'stopped' | 'unknown';
+
+  /**
+   * Will generally be set to show that the administration has been
+   * completed.  For some long running administrations such as infusions,
+   * it is possible for an administration to be started but not completed
+   * or it may be paused while some other process is under way.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * A code indicating why the administration was not performed.
@@ -195,6 +229,14 @@ export interface MedicationAdministration {
    * tablet the use of dateTime is more appropriate.
    */
   effectiveDateTime?: string;
+
+  /**
+   * A specific date/time or interval of time during which the
+   * administration took place (or did not take place, when the 'notGiven'
+   * attribute is true). For many administrations, such as swallowing a
+   * tablet the use of dateTime is more appropriate.
+   */
+  _effectiveDateTime?: PrimitiveExtension;
 
   /**
    * A specific date/time or interval of time during which the
@@ -266,7 +308,7 @@ export type MedicationAdministrationMedication = CodeableConcept | Reference<Med
  * attribute is true). For many administrations, such as swallowing a
  * tablet the use of dateTime is more appropriate.
  */
-export type MedicationAdministrationEffective = Period | string;
+export type MedicationAdministrationEffective = Period | PrimitiveExtension | string;
 
 /**
  * Describes the medication dosage information details e.g. dose, rate,
@@ -279,6 +321,12 @@ export interface MedicationAdministrationDosage {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -317,6 +365,15 @@ export interface MedicationAdministrationDosage {
    * administered.
    */
   text?: string;
+
+  /**
+   * Free text dosage can be used for cases where the dosage administered
+   * is too complex to code. When coded dosage is present, the free text
+   * dosage may still be present for display to humans.The dosage
+   * instructions should reflect the dosage of the medication that was
+   * administered.
+   */
+  _text?: PrimitiveExtension;
 
   /**
    * A coded specification of the anatomic site where the medication first
@@ -385,6 +442,12 @@ export interface MedicationAdministrationPerformer {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

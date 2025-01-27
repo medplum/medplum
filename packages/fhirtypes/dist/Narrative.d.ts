@@ -4,6 +4,7 @@
  */
 
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * A human-readable summary of the resource conveying the essential
@@ -16,6 +17,12 @@ export interface Narrative {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -35,7 +42,19 @@ export interface Narrative {
   status: 'generated' | 'extensions' | 'additional' | 'empty';
 
   /**
+   * The status of the narrative - whether it's entirely generated (from
+   * just the defined data or the extensions too), or whether a human
+   * authored it and it may contain additional data.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The actual narrative content, a stripped down version of XHTML.
    */
   div: string;
+
+  /**
+   * The actual narrative content, a stripped down version of XHTML.
+   */
+  _div?: PrimitiveExtension;
 }

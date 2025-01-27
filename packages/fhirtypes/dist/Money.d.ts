@@ -4,6 +4,7 @@
  */
 
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * An amount of economic utility in some recognized currency.
@@ -15,6 +16,12 @@ export interface Money {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -32,6 +39,11 @@ export interface Money {
   value?: number;
 
   /**
+   * Numerical value (with implicit precision).
+   */
+  _value?: PrimitiveExtension;
+
+  /**
    * ISO 4217 Currency Code.
    */
   currency?: 'AFN' | 'EUR' | 'ALL' | 'DZD' | 'USD' | 'AOA' | 'XCD' | 'ARS' | 'AMD' | 'AWG' | 'AUD' | 'AZN' | 'BSD' |
@@ -47,4 +59,9 @@ export interface Money {
       | 'SYP' | 'TWD' | 'TJS' | 'TZS' | 'THB' | 'TOP' | 'TTD' | 'TND' | 'TRY' | 'TMT' | 'UGX' | 'UAH' | 'AED' | 'USN' |
       'UYU' | 'UYI' | 'UYW' | 'UZS' | 'VUV' | 'VES' | 'VED' | 'VND' | 'YER' | 'ZMW' | 'ZWG' | 'XBA' | 'XBB' | 'XBC' | 'XBD'
       | 'XTS' | 'XXX' | 'XAU' | 'XPD' | 'XPT' | 'XAG';
+
+  /**
+   * ISO 4217 Currency Code.
+   */
+  _currency?: PrimitiveExtension;
 }

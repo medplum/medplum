@@ -6,6 +6,7 @@
 import { DataRequirement } from './DataRequirement';
 import { Expression } from './Expression';
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Schedule } from './Schedule';
 import { Timing } from './Timing';
@@ -23,6 +24,12 @@ export interface TriggerDefinition {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -38,11 +45,23 @@ export interface TriggerDefinition {
   type: 'named-event' | 'periodic' | 'data-changed' | 'data-added' | 'data-modified' | 'data-removed' | 'data-accessed' | 'data-access-ended';
 
   /**
+   * The type of triggering event.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * A formal name for the event. This may be an absolute URI that
    * identifies the event formally (e.g. from a trigger registry), or a
    * simple relative URI that identifies the event in a local context.
    */
   name?: string;
+
+  /**
+   * A formal name for the event. This may be an absolute URI that
+   * identifies the event formally (e.g. from a trigger registry), or a
+   * simple relative URI that identifies the event in a local context.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * The timing of the event (if this is a periodic trigger).
@@ -62,7 +81,17 @@ export interface TriggerDefinition {
   /**
    * The timing of the event (if this is a periodic trigger).
    */
+  _timingDate?: PrimitiveExtension;
+
+  /**
+   * The timing of the event (if this is a periodic trigger).
+   */
   timingDateTime?: string;
+
+  /**
+   * The timing of the event (if this is a periodic trigger).
+   */
+  _timingDateTime?: PrimitiveExtension;
 
   /**
    * The triggering data of the event (if this is a data trigger). If more
@@ -82,4 +111,4 @@ export interface TriggerDefinition {
 /**
  * The timing of the event (if this is a periodic trigger).
  */
-export type TriggerDefinitionTiming = Reference<Schedule> | string | Timing;
+export type TriggerDefinitionTiming = PrimitiveExtension | Reference<Schedule> | string | Timing;

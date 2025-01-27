@@ -16,6 +16,7 @@ import { Narrative } from './Narrative';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -36,6 +37,12 @@ export interface List {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -51,9 +58,22 @@ export interface List {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -112,6 +132,11 @@ export interface List {
   status: 'current' | 'retired' | 'entered-in-error';
 
   /**
+   * Indicates the current state of this list.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * How this list was prepared - whether it is a working list that is
    * suitable for being maintained on an ongoing basis, or if it represents
    * a snapshot of a list of items from another source, or whether it is a
@@ -120,9 +145,22 @@ export interface List {
   mode: 'working' | 'snapshot' | 'changes';
 
   /**
+   * How this list was prepared - whether it is a working list that is
+   * suitable for being maintained on an ongoing basis, or if it represents
+   * a snapshot of a list of items from another source, or whether it is a
+   * prepared list where items may be marked as added, modified or deleted.
+   */
+  _mode?: PrimitiveExtension;
+
+  /**
    * A label for the list assigned by the author.
    */
   title?: string;
+
+  /**
+   * A label for the list assigned by the author.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * This code defines the purpose of the list - why it was created.
@@ -144,6 +182,11 @@ export interface List {
    * The date that the list was prepared.
    */
   date?: string;
+
+  /**
+   * The date that the list was prepared.
+   */
+  _date?: PrimitiveExtension;
 
   /**
    * The entity responsible for deciding what the contents of the list
@@ -183,6 +226,12 @@ export interface ListEntry {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -225,9 +274,19 @@ export interface ListEntry {
   deleted?: boolean;
 
   /**
+   * True if this item is marked as deleted in the list.
+   */
+  _deleted?: PrimitiveExtension;
+
+  /**
    * When this item was added to the list.
    */
   date?: string;
+
+  /**
+   * When this item was added to the list.
+   */
+  _date?: PrimitiveExtension;
 
   /**
    * A reference to the actual resource from which data was derived.

@@ -9,6 +9,7 @@ import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 import { UsageContext } from './UsageContext';
 
@@ -31,6 +32,12 @@ export interface NamingSystem {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -46,9 +53,22 @@ export interface NamingSystem {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -103,16 +123,35 @@ export interface NamingSystem {
   name: string;
 
   /**
+   * A natural language name identifying the naming system. This name
+   * should be usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The status of this naming system. Enables tracking the life-cycle of
    * the content.
    */
   status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
+   * The status of this naming system. Enables tracking the life-cycle of
+   * the content.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Indicates the purpose for the naming system - what kinds of things
    * does it make unique?
    */
   kind: 'codesystem' | 'identifier' | 'root';
+
+  /**
+   * Indicates the purpose for the naming system - what kinds of things
+   * does it make unique?
+   */
+  _kind?: PrimitiveExtension;
 
   /**
    * The date  (and optionally time) when the naming system was published.
@@ -123,10 +162,24 @@ export interface NamingSystem {
   date: string;
 
   /**
+   * The date  (and optionally time) when the naming system was published.
+   * The date must change when the business version changes and it must
+   * change if the status code changes. In addition, it should change when
+   * the substantive content of the naming system changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the naming
    * system.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the naming
+   * system.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -142,6 +195,13 @@ export interface NamingSystem {
   responsible?: string;
 
   /**
+   * The name of the organization that is responsible for issuing
+   * identifiers or codes for this namespace and ensuring their
+   * non-collision.
+   */
+  _responsible?: PrimitiveExtension;
+
+  /**
    * Categorizes a naming system for easier search by grouping related
    * naming systems.
    */
@@ -153,6 +213,13 @@ export interface NamingSystem {
    * including scope, granularity, version labeling, etc.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the naming system from a
+   * consumer's perspective. Details about what the namespace identifies
+   * including scope, granularity, version labeling, etc.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -176,6 +243,12 @@ export interface NamingSystem {
   usage?: string;
 
   /**
+   * Provides guidance on the use of the namespace, including the handling
+   * of formatting characters, use of upper vs. lower case, etc.
+   */
+  _usage?: PrimitiveExtension;
+
+  /**
    * Indicates how the system may be identified when referenced in
    * electronic exchange.
    */
@@ -193,6 +266,12 @@ export interface NamingSystemUniqueId {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -230,10 +309,22 @@ export interface NamingSystemUniqueId {
   type: 'oid' | 'uuid' | 'uri' | 'other';
 
   /**
+   * Identifies the unique identifier scheme used for this particular
+   * identifier.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * The string that should be sent over the wire to identify the code
    * system or identifier system.
    */
   value: string;
+
+  /**
+   * The string that should be sent over the wire to identify the code
+   * system or identifier system.
+   */
+  _value?: PrimitiveExtension;
 
   /**
    * Indicates whether this identifier is the &quot;preferred&quot; identifier of
@@ -242,9 +333,20 @@ export interface NamingSystemUniqueId {
   preferred?: boolean;
 
   /**
+   * Indicates whether this identifier is the &quot;preferred&quot; identifier of
+   * this type.
+   */
+  _preferred?: PrimitiveExtension;
+
+  /**
    * Notes about the past or intended usage of this identifier.
    */
   comment?: string;
+
+  /**
+   * Notes about the past or intended usage of this identifier.
+   */
+  _comment?: PrimitiveExtension;
 
   /**
    * Identifies the period of time over which this identifier is considered

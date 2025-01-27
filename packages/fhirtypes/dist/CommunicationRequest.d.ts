@@ -24,6 +24,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
@@ -47,6 +48,12 @@ export interface CommunicationRequest {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -62,9 +69,22 @@ export interface CommunicationRequest {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -143,6 +163,11 @@ export interface CommunicationRequest {
   status: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
+   * The status of the proposal or order.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Captures the reason for the current state of the CommunicationRequest.
    */
   statusReason?: CodeableConcept;
@@ -160,10 +185,22 @@ export interface CommunicationRequest {
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
+   * Characterizes how quickly the proposed act must be initiated. Includes
+   * concepts such as stat, urgent, routine.
+   */
+  _priority?: PrimitiveExtension;
+
+  /**
    * If true indicates that the CommunicationRequest is asking for the
    * specified action to *not* occur.
    */
   doNotPerform?: boolean;
+
+  /**
+   * If true indicates that the CommunicationRequest is asking for the
+   * specified action to *not* occur.
+   */
+  _doNotPerform?: PrimitiveExtension;
 
   /**
    * A channel that was used for this communication (e.g. email, fax).
@@ -201,6 +238,11 @@ export interface CommunicationRequest {
   /**
    * The time when this communication is to occur.
    */
+  _occurrenceDateTime?: PrimitiveExtension;
+
+  /**
+   * The time when this communication is to occur.
+   */
   occurrencePeriod?: Period;
 
   /**
@@ -208,6 +250,12 @@ export interface CommunicationRequest {
    * requests with other statuses, indicates the date of activation.
    */
   authoredOn?: string;
+
+  /**
+   * For draft requests, indicates the date of initial creation.  For
+   * requests with other statuses, indicates the date of activation.
+   */
+  _authoredOn?: PrimitiveExtension;
 
   /**
    * The device, individual, or organization who initiated the request and
@@ -248,7 +296,7 @@ export interface CommunicationRequest {
 /**
  * The time when this communication is to occur.
  */
-export type CommunicationRequestOccurrence = Period | string;
+export type CommunicationRequestOccurrence = Period | PrimitiveExtension | string;
 
 /**
  * Text, attachment(s), or resource(s) to be communicated to the
@@ -261,6 +309,12 @@ export interface CommunicationRequestPayload {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -301,6 +355,12 @@ export interface CommunicationRequestPayload {
    * The communicated content (or for multi-part communications, one
    * portion of the communication).
    */
+  _contentString?: PrimitiveExtension;
+
+  /**
+   * The communicated content (or for multi-part communications, one
+   * portion of the communication).
+   */
   contentAttachment?: Attachment;
 
   /**
@@ -314,4 +374,4 @@ export interface CommunicationRequestPayload {
  * The communicated content (or for multi-part communications, one
  * portion of the communication).
  */
-export type CommunicationRequestPayloadContent = Attachment | Reference<Resource> | string;
+export type CommunicationRequestPayloadContent = Attachment | PrimitiveExtension | Reference<Resource> | string;

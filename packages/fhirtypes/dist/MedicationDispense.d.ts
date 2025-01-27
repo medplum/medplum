@@ -22,6 +22,7 @@ import { Organization } from './Organization';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Procedure } from './Procedure';
 import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
@@ -50,6 +51,12 @@ export interface MedicationDispense {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -65,9 +72,22 @@ export interface MedicationDispense {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -133,6 +153,11 @@ export interface MedicationDispense {
    * A code specifying the state of the set of dispense events.
    */
   status: 'preparation' | 'in-progress' | 'cancelled' | 'on-hold' | 'completed' | 'entered-in-error' | 'stopped' | 'declined' | 'unknown';
+
+  /**
+   * A code specifying the state of the set of dispense events.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * Indicates the reason why a dispense was not performed.
@@ -223,10 +248,21 @@ export interface MedicationDispense {
   whenPrepared?: string;
 
   /**
+   * The time when the dispensed product was packaged and reviewed.
+   */
+  _whenPrepared?: PrimitiveExtension;
+
+  /**
    * The time the dispensed product was provided to the patient or their
    * representative.
    */
   whenHandedOver?: string;
+
+  /**
+   * The time the dispensed product was provided to the patient or their
+   * representative.
+   */
+  _whenHandedOver?: PrimitiveExtension;
 
   /**
    * Identification of the facility/location where the medication was
@@ -300,6 +336,12 @@ export interface MedicationDispensePerformer {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -357,6 +399,12 @@ export interface MedicationDispenseSubstitution {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -390,6 +438,12 @@ export interface MedicationDispenseSubstitution {
    * was prescribed.
    */
   wasSubstituted: boolean;
+
+  /**
+   * True if the dispenser dispensed a different drug or product from what
+   * was prescribed.
+   */
+  _wasSubstituted?: PrimitiveExtension;
 
   /**
    * A code signifying whether a different drug was dispensed from what was

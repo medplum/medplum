@@ -21,6 +21,7 @@ import { Observation } from './Observation';
 import { OperationOutcome } from './OperationOutcome';
 import { Parameters } from './Parameters';
 import { Patient } from './Patient';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RequestGroup } from './RequestGroup';
 import { Resource } from './Resource';
@@ -44,6 +45,12 @@ export interface GuidanceResponse {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -59,9 +66,22 @@ export interface GuidanceResponse {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -132,7 +152,19 @@ export interface GuidanceResponse {
    * An identifier, CodeableConcept or canonical reference to the guidance
    * that was requested.
    */
+  _moduleUri?: PrimitiveExtension;
+
+  /**
+   * An identifier, CodeableConcept or canonical reference to the guidance
+   * that was requested.
+   */
   moduleCanonical?: string;
+
+  /**
+   * An identifier, CodeableConcept or canonical reference to the guidance
+   * that was requested.
+   */
+  _moduleCanonical?: PrimitiveExtension;
 
   /**
    * An identifier, CodeableConcept or canonical reference to the guidance
@@ -154,6 +186,19 @@ export interface GuidanceResponse {
   status: 'success' | 'data-requested' | 'data-required' | 'in-progress' | 'failure' | 'entered-in-error';
 
   /**
+   * The status of the response. If the evaluation is completed
+   * successfully, the status will indicate success. However, in order to
+   * complete the evaluation, the engine may require more information. In
+   * this case, the status will be data-required, and the response will
+   * contain a description of the additional required information. If the
+   * evaluation completed successfully, but the engine determines that a
+   * potentially more accurate response could be provided if more data was
+   * available, the status will be data-requested, and the response will
+   * contain a description of the additional requested information.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The patient for which the request was processed.
    */
   subject?: Reference<Patient | Group>;
@@ -168,6 +213,11 @@ export interface GuidanceResponse {
    * Indicates when the guidance response was processed.
    */
   occurrenceDateTime?: string;
+
+  /**
+   * Indicates when the guidance response was processed.
+   */
+  _occurrenceDateTime?: PrimitiveExtension;
 
   /**
    * Provides a reference to the device that performed the guidance.
@@ -231,4 +281,4 @@ export interface GuidanceResponse {
  * An identifier, CodeableConcept or canonical reference to the guidance
  * that was requested.
  */
-export type GuidanceResponseModule = CodeableConcept | string;
+export type GuidanceResponseModule = CodeableConcept | PrimitiveExtension | string;

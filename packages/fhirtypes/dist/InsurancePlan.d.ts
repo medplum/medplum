@@ -16,6 +16,7 @@ import { Money } from './Money';
 import { Narrative } from './Narrative';
 import { Organization } from './Organization';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -38,6 +39,12 @@ export interface InsurancePlan {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -53,9 +60,22 @@ export interface InsurancePlan {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -115,6 +135,11 @@ export interface InsurancePlan {
   status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
+   * The current state of the health insurance product.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The kind of health insurance product.
    */
   type?: CodeableConcept[];
@@ -126,10 +151,22 @@ export interface InsurancePlan {
   name?: string;
 
   /**
+   * Official name of the health insurance product as designated by the
+   * owner.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A list of alternate names that the product is known as, or was known
    * as in the past.
    */
   alias?: string[];
+
+  /**
+   * A list of alternate names that the product is known as, or was known
+   * as in the past.
+   */
+  _alias?: (PrimitiveExtension | null)[];
 
   /**
    * The period of time that the health insurance product is available.
@@ -196,6 +233,12 @@ export interface InsurancePlanContact {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -258,6 +301,12 @@ export interface InsurancePlanCoverage {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -315,6 +364,12 @@ export interface InsurancePlanCoverageBenefit {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -355,6 +410,11 @@ export interface InsurancePlanCoverageBenefit {
   requirement?: string;
 
   /**
+   * The referral requirements to have access/coverage for this benefit.
+   */
+  _requirement?: PrimitiveExtension;
+
+  /**
    * The specific limits on the benefit.
    */
   limit?: InsurancePlanCoverageBenefitLimit[];
@@ -370,6 +430,12 @@ export interface InsurancePlanCoverageBenefitLimit {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -422,6 +488,12 @@ export interface InsurancePlanPlan {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -498,6 +570,12 @@ export interface InsurancePlanPlanGeneralCost {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -537,6 +615,11 @@ export interface InsurancePlanPlanGeneralCost {
   groupSize?: number;
 
   /**
+   * Number of participants enrolled in the plan.
+   */
+  _groupSize?: PrimitiveExtension;
+
+  /**
    * Value of the cost.
    */
   cost?: Money;
@@ -546,6 +629,12 @@ export interface InsurancePlanPlanGeneralCost {
    * plan.
    */
   comment?: string;
+
+  /**
+   * Additional information about the general costs associated with this
+   * plan.
+   */
+  _comment?: PrimitiveExtension;
 }
 
 /**
@@ -558,6 +647,12 @@ export interface InsurancePlanPlanSpecificCost {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -612,6 +707,12 @@ export interface InsurancePlanPlanSpecificCostBenefit {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -663,6 +764,12 @@ export interface InsurancePlanPlanSpecificCostBenefitCost {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

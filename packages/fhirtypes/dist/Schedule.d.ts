@@ -15,6 +15,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
@@ -37,6 +38,12 @@ export interface Schedule {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -52,9 +59,22 @@ export interface Schedule {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -113,6 +133,12 @@ export interface Schedule {
   active?: boolean;
 
   /**
+   * Whether this schedule record is in active use or should not be used
+   * (such as was entered in error).
+   */
+  _active?: PrimitiveExtension;
+
+  /**
    * A broad categorization of the service that is to be performed during
    * this appointment.
    */
@@ -149,4 +175,10 @@ export interface Schedule {
    * Such as custom constraints on the slots that may be associated.
    */
   comment?: string;
+
+  /**
+   * Comments on the availability to describe any extended information.
+   * Such as custom constraints on the slots that may be associated.
+   */
+  _comment?: PrimitiveExtension;
 }

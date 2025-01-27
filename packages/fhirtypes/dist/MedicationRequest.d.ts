@@ -28,6 +28,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
@@ -57,6 +58,12 @@ export interface MedicationRequest {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -72,9 +79,22 @@ export interface MedicationRequest {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -138,6 +158,12 @@ export interface MedicationRequest {
   status: 'active' | 'on-hold' | 'cancelled' | 'completed' | 'entered-in-error' | 'stopped' | 'draft' | 'unknown';
 
   /**
+   * A code specifying the current state of the order.  Generally, this
+   * will be active or completed state.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Captures the reason for the current state of the MedicationRequest.
    */
   statusReason?: CodeableConcept;
@@ -146,6 +172,11 @@ export interface MedicationRequest {
    * Whether the request is a proposal, plan, or an original order.
    */
   intent: 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
+
+  /**
+   * Whether the request is a proposal, plan, or an original order.
+   */
+  _intent?: PrimitiveExtension;
 
   /**
    * Indicates the type of medication request (for example, where the
@@ -161,10 +192,22 @@ export interface MedicationRequest {
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
 
   /**
+   * Indicates how quickly the Medication Request should be addressed with
+   * respect to other requests.
+   */
+  _priority?: PrimitiveExtension;
+
+  /**
    * If true indicates that the provider is asking for the medication
    * request not to occur.
    */
   doNotPerform?: boolean;
+
+  /**
+   * If true indicates that the provider is asking for the medication
+   * request not to occur.
+   */
+  _doNotPerform?: PrimitiveExtension;
 
   /**
    * Indicates if this record was captured as a secondary 'reported' record
@@ -172,6 +215,13 @@ export interface MedicationRequest {
    * also indicate the source of the report.
    */
   reportedBoolean?: boolean;
+
+  /**
+   * Indicates if this record was captured as a secondary 'reported' record
+   * rather than as an original primary source-of-truth record.  It may
+   * also indicate the source of the report.
+   */
+  _reportedBoolean?: PrimitiveExtension;
 
   /**
    * Indicates if this record was captured as a secondary 'reported' record
@@ -221,6 +271,12 @@ export interface MedicationRequest {
   authoredOn?: string;
 
   /**
+   * The date (and perhaps time) when the prescription was initially
+   * written or authored on.
+   */
+  _authoredOn?: PrimitiveExtension;
+
+  /**
    * The individual, organization, or device that initiated the request and
    * has responsibility for its activation.
    */
@@ -263,11 +319,25 @@ export interface MedicationRequest {
   instantiatesCanonical?: string[];
 
   /**
+   * The URL pointing to a protocol, guideline, orderset, or other
+   * definition that is adhered to in whole or in part by this
+   * MedicationRequest.
+   */
+  _instantiatesCanonical?: (PrimitiveExtension | null)[];
+
+  /**
    * The URL pointing to an externally maintained protocol, guideline,
    * orderset or other definition that is adhered to in whole or in part by
    * this MedicationRequest.
    */
   instantiatesUri?: string[];
+
+  /**
+   * The URL pointing to an externally maintained protocol, guideline,
+   * orderset or other definition that is adhered to in whole or in part by
+   * this MedicationRequest.
+   */
+  _instantiatesUri?: (PrimitiveExtension | null)[];
 
   /**
    * A plan or request that is fulfilled in whole or in part by this
@@ -351,7 +421,7 @@ export interface MedicationRequest {
  * rather than as an original primary source-of-truth record.  It may
  * also indicate the source of the report.
  */
-export type MedicationRequestReported = boolean | Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Organization>;
+export type MedicationRequestReported = boolean | PrimitiveExtension | Reference<Patient | Practitioner | PractitionerRole | RelatedPerson | Organization>;
 
 /**
  * Identifies the medication being requested. This is a link to a
@@ -376,6 +446,12 @@ export interface MedicationRequestDispenseRequest {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -437,6 +513,18 @@ export interface MedicationRequestDispenseRequest {
   numberOfRepeatsAllowed?: number;
 
   /**
+   * An integer indicating the number of times, in addition to the original
+   * dispense, (aka refills or repeats) that the patient can receive the
+   * prescribed medication. Usage Notes: This integer does not include the
+   * original order dispense. This means that if an order indicates
+   * dispense 30 tablets plus &quot;3 repeats&quot;, then the order can be dispensed
+   * a total of 4 times and the patient can receive a total of 120 tablets.
+   * A prescriber may explicitly say that zero refills are permitted after
+   * the initial dispense.
+   */
+  _numberOfRepeatsAllowed?: PrimitiveExtension;
+
+  /**
    * The amount that is to be dispensed for one fill.
    */
   quantity?: Quantity;
@@ -465,6 +553,12 @@ export interface MedicationRequestDispenseRequestInitialFill {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -521,6 +615,12 @@ export interface MedicationRequestSubstitution {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -559,6 +659,12 @@ export interface MedicationRequestSubstitution {
    * True if the prescriber allows a different drug to be dispensed from
    * what was prescribed.
    */
+  _allowedBoolean?: PrimitiveExtension;
+
+  /**
+   * True if the prescriber allows a different drug to be dispensed from
+   * what was prescribed.
+   */
   allowedCodeableConcept?: CodeableConcept;
 
   /**
@@ -572,4 +678,4 @@ export interface MedicationRequestSubstitution {
  * True if the prescriber allows a different drug to be dispensed from
  * what was prescribed.
  */
-export type MedicationRequestSubstitutionAllowed = boolean | CodeableConcept;
+export type MedicationRequestSubstitutionAllowed = boolean | CodeableConcept | PrimitiveExtension;

@@ -19,6 +19,7 @@ import { Period } from './Period';
 import { PlanDefinition } from './PlanDefinition';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 import { SpecimenDefinition } from './SpecimenDefinition';
@@ -41,6 +42,12 @@ export interface CatalogEntry {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -56,9 +63,22 @@ export interface CatalogEntry {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -122,6 +142,11 @@ export interface CatalogEntry {
   orderable: boolean;
 
   /**
+   * Whether the entry represents an orderable item.
+   */
+  _orderable?: PrimitiveExtension;
+
+  /**
    * The item in a catalog or definition.
    */
   referencedItem: Reference<Medication | Device | Organization | Practitioner | PractitionerRole | HealthcareService |
@@ -144,6 +169,12 @@ export interface CatalogEntry {
   status?: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
+   * Used to support catalog exchange even for unsupported products, e.g.
+   * getting list of medications even if not prescribable.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The time period in which this catalog entry is expected to be active.
    */
   validityPeriod?: Period;
@@ -154,10 +185,21 @@ export interface CatalogEntry {
   validTo?: string;
 
   /**
+   * The date until which this catalog entry is expected to be active.
+   */
+  _validTo?: PrimitiveExtension;
+
+  /**
    * Typically date of issue is different from the beginning of the
    * validity. This can be used to see when an item was last updated.
    */
   lastUpdated?: string;
+
+  /**
+   * Typically date of issue is different from the beginning of the
+   * validity. This can be used to see when an item was last updated.
+   */
+  _lastUpdated?: PrimitiveExtension;
 
   /**
    * Used for examplefor Out of Formulary, or any specifics.
@@ -187,6 +229,12 @@ export interface CatalogEntryRelatedEntry {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -222,6 +270,12 @@ export interface CatalogEntryRelatedEntry {
    * packageContent, containerPackage, usedIn, uses, requires, etc.
    */
   relationtype: 'triggers' | 'is-replaced-by';
+
+  /**
+   * The type of relation to the related item: child, parent,
+   * packageContent, containerPackage, usedIn, uses, requires, etc.
+   */
+  _relationtype?: PrimitiveExtension;
 
   /**
    * The reference to the related item.

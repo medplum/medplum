@@ -7,6 +7,7 @@ import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
 import { Organization } from './Organization';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 
 /**
@@ -20,6 +21,12 @@ export interface Identifier {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -37,6 +44,11 @@ export interface Identifier {
   use?: 'usual' | 'official' | 'temp' | 'secondary' | 'old';
 
   /**
+   * The purpose of this identifier.
+   */
+  _use?: PrimitiveExtension;
+
+  /**
    * A coded type for the identifier that can be used to determine which
    * identifier to use for a specific purpose.
    */
@@ -49,10 +61,22 @@ export interface Identifier {
   system?: string;
 
   /**
+   * Establishes the namespace for the value - that is, a URL that
+   * describes a set values that are unique.
+   */
+  _system?: PrimitiveExtension;
+
+  /**
    * The portion of the identifier typically relevant to the user and which
    * is unique within the context of the system.
    */
   value?: string;
+
+  /**
+   * The portion of the identifier typically relevant to the user and which
+   * is unique within the context of the system.
+   */
+  _value?: PrimitiveExtension;
 
   /**
    * Time period during which identifier is/was valid for use.

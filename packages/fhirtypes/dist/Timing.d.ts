@@ -7,6 +7,7 @@ import { CodeableConcept } from './CodeableConcept';
 import { Duration } from './Duration';
 import { Extension } from './Extension';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Range } from './Range';
 
 /**
@@ -24,6 +25,12 @@ export interface Timing {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -60,6 +67,11 @@ export interface Timing {
   event?: string[];
 
   /**
+   * Identifies specific times when the event occurs.
+   */
+  _event?: (PrimitiveExtension | null)[];
+
+  /**
    * A set of rules that describe when the event is scheduled.
    */
   repeat?: TimingRepeat;
@@ -86,6 +98,12 @@ export interface TimingRepeat {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -127,10 +145,24 @@ export interface TimingRepeat {
   count?: number;
 
   /**
+   * A total count of the desired number of repetitions across the duration
+   * of the entire timing specification. If countMax is present, this
+   * element indicates the lower bound of the allowed range of count
+   * values.
+   */
+  _count?: PrimitiveExtension;
+
+  /**
    * If present, indicates that the count is a range - so to perform the
    * action between [count] and [countMax] times.
    */
   countMax?: number;
+
+  /**
+   * If present, indicates that the count is a range - so to perform the
+   * action between [count] and [countMax] times.
+   */
+  _countMax?: PrimitiveExtension;
 
   /**
    * How long this thing happens for when it happens. If durationMax is
@@ -140,15 +172,33 @@ export interface TimingRepeat {
   duration?: number;
 
   /**
+   * How long this thing happens for when it happens. If durationMax is
+   * present, this element indicates the lower bound of the allowed range
+   * of the duration.
+   */
+  _duration?: PrimitiveExtension;
+
+  /**
    * If present, indicates that the duration is a range - so to perform the
    * action between [duration] and [durationMax] time length.
    */
   durationMax?: number;
 
   /**
+   * If present, indicates that the duration is a range - so to perform the
+   * action between [duration] and [durationMax] time length.
+   */
+  _durationMax?: PrimitiveExtension;
+
+  /**
    * The units of time for the duration, in UCUM units.
    */
   durationUnit?: 's' | 'min' | 'h' | 'd' | 'wk' | 'mo' | 'a';
+
+  /**
+   * The units of time for the duration, in UCUM units.
+   */
+  _durationUnit?: PrimitiveExtension;
 
   /**
    * The number of times to repeat the action within the specified period.
@@ -158,11 +208,25 @@ export interface TimingRepeat {
   frequency?: number;
 
   /**
+   * The number of times to repeat the action within the specified period.
+   * If frequencyMax is present, this element indicates the lower bound of
+   * the allowed range of the frequency.
+   */
+  _frequency?: PrimitiveExtension;
+
+  /**
    * If present, indicates that the frequency is a range - so to repeat
    * between [frequency] and [frequencyMax] times within the period or
    * period range.
    */
   frequencyMax?: number;
+
+  /**
+   * If present, indicates that the frequency is a range - so to repeat
+   * between [frequency] and [frequencyMax] times within the period or
+   * period range.
+   */
+  _frequencyMax?: PrimitiveExtension;
 
   /**
    * Indicates the duration of time over which repetitions are to occur;
@@ -173,6 +237,14 @@ export interface TimingRepeat {
   period?: number;
 
   /**
+   * Indicates the duration of time over which repetitions are to occur;
+   * e.g. to express &quot;3 times per day&quot;, 3 would be the frequency and &quot;1
+   * day&quot; would be the period. If periodMax is present, this element
+   * indicates the lower bound of the allowed range of the period length.
+   */
+  _period?: PrimitiveExtension;
+
+  /**
    * If present, indicates that the period is a range from [period] to
    * [periodMax], allowing expressing concepts such as &quot;do this once every
    * 3-5 days.
@@ -180,9 +252,21 @@ export interface TimingRepeat {
   periodMax?: number;
 
   /**
+   * If present, indicates that the period is a range from [period] to
+   * [periodMax], allowing expressing concepts such as &quot;do this once every
+   * 3-5 days.
+   */
+  _periodMax?: PrimitiveExtension;
+
+  /**
    * The units of time for the period in UCUM units.
    */
   periodUnit?: 's' | 'min' | 'h' | 'd' | 'wk' | 'mo' | 'a';
+
+  /**
+   * The units of time for the period in UCUM units.
+   */
+  _periodUnit?: PrimitiveExtension;
 
   /**
    * If one or more days of week is provided, then the action happens only
@@ -191,9 +275,20 @@ export interface TimingRepeat {
   dayOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
 
   /**
+   * If one or more days of week is provided, then the action happens only
+   * on the specified day(s).
+   */
+  _dayOfWeek?: (PrimitiveExtension | null)[];
+
+  /**
    * Specified time of day for action to take place.
    */
   timeOfDay?: string[];
+
+  /**
+   * Specified time of day for action to take place.
+   */
+  _timeOfDay?: (PrimitiveExtension | null)[];
 
   /**
    * An approximate time period during the day, potentially linked to an
@@ -204,11 +299,24 @@ export interface TimingRepeat {
       | 'PCD' | 'PCV')[];
 
   /**
+   * An approximate time period during the day, potentially linked to an
+   * event of daily living that indicates when the action should occur.
+   */
+  _when?: (PrimitiveExtension | null)[];
+
+  /**
    * The number of minutes from the event. If the event code does not
    * indicate whether the minutes is before or after the event, then the
    * offset is assumed to be after the event.
    */
   offset?: number;
+
+  /**
+   * The number of minutes from the event. If the event code does not
+   * indicate whether the minutes is before or after the event, then the
+   * offset is assumed to be after the event.
+   */
+  _offset?: PrimitiveExtension;
 }
 
 /**

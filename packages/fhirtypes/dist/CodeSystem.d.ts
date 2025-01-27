@@ -10,6 +10,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 import { UsageContext } from './UsageContext';
 
@@ -32,6 +33,12 @@ export interface CodeSystem {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -47,9 +54,22 @@ export interface CodeSystem {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -109,6 +129,18 @@ export interface CodeSystem {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this code system when it is
+   * referenced in a specification, model, design or an instance; also
+   * called its canonical identifier. This SHOULD be globally unique and
+   * SHOULD be a literal address at which at which an authoritative
+   * instance of this code system is (or will be) published. This URL can
+   * be the target of a canonical reference. It SHALL remain the same when
+   * the code system is stored on different servers. This is used in
+   * [Coding](datatypes.html#Coding).system.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this code system when it
    * is represented in other formats, or referenced in a specification,
    * model, design or an instance.
@@ -128,6 +160,18 @@ export interface CodeSystem {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the code
+   * system when it is referenced in a specification, model, design or
+   * instance. This is an arbitrary value managed by the code system author
+   * and is not expected to be globally unique. For example, it might be a
+   * timestamp (e.g. yyyymmdd) if a managed version is not available. There
+   * is also no expectation that versions can be placed in a
+   * lexicographical sequence. This is used in
+   * [Coding](datatypes.html#Coding).version.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the code system. This name should
    * be usable as an identifier for the module by machine processing
    * applications such as code generation.
@@ -135,9 +179,21 @@ export interface CodeSystem {
   name?: string;
 
   /**
+   * A natural language name identifying the code system. This name should
+   * be usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A short, descriptive, user-friendly title for the code system.
    */
   title?: string;
+
+  /**
+   * A short, descriptive, user-friendly title for the code system.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * The date (and optionally time) when the code system resource was
@@ -146,11 +202,24 @@ export interface CodeSystem {
   status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
+   * The date (and optionally time) when the code system resource was
+   * created or revised.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A Boolean value to indicate that this code system is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
   experimental?: boolean;
+
+  /**
+   * A Boolean value to indicate that this code system is authored for
+   * testing purposes (or education/evaluation/marketing) and is not
+   * intended to be used for genuine usage.
+   */
+  _experimental?: PrimitiveExtension;
 
   /**
    * The date  (and optionally time) when the code system was published.
@@ -161,10 +230,24 @@ export interface CodeSystem {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the code system was published.
+   * The date must change when the business version changes and it must
+   * change if the status code changes. In addition, it should change when
+   * the substantive content of the code system changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the code
    * system.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the code
+   * system.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -177,6 +260,12 @@ export interface CodeSystem {
    * consumer's perspective.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the code system from a
+   * consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -200,11 +289,24 @@ export interface CodeSystem {
   purpose?: string;
 
   /**
+   * Explanation of why this code system is needed and why it has been
+   * designed as it has.
+   */
+  _purpose?: PrimitiveExtension;
+
+  /**
    * A copyright statement relating to the code system and/or its contents.
    * Copyright statements are generally legal restrictions on the use and
    * publishing of the code system.
    */
   copyright?: string;
+
+  /**
+   * A copyright statement relating to the code system and/or its contents.
+   * Copyright statements are generally legal restrictions on the use and
+   * publishing of the code system.
+   */
+  _copyright?: PrimitiveExtension;
 
   /**
    * If code comparison is case sensitive when codes within this system are
@@ -213,10 +315,22 @@ export interface CodeSystem {
   caseSensitive?: boolean;
 
   /**
+   * If code comparison is case sensitive when codes within this system are
+   * compared to each other.
+   */
+  _caseSensitive?: PrimitiveExtension;
+
+  /**
    * Canonical reference to the value set that contains the entire code
    * system.
    */
   valueSet?: string;
+
+  /**
+   * Canonical reference to the value set that contains the entire code
+   * system.
+   */
+  _valueSet?: PrimitiveExtension;
 
   /**
    * The meaning of the hierarchy of concepts as represented in this
@@ -225,9 +339,20 @@ export interface CodeSystem {
   hierarchyMeaning?: 'grouped-by' | 'is-a' | 'part-of' | 'classified-with';
 
   /**
+   * The meaning of the hierarchy of concepts as represented in this
+   * resource.
+   */
+  _hierarchyMeaning?: PrimitiveExtension;
+
+  /**
    * The code system defines a compositional (post-coordination) grammar.
    */
   compositional?: boolean;
+
+  /**
+   * The code system defines a compositional (post-coordination) grammar.
+   */
+  _compositional?: PrimitiveExtension;
 
   /**
    * This flag is used to signify that the code system does not commit to
@@ -237,10 +362,23 @@ export interface CodeSystem {
   versionNeeded?: boolean;
 
   /**
+   * This flag is used to signify that the code system does not commit to
+   * concept permanence across versions. If true, a version must be
+   * specified when referencing this code system.
+   */
+  _versionNeeded?: PrimitiveExtension;
+
+  /**
    * The extent of the content of the code system (the concepts and codes
    * it defines) are represented in this resource instance.
    */
   content: 'not-present' | 'example' | 'fragment' | 'complete' | 'supplement';
+
+  /**
+   * The extent of the content of the code system (the concepts and codes
+   * it defines) are represented in this resource instance.
+   */
+  _content?: PrimitiveExtension;
 
   /**
    * The canonical URL of the code system that this code system supplement
@@ -249,11 +387,24 @@ export interface CodeSystem {
   supplements?: string;
 
   /**
+   * The canonical URL of the code system that this code system supplement
+   * is adding designations and properties to.
+   */
+  _supplements?: PrimitiveExtension;
+
+  /**
    * The total number of concepts defined by the code system. Where the
    * code system has a compositional grammar, the basis of this count is
    * defined by the system steward.
    */
   count?: number;
+
+  /**
+   * The total number of concepts defined by the code system. Where the
+   * code system has a compositional grammar, the basis of this count is
+   * defined by the system steward.
+   */
+  _count?: PrimitiveExtension;
 
   /**
    * A filter that can be used in a value set compose statement when
@@ -287,6 +438,12 @@ export interface CodeSystemConcept {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -324,10 +481,22 @@ export interface CodeSystemConcept {
   code: string;
 
   /**
+   * A code - a text symbol - that uniquely identifies the concept within
+   * the code system.
+   */
+  _code?: PrimitiveExtension;
+
+  /**
    * A human readable string that is the recommended default way to present
    * this concept to a user.
    */
   display?: string;
+
+  /**
+   * A human readable string that is the recommended default way to present
+   * this concept to a user.
+   */
+  _display?: PrimitiveExtension;
 
   /**
    * The formal definition of the concept. The code system resource does
@@ -336,6 +505,14 @@ export interface CodeSystemConcept {
    * there is no formal meaning associated with the concept.
    */
   definition?: string;
+
+  /**
+   * The formal definition of the concept. The code system resource does
+   * not make formal definitions required, because of the prevalence of
+   * legacy systems. However, they are highly recommended, as without them
+   * there is no formal meaning associated with the concept.
+   */
+  _definition?: PrimitiveExtension;
 
   /**
    * Additional representations for the concept - other languages, aliases,
@@ -367,6 +544,12 @@ export interface CodeSystemConceptDesignation {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -403,6 +586,11 @@ export interface CodeSystemConceptDesignation {
   language?: string;
 
   /**
+   * The language this designation is defined for.
+   */
+  _language?: PrimitiveExtension;
+
+  /**
    * A code that details how this designation would be used.
    */
   use?: Coding;
@@ -411,6 +599,11 @@ export interface CodeSystemConceptDesignation {
    * The text value for this designation.
    */
   value: string;
+
+  /**
+   * The text value for this designation.
+   */
+  _value?: PrimitiveExtension;
 }
 
 /**
@@ -423,6 +616,12 @@ export interface CodeSystemConceptProperty {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -459,9 +658,19 @@ export interface CodeSystemConceptProperty {
   code: string;
 
   /**
+   * A code that is a reference to CodeSystem.property.code.
+   */
+  _code?: PrimitiveExtension;
+
+  /**
    * The value of this property.
    */
   valueCode?: string;
+
+  /**
+   * The value of this property.
+   */
+  _valueCode?: PrimitiveExtension;
 
   /**
    * The value of this property.
@@ -476,7 +685,17 @@ export interface CodeSystemConceptProperty {
   /**
    * The value of this property.
    */
+  _valueString?: PrimitiveExtension;
+
+  /**
+   * The value of this property.
+   */
   valueInteger?: number;
+
+  /**
+   * The value of this property.
+   */
+  _valueInteger?: PrimitiveExtension;
 
   /**
    * The value of this property.
@@ -486,18 +705,33 @@ export interface CodeSystemConceptProperty {
   /**
    * The value of this property.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * The value of this property.
+   */
   valueDateTime?: string;
 
   /**
    * The value of this property.
    */
+  _valueDateTime?: PrimitiveExtension;
+
+  /**
+   * The value of this property.
+   */
   valueDecimal?: number;
+
+  /**
+   * The value of this property.
+   */
+  _valueDecimal?: PrimitiveExtension;
 }
 
 /**
  * The value of this property.
  */
-export type CodeSystemConceptPropertyValue = boolean | Coding | number | string;
+export type CodeSystemConceptPropertyValue = boolean | Coding | number | PrimitiveExtension | string;
 
 /**
  * A filter that can be used in a value set compose statement when
@@ -510,6 +744,12 @@ export interface CodeSystemFilter {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -547,9 +787,20 @@ export interface CodeSystemFilter {
   code: string;
 
   /**
+   * The code that identifies this filter when it is used as a filter in
+   * [ValueSet](valueset.html#).compose.include.filter.
+   */
+  _code?: PrimitiveExtension;
+
+  /**
    * A description of how or why the filter is used.
    */
   description?: string;
+
+  /**
+   * A description of how or why the filter is used.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * A list of operators that can be used with the filter.
@@ -557,9 +808,19 @@ export interface CodeSystemFilter {
   operator: ('=' | 'is-a' | 'descendent-of' | 'is-not-a' | 'regex' | 'in' | 'not-in' | 'generalizes' | 'exists')[];
 
   /**
+   * A list of operators that can be used with the filter.
+   */
+  _operator?: (PrimitiveExtension | null)[];
+
+  /**
    * A description of what the value for the filter should be.
    */
   value: string;
+
+  /**
+   * A description of what the value for the filter should be.
+   */
+  _value?: PrimitiveExtension;
 }
 
 /**
@@ -573,6 +834,12 @@ export interface CodeSystemProperty {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -611,11 +878,25 @@ export interface CodeSystemProperty {
   code: string;
 
   /**
+   * A code that is used to identify the property. The code is used
+   * internally (in CodeSystem.concept.property.code) and also externally,
+   * such as in property filters.
+   */
+  _code?: PrimitiveExtension;
+
+  /**
    * Reference to the formal meaning of the property. One possible source
    * of meaning is the [Concept
    * Properties](codesystem-concept-properties.html) code system.
    */
   uri?: string;
+
+  /**
+   * Reference to the formal meaning of the property. One possible source
+   * of meaning is the [Concept
+   * Properties](codesystem-concept-properties.html) code system.
+   */
+  _uri?: PrimitiveExtension;
 
   /**
    * A description of the property- why it is defined, and how its value
@@ -624,9 +905,22 @@ export interface CodeSystemProperty {
   description?: string;
 
   /**
+   * A description of the property- why it is defined, and how its value
+   * might be used.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * The type of the property value. Properties of type &quot;code&quot; contain a
    * code defined by the code system (e.g. a reference to another defined
    * concept).
    */
   type: 'code' | 'Coding' | 'string' | 'integer' | 'boolean' | 'dateTime' | 'decimal';
+
+  /**
+   * The type of the property value. Properties of type &quot;code&quot; contain a
+   * code defined by the code system (e.g. a reference to another defined
+   * concept).
+   */
+  _type?: PrimitiveExtension;
 }

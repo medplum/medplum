@@ -25,6 +25,7 @@ export function main(): void {
   writeIndexFile();
   writeResourceFile();
   writeResourceTypeFile();
+  writePrimitiveExtensionFile();
 
   for (const type of Object.values(getAllDataTypes())) {
     if (isResourceTypeSchema(type) || type.kind === 'complex-type' || type.kind === 'logical') {
@@ -78,6 +79,19 @@ function writeResourceTypeFile(): void {
   b.append("export type ResourceType = Resource['resourceType'];");
   b.append('export type ExtractResource<K extends ResourceType> = Extract<Resource, { resourceType: K }>;');
   writeFileSync(resolve(__dirname, '../../fhirtypes/dist/ResourceType.d.ts'), b.toString(), 'utf8');
+}
+
+function writePrimitiveExtensionFile(): void {
+  const b = new FileBuilder();
+  b.append("import { Extension } from './Extension';");
+  b.newLine();
+  b.append('export interface PrimitiveExtension {');
+  b.indentCount++;
+  b.append('id?: string;');
+  b.append('extension: Extension[];');
+  b.indentCount--;
+  b.append('}');
+  writeFileSync(resolve(__dirname, '../../fhirtypes/dist/PrimitiveExtension.d.ts'), b.toString(), 'utf8');
 }
 
 function writeInterfaceFile(fhirType: InternalTypeSchema): void {
@@ -162,12 +176,10 @@ function writeInterfaceProperty(
   property: InternalSchemaElement,
   path: string
 ): void {
-  for (const typeScriptProperty of getTypeScriptProperties(property, path, fhirType.name)) {
+  for (const { name, required, typeName } of getTypeScriptProperties(property, path, fhirType.name)) {
     b.newLine();
     generateJavadoc(b, property.description);
-    b.append(
-      typeScriptProperty.name + (typeScriptProperty.required ? '' : '?') + ': ' + typeScriptProperty.typeName + ';'
-    );
+    b.append(`${name}${required ? '' : '?'}: ${typeName};`);
   }
 }
 
@@ -228,6 +240,13 @@ function cleanReferencedType(typeName: string): string[] {
     return ['Reference', ...typeName.substring(start, end).split(' | ')];
   }
 
+  if (typeName.startsWith('(') && typeName.endsWith(')[]')) {
+    return typeName
+      .substring(1, typeName.length - 3)
+      .split(' | ')
+      .filter((t) => !isLowerCase(t[0]));
+  }
+
   return [typeName.replace('[]', '')];
 }
 
@@ -250,18 +269,35 @@ function getTypeScriptProperties(
     const baseName = name.replace('[x]', '');
     const propertyTypes = property.type as ElementDefinitionType[];
     for (const propertyType of propertyTypes) {
-      const code = propertyType.code as string;
+      const name = baseName + capitalize(propertyType.code as string);
       result.push({
-        name: baseName + capitalize(code),
+        name,
         typeName: getTypeScriptTypeForProperty(property, propertyType, path),
       });
+      if (isLowerCase(propertyType.code[0])) {
+        // Primitive type requires explicit extra field for possible extensions
+        result.push({
+          name: `_${name}`,
+          typeName: 'PrimitiveExtension',
+          required: false,
+        });
+      }
     }
   } else {
+    const propertyType = property.type?.[0] as ElementDefinitionType;
     result.push({
       name,
-      typeName: getTypeScriptTypeForProperty(property, property.type?.[0] as ElementDefinitionType, path),
+      typeName: getTypeScriptTypeForProperty(property, propertyType, path),
       required,
     });
+    if (isLowerCase(propertyType.code[0])) {
+      // Primitive type requires explicit extra field for possible extensions
+      result.push({
+        name: `_${name}`,
+        typeName: property.max > 1 ? '(PrimitiveExtension | null)[]' : 'PrimitiveExtension',
+        required: false,
+      });
+    }
   }
 
   return result;

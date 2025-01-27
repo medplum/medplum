@@ -22,6 +22,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
@@ -46,6 +47,12 @@ export interface Media {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -61,9 +68,22 @@ export interface Media {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -135,6 +155,11 @@ export interface Media {
   status: 'preparation' | 'in-progress' | 'not-done' | 'on-hold' | 'stopped' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
+   * The current state of the {{title}}.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A code that classifies whether the media is an image, video or audio
    * recording or some other media category.
    */
@@ -170,6 +195,11 @@ export interface Media {
   /**
    * The date and time(s) at which the media was collected.
    */
+  _createdDateTime?: PrimitiveExtension;
+
+  /**
+   * The date and time(s) at which the media was collected.
+   */
   createdPeriod?: Period;
 
   /**
@@ -177,6 +207,12 @@ export interface Media {
    * providers, typically after having been reviewed.
    */
   issued?: string;
+
+  /**
+   * The date and time this version of the media was made available to
+   * providers, typically after having been reviewed.
+   */
+  _issued?: PrimitiveExtension;
 
   /**
    * The person who administered the collection of the image.
@@ -201,6 +237,12 @@ export interface Media {
   deviceName?: string;
 
   /**
+   * The name of the device / manufacturer of the device  that was used to
+   * make the recording.
+   */
+  _deviceName?: PrimitiveExtension;
+
+  /**
    * The device used to collect the media.
    */
   device?: Reference<Device | DeviceMetric | Device>;
@@ -211,9 +253,19 @@ export interface Media {
   height?: number;
 
   /**
+   * Height of the image in pixels (photo/video).
+   */
+  _height?: PrimitiveExtension;
+
+  /**
    * Width of the image in pixels (photo/video).
    */
   width?: number;
+
+  /**
+   * Width of the image in pixels (photo/video).
+   */
+  _width?: PrimitiveExtension;
 
   /**
    * The number of frames in a photo. This is used with a multi-page fax,
@@ -225,9 +277,23 @@ export interface Media {
   frames?: number;
 
   /**
+   * The number of frames in a photo. This is used with a multi-page fax,
+   * or an imaging acquisition context that takes multiple slices in a
+   * single image, or an animated gif. If there is more than one frame,
+   * this SHALL have a value in order to alert interface software that a
+   * multi-frame capable rendering widget is required.
+   */
+  _frames?: PrimitiveExtension;
+
+  /**
    * The duration of the recording in seconds - for audio and video.
    */
   duration?: number;
+
+  /**
+   * The duration of the recording in seconds - for audio and video.
+   */
+  _duration?: PrimitiveExtension;
 
   /**
    * The actual content of the media - inline or by direct reference to the
@@ -245,4 +311,4 @@ export interface Media {
 /**
  * The date and time(s) at which the media was collected.
  */
-export type MediaCreated = Period | string;
+export type MediaCreated = Period | PrimitiveExtension | string;

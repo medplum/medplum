@@ -10,6 +10,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 import { UsageContext } from './UsageContext';
 
@@ -33,6 +34,12 @@ export interface ValueSet {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -48,9 +55,22 @@ export interface ValueSet {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -109,6 +129,17 @@ export interface ValueSet {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this value set when it is
+   * referenced in a specification, model, design or an instance; also
+   * called its canonical identifier. This SHOULD be globally unique and
+   * SHOULD be a literal address at which at which an authoritative
+   * instance of this value set is (or will be) published. This URL can be
+   * the target of a canonical reference. It SHALL remain the same when the
+   * value set is stored on different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this value set when it is
    * represented in other formats, or referenced in a specification, model,
    * design or an instance.
@@ -127,6 +158,17 @@ export interface ValueSet {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the value set
+   * when it is referenced in a specification, model, design or instance.
+   * This is an arbitrary value managed by the value set author and is not
+   * expected to be globally unique. For example, it might be a timestamp
+   * (e.g. yyyymmdd) if a managed version is not available. There is also
+   * no expectation that versions can be placed in a lexicographical
+   * sequence.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the value set. This name should be
    * usable as an identifier for the module by machine processing
    * applications such as code generation.
@@ -134,9 +176,21 @@ export interface ValueSet {
   name?: string;
 
   /**
+   * A natural language name identifying the value set. This name should be
+   * usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A short, descriptive, user-friendly title for the value set.
    */
   title?: string;
+
+  /**
+   * A short, descriptive, user-friendly title for the value set.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * The status of this value set. Enables tracking the life-cycle of the
@@ -147,11 +201,26 @@ export interface ValueSet {
   status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
+   * The status of this value set. Enables tracking the life-cycle of the
+   * content. The status of the value set applies to the value set
+   * definition (ValueSet.compose) and the associated ValueSet metadata.
+   * Expansions do not have a state.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A Boolean value to indicate that this value set is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
   experimental?: boolean;
+
+  /**
+   * A Boolean value to indicate that this value set is authored for
+   * testing purposes (or education/evaluation/marketing) and is not
+   * intended to be used for genuine usage.
+   */
+  _experimental?: PrimitiveExtension;
 
   /**
    * The date (and optionally time) when the value set was created or
@@ -160,10 +229,22 @@ export interface ValueSet {
   date?: string;
 
   /**
+   * The date (and optionally time) when the value set was created or
+   * revised (e.g. the 'content logical definition').
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the value
    * set.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the value
+   * set.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -179,6 +260,15 @@ export interface ValueSet {
    * Set.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the value set from a
+   * consumer's perspective. The textual description specifies the span of
+   * meanings for concepts to be included within the Value Set Expansion,
+   * and also may specify the intended use and limitations of the Value
+   * Set.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -202,10 +292,22 @@ export interface ValueSet {
   immutable?: boolean;
 
   /**
+   * If this is set to 'true', then no new versions of the content logical
+   * definition can be created.  Note: Other metadata might still change.
+   */
+  _immutable?: PrimitiveExtension;
+
+  /**
    * Explanation of why this value set is needed and why it has been
    * designed as it has.
    */
   purpose?: string;
+
+  /**
+   * Explanation of why this value set is needed and why it has been
+   * designed as it has.
+   */
+  _purpose?: PrimitiveExtension;
 
   /**
    * A copyright statement relating to the value set and/or its contents.
@@ -213,6 +315,13 @@ export interface ValueSet {
    * publishing of the value set.
    */
   copyright?: string;
+
+  /**
+   * A copyright statement relating to the value set and/or its contents.
+   * Copyright statements are generally legal restrictions on the use and
+   * publishing of the value set.
+   */
+  _copyright?: PrimitiveExtension;
 
   /**
    * A set of criteria that define the contents of the value set by
@@ -243,6 +352,12 @@ export interface ValueSetCompose {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -282,6 +397,14 @@ export interface ValueSetCompose {
   lockedDate?: string;
 
   /**
+   * The Locked Date is  the effective date that is used to determine the
+   * version of all referenced Code Systems and Value Set Definitions
+   * included in the compose that are not already tied to a specific
+   * version.
+   */
+  _lockedDate?: PrimitiveExtension;
+
+  /**
    * Whether inactive codes - codes that are not approved for current use -
    * are in the value set. If inactive = true, inactive codes are to be
    * included in the expansion, if inactive = false, the inactive codes
@@ -291,6 +414,17 @@ export interface ValueSetCompose {
    * included).
    */
   inactive?: boolean;
+
+  /**
+   * Whether inactive codes - codes that are not approved for current use -
+   * are in the value set. If inactive = true, inactive codes are to be
+   * included in the expansion, if inactive = false, the inactive codes
+   * will not be included in the expansion. If absent, the behavior is
+   * determined by the implementation, or by the applicable $expand
+   * parameters (but generally, inactive codes would be expected to be
+   * included).
+   */
+  _inactive?: PrimitiveExtension;
 
   /**
    * Include one or more codes from a code system or other value set(s).
@@ -314,6 +448,12 @@ export interface ValueSetComposeInclude {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -351,10 +491,22 @@ export interface ValueSetComposeInclude {
   system?: string;
 
   /**
+   * An absolute URI which is the code system from which the selected codes
+   * come from.
+   */
+  _system?: PrimitiveExtension;
+
+  /**
    * The version of the code system that the codes are selected from, or
    * the special version '*' for all versions.
    */
   version?: string;
+
+  /**
+   * The version of the code system that the codes are selected from, or
+   * the special version '*' for all versions.
+   */
+  _version?: PrimitiveExtension;
 
   /**
    * Specifies a concept to be included or excluded.
@@ -376,6 +528,14 @@ export interface ValueSetComposeInclude {
    * union of the contents of all of the referenced value sets.
    */
   valueSet?: string[];
+
+  /**
+   * Selects the concepts found in this value set (based on its value set
+   * definition). This is an absolute URI that is a reference to
+   * ValueSet.url.  If multiple value sets are specified this includes the
+   * union of the contents of all of the referenced value sets.
+   */
+  _valueSet?: (PrimitiveExtension | null)[];
 }
 
 /**
@@ -388,6 +548,12 @@ export interface ValueSetComposeIncludeConcept {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -424,11 +590,23 @@ export interface ValueSetComposeIncludeConcept {
   code: string;
 
   /**
+   * Specifies a code for the concept to be included or excluded.
+   */
+  _code?: PrimitiveExtension;
+
+  /**
    * The text to display to the user for this concept in the context of
    * this valueset. If no display is provided, then applications using the
    * value set use the display specified for the code by the system.
    */
   display?: string;
+
+  /**
+   * The text to display to the user for this concept in the context of
+   * this valueset. If no display is provided, then applications using the
+   * value set use the display specified for the code by the system.
+   */
+  _display?: PrimitiveExtension;
 
   /**
    * Additional representations for this concept when used in this value
@@ -450,6 +628,12 @@ export interface ValueSetComposeIncludeConceptDesignation {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -486,6 +670,11 @@ export interface ValueSetComposeIncludeConceptDesignation {
   language?: string;
 
   /**
+   * The language this designation is defined for.
+   */
+  _language?: PrimitiveExtension;
+
+  /**
    * A code that represents types of uses of designations.
    */
   use?: Coding;
@@ -494,6 +683,11 @@ export interface ValueSetComposeIncludeConceptDesignation {
    * The text value for this designation.
    */
   value: string;
+
+  /**
+   * The text value for this designation.
+   */
+  _value?: PrimitiveExtension;
 }
 
 /**
@@ -509,6 +703,12 @@ export interface ValueSetComposeIncludeFilter {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -546,9 +746,20 @@ export interface ValueSetComposeIncludeFilter {
   property: string;
 
   /**
+   * A code that identifies a property or a filter defined in the code
+   * system.
+   */
+  _property?: PrimitiveExtension;
+
+  /**
    * The kind of operation to perform as a part of the filter criteria.
    */
   op: '=' | 'is-a' | 'descendent-of' | 'is-not-a' | 'regex' | 'in' | 'not-in' | 'generalizes' | 'exists';
+
+  /**
+   * The kind of operation to perform as a part of the filter criteria.
+   */
+  _op?: PrimitiveExtension;
 
   /**
    * The match value may be either a code defined by the system, or a
@@ -559,6 +770,16 @@ export interface ValueSetComposeIncludeFilter {
    * the values (true and false), when the operation is 'exists'.
    */
   value: string;
+
+  /**
+   * The match value may be either a code defined by the system, or a
+   * string value, which is a regex match on the literal string of the
+   * property value  (if the filter represents a property defined in
+   * CodeSystem) or of the system filter value (if the filter represents a
+   * filter defined in CodeSystem) when the operation is 'regex', or one of
+   * the values (true and false), when the operation is 'exists'.
+   */
+  _value?: PrimitiveExtension;
 }
 
 /**
@@ -573,6 +794,12 @@ export interface ValueSetExpansion {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -614,9 +841,24 @@ export interface ValueSetExpansion {
   identifier?: string;
 
   /**
+   * An identifier that uniquely identifies this expansion of the valueset,
+   * based on a unique combination of the provided parameters, the system
+   * default parameters, and the underlying system code system versions
+   * etc. Systems may re-use the same identifier as long as those factors
+   * remain the same, and the expansion is the same, but are not required
+   * to do so. This is a business identifier.
+   */
+  _identifier?: PrimitiveExtension;
+
+  /**
    * The time at which the expansion was produced by the expanding system.
    */
   timestamp: string;
+
+  /**
+   * The time at which the expansion was produced by the expanding system.
+   */
+  _timestamp?: PrimitiveExtension;
 
   /**
    * The total number of concepts in the expansion. If the number of
@@ -626,11 +868,25 @@ export interface ValueSetExpansion {
   total?: number;
 
   /**
+   * The total number of concepts in the expansion. If the number of
+   * concept nodes in this resource is less than the stated number, then
+   * the server can return more using the offset parameter.
+   */
+  _total?: PrimitiveExtension;
+
+  /**
    * If paging is being used, the offset at which this resource starts.
    * I.e. this resource is a partial view into the expansion. If paging is
    * not being used, this element SHALL NOT be present.
    */
   offset?: number;
+
+  /**
+   * If paging is being used, the offset at which this resource starts.
+   * I.e. this resource is a partial view into the expansion. If paging is
+   * not being used, this element SHALL NOT be present.
+   */
+  _offset?: PrimitiveExtension;
 
   /**
    * A parameter that controlled the expansion process. These parameters
@@ -656,6 +912,12 @@ export interface ValueSetExpansionContains {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -693,11 +955,24 @@ export interface ValueSetExpansionContains {
   system?: string;
 
   /**
+   * An absolute URI which is the code system in which the code for this
+   * item in the expansion is defined.
+   */
+  _system?: PrimitiveExtension;
+
+  /**
    * If true, this entry is included in the expansion for navigational
    * purposes, and the user cannot select the code directly as a proper
    * value.
    */
   abstract?: boolean;
+
+  /**
+   * If true, this entry is included in the expansion for navigational
+   * purposes, and the user cannot select the code directly as a proper
+   * value.
+   */
+  _abstract?: PrimitiveExtension;
 
   /**
    * If the concept is inactive in the code system that defines it.
@@ -709,6 +984,15 @@ export interface ValueSetExpansionContains {
   inactive?: boolean;
 
   /**
+   * If the concept is inactive in the code system that defines it.
+   * Inactive codes are those that are no longer to be used, but are
+   * maintained by the code system for understanding legacy data. It might
+   * not be known or specified whether an concept is inactive (and it may
+   * depend on the context of use).
+   */
+  _inactive?: PrimitiveExtension;
+
+  /**
    * The version of the code system from this code was taken. Note that a
    * well-maintained code system does not need the version reported,
    * because the meaning of codes is consistent across versions. However
@@ -718,6 +1002,15 @@ export interface ValueSetExpansionContains {
   version?: string;
 
   /**
+   * The version of the code system from this code was taken. Note that a
+   * well-maintained code system does not need the version reported,
+   * because the meaning of codes is consistent across versions. However
+   * this cannot consistently be assured, and when the meaning is not
+   * guaranteed to be consistent, the version SHOULD be exchanged.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * The code for this item in the expansion hierarchy. If this code is
    * missing the entry in the hierarchy is a place holder (abstract) and
    * does not represent a valid code in the value set.
@@ -725,9 +1018,21 @@ export interface ValueSetExpansionContains {
   code?: string;
 
   /**
+   * The code for this item in the expansion hierarchy. If this code is
+   * missing the entry in the hierarchy is a place holder (abstract) and
+   * does not represent a valid code in the value set.
+   */
+  _code?: PrimitiveExtension;
+
+  /**
    * The recommended display for this item in the expansion.
    */
   display?: string;
+
+  /**
+   * The recommended display for this item in the expansion.
+   */
+  _display?: PrimitiveExtension;
 
   /**
    * Additional representations for this item - other languages, aliases,
@@ -756,6 +1061,12 @@ export interface ValueSetExpansionParameter {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -794,9 +1105,21 @@ export interface ValueSetExpansionParameter {
   name: string;
 
   /**
+   * Name of the input parameter to the $expand operation; may be a
+   * server-assigned name for additional default or other server-supplied
+   * parameters used to control the expansion process.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The value of the parameter.
    */
   valueString?: string;
+
+  /**
+   * The value of the parameter.
+   */
+  _valueString?: PrimitiveExtension;
 
   /**
    * The value of the parameter.
@@ -806,7 +1129,17 @@ export interface ValueSetExpansionParameter {
   /**
    * The value of the parameter.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * The value of the parameter.
+   */
   valueInteger?: number;
+
+  /**
+   * The value of the parameter.
+   */
+  _valueInteger?: PrimitiveExtension;
 
   /**
    * The value of the parameter.
@@ -816,7 +1149,17 @@ export interface ValueSetExpansionParameter {
   /**
    * The value of the parameter.
    */
+  _valueDecimal?: PrimitiveExtension;
+
+  /**
+   * The value of the parameter.
+   */
   valueUri?: string;
+
+  /**
+   * The value of the parameter.
+   */
+  _valueUri?: PrimitiveExtension;
 
   /**
    * The value of the parameter.
@@ -826,10 +1169,20 @@ export interface ValueSetExpansionParameter {
   /**
    * The value of the parameter.
    */
+  _valueCode?: PrimitiveExtension;
+
+  /**
+   * The value of the parameter.
+   */
   valueDateTime?: string;
+
+  /**
+   * The value of the parameter.
+   */
+  _valueDateTime?: PrimitiveExtension;
 }
 
 /**
  * The value of the parameter.
  */
-export type ValueSetExpansionParameterValue = boolean | number | string;
+export type ValueSetExpansionParameterValue = boolean | number | PrimitiveExtension | string;

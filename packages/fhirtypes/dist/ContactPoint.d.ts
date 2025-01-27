@@ -5,6 +5,7 @@
 
 import { Extension } from './Extension';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * Details for all kinds of technology mediated contact points for a
@@ -17,6 +18,12 @@ export interface ContactPoint {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -35,10 +42,22 @@ export interface ContactPoint {
   system?: 'phone' | 'fax' | 'email' | 'pager' | 'url' | 'sms' | 'other';
 
   /**
+   * Telecommunications form for contact point - what communications system
+   * is required to make use of the contact.
+   */
+  _system?: PrimitiveExtension;
+
+  /**
    * The actual contact point details, in a form that is meaningful to the
    * designated communication system (i.e. phone number or email address).
    */
   value?: string;
+
+  /**
+   * The actual contact point details, in a form that is meaningful to the
+   * designated communication system (i.e. phone number or email address).
+   */
+  _value?: PrimitiveExtension;
 
   /**
    * Identifies the purpose for the contact point.
@@ -46,11 +65,23 @@ export interface ContactPoint {
   use?: 'home' | 'work' | 'temp' | 'old' | 'mobile';
 
   /**
+   * Identifies the purpose for the contact point.
+   */
+  _use?: PrimitiveExtension;
+
+  /**
    * Specifies a preferred order in which to use a set of contacts.
    * ContactPoints with lower rank values are more preferred than those
    * with higher rank values.
    */
   rank?: number;
+
+  /**
+   * Specifies a preferred order in which to use a set of contacts.
+   * ContactPoints with lower rank values are more preferred than those
+   * with higher rank values.
+   */
+  _rank?: PrimitiveExtension;
 
   /**
    * Time period when the contact point was/is in use.

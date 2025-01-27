@@ -18,6 +18,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { ObservationDefinition } from './ObservationDefinition';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
@@ -47,6 +48,12 @@ export interface ActivityDefinition {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -62,9 +69,22 @@ export interface ActivityDefinition {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -123,6 +143,17 @@ export interface ActivityDefinition {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this activity definition when
+   * it is referenced in a specification, model, design or an instance;
+   * also called its canonical identifier. This SHOULD be globally unique
+   * and SHOULD be a literal address at which at which an authoritative
+   * instance of this activity definition is (or will be) published. This
+   * URL can be the target of a canonical reference. It SHALL remain the
+   * same when the activity definition is stored on different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this activity definition
    * when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
@@ -145,6 +176,21 @@ export interface ActivityDefinition {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the activity
+   * definition when it is referenced in a specification, model, design or
+   * instance. This is an arbitrary value managed by the activity
+   * definition author and is not expected to be globally unique. For
+   * example, it might be a timestamp (e.g. yyyymmdd) if a managed version
+   * is not available. There is also no expectation that versions can be
+   * placed in a lexicographical sequence. To provide a version consistent
+   * with the Decision Support Service specification, use the format
+   * Major.Minor.Revision (e.g. 1.0.0). For more information on versioning
+   * knowledge assets, refer to the Decision Support Service specification.
+   * Note that a version is required for non-experimental active assets.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the activity definition. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
@@ -152,9 +198,21 @@ export interface ActivityDefinition {
   name?: string;
 
   /**
+   * A natural language name identifying the activity definition. This name
+   * should be usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A short, descriptive, user-friendly title for the activity definition.
    */
   title?: string;
+
+  /**
+   * A short, descriptive, user-friendly title for the activity definition.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * An explanatory or alternate title for the activity definition giving
@@ -163,10 +221,22 @@ export interface ActivityDefinition {
   subtitle?: string;
 
   /**
+   * An explanatory or alternate title for the activity definition giving
+   * additional information about its content.
+   */
+  _subtitle?: PrimitiveExtension;
+
+  /**
    * The status of this activity definition. Enables tracking the
    * life-cycle of the content.
    */
   status: 'draft' | 'active' | 'retired' | 'unknown';
+
+  /**
+   * The status of this activity definition. Enables tracking the
+   * life-cycle of the content.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * A Boolean value to indicate that this activity definition is authored
@@ -174,6 +244,13 @@ export interface ActivityDefinition {
    * intended to be used for genuine usage.
    */
   experimental?: boolean;
+
+  /**
+   * A Boolean value to indicate that this activity definition is authored
+   * for testing purposes (or education/evaluation/marketing) and is not
+   * intended to be used for genuine usage.
+   */
+  _experimental?: PrimitiveExtension;
 
   /**
    * A code or group definition that describes the intended subject of the
@@ -197,10 +274,25 @@ export interface ActivityDefinition {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the activity definition was
+   * published. The date must change when the business version changes and
+   * it must change if the status code changes. In addition, it should
+   * change when the substantive content of the activity definition
+   * changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the activity
    * definition.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the activity
+   * definition.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -213,6 +305,12 @@ export interface ActivityDefinition {
    * from a consumer's perspective.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the activity definition
+   * from a consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -236,10 +334,22 @@ export interface ActivityDefinition {
   purpose?: string;
 
   /**
+   * Explanation of why this activity definition is needed and why it has
+   * been designed as it has.
+   */
+  _purpose?: PrimitiveExtension;
+
+  /**
    * A detailed description of how the activity definition is used from a
    * clinical perspective.
    */
   usage?: string;
+
+  /**
+   * A detailed description of how the activity definition is used from a
+   * clinical perspective.
+   */
+  _usage?: PrimitiveExtension;
 
   /**
    * A copyright statement relating to the activity definition and/or its
@@ -249,6 +359,13 @@ export interface ActivityDefinition {
   copyright?: string;
 
   /**
+   * A copyright statement relating to the activity definition and/or its
+   * contents. Copyright statements are generally legal restrictions on the
+   * use and publishing of the activity definition.
+   */
+  _copyright?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
@@ -256,11 +373,25 @@ export interface ActivityDefinition {
   approvalDate?: string;
 
   /**
+   * The date on which the resource content was approved by the publisher.
+   * Approval happens once when the content is officially approved for
+   * usage.
+   */
+  _approvalDate?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
   lastReviewDate?: string;
+
+  /**
+   * The date on which the resource content was last reviewed. Review
+   * happens periodically after approval but does not change the original
+   * approval date.
+   */
+  _lastReviewDate?: PrimitiveExtension;
 
   /**
    * The period during which the activity definition content was or is
@@ -312,6 +443,12 @@ export interface ActivityDefinition {
   library?: string[];
 
   /**
+   * A reference to a Library resource containing any formal logic used by
+   * the activity definition.
+   */
+  _library?: (PrimitiveExtension | null)[];
+
+  /**
    * A description of the kind of resource the activity definition is
    * representing. For example, a MedicationRequest, a ServiceRequest, or a
    * CommunicationRequest. Typically, but not always, this is a Request
@@ -322,10 +459,24 @@ export interface ActivityDefinition {
       'ServiceRequest' | 'SupplyRequest' | 'Task' | 'VisionPrescription';
 
   /**
+   * A description of the kind of resource the activity definition is
+   * representing. For example, a MedicationRequest, a ServiceRequest, or a
+   * CommunicationRequest. Typically, but not always, this is a Request
+   * resource.
+   */
+  _kind?: PrimitiveExtension;
+
+  /**
    * A profile to which the target of the activity definition is expected
    * to conform.
    */
   profile?: string;
+
+  /**
+   * A profile to which the target of the activity definition is expected
+   * to conform.
+   */
+  _profile?: PrimitiveExtension;
 
   /**
    * Detailed description of the type of activity; e.g. What lab test, what
@@ -340,10 +491,22 @@ export interface ActivityDefinition {
   intent?: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
+   * Indicates the level of authority/intentionality associated with the
+   * activity and where the request should fit into the workflow chain.
+   */
+  _intent?: PrimitiveExtension;
+
+  /**
    * Indicates how quickly the activity  should be addressed with respect
    * to other requests.
    */
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
+
+  /**
+   * Indicates how quickly the activity  should be addressed with respect
+   * to other requests.
+   */
+  _priority?: PrimitiveExtension;
 
   /**
    * Set this to true if the definition is to indicate that a particular
@@ -353,6 +516,15 @@ export interface ActivityDefinition {
    * action.
    */
   doNotPerform?: boolean;
+
+  /**
+   * Set this to true if the definition is to indicate that a particular
+   * activity should NOT be performed. If true, this element should be
+   * interpreted to reinforce a negative coding. For example NPO as a code
+   * with a doNotPerform of true would still indicate to NOT perform the
+   * action.
+   */
+  _doNotPerform?: PrimitiveExtension;
 
   /**
    * The period, timing or frequency upon which the described activity is
@@ -365,6 +537,12 @@ export interface ActivityDefinition {
    * to occur.
    */
   timingDateTime?: string;
+
+  /**
+   * The period, timing or frequency upon which the described activity is
+   * to occur.
+   */
+  _timingDateTime?: PrimitiveExtension;
 
   /**
    * The period, timing or frequency upon which the described activity is
@@ -457,6 +635,13 @@ export interface ActivityDefinition {
   transform?: string;
 
   /**
+   * A reference to a StructureMap resource that defines a transform that
+   * can be executed to produce the intent resource using the
+   * ActivityDefinition instance as the input.
+   */
+  _transform?: PrimitiveExtension;
+
+  /**
    * Dynamic values that will be evaluated to produce values for elements
    * of the resulting resource. For example, if the dosage of a medication
    * must be computed based on the patient's weight, a dynamic value would
@@ -476,7 +661,7 @@ export type ActivityDefinitionSubject = CodeableConcept | Reference<Group>;
  * The period, timing or frequency upon which the described activity is
  * to occur.
  */
-export type ActivityDefinitionTiming = Age | Duration | Period | Range | string | Timing;
+export type ActivityDefinitionTiming = Age | Duration | Period | PrimitiveExtension | Range | string | Timing;
 
 /**
  * Identifies the food, drug or other product being consumed or supplied
@@ -498,6 +683,12 @@ export interface ActivityDefinitionDynamicValue {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -542,6 +733,19 @@ export interface ActivityDefinitionDynamicValue {
   path: string;
 
   /**
+   * The path to the element to be customized. This is the path on the
+   * resource that will hold the result of the calculation defined by the
+   * expression. The specified path SHALL be a FHIRPath resolveable on the
+   * specified target type of the ActivityDefinition, and SHALL consist
+   * only of identifiers, constant indexers, and a restricted subset of
+   * functions. The path is allowed to contain qualifiers (.) to traverse
+   * sub-elements, as well as indexers ([x]) to traverse
+   * multiple-cardinality sub-elements (see the [Simple FHIRPath
+   * Profile](fhirpath.html#simple) for full details).
+   */
+  _path?: PrimitiveExtension;
+
+  /**
    * An expression specifying the value of the customized element.
    */
   expression: Expression;
@@ -557,6 +761,12 @@ export interface ActivityDefinitionParticipant {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -591,6 +801,11 @@ export interface ActivityDefinitionParticipant {
    * The type of participant in the action.
    */
   type: 'patient' | 'practitioner' | 'related-person' | 'device';
+
+  /**
+   * The type of participant in the action.
+   */
+  _type?: PrimitiveExtension;
 
   /**
    * The role the participant should play in performing the described

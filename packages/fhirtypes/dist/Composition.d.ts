@@ -15,6 +15,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
@@ -45,6 +46,12 @@ export interface Composition {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -60,9 +67,22 @@ export interface Composition {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -122,6 +142,12 @@ export interface Composition {
   status: 'preliminary' | 'final' | 'amended' | 'entered-in-error';
 
   /**
+   * The workflow/clinical status of this composition. The status is a
+   * marker for the clinical standing of the document.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Specifies the particular kind of composition (e.g. History and
    * Physical, Discharge Summary, Progress Note). This usually equates to
    * the purpose of making the composition.
@@ -156,6 +182,12 @@ export interface Composition {
   date: string;
 
   /**
+   * The composition editing time, when the composition was last logically
+   * changed by the author.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * Identifies who is responsible for the information in the composition,
    * not necessarily who typed it in.
    */
@@ -167,9 +199,19 @@ export interface Composition {
   title: string;
 
   /**
+   * Official human-readable label for the composition.
+   */
+  _title?: PrimitiveExtension;
+
+  /**
    * The code specifying the level of confidentiality of the Composition.
    */
   confidentiality?: 'U' | 'L' | 'M' | 'N' | 'R' | 'V';
+
+  /**
+   * The code specifying the level of confidentiality of the Composition.
+   */
+  _confidentiality?: PrimitiveExtension;
 
   /**
    * A participant who has attested to the accuracy of the
@@ -214,6 +256,12 @@ export interface CompositionAttester {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -248,9 +296,19 @@ export interface CompositionAttester {
   mode: 'personal' | 'professional' | 'legal' | 'official';
 
   /**
+   * The type of attestation the authenticator offers.
+   */
+  _mode?: PrimitiveExtension;
+
+  /**
    * When the composition was attested by the party.
    */
   time?: string;
+
+  /**
+   * When the composition was attested by the party.
+   */
+  _time?: PrimitiveExtension;
 
   /**
    * Who attested the composition in the specified way.
@@ -269,6 +327,12 @@ export interface CompositionEvent {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -336,6 +400,12 @@ export interface CompositionRelatesTo {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -371,6 +441,12 @@ export interface CompositionRelatesTo {
   code: 'replaces' | 'transforms' | 'signs' | 'appends';
 
   /**
+   * The type of relationship that this composition has with anther
+   * composition or document.
+   */
+  _code?: PrimitiveExtension;
+
+  /**
    * The target composition/document of this relationship.
    */
   targetIdentifier?: Identifier;
@@ -396,6 +472,12 @@ export interface CompositionSection {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -432,6 +514,13 @@ export interface CompositionSection {
    * of contents.
    */
   title?: string;
+
+  /**
+   * The label for this particular section.  This will be part of the
+   * rendered content for the document, and is often used to build a table
+   * of contents.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * A code identifying the kind of content contained within the section.
@@ -474,6 +563,14 @@ export interface CompositionSection {
    * prepared list where items may be marked as added, modified or deleted.
    */
   mode?: 'working' | 'snapshot' | 'changes';
+
+  /**
+   * How the entry list was prepared - whether it is a working list that is
+   * suitable for being maintained on an ongoing basis, or if it represents
+   * a snapshot of a list of items from another source, or whether it is a
+   * prepared list where items may be marked as added, modified or deleted.
+   */
+  _mode?: PrimitiveExtension;
 
   /**
    * Specifies the order applied to the items in the section entries.

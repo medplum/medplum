@@ -33,6 +33,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Procedure } from './Procedure';
 import { Quantity } from './Quantity';
 import { QuestionnaireResponse } from './QuestionnaireResponse';
@@ -64,6 +65,12 @@ export interface Observation {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -79,9 +86,22 @@ export interface Observation {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -152,6 +172,11 @@ export interface Observation {
   status: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
+   * The status of the result value.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A code that classifies the general type of observation being made.
    */
   category?: CodeableConcept[];
@@ -207,6 +232,15 @@ export interface Observation {
    * of the procedure or of specimen collection, but very often the source
    * of the date/time is not known, only the date/time itself.
    */
+  _effectiveDateTime?: PrimitiveExtension;
+
+  /**
+   * The time or time-period the observed value is asserted as being true.
+   * For biological subjects - e.g. human patients - this is usually called
+   * the &quot;physiologically relevant time&quot;. This is usually either the time
+   * of the procedure or of specimen collection, but very often the source
+   * of the date/time is not known, only the date/time itself.
+   */
   effectivePeriod?: Period;
 
   /**
@@ -228,11 +262,27 @@ export interface Observation {
   effectiveInstant?: string;
 
   /**
+   * The time or time-period the observed value is asserted as being true.
+   * For biological subjects - e.g. human patients - this is usually called
+   * the &quot;physiologically relevant time&quot;. This is usually either the time
+   * of the procedure or of specimen collection, but very often the source
+   * of the date/time is not known, only the date/time itself.
+   */
+  _effectiveInstant?: PrimitiveExtension;
+
+  /**
    * The date and time this version of the observation was made available
    * to providers, typically after the results have been reviewed and
    * verified.
    */
   issued?: string;
+
+  /**
+   * The date and time this version of the observation was made available
+   * to providers, typically after the results have been reviewed and
+   * verified.
+   */
+  _issued?: PrimitiveExtension;
 
   /**
    * Who was responsible for asserting the observed value as &quot;true&quot;.
@@ -261,13 +311,31 @@ export interface Observation {
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
+  _valueString?: PrimitiveExtension;
+
+  /**
+   * The information determined as a result of making the observation, if
+   * the information has a simple value.
+   */
   valueBoolean?: boolean;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * The information determined as a result of making the observation, if
+   * the information has a simple value.
+   */
   valueInteger?: number;
+
+  /**
+   * The information determined as a result of making the observation, if
+   * the information has a simple value.
+   */
+  _valueInteger?: PrimitiveExtension;
 
   /**
    * The information determined as a result of making the observation, if
@@ -297,7 +365,19 @@ export interface Observation {
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
+  _valueTime?: PrimitiveExtension;
+
+  /**
+   * The information determined as a result of making the observation, if
+   * the information has a simple value.
+   */
   valueDateTime?: string;
+
+  /**
+   * The information determined as a result of making the observation, if
+   * the information has a simple value.
+   */
+  _valueDateTime?: PrimitiveExtension;
 
   /**
    * The information determined as a result of making the observation, if
@@ -382,13 +462,13 @@ export interface Observation {
  * of the procedure or of specimen collection, but very often the source
  * of the date/time is not known, only the date/time itself.
  */
-export type ObservationEffective = Period | string | Timing;
+export type ObservationEffective = Period | PrimitiveExtension | string | Timing;
 
 /**
  * The information determined as a result of making the observation, if
  * the information has a simple value.
  */
-export type ObservationValue = boolean | CodeableConcept | number | Period | Quantity | Range | Ratio | SampledData | string;
+export type ObservationValue = boolean | CodeableConcept | number | Period | PrimitiveExtension | Quantity | Range | Ratio | SampledData | string;
 
 /**
  * Some observations have multiple component observations.  These
@@ -404,6 +484,12 @@ export interface ObservationComponent {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -462,13 +548,31 @@ export interface ObservationComponent {
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
+  _valueString?: PrimitiveExtension;
+
+  /**
+   * The information determined as a result of making the observation, if
+   * the information has a simple value.
+   */
   valueBoolean?: boolean;
 
   /**
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * The information determined as a result of making the observation, if
+   * the information has a simple value.
+   */
   valueInteger?: number;
+
+  /**
+   * The information determined as a result of making the observation, if
+   * the information has a simple value.
+   */
+  _valueInteger?: PrimitiveExtension;
 
   /**
    * The information determined as a result of making the observation, if
@@ -498,7 +602,19 @@ export interface ObservationComponent {
    * The information determined as a result of making the observation, if
    * the information has a simple value.
    */
+  _valueTime?: PrimitiveExtension;
+
+  /**
+   * The information determined as a result of making the observation, if
+   * the information has a simple value.
+   */
   valueDateTime?: string;
+
+  /**
+   * The information determined as a result of making the observation, if
+   * the information has a simple value.
+   */
+  _valueDateTime?: PrimitiveExtension;
 
   /**
    * The information determined as a result of making the observation, if
@@ -529,7 +645,7 @@ export interface ObservationComponent {
  * The information determined as a result of making the observation, if
  * the information has a simple value.
  */
-export type ObservationComponentValue = boolean | CodeableConcept | number | Period | Quantity | Range | Ratio | SampledData | string;
+export type ObservationComponentValue = boolean | CodeableConcept | number | Period | PrimitiveExtension | Quantity | Range | Ratio | SampledData | string;
 
 /**
  * Guidance on how to interpret the value by comparison to a normal or
@@ -544,6 +660,12 @@ export interface ObservationReferenceRange {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -619,4 +741,12 @@ export interface ObservationReferenceRange {
    * &quot;normals&quot;.
    */
   text?: string;
+
+  /**
+   * Text based reference range in an observation which may be used when a
+   * quantitative range is not appropriate for an observation.  An example
+   * would be a reference value of &quot;Negative&quot; or a list or table of
+   * &quot;normals&quot;.
+   */
+  _text?: PrimitiveExtension;
 }

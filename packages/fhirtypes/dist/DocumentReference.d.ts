@@ -19,6 +19,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
@@ -45,6 +46,12 @@ export interface DocumentReference {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -60,9 +67,22 @@ export interface DocumentReference {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -129,9 +149,19 @@ export interface DocumentReference {
   status: 'current' | 'superseded' | 'entered-in-error';
 
   /**
+   * The status of this document reference.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The status of the underlying document.
    */
   docStatus?: 'preliminary' | 'final' | 'amended' | 'entered-in-error';
+
+  /**
+   * The status of the underlying document.
+   */
+  _docStatus?: PrimitiveExtension;
 
   /**
    * Specifies the particular kind of document referenced  (e.g. History
@@ -161,6 +191,11 @@ export interface DocumentReference {
   date?: string;
 
   /**
+   * When the document reference was created.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * Identifies who is responsible for adding the information to the
    * document.
    */
@@ -188,6 +223,11 @@ export interface DocumentReference {
    * Human-readable description of the source document.
    */
   description?: string;
+
+  /**
+   * Human-readable description of the source document.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * A set of Security-Tag codes specifying the level of privacy/security
@@ -221,6 +261,12 @@ export interface DocumentReferenceContent {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -275,6 +321,12 @@ export interface DocumentReferenceContext {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -363,6 +415,12 @@ export interface DocumentReferenceRelatesTo {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -395,6 +453,11 @@ export interface DocumentReferenceRelatesTo {
    * The type of relationship that this document has with anther document.
    */
   code: 'replaces' | 'transforms' | 'signs' | 'appends';
+
+  /**
+   * The type of relationship that this document has with anther document.
+   */
+  _code?: PrimitiveExtension;
 
   /**
    * The target document of this relationship.

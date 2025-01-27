@@ -8,6 +8,7 @@ import { Extension } from './Extension';
 import { IdentityProvider } from './IdentityProvider';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 
 /**
@@ -27,6 +28,12 @@ export interface ClientApplication {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -42,9 +49,22 @@ export interface ClientApplication {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -100,14 +120,32 @@ export interface ClientApplication {
   status?: 'active' | 'off' | 'error';
 
   /**
+   * The client application status. The status is active by default. The
+   * status can be set to error to indicate that the client application is
+   * not working properly. The status can be set to off to indicate that
+   * the client application is no longer in use.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A name associated with the ClientApplication.
    */
   name?: string;
 
   /**
+   * A name associated with the ClientApplication.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A summary, characterization or explanation of the ClientApplication.
    */
   description?: string;
+
+  /**
+   * A summary, characterization or explanation of the ClientApplication.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Custom values for the Log In form.
@@ -120,10 +158,21 @@ export interface ClientApplication {
   secret?: string;
 
   /**
+   * Client secret string used to verify the identity of a client.
+   */
+  _secret?: PrimitiveExtension;
+
+  /**
    * Optional JWKS URI for public key verification of JWTs issued by the
    * authorization server (client_secret_jwt).
    */
   jwksUri?: string;
+
+  /**
+   * Optional JWKS URI for public key verification of JWTs issued by the
+   * authorization server (client_secret_jwt).
+   */
+  _jwksUri?: PrimitiveExtension;
 
   /**
    * Optional redirect URI used when redirecting a client back to the
@@ -132,9 +181,20 @@ export interface ClientApplication {
   redirectUri?: string;
 
   /**
+   * Optional redirect URI used when redirecting a client back to the
+   * client application.
+   */
+  _redirectUri?: PrimitiveExtension;
+
+  /**
    * Optional launch URI for SMART EHR launch sequence.
    */
   launchUri?: string;
+
+  /**
+   * Optional launch URI for SMART EHR launch sequence.
+   */
+  _launchUri?: PrimitiveExtension;
 
   /**
    * Flag to make PKCE optional for this client application. PKCE is
@@ -142,6 +202,13 @@ export interface ClientApplication {
    * disabled for compatibility with legacy client applications.
    */
   pkceOptional?: boolean;
+
+  /**
+   * Flag to make PKCE optional for this client application. PKCE is
+   * required by default for compliance with Smart App Launch. It can be
+   * disabled for compatibility with legacy client applications.
+   */
+  _pkceOptional?: PrimitiveExtension;
 
   /**
    * Optional external Identity Provider (IdP) for the client application.
@@ -152,6 +219,11 @@ export interface ClientApplication {
    * Optional configuration to set the refresh token duration
    */
   refreshTokenLifetime?: string;
+
+  /**
+   * Optional configuration to set the refresh token duration
+   */
+  _refreshTokenLifetime?: PrimitiveExtension;
 }
 
 /**
@@ -163,6 +235,11 @@ export interface ClientApplicationSignInForm {
    * Welcome string for the Log In Form.
    */
   welcomeString?: string;
+
+  /**
+   * Welcome string for the Log In Form.
+   */
+  _welcomeString?: PrimitiveExtension;
 
   /**
    * Logo for the Log In Form.

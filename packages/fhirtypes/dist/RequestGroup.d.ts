@@ -23,6 +23,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
@@ -49,6 +50,12 @@ export interface RequestGroup {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -64,9 +71,22 @@ export interface RequestGroup {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -127,11 +147,25 @@ export interface RequestGroup {
   instantiatesCanonical?: string[];
 
   /**
+   * A canonical URL referencing a FHIR-defined protocol, guideline,
+   * orderset or other definition that is adhered to in whole or in part by
+   * this request.
+   */
+  _instantiatesCanonical?: (PrimitiveExtension | null)[];
+
+  /**
    * A URL referencing an externally defined protocol, guideline, orderset
    * or other definition that is adhered to in whole or in part by this
    * request.
    */
   instantiatesUri?: string[];
+
+  /**
+   * A URL referencing an externally defined protocol, guideline, orderset
+   * or other definition that is adhered to in whole or in part by this
+   * request.
+   */
+  _instantiatesUri?: (PrimitiveExtension | null)[];
 
   /**
    * A plan, proposal or order that is fulfilled in whole or in part by
@@ -159,16 +193,34 @@ export interface RequestGroup {
   status: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
+   * The current state of the request. For request groups, the status
+   * reflects the status of all the requests in the group.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Indicates the level of authority/intentionality associated with the
    * request and where the request fits into the workflow chain.
    */
   intent: 'proposal' | 'plan' | 'directive' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
+   * Indicates the level of authority/intentionality associated with the
+   * request and where the request fits into the workflow chain.
+   */
+  _intent?: PrimitiveExtension;
+
+  /**
    * Indicates how quickly the request should be addressed with respect to
    * other requests.
    */
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
+
+  /**
+   * Indicates how quickly the request should be addressed with respect to
+   * other requests.
+   */
+  _priority?: PrimitiveExtension;
 
   /**
    * A code that identifies what the overall request group is.
@@ -189,6 +241,11 @@ export interface RequestGroup {
    * Indicates when the request group was created.
    */
   authoredOn?: string;
+
+  /**
+   * Indicates when the request group was created.
+   */
+  _authoredOn?: PrimitiveExtension;
 
   /**
    * Provides a reference to the author of the request group.
@@ -230,6 +287,12 @@ export interface RequestGroupAction {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -264,15 +327,31 @@ export interface RequestGroupAction {
   prefix?: string;
 
   /**
+   * A user-visible prefix for the action.
+   */
+  _prefix?: PrimitiveExtension;
+
+  /**
    * The title of the action displayed to a user.
    */
   title?: string;
+
+  /**
+   * The title of the action displayed to a user.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * A short description of the action used to provide a summary to display
    * to the user.
    */
   description?: string;
+
+  /**
+   * A short description of the action used to provide a summary to display
+   * to the user.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * A text equivalent of the action to be performed. This provides a
@@ -283,10 +362,24 @@ export interface RequestGroupAction {
   textEquivalent?: string;
 
   /**
+   * A text equivalent of the action to be performed. This provides a
+   * human-interpretable description of the action when the definition is
+   * consumed by a system that might not be capable of interpreting it
+   * dynamically.
+   */
+  _textEquivalent?: PrimitiveExtension;
+
+  /**
    * Indicates how quickly the action should be addressed with respect to
    * other actions.
    */
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
+
+  /**
+   * Indicates how quickly the action should be addressed with respect to
+   * other actions.
+   */
+  _priority?: PrimitiveExtension;
 
   /**
    * A code that provides meaning for the action or action group. For
@@ -318,6 +411,11 @@ export interface RequestGroupAction {
    * An optional value describing when the action should be performed.
    */
   timingDateTime?: string;
+
+  /**
+   * An optional value describing when the action should be performed.
+   */
+  _timingDateTime?: PrimitiveExtension;
 
   /**
    * An optional value describing when the action should be performed.
@@ -360,9 +458,19 @@ export interface RequestGroupAction {
   groupingBehavior?: 'visual-group' | 'logical-group' | 'sentence-group';
 
   /**
+   * Defines the grouping behavior for the action and its children.
+   */
+  _groupingBehavior?: PrimitiveExtension;
+
+  /**
    * Defines the selection behavior for the action and its children.
    */
   selectionBehavior?: 'any' | 'all' | 'all-or-none' | 'exactly-one' | 'at-most-one' | 'one-or-more';
+
+  /**
+   * Defines the selection behavior for the action and its children.
+   */
+  _selectionBehavior?: PrimitiveExtension;
 
   /**
    * Defines expectations around whether an action is required.
@@ -370,14 +478,29 @@ export interface RequestGroupAction {
   requiredBehavior?: 'must' | 'could' | 'must-unless-documented';
 
   /**
+   * Defines expectations around whether an action is required.
+   */
+  _requiredBehavior?: PrimitiveExtension;
+
+  /**
    * Defines whether the action should usually be preselected.
    */
   precheckBehavior?: 'yes' | 'no';
 
   /**
+   * Defines whether the action should usually be preselected.
+   */
+  _precheckBehavior?: PrimitiveExtension;
+
+  /**
    * Defines whether the action can be selected multiple times.
    */
   cardinalityBehavior?: 'single' | 'multiple';
+
+  /**
+   * Defines whether the action can be selected multiple times.
+   */
+  _cardinalityBehavior?: PrimitiveExtension;
 
   /**
    * The resource that is the target of the action (e.g.
@@ -394,7 +517,7 @@ export interface RequestGroupAction {
 /**
  * An optional value describing when the action should be performed.
  */
-export type RequestGroupActionTiming = Age | Duration | Period | Range | string | Timing;
+export type RequestGroupActionTiming = Age | Duration | Period | PrimitiveExtension | Range | string | Timing;
 
 /**
  * An expression that describes applicability criteria, or start/stop
@@ -407,6 +530,12 @@ export interface RequestGroupActionCondition {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -443,6 +572,11 @@ export interface RequestGroupActionCondition {
   kind: 'applicability' | 'start' | 'stop';
 
   /**
+   * The kind of condition.
+   */
+  _kind?: PrimitiveExtension;
+
+  /**
    * An expression that returns true or false, indicating whether or not
    * the condition is satisfied.
    */
@@ -460,6 +594,12 @@ export interface RequestGroupActionRelatedAction {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -496,10 +636,20 @@ export interface RequestGroupActionRelatedAction {
   actionId: string;
 
   /**
+   * The element id of the action this is related to.
+   */
+  _actionId?: PrimitiveExtension;
+
+  /**
    * The relationship of this action to the related action.
    */
   relationship: 'before-start' | 'before' | 'before-end' | 'concurrent-with-start' | 'concurrent' |
       'concurrent-with-end' | 'after-start' | 'after' | 'after-end';
+
+  /**
+   * The relationship of this action to the related action.
+   */
+  _relationship?: PrimitiveExtension;
 
   /**
    * A duration or range of durations to apply to the relationship. For

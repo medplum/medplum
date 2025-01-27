@@ -16,6 +16,7 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
@@ -41,6 +42,12 @@ export interface EvidenceVariable {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -56,9 +63,22 @@ export interface EvidenceVariable {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -117,6 +137,17 @@ export interface EvidenceVariable {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this evidence variable when
+   * it is referenced in a specification, model, design or an instance;
+   * also called its canonical identifier. This SHOULD be globally unique
+   * and SHOULD be a literal address at which at which an authoritative
+   * instance of this evidence variable is (or will be) published. This URL
+   * can be the target of a canonical reference. It SHALL remain the same
+   * when the evidence variable is stored on different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this evidence variable
    * when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
@@ -139,6 +170,21 @@ export interface EvidenceVariable {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the evidence
+   * variable when it is referenced in a specification, model, design or
+   * instance. This is an arbitrary value managed by the evidence variable
+   * author and is not expected to be globally unique. For example, it
+   * might be a timestamp (e.g. yyyymmdd) if a managed version is not
+   * available. There is also no expectation that versions can be placed in
+   * a lexicographical sequence. To provide a version consistent with the
+   * Decision Support Service specification, use the format
+   * Major.Minor.Revision (e.g. 1.0.0). For more information on versioning
+   * knowledge assets, refer to the Decision Support Service specification.
+   * Note that a version is required for non-experimental active artifacts.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the evidence variable. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
@@ -146,9 +192,21 @@ export interface EvidenceVariable {
   name?: string;
 
   /**
+   * A natural language name identifying the evidence variable. This name
+   * should be usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A short, descriptive, user-friendly title for the evidence variable.
    */
   title?: string;
+
+  /**
+   * A short, descriptive, user-friendly title for the evidence variable.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * The short title provides an alternate title for use in informal
@@ -157,16 +215,34 @@ export interface EvidenceVariable {
   shortTitle?: string;
 
   /**
+   * The short title provides an alternate title for use in informal
+   * descriptive contexts where the full, formal title is not necessary.
+   */
+  _shortTitle?: PrimitiveExtension;
+
+  /**
    * An explanatory or alternate title for the EvidenceVariable giving
    * additional information about its content.
    */
   subtitle?: string;
 
   /**
+   * An explanatory or alternate title for the EvidenceVariable giving
+   * additional information about its content.
+   */
+  _subtitle?: PrimitiveExtension;
+
+  /**
    * The status of this evidence variable. Enables tracking the life-cycle
    * of the content.
    */
   status: 'draft' | 'active' | 'retired' | 'unknown';
+
+  /**
+   * The status of this evidence variable. Enables tracking the life-cycle
+   * of the content.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * The date  (and optionally time) when the evidence variable was
@@ -177,10 +253,24 @@ export interface EvidenceVariable {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the evidence variable was
+   * published. The date must change when the business version changes and
+   * it must change if the status code changes. In addition, it should
+   * change when the substantive content of the evidence variable changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the evidence
    * variable.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the evidence
+   * variable.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -193,6 +283,12 @@ export interface EvidenceVariable {
    * a consumer's perspective.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the evidence variable from
+   * a consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * A human-readable string to clarify or explain concepts about the
@@ -223,6 +319,13 @@ export interface EvidenceVariable {
   copyright?: string;
 
   /**
+   * A copyright statement relating to the evidence variable and/or its
+   * contents. Copyright statements are generally legal restrictions on the
+   * use and publishing of the evidence variable.
+   */
+  _copyright?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
@@ -230,11 +333,25 @@ export interface EvidenceVariable {
   approvalDate?: string;
 
   /**
+   * The date on which the resource content was approved by the publisher.
+   * Approval happens once when the content is officially approved for
+   * usage.
+   */
+  _approvalDate?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
   lastReviewDate?: string;
+
+  /**
+   * The date on which the resource content was last reviewed. Review
+   * happens periodically after approval but does not change the original
+   * approval date.
+   */
+  _lastReviewDate?: PrimitiveExtension;
 
   /**
    * The period during which the evidence variable content was or is
@@ -286,6 +403,12 @@ export interface EvidenceVariable {
   type?: 'dichotomous' | 'continuous' | 'descriptive';
 
   /**
+   * The type of evidence element, a population, an exposure, or an
+   * outcome.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * A defining factor of the EvidenceVariable. Multiple characteristics
    * are applied with &quot;and&quot; semantics.
    */
@@ -303,6 +426,12 @@ export interface EvidenceVariableCharacteristic {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -339,10 +468,21 @@ export interface EvidenceVariableCharacteristic {
   linkId?: string;
 
   /**
+   * Label used for when a characteristic refers to another characteristic.
+   */
+  _linkId?: PrimitiveExtension;
+
+  /**
    * A short, natural language description of the characteristic that could
    * be used to communicate the criteria to an end-user.
    */
   description?: string;
+
+  /**
+   * A short, natural language description of the characteristic that could
+   * be used to communicate the criteria to an end-user.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * A human-readable string to clarify or explain concepts about the
@@ -358,6 +498,13 @@ export interface EvidenceVariableCharacteristic {
   exclude?: boolean;
 
   /**
+   * When true, this characteristic is an exclusion criterion. In other
+   * words, not matching this characteristic definition is equivalent to
+   * meeting this criterion.
+   */
+  _exclude?: PrimitiveExtension;
+
+  /**
    * Defines the characteristic using a Reference.
    */
   definitionReference?: Reference<EvidenceVariable | Group | Evidence>;
@@ -366,6 +513,11 @@ export interface EvidenceVariableCharacteristic {
    * Defines the characteristic using Canonical.
    */
   definitionCanonical?: string;
+
+  /**
+   * Defines the characteristic using Canonical.
+   */
+  _definitionCanonical?: PrimitiveExtension;
 
   /**
    * Defines the characteristic using CodeableConcept.
@@ -381,6 +533,11 @@ export interface EvidenceVariableCharacteristic {
    * Defines the characteristic using id.
    */
   definitionId?: string;
+
+  /**
+   * Defines the characteristic using id.
+   */
+  _definitionId?: PrimitiveExtension;
 
   /**
    * Defines the characteristic using both a type and value[x] elements.
@@ -442,6 +599,12 @@ export interface EvidenceVariableCharacteristicDefinitionByCombination {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and managable, there is a strict set of governance applied to the
@@ -477,9 +640,20 @@ export interface EvidenceVariableCharacteristicDefinitionByCombination {
   code: string;
 
   /**
+   * Used to specify if two or more characteristics are combined with OR or
+   * AND.
+   */
+  _code?: PrimitiveExtension;
+
+  /**
    * Provides the value of &quot;n&quot; when &quot;at-least&quot; or &quot;at-most&quot; codes are used.
    */
   threshold?: number;
+
+  /**
+   * Provides the value of &quot;n&quot; when &quot;at-least&quot; or &quot;at-most&quot; codes are used.
+   */
+  _threshold?: PrimitiveExtension;
 
   /**
    * A defining factor of the characteristic.
@@ -497,6 +671,12 @@ export interface EvidenceVariableCharacteristicDefinitionByTypeAndValue {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -555,6 +735,11 @@ export interface EvidenceVariableCharacteristicDefinitionByTypeAndValue {
   /**
    * Defines the characteristic when paired with characteristic.type.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * Defines the characteristic when paired with characteristic.type.
+   */
   valueQuantity?: Quantity;
 
   /**
@@ -573,6 +758,11 @@ export interface EvidenceVariableCharacteristicDefinitionByTypeAndValue {
   valueId?: string;
 
   /**
+   * Defines the characteristic when paired with characteristic.type.
+   */
+  _valueId?: PrimitiveExtension;
+
+  /**
    * Defines the reference point for comparison when valueQuantity or
    * valueRange is not compared to zero.
    */
@@ -582,7 +772,8 @@ export interface EvidenceVariableCharacteristicDefinitionByTypeAndValue {
 /**
  * Defines the characteristic when paired with characteristic.type.
  */
-export type EvidenceVariableCharacteristicDefinitionByTypeAndValueValue = boolean | CodeableConcept | Quantity | Range | Reference | string;
+export type EvidenceVariableCharacteristicDefinitionByTypeAndValueValue = boolean | CodeableConcept | PrimitiveExtension
+    | Quantity | Range | Reference | string;
 
 /**
  * Timing in which the characteristic is determined.
@@ -594,6 +785,12 @@ export interface EvidenceVariableCharacteristicTimeFromEvent {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -630,6 +827,11 @@ export interface EvidenceVariableCharacteristicTimeFromEvent {
   description?: string;
 
   /**
+   * Human readable description.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * A human-readable string to clarify or explain concepts about the
    * timeFromEvent.
    */
@@ -653,7 +855,17 @@ export interface EvidenceVariableCharacteristicTimeFromEvent {
   /**
    * The event used as a base point (reference point) in time.
    */
+  _eventDateTime?: PrimitiveExtension;
+
+  /**
+   * The event used as a base point (reference point) in time.
+   */
   eventId?: string;
+
+  /**
+   * The event used as a base point (reference point) in time.
+   */
+  _eventId?: PrimitiveExtension;
 
   /**
    * Used to express the observation at a defined amount of time before or
@@ -671,4 +883,4 @@ export interface EvidenceVariableCharacteristicTimeFromEvent {
 /**
  * The event used as a base point (reference point) in time.
  */
-export type EvidenceVariableCharacteristicTimeFromEventEvent = CodeableConcept | Reference | string;
+export type EvidenceVariableCharacteristicTimeFromEventEvent = CodeableConcept | PrimitiveExtension | Reference | string;
