@@ -14,17 +14,7 @@ export const EncounterChart = (): JSX.Element => {
   const medplum = useMedplum();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [status, setStatus] = useState<
-    | 'planned'
-    | 'arrived'
-    | 'triaged'
-    | 'in-progress'
-    | 'onleave'
-    | 'finished'
-    | 'cancelled'
-    | 'entered-in-error'
-    | 'unknown'
-  >('planned');
+  const [status, setStatus] = useState<Task['status'] | undefined>();
 
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {

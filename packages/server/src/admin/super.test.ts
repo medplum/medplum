@@ -1,8 +1,8 @@
 import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
-import { Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { Job } from 'bullmq';
-import { randomUUID } from 'crypto';
+import { Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { Job, Queue } from 'bullmq';
 import express from 'express';
+import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
@@ -16,6 +16,7 @@ import { rebuildR4SearchParameters } from '../seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from '../seeds/structuredefinitions';
 import { rebuildR4ValueSets } from '../seeds/valuesets';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../test.setup';
+import { CronJobData, getCronQueue } from '../workers/cron';
 import { getReindexQueue, ReindexJob, ReindexJobData } from '../workers/reindex';
 import { isValidTableName } from './super';
 
@@ -881,6 +882,51 @@ describe('Super Admin routes', () => {
       expect(res1.status).toStrictEqual(400);
       expect(res1.headers['content-location']).not.toBeDefined();
       expect(res1.body).toMatchObject(badRequest('Operation requires "Prefer: respond-async"'));
+    });
+  });
+
+  describe('Reload cron', () => {
+    test('Happy path', async () => {
+      const cronQueue = getCronQueue() as Queue<CronJobData>;
+      expect(cronQueue).toBeDefined();
+
+      const res1 = await request(app)
+        .post('/fhir/R4/Bot')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .type('json')
+        .send({ resourceType: 'Bot', cronString: '*/20 * * * *' } satisfies Bot);
+
+      expect(res1.status).toStrictEqual(201);
+      expect(res1.body).toBeDefined();
+
+      const bot = res1.body as Bot & { id: string };
+
+      const obliterateSpy = jest.spyOn(cronQueue, 'obliterate');
+      const upsertJobSchedulerSpy = jest.spyOn(cronQueue, 'upsertJobScheduler');
+
+      const res2 = await request(app)
+        .post('/admin/super/reloadcron')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json');
+
+      expect(res2.status).toStrictEqual(202);
+      expect(res2.headers['content-location']).toBeDefined();
+      await waitForAsyncJob(res2.headers['content-location'], app, adminAccessToken);
+
+      expect(obliterateSpy).toHaveBeenCalledWith({ force: true });
+      expect(upsertJobSchedulerSpy).toHaveBeenCalledWith(
+        bot.id,
+        {
+          pattern: '*/20 * * * *',
+        },
+        {
+          data: {
+            resourceType: bot.resourceType,
+            botId: bot.id,
+          },
+        }
+      );
     });
   });
 });

@@ -1,6 +1,6 @@
 {
   "name": "@medplum/expo-polyfills",
-  "version": "3.2.27",
+  "version": "3.2.28",
   "description": "A module for polyfilling the minimum necessary web APIs for using the Medplum client on React Native",
   "keywords": [
     "react-native",
@@ -48,7 +48,7 @@
     "text-encoding": "0.7.0"
   },
   "devDependencies": {
-    "@medplum/core": "3.2.27",
+    "@medplum/core": "3.2.28",
     "@types/base-64": "1.0.2",
     "@types/react": "18.3.12",
     "@types/text-encoding": "0.0.40",
@@ -66,7 +66,7 @@
     "ts-jest": "29.2.5"
   },
   "peerDependencies": {
-    "@medplum/core": "3.2.27",
+    "@medplum/core": "3.2.28",
     "expo": "*",
     "expo-crypto": "*",
     "expo-secure-store": "*",

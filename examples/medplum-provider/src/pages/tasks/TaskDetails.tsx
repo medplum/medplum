@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Card, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { usePatient } from '../../hooks/usePatient';
-import { formatHumanName } from '@medplum/core';
+import { formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { notifications } from '@mantine/notifications';
-import { IconCircleOff } from '@tabler/icons-react';
+import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 export const TaskDetails = (): JSX.Element => {
   const { taskId } = useParams();
@@ -15,20 +15,33 @@ export const TaskDetails = (): JSX.Element => {
   const navigate = useNavigate();
   const [task, setTask] = useState<Task | undefined>(undefined);
   const [isOpened, setIsOpened] = useState(true);
+  const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
+  const [dueDate, setDueDate] = useState<string | undefined>();
   const [status, setStatus] = useState<Task['status'] | undefined>();
+  const [note, setNote] = useState<string>('');
 
   useEffect(() => {
     const fetchTask = async (): Promise<void> => {
       const task = await medplum.readResource('Task', taskId as string);
       setStatus(task.status as typeof status);
       setTask(task);
+      setDueDate(task.restriction?.period?.end);
+
+      console.log(task);
     };
 
-    fetchTask().catch(console.error);
+    fetchTask().catch((err) => {
+      notifications.show({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
   }, [medplum, taskId]);
 
   const handleOnSubmit = async (): Promise<void> => {
-    if (!task || !status) {
+    if (!task) {
       return;
     }
 
@@ -36,12 +49,32 @@ export const TaskDetails = (): JSX.Element => {
       ...task,
     };
 
-    if (task.status !== status) {
+    const trimmedNote = note.trim();
+    if (trimmedNote !== '') {
+      updatedTask.note = [
+        ...(task.note || []),
+        {
+          text: trimmedNote,
+        },
+      ];
+    }
+
+    if (status) {
       updatedTask.status = status;
+    }
+
+    if (practitioner) {
+      updatedTask.owner = { reference: getReferenceString(practitioner) } as Reference<Practitioner>;
     }
 
     try {
       await medplum.updateResource(updatedTask);
+      notifications.show({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Task updated',
+      });
+      setTask(updatedTask);
       navigate(-1);
     } catch {
       notifications.show({
@@ -86,15 +119,18 @@ export const TaskDetails = (): JSX.Element => {
               name="practitioner"
               resourceType="Practitioner"
               label="Assigned to"
-              // onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
+              defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
+              onChange={(value) => {
+                setPractitioner(value as Practitioner);
+              }}
             />
 
             <DateTimeInput
               name="Due Date"
               placeholder="End"
-              label='Due Date'
-              // defaultValue={value?.end}
-              // onChange={(newValue) => setValueWrapper({ ...value, end: newValue })}
+              label="Due Date"
+              defaultValue={dueDate}
+              onChange={setDueDate}
             />
 
             {task?.status && (
@@ -116,7 +152,12 @@ export const TaskDetails = (): JSX.Element => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <Stack gap="sm">
             <Text>Note</Text>
-            <Textarea placeholder="Add note" minRows={3} />
+            <Textarea
+              placeholder="Add note"
+              minRows={3}
+              value={note}
+              onChange={(event) => setNote(event.currentTarget.value)}
+            />
           </Stack>
         </div>
       </div>

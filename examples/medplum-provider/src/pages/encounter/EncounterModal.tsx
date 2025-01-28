@@ -5,7 +5,7 @@ import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Coding, Encounter, PlanDefinition, Task, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { usePatient } from '../../hooks/usePatient';
 
 export const EncounterModal = (): JSX.Element => {
