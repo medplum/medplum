@@ -19,11 +19,11 @@ export const EncounterChart = (): JSX.Element => {
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
       const encounterResult = await medplum.readResource('Encounter', encounterId as string);
-        setEncounter(encounterResult);
-        setStatus(encounterResult.status as typeof status);
+      setEncounter(encounterResult);
+      setStatus(encounterResult.status as typeof status);
 
-        const taskResult = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
-        setTasks(taskResult);
+      const taskResult = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
+      setTasks(taskResult);
     };
 
     fetchTasks().catch((err) => {
@@ -118,18 +118,16 @@ export const EncounterChart = (): JSX.Element => {
                 // onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
               />
             </div>
-            
+
             <div>
-            <Text fw={500} mb="xs">
-              Encounter Time
-            </Text>
-            <Select placeholder="1 hour" data={['30 minutes', '1 hour', '2 hours']} />
-          </div>
+              <Text fw={500} mb="xs">
+                Encounter Time
+              </Text>
+              <Select placeholder="1 hour" data={['30 minutes', '1 hour', '2 hours']} />
+            </div>
 
             <Stack gap="md">
-              <Button  fullWidth>
-                Save changes
-              </Button>
+              <Button fullWidth>Save changes</Button>
 
               <Group gap="sm">
                 <Button variant="light" color="gray" fullWidth>
