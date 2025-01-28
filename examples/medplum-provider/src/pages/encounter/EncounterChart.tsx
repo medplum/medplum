@@ -111,11 +111,7 @@ export const EncounterChart = (): JSX.Element => {
             </div>
 
             <div>
-              <ResourceInput
-                name="practitioner"
-                resourceType="Practitioner"
-                label="Assigned practitioner"
-              />
+              <ResourceInput name="practitioner" resourceType="Practitioner" label="Assigned practitioner" />
             </div>
 
             <div>
