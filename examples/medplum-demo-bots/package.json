@@ -42,6 +42,7 @@
     "@vitest/ui": "3.0.4",
     "esbuild": "0.24.2",
     "fast-glob": "3.3.3",
+    "fast-xml-parser": "4.5.1",
     "form-data": "4.0.1",
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.18",
