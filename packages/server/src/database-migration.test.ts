@@ -2,6 +2,7 @@ import { deepClone, parseSearchRequest, sleep } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Pool, PoolConfig } from 'pg';
 import { initAppServices, shutdownApp } from './app';
+import * as configModule from './config';
 import { loadTestConfig, MedplumServerConfig } from './config';
 import { getPendingDataMigration, markPendingDataMigrationCompleted, maybeStartDataMigration } from './database';
 import { getSystemRepo, Repository } from './fhir/repo';
@@ -141,13 +142,19 @@ describe('Database migrations', () => {
     test('Schema migrations did not run', () =>
       withTestContext(async () => {
         await expect(maybeStartDataMigration()).rejects.toThrow(
-          'Cannot run data migration; config.runMigrations may be false and has prevented schema migrations from running'
+          'Cannot run data migration; schema migrations did not run'
         );
       }));
   });
 
   describe('maybeStartDataMigration -- Schema migrations ran', () => {
+    let getConfigSpy: jest.SpyInstance;
+
     beforeEach(async () => {
+      getConfigSpy = jest.spyOn(configModule, 'getConfig').mockImplementation(() => {
+        return migrationsConfig;
+      });
+
       await initAppServices(migrationsConfig);
 
       // Delete all data migration jobs
@@ -162,6 +169,7 @@ describe('Database migrations', () => {
 
     afterEach(async () => {
       await shutdownApp();
+      getConfigSpy.mockRestore();
     });
 
     test('No data migration in progress -- start migration job', () =>
@@ -245,7 +253,7 @@ describe('Database migrations', () => {
         await expect(maybeStartDataMigration(1)).resolves.toBeUndefined();
       }));
 
-    test.only('Asserted version is greater than current version AND there is NO pending migration', () =>
+    test('Asserted version is greater than current version AND there is NO pending migration', () =>
       withTestContext(async () => {
         await markPendingDataMigrationCompleted({
           resourceType: 'AsyncJob',
@@ -270,7 +278,7 @@ describe('Database migrations', () => {
           )
         ).resolves.toBeUndefined();
 
-        expect(getPendingDataMigration()).toStrictEqual(1);
+        expect(await getPendingDataMigration()).toStrictEqual(1);
 
         await expect(maybeStartDataMigration(2)).rejects.toThrow(
           'Data migration assertion failed. Expected pending migration to be migration 2, server has current pending data migration 1'

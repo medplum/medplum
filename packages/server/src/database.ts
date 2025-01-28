@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Pool, PoolClient } from 'pg';
 import * as semver from 'semver';
-import { MedplumDatabaseConfig, MedplumServerConfig } from './config';
+import { getConfig, MedplumDatabaseConfig, MedplumServerConfig } from './config';
 import { getSystemRepo } from './fhir/repo';
 import { globalLogger } from './logger';
 import * as dataMigrations from './migrations/data';
@@ -24,15 +24,24 @@ const DataVersion = {
 
 let pool: Pool | undefined;
 let readonlyPool: Pool | undefined;
-let dataVersion: number = DataVersion.UNKNOWN;
-let pendingDataMigration: number = DataVersion.UNKNOWN;
 
-export function getCurrentDataVersion(): number {
-  return dataVersion;
+export async function getDataVersion(): Promise<number> {
+  const result = await getDatabasePool(DatabaseMode.WRITER).query<{ dataVersion?: number }>(
+    'SELECT "dataVersion" FROM "DatabaseMigration";'
+  );
+  return result.rows[0]?.dataVersion ?? DataVersion.UNKNOWN;
 }
 
-export function getPendingDataMigration(): number {
-  return pendingDataMigration;
+export async function getPendingDataMigration(): Promise<number> {
+  const dataVersion = await getDataVersion();
+  if (dataVersion === DataVersion.UNKNOWN) {
+    return dataVersion;
+  }
+  const allDataVersions = getMigrationVersions(dataMigrations);
+  if (allDataVersions.includes(dataVersion + 1)) {
+    return dataVersion + 1;
+  }
+  return DataVersion.NONE;
 }
 
 export async function markPendingDataMigrationCompleted(job: AsyncJob): Promise<void> {
@@ -40,7 +49,6 @@ export async function markPendingDataMigrationCompleted(job: AsyncJob): Promise<
   await getDatabasePool(DatabaseMode.WRITER).query('UPDATE "DatabaseMigration" SET "dataVersion" = $1', [
     job.dataVersion,
   ]);
-  pendingDataMigration = DataVersion.NONE;
 }
 
 export function getDatabasePool(mode: DatabaseMode): Pool {
@@ -61,9 +69,6 @@ export const locks = {
 
 export async function initDatabase(serverConfig: MedplumServerConfig): Promise<void> {
   pool = await initPool(serverConfig.database, serverConfig.databaseProxyEndpoint);
-
-  dataVersion = DataVersion.UNKNOWN;
-  pendingDataMigration = DataVersion.UNKNOWN;
 
   if (serverConfig.database.runMigrations !== false) {
     await runMigrations(pool);
@@ -186,13 +191,12 @@ async function migrate(client: PoolClient): Promise<void> {
   // This generic type is not technically correct, but leads to the desired forced checks for undefined `version` and `dataVersion`
   // Technically pg should infer that rows could have zero length, but adding optionality to all fields forces handling the undefined case when the row is empty
   const result = await client.query<{ version?: number; dataVersion?: number }>(
-    'SELECT "version", "dataVersion" FROM "DatabaseMigration"'
+    'SELECT "version" FROM "DatabaseMigration"'
   );
   let version = result.rows[0]?.version ?? DataVersion.UNKNOWN;
-  dataVersion = result.rows[0]?.dataVersion ?? DataVersion.UNKNOWN;
   const allDataVersions = getMigrationVersions(dataMigrations);
-  pendingDataMigration = DataVersion.NONE;
 
+  const pendingDataMigration = await getPendingDataMigration();
   // If this is the first time the server has been started up (version < 0)
   // We need to initialize our migrations table
   // This also opts us into the fast path for data migrations, so we can skip all checks for server version and go straight to the latest data version
@@ -202,13 +206,10 @@ async function migrate(client: PoolClient): Promise<void> {
       latestDataVersion,
     ]);
     version = 0;
-    dataVersion = latestDataVersion;
-  } else if (allDataVersions.includes(dataVersion + 1)) {
+  } else if (pendingDataMigration > 0) {
     // Before migrating, check if we have pending data migrations to apply
     // We have to check these first since they depend on particular versions of the server code to be present in order
     // To ensure that the migration is applied before at a particular point in time before the version that requires it
-    pendingDataMigration = dataVersion + 1;
-
     const manifest = JSON.parse(
       readFileSync(resolve(__dirname, 'migrations/data/data-version-manifest.json'), { encoding: 'utf-8' })
     ) as Record<string, { serverVersion: string }>;
@@ -260,13 +261,17 @@ function getMigrationVersions(migrationModule: Record<string, any>): number[] {
  * @returns An `AsyncJob` if migration is started or already running, otherwise returns `undefined` if no migration to run.
  */
 export async function maybeStartDataMigration(assertedDataVersion?: number): Promise<AsyncJob | undefined> {
-  // If `config.runMigrations` was false, `pendingDataMigration` will be -1, and we should throw
+  // If schema migrations didn't run, we should not attempt to run data migrations
+  if (getConfig().database.runMigrations === false) {
+    throw new OperationOutcomeError(badRequest('Cannot run data migration; schema migrations did not run'));
+  }
+
+  const dataVersion = await getDataVersion();
+  const pendingDataMigration = await getPendingDataMigration();
+
+  // This should never happen unless there is something wrong with the state of the database but technically possible
   if (pendingDataMigration === DataVersion.UNKNOWN) {
-    throw new OperationOutcomeError(
-      badRequest(
-        'Cannot run data migration; config.runMigrations may be false and has prevented schema migrations from running'
-      )
-    );
+    throw new OperationOutcomeError(badRequest('Cannot run data migration; data version is unknown'));
   }
 
   // If a version has been asserted, check if we have that version pending
@@ -277,6 +282,7 @@ export async function maybeStartDataMigration(assertedDataVersion?: number): Pro
       return undefined;
     }
     // The data version is higher than the version we expect to apply next, we cannot apply this migration
+    // This is also true when pending migration is NONE
     if (assertedDataVersion > pendingDataMigration) {
       throw new OperationOutcomeError(
         badRequest(
