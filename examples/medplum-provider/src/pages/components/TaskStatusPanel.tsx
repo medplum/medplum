@@ -34,15 +34,31 @@ export const TaskStatusPanel = ({ task, isQuestionnaire, onSubmit }: TaskStatusP
           Task details
         </Button>
         <Menu>
-          <Menu.Target>
+          <div style={{ display: 'inline-block' }}>
             <Button
               onClick={onSubmit}
-              variant={isQuestionnaire === true ? 'filled' : 'outline'}
-              rightSection={<IconCaretDownFilled size={14} />}
+              variant={isQuestionnaire ? 'filled' : 'outline'}
+              rightSection={
+                <Menu.Target>
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      padding: '8px',
+                      margin: '-8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <IconCaretDownFilled size={14} />
+                  </div>
+                </Menu.Target>
+              }
             >
-              {isQuestionnaire === true ? 'Save Changes' : 'Edit Task'}
+              {isQuestionnaire ? 'Save Changes' : 'Edit Task'}
             </Button>
-          </Menu.Target>
+          </div>
+
           <Menu.Dropdown>
             <Menu.Item>Edit</Menu.Item>
             <Menu.Item>Delete</Menu.Item>
