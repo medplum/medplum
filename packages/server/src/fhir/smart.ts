@@ -111,7 +111,7 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
 
   if (scope) {
     for (const scopeTerm of scope.split(' ')) {
-      const match = /^(patient|user|system)\/(\w+|\*)\.(\*|c?r?u?d?s?)(\?(([a-zA-Z_-]+=[^&]*&?)+))?$/.exec(scopeTerm);
+      const match = /^(patient|user|system)\/(\w+|\*)\.(\*|c?r?u?d?s?)(\?(([a-zA-Z_-]+=[^&]+&?)+))?$/.exec(scopeTerm);
       if (match) {
         result.push({
           permissionType: match[1] as 'patient' | 'user' | 'system',
