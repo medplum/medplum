@@ -1,6 +1,8 @@
 import { getDataType, InternalTypeSchema } from '@medplum/core';
 import {
   buildCreateTables,
+  ColumnDefinition,
+  columnDefinitionsEqual,
   IndexDefinition,
   indexDefinitionsEqual,
   indexStructureDefinitionsAndSearchParameters,
@@ -17,7 +19,7 @@ describe('Generator', () => {
     });
 
     test('Patient', () => {
-      const result: SchemaDefinition = { tables: [] };
+      const result: SchemaDefinition = { tables: [], functions: [] };
       const dataTypes: [ResourceType, InternalTypeSchema][] = [['Patient', getDataType('Patient')]];
       for (const [resourceType, typeSchema] of dataTypes) {
         buildCreateTables(result, resourceType, typeSchema);
@@ -32,7 +34,18 @@ describe('Generator', () => {
       const table = result.tables.find((t) => t.name === 'Patient') as TableDefinition;
       expect(table).toBeDefined();
 
-      const expectedColumns = [
+      const tokenColumns = [
+        '_security',
+        '_tag',
+        'telecom',
+        'language',
+        'identifier',
+        'organizationIdentifier',
+        'linkIdentifier',
+        'generalPractitionerIdentifier',
+      ];
+
+      const expectedColumns: ColumnDefinition[] = [
         {
           name: 'id',
           type: 'UUID',
@@ -132,9 +145,24 @@ describe('Generator', () => {
           type: 'TEXT[]',
           notNull: false,
         },
+        ...tokenColumns.map((name) => {
+          return {
+            name,
+            defaultValue: 'ARRAY[]::TEXT[]',
+            notNull: true,
+            primaryKey: false,
+            type: 'TEXT[]',
+          };
+        }),
       ];
 
-      expect(table.columns).toStrictEqual(expectedColumns);
+      const sortFn = (a: { name: string }, b: { name: string }): number => a.name.localeCompare(b.name);
+      const actual: ColumnDefinition[] = toSorted(table.columns, sortFn);
+      const expected = toSorted(expectedColumns, sortFn);
+      expect(actual.length).toEqual(expected.length);
+      for (let i = 0; i < actual.length; i++) {
+        expect(columnDefinitionsEqual(actual[i], expected[i])).toBe(true);
+      }
     });
   });
 
@@ -207,3 +235,9 @@ describe('Generator', () => {
     });
   });
 });
+
+function toSorted<T>(array: T[], sortFn: (a: T, b: T) => number): T[] {
+  const newArray = Array.from(array);
+  newArray.sort(sortFn);
+  return newArray;
+}
