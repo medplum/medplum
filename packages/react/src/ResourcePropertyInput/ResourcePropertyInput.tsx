@@ -56,8 +56,6 @@ export function ResourcePropertyInput(props: ResourcePropertyInputProps): JSX.El
       : property.type[0].code;
   const propertyTypes = property.type as ElementDefinitionType[];
 
-  console.log('ResourcePropertyInput', property, name, propertyTypes);
-
   if ((property.isArray || property.max > 1) && !props.arrayElement) {
     if (defaultPropertyType === PropertyType.Attachment) {
       return (

@@ -13,8 +13,6 @@ export const TaskStatusPanel = ({ task, isQuestionnaire, onSubmit }: TaskStatusP
   const theme = useMantineTheme();
   const navigate = useNavigate();
 
-  console.log(task);
-
   return (
     <Group
       justify="space-between"
