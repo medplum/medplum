@@ -180,7 +180,7 @@ describe('SMART on FHIR', () => {
     };
 
     const scope =
-      'patient/Patient.* patient/Practitioner.rus?identifier=http://hl7.org/fhir/sid/us-npi|1234567893 patient/Goal.rs?category=nursing patient/Condition.rus?category=encounter-diagnosis';
+      'patient/Patient.* patient/Practitioner.rus?identifier=http://hl7.org/fhir/sid/us-npi|1234567893 patient/Goal.rs?category=nursing patient/Condition.rus?category=encounter-diagnosis patient/Condition.rus?category=health-concern';
 
     expect(applySmartScopes(startAccessPolicy, scope)).toMatchObject<AccessPolicy>({
       resourceType: 'AccessPolicy',
@@ -212,6 +212,10 @@ describe('SMART on FHIR', () => {
         {
           resourceType: 'Condition',
           criteria: `Condition?_compartment=${compartment}&category=encounter-diagnosis`,
+        },
+        {
+          resourceType: 'Condition',
+          criteria: `Condition?_compartment=${compartment}&category=health-concern`,
         },
       ],
     });
