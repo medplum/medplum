@@ -9,33 +9,27 @@ export function HomePage(): JSX.Element {
   const [searchTerm, setSearchTerm] = useState('');
   const [customValueSet, setCustomValueSet] = useState(`{
   "resourceType": "ValueSet",
-  "url": "http://example.org/custom-allergies",
-  "name": "CustomAllergies",
-  "title": "Custom Allergies Value Set",
+  "id": "rxnorm-branded-drugs",
+  "url": "http://example.org/fhir/ValueSet/rxnorm-branded-drugs",
+  "version": "1.0.0",
+  "name": "RxNormBrandedDrugs",
+  "title": "RxNorm Branded Drug Components",
   "status": "active",
-  "expansion": {
-    "identifier": "http://example.org/custom-allergies",
-    "timestamp": "2024-01-21T00:00:00Z",
-    "contains": [
+  "experimental": false,
+  "date": "2025-01-28",
+  "publisher": "National Library of Medicine",
+  "description": "ValueSet of RxNorm branded drug components",
+  "compose": {
+    "include": [
       {
-        "system": "http://example.org/custom-allergies",
-        "code": "apple",
-        "display": "Apple"
-      },
-      {
-        "system": "http://example.org/custom-allergies",
-        "code": "banana",
-        "display": "Banana"
-      },
-      {
-        "system": "http://example.org/custom-allergies",
-        "code": "peanut",
-        "display": "Peanut"
-      },
-      {
-        "system": "http://example.org/custom-allergies",
-        "code": "shellfish",
-        "display": "Shellfish"
+        "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+        "filter": [
+          {
+            "property": "tty",
+            "op": "in",
+            "value": "BN,SBD,SBDG,BPCK"
+          }
+        ]
       }
     ]
   }
