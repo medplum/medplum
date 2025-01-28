@@ -1,13 +1,15 @@
 import React from 'react';
 import { Group, Stack, Text, Button, Menu, useMantineTheme } from '@mantine/core';
 import { Task } from '@medplum/fhirtypes';
+import { IconCaretDownFilled } from '@tabler/icons-react';
 
 interface TaskStatusPanelProps {
   task: Task;
+  isQuestionnaire?: boolean;
   onSubmit?: () => void;
 }
 
-export const TaskStatusPanel = ({ task, onSubmit }: TaskStatusPanelProps): JSX.Element => {
+export const TaskStatusPanel = ({ task, isQuestionnaire, onSubmit }: TaskStatusPanelProps): JSX.Element => {
   const theme = useMantineTheme();
 
   return (
@@ -33,7 +35,12 @@ export const TaskStatusPanel = ({ task, onSubmit }: TaskStatusPanelProps): JSX.E
         </Button>
         <Menu>
           <Menu.Target>
-            <Button onClick={onSubmit}>Edit task ▾</Button>
+            <Button 
+            onClick={onSubmit} 
+            variant={isQuestionnaire === true ? 'filled' : 'outline'}
+            rightSection={<IconCaretDownFilled size={14} />}>
+            {isQuestionnaire === true ? 'Save Changes' : 'Edit Task'}
+            </Button>
           </Menu.Target>
           <Menu.Dropdown>
             <Menu.Item>Edit</Menu.Item>

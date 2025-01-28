@@ -1,10 +1,10 @@
-import { Select, Button, Text, Stack, Group, Box, Card } from '@mantine/core';
-import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
-import { QuestionnaireForm, useMedplum } from '@medplum/react';
+import { Select, Button, Text, Stack, Group, Box } from '@mantine/core';
+import { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
 import { useParams } from 'react-router-dom';
 import { TaskQuestionnaireForm } from '../components/TaskQuestionnaireForm';
 import { SimpleTask } from '../components/SimpleTask';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff } from '@tabler/icons-react';
@@ -13,12 +13,6 @@ export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
   const medplum = useMedplum();
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
-  const [chartQuestionnaire, setChartQuestionnaire] = useState<Reference<Questionnaire> | undefined>(undefined);
-  const [chartQuestionnaireResponse, setChartQuestionnaireResponse] = useState<
-    Reference<QuestionnaireResponse> | undefined
-  >(undefined);
-  const questionnaireReference = 'Questionnaire/0194903a-74f5-72e9-9063-e38b8276a855';
 
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
@@ -36,44 +30,12 @@ export const EncounterChart = (): JSX.Element => {
     });
   }, [medplum, encounterId]);
 
-  const { filteredTasks, chartNoteTasks } = useMemo(() => {
-    if (!tasks) {
-      return { filteredTasks: [] as Task[], chartNoteTasks: [] as Task[] };
-    }
-
-    return tasks.reduce(
-      (acc, task) => {
-        if (
-          Array.isArray(task.input) &&
-          task.input.length > 0 &&
-          task.input[0]?.valueReference?.reference === questionnaireReference
-        ) {
-          acc.chartNoteTasks.push(task);
-          if (task.output?.[0]?.type?.text === 'QuestionnaireResponse') {
-            setChartQuestionnaireResponse(task.output[0].valueReference as Reference<QuestionnaireResponse>);
-          }
-
-          if (task.input?.[0]?.type?.text === 'Questionnaire') {
-            setChartQuestionnaire(task.input[0].valueReference as Reference<Questionnaire>);
-          }
-        } else {
-          acc.filteredTasks.push(task);
-        }
-        return acc;
-      },
-      { filteredTasks: [] as Task[], chartNoteTasks: [] as Task[] }
-    );
-  }, [tasks]);
-
-  const handleSaveChanges = async (): Promise<void> => {
-    if (!questionnaireResponse) {
-      return;
-    }
-
+  const handleSaveChanges = useCallback(
+    async (task: Task, questionnaireResponse: QuestionnaireResponse): Promise<void> => {
     try {
       const response = await medplum.createResource<QuestionnaireResponse>(questionnaireResponse);
-      const updatedTask = {
-        ...chartNoteTasks[0],
+      const updatedTask = await medplum.updateResource<Task>({
+        ...task,
         output: [
           {
             type: {
@@ -84,10 +46,8 @@ export const EncounterChart = (): JSX.Element => {
             },
           },
         ],
-      };
-
-      const task = await medplum.updateResource<Task>(updatedTask);
-      setTasks((prevTasks) => prevTasks.map((t) => (t.id === task.id ? task : t)));
+      });
+      setTasks((prevTasks) => prevTasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
     } catch (err) {
       showNotification({
         color: 'red',
@@ -96,7 +56,8 @@ export const EncounterChart = (): JSX.Element => {
         message: normalizeErrorString(err),
       });
     }
-  };
+  }, [medplum]);
+  
 
   return (
     <Box p="md">
@@ -106,28 +67,14 @@ export const EncounterChart = (): JSX.Element => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
         <Stack gap="md">
-          <Card withBorder shadow="sm">
-            <Stack gap="md">
-              {chartQuestionnaireResponse ? (
-                <Text size="sm" color="dimmed">
-                  Chart note saved.
-                </Text>
-              ) : null}
-
-              {!chartQuestionnaireResponse && chartQuestionnaire ? (
-                <QuestionnaireForm
-                  questionnaire={chartQuestionnaire}
-                  excludeButtons={true}
-                  onChange={setQuestionnaireResponse}
-                />
-              ) : null}
-            </Stack>
-          </Card>
-
+          
           <Stack gap="md">
-            {filteredTasks?.map((task: Task) =>
+            {tasks?.map((task: Task) =>
               task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-                <TaskQuestionnaireForm key={task.id} task={task} />
+                <TaskQuestionnaireForm 
+                key={task.id} 
+                task={task}
+                onSaveQuestionnaire={handleSaveChanges}  />
               ) : (
                 <SimpleTask key={task.id} task={task} />
               )
@@ -166,7 +113,7 @@ export const EncounterChart = (): JSX.Element => {
           </div>
 
           <Stack gap="md">
-            <Button color="blue" fullWidth onClick={handleSaveChanges}>
+            <Button color="blue" fullWidth>
               Save changes
             </Button>
 
