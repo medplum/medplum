@@ -74,7 +74,6 @@ export const TaskDetails = (): JSX.Element => {
   }, [medplum, taskId]);
 
   const handleOnSubmit = async (): Promise<void> => {
-
     if (!task) {
       return;
     }
@@ -160,12 +159,9 @@ export const TaskDetails = (): JSX.Element => {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <Stack gap="sm">
-          <Text>Note</Text>
-        <Textarea
-            placeholder="Add note"
-            minRows={3}
-          />
-            </Stack>
+            <Text>Note</Text>
+            <Textarea placeholder="Add note" minRows={3} />
+          </Stack>
         </div>
       </div>
 
