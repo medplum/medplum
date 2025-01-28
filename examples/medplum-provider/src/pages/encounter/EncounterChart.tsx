@@ -32,32 +32,33 @@ export const EncounterChart = (): JSX.Element => {
 
   const handleSaveChanges = useCallback(
     async (task: Task, questionnaireResponse: QuestionnaireResponse): Promise<void> => {
-    try {
-      const response = await medplum.createResource<QuestionnaireResponse>(questionnaireResponse);
-      const updatedTask = await medplum.updateResource<Task>({
-        ...task,
-        output: [
-          {
-            type: {
-              text: 'QuestionnaireResponse',
+      try {
+        const response = await medplum.createResource<QuestionnaireResponse>(questionnaireResponse);
+        const updatedTask = await medplum.updateResource<Task>({
+          ...task,
+          output: [
+            {
+              type: {
+                text: 'QuestionnaireResponse',
+              },
+              valueReference: {
+                reference: getReferenceString(response),
+              },
             },
-            valueReference: {
-              reference: getReferenceString(response),
-            },
-          },
-        ],
-      });
-      setTasks((prevTasks) => prevTasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
-    } catch (err) {
-      showNotification({
-        color: 'red',
-        icon: <IconCircleOff />,
-        title: 'Error',
-        message: normalizeErrorString(err),
-      });
-    }
-  }, [medplum]);
-  
+          ],
+        });
+        setTasks((prevTasks) => prevTasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+      } catch (err) {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      }
+    },
+    [medplum]
+  );
 
   return (
     <Box p="md">
@@ -67,14 +68,10 @@ export const EncounterChart = (): JSX.Element => {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
         <Stack gap="md">
-          
           <Stack gap="md">
             {tasks?.map((task: Task) =>
               task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-                <TaskQuestionnaireForm 
-                key={task.id} 
-                task={task}
-                onSaveQuestionnaire={handleSaveChanges}  />
+                <TaskQuestionnaireForm key={task.id} task={task} onSaveQuestionnaire={handleSaveChanges} />
               ) : (
                 <SimpleTask key={task.id} task={task} />
               )

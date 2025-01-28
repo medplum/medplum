@@ -35,11 +35,12 @@ export const TaskStatusPanel = ({ task, isQuestionnaire, onSubmit }: TaskStatusP
         </Button>
         <Menu>
           <Menu.Target>
-            <Button 
-            onClick={onSubmit} 
-            variant={isQuestionnaire === true ? 'filled' : 'outline'}
-            rightSection={<IconCaretDownFilled size={14} />}>
-            {isQuestionnaire === true ? 'Save Changes' : 'Edit Task'}
+            <Button
+              onClick={onSubmit}
+              variant={isQuestionnaire === true ? 'filled' : 'outline'}
+              rightSection={<IconCaretDownFilled size={14} />}
+            >
+              {isQuestionnaire === true ? 'Save Changes' : 'Edit Task'}
             </Button>
           </Menu.Target>
           <Menu.Dropdown>
