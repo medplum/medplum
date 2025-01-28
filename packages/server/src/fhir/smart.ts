@@ -12,6 +12,7 @@ export interface SmartScope {
   readonly permissionType: 'patient' | 'user' | 'system';
   readonly resourceType: string;
   readonly scope: string;
+  readonly criteria?: string;
 }
 
 /**
@@ -110,12 +111,13 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
 
   if (scope) {
     for (const scopeTerm of scope.split(' ')) {
-      const match = /^(patient|user|system)\/(\w+|\*)\.(\*|c?r?u?d?s?)$/.exec(scopeTerm);
+      const match = /^(patient|user|system)\/(\w+|\*)\.(\*|c?r?u?d?s?)(\?(([a-zA-Z_-]+=[^&]*&?)+))?$/.exec(scopeTerm);
       if (match) {
         result.push({
           permissionType: match[1] as 'patient' | 'user' | 'system',
           resourceType: match[2],
           scope: match[3] === '*' ? 'cruds' : match[3],
+          criteria: match[5],
         });
       }
     }
@@ -171,9 +173,15 @@ function intersectSmartScopes(accessPolicy: AccessPolicy, smartScope: SmartScope
 const readOnlyScope = /^[rs]+$/;
 function mergeAccessPolicyWithScope(policy: AccessPolicyResource, scope: SmartScope): AccessPolicyResource {
   const result = deepClone(policy);
+  if (result.criteria?.startsWith('*') && scope.resourceType !== '*') {
+    result.criteria = result.criteria.replace('*', scope.resourceType);
+  }
 
   if (scope.scope.match(readOnlyScope)) {
     result.readonly = true;
+  }
+  if (scope.criteria) {
+    result.criteria = `${result.criteria ?? scope.resourceType + '?'}${result.criteria && !result.criteria?.endsWith('&') ? '&' : ''}${scope.criteria}`;
   }
   return result;
 }
