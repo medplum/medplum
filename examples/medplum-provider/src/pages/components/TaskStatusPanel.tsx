@@ -5,11 +5,12 @@ import { useNavigate } from 'react-router-dom';
 
 interface TaskStatusPanelProps {
   task: Task;
+  onSubmit?: () => void;
 }
 
-export const TaskStatusPanel = ({ task }: TaskStatusPanelProps): JSX.Element => {
-  const navigate = useNavigate();
+export const TaskStatusPanel = ({ task, onSubmit }: TaskStatusPanelProps): JSX.Element => {
   const theme = useMantineTheme();
+  const navigate = useNavigate();
 
   return (
     <Group
@@ -40,7 +41,7 @@ export const TaskStatusPanel = ({ task }: TaskStatusPanelProps): JSX.Element => 
         </Button>
         <Menu>
           <Menu.Target>
-            <Button>Edit task ▾</Button>
+            <Button onClick={onSubmit}>Edit task ▾</Button>
           </Menu.Target>
           <Menu.Dropdown>
             <Menu.Item>Edit</Menu.Item>
