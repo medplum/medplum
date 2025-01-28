@@ -50,22 +50,6 @@ export const EncounterModal = (): JSX.Element => {
 
     try {
       const encounter = await medplum.createResource(encounterData);
-      await medplum.post(
-        medplum.fhirUrl('PlanDefinition', '019499a2-ade8-734c-940e-132cfb8a6fb8' as string, '$apply'),
-        {
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'subject',
-              valueString: getReferenceString(patient),
-            },
-            {
-              name: 'encounter',
-              valueString: getReferenceString(encounter),
-            },
-          ],
-        }
-      );
       await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinitionData.id as string, '$apply'), {
         resourceType: 'Parameters',
         parameter: [

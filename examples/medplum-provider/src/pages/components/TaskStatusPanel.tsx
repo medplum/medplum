@@ -1,13 +1,15 @@
 import { Group, Stack, Text, Button, Menu, useMantineTheme } from '@mantine/core';
 import { Task } from '@medplum/fhirtypes';
 import { useNavigate } from 'react-router-dom';
+import { IconCaretDownFilled } from '@tabler/icons-react';
 
 interface TaskStatusPanelProps {
   task: Task;
+  isQuestionnaire?: boolean;
   onSubmit?: () => void;
 }
 
-export const TaskStatusPanel = ({ task, onSubmit }: TaskStatusPanelProps): JSX.Element => {
+export const TaskStatusPanel = ({ task, isQuestionnaire, onSubmit }: TaskStatusPanelProps): JSX.Element => {
   const theme = useMantineTheme();
   const navigate = useNavigate();
 
@@ -33,9 +35,31 @@ export const TaskStatusPanel = ({ task, onSubmit }: TaskStatusPanelProps): JSX.E
           Task details
         </Button>
         <Menu>
-          <Menu.Target>
-            <Button onClick={onSubmit}>Edit task ▾</Button>
-          </Menu.Target>
+          <div style={{ display: 'inline-block' }}>
+            <Button
+              onClick={onSubmit}
+              variant={isQuestionnaire ? 'filled' : 'outline'}
+              rightSection={
+                <Menu.Target>
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      padding: '8px',
+                      margin: '-8px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <IconCaretDownFilled size={14} />
+                  </div>
+                </Menu.Target>
+              }
+            >
+              {isQuestionnaire ? 'Save Changes' : 'Edit Task'}
+            </Button>
+          </div>
+
           <Menu.Dropdown>
             <Menu.Item>Edit</Menu.Item>
             <Menu.Item>Delete</Menu.Item>
