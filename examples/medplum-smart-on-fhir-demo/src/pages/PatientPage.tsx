@@ -1,8 +1,11 @@
 import { Container, Group, Loader, Paper, Stack, Text, Title } from '@mantine/core';
-import { Patient } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { calculateAgeString, formatDate, formatDateTime, formatHumanName } from '@medplum/core';
+import { HumanName, Observation, Patient } from '@medplum/fhirtypes';
+import { ResourceAvatar, useMedplum } from '@medplum/react';
+import { ChartData } from 'chart.js';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { LineChart } from '../components/LineChart';
 
 export function PatientPage(): JSX.Element {
   const navigate = useNavigate();
@@ -10,9 +13,10 @@ export function PatientPage(): JSX.Element {
   const [patient, setPatient] = useState<Patient>();
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>();
+  const [bpReadings, setBpReadings] = useState<Observation[]>([]);
 
   useEffect(() => {
-    const fetchPatient = async (): Promise<void> => {
+    const fetchData = async (): Promise<void> => {
       try {
         const patientId = sessionStorage.getItem('smart_patient');
 
@@ -22,6 +26,16 @@ export function PatientPage(): JSX.Element {
 
         const patient = await medplum.readResource('Patient', patientId);
         setPatient(patient);
+
+        // Fetch blood pressure readings
+        const bpObservations = await medplum.searchResources('Observation', {
+          subject: `Patient/${patientId}`,
+          code: '85354-9', // LOINC code for blood pressure panel
+          _sort: '-date',
+          _count: '10',
+        });
+        setBpReadings(bpObservations);
+
         setLoading(false);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
@@ -29,11 +43,41 @@ export function PatientPage(): JSX.Element {
       }
     };
 
-    fetchPatient().catch((err) => {
+    fetchData().catch((err) => {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setLoading(false);
     });
   }, [navigate, medplum]);
+
+  const getBpChartData = (): ChartData<'line', number[]> => {
+    const dates = bpReadings.map((obs) => formatDate(obs.effectiveDateTime as string));
+    const systolicData = bpReadings.map((obs) => {
+      const systolic = obs.component?.find((c) => c.code?.coding?.[0].code === '8480-6');
+      return systolic?.valueQuantity?.value ?? 0;
+    });
+    const diastolicData = bpReadings.map((obs) => {
+      const diastolic = obs.component?.find((c) => c.code?.coding?.[0].code === '8462-4');
+      return diastolic?.valueQuantity?.value ?? 0;
+    });
+
+    return {
+      labels: dates,
+      datasets: [
+        {
+          label: 'Systolic',
+          data: systolicData,
+          borderColor: 'rgb(255, 99, 132)',
+          backgroundColor: 'rgba(255, 99, 132, 0.5)',
+        },
+        {
+          label: 'Diastolic',
+          data: diastolicData,
+          borderColor: 'rgb(53, 162, 235)',
+          backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        },
+      ],
+    };
+  };
 
   if (loading) {
     return (
@@ -64,34 +108,98 @@ export function PatientPage(): JSX.Element {
   }
 
   return (
-    <Container size="md" mt="xl">
+    <Container size="xl" mt="xl">
       <Stack>
-        <Title order={1}>Patient Information</Title>
+        <Paper p="md">
+          <ResourceAvatar
+            value={patient}
+            size={80}
+            radius={80}
+            mx="auto"
+            mt={-50}
+            style={{ border: '2px solid white' }}
+          />
+          <Text ta="center" fz="lg" fw={500}>
+            {formatHumanName(patient.name?.[0] as HumanName)}
+          </Text>
+          {patient.birthDate && (
+            <Text ta="center" fz="xs" c="dimmed">
+              {patient.birthDate} ({calculateAgeString(patient.birthDate)})
+            </Text>
+          )}
+        </Paper>
         <Paper p="md" withBorder>
           <Stack>
-            <Group>
-              <Text fw={500}>Name:</Text>
-              <Text>
-                {patient.name?.[0]?.given?.join(' ')} {patient.name?.[0]?.family}
-              </Text>
-            </Group>
-            <Group>
-              <Text fw={500}>Birth Date:</Text>
-              <Text>{patient.birthDate}</Text>
-            </Group>
-            <Group>
-              <Text fw={500}>Gender:</Text>
-              <Text>{patient.gender}</Text>
-            </Group>
-            {patient.address?.[0] && (
-              <Group>
-                <Text fw={500}>Address:</Text>
-                <Text>
-                  {patient.address[0].line?.join(', ')}, {patient.address[0].city}, {patient.address[0].state}{' '}
-                  {patient.address[0].postalCode}
-                </Text>
-              </Group>
+            <Title order={2}>Blood Pressure Trends</Title>
+            {bpReadings.length > 0 ? (
+              <LineChart chartData={getBpChartData()} />
+            ) : (
+              <Text c="dimmed">No blood pressure readings available</Text>
             )}
+          </Stack>
+        </Paper>
+
+        <Paper p="md" withBorder>
+          <Stack>
+            <Title order={2}>Cardiac Risk Assessment</Title>
+            <Group>
+              <Paper p="md" withBorder style={{ flex: 1 }}>
+                <Stack align="center">
+                  <Title order={3}>10-Year ASCVD Risk</Title>
+                  <Text size="xl" fw={700} style={{ color: 'rgb(255, 99, 132)' }}>
+                    7.2%
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    Based on ACC/AHA Guidelines
+                  </Text>
+                </Stack>
+              </Paper>
+              <Paper p="md" withBorder style={{ flex: 1 }}>
+                <Stack align="center">
+                  <Title order={3}>Risk Factors</Title>
+                  <Stack gap="xs">
+                    <Text>• High Blood Pressure</Text>
+                    <Text>• High Cholesterol</Text>
+                    <Text>• Family History</Text>
+                  </Stack>
+                </Stack>
+              </Paper>
+            </Group>
+          </Stack>
+        </Paper>
+
+        <Paper p="md" withBorder>
+          <Stack>
+            <Title order={2}>Latest Vitals</Title>
+            <Group grow>
+              <Stack>
+                <Text c="dimmed">Last BP</Text>
+                <Text fw={500}>
+                  {bpReadings[0]?.component
+                    ?.map((c) => c.valueQuantity?.value)
+                    .filter(Boolean)
+                    .join('/')}{' '}
+                  mmHg
+                </Text>
+                <Text size="sm" c="dimmed">
+                  {formatDateTime(bpReadings[0]?.effectiveDateTime as string)}
+                </Text>
+              </Stack>
+              <Stack>
+                <Text c="dimmed">Heart Rate</Text>
+                <Text fw={500}>72 bpm</Text>
+                <Text size="sm" c="dimmed">
+                  Today
+                </Text>
+              </Stack>
+              <Stack>
+                <Text c="dimmed">Weight</Text>
+                <Text fw={500}>180 lbs</Text>
+                <Text size="sm" c="dimmed">
+                  2 days ago
+                </Text>
+              </Stack>
+            </Group>
           </Stack>
         </Paper>
       </Stack>
