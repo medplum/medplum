@@ -526,6 +526,8 @@ function buildWhereCondition(
     // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
     if (operator === FhirOperator.IN) {
       return buildInValueSetCondition(tableName, query);
+    } else if (operator === FhirOperator.NOT_IN) {
+      return new Negation(buildInValueSetCondition(tableName, query));
     }
     // If we we are searching for a particular token value, build a Condition that filters the lookup table on that
     //value
