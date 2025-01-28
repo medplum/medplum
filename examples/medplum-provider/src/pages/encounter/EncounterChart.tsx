@@ -1,6 +1,6 @@
-import { Select, Button, Text, Stack, Group, Box } from '@mantine/core';
-import { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { Button, Text, Stack, Group, Box, Select } from '@mantine/core';
+import { Encounter, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { CodeInput, ResourceInput, useMedplum } from '@medplum/react';
 import { Outlet, useParams } from 'react-router-dom';
 import { TaskQuestionnaireForm } from '../components/TaskQuestionnaireForm';
 import { SimpleTask } from '../components/SimpleTask';
@@ -12,12 +12,28 @@ import { IconCircleOff } from '@tabler/icons-react';
 export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
   const medplum = useMedplum();
+  const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [status, setStatus] = useState<
+    | 'planned'
+    | 'arrived'
+    | 'triaged'
+    | 'in-progress'
+    | 'onleave'
+    | 'finished'
+    | 'cancelled'
+    | 'entered-in-error'
+    | 'unknown'
+  >('planned');
 
   useEffect(() => {
     const fetchTasks = async (): Promise<void> => {
-      const result = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
-      setTasks(result);
+      const encounterResult = await medplum.readResource('Encounter', encounterId as string);
+        setEncounter(encounterResult);
+        setStatus(encounterResult.status as typeof status);
+
+        const taskResult = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
+        setTasks(taskResult);
     };
 
     fetchTasks().catch((err) => {
@@ -64,7 +80,7 @@ export const EncounterChart = (): JSX.Element => {
     <>
       <Box p="md">
         <Text size="lg" color="dimmed" mb="lg">
-          Encounters • Encounter 12.12.2024
+          Encounter {encounter?.period?.start ? new Date(encounter.period.start).toLocaleDateString() : ''}
         </Text>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
@@ -90,28 +106,38 @@ export const EncounterChart = (): JSX.Element => {
             </Text>
 
             <div>
-              <Text fw={500} mb="xs">
-                Encounter status
-              </Text>
-              <Select placeholder="In-progress" data={['In-progress', 'Completed', 'Cancelled']} />
+              <CodeInput
+                name="status"
+                label="Status"
+                binding="http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
+                maxValues={1}
+                defaultValue={status}
+                onChange={(value) => {
+                  if (value) {
+                    setStatus(value as typeof status);
+                  }
+                }}
+              />
             </div>
 
             <div>
-              <Text fw={500} mb="xs">
-                Assigned practitioner
-              </Text>
-              <Select placeholder="Lisa Caddy" data={['Lisa Caddy', 'John Smith', 'Jane Doe']} />
+              <ResourceInput
+                name="practitioner"
+                resourceType="Practitioner"
+                label="Assigned practitioner"
+                // onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
+              />
             </div>
-
+            
             <div>
-              <Text fw={500} mb="xs">
-                Encounter Time
-              </Text>
-              <Select placeholder="1 hour" data={['30 minutes', '1 hour', '2 hours']} />
-            </div>
+            <Text fw={500} mb="xs">
+              Encounter Time
+            </Text>
+            <Select placeholder="1 hour" data={['30 minutes', '1 hour', '2 hours']} />
+          </div>
 
             <Stack gap="md">
-              <Button color="blue" fullWidth>
+              <Button  fullWidth>
                 Save changes
               </Button>
 

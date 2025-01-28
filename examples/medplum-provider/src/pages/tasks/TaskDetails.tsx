@@ -1,10 +1,10 @@
-import { HumanName, Practitioner, Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
-import { CodeInput, QuestionnaireForm, useMedplum } from '@medplum/react';
+import { HumanName, Practitioner, Reference, Task } from '@medplum/fhirtypes';
+import { CodeInput, DateTimeInput, ResourceInput, useMedplum } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Card, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { usePatient } from '../../hooks/usePatient';
-import { formatHumanName, getQuestionnaireAnswers } from '@medplum/core';
+import { formatHumanName } from '@medplum/core';
 import { notifications } from '@mantine/notifications';
 import { IconCircleOff } from '@tabler/icons-react';
 
@@ -15,53 +15,7 @@ export const TaskDetails = (): JSX.Element => {
   const navigate = useNavigate();
   const [task, setTask] = useState<Task | undefined>(undefined);
   const [isOpened, setIsOpened] = useState(true);
-  const [status, setStatus] = useState<
-    | 'draft'
-    | 'requested'
-    | 'received'
-    | 'accepted'
-    | 'rejected'
-    | 'ready'
-    | 'cancelled'
-    | 'in-progress'
-    | 'on-hold'
-    | 'failed'
-    | 'completed'
-    | 'entered-in-error'
-  >('draft');
-  const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
-
-  const assignTaskQuestionnaire: Questionnaire = {
-    resourceType: 'Questionnaire',
-    status: 'active',
-    id: 'assign-task',
-    item: [
-      {
-        linkId: 'owner',
-        text: 'Assigned to',
-        type: 'reference',
-        extension: [
-          {
-            url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-referenceResource',
-            valueCodeableConcept: {
-              coding: [
-                {
-                  system: 'http://hl7.org/fhir/fhir-types',
-                  display: 'Practitioner',
-                  code: 'Practitioner',
-                },
-              ],
-            },
-          },
-        ],
-      },
-      {
-        linkId: 'dueDate',
-        text: 'Due Date',
-        type: 'date',
-      },
-    ],
-  };
+  const [status, setStatus] = useState<Task['status'] | undefined>();
 
   useEffect(() => {
     const fetchTask = async (): Promise<void> => {
@@ -74,7 +28,7 @@ export const TaskDetails = (): JSX.Element => {
   }, [medplum, taskId]);
 
   const handleOnSubmit = async (): Promise<void> => {
-    if (!task) {
+    if (!task || !status) {
       return;
     }
 
@@ -84,13 +38,6 @@ export const TaskDetails = (): JSX.Element => {
 
     if (task.status !== status) {
       updatedTask.status = status;
-    }
-
-    if (questionnaireResponse) {
-      const owner = getQuestionnaireAnswers(questionnaireResponse)['owner']?.valueReference as Reference<Practitioner>;
-      if (owner) {
-        updatedTask.owner = owner;
-      }
     }
 
     try {
@@ -121,7 +68,7 @@ export const TaskDetails = (): JSX.Element => {
             <Card p="md" radius="md" style={{ backgroundColor: '#F8F9FA' }}>
               <Stack gap="sm">
                 <Text fz="lg" fw={700}>
-                  Check insurance
+                  {task?.code?.text}
                 </Text>
                 {task?.description && <Text>{task.description}</Text>}
                 {patient?.name && (
@@ -135,17 +82,26 @@ export const TaskDetails = (): JSX.Element => {
               </Stack>
             </Card>
 
-            <QuestionnaireForm
-              questionnaire={assignTaskQuestionnaire}
-              excludeButtons
-              onChange={setQuestionnaireResponse}
+            <ResourceInput
+              name="practitioner"
+              resourceType="Practitioner"
+              label="Assigned to"
+              // onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
+            />
+
+            <DateTimeInput
+              name="Due Date"
+              placeholder="End"
+              label='Due Date'
+              // defaultValue={value?.end}
+              // onChange={(newValue) => setValueWrapper({ ...value, end: newValue })}
             />
 
             {task?.status && (
               <CodeInput
                 name="status"
                 label="Status"
-                binding="http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
+                binding="http://hl7.org/fhir/ValueSet/task-status|4.0.1"
                 maxValues={1}
                 defaultValue={status}
                 onChange={(value) => {

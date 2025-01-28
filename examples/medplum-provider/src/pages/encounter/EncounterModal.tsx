@@ -5,7 +5,7 @@ import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { Coding, Encounter, PlanDefinition, Task, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { usePatient } from '../../hooks/usePatient';
 
 export const EncounterModal = (): JSX.Element => {
@@ -16,21 +16,10 @@ export const EncounterModal = (): JSX.Element => {
   const [types, setTypes] = useState<ValueSetExpansionContains[]>([]);
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
-  // Todo: create a resusable type
-  const [status, setStatus] = useState<
-    | 'planned'
-    | 'arrived'
-    | 'triaged'
-    | 'in-progress'
-    | 'onleave'
-    | 'finished'
-    | 'cancelled'
-    | 'entered-in-error'
-    | 'unknown'
-  >('planned');
+  const [status, setStatus] = useState<Encounter['status'] | undefined>();
 
   const handleCreateEncounter = async (): Promise<void> => {
-    if (!patient || !encounterClass || !planDefinitionData) {
+    if (!patient || !encounterClass || !planDefinitionData || !status) {
       return;
     }
 
