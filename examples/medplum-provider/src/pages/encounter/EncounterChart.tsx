@@ -1,13 +1,64 @@
-import { Textarea, Select, Button, Text, Paper, Stack, Group, Box } from '@mantine/core';
-import { Task } from '@medplum/fhirtypes';
-import { useSearchResources } from '@medplum/react';
+import { Select, Button, Text, Stack, Group, Box } from '@mantine/core';
+import { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
 import { useParams } from 'react-router-dom';
 import { TaskQuestionnaireForm } from '../components/TaskQuestionnaireForm';
 import { SimpleTask } from '../components/SimpleTask';
+import { useCallback, useEffect, useState } from 'react';
+import { showNotification } from '@mantine/notifications';
+import { getReferenceString, normalizeErrorString } from '@medplum/core';
+import { IconCircleOff } from '@tabler/icons-react';
 
 export const EncounterChart = (): JSX.Element => {
   const { encounterId } = useParams();
-  const [tasks] = useSearchResources('Task', `encounter=Encounter/${encounterId}`);
+  const medplum = useMedplum();
+  const [tasks, setTasks] = useState<Task[]>([]);
+
+  useEffect(() => {
+    const fetchTasks = async (): Promise<void> => {
+      const result = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
+      setTasks(result);
+    };
+
+    fetchTasks().catch((err) => {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    });
+  }, [medplum, encounterId]);
+
+  const handleSaveChanges = useCallback(
+    async (task: Task, questionnaireResponse: QuestionnaireResponse): Promise<void> => {
+      try {
+        const response = await medplum.createResource<QuestionnaireResponse>(questionnaireResponse);
+        const updatedTask = await medplum.updateResource<Task>({
+          ...task,
+          output: [
+            {
+              type: {
+                text: 'QuestionnaireResponse',
+              },
+              valueReference: {
+                reference: getReferenceString(response),
+              },
+            },
+          ],
+        });
+        setTasks((prevTasks) => prevTasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+      } catch (err) {
+        showNotification({
+          color: 'red',
+          icon: <IconCircleOff />,
+          title: 'Error',
+          message: normalizeErrorString(err),
+        });
+      }
+    },
+    [medplum]
+  );
 
   return (
     <Box p="md">
@@ -16,58 +67,17 @@ export const EncounterChart = (): JSX.Element => {
       </Text>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
-        <Paper p="lg" radius="md" withBorder>
+        <Stack gap="md">
           <Stack gap="md">
-            <Stack gap="md">
-              <Text size="xl" fw={500}>
-                FILL CHART NOTE
-              </Text>
-
-              <Stack gap="md">
-                <div>
-                  <Text fw={500} mb="xs">
-                    Subjective evaluation
-                  </Text>
-                  <Textarea placeholder="What patient describes" minRows={3} />
-                </div>
-
-                <div>
-                  <Text fw={500} mb="xs">
-                    Objective evaluation
-                  </Text>
-                  <Textarea placeholder="What is being observed" minRows={3} />
-                </div>
-
-                <div>
-                  <Text fw={500} mb="xs">
-                    Assessment
-                  </Text>
-                  <Text size="sm" color="dimmed" mb="xs">
-                    Necessary for insurance claim
-                  </Text>
-                  <Select placeholder="Select diagnostics code" data={[]} searchable />
-                </div>
-
-                <div>
-                  <Text fw={500} mb="xs">
-                    Treatment plan
-                  </Text>
-                  <Textarea placeholder="Plan for treatment" minRows={3} />
-                </div>
-              </Stack>
-            </Stack>
-
-            <Stack gap="md">
-              {tasks?.map((task: Task) =>
-                task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-                  <TaskQuestionnaireForm task={task} />
-                ) : (
-                  <SimpleTask task={task} />
-                )
-              )}
-            </Stack>
+            {tasks?.map((task: Task) =>
+              task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
+                <TaskQuestionnaireForm key={task.id} task={task} onSaveQuestionnaire={handleSaveChanges} />
+              ) : (
+                <SimpleTask key={task.id} task={task} />
+              )
+            )}
           </Stack>
-        </Paper>
+        </Stack>
 
         <Stack gap="lg">
           <Button variant="outline" color="blue" fullWidth>
