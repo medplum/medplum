@@ -29,7 +29,6 @@ export const TaskQuestionnaireForm = ({ task, onSaveQuestionnaire }: ActionQuest
   }, [medplum, task]);
 
   const handleSubmitChanges = async (): Promise<void> => {
-    console.log('handleSubmitChanges');
     if (!questionnaireResponse) {
       return;
     }
