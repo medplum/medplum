@@ -53,7 +53,7 @@ function convertCcdaToFhir(xmlContent: string): {
       },
     ],
     telecom: Array.isArray(patientRole.telecom)
-      ? patientRole.telecom.map((tel) => ({
+      ? patientRole.telecom.map((tel: any) => ({
           system: 'phone',
           value: tel['@_value']?.replace('tel:', ''),
           use: tel['@_use']?.toLowerCase(),
@@ -73,7 +73,7 @@ function convertCcdaToFhir(xmlContent: string): {
     : [clinicalDoc.component.structuredBody.component];
 
   const vitalSignsSection = components.find(
-    (comp) => getElementAtPath(comp, 'section.code.@_code') === '8716-3'
+    (comp: any) => getElementAtPath(comp, 'section.code.@_code') === '8716-3'
   )?.section;
 
   const patientRef = createReference(patient);
