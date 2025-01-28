@@ -1,7 +1,7 @@
 import { Textarea, Select, Button, Text, Paper, Stack, Group, Box } from '@mantine/core';
 import { Task } from '@medplum/fhirtypes';
 import { useSearchResources } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 import { TaskQuestionnaireForm } from '../components/TaskQuestionnaireForm';
 import { SimpleTask } from '../components/SimpleTask';
 
@@ -10,6 +10,7 @@ export const EncounterChart = (): JSX.Element => {
   const [tasks] = useSearchResources('Task', `encounter=Encounter/${encounterId}`);
 
   return (
+    <>
     <Box p="md">
       <Text size="lg" color="dimmed" mb="lg">
         Encounters • Encounter 12.12.2024
@@ -114,6 +115,9 @@ export const EncounterChart = (): JSX.Element => {
           </Stack>
         </Stack>
       </div>
+      
     </Box>
+    <Outlet />
+    </>
   );
 };
