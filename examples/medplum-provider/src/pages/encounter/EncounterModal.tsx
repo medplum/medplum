@@ -70,7 +70,7 @@ export const EncounterModal = (): JSX.Element => {
         message: 'Encounter created',
       });
 
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`);
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`);
     } catch (err) {
       showNotification({
         color: 'red',
