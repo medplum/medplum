@@ -31,7 +31,7 @@ export const TaskStatusPanel = ({ task, isQuestionnaire, onSubmit }: TaskStatusP
       </Stack>
 
       <Group gap={8}>
-      <Button variant="transparent" color={theme.colors.blue[6]} onClick={() => navigate(`Task/${task.id}`)}>
+        <Button variant="transparent" color={theme.colors.blue[6]} onClick={() => navigate(`Task/${task.id}`)}>
           Task details
         </Button>
         <Menu>

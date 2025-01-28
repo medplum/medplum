@@ -62,71 +62,71 @@ export const EncounterChart = (): JSX.Element => {
 
   return (
     <>
-    <Box p="md">
-      <Text size="lg" color="dimmed" mb="lg">
-        Encounters • Encounter 12.12.2024
-      </Text>
+      <Box p="md">
+        <Text size="lg" color="dimmed" mb="lg">
+          Encounters • Encounter 12.12.2024
+        </Text>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
-        <Stack gap="md">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
           <Stack gap="md">
-            {tasks?.map((task: Task) =>
-              task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-                <TaskQuestionnaireForm key={task.id} task={task} onSaveQuestionnaire={handleSaveChanges} />
-              ) : (
-                <SimpleTask key={task.id} task={task} />
-              )
-            )}
+            <Stack gap="md">
+              {tasks?.map((task: Task) =>
+                task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
+                  <TaskQuestionnaireForm key={task.id} task={task} onSaveQuestionnaire={handleSaveChanges} />
+                ) : (
+                  <SimpleTask key={task.id} task={task} />
+                )
+              )}
+            </Stack>
           </Stack>
-        </Stack>
 
-        <Stack gap="lg">
-          <Button variant="outline" color="blue" fullWidth>
-            Add care template
-          </Button>
-
-          <Text size="sm" color="dimmed">
-            Task groups predefined by care planner
-          </Text>
-
-          <div>
-            <Text fw={500} mb="xs">
-              Encounter status
-            </Text>
-            <Select placeholder="In-progress" data={['In-progress', 'Completed', 'Cancelled']} />
-          </div>
-
-          <div>
-            <Text fw={500} mb="xs">
-              Assigned practitioner
-            </Text>
-            <Select placeholder="Lisa Caddy" data={['Lisa Caddy', 'John Smith', 'Jane Doe']} />
-          </div>
-
-          <div>
-            <Text fw={500} mb="xs">
-              Encounter Time
-            </Text>
-            <Select placeholder="1 hour" data={['30 minutes', '1 hour', '2 hours']} />
-          </div>
-
-          <Stack gap="md">
-            <Button color="blue" fullWidth>
-              Save changes
+          <Stack gap="lg">
+            <Button variant="outline" color="blue" fullWidth>
+              Add care template
             </Button>
 
-            <Group gap="sm">
-              <Button variant="light" color="gray" fullWidth>
-                Mark as finished
-              </Button>
-            </Group>
+            <Text size="sm" color="dimmed">
+              Task groups predefined by care planner
+            </Text>
 
-            <Text size="sm">Complete all the tasks in encounter before finishing it</Text>
+            <div>
+              <Text fw={500} mb="xs">
+                Encounter status
+              </Text>
+              <Select placeholder="In-progress" data={['In-progress', 'Completed', 'Cancelled']} />
+            </div>
+
+            <div>
+              <Text fw={500} mb="xs">
+                Assigned practitioner
+              </Text>
+              <Select placeholder="Lisa Caddy" data={['Lisa Caddy', 'John Smith', 'Jane Doe']} />
+            </div>
+
+            <div>
+              <Text fw={500} mb="xs">
+                Encounter Time
+              </Text>
+              <Select placeholder="1 hour" data={['30 minutes', '1 hour', '2 hours']} />
+            </div>
+
+            <Stack gap="md">
+              <Button color="blue" fullWidth>
+                Save changes
+              </Button>
+
+              <Group gap="sm">
+                <Button variant="light" color="gray" fullWidth>
+                  Mark as finished
+                </Button>
+              </Group>
+
+              <Text size="sm">Complete all the tasks in encounter before finishing it</Text>
+            </Stack>
           </Stack>
-        </Stack>
-      </div>
-      <Outlet />
-    </Box>
+        </div>
+        <Outlet />
+      </Box>
     </>
   );
 };
