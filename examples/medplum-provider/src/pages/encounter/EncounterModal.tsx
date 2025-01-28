@@ -86,7 +86,7 @@ export const EncounterModal = (): JSX.Element => {
       opened={isOpen}
       onClose={() => {
         navigate(-1);
-        setIsOpen(false)
+        setIsOpen(false);
       }}
       size="xl"
       title="New encounter"
