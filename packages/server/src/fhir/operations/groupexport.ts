@@ -1,11 +1,11 @@
 import { accepted, concatUrls, parseReference, singularize } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Group, Patient, Project } from '@medplum/fhirtypes';
+import { Group, Patient, Project, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
 import { getLogger } from '../../logger';
 import { Repository } from '../repo';
-import { getPatientEverything } from './patienteverything';
+import { getPatientEverything, PatientEverythingParameters } from './patienteverything';
 import { BulkExporter } from './utils/bulkexporter';
 
 /**
@@ -30,10 +30,13 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
   const group = await ctx.repo.readResource<Group>('Group', id);
 
   // Start the exporter
-  const exporter = new BulkExporter(ctx.repo, since, types);
+  const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4/' + req.pathname));
 
-  groupExportResources(exporter, ctx.project, group, ctx.repo)
+  groupExportResources(ctx.repo, exporter, ctx.project, group, {
+    _type: types as ResourceType[] | undefined,
+    _since: since,
+  })
     .then(() => ctx.logger.info('Group export completed', { id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Group export failed', { id: ctx.project.id, error: err }));
 
@@ -41,10 +44,11 @@ export async function groupExportHandler(req: FhirRequest): Promise<FhirResponse
 }
 
 export async function groupExportResources(
+  repo: Repository,
   exporter: BulkExporter,
   project: Project,
   group: Group,
-  repo: Repository
+  params?: PatientEverythingParameters
 ): Promise<void> {
   // Read all patients in the group
   if (group.member) {
@@ -56,7 +60,7 @@ export async function groupExportResources(
       try {
         if (resourceType === 'Patient') {
           const patient = await repo.readResource<Patient>('Patient', memberId);
-          const bundle = await getPatientEverything(repo, patient);
+          const bundle = await getPatientEverything(repo, patient, params);
           await exporter.writeBundle(bundle);
         } else {
           const resource = await repo.readResource(resourceType, memberId);
