@@ -70,7 +70,7 @@ export const EncounterChart = (): JSX.Element => {
     <>
       <Box p="md">
         <Text size="lg" color="dimmed" mb="lg">
-          Encounter {encounter?.period?.start ? new Date(encounter.period.start).toLocaleDateString() : ''}
+          Encounter {encounter?.period?.start ?? ''}
         </Text>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
@@ -115,7 +115,6 @@ export const EncounterChart = (): JSX.Element => {
                 name="practitioner"
                 resourceType="Practitioner"
                 label="Assigned practitioner"
-                // onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
               />
             </div>
 
