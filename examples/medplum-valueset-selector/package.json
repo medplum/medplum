@@ -14,12 +14,7 @@
     "singleQuote": true,
     "trailingComma": "es5"
   },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
-  "devDependencies": {
+    "devDependencies": {
     "@mantine/core": "7.15.3",
     "@mantine/hooks": "7.15.3",
     "@mantine/notifications": "7.15.3",
