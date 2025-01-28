@@ -46,22 +46,22 @@ export const TaskQuestionnaireForm = ({ task, onSaveQuestionnaire }: ActionQuest
       <Stack gap="xs">
         {!task.output?.[0]?.valueReference ? (
           <Box p="md">
-        <QuestionnaireForm
-          questionnaire={questionnaire}
-          excludeButtons={true}
-          onChange={setQuestionnaireResponse}
-        />
+            <QuestionnaireForm
+              questionnaire={questionnaire}
+              excludeButtons={true}
+              onChange={setQuestionnaireResponse}
+            />
           </Box>
         ) : (
           <Box p="md">
-        <Text>Questionnaire already completed</Text>
+            <Text>Questionnaire already completed</Text>
           </Box>
         )}
 
-        <TaskStatusPanel 
-          task={task} 
-          onSubmit={handleSubmitChanges} 
-          isQuestionnaire={questionnaireResponse && !task.output?.[0]?.valueReference} 
+        <TaskStatusPanel
+          task={task}
+          onSubmit={handleSubmitChanges}
+          isQuestionnaire={questionnaireResponse && !task.output?.[0]?.valueReference}
         />
       </Stack>
     </Card>
