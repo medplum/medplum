@@ -1,7 +1,7 @@
 import { Select, Button, Text, Stack, Group, Box, Card } from '@mantine/core';
 import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { QuestionnaireForm, useMedplum } from '@medplum/react';
-import { useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 import { TaskQuestionnaireForm } from '../components/TaskQuestionnaireForm';
 import { SimpleTask } from '../components/SimpleTask';
 import { useEffect, useMemo, useState } from 'react';
@@ -181,7 +181,7 @@ export const EncounterChart = (): JSX.Element => {
           </Stack>
         </Stack>
       </div>
-      
+      <Outlet />
     </Box>
     </>
   );

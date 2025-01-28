@@ -1,4 +1,3 @@
-import React from 'react';
 import { Group, Stack, Text, Button, Menu, useMantineTheme } from '@mantine/core';
 import { Task } from '@medplum/fhirtypes';
 import { useNavigate } from 'react-router-dom';
@@ -30,13 +29,7 @@ export const TaskStatusPanel = ({ task, onSubmit }: TaskStatusPanelProps): JSX.E
       </Stack>
 
       <Group gap={8}>
-        <Button variant="transparent" 
-        color={theme.colors.blue[6]}
-           onClick={() => {
-            console.log('Task details', task.id);
-            navigate(`Task/${task.id}`);
-          }}
-        >
+      <Button variant="transparent" color={theme.colors.blue[6]} onClick={() => navigate(`Task/${task.id}`)}>
           Task details
         </Button>
         <Menu>
