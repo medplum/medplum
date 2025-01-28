@@ -941,3 +941,14 @@ export function periodToRangeString(period: Period): string | undefined {
   }
   return undefined;
 }
+
+export interface SqlFunctionDefinition {
+  readonly name: string;
+  readonly createQuery: string;
+}
+
+// Custom SQL Functions
+// When a function is defined and live in the database, i.e. it's created via a migration,
+// its definitions should NEVER be changed. If a change is needed, a new function should be created.
+
+export const SqlFunctions: Record<string, SqlFunctionDefinition> = {};
