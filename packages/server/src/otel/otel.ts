@@ -1,9 +1,19 @@
 import opentelemetry, { Attributes, Counter, Gauge, Histogram, Meter, MetricOptions } from '@opentelemetry/api';
+import os from 'node:os';
+import v8 from 'node:v8';
+import { DatabaseMode, getDatabasePool } from '../database';
+import { heartbeat } from '../heartbeat';
+import { getCronQueue } from '../workers/cron';
+import { getSubscriptionQueue } from '../workers/subscription';
 
 // This file includes OpenTelemetry helpers.
 // Note that this file is related but separate from the OpenTelemetry initialization code in instrumentation.ts.
 // The instrumentation.ts code is used to initialize OpenTelemetry.
 // This file is used to record metrics.
+
+const hostname = os.hostname();
+const BASE_METRIC_OPTIONS = { attributes: { hostname } } satisfies RecordMetricOptions;
+let otelHeartbeatListener: (() => Promise<void>) | undefined;
 
 let meter: Meter | undefined = undefined;
 const counters = new Map<string, Counter>();
@@ -75,4 +85,69 @@ export function setGauge(name: string, value: number, options?: RecordMetricOpti
 
 function isOtelMetricsEnabled(): boolean {
   return !!process.env.OTLP_METRICS_ENDPOINT;
+}
+
+export function initOtelHeartbeat(): void {
+  if (otelHeartbeatListener) {
+    return;
+  }
+  otelHeartbeatListener = async () => {
+    const writerPool = getDatabasePool(DatabaseMode.WRITER);
+    const readerPool = getDatabasePool(DatabaseMode.READER);
+
+    setGauge('medplum.db.idleConnections', writerPool.idleCount, {
+      ...BASE_METRIC_OPTIONS,
+      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
+    });
+    setGauge('medplum.db.queriesAwaitingClient', writerPool.waitingCount, {
+      ...BASE_METRIC_OPTIONS,
+      attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'writer' },
+    });
+
+    if (writerPool !== readerPool) {
+      setGauge('medplum.db.idleConnections', readerPool.idleCount, {
+        ...BASE_METRIC_OPTIONS,
+        attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
+      });
+      setGauge('medplum.db.queriesAwaitingClient', readerPool.waitingCount, {
+        ...BASE_METRIC_OPTIONS,
+        attributes: { ...BASE_METRIC_OPTIONS.attributes, dbInstanceType: 'reader' },
+      });
+    }
+
+    const heapStats = v8.getHeapStatistics();
+    setGauge('medplum.node.usedHeapSize', heapStats.used_heap_size, BASE_METRIC_OPTIONS);
+
+    const heapSpaceStats = v8.getHeapSpaceStatistics();
+    setGauge(
+      'medplum.node.oldSpaceUsedSize',
+      heapSpaceStats.find((entry) => entry.space_name === 'old_space')?.space_used_size ?? -1,
+      BASE_METRIC_OPTIONS
+    );
+    setGauge(
+      'medplum.node.newSpaceUsedSize',
+      heapSpaceStats.find((entry) => entry.space_name === 'new_space')?.space_used_size ?? -1,
+      BASE_METRIC_OPTIONS
+    );
+
+    const subscriptionQueue = getSubscriptionQueue();
+    if (subscriptionQueue) {
+      setGauge('medplum.subscription.waitingCount', await subscriptionQueue.getWaitingCount());
+      setGauge('medplum.subscription.delayedCount', await subscriptionQueue.getDelayedCount());
+    }
+
+    const cronQueue = getCronQueue();
+    if (cronQueue) {
+      setGauge('medplum.cron.waitingCount', await cronQueue.getWaitingCount());
+      setGauge('medplum.cron.delayedCount', await cronQueue.getDelayedCount());
+    }
+  };
+  heartbeat.addEventListener('heartbeat', otelHeartbeatListener);
+}
+
+export function cleanupOtelHeartbeat(): void {
+  if (otelHeartbeatListener) {
+    heartbeat.removeEventListener('heartbeat', otelHeartbeatListener);
+    otelHeartbeatListener = undefined;
+  }
 }

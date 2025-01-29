@@ -1,4 +1,4 @@
-import { ContentType, flatMapFilter, isNotFound, OperationOutcomeError } from '@medplum/core';
+import { ContentType, flatMapFilter, isNotFound, notFound, OperationOutcomeError } from '@medplum/core';
 import { AsyncJob, BulkDataExport } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
@@ -13,23 +13,33 @@ import { getAuthenticatedContext } from '../context';
 
 export const bulkDataRouter = Router();
 
+async function getExportResource(id: string): Promise<AsyncJob | BulkDataExport> {
+  const { repo } = getAuthenticatedContext();
+  let resource: AsyncJob | BulkDataExport;
+  try {
+    resource = await repo.readResource<AsyncJob>('AsyncJob', id);
+  } catch (err: unknown) {
+    if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
+      resource = await repo.readResource<BulkDataExport>('BulkDataExport', id);
+    } else {
+      throw err;
+    }
+  }
+
+  return resource;
+}
+
 bulkDataRouter.get(
   '/export/:id',
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = getAuthenticatedContext();
     const { id } = req.params;
-    let bulkDataExport: AsyncJob | BulkDataExport;
-    try {
-      bulkDataExport = await ctx.repo.readResource<AsyncJob>('AsyncJob', id);
-    } catch (err: unknown) {
-      if (err instanceof OperationOutcomeError && isNotFound(err.outcome)) {
-        bulkDataExport = await ctx.repo.readResource<BulkDataExport>('BulkDataExport', id);
-      } else {
-        throw err;
-      }
-    }
+    const bulkDataExport = await getExportResource(id);
 
-    if (bulkDataExport.status !== 'completed') {
+    if (bulkDataExport.status === 'cancelled') {
+      res.status(404).json(notFound);
+      return;
+    } else if (bulkDataExport.status !== 'completed') {
       res.status(202).end();
       return;
     }
@@ -46,7 +56,16 @@ bulkDataRouter.get(
   })
 );
 
-bulkDataRouter.delete('/export/:id', (req: Request, res: Response) => {
+bulkDataRouter.delete('/export/:id', async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const bulkDataExport = await getExportResource(id);
+
+  if (bulkDataExport.status !== 'cancelled') {
+    bulkDataExport.status = 'cancelled';
+    const { repo } = getAuthenticatedContext();
+    await repo.updateResource(bulkDataExport);
+  }
+
   res.sendStatus(202);
 });
 

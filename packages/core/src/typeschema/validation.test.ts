@@ -47,6 +47,7 @@ describe('FHIR resource validation', () => {
   let medplumBundle: Bundle;
   let observationProfile: StructureDefinition;
   let patientProfile: StructureDefinition;
+  let smokingStatusProfile: StructureDefinition;
 
   beforeAll(() => {
     console.log = jest.fn();
@@ -63,6 +64,9 @@ describe('FHIR resource validation', () => {
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
     );
     patientProfile = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-patient.json'), 'utf8'));
+    smokingStatusProfile = JSON.parse(
+      readFileSync(resolve(__dirname, '__test__', 'us-core-smoking-status.json'), 'utf8')
+    );
   });
 
   test('Invalid resource', () => {
@@ -1737,6 +1741,22 @@ describe('FHIR resource validation', () => {
         )
       )
     );
+  });
+
+  test('US Core Smoking Status profile', () => {
+    const resource: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      category: [
+        { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'social-history' }] },
+      ],
+      code: { coding: [{ system: LOINC, code: '72166-2' }] },
+      effectivePeriod: { start: '2020-01-01' },
+      valueCodeableConcept: { text: 'Pipe smoker' },
+      subject: { reference: 'urn:uuid:8c45961c-26fa-42d3-91e1-2d1acba74748' },
+    };
+
+    expect(() => validateResource(resource, { profile: smokingStatusProfile })).not.toThrow();
   });
 });
 

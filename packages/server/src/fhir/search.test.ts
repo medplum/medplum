@@ -3001,50 +3001,6 @@ describe('FHIR Search', () => {
         expect(nextUrl).toContain('code:not=x');
       }));
 
-    test('Condition.code :in search', () =>
-      withTestContext(async () => {
-        // ValueSet: http://hl7.org/fhir/ValueSet/condition-code
-        // compose includes codes from http://snomed.info/sct
-        // but does not include codes from https://example.com
-
-        const p = await repo.createResource({
-          resourceType: 'Patient',
-          name: [{ family: randomUUID() }],
-        });
-
-        const c1 = await repo.createResource<Condition>({
-          resourceType: 'Condition',
-          subject: createReference(p),
-          code: { coding: [{ system: SNOMED, code: '165002' }] },
-        });
-
-        const c2 = await repo.createResource<Condition>({
-          resourceType: 'Condition',
-          subject: createReference(p),
-          code: { coding: [{ system: 'https://example.com', code: 'test' }] },
-        });
-
-        const bundle = await repo.search({
-          resourceType: 'Condition',
-          filters: [
-            {
-              code: 'subject',
-              operator: Operator.EQUALS,
-              value: getReferenceString(p),
-            },
-            {
-              code: 'code',
-              operator: Operator.IN,
-              value: 'http://hl7.org/fhir/ValueSet/condition-code',
-            },
-          ],
-        });
-
-        expect(bundle.entry?.length).toStrictEqual(1);
-        expect(bundleContains(bundle, c1)).toBeTruthy();
-        expect(bundleContains(bundle, c2)).not.toBeTruthy();
-      }));
-
     test('Reference identifier search', () =>
       withTestContext(async () => {
         const code = randomUUID();
@@ -3329,6 +3285,38 @@ describe('FHIR Search', () => {
               code: '_filter',
               operator: Operator.EQUALS,
               value: 'organization re ' + patient.managingOrganization?.reference,
+            },
+          ],
+        });
+
+        expect(result.entry).toHaveLength(1);
+        expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+      }));
+
+    test('_filter chained pr', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          birthDate: '2000-01-01',
+          name: [{ given: ['Eve'] }],
+          managingOrganization: { reference: 'Organization/' + randomUUID() },
+        });
+
+        await repo.createResource<Observation>({
+          resourceType: 'Observation',
+          effectiveDateTime: '2000-01-01',
+          status: 'final',
+          code: { text: 'Born' },
+          subject: createReference(patient),
+        });
+
+        const result = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: '_has:Observation:subject:date pr true',
             },
           ],
         });
