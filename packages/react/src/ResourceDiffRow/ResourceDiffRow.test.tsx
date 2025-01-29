@@ -35,8 +35,6 @@ describe('ResourceDiffRow', () => {
           "path": "Bot.sourceCode",
           "min": 0,
           "max": 1,
-          "isArray": false,
-          "constraints": [],
           "type": [
             {
               "code": "Attachment"
