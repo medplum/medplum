@@ -31,16 +31,12 @@ class BulkFileWriter {
 
 export class BulkExporter {
   readonly repo: Repository;
-  readonly since: string | undefined;
-  readonly types: string[];
   private resource: AsyncJob | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSet = new Set<string>();
 
-  constructor(repo: Repository, since: string | undefined, types: string[] = []) {
+  constructor(repo: Repository) {
     this.repo = repo;
-    this.since = since;
-    this.types = types;
   }
 
   async start(url: string): Promise<AsyncJob> {
@@ -77,15 +73,6 @@ export class BulkExporter {
   }
 
   async writeResource(resource: Resource): Promise<void> {
-    if (this.types.length > 0 && !this.types.includes(resource.resourceType)) {
-      return;
-    }
-    if (resource.resourceType === 'AuditEvent') {
-      return;
-    }
-    if (this.since !== undefined && (resource.meta?.lastUpdated as string) < this.since) {
-      return;
-    }
     const ref = getReferenceString(resource);
     if (!this.resourceSet.has(ref)) {
       const writer = await this.getWriter(resource.resourceType);

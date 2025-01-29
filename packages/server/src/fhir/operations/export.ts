@@ -50,10 +50,10 @@ async function startExport(req: FhirRequest, exportType: string): Promise<FhirRe
   const since = singularize(req.query._since);
   const types = singularize(req.query._type)?.split(',');
 
-  const exporter = new BulkExporter(ctx.repo, since);
+  const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
-  exportResources(exporter, ctx.project, types, exportType)
+  exportResources(exporter, ctx.project, types, exportType, since)
     .then(() => ctx.logger.info('Export completed', { exportType, id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Export failure', { exportType, id: ctx.project.id, error: err }));
 
@@ -119,6 +119,7 @@ const unexportedResourceTypes = [
   'ValueSet',
   'BulkDataExport',
   'AsyncJob',
+  'AuditEvent',
 ];
 
 function canBeExported(resourceType: string): boolean {
