@@ -48,7 +48,7 @@ export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
             </Table.Td>
           </Table.Tr>
         </>
-      ): (
+      ) : (
         <Table.Tr className={classes.nobordertop}>
           <Table.Td>{name}</Table.Td>
           <Table.Td colSpan={2} style={{ textAlign: 'right' }}>
