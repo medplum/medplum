@@ -7,6 +7,7 @@ import { ContentType, deepClone, OAuthGrantType, OAuthTokenAuthMethod, splitN } 
 import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config';
+import qs from 'node:querystring';
 
 const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(\*|c?r?u?d?s?)$/;
 
@@ -115,12 +116,20 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
     for (const scopeTerm of scope.split(' ')) {
       const [baseScope, query] = splitN(scopeTerm, '?', 2);
       const match = smartScopeFormat.exec(baseScope);
+
+      let criteria: string | undefined;
+      if (query) {
+        // Parse and normalize query parameters, without affecting string encoding, for safety
+        const parsed = qs.parse(query, '&', '=', { decodeURIComponent: (s) => s });
+        criteria = qs.stringify(parsed, '&', '=', { encodeURIComponent: (s) => s });
+      }
+
       if (match) {
         result.push({
           permissionType: match[1] as 'patient' | 'user' | 'system',
           resourceType: match[2],
           scope: match[3] === '*' ? 'cruds' : match[3],
-          criteria: query,
+          criteria,
         });
       }
     }
