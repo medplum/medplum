@@ -8,7 +8,7 @@ import {
   getSearchParameterDetails,
   toTypedValue,
 } from '@medplum/core';
-import { Bot, Resource, SearchParameter } from '@medplum/fhirtypes';
+import { Resource, SearchParameter } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useEffect, useMemo, useState } from 'react';
 import { Operation, createPatch } from 'rfc6902';

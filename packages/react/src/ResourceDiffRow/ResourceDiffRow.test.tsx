@@ -18,8 +18,7 @@ describe('ResourceDiffRow', () => {
         path: 'given',
         property: undefined,
         originalValue: { type: 'string', value: 'Bart' },
-        revisedValue: { type: 'string', value: 'Homer' },
-        shouldToggleDisplay: false,
+        revisedValue: { type: 'string', value: 'Homer' }
       });
     });
 
@@ -29,12 +28,37 @@ describe('ResourceDiffRow', () => {
   test('Text Expand/Collapse', async () => {
     await act(async () => {
       setup({
-        name: 'Add name',
-        path: 'given',
-        property: undefined,
-        originalValue: { type: 'string', value: 'Bart' },
-        revisedValue: { type: 'string', value: 'Homer' },
-        shouldToggleDisplay: true,
+        "name": "Replace sourceCode",
+        "path": "Bot.sourceCode",
+        "property": {
+          "description": "Bot source code",
+          "path": "Bot.sourceCode",
+          "min": 0,
+          "max": 1,
+          "isArray": false,
+          "constraints": [],
+          "type": [
+            {
+              "code": "Attachment"
+            }
+          ],
+        },
+        "originalValue": {
+          "type": "Attachment",
+          "value": {
+            "contentType": "text/typescript",
+            "title": "index.ts",
+            "url": "http://example.com/new.pdf",
+          }
+        },
+        "revisedValue": {
+          "type": "Attachment",
+          "value": {
+            "contentType": "text/typescript",
+             "url": "http://example.com/new.pdf",
+             "title": "index.ts"
+          }
+        }
       });
     });
 
@@ -45,25 +69,17 @@ describe('ResourceDiffRow', () => {
       button.click();
     });
 
-    expect(await screen.queryByText('Homer')).toBeInTheDocument();
-
-    await act(async () => {
-      const button = screen.getByText('Collapse');
-      button.click();
-    });
-
-    expect(await screen.queryByText('Homer')).not.toBeInTheDocument();
+    expect(await screen.queryByText('Expand')).not.toBeInTheDocument();
   });
 
-  test('No code diff - No Expand', async () => {
+  test('No Attachmentcd diff - No Expand button', async () => {
     await act(async () => {
       setup({
         name: 'Add name',
         path: 'given',
         property: undefined,
         originalValue: { type: 'string', value: 'Bart' },
-        revisedValue: { type: 'string', value: 'Homer' },
-        shouldToggleDisplay: false,
+        revisedValue: { type: 'string', value: 'Homer' }
       });
     });
 
