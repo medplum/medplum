@@ -18,7 +18,7 @@ describe('ResourceDiffRow', () => {
         path: 'given',
         property: undefined,
         originalValue: { type: 'string', value: 'Bart' },
-        revisedValue: { type: 'string', value: 'Homer' }
+        revisedValue: { type: 'string', value: 'Homer' },
       });
     });
 
@@ -28,38 +28,38 @@ describe('ResourceDiffRow', () => {
   test('Text Expand/Collapse', async () => {
     await act(async () => {
       setup({
-        "name": "Replace sourceCode",
-        "path": "Bot.sourceCode",
-        "property": {
-          "description": "Bot source code",
-          "path": "Bot.sourceCode",
-          "min": 0,
-          "max": 1,
-          "type": [
+        name: 'Replace sourceCode',
+        path: 'Bot.sourceCode',
+        property: {
+          description: 'Bot source code',
+          path: 'Bot.sourceCode',
+          min: 0,
+          max: 1,
+          type: [
             {
-              "code": "Attachment"
-            }
+              code: 'Attachment',
+            },
           ],
         },
-        "originalValue": {
-          "type": "Attachment",
-          "value": {
-            "contentType": "text/typescript",
-            "title": "old.ts",
-            "url": "http://example.com/old.pdf",
-          }
+        originalValue: {
+          type: 'Attachment',
+          value: {
+            contentType: 'text/typescript',
+            title: 'old.ts',
+            url: 'http://example.com/old.pdf',
+          },
         },
-        "revisedValue": {
-          "type": "Attachment",
-          "value": {
-            "contentType": "text/typescript",
-             "url": "http://example.com/new.ts",
-             "title": "new.ts"
-          }
-        }
+        revisedValue: {
+          type: 'Attachment',
+          value: {
+            contentType: 'text/typescript',
+            url: 'http://example.com/new.ts',
+            title: 'new.ts',
+          },
+        },
       });
     });
-  
+
     await act(async () => {
       const button = screen.getByText('Expand');
       button.click();
@@ -75,7 +75,7 @@ describe('ResourceDiffRow', () => {
         path: 'given',
         property: undefined,
         originalValue: { type: 'string', value: 'Bart' },
-        revisedValue: { type: 'string', value: 'Homer' }
+        revisedValue: { type: 'string', value: 'Homer' },
       });
     });
 
