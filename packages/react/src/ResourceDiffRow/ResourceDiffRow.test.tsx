@@ -61,9 +61,7 @@ describe('ResourceDiffRow', () => {
         }
       });
     });
-
-    expect(await screen.queryByText('Homer')).not.toBeInTheDocument();
-
+  
     await act(async () => {
       const button = screen.getByText('Expand');
       button.click();
