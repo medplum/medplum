@@ -18,4 +18,7 @@ export const ContentType = {
   TEXT: 'text/plain',
   TYPESCRIPT: 'text/typescript',
   PING: 'x-application/ping',
+  XML: 'text/xml',
+  // See: https://www.iana.org/assignments/media-types/application/cda+xml
+  CDA_XML: 'application/cda+xml',
 } as const;

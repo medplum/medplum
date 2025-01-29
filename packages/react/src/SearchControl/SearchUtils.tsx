@@ -56,6 +56,7 @@ const searchParamToOperators: Record<string, Operator[]> = {
     Operator.ENDS_BEFORE,
     Operator.APPROXIMATELY,
   ],
+  uri: [Operator.EQUALS, Operator.NOT, Operator.ABOVE, Operator.BELOW],
 };
 
 const operatorNames: Record<Operator, string> = {

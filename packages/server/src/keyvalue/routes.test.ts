@@ -4,7 +4,8 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { AuthenticatedRequestContext, requestContextStore } from '../context';
+import { AuthenticatedRequestContext } from '../context';
+import { requestContextStore } from '../request-context-store';
 import { MAX_ITEMS } from './store';
 
 describe('Key Value Routes', () => {

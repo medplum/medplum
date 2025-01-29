@@ -12,11 +12,12 @@ import { randomUUID } from 'crypto';
 import { createClient } from '../../admin/client';
 import { createUser } from '../../auth/newuser';
 import { createProfile, createProjectMembership } from '../../auth/utils';
-import { getAuthenticatedContext, getLogger } from '../../context';
+import { getConfig } from '../../config';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { getUserByEmailWithoutProject } from '../../oauth/utils';
 import { getSystemRepo } from '../repo';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
-import { getConfig } from '../../config';
 
 const projectInitOperation: OperationDefinition = {
   resourceType: 'OperationDefinition',

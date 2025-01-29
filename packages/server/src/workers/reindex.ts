@@ -1,10 +1,10 @@
-import { SearchRequest, Operator, normalizeErrorString, parseSearchRequest } from '@medplum/core';
-import { ResourceType, Resource, AsyncJob, Parameters, ParametersParameter } from '@medplum/fhirtypes';
-import { Queue, QueueBaseOptions, Job, Worker } from 'bullmq';
+import { Operator, SearchRequest, normalizeErrorString, parseSearchRequest } from '@medplum/core';
+import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
+import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { MedplumServerConfig } from '../config';
-import { getLogger, getRequestContext, tryRunInRequestContext } from '../context';
+import { getRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
-import { globalLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import { LongJob } from './long-job';
 
 /*

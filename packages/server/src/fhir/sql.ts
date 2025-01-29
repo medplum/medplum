@@ -2,7 +2,7 @@ import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, ser
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
-import { getLogger } from '../context';
+import { getLogger } from '../logger';
 
 const DEBUG = env['SQL_DEBUG'];
 
@@ -861,20 +861,31 @@ export class InsertQuery extends BaseQuery {
 }
 
 export class DeleteQuery extends BaseQuery {
-  returnColumns?: string[];
+  usingTables?: string[];
 
-  returnColumn(column: Column | string): this {
-    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
+  using(...tableNames: string[]): this {
+    this.usingTables = tableNames;
     return this;
   }
+
   async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     sql.append('DELETE FROM ');
     sql.appendIdentifier(this.tableName);
-    this.buildConditions(sql);
-    if (this.returnColumns) {
-      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+
+    if (this.usingTables) {
+      sql.append(' USING ');
+      let first = true;
+      for (const tableName of this.usingTables) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendIdentifier(tableName);
+        first = false;
+      }
     }
+
+    this.buildConditions(sql);
     return (await sql.execute(conn)).rows;
   }
 }

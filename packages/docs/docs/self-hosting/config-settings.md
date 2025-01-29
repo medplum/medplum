@@ -222,6 +222,29 @@ Optional flag to skip all DNS entries. Use this option if you do not use Route 5
 
 Optional Route 53 Hosted Zone name for DNS entries. By default, the CDK will use root domain name of the `domainName` setting (for example, if `domainName` is `staging.example.com`, the default hosted zone name is `example.com`).
 
+### fargateAutoScaling
+__Fargate__ is an AWS serverless compute engine for containers, meaning you don't have to manage any underlying infrastructure
+
+Example: 
+```ts   
+fargateAutoScaling: {
+  minCapacity: 1,
+  maxCapacity: 10,
+  targetUtilizationPercent: 50,
+  scaleInCooldown: 60,
+  scaleOutCooldown: 60,
+}
+```
+__Fargate Auto Scaling__
+| Option | Description |
+| --- | --- |
+| minCapacity | The minimum number of tasks that will be run at all times. This ensures that there are always some tasks running, even if the target utilization is not being met. |
+| maxCapacity | The maximum number of tasks that can be run simultaneously. This limits the number of tasks that can be scaled up to meet demand. |
+| targetUtilizationPercent | The target value for the average CPU utilization of the tasks, in percentage. When setting up autoscaling, you define a target utilization percentage, and AWS adjusts the number of tasks to maintain this target. For example, if you set a target CPU utilization of 70%, AWS will scale up tasks when the CPU usage is above 70% and scale down when it's below that threshold. |
+| scaleInCooldown | The amount of time, in seconds, after a scale in event that scaling activities are ignored. This is so you don't see a low CPU spike and then immediately scale in again. This cooldown period helps to ensure that your application remains stable and doesn't experience frequent fluctuations in task counts. It gives the system time to stabilize before any further scaling actions are taken. |
+| scaleOutCooldown | The amount of time, in seconds, after a scale out event that scaling activities are ignored. This is so you don't see a high CPU spike and then immediately scale out again. This cooldown period helps to ensure that your application remains stable and doesn't experience frequent fluctuations in task counts. It gives the system time to stabilize before any further scaling actions are taken. |
+
+
 ## Task Size
 
 A certain amount of server CPU and memory is required to validate resources on write, and having an underpowered server

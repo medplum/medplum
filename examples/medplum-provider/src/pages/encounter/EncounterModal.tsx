@@ -1,11 +1,11 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Button, Select, Modal, Text, Card, Stack } from '@mantine/core';
+import { Button, Modal, Text, Card } from '@mantine/core';
 import { useState } from 'react';
 import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
-import { createReference, normalizeErrorString } from '@medplum/core';
-import { Coding, Encounter, ValueSetExpansionContains } from '@medplum/fhirtypes';
+import { createReference, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { Coding, Encounter, PlanDefinition, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { usePatient } from '../../hooks/usePatient';
 
 export const EncounterModal = (): JSX.Element => {
@@ -15,6 +15,7 @@ export const EncounterModal = (): JSX.Element => {
   const patient = usePatient();
   const [types, setTypes] = useState<ValueSetExpansionContains[]>([]);
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
+  const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   // Todo: create a resusable type
   const [status, setStatus] = useState<
     | 'planned'
@@ -33,8 +34,8 @@ export const EncounterModal = (): JSX.Element => {
     navigate(-1);
   };
 
-  const handleCreateEncounter = (): void => {
-    if (!patient || !encounterClass) {
+  const handleCreateEncounter = async (): Promise<void> => {
+    if (!patient || !encounterClass || !planDefinitionData) {
       return;
     }
 
@@ -52,25 +53,37 @@ export const EncounterModal = (): JSX.Element => {
       subject: createReference(patient),
     };
 
-    medplum
-      .createResource(encounterData)
-      .then((encounter) => {
-        showNotification({
-          icon: <IconCircleCheck />,
-          title: 'Success',
-          message: 'Encounter created',
-        });
-        // Redirect to actual chart
-        navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`);
-      })
-      .catch((err) => {
-        showNotification({
-          color: 'red',
-          icon: <IconCircleOff />,
-          title: 'Error',
-          message: normalizeErrorString(err),
-        });
+    try {
+      const encounter = await medplum.createResource(encounterData);
+      await medplum.post(medplum.fhirUrl('PlanDefinition', planDefinitionData.id as string, '$apply'), {
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'subject',
+            valueString: getReferenceString(patient),
+          },
+          {
+            name: 'encounter',
+            valueString: getReferenceString(encounter),
+          },
+        ],
       });
+
+      showNotification({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Encounter created',
+      });
+
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`);
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err),
+      });
+    }
   };
 
   return (
@@ -93,8 +106,9 @@ export const EncounterModal = (): JSX.Element => {
           <ValueSetAutocomplete
             name="type"
             label="Type"
-            binding="http://hl7.org/fhir/ValueSet/service-type"
+            binding="http://hl7.org/fhir/ValueSet/encounter-type"
             withHelpText={true}
+            maxValues={1}
             onChange={(items: ValueSetExpansionContains[]) => setTypes(items)}
           />
 
@@ -110,6 +124,7 @@ export const EncounterModal = (): JSX.Element => {
             name="status"
             label="Status"
             binding="http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
+            maxValues={1}
             onChange={(value) => {
               if (value) {
                 setStatus(value as typeof status);
@@ -131,35 +146,11 @@ export const EncounterModal = (): JSX.Element => {
             .
           </Text>
 
-          <Select
-            label="Template Plan definition"
-            placeholder="Initial encounter template"
-            data={['Initial encounter template', 'Follow-up template']}
-            value=""
-            styles={{
-              label: {
-                marginBottom: '0.5rem',
-              },
-            }}
+          <ResourceInput
+            name="plandefinition"
+            resourceType="PlanDefinition"
+            onChange={(value) => setPlanDefinitionData(value as PlanDefinition)}
           />
-
-          <Text size="sm" fw={500} mt="md" mb="xs">
-            Initial encounter plan (these tasks to be added to encounter):
-          </Text>
-
-          <Stack gap="xs">
-            <Card padding="sm" radius="sm" withBorder>
-              <Text size="sm" style={{ textTransform: 'uppercase' }}>
-                CHECK INSURANCE STATUS
-              </Text>
-            </Card>
-
-            <Card padding="sm" radius="sm" withBorder>
-              <Text size="sm" style={{ textTransform: 'uppercase' }}>
-                ORDER BASELINE LAB TESTS
-              </Text>
-            </Card>
-          </Stack>
         </Card>
       </div>
 

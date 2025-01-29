@@ -13,7 +13,7 @@ This diagram shows a high level summary of the three common patterns. The [Medpl
 
 There are 3 primary domains of authentication for a Medplum healthcare app:
 
-- **Client-side: ** A user facing application, typically running in a web browser or native app
+- **Client-side:** A user facing application, typically running in a web browser or native app
 - **Server-side:** A back-end web server acting as a proxy to Medplum, operating in a trusted environment
 - **Device / Host:** A non-web enabled device, such as lab analyzer or on-premise host machine
 
@@ -69,7 +69,6 @@ Medplum provides built-in first party integration with [Google](./google-auth.md
 
 - [IP Address restriction](/docs/access/ip-access-rules) for logins
 - Use of Medplum [React components](/docs/react) such as the [Signin](https://storybook.medplum.com/?path=/story/medplum-signinform--basic) and [Register](https://storybook.medplum.com/?path=/story/medplum-registerform--basic)
--
 
 The [Medplum Typescript SDK](/docs/sdk/core.medplumclient) can be used in the browser to enable client side authentication of different kinds, for example [signInWithExternalAuth](/docs/sdk/core.medplumclient.signinwithexternalauth).
 

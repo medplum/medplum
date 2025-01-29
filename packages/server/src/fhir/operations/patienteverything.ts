@@ -11,10 +11,11 @@ const operation = getOperationDefinition('Patient', 'everything');
 
 const defaultMaxResults = 1000;
 
-type PatientEverythingParameters = {
+export type PatientEverythingParameters = {
   _since?: string;
   _count?: number;
   _offset?: number;
+  _type?: ResourceType[];
 };
 
 // Patient everything operation.
@@ -54,7 +55,7 @@ export async function getPatientEverything(
   params?: PatientEverythingParameters
 ): Promise<Bundle> {
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const types = resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
+  const types = params?._type ?? resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
   types.push('Patient');
   sortStringArray(types);
 
