@@ -41,6 +41,10 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
   }
 
+  function reloadCron(): void {
+    startAsyncJob(medplum, 'Reload Cron Resources', 'admin/super/reloadcron');
+  }
+
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
@@ -197,6 +201,14 @@ export function SuperAdminPage(): JSX.Element {
       <Form onSubmit={getSchemaDiff}>
         <Stack>
           <Button type="submit">Get Database Schema Drift</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Reload Cron Resources</Title>
+      <p>Obliterates the cron queue and rebuilds all the cron job schedulers for cron resources (eg. cron bots).</p>
+      <Form onSubmit={reloadCron}>
+        <Stack>
+          <Button type="submit">Reload Cron Resources</Button>
         </Stack>
       </Form>
 

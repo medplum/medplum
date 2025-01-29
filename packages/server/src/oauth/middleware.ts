@@ -4,6 +4,7 @@ import { NextFunction, Request, Response } from 'express';
 import { IncomingMessage } from 'http';
 import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';
+import { getConfig } from '../config';
 
 export interface AuthState {
   login: Login;
@@ -15,11 +16,16 @@ export interface AuthState {
   onBehalfOfMembership?: ProjectMembership;
 }
 
+export const PROMPT_BASIC_AUTH_PARAM = '_medplum-prompt-basic-auth';
+
 export function authenticateRequest(req: Request, res: Response, next: NextFunction): void {
   const ctx = getRequestContext();
   if (ctx instanceof AuthenticatedRequestContext) {
     next();
   } else {
+    if (res.req.query[PROMPT_BASIC_AUTH_PARAM]) {
+      res.set('WWW-Authenticate', `Basic realm="${getConfig().baseUrl}"`);
+    }
     next(new OperationOutcomeError(unauthorized));
   }
 }

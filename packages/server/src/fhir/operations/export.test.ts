@@ -145,7 +145,7 @@ describe('Export', () => {
         },
       });
 
-      const exporter = new BulkExporter(systemRepo, undefined);
+      const exporter = new BulkExporter(systemRepo);
       const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
       await exporter.start('http://example.com');
 

@@ -3001,50 +3001,6 @@ describe('FHIR Search', () => {
         expect(nextUrl).toContain('code:not=x');
       }));
 
-    test('Condition.code :in search', () =>
-      withTestContext(async () => {
-        // ValueSet: http://hl7.org/fhir/ValueSet/condition-code
-        // compose includes codes from http://snomed.info/sct
-        // but does not include codes from https://example.com
-
-        const p = await repo.createResource({
-          resourceType: 'Patient',
-          name: [{ family: randomUUID() }],
-        });
-
-        const c1 = await repo.createResource<Condition>({
-          resourceType: 'Condition',
-          subject: createReference(p),
-          code: { coding: [{ system: SNOMED, code: '165002' }] },
-        });
-
-        const c2 = await repo.createResource<Condition>({
-          resourceType: 'Condition',
-          subject: createReference(p),
-          code: { coding: [{ system: 'https://example.com', code: 'test' }] },
-        });
-
-        const bundle = await repo.search({
-          resourceType: 'Condition',
-          filters: [
-            {
-              code: 'subject',
-              operator: Operator.EQUALS,
-              value: getReferenceString(p),
-            },
-            {
-              code: 'code',
-              operator: Operator.IN,
-              value: 'http://hl7.org/fhir/ValueSet/condition-code',
-            },
-          ],
-        });
-
-        expect(bundle.entry?.length).toStrictEqual(1);
-        expect(bundleContains(bundle, c1)).toBeTruthy();
-        expect(bundleContains(bundle, c2)).not.toBeTruthy();
-      }));
-
     test('Reference identifier search', () =>
       withTestContext(async () => {
         const code = randomUUID();

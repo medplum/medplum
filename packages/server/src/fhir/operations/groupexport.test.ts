@@ -318,7 +318,7 @@ describe('Group Export', () => {
   test('groupExportResources without members', async () => {
     const { project } = await createTestProject();
     expect(project).toBeDefined();
-    const exporter = new BulkExporter(systemRepo, undefined);
+    const exporter = new BulkExporter(systemRepo);
     const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
 
     const group: Group = await systemRepo.createResource<Group>({
@@ -327,7 +327,7 @@ describe('Group Export', () => {
       actual: true,
     });
     await exporter.start('http://example.com');
-    await groupExportResources(exporter, project, group, systemRepo);
+    await groupExportResources(systemRepo, exporter, project, group);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
     expect(exportWriteResourceSpy).toHaveBeenCalledTimes(0);
@@ -336,7 +336,7 @@ describe('Group Export', () => {
   test('groupExportResources members without reference', async () => {
     const { project } = await createTestProject();
     expect(project).toBeDefined();
-    const exporter = new BulkExporter(systemRepo, undefined);
+    const exporter = new BulkExporter(systemRepo);
 
     const patient: Patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
@@ -354,7 +354,7 @@ describe('Group Export', () => {
       member: [{ entity: { reference: '' } }, { entity: { reference: `Patient/${patient.id}` } }],
     });
     await exporter.start('http://example.com');
-    await groupExportResources(exporter, project, group, systemRepo);
+    await groupExportResources(systemRepo, exporter, project, group);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
   });

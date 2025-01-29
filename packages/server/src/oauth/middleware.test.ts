@@ -4,10 +4,11 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { getConfig, loadTestConfig } from '../config';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestClient, createTestProject, withTestContext } from '../test.setup';
 import { generateAccessToken, generateSecret } from './keys';
+import { PROMPT_BASIC_AUTH_PARAM } from './middleware';
 
 describe('Auth middleware', () => {
   const app = express();
@@ -72,6 +73,13 @@ describe('Auth middleware', () => {
 
   test('No auth header', async () => {
     const res = await request(app).get('/fhir/R4/Patient');
+    expect(res.header['www-authenticate']).toBeUndefined();
+    expect(res.status).toBe(401);
+  });
+
+  test('No auth header with magic param', async () => {
+    const res = await request(app).get(`/fhir/R4/Patient?${PROMPT_BASIC_AUTH_PARAM}=1`);
+    expect(res.header['www-authenticate']).toBe(`Basic realm="${getConfig().baseUrl}"`);
     expect(res.status).toBe(401);
   });
 
