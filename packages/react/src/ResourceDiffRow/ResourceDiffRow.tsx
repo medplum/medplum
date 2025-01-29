@@ -10,17 +10,17 @@ export interface ResourceDiffRowProps {
   property: InternalSchemaElement | undefined;
   originalValue: TypedValue | undefined;
   revisedValue: TypedValue | undefined;
-  shouldToggleDisplay: boolean;
 }
 
 export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
-  const { name, path, property, originalValue, revisedValue, shouldToggleDisplay } = props;
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const { name, path, property, originalValue, revisedValue } = props;
+  const isAttachmentType = !!property?.type?.find((t) => t.code === 'Attachment');
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(isAttachmentType);
   const toggleCollapse = (): void => setIsCollapsed((prev) => !prev);
 
   return (
     <>
-      {(shouldToggleDisplay && !isCollapsed) || !shouldToggleDisplay ? (
+      {(isAttachmentType && !isCollapsed) || !isAttachmentType ? (
         <>
           <Table.Tr>
             <Table.Td>{name}</Table.Td>
@@ -47,18 +47,8 @@ export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
               )}
             </Table.Td>
           </Table.Tr>
-          {shouldToggleDisplay && (
-            <Table.Tr>
-              <Table.Td></Table.Td>
-              <Table.Td colSpan={2} style={{ textAlign: 'right' }}>
-                <Button onClick={toggleCollapse} variant="light">
-                  Collapse
-                </Button>
-              </Table.Td>
-            </Table.Tr>
-          )}
         </>
-      ) : (
+      ): (
         <Table.Tr className={classes.nobordertop}>
           <Table.Td>{name}</Table.Td>
           <Table.Td colSpan={2} style={{ textAlign: 'right' }}>

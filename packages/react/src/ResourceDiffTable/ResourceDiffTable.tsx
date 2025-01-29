@@ -24,7 +24,6 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
   const medplum = useMedplum();
   const { original, revised } = props;
   const [schemaLoaded, setSchemaLoaded] = useState(false);
-  const shouldToggleDisplay = (original as Bot).sourceCode?.contentType === 'text/typescript';
 
   useEffect(() => {
     medplum
@@ -83,7 +82,7 @@ export function ResourceDiffTable(props: ResourceDiffTableProps): JSX.Element | 
       </Table.Thead>
       <Table.Tbody>
         {diffTable.map((row) => (
-          <ResourceDiffRow {...row} shouldToggleDisplay={shouldToggleDisplay} />
+          <ResourceDiffRow {...row} />
         ))}
       </Table.Tbody>
     </Table>
