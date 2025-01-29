@@ -49,7 +49,7 @@ export function ResourceDiffRow(props: ResourceDiffRowProps): JSX.Element {
           </Table.Tr>
         </>
       ) : (
-        <Table.Tr className={classes.nobordertop}>
+        <Table.Tr>
           <Table.Td>{name}</Table.Td>
           <Table.Td colSpan={2} style={{ textAlign: 'right' }}>
             <Button onClick={toggleCollapse} variant="light">
