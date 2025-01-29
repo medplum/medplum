@@ -2120,7 +2120,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * Example:
    *
    * ```typescript
-   * const result = await medplum.createAttachment(myFile, 'test.jpg', 'image/jpeg');
+   * const result = await medplum.createAttachment({ data: myFile, filename: 'test.jpg', contentType: 'image/jpeg' });
    * console.log(result);
    * ```
    *

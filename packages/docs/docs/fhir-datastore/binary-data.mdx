@@ -77,7 +77,11 @@ Once uploaded, the `Binary` resource can be referenced in various FHIR resources
 **a. Patient Profile Picture - `Patient.photo`:**
 
 ```javascript
-const photo = await medplum.createAttachment(myFile, 'test.jpg', 'image/jpeg');
+const photo = await medplum.createAttachment({
+  data: myFile,
+  filename: 'test.jpg',
+  contentType: 'image/jpeg',
+});
 
 const patient = await medplum.createResource('Patient', {
   resourceType: 'Patient',
@@ -88,7 +92,11 @@ const patient = await medplum.createResource('Patient', {
 **b. Message Attachment - `Communication.payload.contentAttachment`:**
 
 ```javascript
-const document = await medplum.createAttachment(myFile, 'test.pdf', 'application/pdf');
+const document = await medplum.createAttachment({
+  data: myFile,
+  filename: 'test.pdf',
+  contentType: 'application/pdf',
+});
 
 const communication = await medplum.createResource('Communication', {
   resourceType: 'Communication',
