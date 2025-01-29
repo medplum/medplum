@@ -47,16 +47,16 @@ describe('ResourceDiffRow', () => {
           "type": "Attachment",
           "value": {
             "contentType": "text/typescript",
-            "title": "index.ts",
-            "url": "http://example.com/new.pdf",
+            "title": "old.ts",
+            "url": "http://example.com/old.pdf",
           }
         },
         "revisedValue": {
           "type": "Attachment",
           "value": {
             "contentType": "text/typescript",
-             "url": "http://example.com/new.pdf",
-             "title": "index.ts"
+             "url": "http://example.com/new.ts",
+             "title": "new.ts"
           }
         }
       });
