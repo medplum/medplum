@@ -46,6 +46,7 @@ import validator from 'validator';
 import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { getLogger } from '../logger';
+import { ReadFromTokenColumns } from './lookups/token';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { Repository } from './repo';
 import { getFullUrl } from './response';
@@ -69,6 +70,7 @@ import {
   Union,
   ValuesQuery,
 } from './sql';
+import { addTokenColumnsOrderBy, buildTokenColumnsSearchFilter } from './token-column';
 
 /**
  * Defines the maximum number of resources returned in a single search result.
@@ -968,11 +970,12 @@ function buildSearchFilterExpression(
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'lookup-table') {
+  if (ReadFromTokenColumns.value && impl.searchStrategy === 'token-column') {
+    return buildTokenColumnsSearchFilter(resourceType, table, param, filter);
+  } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
     return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
   }
 
-  // Not any special cases, just a normal search parameter.
   return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
 }
 
@@ -1383,12 +1386,14 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
   }
 
   const impl = getSearchParameterImplementation(resourceType, param);
-  if (impl.searchStrategy === 'lookup-table') {
+  if (ReadFromTokenColumns.value && impl.searchStrategy === 'token-column') {
+    addTokenColumnsOrderBy(builder, resourceType, sortRule, param);
+  } else if (impl.searchStrategy === 'lookup-table' || impl.searchStrategy === 'token-column') {
     impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
-    return;
+  } else {
+    impl satisfies ColumnSearchParameterImplementation;
+    builder.orderBy(impl.columnName, !!sortRule.descending);
   }
-
-  builder.orderBy(impl.columnName, !!sortRule.descending);
 }
 
 /**
