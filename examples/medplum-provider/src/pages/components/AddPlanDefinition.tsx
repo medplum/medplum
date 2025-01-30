@@ -220,31 +220,31 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
 
             <Paper withBorder p="md" style={{ flex: '1', height: '100%' }}>
               {selectedPlanDefinition ? (
-              <Stack gap="sm" style={{ height: '100%' }}>
-                <Title order={5}>Preview</Title>
+                <Stack gap="sm" style={{ height: '100%' }}>
+                  <Title order={5}>Preview</Title>
 
-                <Stack gap={0}>
-                <Text fz="md" fw={500}>
-                  {selectedPlanDefinition.name}
-                </Text>
-                <Text fw={500} c="dimmed">
-                  {selectedPlanDefinition.subtitle}
-                </Text>
-                </Stack>
+                  <Stack gap={0}>
+                    <Text fz="md" fw={500}>
+                      {selectedPlanDefinition.name}
+                    </Text>
+                    <Text fw={500} c="dimmed">
+                      {selectedPlanDefinition.subtitle}
+                    </Text>
+                  </Stack>
 
-                <ScrollArea style={{ flex: 1 }}>
-                <Stack gap="xs">
-                  {selectedPlanDefinition.action?.map((action, index) => (
-                  <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
-                    <Text fw={500}>{action.title}</Text>
-                    {action.description && <Text c="dimmed">{action.description}</Text>}
-                  </Card>
-                  ))}
+                  <ScrollArea style={{ flex: 1 }}>
+                    <Stack gap="xs">
+                      {selectedPlanDefinition.action?.map((action, index) => (
+                        <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
+                          <Text fw={500}>{action.title}</Text>
+                          {action.description && <Text c="dimmed">{action.description}</Text>}
+                        </Card>
+                      ))}
+                    </Stack>
+                  </ScrollArea>
                 </Stack>
-                </ScrollArea>
-              </Stack>
               ) : (
-              <Text color="dimmed">Select a template to see preview</Text>
+                <Text color="dimmed">Select a template to see preview</Text>
               )}
             </Paper>
           </Box>

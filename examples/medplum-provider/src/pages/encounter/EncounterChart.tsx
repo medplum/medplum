@@ -81,7 +81,9 @@ export const EncounterChart = (): JSX.Element => {
         </Stack>
 
         <Stack gap="lg">
-          {encounterId && patientId && <AddPlanDefinition encounterId={encounterId} patientId={patientId} onApply={fetchTasks} />}
+          {encounterId && patientId && (
+            <AddPlanDefinition encounterId={encounterId} patientId={patientId} onApply={fetchTasks} />
+          )}
           <div>
             <Text fw={500} mb="xs">
               Encounter status
