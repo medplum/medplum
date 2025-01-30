@@ -68,6 +68,64 @@ export const Operator = {
     }
     sql.append(')');
   },
+  ARRAY_CONTAINS_SUBQUERY: (sql: SqlBuilder, column: Column, expression: Expression, expressionType?: string) => {
+    sql.append('(');
+    sql.appendColumn(column);
+    sql.append(' && (');
+    sql.appendExpression(expression);
+    sql.append(')');
+    if (expressionType) {
+      sql.append('::' + expressionType);
+    }
+    sql.append(')');
+  },
+  ARRAY_EMPTY: (sql: SqlBuilder, column: Column) => {
+    sql.append('(array_length(');
+    sql.appendColumn(column);
+    sql.append(', 1) IS NULL');
+    sql.append(')');
+  },
+  ARRAY_NOT_EMPTY: (sql: SqlBuilder, column: Column) => {
+    sql.append('(array_length(');
+    sql.appendColumn(column);
+    sql.append(', 1) IS NOT NULL');
+    sql.append(')');
+  },
+  ANY_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append('TEXT(');
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' LIKE ');
+    sql.appendParameters(parameter, false);
+  },
+  ARRAY_LIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`${TokenArrayToTextFn.name}(`);
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~~ ');
+    sql.appendParameters(parameter, false);
+  },
+  ARRAY_ILIKE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`${TokenArrayToTextFn.name}(`);
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~~* ');
+    sql.appendParameters(parameter, false);
+  },
+  ARRAY_REGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`${TokenArrayToTextFn.name}(`);
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~ ');
+    sql.appendParameters(parameter, false);
+  },
+  ARRAY_IREGEX: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
+    sql.append(`${TokenArrayToTextFn.name}(`);
+    sql.appendColumn(column);
+    sql.append(')');
+    sql.append(' ~* ');
+    sql.appendParameters(parameter, false);
+  },
   TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     const query = formatTsquery(parameter);
     if (!query) {
@@ -94,15 +152,15 @@ export const Operator = {
     sql.param(query);
     sql.append(')');
   },
-  IN_SUBQUERY: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
+  IN_SUBQUERY: (sql: SqlBuilder, column: Column, expression: Expression, expressionType?: string) => {
     sql.appendColumn(column);
     sql.append('=ANY(');
-    if (paramType) {
+    if (expressionType) {
       sql.append('(');
     }
-    sql.appendExpression(parameter);
-    if (paramType) {
-      sql.append(')::' + paramType);
+    sql.appendExpression(expression);
+    if (expressionType) {
+      sql.append(')::' + expressionType);
     }
     sql.append(')');
   },
@@ -210,6 +268,17 @@ export class Condition implements Expression {
   buildSql(sql: SqlBuilder): void {
     const operator = Operator[this.operator];
     operator(sql, this.column, this.parameter, this.parameterType);
+  }
+}
+
+export class TypedCondition<T extends keyof typeof Operator> extends Condition {
+  constructor(
+    column: Column | string,
+    readonly operator: T,
+    readonly parameter: Parameters<(typeof Operator)[T]>[2],
+    readonly parameterType?: string
+  ) {
+    super(column, operator, parameter, parameterType);
   }
 }
 
@@ -951,4 +1020,15 @@ export interface SqlFunctionDefinition {
 // When a function is defined and live in the database, i.e. it's created via a migration,
 // its definitions should NEVER be changed. If a change is needed, a new function should be created.
 
-export const SqlFunctions: Record<string, SqlFunctionDefinition> = {};
+const TokenArrayToTextFn: SqlFunctionDefinition = {
+  name: 'token_array_to_text',
+  createQuery: `CREATE FUNCTION token_array_to_text(text[])
+      RETURNS text
+      LANGUAGE sql
+      IMMUTABLE
+    AS $function$SELECT e'\x03'||array_to_string($1, e'\x03')||e'\x03'$function$`,
+};
+
+export const SqlFunctions = {
+  token_array_to_text: TokenArrayToTextFn,
+} as const;

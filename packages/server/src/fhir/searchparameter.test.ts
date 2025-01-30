@@ -7,8 +7,9 @@ import {
   globalSearchParameterRegistry,
   LookupTableSearchParameterImplementation,
   SearchParameterImplementation,
+  SearchStrategies,
+  TokenColumnSearchParameterImplementation,
 } from './searchparameter';
-import { TokenTable } from './lookups/token';
 import { AddressTable } from './lookups/address';
 import { HumanNameTable } from './lookups/humanname';
 
@@ -74,6 +75,7 @@ describe('SearchParameterImplementation', () => {
       code: 'test',
       type: 'string',
       expression: 'OtherType.test',
+      base: ['Patient'],
     } as SearchParameter;
 
     const impl = getSearchParameterImplementation('Patient', missingExpressionParam);
@@ -227,20 +229,27 @@ describe('SearchParameterImplementation', () => {
       (e) => e.id === 'EvidenceVariable-characteristic-type'
     ) as SearchParameter;
     const impl = getSearchParameterImplementation('EvidenceVariable', searchParam);
-    assertLookupTableImplementation(impl);
-    expect(impl.lookupTable instanceof TokenTable).toBeTruthy();
+    expectTokenColumnImplementation(impl);
   });
 
+  test.each([['Patient-identifier'], ['Patient-language']])(
+    'token column for SearchParameter %s on Patient',
+    (searchParamId) => {
+      const resourceType = 'Patient';
+      const searchParam = indexedSearchParams.find((e) => e.id === searchParamId) as SearchParameter;
+      const impl = getSearchParameterImplementation(resourceType, searchParam);
+      expectTokenColumnImplementation(impl);
+    }
+  );
+
   test.each([
-    ['Patient-identifier', TokenTable],
     ['individual-address-country', AddressTable],
     ['Patient-name', HumanNameTable],
-    ['Patient-language', TokenTable],
   ])('lookup table for SearchParameter %s on Patient', (searchParamId, lookupTableClass) => {
     const resourceType = 'Patient';
     const searchParam = indexedSearchParams.find((e) => e.id === searchParamId) as SearchParameter;
     const impl = getSearchParameterImplementation(resourceType, searchParam);
-    assertLookupTableImplementation(impl);
+    expectLookupTableImplementation(impl);
     expect(impl.lookupTable instanceof lookupTableClass).toBeTruthy();
   });
 
@@ -260,21 +269,20 @@ describe('SearchParameterImplementation', () => {
 function assertColumnImplementation(
   impl: SearchParameterImplementation | undefined
 ): asserts impl is ColumnSearchParameterImplementation {
-  if (!impl) {
-    throw new Error('Expected implementation');
-  }
-  if (impl.searchStrategy !== 'column') {
-    throw new Error('Expected column search strategy');
-  }
+  expect(impl).toBeDefined();
+  expect(impl?.searchStrategy).toBe(SearchStrategies.COLUMN);
 }
 
-function assertLookupTableImplementation(
+function expectLookupTableImplementation(
   impl: SearchParameterImplementation | undefined
 ): asserts impl is LookupTableSearchParameterImplementation {
-  if (!impl) {
-    throw new Error('Expected implementation');
-  }
-  if (impl.searchStrategy !== 'lookup-table') {
-    throw new Error('Expected lookup-table search strategy');
-  }
+  expect(impl).toBeDefined();
+  expect(impl?.searchStrategy).toBe(SearchStrategies.LOOKUP_TABLE);
+}
+
+function expectTokenColumnImplementation(
+  impl: SearchParameterImplementation | undefined
+): asserts impl is TokenColumnSearchParameterImplementation {
+  expect(impl).toBeDefined();
+  expect(impl?.searchStrategy).toBe(SearchStrategies.TOKEN_COLUMN);
 }
