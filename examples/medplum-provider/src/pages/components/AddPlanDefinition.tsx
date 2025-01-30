@@ -136,11 +136,9 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
     plan: PlanDefinition;
     selectedPlanDefinition: PlanDefinition | undefined;
   }): string => {
-    // Check selection first
     if (selectedPlanDefinition?.id === plan.id) {
       return theme.colors.blue[5];
     }
-    // Fallback to dark or light
     if (colorScheme === 'dark') {
       return theme.colors.dark[8];
     }
