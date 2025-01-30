@@ -33,7 +33,7 @@ import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
 import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
-import { closeRateLimiter, getRateLimiter } from './ratelimit';
+import { closeRateLimiter, rateLimitHandler } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
 import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
@@ -158,7 +158,7 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
   app.use(cors(corsOptions));
   app.use(compression());
   app.use(attachRequestContext);
-  app.use(getRateLimiter(config));
+  app.use(rateLimitHandler(config));
   app.use('/fhir/R4/Binary', binaryRouter);
 
   // Handle async batch by enqueueing job
