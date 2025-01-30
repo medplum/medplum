@@ -20,9 +20,16 @@ import {
   ColumnSearchParameterImplementation,
   getSearchParameterImplementation,
   SearchParameterImplementation,
+  TokenColumnSearchParameterImplementation,
 } from '../fhir/searchparameter';
 import { SqlFunctionDefinition, SqlFunctions } from '../fhir/sql';
-import { doubleEscapeSingleQuotes, escapeUnicode, parseIndexColumns, splitIndexColumnNames } from './migrate-utils';
+import {
+  doubleEscapeSingleQuotes,
+  escapeUnicode,
+  parseIndexColumns,
+  quotedColumnName,
+  splitIndexColumnNames,
+} from './migrate-utils';
 
 const SCHEMA_DIR = resolve(__dirname, 'schema');
 let DRY_RUN = false;
@@ -41,7 +48,7 @@ export interface TableDefinition {
   indexes: IndexDefinition[];
 }
 
-interface ColumnDefinition {
+export interface ColumnDefinition {
   name: string;
   type: string;
   notNull?: boolean;
@@ -507,40 +514,47 @@ function buildSearchColumns(tableDefinition: TableDefinition, resourceType: stri
   }
 }
 
-function getSearchParameterColumns(impl: ColumnSearchParameterImplementation): ColumnDefinition[] {
-  return [getColumnDefinition(impl.columnName, impl)];
-}
+function getSearchParameterColumns(
+  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
+): ColumnDefinition[] {
+  switch (impl.searchStrategy) {
+    case 'token-column':
+      if (impl.type !== SearchParameterType.TEXT) {
+        throw new Error('Expected SearchParameterDetails.type to be TEXT but got ' + impl.type);
+      }
+      return [{ name: impl.columnName, type: 'TEXT[]' }];
 
-const TableAbbrieviations: Record<string, string | undefined> = {
-  MedicinalProductAuthorization: 'MPA',
-  MedicinalProductContraindication: 'MPC',
-  MedicinalProductPharmaceutical: 'MPP',
-  MedicinalProductUndesirableEffect: 'MPUE',
-};
-
-const ColumnNameAbbreviations: Record<string, string | undefined> = {
-  participatingOrganization: 'partOrg',
-  primaryOrganization: 'primOrg',
-};
-
-function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
-  let result = name;
-  for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>)) {
-    result = result.replace(original, abbrev);
+    case 'column':
+      return [getColumnDefinition(impl.columnName, impl)];
+    default:
+      throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
   }
-  return result;
 }
 
-function expandAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
-  let result = name;
-  for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>).reverse()) {
-    result = result.replace(abbrev, original);
+function getSearchParameterIndexes(
+  impl: ColumnSearchParameterImplementation | TokenColumnSearchParameterImplementation
+): IndexDefinition[] {
+  switch (impl.searchStrategy) {
+    case 'token-column': {
+      return [
+        { columns: [impl.columnName], indexType: 'gin', where: `${quotedColumnName(impl.columnName)} IS NOT NULL` },
+        {
+          columns: [
+            {
+              expression: `token_array_to_text(${quotedColumnName(impl.columnName)}) gin_trgm_ops`,
+              name: impl.columnName + 'Trgm',
+            },
+          ],
+          indexType: 'gin',
+          where: `${quotedColumnName(impl.columnName)} IS NOT NULL`,
+        },
+      ];
+    }
+    case 'column':
+      return [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
+    default:
+      throw new Error('Unexpected searchStrategy: ' + (impl as SearchParameterImplementation).searchStrategy);
   }
-  return result;
-}
-
-function getSearchParameterIndexes(impl: ColumnSearchParameterImplementation): IndexDefinition[] {
-  return [{ columns: [impl.columnName], indexType: impl.array ? 'gin' : 'btree' }];
 }
 
 const additionalSearchColumns: { table: string; column: string; type: string; indexType: IndexType }[] = [
@@ -571,6 +585,20 @@ function getColumnDefinition(name: string, impl: SearchParameterImplementation):
       baseColumnType = 'TEXT';
       break;
   }
+
+  if (impl.searchStrategy === 'token-column') {
+    if (baseColumnType.toLocaleUpperCase() !== 'TEXT') {
+      throw new Error('Token columns must have TEXT column type');
+    }
+
+    return {
+      name,
+      type: 'TEXT[]',
+      // notNull: true,
+      // defaultValue: 'ARRAY[]::TEXT[]',
+    };
+  }
+
   const type = impl.array ? baseColumnType + '[]' : baseColumnType;
 
   return {
@@ -1090,7 +1118,7 @@ export function indexDefinitionsEqual(a: IndexDefinition, b: IndexDefinition): b
   return deepEquals(aPrime, bPrime);
 }
 
-function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition): boolean {
+export function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition): boolean {
   // Populate optional fields with default values before comparing
   for (const def of [a, b]) {
     def.defaultValue ??= undefined;
@@ -1100,6 +1128,34 @@ function columnDefinitionsEqual(a: ColumnDefinition, b: ColumnDefinition): boole
 
   // deepEquals has FHIR-specific logic, but ColumnDefinition is simple enough that it works fine
   return deepEquals(a, b);
+}
+
+const TableAbbrieviations: Record<string, string | undefined> = {
+  MedicinalProductAuthorization: 'MPA',
+  MedicinalProductContraindication: 'MPC',
+  MedicinalProductPharmaceutical: 'MPP',
+  MedicinalProductUndesirableEffect: 'MPUE',
+};
+
+const ColumnNameAbbreviations: Record<string, string | undefined> = {
+  participatingOrganization: 'partOrg',
+  primaryOrganization: 'primOrg',
+};
+
+function applyAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
+  let result = name;
+  for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>)) {
+    result = result.replace(original, abbrev);
+  }
+  return result;
+}
+
+function expandAbbreviations(name: string, abbreviations: Record<string, string | undefined>): string {
+  let result = name;
+  for (const [original, abbrev] of Object.entries(abbreviations as Record<string, string>).reverse()) {
+    result = result.replace(abbrev, original);
+  }
+  return result;
 }
 
 if (require.main === module) {

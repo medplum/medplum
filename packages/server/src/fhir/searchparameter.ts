@@ -1,5 +1,5 @@
 import { capitalize, getSearchParameterDetails, SearchParameterDetails } from '@medplum/core';
-import { SearchParameter } from '@medplum/fhirtypes';
+import { ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { HumanNameTable } from './lookups/humanname';
 import { AddressTable } from './lookups/address';
 import { CodingTable } from './lookups/coding';
@@ -9,19 +9,32 @@ import { TokenTable } from './lookups/token';
 
 type Writeable<T> = { -readonly [P in keyof T]: T[P] };
 
+export const SearchStrategies = {
+  COLUMN: 'column',
+  LOOKUP_TABLE: 'lookup-table',
+  TOKEN_COLUMN: 'token-column',
+} as const;
+
 export interface ColumnSearchParameterImplementation extends SearchParameterDetails {
-  readonly searchStrategy: 'column';
+  readonly searchStrategy: typeof SearchStrategies.COLUMN;
   readonly columnName: string;
 }
 
 export interface LookupTableSearchParameterImplementation extends SearchParameterDetails {
-  readonly searchStrategy: 'lookup-table';
+  readonly searchStrategy: typeof SearchStrategies.LOOKUP_TABLE;
+  readonly lookupTable: LookupTable;
+}
+
+export interface TokenColumnSearchParameterImplementation extends SearchParameterDetails {
+  readonly searchStrategy: typeof SearchStrategies.TOKEN_COLUMN;
+  readonly columnName: string;
   readonly lookupTable: LookupTable;
 }
 
 export type SearchParameterImplementation =
   | ColumnSearchParameterImplementation
-  | LookupTableSearchParameterImplementation;
+  | LookupTableSearchParameterImplementation
+  | TokenColumnSearchParameterImplementation;
 
 interface ResourceTypeSearchParameterInfo {
   searchParamsImplementations: Record<string, SearchParameterImplementation>;
@@ -41,6 +54,7 @@ export function getSearchParameterImplementation(
     globalSearchParameterRegistry.types[resourceType]?.searchParamsImplementations?.[searchParam.code as string];
   if (!result) {
     result = buildSearchParameterImplementation(resourceType, searchParam);
+    setSearchParameterImplementation(resourceType, searchParam.code, result);
   }
   return result;
 }
@@ -58,6 +72,15 @@ function setSearchParameterImplementation(
   typeSchema.searchParamsImplementations[code] = implementation;
 }
 
+// const TelecomTokenSearchParameterIds = [
+//   'individual-telecom',
+//   'individual-email',
+//   'individual-phone',
+//   'OrganizationAffiliation-telecom',
+//   'OrganizationAffiliation-email',
+//   'OrganizationAffiliation-phone',
+// ];
+
 function buildSearchParameterImplementation(
   resourceType: string,
   searchParam: SearchParameter
@@ -65,18 +88,36 @@ function buildSearchParameterImplementation(
   const code = searchParam.code;
   const impl = getSearchParameterDetails(resourceType, searchParam) as SearchParameterImplementation;
 
-  const lookupTable = getLookupTable(resourceType, searchParam);
-  if (lookupTable) {
+  let lookupTable: LookupTable | undefined;
+  if (!searchParam.base?.includes(resourceType as ResourceType)) {
+    throw new Error(`SearchParameter.base does not include ${resourceType} for ${searchParam.id ?? searchParam.code}`);
+  }
+
+  if ((lookupTable = getLookupTable(resourceType, searchParam))) {
+    if (lookupTable === tokenTable) {
+      const writeable = impl as Writeable<TokenColumnSearchParameterImplementation>;
+      writeable.searchStrategy = 'token-column';
+      writeable.lookupTable = lookupTable;
+
+      writeable.columnName = 'tokens';
+      // if (TelecomTokenSearchParameterIds.includes(searchParam.id as string)) {
+      //   writeable.columnName = 'telecom';
+      // } else {
+      //   writeable.columnName = convertCodeToColumnName(code);
+      // }
+      return impl;
+    }
+
     const writeable = impl as Writeable<LookupTableSearchParameterImplementation>;
     writeable.searchStrategy = 'lookup-table';
     writeable.lookupTable = lookupTable;
-  } else {
-    const writeable = impl as Writeable<ColumnSearchParameterImplementation>;
-    writeable.searchStrategy = 'column';
-    writeable.columnName = convertCodeToColumnName(code);
+    return impl;
   }
 
-  setSearchParameterImplementation(resourceType, code, impl);
+  const writeable = impl as Writeable<ColumnSearchParameterImplementation>;
+  writeable.searchStrategy = 'column';
+  writeable.columnName = convertCodeToColumnName(code);
+
   return impl;
 }
 
@@ -86,8 +127,12 @@ function buildSearchParameterImplementation(
  * @returns The SQL column name.
  */
 function convertCodeToColumnName(code: string): string {
-  return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
+  // hyphen is common in SearchParameter.code
+  // colon is used in Medplum "derived" search parameters, see deriveIdentifierSearchParameter
+  return code.split(/[-:]/).reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
+
+const tokenTable = new TokenTable();
 
 /**
  * The lookup tables array includes a list of special tables for search indexing.
@@ -95,7 +140,7 @@ function convertCodeToColumnName(code: string): string {
 export const lookupTables: LookupTable[] = [
   new AddressTable(),
   new HumanNameTable(),
-  new TokenTable(),
+  tokenTable,
   new ReferenceTable(),
   new CodingTable(),
 ];
