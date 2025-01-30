@@ -137,7 +137,9 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
   let defaultHeaders: Record<string, string> | undefined;
   if (bot.runAsUser) {
     runAs = ctx.membership;
-    defaultHeaders = req.headers as Record<string, string>;
+    defaultHeaders = {
+      Cookie: req.headers.cookie as string,
+    };
   } else {
     runAs = (await findProjectMembership(project, createReference(bot))) ?? ctx.membership;
   }
