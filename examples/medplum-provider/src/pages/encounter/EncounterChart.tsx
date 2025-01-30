@@ -16,7 +16,7 @@ export const EncounterChart = (): JSX.Element => {
   const [tasks, setTasks] = useState<Task[]>([]);
 
   const fetchTasks = useCallback(async (): Promise<void> => {
-    const result = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
+    const result = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`, { cache: 'no-cache' });
     setTasks(result);
   }, [medplum, encounterId]);
 
