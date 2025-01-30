@@ -90,12 +90,13 @@ import { patchObject } from '../util/patch';
 import { addBackgroundJobs } from '../workers';
 import { addSubscriptionJobs } from '../workers/subscription';
 import { validateResourceWithJsonSchema } from './jsonschema';
+import { deriveIdentifierSearchParameter } from './lookups/util';
 import { getPatients } from './patient';
 import { replaceConditionalReferences, validateResourceReferences } from './references';
 import { getFullUrl } from './response';
 import { RewriteMode, rewriteAttachments } from './rewrite';
 import { buildSearchExpression, searchByReferenceImpl, searchImpl } from './search';
-import { getSearchParameterImplementation, lookupTables } from './searchparameter';
+import { ColumnSearchParameterImplementation, getSearchParameterImplementation, lookupTables } from './searchparameter';
 import {
   Condition,
   DeleteQuery,
@@ -108,6 +109,7 @@ import {
   periodToRangeString,
 } from './sql';
 import { getBinaryStorage } from './storage';
+import { buildTokenColumns } from './token-column';
 
 const transactionAttempts = 2;
 const retryableTransactionErrorCodes = ['40001'];
@@ -1317,6 +1319,10 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (searchParams) {
       for (const searchParam of Object.values(searchParams)) {
         this.buildColumn(resource, row, searchParam);
+        if (searchParam.type === 'reference') {
+          const derived = deriveIdentifierSearchParameter(searchParam);
+          this.buildColumn(resource, row, derived);
+        }
       }
     }
     return row;
@@ -1449,6 +1455,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       searchParam.code === '_id' ||
       searchParam.code === '_lastUpdated' ||
       searchParam.code === '_compartment' ||
+      searchParam.code === '_compartment:identifier' ||
       searchParam.type === 'composite' ||
       impl.searchStrategy === 'lookup-table'
     ) {
@@ -1456,17 +1463,21 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
 
     const values = evalFhirPath(searchParam.expression as string, resource);
-    let columnValue = null;
 
-    if (values.length > 0) {
-      if (impl.array) {
-        columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
-      } else {
-        columnValue = this.buildColumnValue(searchParam, impl, values[0]);
+    if (impl.searchStrategy === 'token-column') {
+      buildTokenColumns(searchParam, impl, columns, resource);
+    } else {
+      impl satisfies ColumnSearchParameterImplementation;
+      let columnValue = null;
+      if (values.length > 0) {
+        if (impl.array) {
+          columnValue = values.map((v) => this.buildColumnValue(searchParam, impl, v));
+        } else {
+          columnValue = this.buildColumnValue(searchParam, impl, values[0]);
+        }
       }
+      columns[impl.columnName] = columnValue;
     }
-
-    columns[impl.columnName] = columnValue;
 
     // Handle special case for "MeasureReport-period"
     // This is a trial for using "tstzrange" columns for date/time ranges.

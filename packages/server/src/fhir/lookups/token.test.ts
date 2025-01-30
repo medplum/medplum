@@ -5,11 +5,13 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { bundleContains, createTestProject, withTestContext } from '../../test.setup';
 import { getSystemRepo, Repository } from '../repo';
+import { ReadFromTokenColumns } from './token';
 
-describe('Identifier Lookup Table', () => {
+describe.each([false, true])('Token Lookup Table using token columns: %s', (useTokenColumns) => {
   const systemRepo = getSystemRepo();
 
   beforeAll(async () => {
+    ReadFromTokenColumns.value = useTokenColumns;
     const config = await loadTestConfig();
     await initAppServices(config);
   });
@@ -980,11 +982,10 @@ describe('Identifier Lookup Table', () => {
       expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
     });
 
-    //TODO{mattlong} these tests should pass in new token implementation
-    test.failing.each<[string, Conditions[]]>([
+    test.each<[string, Conditions[]]>([
       [val1.slice(1, 3), ['codeOneNoCat', 'codeOneCatOne', 'codeOneCatTwo', 'codeOneWithoutSystemNoCat']],
       [val2.slice(1, 3), ['codeTwoWithoutSystemCatTwo']],
-    ])('FAILING code :contains middle of value %s', async (value, expected) => {
+    ])(`code :contains middle of value %s`, async (value, expected) => {
       const resContains = await repo.search<Condition>({
         resourceType: 'Condition',
         filters: [
@@ -995,7 +996,12 @@ describe('Identifier Lookup Table', () => {
           },
         ],
       });
-      expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
+      if (ReadFromTokenColumns.value) {
+        expect(toSortedIdentifierValues(resContains)).toStrictEqual(toSorted(expected));
+      } else {
+        // Token lookup tables don't support infix queries
+        expect(toSortedIdentifierValues(resContains).length).toBe(0);
+      }
     });
 
     test.each<[string, Conditions[]]>([
