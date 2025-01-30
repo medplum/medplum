@@ -8,18 +8,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff } from '@tabler/icons-react';
+import { AddPlanDefinition } from '../components/AddPlanDefinition';
 
 export const EncounterChart = (): JSX.Element => {
-  const { encounterId } = useParams();
+  const { patientId, encounterId } = useParams();
   const medplum = useMedplum();
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  useEffect(() => {
-    const fetchTasks = async (): Promise<void> => {
-      const result = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
-      setTasks(result);
-    };
+  const fetchTasks = useCallback(async (): Promise<void> => {
+    const result = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
+    setTasks(result);
+  }, [medplum, encounterId]);
 
+  useEffect(() => {
     fetchTasks().catch((err) => {
       showNotification({
         color: 'red',
@@ -28,7 +29,7 @@ export const EncounterChart = (): JSX.Element => {
         message: normalizeErrorString(err),
       });
     });
-  }, [medplum, encounterId]);
+  }, [medplum, encounterId, fetchTasks]);
 
   const handleSaveChanges = useCallback(
     async (task: Task, questionnaireResponse: QuestionnaireResponse): Promise<void> => {
@@ -80,14 +81,7 @@ export const EncounterChart = (): JSX.Element => {
         </Stack>
 
         <Stack gap="lg">
-          <Button variant="outline" color="blue" fullWidth>
-            Add care template
-          </Button>
-
-          <Text size="sm" color="dimmed">
-            Task groups predefined by care planner
-          </Text>
-
+          {encounterId && patientId && <AddPlanDefinition encounterId={encounterId} patientId={patientId} onApply={fetchTasks} />}
           <div>
             <Text fw={500} mb="xs">
               Encounter status
