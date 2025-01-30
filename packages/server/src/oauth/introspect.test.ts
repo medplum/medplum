@@ -71,4 +71,30 @@ describe('OAuth2 UserInfo', () => {
     expect(res3.status).toBe(200);
     expect(res3.body).toStrictEqual({ active: false });
   });
+
+  test('Token parameter required', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      email: 'admin@example.com',
+      password: 'medplum_admin',
+      scope: 'openid profile email phone address',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.access_token).toBeDefined();
+    const token = res2.body.access_token;
+
+    const res3 = await request(app)
+      .post(`/oauth2/introspect`)
+      .set('Authorization', 'Bearer ' + token)
+      .send({});
+    expect(res3.status).toBe(400);
+  });
 });
