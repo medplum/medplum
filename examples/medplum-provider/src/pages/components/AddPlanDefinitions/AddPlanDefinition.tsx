@@ -215,7 +215,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                         </Text>
                       </Stack>
 
-                      <ScrollArea.Autosize>
+                      <ScrollArea>
                         <Stack gap="xs">
                           {selectedPlanDefinition.action?.map((action, index) => (
                             <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
@@ -224,7 +224,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                             </Card>
                           ))}
                         </Stack>
-                      </ScrollArea.Autosize>
+                      </ScrollArea>
                     </Stack>
                   ) : (
                     <Text c="dimmed">Select a template to see preview</Text>
