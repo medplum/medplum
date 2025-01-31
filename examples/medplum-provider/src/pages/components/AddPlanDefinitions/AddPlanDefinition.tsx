@@ -9,17 +9,18 @@ import {
   Card,
   TextInput,
   Title,
-  Group,
   Loader,
   useMantineTheme,
   useMantineColorScheme,
   Paper,
+  Grid,
 } from '@mantine/core';
 import { useMedplum } from '@medplum/react';
 import { PlanDefinition } from '@medplum/fhirtypes';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
+import classes from './AddPlanDefinition.module.css';
 
 interface AddPlanDefinitionProps {
   encounterId: string;
@@ -170,98 +171,95 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
           },
         }}
       >
-        <Box p="md">
-          <Box style={{ display: 'flex', gap: '2rem' }}>
-            <Box style={{ flex: 1 }}>
-              <Title order={5} mb="xs">
-                Select care template
-              </Title>
-              <Text size="sm" color="dimmed" mb="md">
-                Care templates are predefined sets of actions that can be applied to encounters.
-              </Text>
+        <Stack h="100%" justify="space-between" gap={0}>
+          <Box flex={1} miw={0}>
+            <Grid p="md">
+              <Grid.Col span={6}>
+                <Box>
+                  <Title order={5} mb="xs">
+                    Select care template
+                  </Title>
+                  <Text size="sm" color="dimmed" mb="md">
+                    Care templates are predefined sets of actions that can be applied to encounters.
+                  </Text>
 
-              <TextInput
-                placeholder="Search by name"
-                mb="md"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.currentTarget.value)}
-                rightSection={isLoading ? <Loader size={16} /> : null}
-                styles={{
-                  input: {
-                    '&:focus': {
-                      borderColor: '#228be6',
-                    },
-                  },
-                }}
-              />
-
-              <ScrollArea.Autosize>
-                {planDefinitions.map((plan) => (
-                  <Card
-                    key={plan.id}
-                    p="md"
-                    mb="xs"
-                    style={{
-                      cursor: 'pointer',
-                      backgroundColor: getBackgroundColor({ plan, selectedPlanDefinition }),
+                  <TextInput
+                    placeholder="Search by name"
+                    mb="md"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.currentTarget.value)}
+                    rightSection={isLoading ? <Loader size={16} /> : null}
+                    styles={{
+                      input: {
+                        '&:focus': {
+                          borderColor: '#228be6',
+                        },
+                      },
                     }}
-                    onClick={() => setSelectedPlanDefinition(plan)}
-                  >
-                    <Text fz="md" fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : undefined}>
-                      {plan.name}
-                    </Text>
-                    <Text fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : 'dimmed'}>
-                      {plan.subtitle}
-                    </Text>
-                  </Card>
-                ))}
-              </ScrollArea.Autosize>
-            </Box>
+                  />
 
-            <Paper withBorder p="md" style={{ flex: '1', height: '100%' }}>
-              {selectedPlanDefinition ? (
-                <Stack gap="sm" style={{ height: '100%' }}>
-                  <Title order={5}>Preview</Title>
+                  <ScrollArea.Autosize>
+                    {planDefinitions.map((plan) => (
+                      <Card
+                        key={plan.id}
+                        p="md"
+                        mb="xs"
+                        style={{
+                          cursor: 'pointer',
+                          backgroundColor: getBackgroundColor({ plan, selectedPlanDefinition }),
+                        }}
+                        onClick={() => setSelectedPlanDefinition(plan)}
+                      >
+                        <Text fz="md" fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : undefined}>
+                          {plan.name}
+                        </Text>
+                        <Text fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : 'dimmed'}>
+                          {plan.subtitle}
+                        </Text>
+                      </Card>
+                    ))}
+                  </ScrollArea.Autosize>
+                </Box>
+              </Grid.Col>
 
-                  <Stack gap={0}>
-                    <Text fz="md" fw={500}>
-                      {selectedPlanDefinition.name}
-                    </Text>
-                    <Text fw={500} c="dimmed">
-                      {selectedPlanDefinition.subtitle}
-                    </Text>
-                  </Stack>
+              <Grid.Col span={6} h="100%">
+                <Paper withBorder p="md" h="100%">
+                  {selectedPlanDefinition ? (
+                    <Stack gap="sm" h="100%">
+                      <Title order={5}>Preview</Title>
 
-                  <ScrollArea style={{ flex: 1 }}>
-                    <Stack gap="xs">
-                      {selectedPlanDefinition.action?.map((action, index) => (
-                        <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
-                          <Text fw={500}>{action.title}</Text>
-                          {action.description && <Text c="dimmed">{action.description}</Text>}
-                        </Card>
-                      ))}
+                      <Stack gap={0}>
+                        <Text fz="md" fw={500}>
+                          {selectedPlanDefinition.name}
+                        </Text>
+                        <Text fw={500} c="dimmed">
+                          {selectedPlanDefinition.subtitle}
+                        </Text>
+                      </Stack>
+
+                      <ScrollArea>
+                        <Stack gap="xs">
+                          {selectedPlanDefinition.action?.map((action, index) => (
+                            <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
+                              <Text fw={500}>{action.title}</Text>
+                              {action.description && <Text c="dimmed">{action.description}</Text>}
+                            </Card>
+                          ))}
+                        </Stack>
+                      </ScrollArea>
                     </Stack>
-                  </ScrollArea>
-                </Stack>
-              ) : (
-                <Text color="dimmed">Select a template to see preview</Text>
-              )}
-            </Paper>
+                  ) : (
+                    <Text c="dimmed">Select a template to see preview</Text>
+                  )}
+                </Paper>
+              </Grid.Col>
+            </Grid>
           </Box>
-        </Box>
 
-        <Group
-          mt="md"
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            position: 'absolute',
-            bottom: '1rem',
-            right: '1rem',
-          }}
-        >
-          <Button onClick={handleApplyPlanDefinition}>Add care template</Button>
-        </Group>
+          <Box className={classes.footer} h={70} p="md" >
+            <Button onClick={handleApplyPlanDefinition}>Add care template</Button>
+          </Box>
+        </Stack>
       </Modal>
     </>
   );

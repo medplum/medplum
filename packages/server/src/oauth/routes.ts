@@ -5,6 +5,7 @@ import { logoutHandler } from './logout';
 import { authenticateRequest } from './middleware';
 import { tokenHandler } from './token';
 import { userInfoHandler } from './userinfo';
+import { tokenIntrospectHandler } from './introspect';
 
 export const oauthRouter = Router();
 oauthRouter.get('/authorize', cookieParser(), authorizeGetHandler);
@@ -14,3 +15,4 @@ oauthRouter.get('/userinfo', authenticateRequest, userInfoHandler);
 oauthRouter.post('/userinfo', authenticateRequest, userInfoHandler);
 oauthRouter.get('/logout', authenticateRequest, logoutHandler);
 oauthRouter.post('/logout', authenticateRequest, logoutHandler);
+oauthRouter.post('/introspect', tokenIntrospectHandler);
