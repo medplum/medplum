@@ -10,8 +10,6 @@ import {
   TextInput,
   Title,
   Loader,
-  useMantineTheme,
-  useMantineColorScheme,
   Paper,
   Grid,
 } from '@mantine/core';
@@ -21,6 +19,7 @@ import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
 import classes from './AddPlanDefinition.module.css';
+import cx from 'clsx';
 
 interface AddPlanDefinitionProps {
   encounterId: string;
@@ -35,8 +34,6 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const medplum = useMedplum();
-  const theme = useMantineTheme();
-  const { colorScheme } = useMantineColorScheme();
 
   const handleApplyPlanDefinition = async (): Promise<void> => {
     if (!selectedPlanDefinition) {
@@ -130,22 +127,6 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
     setSearchQuery('');
   };
 
-  const getBackgroundColor = ({
-    plan,
-    selectedPlanDefinition,
-  }: {
-    plan: PlanDefinition;
-    selectedPlanDefinition: PlanDefinition | undefined;
-  }): string => {
-    if (selectedPlanDefinition?.id === plan.id) {
-      return theme.colors.blue[5];
-    }
-    if (colorScheme === 'dark') {
-      return theme.colors.dark[8];
-    }
-    return theme.colors.gray[1];
-  };
-
   return (
     <>
       <Stack gap="md">
@@ -200,23 +181,20 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
 
                   <ScrollArea.Autosize>
                     {planDefinitions.map((plan) => (
-                      <Card
+                        <Card
                         key={plan.id}
                         p="md"
                         mb="xs"
-                        style={{
-                          cursor: 'pointer',
-                          backgroundColor: getBackgroundColor({ plan, selectedPlanDefinition }),
-                        }}
+                        className={cx(classes.planDefinition, { [classes.selected]: selectedPlanDefinition?.id === plan.id  })}
                         onClick={() => setSelectedPlanDefinition(plan)}
-                      >
+                        >
                         <Text fz="md" fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : undefined}>
                           {plan.name}
                         </Text>
                         <Text fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : 'dimmed'}>
                           {plan.subtitle}
                         </Text>
-                      </Card>
+                        </Card>
                     ))}
                   </ScrollArea.Autosize>
                 </Box>

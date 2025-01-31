@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff } from '@tabler/icons-react';
-import { AddPlanDefinition } from '../components/AddPlanDefinitions.tsx/AddPlanDefinition';
+import { AddPlanDefinition } from '../components/AddPlanDefinitions/AddPlanDefinition';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
