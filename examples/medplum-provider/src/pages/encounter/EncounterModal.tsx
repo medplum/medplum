@@ -1,4 +1,4 @@
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button, Modal, Text, Card } from '@mantine/core';
 import { useState } from 'react';
 import { CodeInput, CodingInput, ResourceInput, useMedplum, ValueSetAutocomplete } from '@medplum/react';
@@ -11,31 +11,15 @@ import { usePatient } from '../../hooks/usePatient';
 export const EncounterModal = (): JSX.Element => {
   const navigate = useNavigate();
   const medplum = useMedplum();
-  const location = useLocation();
   const patient = usePatient();
+  const [isOpen, setIsOpen] = useState(true);
   const [types, setTypes] = useState<ValueSetExpansionContains[]>([]);
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
-  // Todo: create a resusable type
-  const [status, setStatus] = useState<
-    | 'planned'
-    | 'arrived'
-    | 'triaged'
-    | 'in-progress'
-    | 'onleave'
-    | 'finished'
-    | 'cancelled'
-    | 'entered-in-error'
-    | 'unknown'
-  >('planned');
-  const isOpen = location.pathname.endsWith('/Encounter/new');
-
-  const handleClose = (): void => {
-    navigate(-1);
-  };
+  const [status, setStatus] = useState<Encounter['status'] | undefined>();
 
   const handleCreateEncounter = async (): Promise<void> => {
-    if (!patient || !encounterClass || !planDefinitionData) {
+    if (!patient || !encounterClass || !planDefinitionData || !status) {
       return;
     }
 
@@ -75,7 +59,7 @@ export const EncounterModal = (): JSX.Element => {
         message: 'Encounter created',
       });
 
-      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}/chart`);
+      navigate(`/Patient/${patient.id}/Encounter/${encounter.id}`);
     } catch (err) {
       showNotification({
         color: 'red',
@@ -89,7 +73,10 @@ export const EncounterModal = (): JSX.Element => {
   return (
     <Modal
       opened={isOpen}
-      onClose={handleClose}
+      onClose={() => {
+        navigate(-1);
+        setIsOpen(false);
+      }}
       size="xl"
       title="New encounter"
       styles={{
