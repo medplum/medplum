@@ -34,7 +34,7 @@ export function getPatientPageTabOrThrow(tabId: string): PatientPageTabInfo {
 export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'timeline', url: '', label: 'Timeline' },
   { id: 'edit', url: 'edit', label: 'Edit' },
-  { id: 'encounter', url: 'Encounter', label: 'Encounter' },
+  { id: 'encounter', url: 'Encounter?_count=20&_fields=_lastUpdated,period,status,type', label: 'Encounter' },
   {
     id: 'tasks',
     url: 'Task?_fields=_lastUpdated,code,status,focus&_offset=0&_sort=-_lastUpdated&patient=%patient.id',

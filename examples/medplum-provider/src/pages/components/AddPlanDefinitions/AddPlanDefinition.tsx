@@ -154,7 +154,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
       >
         <Stack h="100%" justify="space-between" gap={0}>
           <Box flex={1} miw={0}>
-            <Grid p="md">
+            <Grid p="md" h="100%">
               <Grid.Col span={6}>
                 <Box>
                   <Title order={5} mb="xs">
@@ -200,8 +200,8 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                 </Box>
               </Grid.Col>
 
-              <Grid.Col span={6} h="100%">
-                <Paper withBorder p="md" h="100%">
+              <Grid.Col span={6} h="100%" >
+                <Paper withBorder p="md" h="100%" className={classes.preview}>
                   {selectedPlanDefinition ? (
                     <Stack gap="sm" h="100%">
                       <Title order={5}>Preview</Title>
@@ -215,7 +215,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                         </Text>
                       </Stack>
 
-                      <ScrollArea>
+                      <ScrollArea.Autosize>
                         <Stack gap="xs">
                           {selectedPlanDefinition.action?.map((action, index) => (
                             <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
@@ -224,7 +224,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                             </Card>
                           ))}
                         </Stack>
-                      </ScrollArea>
+                      </ScrollArea.Autosize>
                     </Stack>
                   ) : (
                     <Text c="dimmed">Select a template to see preview</Text>

@@ -9,7 +9,7 @@ import { notifications } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
 export const TaskDetails = (): JSX.Element => {
-  const { taskId } = useParams();
+  const { patientId, encounterId, taskId } = useParams();
   const patient = usePatient();
   const medplum = useMedplum();
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ export const TaskDetails = (): JSX.Element => {
         message: 'Task updated',
       });
       setTask(updatedTask);
-      navigate(-1);
+      navigate(`/Patient/${patientId}/Encounter/${encounterId}`);
     } catch {
       notifications.show({
         color: 'red',
