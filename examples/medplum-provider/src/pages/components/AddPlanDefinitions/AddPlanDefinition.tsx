@@ -139,7 +139,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
       <Modal
         opened={opened}
         onClose={handleClose}
-        title="Add care Template"
+        title="Add Care Template"
         size="75%"
         styles={{
           title: {
@@ -181,26 +181,28 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
 
                   <ScrollArea.Autosize>
                     {planDefinitions.map((plan) => (
-                        <Card
+                      <Card
                         key={plan.id}
                         p="md"
                         mb="xs"
-                        className={cx(classes.planDefinition, { [classes.selected]: selectedPlanDefinition?.id === plan.id  })}
+                        className={cx(classes.planDefinition, {
+                          [classes.selected]: selectedPlanDefinition?.id === plan.id,
+                        })}
                         onClick={() => setSelectedPlanDefinition(plan)}
-                        >
+                      >
                         <Text fz="md" fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : undefined}>
                           {plan.name}
                         </Text>
                         <Text fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : 'dimmed'}>
                           {plan.subtitle}
                         </Text>
-                        </Card>
+                      </Card>
                     ))}
                   </ScrollArea.Autosize>
                 </Box>
               </Grid.Col>
 
-              <Grid.Col span={6} h="100%" >
+              <Grid.Col span={6} h="100%">
                 <Paper withBorder p="md" h="100%" className={classes.preview}>
                   {selectedPlanDefinition ? (
                     <Stack gap="sm" h="100%">
@@ -234,7 +236,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
             </Grid>
           </Box>
 
-          <Box className={classes.footer} h={70} p="md" >
+          <Box className={classes.footer} h={70} p="md">
             <Button onClick={handleApplyPlanDefinition}>Add care template</Button>
           </Box>
         </Stack>
