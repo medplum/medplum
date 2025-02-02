@@ -32,6 +32,13 @@ export async function getDataVersion(): Promise<number> {
   return result.rows[0]?.dataVersion ?? DataVersion.UNKNOWN;
 }
 
+/**
+ * Gets the next data migration version (if any) that should be run.s
+ *
+ * This function returns `DataVersion.NONE` if there are none, or `DataVersion.UNKNOWN` if the current data version (and therefore, the pending data migration) cannot be assessed.
+ *
+ * @returns The next data migration version (if any) that should be run.
+ */
 export async function getPendingDataMigration(): Promise<number> {
   const dataVersion = await getDataVersion();
   if (dataVersion === DataVersion.UNKNOWN) {
@@ -212,25 +219,28 @@ async function migrate(client: PoolClient): Promise<void> {
     // To ensure that the migration is applied before at a particular point in time before the version that requires it
     const manifest = JSON.parse(
       readFileSync(resolve(__dirname, 'migrations/data/data-version-manifest.json'), { encoding: 'utf-8' })
-    ) as Record<string, { serverVersion: string }>;
-    const requiredServerVersion = manifest['v' + pendingDataMigration].serverVersion;
+    ) as Record<string, { serverVersion: string; requiredBefore: string }>;
+    const versionEntry = manifest['v' + pendingDataMigration];
 
     const serverVersion = getServerVersion();
 
-    // TODO(ThatOneBro 16 Dec 2024): Make this version strict after v4 (exact version only)
-    // ----  We made this requirement looser so that self-hosters can run first migration on any version within the minor version before v4
+    // We don't want to run the data migration until the specified version at least
+    // We can just skip over this check if we are not on a version greater than or equal to the specified version
 
-    // We allow any version where the data migration is present and it less than the required version
-    // To run the migration, as we can assume that after the data migration is added, any version between the migration being present
-    // And the minor release that it is supposed to be run in will have the capacity to safely run the migration
-    if (!semver.satisfies(serverVersion, `<${semver.inc(requiredServerVersion, 'minor')}`)) {
-      throw new Error(
-        `Unable to run data migration against the current server version. Migration requires server at version ${requiredServerVersion}, but current server version is ${serverVersion}`
-      );
+    // Broadly there are 3 cases
+    // 1. Less than specified version (version < entry.serverVersion) - skip data migration prompt, allow startup of server
+    // 2. Greater than or equal to the specified serverVersion and less than the requiredBefore version (entry.serverVersion <= version <= entry.requiredBefore) -- notify that a data migration is ready, allow startup
+    // 3. Greater than or equal to the requiredBefore version (version >= entry.requiredBefore) -- throw from this function and do not allow server to startup
+    if (semver.gte(serverVersion, versionEntry.serverVersion)) {
+      // We allow any version where the data migration is greater than or equal to the specified `serverVersion` and it less than the `requiredBefore` version
+      if (semver.gte(serverVersion, versionEntry.requiredBefore)) {
+        throw new Error(
+          `Unable to run data migration against the current server version. Migration requires server at version ${versionEntry.serverVersion} <= version < ${versionEntry.requiredBefore}, but current server version is ${serverVersion}`
+        );
+      }
+      // If we make it here, we have a pending migration, but we don't want to apply it until we make sure we apply all the schema migrations first
+      globalLogger.info('Data migration ready to run', { dataVersion: pendingDataMigration });
     }
-
-    globalLogger.info('Data migration ready to run', { dataVersion: pendingDataMigration });
-    // If we make it here, we have a pending migration, but we don't want to apply it until we make sure we apply all the schema migrations first
   }
 
   const migrationKeys = Object.keys(migrations);
@@ -245,6 +255,14 @@ async function migrate(client: PoolClient): Promise<void> {
   }
 }
 
+/**
+ * Gets a sorted array of all migration versions for the passed in migration module.
+ *
+ * Can be used for either the schema or data migrations modules.
+ *
+ * @param migrationModule - The migration module to read all migrations for. Either the schemaMigrations or dataMigrations module.
+ * @returns All the numeric migration versions from a given migration module, either the schema or data migrations.
+ */
 function getMigrationVersions(migrationModule: Record<string, any>): number[] {
   const prefixedVersions = Object.keys(migrationModule).filter((key) => key.startsWith('v'));
   const migrationVersions = prefixedVersions.map((key) => Number.parseInt(key.slice(1), 10)).sort((a, b) => a - b);

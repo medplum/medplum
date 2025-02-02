@@ -89,19 +89,32 @@ describe('Database migrations', () => {
       await shutdownApp();
     });
 
-    test('Current version is greater than minor version after required version', () =>
+    test('Current version is greater than `requiredBefore`', () =>
       withTestContext(async () => {
         jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '4.0.0');
         await expect(initAppServices(migrationsConfig)).rejects.toThrow(
           new Error(
-            'Unable to run data migration against the current server version. Migration requires server at version 3.3.0, but current server version is 4.0.0'
+            'Unable to run data migration against the current server version. Migration requires server at version 3.3.0 <= version < 4.0.0, but current server version is 4.0.0'
           )
         );
         await shutdownApp();
       }));
 
-    test.each(['3.2.24', '3.3.0'])(
-      'Current version is less than or equal to required version -- version %s',
+    test('Current version is less than required version', async () => {
+      const loggerInfoSpy = jest.spyOn(globalLogger, 'info');
+
+      jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '3.2.0');
+      await expect(initAppServices(migrationsConfig)).resolves.toBeUndefined();
+      expect(loggerInfoSpy).not.toHaveBeenCalledWith('Data migration ready to run', {
+        dataVersion: expect.any(Number),
+      });
+
+      await shutdownApp();
+      loggerInfoSpy.mockRestore();
+    });
+
+    test.each(['3.3.0', '3.3.1', '3.4.0'])(
+      'Current version greater than or equal to required version and less than `requiredBefore` -- version %s',
       (serverVersion) =>
         withTestContext(async () => {
           const loggerInfoSpy = jest.spyOn(globalLogger, 'info');
@@ -174,6 +187,8 @@ describe('Database migrations', () => {
 
     test('No data migration in progress -- start migration job', () =>
       withTestContext(async () => {
+        jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '3.3.0');
+
         const asyncJob = await maybeStartDataMigration();
         expect(asyncJob).toMatchObject<AsyncJob>({
           id: expect.any(String),
