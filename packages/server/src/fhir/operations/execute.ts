@@ -394,7 +394,7 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
     console: botConsole,
     event: {
       bot: createReference(bot),
-      baseUrl: config.baseUrl,
+      baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
       accessToken: request.accessToken,
       input: input instanceof Hl7Message ? input.toString() : input,
       contentType,
