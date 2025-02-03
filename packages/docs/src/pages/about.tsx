@@ -116,6 +116,29 @@ export default function AboutPage(): JSX.Element {
               githubUrl="https://github.com/mattlong"
             />
           </CardContainer>
+          <CardContainer>
+            <ProfileCard
+              name="Ian Plunkett"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/ianplunkett.jpg"
+              linkedInUrl="https://www.linkedin.com/in/ianplunkett/"
+              githubUrl="https://github.com/ianplunkett"
+            />
+            <ProfileCard
+              name="David Yanez"
+              title="Senior Software Engineer"
+              imgUrl="/img/people/david.jpg"
+              linkedInUrl="https://www.linkedin.com/in/jorge-david-yanez-a427b459/"
+              githubUrl="https://github.com/techdavidy"
+            />
+            <ProfileCard
+              name="Finn Bergquist"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/finnbergquist.jpg"
+              linkedInUrl="https://www.linkedin.com/in/finn-bergquist/"
+              githubUrl="https://github.com/finnbergquist"
+            />
+          </CardContainer>
         </Section>
       </Container>
     </Layout>

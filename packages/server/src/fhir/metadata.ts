@@ -50,6 +50,7 @@ const baseStmt: CapabilityStatement = {
     'http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server',
     'http://hl7.org/fhir/uv/bulkdata/CapabilityStatement/bulk-data',
   ],
+  implementationGuide: ['http://hl7.org/fhir/uv/fhircast/ImplementationGuide/hl7.fhir.uv.fhircast|3.0.0'],
   fhirVersion: '4.0.1',
   format: ['json'],
   patchFormat: [ContentType.JSON_PATCH],
@@ -210,6 +211,18 @@ function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
       resource: buildResourceTypes(),
       interaction: [{ code: 'transaction' }, { code: 'batch' }],
       searchParam: supportedSearchParams,
+      extension: [
+        // See: https://build.fhir.org/ig/HL7/fhircast-docs/CapabilityStatement-fhircast-capabilitystatement-example.json
+        {
+          extension: [
+            {
+              url: 'hub.url',
+              valueUrl: `${config.baseUrl}fhircast/STU3`,
+            },
+          ],
+          url: 'http://hl7.org/fhir/uv/fhircast/StructureDefinition/fhircast-configuration-extension',
+        },
+      ],
     },
   ];
 }
@@ -238,32 +251,38 @@ function buildResourceTypes(): CapabilityStatementRestResource[] {
   return Object.entries(getAllDataTypes())
     .filter(
       ([resourceType, typeSchema]) =>
-        isResourceType(resourceType) && typeSchema.url?.startsWith('http://hl7.org/fhir/StructureDefinition/')
+        isResourceType(resourceType) &&
+        typeSchema.url?.startsWith('http://hl7.org/fhir/StructureDefinition/') &&
+        typeSchema.version === '4.0.1'
     )
-    .map(([resourceType, typeSchema]) => ({
-      type: resourceType as ResourceType,
-      profile: typeSchema.url,
-      supportedProfile: supportedProfiles[resourceType] || undefined,
-      interaction: [
-        { code: 'read' }, // Read the current state of the resource.
-        { code: 'vread' }, // Read the state of a specific version of the resource.
-        { code: 'update' }, // Update an existing resource by its id.
-        { code: 'patch' }, // Update an existing resource by posting a set of changes to it.
-        { code: 'delete' }, // Delete a resource.
-        { code: 'history-instance' }, // Retrieve the change history for a particular resource.
-        { code: 'create' }, // Create a new resource with a server assigned id.
-        { code: 'search-type' }, // Search all resources of the specified type based on some filter criteria.
-      ],
-      versioning: 'versioned',
-      readHistory: true,
-      updateCreate: false,
-      conditionalCreate: false,
-      conditionalRead: 'not-supported',
-      conditionalDelete: 'not-supported',
-      referencePolicy: ['literal', 'logical', 'local'],
-      searchParam: buildSearchParameters(typeSchema),
-      operation: supportedOperations[resourceType] || undefined,
-    }));
+    .map(
+      ([resourceType, typeSchema]) =>
+        ({
+          type: resourceType as ResourceType,
+          profile: typeSchema.url,
+          supportedProfile: supportedProfiles[resourceType] || undefined,
+          interaction: [
+            { code: 'read' }, // Read the current state of the resource.
+            { code: 'vread' }, // Read the state of a specific version of the resource.
+            { code: 'update' }, // Update an existing resource by its id.
+            { code: 'patch' }, // Update an existing resource by posting a set of changes to it.
+            { code: 'delete' }, // Delete a resource.
+            { code: 'history-instance' }, // Retrieve the change history for a particular resource.
+            { code: 'create' }, // Create a new resource with a server assigned id.
+            { code: 'search-type' }, // Search all resources of the specified type based on some filter criteria.
+          ],
+          versioning: 'versioned',
+          readHistory: true,
+          updateCreate: false,
+          conditionalCreate: true,
+          conditionalUpdate: true,
+          conditionalRead: 'not-supported',
+          conditionalDelete: 'single',
+          referencePolicy: ['literal', 'logical', 'local'],
+          searchParam: buildSearchParameters(typeSchema),
+          operation: supportedOperations[resourceType],
+        }) satisfies CapabilityStatementRestResource
+    );
 }
 
 function buildSearchParameters(

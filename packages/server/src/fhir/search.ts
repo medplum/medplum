@@ -874,7 +874,7 @@ export function buildSearchExpression(
     for (const filter of searchRequest.filters) {
       let expr: Expression | undefined;
       if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
-        const chain = parseChainedParameter(searchRequest.resourceType, filter.code, filter.value);
+        const chain = parseChainedParameter(searchRequest.resourceType, filter);
         expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
       } else {
         expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
@@ -915,7 +915,7 @@ function buildSearchFilterExpression(
   }
 
   if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
-    const chain = parseChainedParameter(resourceType, filter.code, filter.value);
+    const chain = parseChainedParameter(resourceType, filter);
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
   }
 
@@ -986,11 +986,7 @@ function buildNormalSearchFilterExpression(
     case 'date':
       return buildDateSearchFilter(table, impl, filter);
     case 'quantity':
-      return new Condition(
-        new Column(table, impl.columnName),
-        fhirOperatorToSqlOperator(filter.operator),
-        filter.value
-      );
+      return buildQuantitySearchFilter(table, impl, filter);
     default: {
       const values = splitSearchOnComma(filter.value).map(
         (v) => new Condition(new Column(undefined, impl.columnName), fhirOperatorToSqlOperator(filter.operator), v)
@@ -1290,6 +1286,39 @@ function buildDateSearchFilter(table: string, impl: ColumnSearchParameterImpleme
   }
 
   return new Condition(new Column(table, impl.columnName), fhirOperatorToSqlOperator(filter.operator), filter.value);
+}
+
+/**
+ * Builds a quantity search filter.
+ * @param table - The resource table name.
+ * @param impl - The search parameter implementation info.
+ * @param filter - The search filter.
+ * @returns The select query condition.
+ */
+function buildQuantitySearchFilter(
+  table: string,
+  impl: ColumnSearchParameterImplementation,
+  filter: Filter
+): Expression {
+  const [number, _system, _code] = splitN(filter.value, '|', 3);
+  if (!number) {
+    throw new OperationOutcomeError(badRequest('Invalid quantity value: ' + filter.value));
+  }
+
+  if (filter.operator === Operator.APPROXIMATELY) {
+    // Search for operators within 10% of the value
+    // See: https://hl7.org/fhir/R4/search.html#prefix
+    // 	 The value for the parameter in the resource is approximately the same to the provided value.
+    //   Note that the recommended value for the approximation is 10% of the stated value
+    //   (or for a date, 10% of the gap between now and the date), but systems may choose other values where appropriate
+    const numberValue = parseFloat(number);
+    return new Conjunction([
+      new Condition(new Column(table, impl.columnName), '>=', numberValue * 0.9),
+      new Condition(new Column(table, impl.columnName), '<=', numberValue * 1.1),
+    ]);
+  }
+
+  return new Condition(new Column(table, impl.columnName), fhirOperatorToSqlOperator(filter.operator), number);
 }
 
 /**
@@ -1622,9 +1651,9 @@ function buildSearchLinkCondition(
   }
 }
 
-function parseChainedParameter(resourceType: string, key: string, value: string): ChainedSearchParameter {
+function parseChainedParameter(resourceType: string, searchFilter: Filter): ChainedSearchParameter {
   let currentResourceType = resourceType;
-  const parts = splitChainedSearch(key);
+  const parts = splitChainedSearch(searchFilter.code);
 
   const chain: ChainedSearchLink[] = [];
   let filter: Filter | undefined;
@@ -1640,7 +1669,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       if (!searchParam) {
         throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
       }
-      filter = parseParameter(searchParam, modifier, value);
+      filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
     } else {
       const link = parseChainLink(part, currentResourceType);
       chain.push(link);

@@ -56,6 +56,9 @@ export function HomePage(): JSX.Element {
         >
           Practitioners
         </Button>
+        <Button component="a" href="/Patient">
+          Patients
+        </Button>
       </Group>
 
       <pre

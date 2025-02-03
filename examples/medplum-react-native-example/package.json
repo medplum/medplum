@@ -1,6 +1,6 @@
 {
   "name": "medplum-react-native-example",
-  "version": "3.2.27",
+  "version": "3.2.30",
   "main": "src/main.ts",
   "scripts": {
     "android": "expo start --android",
@@ -20,21 +20,21 @@
     ]
   },
   "dependencies": {
-    "@expo/metro-runtime": "4.0.0",
-    "@medplum/core": "3.2.27",
-    "@medplum/expo-polyfills": "3.2.27",
-    "@medplum/fhirtypes": "3.2.27",
-    "@medplum/react-hooks": "3.2.27",
-    "expo": "52.0.23",
-    "expo-status-bar": "2.0.0",
+    "@expo/metro-runtime": "4.0.1",
+    "@medplum/core": "3.2.30",
+    "@medplum/expo-polyfills": "3.2.30",
+    "@medplum/fhirtypes": "3.2.30",
+    "@medplum/react-hooks": "3.2.30",
+    "expo": "52.0.27",
+    "expo-status-bar": "2.0.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-native": "0.75.4",
     "react-native-web": "0.19.13"
   },
   "devDependencies": {
-    "@babel/core": "7.26.0",
-    "babel-preset-expo": "12.0.4",
-    "typescript": "5.7.2"
+    "@babel/core": "7.26.7",
+    "babel-preset-expo": "12.0.6",
+    "typescript": "5.7.3"
   }
 }

@@ -1,4 +1,4 @@
-import { concatUrls } from '@medplum/core';
+import { badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { createSign } from 'crypto';
 import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
@@ -235,10 +235,10 @@ const BLOCKED_CONTENT_TYPES = [
  */
 export function checkFileMetadata(filename: string | undefined, contentType: string | undefined): void {
   if (checkFileExtension(filename)) {
-    throw new Error('Invalid file extension');
+    throw new OperationOutcomeError(badRequest('Invalid file extension'));
   }
   if (checkContentType(contentType)) {
-    throw new Error('Invalid content type');
+    throw new OperationOutcomeError(badRequest('Invalid content type'));
   }
 }
 

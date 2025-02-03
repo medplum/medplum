@@ -39,6 +39,7 @@ import {
   resolveId,
   satisfiedAccessPolicy,
   serverError,
+  sleep,
   stringify,
   toPeriod,
   validateResource,
@@ -59,14 +60,14 @@ import {
   SearchParameter,
   StructureDefinition,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
+import { v7 } from 'uuid';
 import validator from 'validator';
 import { getConfig } from '../config';
-import { getLogger } from '../context';
 import { DatabaseMode, getDatabasePool } from '../database';
+import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
@@ -210,6 +211,10 @@ export interface ResendSubscriptionsOptions extends InteractionOptions {
   subscription?: string;
 }
 
+export interface ProcessAllResourcesOptions {
+  delayBetweenPagesMs?: number;
+}
+
 /**
  * The Repository class manages reading and writing to the FHIR repository.
  * It is a thin layer on top of the database.
@@ -279,7 +284,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   generateId(): string {
-    return randomUUID();
+    return v7();
   }
 
   async readResource<T extends Resource>(
@@ -621,7 +626,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
     const resultMeta: Meta = {
       ...updated.meta,
-      versionId: randomUUID(),
+      versionId: this.generateId(),
       lastUpdated: this.getLastUpdated(existing, resource),
       author: this.getAuthor(resource),
       onBehalfOf: this.context.onBehalfOf,
@@ -1029,7 +1034,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         await new InsertQuery(resourceType + '_History', [
           {
             id,
-            versionId: randomUUID(),
+            versionId: this.generateId(),
             lastUpdated,
             content,
           },
@@ -1134,16 +1139,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (!this.isSuperAdmin()) {
       throw new OperationOutcomeError(forbidden);
     }
-    await this.withTransaction(async (client) => {
-      const ids = await new DeleteQuery(resourceType)
-        .where('lastUpdated', '<=', before)
-        .returnColumn('id')
-        .execute(client);
-      await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
-      for (const { id } of ids) {
-        await this.deleteFromLookupTables(client, { resourceType, id } as Resource);
-      }
-    });
+
+    const client = this.getDatabaseClient(DatabaseMode.WRITER);
+
+    // Delete from lookup tables first
+    // These operations use the main resource table for lastUpdated, so must come first
+    for (const lookupTable of lookupTables) {
+      await lookupTable.purgeValuesBefore(client, resourceType, before);
+    }
+
+    await new DeleteQuery(resourceType).where('lastUpdated', '<=', before).execute(client);
+    await new DeleteQuery(resourceType + '_History').where('lastUpdated', '<=', before).execute(client);
   }
 
   async search<T extends Resource>(searchRequest: SearchRequest<T>): Promise<Bundle<T>> {
@@ -1158,6 +1164,34 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       const durationMs = Date.now() - startTime;
       this.logEvent(SearchInteraction, AuditEventOutcome.MinorFailure, err, { searchRequest, durationMs });
       throw err;
+    }
+  }
+
+  async processAllResources<T extends Resource>(
+    initialSearchRequest: SearchRequest<T>,
+    process: (resource: T) => Promise<void>,
+    options?: ProcessAllResourcesOptions
+  ): Promise<void> {
+    let searchRequest: SearchRequest<T> | undefined = initialSearchRequest;
+    while (searchRequest) {
+      const bundle: Bundle<T> = await this.search<T>(searchRequest);
+      if (!bundle.entry?.length) {
+        break;
+      }
+      for (const entry of bundle.entry) {
+        if (entry.resource?.id) {
+          await process(entry.resource);
+        }
+      }
+      const nextLink = bundle.link?.find((b) => b.relation === 'next');
+      if (nextLink) {
+        searchRequest = parseSearchRequest<T>(nextLink.url);
+        if (options?.delayBetweenPagesMs) {
+          await sleep(options.delayBetweenPagesMs);
+        }
+      } else {
+        searchRequest = undefined;
+      }
     }
   }
 
@@ -2378,9 +2412,27 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // Return early to avoid calling mget() with no args, which is an error
       return [];
     }
-    return (await getRedis().mget(...referenceKeys)).map((cachedValue) =>
-      cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
-    );
+    const cacheEntries = await getRedis().mget(...referenceKeys);
+    const results = new Array<CacheEntry | undefined>(cacheEntries.length);
+    let cacheHits = 0;
+    for (let i = 0; i < cacheEntries.length; i++) {
+      const cachedValue = cacheEntries[i];
+      if (cachedValue) {
+        // Cache hit
+        results[i] = JSON.parse(cachedValue) as CacheEntry;
+        cacheHits++;
+      } else {
+        // Cache miss
+        results[i] = undefined;
+      }
+    }
+
+    const hitRate = cacheHits / cacheEntries.length;
+    if (hitRate < 0.1 && referenceKeys.length > 50) {
+      getLogger().warn('Excessive cache miss', { references: referenceKeys, hitRate, stack: new Error().stack });
+    }
+
+    return results;
   }
 
   /**

@@ -1,6 +1,22 @@
-import { allOk, getReferenceString, Operator, sortStringArray } from '@medplum/core';
+import {
+  allOk,
+  getReferenceString,
+  Operator,
+  sortStringArray,
+  isReference,
+  isResource,
+  flatMapFilter,
+} from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Bundle, CompartmentDefinitionResource, Patient, ResourceType } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  CompartmentDefinitionResource,
+  Patient,
+  ResourceType,
+  Resource,
+  Reference,
+  BundleEntry,
+} from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
 import { Repository } from '../repo';
@@ -11,10 +27,11 @@ const operation = getOperationDefinition('Patient', 'everything');
 
 const defaultMaxResults = 1000;
 
-type PatientEverythingParameters = {
+export type PatientEverythingParameters = {
   _since?: string;
   _count?: number;
   _offset?: number;
+  _type?: ResourceType[];
 };
 
 // Patient everything operation.
@@ -53,8 +70,9 @@ export async function getPatientEverything(
   patient: Patient,
   params?: PatientEverythingParameters
 ): Promise<Bundle> {
+  // First get all compartment resources
   const resourceList = getPatientCompartments().resource as CompartmentDefinitionResource[];
-  const types = resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
+  const types = params?._type ?? resourceList.map((r) => r.code as ResourceType).filter((t) => t !== 'Binary');
   types.push('Patient');
   sortStringArray(types);
 
@@ -74,11 +92,82 @@ export async function getPatientEverything(
     });
   }
 
-  return repo.search({
+  // Get initial bundle of compartment resources
+  const bundle = await repo.search({
     resourceType: 'Patient',
     types,
     filters,
     count: params?._count ?? defaultMaxResults,
     offset: params?._offset,
   });
+
+  // Recursively resolve references
+  await addResolvedReferences(repo, bundle.entry);
+  return bundle;
+}
+
+/**
+ * Recursively resolves references in the given resources.
+ * @param repo - The repository.
+ * @param entries - The initial resources to process.
+ */
+async function addResolvedReferences(repo: Repository, entries: BundleEntry[] | undefined): Promise<void> {
+  const processedRefs = new Set<string>();
+  let page = entries;
+  while (page?.length) {
+    const references = processReferencesFromResources(page, processedRefs);
+    const resolved = await repo.readReferences(references);
+    page = flatMapFilter(resolved, (resource) =>
+      isResource(resource) ? { resource, search: { mode: 'include' } } : undefined
+    );
+    entries?.push(...page);
+  }
+}
+
+function processReferencesFromResources(toProcess: BundleEntry[], processedRefs: Set<string>): Reference[] {
+  const references = new Set<string>();
+  for (const entry of toProcess) {
+    const resource = entry.resource as Resource;
+    const refString = getReferenceString(resource);
+    if (processedRefs.has(refString)) {
+      continue;
+    } else {
+      processedRefs.add(refString);
+    }
+
+    // Find all references in the resource
+    const candidateRefs = collectReferences(resource);
+    for (const reference of candidateRefs) {
+      if (!processedRefs.has(reference) && shouldResolveReference(reference)) {
+        references.add(reference);
+      }
+    }
+  }
+
+  const result: Reference[] = [];
+  for (const reference of references) {
+    result.push({ reference });
+  }
+  return result;
+}
+
+// Most relevant resource types are already included in the Patient compartment, so
+// only references of select other types need to be resolved
+const allowedReferenceTypes = /^(Organization|Location|Practitioner|Medication)\//;
+function shouldResolveReference(refString: string): boolean {
+  return allowedReferenceTypes.test(refString);
+}
+
+function collectReferences(resource: any, foundReferences = new Set<string>()): Set<string> {
+  for (const key in resource) {
+    if (resource[key] && typeof resource[key] === 'object') {
+      const value = resource[key];
+      if (isReference(value)) {
+        foundReferences.add(value.reference);
+      } else {
+        collectReferences(value, foundReferences);
+      }
+    }
+  }
+  return foundReferences;
 }

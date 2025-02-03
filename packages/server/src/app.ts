@@ -1,4 +1,4 @@
-import { badRequest, ContentType, warnIfNewerVersionAvailable } from '@medplum/core';
+import { badRequest, ContentType, parseLogLevel, warnIfNewerVersionAvailable } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import compression from 'compression';
 import cors from 'cors';
@@ -12,14 +12,7 @@ import { asyncWrap } from './async';
 import { asyncBatchHandler } from './async-batch';
 import { authRouter } from './auth/routes';
 import { getConfig, MedplumServerConfig } from './config';
-import {
-  attachRequestContext,
-  AuthenticatedRequestContext,
-  closeRequestContext,
-  getLogger,
-  getRequestContext,
-  requestContextStore,
-} from './context';
+import { attachRequestContext, AuthenticatedRequestContext, closeRequestContext, getRequestContext } from './context';
 import { corsOptions } from './cors';
 import { closeDatabase, initDatabase } from './database';
 import { dicomRouter } from './dicom/routes';
@@ -34,12 +27,15 @@ import { healthcheckHandler } from './healthcheck';
 import { cleanupHeartbeat, initHeartbeat } from './heartbeat';
 import { hl7BodyParser } from './hl7/parser';
 import { keyValueRouter } from './keyvalue/routes';
+import { getLogger, globalLogger } from './logger';
 import { initKeys } from './oauth/keys';
 import { authenticateRequest } from './oauth/middleware';
 import { oauthRouter } from './oauth/routes';
 import { openApiHandler } from './openapi';
+import { cleanupOtelHeartbeat, initOtelHeartbeat } from './otel/otel';
 import { closeRateLimiter, getRateLimiter } from './ratelimit';
 import { closeRedis, initRedis } from './redis';
+import { requestContextStore } from './request-context-store';
 import { scimRouter } from './scim/routes';
 import { seedDatabase } from './seed';
 import { storageRouter } from './storage';
@@ -147,6 +143,10 @@ export async function initApp(app: Express, config: MedplumServerConfig): Promis
     await warnIfNewerVersionAvailable('server', { base: config.baseUrl });
   }
 
+  if (config.logLevel) {
+    globalLogger.level = parseLogLevel(config.logLevel);
+  }
+
   await initAppServices(config);
   server = http.createServer(app);
   initWebSockets(server);
@@ -219,10 +219,12 @@ export function initAppServices(config: MedplumServerConfig): Promise<void> {
     initBinaryStorage(config.binaryStorage);
     initWorkers(config);
     initHeartbeat(config);
+    initOtelHeartbeat();
   });
 }
 
 export async function shutdownApp(): Promise<void> {
+  cleanupOtelHeartbeat();
   cleanupHeartbeat();
   await closeWebSockets();
   if (server) {

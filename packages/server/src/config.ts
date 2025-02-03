@@ -4,6 +4,7 @@ import { mkdtempSync, readFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, resolve } from 'path';
 import { loadAwsConfig } from './cloud/aws/config';
+import { loadAzureConfig } from './cloud/azure/config';
 import { loadGcpConfig } from './cloud/gcp/config';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
@@ -52,6 +53,7 @@ export interface MedplumServerConfig {
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;
   vmContextBotsEnabled?: boolean;
+  vmContextBaseUrl?: string;
   shutdownTimeoutMilliseconds?: number;
   heartbeatMilliseconds?: number;
   heartbeatEnabled?: boolean;
@@ -178,6 +180,9 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     case 'gcp':
       cachedConfig = await loadGcpConfig(configPath);
       break;
+    case 'azure':
+      cachedConfig = await loadAzureConfig(configPath);
+      break;
     default:
       throw new Error('Unrecognized config type: ' + configType);
   }
@@ -208,7 +213,6 @@ export async function loadTestConfig(): Promise<MedplumServerConfig> {
   config.emailProvider = 'none';
   config.logLevel = 'error';
   config.defaultRateLimit = -1; // Disable rate limiter by default in tests
-
   return config;
 }
 

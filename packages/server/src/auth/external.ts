@@ -66,9 +66,17 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   let email: string | undefined = undefined;
   let externalId: string | undefined = undefined;
   if (idp.useSubject) {
-    externalId = userInfo.sub as string;
+    externalId = userInfo.sub as string | undefined;
+    if (!externalId) {
+      sendOutcome(res, badRequest('External token does not contain subject'));
+      return;
+    }
   } else {
-    email = (userInfo.email as string).toLowerCase();
+    email = (userInfo.email as string | undefined)?.toLowerCase();
+    if (!email) {
+      sendOutcome(res, badRequest('External token does not contain email address'));
+      return;
+    }
   }
 
   if (body.domain && !email?.endsWith('@' + body.domain)) {

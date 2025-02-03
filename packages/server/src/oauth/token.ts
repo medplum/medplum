@@ -601,7 +601,7 @@ async function sendTokenResponse(res: Response, login: Login, refreshLifetime?: 
       sendTokenError(res, normalizeErrorString(err));
       return;
     }
-    fhircastProps['hub.url'] = config.baseUrl + 'fhircast/STU3/'; // TODO: Figure out how to handle the split between STU2 and STU3...
+    fhircastProps['hub.url'] = `${config.baseUrl}fhircast/STU3`; // TODO: Figure out how to handle the split between STU2 and STU3...
     fhircastProps['hub.topic'] = topic;
   }
 

@@ -359,10 +359,17 @@ export interface MedplumRequestOptions extends RequestInit {
    * Default value is 1000 (1 second).
    */
   pollStatusPeriod?: number;
+
   /**
    * Optional max number of retries that should be made in the case of a failed request. Default is `2`.
    */
   maxRetries?: number;
+
+  /**
+   * Optional flag to disable auto-batching for this specific request.
+   * Only applies when the client is configured with auto-batching enabled.
+   */
+  disableAutoBatch?: boolean;
 }
 
 export type FetchLike = (url: string, options?: any) => Promise<any>;
@@ -1072,7 +1079,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
 
     let promise: Promise<T>;
 
-    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchQueue) {
+    if (url.startsWith(this.fhirBaseUrl) && this.autoBatchQueue && !options.disableAutoBatch) {
       promise = new Promise<T>((resolve, reject) => {
         (this.autoBatchQueue as AutoBatchEntry[]).push({
           method: 'GET',
@@ -2153,7 +2160,38 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     arg4?: (e: ProgressEvent) => void,
     arg5?: MedplumRequestOptions
   ): Promise<Attachment> {
-    const createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
+    let createBinaryOptions = normalizeCreateBinaryOptions(arg1, arg2, arg3, arg4);
+
+    if (createBinaryOptions.contentType === ContentType.XML) {
+      const fileData = createBinaryOptions.data;
+      let fileStr: string;
+
+      if (fileData instanceof Blob) {
+        fileStr = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (!reader.result) {
+              reject(new Error('Failed to load file'));
+              return;
+            }
+            resolve(reader.result as string);
+          };
+          reader.readAsText(fileData, 'utf-8');
+        });
+      } else if (ArrayBuffer.isView(fileData)) {
+        fileStr = new TextDecoder().decode(fileData);
+      } else {
+        fileStr = fileData;
+      }
+
+      // Both of the above strings are required to be within a valid C-CDA document
+      // The root element in a CDA document should be a "ClinicalDocument"
+      // "urn:hl7-org:v3" is a required namespace to be referenced by all valid C-CDA documents as well
+      if (fileStr.includes('<ClinicalDocument') && fileStr.includes('urn:hl7-org:v3')) {
+        createBinaryOptions = { ...createBinaryOptions, contentType: ContentType.CDA_XML };
+      }
+    }
+
     const requestOptions = arg5 ?? (typeof arg2 === 'object' ? arg2 : {});
     const binary = await this.createBinary(createBinaryOptions, requestOptions);
     return {

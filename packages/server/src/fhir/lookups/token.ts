@@ -23,7 +23,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { getLogger } from '../../context';
+import { getLogger } from '../../logger';
 import {
   Column,
   Condition,
@@ -97,8 +97,9 @@ export class TokenTable extends LookupTable {
     const values = tokens.map((token) => ({
       resourceId,
       code: token.code,
-      system: token.system?.trim(),
-      value: token.value?.trim?.(),
+      // logical OR coalesce to ensure that empty strings are inserted as NULL
+      system: token.system?.trim?.() || undefined,
+      value: token.value?.trim?.() || undefined,
     }));
 
     await this.insertValuesForResource(client, resourceType, values);
@@ -515,7 +516,8 @@ function buildWhereCondition(
   const parts = splitN(query, '|', 2);
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
-    const [system, value] = parts;
+    const system = parts[0] || null; // Logical OR coalesce to account for system being the empty string, i.e. [parameter]=|[code]
+    const value = parts[1];
     const systemCondition = new Condition(new Column(tableName, 'system'), '=', system);
     return value
       ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, caseSensitive, value)])
@@ -524,6 +526,8 @@ function buildWhereCondition(
     // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
     if (operator === FhirOperator.IN) {
       return buildInValueSetCondition(tableName, query);
+    } else if (operator === FhirOperator.NOT_IN) {
+      return new Negation(buildInValueSetCondition(tableName, query));
     }
     // If we we are searching for a particular token value, build a Condition that filters the lookup table on that
     //value

@@ -3,13 +3,12 @@ import {
   concatUrls,
   getResourceTypes,
   Operator,
-  parseSearchRequest,
   protectedResourceTypes,
   SearchRequest,
   singularize,
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import { Project, Resource, ResourceType } from '@medplum/fhirtypes';
 import { getConfig } from '../../config';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientResourceTypes } from '../patient';
@@ -51,10 +50,10 @@ async function startExport(req: FhirRequest, exportType: string): Promise<FhirRe
   const since = singularize(req.query._since);
   const types = singularize(req.query._type)?.split(',');
 
-  const exporter = new BulkExporter(ctx.repo, since);
+  const exporter = new BulkExporter(ctx.repo);
   const bulkDataExport = await exporter.start(concatUrls(baseUrl, 'fhir/R4' + req.pathname));
 
-  exportResources(exporter, ctx.project, types, exportType)
+  exportResources(exporter, ctx.project, types, exportType, since)
     .then(() => ctx.logger.info('Export completed', { exportType, id: ctx.project.id }))
     .catch((err) => ctx.logger.error('Export failure', { exportType, id: ctx.project.id, error: err }));
 
@@ -93,30 +92,15 @@ export async function exportResourceType<T extends Resource>(
   since?: string
 ): Promise<void> {
   const repo = exporter.repo;
-  let searchRequest: SearchRequest<T> | undefined = {
+  const searchRequest: SearchRequest<T> | undefined = {
     resourceType,
     count,
     filters: since ? [{ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: since }] : undefined,
     sortRules: [{ code: '_lastUpdated', descending: false }],
   };
-  while (searchRequest) {
-    const bundle: Bundle<T> = await repo.search<T>(searchRequest);
-    if (!bundle.entry || bundle.entry.length === 0) {
-      break;
-    }
-
-    for (const entry of bundle.entry) {
-      if (entry.resource) {
-        await exporter.writeResource(entry.resource);
-      }
-    }
-
-    const linkNext = bundle.link?.find((b) => b.relation === 'next')?.url;
-    if (!linkNext) {
-      break;
-    }
-    searchRequest = parseSearchRequest<T>(linkNext);
-  }
+  await repo.processAllResources(searchRequest, async (resource: T) => {
+    await exporter.writeResource(resource);
+  });
 }
 
 function getResourceTypesByExportLevel(exportLevel: string): ResourceType[] {
@@ -135,6 +119,7 @@ const unexportedResourceTypes = [
   'ValueSet',
   'BulkDataExport',
   'AsyncJob',
+  'AuditEvent',
 ];
 
 function canBeExported(resourceType: string): boolean {
