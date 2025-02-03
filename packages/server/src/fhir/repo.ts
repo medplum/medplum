@@ -251,7 +251,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   clone(): Repository {
-    return new Repository(this.context);
+    return new Repository(this.context, this.conn);
   }
 
   setMode(mode: RepositoryMode): void {
