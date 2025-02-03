@@ -67,7 +67,7 @@ import { v7 } from 'uuid';
 import validator from 'validator';
 import { getConfig } from '../config';
 import { DatabaseMode, getDatabasePool } from '../database';
-import { getLogger } from '../logger';
+import { getLogger, systemLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
 import { r4ProjectId } from '../seed';
@@ -2393,8 +2393,14 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth) {
       return undefined;
     }
-    const cachedValue = await getRedis().get(getCacheKey(resourceType, id));
-    return cachedValue ? (JSON.parse(cachedValue) as CacheEntry<T>) : undefined;
+    const key = getCacheKey(resourceType, id);
+    const cachedValue = await getRedis().get(key);
+    if (cachedValue) {
+      return JSON.parse(cachedValue) as CacheEntry<T>;
+    } else {
+      recordCacheMiss(key);
+      return undefined;
+    }
   }
 
   /**
@@ -2576,6 +2582,30 @@ async function removeCachedProfile(profile: StructureDefinition): Promise<void> 
  */
 function getProfileCacheKey(projectId: string, url: string): string {
   return `Project/${projectId}/StructureDefinition/${url}`;
+}
+
+const cacheMisses = {
+  lastUpdated: Date.now(),
+  total: 0,
+  counts: Object.create(null) as Record<string, number>,
+};
+const resetInterval = 5 * 60 * 1000; // 5 minutes in milliseconds
+function recordCacheMiss(key: string): void {
+  const now = Date.now();
+  if (now - cacheMisses.lastUpdated >= resetInterval) {
+    if (cacheMisses.total > 50_000_000) {
+      const topKeys = Object.entries(cacheMisses.counts)
+        .sort((a, b) => a[1] - b[1])
+        .slice(0, 25);
+      systemLogger.warn('High cache misses', { topKeys, total: cacheMisses.total });
+    }
+    cacheMisses.counts = Object.create(null);
+    cacheMisses.total = 0;
+  }
+
+  cacheMisses.counts[key] = cacheMisses.counts[key] ? cacheMisses.counts[key] + 1 : 1; // Increment counter
+  cacheMisses.total++;
+  cacheMisses.lastUpdated = now;
 }
 
 export function getSystemRepo(conn?: PoolClient): Repository {
