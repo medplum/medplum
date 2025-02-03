@@ -3,15 +3,19 @@
  * https://build.fhir.org/ig/HL7/smart-app-launch/scopes-and-launch-context.html
  */
 
-import { ContentType, deepClone, OAuthGrantType, OAuthTokenAuthMethod } from '@medplum/core';
+import { ContentType, deepClone, OAuthGrantType, OAuthTokenAuthMethod, splitN } from '@medplum/core';
 import { AccessPolicy, AccessPolicyResource } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { getConfig } from '../config';
+import qs from 'node:querystring';
+
+const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(\*|c?r?u?d?s?)$/;
 
 export interface SmartScope {
   readonly permissionType: 'patient' | 'user' | 'system';
   readonly resourceType: string;
   readonly scope: string;
+  readonly criteria?: string;
 }
 
 /**
@@ -110,12 +114,22 @@ export function parseSmartScopes(scope: string | undefined): SmartScope[] {
 
   if (scope) {
     for (const scopeTerm of scope.split(' ')) {
-      const match = /^(patient|user|system)\/(\w+|\*)\.(\*|c?r?u?d?s?)$/.exec(scopeTerm);
+      const [baseScope, query] = splitN(scopeTerm, '?', 2);
+      const match = smartScopeFormat.exec(baseScope);
+
+      let criteria: string | undefined;
+      if (query) {
+        // Parse and normalize query parameters, without affecting string encoding, for safety
+        const parsed = qs.parse(query, '&', '=', { decodeURIComponent: (s) => s });
+        criteria = qs.stringify(parsed, '&', '=', { encodeURIComponent: (s) => s });
+      }
+
       if (match) {
         result.push({
           permissionType: match[1] as 'patient' | 'user' | 'system',
           resourceType: match[2],
           scope: match[3] === '*' ? 'cruds' : match[3],
+          criteria,
         });
       }
     }
@@ -171,9 +185,15 @@ function intersectSmartScopes(accessPolicy: AccessPolicy, smartScope: SmartScope
 const readOnlyScope = /^[rs]+$/;
 function mergeAccessPolicyWithScope(policy: AccessPolicyResource, scope: SmartScope): AccessPolicyResource {
   const result = deepClone(policy);
+  if (result.criteria?.startsWith('*') && scope.resourceType !== '*') {
+    result.criteria = result.criteria.replace('*', scope.resourceType);
+  }
 
   if (scope.scope.match(readOnlyScope)) {
     result.readonly = true;
+  }
+  if (scope.criteria) {
+    result.criteria = `${result.criteria ?? scope.resourceType + '?'}${result.criteria && !result.criteria?.endsWith('&') ? '&' : ''}${scope.criteria}`;
   }
   return result;
 }

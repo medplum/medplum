@@ -1,6 +1,6 @@
 {
   "name": "@medplum/health-gorilla-react",
-  "version": "3.2.28",
+  "version": "3.2.30",
   "description": "Medplum Health Gorilla React SDK",
   "keywords": [
     "medplum",
@@ -58,12 +58,12 @@
     "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@medplum/core": "3.2.28",
-    "@medplum/definitions": "3.2.28",
-    "@medplum/fhirtypes": "3.2.28",
-    "@medplum/health-gorilla-core": "3.2.28",
-    "@medplum/mock": "3.2.28",
-    "@medplum/react": "3.2.28",
+    "@medplum/core": "3.2.30",
+    "@medplum/definitions": "3.2.30",
+    "@medplum/fhirtypes": "3.2.30",
+    "@medplum/health-gorilla-core": "3.2.30",
+    "@medplum/mock": "3.2.30",
+    "@medplum/react": "3.2.30",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.2.0",
     "@types/node": "22.10.10",
@@ -78,10 +78,10 @@
     "vitest": "3.0.4"
   },
   "peerDependencies": {
-    "@medplum/core": "3.2.28",
-    "@medplum/fhirtypes": "3.2.28",
-    "@medplum/health-gorilla-core": "3.2.28",
-    "@medplum/react": "3.2.28",
+    "@medplum/core": "3.2.30",
+    "@medplum/fhirtypes": "3.2.30",
+    "@medplum/health-gorilla-core": "3.2.30",
+    "@medplum/react": "3.2.30",
     "react": "^18.0.0"
   },
   "engines": {

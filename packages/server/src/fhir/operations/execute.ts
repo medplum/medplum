@@ -66,6 +66,7 @@ export interface BotExecutionRequest {
   readonly forwardedFor?: string;
   readonly requestTime?: string;
   readonly traceId?: string;
+  readonly defaultHeaders?: Record<string, string>;
 }
 
 export interface BotExecutionContext extends BotExecutionRequest {
@@ -133,8 +134,12 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
   // Otherwise, use the bot's project membership
   const project = bot.meta?.project as string;
   let runAs: ProjectMembership | undefined;
+  let defaultHeaders: Record<string, string> | undefined;
   if (bot.runAsUser) {
     runAs = ctx.membership;
+    defaultHeaders = {
+      Cookie: req.headers.cookie as string,
+    };
   } else {
     runAs = (await findProjectMembership(project, createReference(bot))) ?? ctx.membership;
   }
@@ -147,6 +152,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
     runAs,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
+    defaultHeaders,
   });
 
   return result;
@@ -388,12 +394,13 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
     console: botConsole,
     event: {
       bot: createReference(bot),
-      baseUrl: config.baseUrl,
+      baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
       accessToken: request.accessToken,
       input: input instanceof Hl7Message ? input.toString() : input,
       contentType,
       secrets: request.secrets,
       traceId,
+      defaultHeaders: request.defaultHeaders,
     },
   };
 
@@ -411,9 +418,10 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, contentType, secrets, traceId } = event;
+    const { bot, baseUrl, accessToken, contentType, secrets, traceId, defaultHeaders } = event;
     const medplum = new MedplumClient({
       baseUrl,
+      defaultHeaders,
       fetch: function(url, options = {}) {
         options.headers ||= {};
         options.headers['X-Trace-Id'] = traceId;

@@ -1,5 +1,6 @@
 import { AccessPolicy } from '@medplum/fhirtypes';
 import { applySmartScopes, parseSmartScopes } from './smart';
+import { randomUUID } from 'node:crypto';
 
 describe('SMART on FHIR', () => {
   test('Parse empty', () => {
@@ -158,6 +159,64 @@ describe('SMART on FHIR', () => {
         { resourceType: 'Patient', readonly: true },
         { resourceType: 'StructureDefinition' }, // Expanded from *
         { resourceType: 'Practitioner' },
+      ],
+    });
+  });
+
+  test('Intersect with granular scopes and criteria', () => {
+    const id = randomUUID();
+    const compartment = `Patient/${id}`;
+    const startAccessPolicy: AccessPolicy = {
+      resourceType: 'AccessPolicy',
+      resource: [
+        { resourceType: 'Patient', readonly: true, criteria: 'Patient?_id=' + id },
+        { resourceType: 'Practitioner', readonly: true },
+        {
+          resourceType: 'Goal',
+          criteria: 'Goal?identifier=http://example.com/patientVisible|true&_compartment=' + compartment,
+        },
+        { resourceType: '*', criteria: '*?_compartment=' + compartment },
+      ],
+    };
+
+    const scope =
+      'patient/Patient.* patient/Practitioner.rus?identifier=http://hl7.org/fhir/sid/us-npi|1234567893 patient/Goal.rs?category=nursing patient/Condition.rus?category=encounter-diagnosis patient/Condition.rus?category=health-concern';
+
+    expect(applySmartScopes(startAccessPolicy, scope)).toMatchObject<AccessPolicy>({
+      resourceType: 'AccessPolicy',
+      resource: [
+        { resourceType: 'Patient', readonly: true, criteria: 'Patient?_id=' + id },
+        {
+          resourceType: 'Practitioner',
+          readonly: true,
+          criteria: 'Practitioner?identifier=http://hl7.org/fhir/sid/us-npi|1234567893',
+        },
+        {
+          resourceType: 'Goal',
+          readonly: true,
+          criteria: `Goal?identifier=http://example.com/patientVisible|true&_compartment=${compartment}&category=nursing`,
+        },
+        {
+          resourceType: 'Patient',
+          criteria: `Patient?_compartment=${compartment}`,
+        },
+        {
+          resourceType: 'Practitioner',
+          criteria: `Practitioner?_compartment=${compartment}&identifier=http://hl7.org/fhir/sid/us-npi|1234567893`,
+        },
+        {
+          resourceType: 'Goal',
+          readonly: true,
+          criteria: `Goal?_compartment=${compartment}&category=nursing`,
+        },
+        {
+          resourceType: 'Condition',
+          criteria: `Condition?_compartment=${compartment}&category=encounter-diagnosis`,
+        },
+        {
+          resourceType: 'Condition',
+          criteria: `Condition?_compartment=${compartment}&category=health-concern`,
+        },
       ],
     });
   });

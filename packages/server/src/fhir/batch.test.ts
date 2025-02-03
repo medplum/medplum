@@ -29,7 +29,7 @@ describe('Batch and Transaction processing', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth({ project: { features: ['transaction-bundles'] } });
+    accessToken = await initTestAuth({ project: { features: ['transaction-bundles'] }, membership: { admin: true } });
   });
 
   afterAll(async () => {
@@ -1102,5 +1102,57 @@ describe('Batch and Transaction processing', () => {
     });
 
     expect(queue.add).not.toHaveBeenCalled();
+  });
+
+  test('Transaction bundle account propagation', async () => {
+    const transaction: Bundle = {
+      resourceType: 'Bundle',
+      type: 'transaction',
+      entry: [
+        {
+          fullUrl: 'urn:uuid:b27e3483-3048-4943-b67f-0ca3579078e3',
+          request: {
+            method: 'POST',
+            url: 'Patient',
+          },
+          resource: {
+            resourceType: 'Patient',
+            name: [{ family: 'test', given: ['test'] }],
+            meta: {
+              accounts: [{ reference: 'Organization/4640af05-8f7b-4abb-905d-ee56b0aef229' }],
+            },
+          },
+        },
+        {
+          request: {
+            method: 'POST',
+            url: 'Coverage',
+          },
+          resource: {
+            resourceType: 'Coverage',
+            status: 'draft',
+            beneficiary: { reference: 'urn:uuid:b27e3483-3048-4943-b67f-0ca3579078e3' },
+            payor: [{ reference: 'Organization/7b05cee4-20cc-45b0-a56b-e0a731ec5b0f' }],
+          },
+        },
+      ],
+    };
+
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send(transaction);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toStrictEqual('Bundle');
+
+    const response = res.body as Bundle;
+    expect(response.entry?.[0].resource?.meta?.accounts).toStrictEqual([
+      { reference: 'Organization/4640af05-8f7b-4abb-905d-ee56b0aef229' },
+    ]);
+    expect(response.entry?.[1].resource?.meta?.compartment).toContainEqual({
+      reference: 'Organization/4640af05-8f7b-4abb-905d-ee56b0aef229',
+    });
   });
 });
