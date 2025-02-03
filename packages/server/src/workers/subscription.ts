@@ -353,7 +353,7 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
       if (hitRate < 0.1 && redisOnlySubRefStrs.length >= 100) {
         getLogger().warn('Excessive subscription cache miss', { keys: redisOnlySubRefStrs, hitRate });
       }
-      const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
+      const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
       for (const { resource } of inMemorySubs) {
         subscriptions.push(resource);
