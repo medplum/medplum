@@ -288,12 +288,18 @@ superAdminRouter.post(
       return;
     }
 
-    const query = `ALTER TABLE "${req.body.tableName}" SET (${Object.entries(req.body.settings)
-      .map(([settingName, val]) => `${settingName} = ${val}`)
-      .join(', ')});`;
+    // Build parameterized query and values array
+    const settingsEntries = Object.entries(req.body.settings);
+    const parameterizedSettings = settingsEntries
+      .map((_, index) => `$${index + 2}`) // $1 is reserved for tableName
+      .join(', ');
+    const settingNames = settingsEntries.map(([name]) => name).join(', ');
+    
+    const query = `ALTER TABLE $1 SET (${settingNames}) = (${parameterizedSettings});`;
+    const values = [req.body.tableName, ...settingsEntries.map(([_, val]) => val)];
 
     const startTime = Date.now();
-    await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query);
+    await getSystemRepo().getDatabaseClient(DatabaseMode.WRITER).query(query, values);
     globalLogger.info('[Super Admin]: Table settings updated', {
       tableName: req.body.tableName,
       settings: req.body.settings,
