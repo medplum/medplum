@@ -26,6 +26,7 @@ export const TaskDetails = (): JSX.Element => {
       setStatus(task.status as typeof status);
       setTask(task);
       setDueDate(task.restriction?.period?.end);
+      setNote(task.note?.[0]?.text ?? "")
     };
 
     fetchTask().catch((err) => {
@@ -50,7 +51,6 @@ export const TaskDetails = (): JSX.Element => {
     const trimmedNote = note.trim();
     if (trimmedNote !== '') {
       updatedTask.note = [
-        ...(task.note || []),
         {
           text: trimmedNote,
         },
