@@ -1,7 +1,7 @@
 import { Button, Text, Stack, Group, Box, Select } from '@mantine/core';
 import { Encounter, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { CodeInput, ResourceInput, useMedplum } from '@medplum/react';
-import { Outlet, useParams } from 'react-router-dom';
+import { Outlet, useLocation, useParams } from 'react-router-dom';
 import { TaskQuestionnaireForm } from '../components/Task/TaskQuestionnaireForm';
 import { SimpleTask } from '../components/Task/SimpleTask';
 import { useCallback, useEffect, useState } from 'react';
@@ -16,6 +16,7 @@ export const EncounterChart = (): JSX.Element => {
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [status, setStatus] = useState<Task['status'] | undefined>();
+  const location = useLocation();
 
   const fetchTasks = useCallback(async (): Promise<void> => {
     const encounterResult = await medplum.readResource('Encounter', encounterId as string);
@@ -37,7 +38,7 @@ export const EncounterChart = (): JSX.Element => {
         message: normalizeErrorString(err),
       });
     });
-  }, [medplum, encounterId, fetchTasks]);
+  }, [medplum, encounterId, fetchTasks, location.pathname]);
 
   const handleSaveChanges = useCallback(
     async (task: Task, questionnaireResponse: QuestionnaireResponse): Promise<void> => {
