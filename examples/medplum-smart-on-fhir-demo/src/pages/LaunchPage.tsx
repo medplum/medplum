@@ -24,7 +24,8 @@ function getClientId(params: URLSearchParams, iss: string): string {
 
   // Otherwise determine based on issuer domain
   const issuerUrl = new URL(iss);
-  if (issuerUrl.hostname.includes('smarthealthit.org')) {
+  const allowedHosts = ['smarthealthit.org'];
+  if (allowedHosts.includes(issuerUrl.hostname)) {
     return SMART_HEALTH_IT_CLIENT_ID;
   }
 
