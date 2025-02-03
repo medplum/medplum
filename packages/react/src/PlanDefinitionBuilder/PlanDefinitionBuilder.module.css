@@ -5,6 +5,10 @@
   transition: all 0.1;
 }
 
+.action {
+  padding: 0;
+}
+
 .hovering {
   border: 1.5px solid var(--mantine-color-blue-5);
 }

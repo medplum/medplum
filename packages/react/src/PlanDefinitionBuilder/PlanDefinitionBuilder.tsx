@@ -180,7 +180,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   }
 
   return (
-    <div onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
+    <div className={classes.action} onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
       <ActionEditor
         action={action}
         actionType={actionType}
