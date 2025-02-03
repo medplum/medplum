@@ -128,4 +128,9 @@ export interface AsyncJob {
    * The data version of the migration this job represents.
    */
   dataVersion?: number;
+
+  /**
+   * The minimum Medplum server version required to run this job.
+   */
+  minServerVersion?: string;
 }
