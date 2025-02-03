@@ -126,19 +126,17 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
   }
 
   return (
-    <Stack gap="md" className={classes.section}>
+    <Stack gap="md" className={classes.section} role="list">
       {props.actions.map((action) => (
-        <div key={action.id}>
-          <ActionBuilder
-            action={action}
-            selectedKey={props.selectedKey}
-            setSelectedKey={props.setSelectedKey}
-            hoverKey={props.hoverKey}
-            setHoverKey={props.setHoverKey}
-            onChange={changeAction}
-            onRemove={() => removeAction(action)}
-          />
-        </div>
+        <ActionBuilder
+          action={action}
+          selectedKey={props.selectedKey}
+          setSelectedKey={props.setSelectedKey}
+          hoverKey={props.hoverKey}
+          setHoverKey={props.setHoverKey}
+          onChange={changeAction}
+          onRemove={() => removeAction(action)}
+        />
       ))}
       <div>
         <Button
@@ -180,7 +178,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   }
 
   return (
-    <div className={classes.action} onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
+    <div key={action.id} role="listitem" onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
       <ActionEditor
         action={action}
         actionType={actionType}
@@ -224,27 +222,20 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
   });
 
   return (
-    <Paper data-testid={action.id}  className={className} p={0} radius="sm" withBorder>
-      <Flex
-      w="100%"
-      p="xs"
-      bg="gray.0"
-      gap="md"
-      align="center"
-      justify="space-between"
-    >
-      <TextInput
-        w="100%"                  
-        name={`actionTitle-${action.id}`}
-        defaultValue={action.title}
-        placeholder="Title"
-        onChange={(e) => changeProperty('title', e.currentTarget.value)}
-      />
+    <Paper data-testid={action.id} className={className} p={0} radius="sm" withBorder>
+      <Flex w="100%" p="xs" bg="gray.0" gap="md" align="center" justify="space-between">
+        <TextInput
+          w="100%"
+          name={`actionTitle-${action.id}`}
+          defaultValue={action.title}
+          placeholder="Title"
+          onChange={(e) => changeProperty('title', e.currentTarget.value)}
+        />
 
-      <ActionIcon variant="subtle" color="gray" onClick={props.onRemove}>
-        <CloseButton data-testid="close-button" />
-      </ActionIcon>
-    </Flex>
+        <ActionIcon variant="subtle" color="gray" onClick={props.onRemove}>
+          <CloseButton data-testid="close-button" />
+        </ActionIcon>
+      </Flex>
 
       {editing && (
         <Stack gap="xl" p="md">
@@ -266,7 +257,11 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
             </Text>
             <Radio.Group value={actionType} onChange={setActionType}>
               <Stack gap="sm">
-                <Radio value="standard" label="Standard task" onChange={() => props.onChange({ ...props.action, definitionCanonical: undefined })} />
+                <Radio
+                  value="standard"
+                  label="Standard task"
+                  onChange={() => props.onChange({ ...props.action, definitionCanonical: undefined })}
+                />
                 <Radio value="questionnaire" label="Task with Questionnaire" />
               </Stack>
             </Radio.Group>
