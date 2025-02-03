@@ -1,7 +1,7 @@
 import { ExampleWorkflowPlanDefinition, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { MemoryRouter } from 'react-router-dom';
-import { act, fireEvent, render, screen, userEvent } from '../test-utils/render';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { PlanDefinitionBuilder, PlanDefinitionBuilderProps } from './PlanDefinitionBuilder';
 
 const medplum = new MockClient();
@@ -35,8 +35,8 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit: jest.fn(),
     });
 
-    expect(screen.findByDisplayValue('Example Plan Definition')).toBeDefined();
-    expect(screen.findByDisplayValue('Patient Registration')).toBeDefined();
+    expect(screen.getByText('Patient Registration (questionnaire)')).toBeDefined();
+    expect(screen.getByText('Family Health History (questionnaire)')).toBeDefined();
   });
 
   test('Hover on/off', async () => {
@@ -56,7 +56,7 @@ describe('PlanDefinitionBuilder', () => {
     expect(screen.getByTestId('action1')).not.toHaveClass('hovering');
 
     await act(async () => {
-      fireEvent.mouseOver(await screen.findByDisplayValue('Example Action'));
+      fireEvent.mouseOver(screen.getByText('Example Action'));
     });
 
     expect(screen.getByTestId('action1')).toHaveClass('hovering');
@@ -129,10 +129,10 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    expect(await screen.findByDisplayValue('Example Action')).toBeInTheDocument();
+    expect(await screen.findByText('Example Action')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(await screen.findByDisplayValue('Example Action'));
+      fireEvent.click(screen.getByText('Example Action'));
     });
 
     await act(async () => {
@@ -150,7 +150,86 @@ describe('PlanDefinitionBuilder', () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
-  
+  test('Add appointment action', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      },
+      onSubmit,
+    });
+
+    expect(await screen.findByText('Add action')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add action'));
+    });
+
+    expect(await screen.findByLabelText('Title')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Title'), {
+        target: { value: 'Example Lab Action' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
+        target: { value: 'appointment' },
+      });
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
+  test('Add lab action', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      value: {
+        resourceType: 'PlanDefinition',
+        title: 'Example Plan Definition',
+      },
+      onSubmit,
+    });
+
+    expect(await screen.findByText('Add action')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Add action'));
+    });
+
+    expect(await screen.findByLabelText('Title')).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Title'), {
+        target: { value: 'Example Lab Action' },
+      });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
+        target: { value: 'lab' },
+      });
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
   test('Add questionnaire action', async () => {
     const onSubmit = jest.fn();
 
@@ -168,19 +247,20 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    expect(await screen.getByPlaceholderText('Title')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Title')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Title'), {
+      fireEvent.change(screen.getByLabelText('Title'), {
         target: { value: 'Example Questionnaire Action' },
       });
     });
 
-    const questionnaireRadio = screen.getByLabelText('Task with Questionnaire');
-    expect(questionnaireRadio).not.toBeChecked();
-    const user = userEvent.setup();
-    await user.click(questionnaireRadio);
-    
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
+        target: { value: 'questionnaire' },
+      });
+    });
+
     expect(screen.getByText('Save')).toBeDefined();
 
     await act(async () => {
@@ -207,16 +287,19 @@ describe('PlanDefinitionBuilder', () => {
       fireEvent.click(screen.getByText('Add action'));
     });
 
-    expect(await screen.getByPlaceholderText('Title')).toBeInTheDocument();
+    expect(await screen.findByLabelText('Title')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Title'), {
+      fireEvent.change(screen.getByLabelText('Title'), {
         target: { value: 'Example Task Action' },
       });
     });
 
-    const questionnaireRadio = screen.getByLabelText('Standard task');
-    expect(questionnaireRadio).toBeChecked();
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Type of Action'), {
+        target: { value: 'task' },
+      });
+    });
 
     expect(screen.getByText('Save')).toBeDefined();
 
@@ -244,10 +327,10 @@ describe('PlanDefinitionBuilder', () => {
       onSubmit,
     });
 
-    expect(await screen.getByTestId('close-button')).toBeInTheDocument();
+    expect(await screen.findByText('Remove')).toBeInTheDocument();
 
     await act(async () => {
-      fireEvent.click(screen.getByTestId('close-button'));
+      fireEvent.click(screen.getByText('Remove'));
     });
 
     expect(screen.getByText('Save')).toBeDefined();
