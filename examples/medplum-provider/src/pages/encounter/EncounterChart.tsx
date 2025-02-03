@@ -2,13 +2,12 @@ import { Button, Text, Stack, Group, Box, Select } from '@mantine/core';
 import { Encounter, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { CodeInput, ResourceInput, useMedplum } from '@medplum/react';
 import { Outlet, useLocation, useParams } from 'react-router-dom';
-import { TaskQuestionnaireForm } from '../components/Task/TaskQuestionnaireForm';
-import { SimpleTask } from '../components/Task/SimpleTask';
 import { useCallback, useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff } from '@tabler/icons-react';
 import { AddPlanDefinition } from '../components/AddPlanDefinitions/AddPlanDefinition';
+import { TaskPanel } from '../components/Task/TaskPanel';
 
 export const EncounterChart = (): JSX.Element => {
   const { patientId, encounterId } = useParams();
@@ -81,11 +80,7 @@ export const EncounterChart = (): JSX.Element => {
           <Stack gap="md">
             <Stack gap="md">
               {tasks?.map((task: Task) =>
-                task.input && task.input[0]?.type?.text === 'Questionnaire' && task.input[0]?.valueReference ? (
-                  <TaskQuestionnaireForm key={task.id} task={task} onSaveQuestionnaire={handleSaveChanges} />
-                ) : (
-                  <SimpleTask key={task.id} task={task} />
-                )
+                <TaskPanel key={task.id} task={task} onSaveQuestionnaire={handleSaveChanges} />
               )}
             </Stack>
           </Stack>

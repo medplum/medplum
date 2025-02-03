@@ -2,17 +2,15 @@ import { useEffect, useState } from 'react';
 import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
 import { useMedplum, QuestionnaireForm } from '@medplum/react';
 import { Box, Card, Stack, Text } from '@mantine/core';
-import { TaskStatusPanel } from './TaskStatusPanel';
 
 interface TaskQuestionnaireFormProps {
   task: Task;
-  onSaveQuestionnaire: (task: Task, response: QuestionnaireResponse) => void;
+  onChangeResponse?: (response: QuestionnaireResponse) => void;
 }
 
-export const TaskQuestionnaireForm = ({ task, onSaveQuestionnaire }: TaskQuestionnaireFormProps): JSX.Element => {
+export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionnaireFormProps): JSX.Element => {
   const medplum = useMedplum();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
-  const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
 
   useEffect(() => {
     const fetchQuestionnaire = async (): Promise<void> => {
@@ -28,14 +26,6 @@ export const TaskQuestionnaireForm = ({ task, onSaveQuestionnaire }: TaskQuestio
     fetchQuestionnaire().catch(console.error);
   }, [medplum, task]);
 
-  const handleSubmitChanges = async (): Promise<void> => {
-    if (!questionnaireResponse) {
-      return;
-    }
-
-    onSaveQuestionnaire(task, questionnaireResponse);
-  };
-
   if (!questionnaire) {
     return <div>Loading...</div>;
   }
@@ -48,7 +38,7 @@ export const TaskQuestionnaireForm = ({ task, onSaveQuestionnaire }: TaskQuestio
             <QuestionnaireForm
               questionnaire={questionnaire}
               excludeButtons={true}
-              onChange={setQuestionnaireResponse}
+              onChange={onChangeResponse}
             />
           </Box>
         ) : (
@@ -57,11 +47,7 @@ export const TaskQuestionnaireForm = ({ task, onSaveQuestionnaire }: TaskQuestio
           </Box>
         )}
 
-        <TaskStatusPanel
-          task={task}
-          onSubmit={handleSubmitChanges}
-          isQuestionnaire={questionnaireResponse && !task.output?.[0]?.valueReference}
-        />
+        
       </Stack>
     </Card>
   );
