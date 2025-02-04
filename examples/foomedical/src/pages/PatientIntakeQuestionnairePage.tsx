@@ -13,7 +13,7 @@ export function PatientIntakeQuestionnairePage(): JSX.Element {
   return (
     <Document width={800}>
       {isSubmitted ? (
-        <div>Thank you for submitting your questions</div>
+        <div>Thank you for submitting your form</div>
       ) : (
         <QuestionnaireForm questionnaire={questionnaire} onSubmit={handleQuestionnaireSubmit} />
       )}
