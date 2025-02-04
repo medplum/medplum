@@ -56,9 +56,6 @@ export const Operator = {
   '>=': simpleBinaryOperator('>='),
   IN: simpleBinaryOperator('IN'),
   ARRAY_CONTAINS: (sql: SqlBuilder, column: Column, parameter: any, paramType?: string) => {
-    sql.append('(');
-    sql.appendColumn(column);
-    sql.append(' IS NOT NULL AND ');
     sql.appendColumn(column);
     sql.append(' && ARRAY[');
     sql.appendParameters(parameter, false);
@@ -66,7 +63,6 @@ export const Operator = {
     if (paramType) {
       sql.append('::' + paramType);
     }
-    sql.append(')');
   },
   TSVECTOR_SIMPLE: (sql: SqlBuilder, column: Column, parameter: any, _paramType?: string) => {
     const query = formatTsquery(parameter);

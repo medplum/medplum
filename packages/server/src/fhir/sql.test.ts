@@ -49,16 +49,14 @@ describe('SqlBuilder', () => {
     test('Select where array contains', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', 'x', 'TEXT[]').buildSql(sql);
-      expect(sql.toString()).toBe(
-        'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" && ARRAY[$1]::TEXT[])'
-      );
+      expect(sql.toString()).toBe('SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" && ARRAY[$1]::TEXT[]');
     });
 
     test('Select where array contains array', () => {
       const sql = new SqlBuilder();
       new SelectQuery('MyTable').column('id').where('name', 'ARRAY_CONTAINS', ['x', 'y'], 'TEXT[]').buildSql(sql);
       expect(sql.toString()).toBe(
-        'SELECT "MyTable"."id" FROM "MyTable" WHERE ("MyTable"."name" IS NOT NULL AND "MyTable"."name" && ARRAY[$1,$2]::TEXT[])'
+        'SELECT "MyTable"."id" FROM "MyTable" WHERE "MyTable"."name" && ARRAY[$1,$2]::TEXT[]'
       );
     });
 
