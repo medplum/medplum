@@ -39,9 +39,12 @@ export const EncounterChart = (): JSX.Element => {
     });
   }, [medplum, encounterId, fetchTasks, location.pathname]);
 
-  const updateTaskList = useCallback((updatedTask: Task): void => {
-    setTasks(tasks.map(task => (task.id === updatedTask.id ? updatedTask : task)));
-  }, [tasks]);
+  const updateTaskList = useCallback(
+    (updatedTask: Task): void => {
+      setTasks(tasks.map((task) => (task.id === updatedTask.id ? updatedTask : task)));
+    },
+    [tasks]
+  );
 
   const handleSaveChanges = useCallback(
     async (task: Task, questionnaireResponse: QuestionnaireResponse): Promise<void> => {
@@ -83,9 +86,14 @@ export const EncounterChart = (): JSX.Element => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px' }}>
           <Stack gap="md">
             <Stack gap="md">
-              {tasks?.map((task: Task) =>
-                <TaskPanel key={task.id} task={task} onSaveQuestionnaire={handleSaveChanges} onCompleteTask={updateTaskList} />
-              )}
+              {tasks?.map((task: Task) => (
+                <TaskPanel
+                  key={task.id}
+                  task={task}
+                  onSaveQuestionnaire={handleSaveChanges}
+                  onCompleteTask={updateTaskList}
+                />
+              ))}
             </Stack>
           </Stack>
 
