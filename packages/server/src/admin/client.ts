@@ -42,6 +42,7 @@ export interface CreateClientRequest {
   readonly redirectUri?: string;
   readonly accessPolicy?: Reference<AccessPolicy>;
   readonly identityProvider?: IdentityProvider;
+  readonly accessTokenLifetime?: string;
   readonly refreshTokenLifetime?: string;
 }
 
@@ -56,6 +57,7 @@ export async function createClient(repo: Repository, request: CreateClientReques
     description: request.description,
     redirectUri: request.redirectUri,
     identityProvider: request.identityProvider,
+    accessTokenLifetime: request.accessTokenLifetime,
     refreshTokenLifetime: request.refreshTokenLifetime,
   });
 
