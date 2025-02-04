@@ -150,7 +150,6 @@ describe('PlanDefinitionBuilder', () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
-  
   test('Add questionnaire action', async () => {
     const onSubmit = jest.fn();
 
@@ -180,7 +179,7 @@ describe('PlanDefinitionBuilder', () => {
     expect(questionnaireRadio).not.toBeChecked();
     const user = userEvent.setup();
     await user.click(questionnaireRadio);
-    
+
     expect(screen.getByText('Save')).toBeDefined();
 
     await act(async () => {

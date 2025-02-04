@@ -126,9 +126,10 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
   }
 
   return (
-    <Stack gap="md" className={classes.section} role="list">
+    <Stack gap="md" className={classes.section} >
       {props.actions.map((action) => (
         <ActionBuilder
+          key={action.id} 
           action={action}
           selectedKey={props.selectedKey}
           setSelectedKey={props.setSelectedKey}
@@ -178,7 +179,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
   }
 
   return (
-    <div key={action.id} role="listitem" onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
+    <div onClick={onClick} onMouseOver={onHover} onFocus={onHover}>
       <ActionEditor
         action={action}
         actionType={actionType}
