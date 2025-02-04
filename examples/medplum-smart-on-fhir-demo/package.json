@@ -8,8 +8,7 @@
     "clean": "rimraf dist",
     "dev": "vite",
     "lint": "eslint src/",
-    "preview": "vite preview",
-    "test": "vitest run"
+    "preview": "vite preview"
   },
   "prettier": {
     "printWidth": 120,
