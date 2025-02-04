@@ -57,9 +57,21 @@ npm run build
 
 ## Testing EHR Launch Flow
 
+### Using the Smart Health IT Sandbox
+
+To test the EHR launch flow using the Smart Health IT Sandbox, you'll need to:
+
+1. Navigate to the [SMART Launcher page](https://launch.smarthealthit.org)
+2. Set the "App's Launch URL" to: `http://localhost:8001/launch`
+3. (Optional) Select a specific patient id to load using the "Patient(s)" selector
+4. (Option) Enable "Simulate launch within the EHR UI"
+5. Click the "Launch Sample App" button
+
+### Using the Medplum App
+
 To test the EHR launch flow, you'll need to:
 
-1. Register your app in the Medplum App Management Console
+1. Register your app in the Medplum App
 2. Configure your EHR launch URL as: `http://localhost:8001/launch`
 3. Launch the app from your EHR system using the SMART on FHIR app launcher
 
@@ -69,4 +81,3 @@ For detailed instructions on setting up SMART on FHIR apps with Medplum, see the
 
 - [Medplum Documentation](https://www.medplum.com/docs)
 - [SMART on FHIR Documentation](https://docs.smarthealthit.org/)
-- [FHIR Documentation](https://hl7.org/fhir/)
