@@ -72,7 +72,7 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
   const onChangeStatus = async (status: Task[`status`]): Promise<void> => {
     const updatedTask: Task = { ...task, status: status };
     await updateTaskStatus(updatedTask, medplum, onCompleteTask);
-  }
+  };
 
   return (
     <Card withBorder shadow="sm" p={0}>
