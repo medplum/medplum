@@ -139,6 +139,15 @@ export default function AboutPage(): JSX.Element {
               githubUrl="https://github.com/finnbergquist"
             />
           </CardContainer>
+          <CardContainer>
+            <ProfileCard
+              name="Maddy Li"
+              title="Forward Deployed Engineer"
+              imgUrl="/img/people/maddyli.jpg"
+              linkedInUrl="https://www.linkedin.com/in/maddy-li/"
+              githubUrl="https://github.com/maddyli"
+            />
+          </CardContainer>
         </Section>
       </Container>
     </Layout>
