@@ -542,20 +542,4 @@ const questionnaire: Questionnaire = {
       ],
     },
   ],
-  id: '6318e63f-42f5-4eab-8cec-ec98c5c177e0',
-  meta: {
-    project: '749bdcee-c77f-4fe8-8c3d-8abc44268215',
-    compartment: [
-      {
-        reference: 'Project/749bdcee-c77f-4fe8-8c3d-8abc44268215',
-      },
-    ],
-    profile: ['http://hl7.org/fhir/StructureDefinition/cqf-questionnaire'],
-    versionId: '124af8cc-c2d8-42c6-b9c1-17ab4cd1b983',
-    lastUpdated: '2024-12-05T22:59:28.783Z',
-    author: {
-      reference: 'Practitioner/51e862b4-6c4e-4efb-b801-14d91c1564f6',
-      display: 'Reshma K',
-    },
-  },
 };
