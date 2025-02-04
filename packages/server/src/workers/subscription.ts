@@ -353,7 +353,11 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
       const hitRate = activeSubStrs.length / redisOnlySubStrs.length;
       if (hitRate < 0.1 && redisOnlySubRefStrs.length >= 100) {
-        getLogger().warn('Excessive subscription cache miss', { keys: redisOnlySubRefStrs, hitRate });
+        getLogger().warn('Excessive subscription cache miss', {
+          numKeys: redisOnlySubRefStrs.length,
+          hitRate,
+          projectId,
+        });
         const inactiveSubs: string[] = [];
         for (let i = 0; i < redisOnlySubStrs.length; i++) {
           if (!redisOnlySubStrs[i]) {
