@@ -1,4 +1,4 @@
-import { createReference, getReferenceString, Operator, SNOMED } from '@medplum/core';
+import { createReference, getReferenceString, getSearchParameter, Operator, SNOMED } from '@medplum/core';
 import { Bundle, Condition, Patient, ServiceRequest, SpecimenDefinition } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
@@ -6,6 +6,8 @@ import { loadTestConfig } from '../../config';
 import { bundleContains, createTestProject, withTestContext } from '../../test.setup';
 import { getSystemRepo, Repository } from '../repo';
 import { ReadFromTokenColumns } from './token';
+import { DatabaseMode } from '../../database';
+import { getSearchParameterImplementation } from '../searchparameter';
 
 describe.each([false, true])('Token Lookup Table using token columns: %s', (useTokenColumns) => {
   const systemRepo = getSystemRepo();
@@ -262,6 +264,20 @@ describe.each([false, true])('Token Lookup Table using token columns: %s', (useT
         name: [{ given: ['Alice'], family: name }],
         identifier: [{ system: 'https://www.example.com', value: identifier + 'xyz' }],
       });
+
+      const patient3 = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ given: ['Alice'], family: name }],
+      });
+      const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+      const searchParam = getSearchParameter('Patient', 'identifier');
+      if (!searchParam) {
+        throw new Error('Search parameter not found');
+      }
+      const impl = getSearchParameterImplementation('Patient', searchParam);
+      if (impl.searchStrategy === 'token-column') {
+        await client.query(`UPDATE "Patient" SET ${impl.columnName} = NULL WHERE id = $1`, [patient3.id]);
+      }
 
       const searchResult1 = await systemRepo.search({
         resourceType: 'Patient',
