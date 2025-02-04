@@ -1,34 +1,77 @@
-import { QuestionnaireResponse, Task } from '@medplum/fhirtypes';
+import { Annotation, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { TaskQuestionnaireForm } from './TaskQuestionnaireForm';
 import { SimpleTask } from './SimpleTask';
 import { Card, Stack } from '@mantine/core';
 import { TaskStatusPanel } from './TaskStatusPanel';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { showNotification } from '@mantine/notifications';
+import { IconCircleOff } from '@tabler/icons-react';
+import { createReference, normalizeErrorString } from '@medplum/core';
 
 interface TaskPanelProps {
   task: Task;
+  onCompleteTask: (task: Task) => void;
   onSaveQuestionnaire: (task: Task, response: QuestionnaireResponse) => void;
 }
-export const TaskPanel = ({ task, onSaveQuestionnaire }: TaskPanelProps): JSX.Element => {
+
+const updateTaskStatus = async (task: Task, medplum: any, onCompleteTask: (task: Task) => void): Promise<void> => {
+  try {
+    const response = await medplum.updateResource(task);
+    onCompleteTask(response);
+  } catch (err) {
+    showNotification({
+      color: 'red',
+      icon: <IconCircleOff />,
+      title: 'Error',
+      message: normalizeErrorString(err),
+    });
+  }
+};
+
+export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPanelProps): JSX.Element => {
   const navigate = useNavigate();
+  const medplum = useMedplum();
+  const author = useMedplumProfile();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
   const [isQuestionnaire, setIsQuestionnaire] = useState<boolean>(false);
 
   useEffect(() => {
-    setIsQuestionnaire(questionnaireResponse !== undefined && !task.output?.[0]?.valueReference)
+    setIsQuestionnaire(questionnaireResponse !== undefined && !task.output?.[0]?.valueReference);
   }, [task, questionnaireResponse]);
 
   const onSubmit = async (): Promise<void> => {
     if (questionnaireResponse && isQuestionnaire) {
       onSaveQuestionnaire(task, questionnaireResponse);
+    } else if (task.status === 'ready' || task.status === 'requested') {
+      const updatedTask: Task = { ...task, status: 'completed' };
+      await updateTaskStatus(updatedTask, medplum, onCompleteTask);
     } else {
-      navigate(`Task/${task.id}`)
+      navigate(`Task/${task.id}`);
     }
   };
 
   const onChangeResponse = (response: QuestionnaireResponse): void => {
     setQuestionnaireResponse(response);
+  };
+
+  const onAddNote = async (note: string): Promise<void> => {
+    const newNote: Annotation = {
+      text: note,
+      authorReference: author && createReference(author),
+      time: new Date().toISOString(),
+    };
+
+    const taskNotes = task?.note || [];
+    taskNotes.push(newNote);
+    const updatedTask: Task = { ...task, note: taskNotes };
+    await updateTaskStatus(updatedTask, medplum, onCompleteTask);
+  };
+
+  const onChangeStatus = async (status: Task[`status`]): Promise<void> => {
+    const updatedTask: Task = { ...task, status: status };
+    await updateTaskStatus(updatedTask, medplum, onCompleteTask);
   }
 
   return (
@@ -39,10 +82,12 @@ export const TaskPanel = ({ task, onSaveQuestionnaire }: TaskPanelProps): JSX.El
         ) : (
           <SimpleTask key={task.id} task={task} />
         )}
-       <TaskStatusPanel
+        <TaskStatusPanel
           task={task}
-          onSubmit={onSubmit}
           isQuestionnaire={isQuestionnaire}
+          onSubmit={onSubmit}
+          onAddNote={onAddNote}
+          onChangeStatus={onChangeStatus}
         />
       </Stack>
     </Card>

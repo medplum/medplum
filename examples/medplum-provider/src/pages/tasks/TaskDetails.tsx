@@ -1,10 +1,10 @@
 import { HumanName, Practitioner, Reference, Task } from '@medplum/fhirtypes';
-import { CodeInput, DateTimeInput, ResourceInput, useMedplum } from '@medplum/react';
+import { CodeInput, DateTimeInput, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Button, Card, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { usePatient } from '../../hooks/usePatient';
-import { formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { notifications } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 
@@ -13,6 +13,7 @@ export const TaskDetails = (): JSX.Element => {
   const patient = usePatient();
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const author = useMedplumProfile();
   const [task, setTask] = useState<Task | undefined>(undefined);
   const [isOpened, setIsOpened] = useState(true);
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
@@ -53,6 +54,8 @@ export const TaskDetails = (): JSX.Element => {
         ...(task.note || []),
         {
           text: trimmedNote,
+          authorReference: author && createReference(author),
+          time: new Date().toISOString(),
         },
       ];
     }

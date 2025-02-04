@@ -1,0 +1,23 @@
+
+.completed {
+  background-color: var(--mantine-color-green-0) !important
+}
+
+.ready {
+  background-color: var(--mantine-color-blue-0) !important
+}
+
+.caret { 
+  padding: '8px';
+  margin: '-8px';
+  cursor: 'pointer';
+  display: 'flex';
+}
+
+[data-mantine-color-scheme="dark"] .panel{
+  background-color: var(--mantine-color-dark-8);
+}
+
+[data-mantine-color-scheme="light"] .panel{
+  background-color: var(--mantine-color-gray-1);
+}

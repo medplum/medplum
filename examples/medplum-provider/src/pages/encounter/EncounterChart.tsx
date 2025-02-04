@@ -39,6 +39,10 @@ export const EncounterChart = (): JSX.Element => {
     });
   }, [medplum, encounterId, fetchTasks, location.pathname]);
 
+  const updateTaskList = useCallback((updatedTask: Task): void => {
+    setTasks(tasks.map(task => (task.id === updatedTask.id ? updatedTask : task)));
+  }, [tasks]);
+
   const handleSaveChanges = useCallback(
     async (task: Task, questionnaireResponse: QuestionnaireResponse): Promise<void> => {
       try {
@@ -56,7 +60,7 @@ export const EncounterChart = (): JSX.Element => {
             },
           ],
         });
-        setTasks((prevTasks) => prevTasks.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+        updateTaskList(updatedTask);
       } catch (err) {
         showNotification({
           color: 'red',
@@ -66,7 +70,7 @@ export const EncounterChart = (): JSX.Element => {
         });
       }
     },
-    [medplum]
+    [medplum, updateTaskList]
   );
 
   return (
@@ -80,7 +84,7 @@ export const EncounterChart = (): JSX.Element => {
           <Stack gap="md">
             <Stack gap="md">
               {tasks?.map((task: Task) =>
-                <TaskPanel key={task.id} task={task} onSaveQuestionnaire={handleSaveChanges} />
+                <TaskPanel key={task.id} task={task} onSaveQuestionnaire={handleSaveChanges} onCompleteTask={updateTaskList} />
               )}
             </Stack>
           </Stack>

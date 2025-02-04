@@ -19,7 +19,6 @@
   flex-direction: column;
 }
 
-
 [data-mantine-color-scheme="dark"] .preview,
 [data-mantine-color-scheme="dark"] .planDefinition,
 [data-mantine-color-scheme="dark"] .footer {
