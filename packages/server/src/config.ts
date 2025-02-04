@@ -53,6 +53,7 @@ export interface MedplumServerConfig {
   introspectionEnabled?: boolean;
   keepAliveTimeout?: number;
   vmContextBotsEnabled?: boolean;
+  vmContextBaseUrl?: string;
   shutdownTimeoutMilliseconds?: number;
   heartbeatMilliseconds?: number;
   heartbeatEnabled?: boolean;
