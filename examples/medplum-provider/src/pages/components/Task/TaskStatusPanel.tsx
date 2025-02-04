@@ -74,7 +74,7 @@ export const TaskStatusPanel = ({ task, isQuestionnaire, onSubmit, onAddNote, on
                 variant={isQuestionnaire || isTaskReadyOrRequested ? 'filled' : 'outline'}
                 rightSection={
                   <Menu.Target>
-                    <div className={classes.caret} onClick={(e) => e.stopPropagation()}>
+                    <div className={classes.menu} onClick={(e) => e.stopPropagation()}>
                       <IconCaretDownFilled size={14} />
                     </div>
                   </Menu.Target>
@@ -92,18 +92,7 @@ export const TaskStatusPanel = ({ task, isQuestionnaire, onSubmit, onAddNote, on
               >
                 <Menu.Item rightSection="›">Change status</Menu.Item>
                 {submenuOpened && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: '100%',
-                      background: theme.white,
-                      border: `1px solid ${theme.colors.gray[3]}`,
-                      boxShadow: theme.shadows.md,
-                      zIndex: 1000,
-                      minWidth: 150,
-                    }}
-                  >
+                  <div className={classes.submenu} >
                     <Menu.Item onClick={() => onChangeStatus('ready')}>Ready</Menu.Item>
                     <Menu.Item onClick={() => onChangeStatus('in-progress')}>In progress</Menu.Item>
                     <Menu.Item onClick={() => onChangeStatus('on-hold')}>On hold</Menu.Item>
