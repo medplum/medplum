@@ -3642,9 +3642,15 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Authentication
    * @param clientId - The client ID.
    * @param clientSecret - The client secret.
+   * @param options - Optional parameters.
+   * @param options.credentialsInHeader - Whether to send client credentials in the HTTP header instead of the body.
    * @returns Promise that resolves to the client profile.
    */
-  async startClientLogin(clientId: string, clientSecret: string): Promise<ProfileResource> {
+  async startClientLogin(
+    clientId: string,
+    clientSecret: string,
+    options?: { credentialsInHeader: boolean }
+  ): Promise<ProfileResource> {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
 
