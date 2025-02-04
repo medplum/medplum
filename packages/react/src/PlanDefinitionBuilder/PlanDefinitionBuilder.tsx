@@ -126,10 +126,10 @@ function ActionArrayBuilder(props: ActionArrayBuilderProps): JSX.Element {
   }
 
   return (
-    <Stack gap="md" className={classes.section} >
+    <Stack gap="md" className={classes.section}>
       {props.actions.map((action) => (
         <ActionBuilder
-          key={action.id} 
+          key={action.id}
           action={action}
           selectedKey={props.selectedKey}
           setSelectedKey={props.setSelectedKey}
