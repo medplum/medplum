@@ -72,12 +72,12 @@ function buildProfile(userInfo: Record<string, any>, profile: ProfileResource): 
 function buildEmail(userInfo: Record<string, any>, profile: ProfileResource, user: User): void {
   if (user.email) {
     userInfo.email = user.email;
-    userInfo.email_verified = user.emailVerified;
+    userInfo.email_verified = Boolean(user.emailVerified);
   } else {
     const contactPoint = profile.telecom?.find((cp) => cp.system === 'email');
     if (contactPoint) {
       userInfo.email = contactPoint.value;
-      userInfo.email_verified = !!(userInfo.email === user.email && user.emailVerified);
+      userInfo.email_verified = false;
     }
   }
 }
