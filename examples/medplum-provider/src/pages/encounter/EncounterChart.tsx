@@ -1,31 +1,35 @@
 import { Button, Text, Stack, Group, Box, Select } from '@mantine/core';
 import { Encounter, QuestionnaireResponse, Task } from '@medplum/fhirtypes';
 import { CodeInput, ResourceInput, useMedplum } from '@medplum/react';
-import { Outlet, useParams } from 'react-router-dom';
-import { TaskQuestionnaireForm } from '../components/TaskQuestionnaireForm';
-import { SimpleTask } from '../components/SimpleTask';
+import { Outlet, useLocation, useParams } from 'react-router-dom';
+import { TaskQuestionnaireForm } from '../components/Task/TaskQuestionnaireForm';
+import { SimpleTask } from '../components/Task/SimpleTask';
 import { useCallback, useEffect, useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
 import { IconCircleOff } from '@tabler/icons-react';
+import { AddPlanDefinition } from '../components/AddPlanDefinitions/AddPlanDefinition';
 
 export const EncounterChart = (): JSX.Element => {
-  const { encounterId } = useParams();
+  const { patientId, encounterId } = useParams();
   const medplum = useMedplum();
   const [encounter, setEncounter] = useState<Encounter | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [status, setStatus] = useState<Task['status'] | undefined>();
+  const location = useLocation();
+
+  const fetchTasks = useCallback(async (): Promise<void> => {
+    const encounterResult = await medplum.readResource('Encounter', encounterId as string);
+    setEncounter(encounterResult);
+    setStatus(encounterResult.status as typeof status);
+
+    const taskResult = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`, {
+      cache: 'no-cache',
+    });
+    setTasks(taskResult);
+  }, [medplum, encounterId]);
 
   useEffect(() => {
-    const fetchTasks = async (): Promise<void> => {
-      const encounterResult = await medplum.readResource('Encounter', encounterId as string);
-      setEncounter(encounterResult);
-      setStatus(encounterResult.status as typeof status);
-
-      const taskResult = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`);
-      setTasks(taskResult);
-    };
-
     fetchTasks().catch((err) => {
       showNotification({
         color: 'red',
@@ -34,7 +38,7 @@ export const EncounterChart = (): JSX.Element => {
         message: normalizeErrorString(err),
       });
     });
-  }, [medplum, encounterId]);
+  }, [medplum, encounterId, fetchTasks, location.pathname]);
 
   const handleSaveChanges = useCallback(
     async (task: Task, questionnaireResponse: QuestionnaireResponse): Promise<void> => {
@@ -87,50 +91,48 @@ export const EncounterChart = (): JSX.Element => {
           </Stack>
 
           <Stack gap="lg">
-            <Button variant="outline" color="blue" fullWidth>
-              Add care template
-            </Button>
-
-            <Text size="sm" color="dimmed">
-              Task groups predefined by care planner
-            </Text>
-
-            <div>
-              <CodeInput
-                name="status"
-                label="Status"
-                binding="http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
-                maxValues={1}
-                defaultValue={status}
-                onChange={(value) => {
-                  if (value) {
-                    setStatus(value as typeof status);
-                  }
-                }}
-              />
-            </div>
-
-            <div>
-              <ResourceInput name="practitioner" resourceType="Practitioner" label="Assigned practitioner" />
-            </div>
-
-            <div>
-              <Text fw={500} mb="xs">
-                Encounter Time
-              </Text>
-              <Select placeholder="1 hour" data={['30 minutes', '1 hour', '2 hours']} />
-            </div>
+            {encounterId && patientId && (
+              <AddPlanDefinition encounterId={encounterId} patientId={patientId} onApply={fetchTasks} />
+            )}
 
             <Stack gap="md">
-              <Button fullWidth>Save changes</Button>
+              <div>
+                <CodeInput
+                  name="status"
+                  label="Status"
+                  binding="http://hl7.org/fhir/ValueSet/encounter-status|4.0.1"
+                  maxValues={1}
+                  defaultValue={status}
+                  onChange={(value) => {
+                    if (value) {
+                      setStatus(value as typeof status);
+                    }
+                  }}
+                />
+              </div>
 
-              <Group gap="sm">
-                <Button variant="light" color="gray" fullWidth>
-                  Mark as finished
-                </Button>
-              </Group>
+              <div>
+                <ResourceInput name="practitioner" resourceType="Practitioner" label="Assigned practitioner" />
+              </div>
 
-              <Text size="sm">Complete all the tasks in encounter before finishing it</Text>
+              <div>
+                <Text fw={500} mb="xs">
+                  Encounter Time
+                </Text>
+                <Select placeholder="1 hour" data={['30 minutes', '1 hour', '2 hours']} />
+              </div>
+
+              <Stack gap="md">
+                <Button fullWidth>Save changes</Button>
+
+                <Group gap="sm">
+                  <Button variant="light" color="gray" fullWidth>
+                    Mark as finished
+                  </Button>
+                </Group>
+
+                <Text size="sm">Complete all the tasks in encounter before finishing it</Text>
+              </Stack>
             </Stack>
           </Stack>
         </div>

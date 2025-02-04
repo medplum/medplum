@@ -4,12 +4,12 @@ import { useMedplum, QuestionnaireForm } from '@medplum/react';
 import { Box, Card, Stack, Text } from '@mantine/core';
 import { TaskStatusPanel } from './TaskStatusPanel';
 
-interface ActionQuestionnaireFormProps {
+interface TaskQuestionnaireFormProps {
   task: Task;
   onSaveQuestionnaire: (task: Task, response: QuestionnaireResponse) => void;
 }
 
-export const TaskQuestionnaireForm = ({ task, onSaveQuestionnaire }: ActionQuestionnaireFormProps): JSX.Element => {
+export const TaskQuestionnaireForm = ({ task, onSaveQuestionnaire }: TaskQuestionnaireFormProps): JSX.Element => {
   const medplum = useMedplum();
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | undefined>(undefined);
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
