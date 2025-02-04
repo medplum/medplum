@@ -20,11 +20,19 @@ export const EncounterChart = (): JSX.Element => {
   const fetchTasks = useCallback(async (): Promise<void> => {
     const encounterResult = await medplum.readResource('Encounter', encounterId as string);
     setEncounter(encounterResult);
+    console.log(encounterResult);
     setStatus(encounterResult.status as typeof status);
 
     const taskResult = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`, {
       cache: 'no-cache',
     });
+
+    taskResult.sort((a: Task, b: Task) => {
+      const dateA = new Date(a.authoredOn || '').getTime();
+      const dateB = new Date(b.authoredOn || '').getTime();
+      return dateA - dateB;
+    });
+
     setTasks(taskResult);
   }, [medplum, encounterId]);
 
