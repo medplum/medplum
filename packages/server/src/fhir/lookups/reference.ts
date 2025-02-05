@@ -1,4 +1,12 @@
-import { PropertyType, evalFhirPathTyped, getSearchParameters, isResource, isUUID, toTypedValue } from '@medplum/core';
+import {
+  PropertyType,
+  evalFhirPathTyped,
+  getSearchParameters,
+  isResource,
+  isUUID,
+  resolveId,
+  toTypedValue,
+} from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
@@ -88,8 +96,8 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
     const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
     for (const value of typedValues) {
       if (value.type === PropertyType.Reference && value.value.reference) {
-        const [_targetType, targetId] = value.value.reference.split('/', 2);
-        if (isUUID(targetId)) {
+        const targetId = resolveId(value.value);
+        if (targetId && isUUID(targetId)) {
           addSearchReferenceResult(result, resource, searchParam, targetId);
         }
       }
