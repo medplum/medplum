@@ -180,24 +180,25 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                   />
 
                   <ScrollArea style={{ height: 'calc(80vh - 250px)' }} type="scroll">
-                    {planDefinitions.length > 0 && planDefinitions.map((plan) => (
-                      <Card
-                        key={plan.id}
-                        p="md"
-                        mb="xs"
-                        className={cx(classes.planDefinition, {
-                          [classes.selected]: selectedPlanDefinition?.id === plan.id,
-                        })}
-                        onClick={() => setSelectedPlanDefinition(plan)}
-                      >
-                        <Text fz="md" fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : undefined}>
-                          {plan.name}
-                        </Text>
-                        <Text fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : 'dimmed'}>
-                          {plan.subtitle}
-                        </Text>
-                      </Card>
-                    ))}
+                    {planDefinitions.length > 0 &&
+                      planDefinitions.map((plan) => (
+                        <Card
+                          key={plan.id}
+                          p="md"
+                          mb="xs"
+                          className={cx(classes.planDefinition, {
+                            [classes.selected]: selectedPlanDefinition?.id === plan.id,
+                          })}
+                          onClick={() => setSelectedPlanDefinition(plan)}
+                        >
+                          <Text fz="md" fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : undefined}>
+                            {plan.name}
+                          </Text>
+                          <Text fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : 'dimmed'}>
+                            {plan.subtitle}
+                          </Text>
+                        </Card>
+                      ))}
 
                     {planDefinitions.length === 0 && !isLoading && (
                       <Paper className={classes.notFound} h={40}>
