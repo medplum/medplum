@@ -344,14 +344,27 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
       },
     ],
   });
-  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${projectId}:active`);
+  const redis = getRedis();
+  const setKey = `medplum:subscriptions:r4:project:${projectId}:active`;
+  const redisOnlySubRefStrs = await redis.smembers(setKey);
   if (redisOnlySubRefStrs.length) {
-    const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
+    const redisOnlySubStrs = await redis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
       const hitRate = activeSubStrs.length / redisOnlySubStrs.length;
       if (hitRate < 0.1 && redisOnlySubRefStrs.length >= 100) {
-        getLogger().warn('Excessive subscription cache miss', { keys: redisOnlySubRefStrs, hitRate });
+        getLogger().warn('Excessive subscription cache miss', {
+          numKeys: redisOnlySubRefStrs.length,
+          hitRate,
+          projectId,
+        });
+        const inactiveSubs: string[] = [];
+        for (let i = 0; i < redisOnlySubStrs.length; i++) {
+          if (!redisOnlySubStrs[i]) {
+            inactiveSubs.push(redisOnlySubRefStrs[i]);
+          }
+        }
+        await redis.srem(setKey, inactiveSubs);
       }
       const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
