@@ -527,7 +527,10 @@ export async function getAuthTokens(
   user: User | ClientApplication,
   login: Login,
   profile: Reference<ProfileResource>,
-  refreshLifetime?: string
+  options?: {
+    accessLifetime?: string;
+    refreshLifetime?: string;
+  }
 ): Promise<TokenResult> {
   assert.equal(getReferenceString(user), login.user?.reference);
 
@@ -556,14 +559,17 @@ export async function getAuthTokens(
     auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
   });
 
-  const accessToken = await generateAccessToken({
-    client_id: clientId,
-    login_id: login.id as string,
-    sub: user.id,
-    username: user.id as string,
-    scope: login.scope as string,
-    profile: profile.reference as string,
-  });
+  const accessToken = await generateAccessToken(
+    {
+      client_id: clientId,
+      login_id: login.id as string,
+      sub: user.id,
+      username: user.id as string,
+      scope: login.scope as string,
+      profile: profile.reference as string,
+    },
+    { lifetime: options?.accessLifetime }
+  );
 
   const refreshToken = login.refreshSecret
     ? await generateRefreshToken(
@@ -572,7 +578,7 @@ export async function getAuthTokens(
           login_id: login.id as string,
           refresh_secret: login.refreshSecret,
         },
-        refreshLifetime
+        options?.refreshLifetime
       )
     : undefined;
 
