@@ -1,18 +1,20 @@
 import { HumanName, Practitioner, Reference, Task } from '@medplum/fhirtypes';
-import { CodeInput, DateTimeInput, ResourceInput, useMedplum } from '@medplum/react';
+import { CodeInput, DateTimeInput, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Button, Card, Modal, Stack, Text, Textarea } from '@mantine/core';
+import { Box, Button, Card, Grid, Modal, Stack, Text, Textarea } from '@mantine/core';
 import { usePatient } from '../../hooks/usePatient';
-import { formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
+import { createReference, formatHumanName, getReferenceString, normalizeErrorString } from '@medplum/core';
 import { notifications } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
+import classes from './TaskDetails.module.css';
 
 export const TaskDetails = (): JSX.Element => {
   const { patientId, encounterId, taskId } = useParams();
   const patient = usePatient();
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const author = useMedplumProfile();
   const [task, setTask] = useState<Task | undefined>(undefined);
   const [isOpened, setIsOpened] = useState(true);
   const [practitioner, setPractitioner] = useState<Practitioner | undefined>();
@@ -53,6 +55,8 @@ export const TaskDetails = (): JSX.Element => {
         ...(task.note || []),
         {
           text: trimmedNote,
+          authorReference: author && createReference(author),
+          time: new Date().toISOString(),
         },
       ];
     }
@@ -93,84 +97,89 @@ export const TaskDetails = (): JSX.Element => {
       }}
       size="xl"
     >
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <Stack gap="sm">
-            <Card p="md" radius="md" style={{ backgroundColor: '#F8F9FA' }}>
+      <Stack h="100%" justify="space-between" gap={0}>
+        <Box flex={1} miw={0}>
+          <Grid p="md" h="100%">
+            <Grid.Col span={6} pr="md">
               <Stack gap="sm">
-                <Text fz="lg" fw={700}>
-                  {task?.code?.text}
-                </Text>
-                {task?.description && <Text>{task.description}</Text>}
-                {patient?.name && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <Text>View Patient</Text>
-                    <Button variant="subtle" component={Link} to={`/Patient/${patient.id}`}>
-                      {formatHumanName(patient.name?.[0] as HumanName)}
-                    </Button>
-                  </div>
+                <Card p="md" radius="md" className={classes.taskDetails}>
+                  <Stack gap="sm">
+                    <Text fz="lg" fw={700}>
+                      {task?.code?.text}
+                    </Text>
+                    {task?.description && <Text>{task.description}</Text>}
+                    {patient?.name && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <Text>View Patient</Text>
+                        <Button variant="subtle" component={Link} to={`/Patient/${patient.id}`}>
+                          {formatHumanName(patient.name?.[0] as HumanName)}
+                        </Button>
+                      </div>
+                    )}
+                  </Stack>
+                </Card>
+
+                <ResourceInput
+                  name="practitioner"
+                  resourceType="Practitioner"
+                  label="Assigned to"
+                  defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
+                  onChange={(value) => {
+                    setPractitioner(value as Practitioner);
+                  }}
+                />
+
+                <DateTimeInput
+                  name="Due Date"
+                  placeholder="End"
+                  label="Due Date"
+                  defaultValue={dueDate}
+                  onChange={setDueDate}
+                />
+
+                {task?.status && (
+                  <CodeInput
+                    name="status"
+                    label="Status"
+                    binding="http://hl7.org/fhir/ValueSet/task-status|4.0.1"
+                    maxValues={1}
+                    defaultValue={status}
+                    onChange={(value) => {
+                      if (value) {
+                        setStatus(value as typeof status);
+                      }
+                    }}
+                  />
                 )}
               </Stack>
-            </Card>
+            </Grid.Col>
 
-            <ResourceInput
-              name="practitioner"
-              resourceType="Practitioner"
-              label="Assigned to"
-              defaultValue={task?.owner ? { reference: task.owner.reference } : undefined}
-              onChange={(value) => {
-                setPractitioner(value as Practitioner);
-              }}
-            />
+            <Grid.Col span={6} pr="md">
+              <Stack gap="sm">
+                <Text>Note</Text>
+                <Textarea
+                  placeholder="Add note"
+                  minRows={3}
+                  value={note}
+                  onChange={(event) => setNote(event.currentTarget.value)}
+                />
+              </Stack>
+            </Grid.Col>
+          </Grid>
+        </Box>
 
-            <DateTimeInput
-              name="Due Date"
-              placeholder="End"
-              label="Due Date"
-              defaultValue={dueDate}
-              onChange={setDueDate}
-            />
-
-            {task?.status && (
-              <CodeInput
-                name="status"
-                label="Status"
-                binding="http://hl7.org/fhir/ValueSet/task-status|4.0.1"
-                maxValues={1}
-                defaultValue={status}
-                onChange={(value) => {
-                  if (value) {
-                    setStatus(value as typeof status);
-                  }
-                }}
-              />
-            )}
-          </Stack>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            marginTop: '1rem',
+          }}
+        >
+          <Button variant="filled" onClick={handleOnSubmit}>
+            Save Changes
+          </Button>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <Stack gap="sm">
-            <Text>Note</Text>
-            <Textarea
-              placeholder="Add note"
-              minRows={3}
-              value={note}
-              onChange={(event) => setNote(event.currentTarget.value)}
-            />
-          </Stack>
-        </div>
-      </div>
-
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          marginTop: '1rem',
-        }}
-      >
-        <Button variant="filled" onClick={handleOnSubmit}>
-          Save Changes
-        </Button>
-      </div>
+      </Stack>
     </Modal>
   );
 };

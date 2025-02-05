@@ -1,0 +1,9 @@
+
+
+[data-mantine-color-scheme="dark"] .taskDetails {
+  background-color: var(--mantine-color-dark-8);
+}
+
+[data-mantine-color-scheme="light"] .taskDetails {
+  background-color: var(--mantine-color-gray-1);
+}
