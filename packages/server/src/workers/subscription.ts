@@ -352,7 +352,7 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
     if (project.features?.includes('websocket-subscriptions')) {
       const activeSubStrs = redisOnlySubStrs.filter(Boolean);
       const hitRate = activeSubStrs.length / redisOnlySubStrs.length;
-      if (hitRate < 0.1 && redisOnlySubRefStrs.length >= 100) {
+      if (hitRate < 0.5 && redisOnlySubRefStrs.length >= 100) {
         getLogger().warn('Excessive subscription cache miss', {
           numKeys: redisOnlySubRefStrs.length,
           hitRate,
