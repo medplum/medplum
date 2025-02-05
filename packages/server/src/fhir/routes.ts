@@ -44,6 +44,7 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { rotateSecretHandler } from './operations/rotatesecret';
 
 export const fhirRouter = Router();
 
@@ -288,6 +289,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Super admin operations
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
+
+  // Rotate client secret
+  router.add('POST', '/ClientApplication/:id/$rotate-secret', rotateSecretHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();

@@ -841,6 +841,21 @@
             }
           },
           {
+            "id" : "ClientApplication.retiringSecret",
+            "path" : "ClientApplication.retiringSecret",
+            "definition" : "Old version of the client secret that is being rotated out.  Instances of the client using this value should update to use the value in ClientApplication.secret",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.retiringSecret",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ClientApplication.jwksUri",
             "path" : "ClientApplication.jwksUri",
             "definition" : "Optional JWKS URI for public key verification of JWTs issued by the authorization server (client_secret_jwt).",

@@ -1,0 +1,79 @@
+import express from 'express';
+import { initApp, shutdownApp } from '../../app';
+import { loadTestConfig } from '../../config';
+import { createTestProject } from '../../test.setup';
+import { ContentType } from '@medplum/core';
+import request from 'supertest';
+import { ClientApplication, Parameters } from '@medplum/fhirtypes';
+
+describe('ClientApplication $rotate-secret', () => {
+  const app = express();
+
+  beforeAll(async () => {
+    const config = await loadTestConfig();
+    await initApp(app, config);
+  });
+
+  afterAll(async () => {
+    await shutdownApp();
+  });
+
+  test('Secret is changed to new value', async () => {
+    const { client, accessToken } = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
+      membership: { admin: true },
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ClientApplication/${client.id}/$rotate-secret`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'secret', valueString: client.secret }],
+      } satisfies Parameters);
+    expect(res.status).toBe(200);
+    const updated = res.body as ClientApplication;
+    expect(updated.secret).toBeDefined();
+    expect(updated.secret).not.toStrictEqual(client.secret);
+    expect(updated.retiringSecret).toStrictEqual(client.secret);
+  });
+
+  test('Secret parameter must match existing', async () => {
+    const { client, accessToken } = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
+      membership: { admin: true },
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ClientApplication/${client.id}/$rotate-secret`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({
+        resourceType: 'Parameters',
+        parameter: [{ name: 'secret', valueString: 'incorrect' }],
+      } satisfies Parameters);
+    expect(res.status).toBe(400);
+    expect(res.body.issue?.[0]?.code).toStrictEqual('invalid');
+  });
+
+  test('Access denied for non-admin user', async () => {
+    const { client, accessToken } = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
+    });
+
+    const res = await request(app)
+      .post(`/fhir/R4/ClientApplication/${client.id}/$rotate-secret`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({});
+    expect(res.status).toBe(403);
+    expect(res.body.issue?.[0]?.code).toStrictEqual('forbidden');
+  });
+});
