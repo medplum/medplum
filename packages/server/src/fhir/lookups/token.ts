@@ -37,7 +37,6 @@ import {
 } from '../sql';
 import { LookupTable } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
-import { getAuthenticatedContext } from '../../context';
 
 interface Token {
   readonly code: string;
@@ -564,18 +563,11 @@ function buildValueCondition(context: FilterContext, value: string): Expression 
 }
 
 function logExpensiveQuery(context: FilterContext, value: string): void {
-  let projectId: string | undefined;
-  try {
-    projectId = getAuthenticatedContext().project.id;
-  } catch (_err) {
-    // Ignore
-  }
   getLogger().warn('Potentially expensive token lookup query', {
     operator: context.filter.operator,
     searchParameter: { id: context.searchParam.id, code: context.searchParam.code },
     filterValue: context.filter.value,
     value,
-    projectId,
   });
 }
 
