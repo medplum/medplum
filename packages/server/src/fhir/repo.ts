@@ -21,6 +21,7 @@ import {
   evalFhirPathTyped,
   forbidden,
   formatSearchQuery,
+  getReferenceString,
   getSearchParameters,
   getStatus,
   gone,
@@ -28,6 +29,7 @@ import {
   isNotFound,
   isObject,
   isOk,
+  isReference,
   isResource,
   normalizeErrorString,
   normalizeOperationOutcome,
@@ -1594,23 +1596,28 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns The reference column value.
    */
   private buildReferenceColumns(value: any): string | undefined {
-    if (value) {
-      if (typeof value === 'string') {
-        // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
-        // This is a reference string that is not a FHIR reference
-        return value;
+    if (!value) {
+      return undefined;
+    }
+    if (typeof value === 'string') {
+      // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
+      // This is a reference string that is not a FHIR reference
+      return value;
+    }
+    if (typeof value === 'object') {
+      if (isReference(value)) {
+        // Handle normal "reference" properties
+        return value.reference;
       }
-      if (typeof value === 'object') {
-        if (value.reference) {
-          // Handle normal "reference" properties
-          return value.reference;
-        }
-        if (typeof value.identifier === 'object') {
-          // Handle logical (identifier-only) references by putting a placeholder in the column
-          // NOTE(mattwiller 2023-11-01): This is done to enable searches using the :missing modifier;
-          // actual identifier search matching is handled by the `<ResourceType>_Token` lookup tables
-          return `identifier:${value.identifier.system}|${value.identifier.value}`;
-        }
+      if (isResource(value) && value.id) {
+        // Handle inline references
+        return getReferenceString(value);
+      }
+      if (typeof value.identifier === 'object') {
+        // Handle logical (identifier-only) references by putting a placeholder in the column
+        // NOTE(mattwiller 2023-11-01): This is done to enable searches using the :missing modifier;
+        // actual identifier search matching is handled by the `<ResourceType>_Token` lookup tables
+        return `identifier:${value.identifier.system}|${value.identifier.value}`;
       }
     }
     return undefined;
