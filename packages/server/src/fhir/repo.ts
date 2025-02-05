@@ -2412,27 +2412,9 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // Return early to avoid calling mget() with no args, which is an error
       return [];
     }
-    const cacheEntries = await getRedis().mget(...referenceKeys);
-    const results = new Array<CacheEntry | undefined>(cacheEntries.length);
-    let cacheHits = 0;
-    for (let i = 0; i < cacheEntries.length; i++) {
-      const cachedValue = cacheEntries[i];
-      if (cachedValue) {
-        // Cache hit
-        results[i] = JSON.parse(cachedValue) as CacheEntry;
-        cacheHits++;
-      } else {
-        // Cache miss
-        results[i] = undefined;
-      }
-    }
-
-    const hitRate = cacheHits / cacheEntries.length;
-    if (hitRate < 0.1 && referenceKeys.length > 50) {
-      getLogger().warn('Excessive cache miss', { references: referenceKeys, hitRate, stack: new Error().stack });
-    }
-
-    return results;
+    return (await getRedis().mget(referenceKeys)).map((cachedValue) =>
+      cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
+    );
   }
 
   /**
