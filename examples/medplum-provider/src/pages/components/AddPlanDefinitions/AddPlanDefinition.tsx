@@ -154,13 +154,13 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
       >
         <Stack h="100%" justify="space-between" gap={0}>
           <Box flex={1} miw={0}>
-            <Grid p="md" h="100%">
-              <Grid.Col span={6}>
+            <Grid p="md">
+              <Grid.Col span={6} pr="md">
                 <Box>
                   <Title order={5} mb="xs">
                     Select care template
                   </Title>
-                  <Text size="sm" color="dimmed" mb="md">
+                  <Text size="sm" c="dimmed" mb="md">
                     Care templates are predefined sets of actions that can be applied to encounters.
                   </Text>
 
@@ -179,7 +179,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                     }}
                   />
 
-                  <ScrollArea.Autosize>
+                  <ScrollArea style={{ height: 'calc(80vh - 250px)' }} type="scroll">
                     {planDefinitions.map((plan) => (
                       <Card
                         key={plan.id}
@@ -198,17 +198,17 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                         </Text>
                       </Card>
                     ))}
-                  </ScrollArea.Autosize>
+                  </ScrollArea>
                 </Box>
               </Grid.Col>
 
-              <Grid.Col span={6} h="100%">
-                <Paper withBorder p="md" h="100%" className={classes.preview}>
+              <Grid.Col span={6} >
+                <Paper withBorder className={classes.preview} >
                   {selectedPlanDefinition ? (
-                    <Stack gap="sm" h="100%">
+                    <Stack gap="sm" px="md" pt="md">
                       <Title order={5}>Preview</Title>
 
-                      <Stack gap={0}>
+                      <Stack gap={0} p={0}>
                         <Text fz="md" fw={500}>
                           {selectedPlanDefinition.name}
                         </Text>
@@ -217,8 +217,8 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                         </Text>
                       </Stack>
 
-                      <ScrollArea>
-                        <Stack gap="xs">
+                      <ScrollArea style={{ height: 'calc(80vh - 220px)' }} type="scroll">
+                        <Stack gap="xs" pb="md">
                           {selectedPlanDefinition.action?.map((action, index) => (
                             <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
                               <Text fw={500}>{action.title}</Text>
