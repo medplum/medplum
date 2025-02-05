@@ -180,7 +180,7 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                   />
 
                   <ScrollArea style={{ height: 'calc(80vh - 250px)' }} type="scroll">
-                    {planDefinitions.map((plan) => (
+                    {planDefinitions.length > 0 && planDefinitions.map((plan) => (
                       <Card
                         key={plan.id}
                         p="md"
@@ -198,39 +198,46 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                         </Text>
                       </Card>
                     ))}
+
+                    {planDefinitions.length === 0 && !isLoading && (
+                      <Paper className={classes.notFound} h={40}>
+                        <Text>Nothing found! Try searching for another name of the care plan.</Text>
+                      </Paper>
+                    )}
                   </ScrollArea>
                 </Box>
               </Grid.Col>
 
-              <Grid.Col span={6} >
-                <Paper withBorder className={classes.preview} >
-                  {selectedPlanDefinition ? (
+              <Grid.Col span={6}>
+                <Paper withBorder className={classes.preview}>
+                  <ScrollArea style={{ height: 'calc(80vh - 110px)' }} type="scroll">
                     <Stack gap="sm" px="md" pt="md">
                       <Title order={5}>Preview</Title>
+                      {selectedPlanDefinition ? (
+                        <>
+                          <Stack gap={0} p={0}>
+                            <Text fz="md" fw={500}>
+                              {selectedPlanDefinition.name}
+                            </Text>
+                            <Text fw={500} c="dimmed">
+                              {selectedPlanDefinition.subtitle}
+                            </Text>
+                          </Stack>
 
-                      <Stack gap={0} p={0}>
-                        <Text fz="md" fw={500}>
-                          {selectedPlanDefinition.name}
-                        </Text>
-                        <Text fw={500} c="dimmed">
-                          {selectedPlanDefinition.subtitle}
-                        </Text>
-                      </Stack>
-
-                      <ScrollArea style={{ height: 'calc(80vh - 220px)' }} type="scroll">
-                        <Stack gap="xs" pb="md">
-                          {selectedPlanDefinition.action?.map((action, index) => (
-                            <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
-                              <Text fw={500}>{action.title}</Text>
-                              {action.description && <Text c="dimmed">{action.description}</Text>}
-                            </Card>
-                          ))}
-                        </Stack>
-                      </ScrollArea>
+                          <Stack gap="xs" pb="md">
+                            {selectedPlanDefinition.action?.map((action, index) => (
+                              <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
+                                <Text fw={500}>{action.title}</Text>
+                                {action.description && <Text c="dimmed">{action.description}</Text>}
+                              </Card>
+                            ))}
+                          </Stack>
+                        </>
+                      ) : (
+                        <Text c="dimmed">Select a template to see preview.</Text>
+                      )}
                     </Stack>
-                  ) : (
-                    <Text c="dimmed">Select a template to see preview</Text>
-                  )}
+                  </ScrollArea>
                 </Paper>
               </Grid.Col>
             </Grid>

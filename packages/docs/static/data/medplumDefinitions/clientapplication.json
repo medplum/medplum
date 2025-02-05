@@ -354,6 +354,22 @@
       "inherited": false
     },
     {
+      "name": "accessTokenLifetime",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.accessTokenLifetime",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Optional configuration to set the access token duration",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "refreshTokenLifetime",
       "depth": 1,
       "types": [

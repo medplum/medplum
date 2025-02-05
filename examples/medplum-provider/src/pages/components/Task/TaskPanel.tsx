@@ -41,13 +41,16 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
     setIsQuestionnaire(questionnaireResponse !== undefined && !task.output?.[0]?.valueReference);
   }, [task, questionnaireResponse]);
 
-  const onSubmit = async (): Promise<void> => {
+  const onActionButtonClicked = async (): Promise<void> => {
     if (questionnaireResponse && isQuestionnaire) {
+      // Task handles an active questionnaire. Action will submit questionnaire
       onSaveQuestionnaire(task, questionnaireResponse);
     } else if (task.status === 'ready' || task.status === 'requested') {
+      // Task status is Ready or Requested. Action will mark as complete.
       const updatedTask: Task = { ...task, status: 'completed' };
       await updateTaskStatus(updatedTask, medplum, onCompleteTask);
     } else {
+      // Fallback navigation to Task details.
       navigate(`Task/${task.id}`);
     }
   };
@@ -85,7 +88,7 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
         <TaskStatusPanel
           task={task}
           isQuestionnaire={isQuestionnaire}
-          onSubmit={onSubmit}
+          onActionButtonClicked={onActionButtonClicked}
           onAddNote={onAddNote}
           onChangeStatus={onChangeStatus}
         />
