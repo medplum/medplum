@@ -486,6 +486,14 @@ function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean 
   return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(ruleValue);
 }
 
+function matchesScope(existing: string, candidate: string): boolean {
+  if (!candidate.startsWith(existing)) {
+    // Must be at least prefix match
+    return false;
+  }
+  return candidate.length === existing.length || candidate[existing.length] === '?';
+}
+
 /**
  * Sets the login scope.
  * Ensures that the scope is the same or a subset of the originally requested scope.
@@ -509,8 +517,8 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
   const submittedScopes = scope.split(' ');
 
   // If user requests any scope that is not in existing scope, then reject
-  for (const scope of submittedScopes) {
-    if (!existingScopes.includes(scope)) {
+  for (const candidate of submittedScopes) {
+    if (!existingScopes.some((existing) => matchesScope(existing, candidate))) {
       throw new OperationOutcomeError(badRequest('Invalid scope'));
     }
   }
