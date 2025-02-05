@@ -11,7 +11,7 @@ import { getQuestionnaireAnswers } from '@medplum/core';
 interface TaskStatusPanelProps {
   task: Task;
   isQuestionnaire?: boolean;
-  onSubmit: () => void;
+  onActionButtonClicked: () => void;
   onAddNote: (note: string) => void;
   onChangeStatus: (status: Task[`status`]) => void;
 }
@@ -19,7 +19,7 @@ interface TaskStatusPanelProps {
 export const TaskStatusPanel = ({
   task,
   isQuestionnaire,
-  onSubmit,
+  onActionButtonClicked,
   onAddNote,
   onChangeStatus,
 }: TaskStatusPanelProps): JSX.Element => {
@@ -76,7 +76,7 @@ export const TaskStatusPanel = ({
             <Menu>
               <div style={{ display: 'inline-block' }}>
                 <Button
-                  onClick={onSubmit}
+                  onClick={onActionButtonClicked}
                   variant={isQuestionnaire || isTaskReadyOrRequested ? 'filled' : 'outline'}
                   rightSection={
                     <Menu.Target>
