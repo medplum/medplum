@@ -50,6 +50,6 @@
     "ssh2-sftp-client": "11.0.0",
     "stripe": "17.6.0",
     "typescript": "5.7.3",
-    "vitest": "3.0.4"
+    "vitest": "3.0.5"
   }
 }
