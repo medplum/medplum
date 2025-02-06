@@ -4,6 +4,7 @@ import { getAuthenticatedContext } from '../../context';
 import { generateSecret } from '../../oauth/keys';
 import { allOk, forbidden } from '@medplum/core';
 import { buildOutputParameters, parseInputParameters } from './utils/parameters';
+import { getSystemRepo } from '../repo';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
@@ -43,7 +44,8 @@ export async function rotateSecretHandler(req: FhirRequest): Promise<FhirRespons
 
   const params = parseInputParameters<RotateSecretParameters>(operation, req);
 
-  const clientApp = await repo.patchResource('ClientApplication', req.params.id, [
+  // Patch using system repo since the secret fields should not generally be user-writeable
+  const clientApp = await getSystemRepo().patchResource('ClientApplication', req.params.id, [
     {
       op: 'test',
       path: '/secret',

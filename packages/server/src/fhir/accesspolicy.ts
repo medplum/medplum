@@ -196,7 +196,7 @@ function applyProjectAdminAccessPolicy(
     // If there is an existing access policy
     // Remove any references to project admin resource types
     accessPolicy.resource = accessPolicy.resource?.filter(
-      (r) => !projectAdminResourceTypes.includes(r.resourceType as string)
+      (r) => !projectAdminResourceTypes.includes(r.resourceType as string) && r.resourceType !== '*'
     );
   }
 
@@ -229,7 +229,7 @@ function applyProjectAdminAccessPolicy(
 
     accessPolicy.resource.push({
       resourceType: 'ProjectMembership',
-      criteria: `ProjectMembership?project=${membership.project?.reference}`,
+      criteria: `ProjectMembership?project=${membership.project.reference}`,
       readonlyFields: ['project', 'user'],
     });
 
@@ -245,9 +245,14 @@ function applyProjectAdminAccessPolicy(
 
     accessPolicy.resource.push({
       resourceType: 'User',
-      criteria: `User?project=${membership.project?.reference}`,
+      criteria: `User?project=${membership.project.reference}`,
       hiddenFields: ['passwordHash', 'mfaSecret'],
       readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
+    });
+
+    accessPolicy.resource.push({
+      resourceType: 'ClientApplication',
+      readonlyFields: ['secret', 'retiringSecret'],
     });
   }
 

@@ -18,6 +18,24 @@ describe('ClientApplication $rotate-secret', () => {
     await shutdownApp();
   });
 
+  test('Secret cannot be changed directly', async () => {
+    const { client, accessToken } = await createTestProject({
+      withAccessToken: true,
+      withClient: true,
+      membership: { admin: true },
+    });
+
+    const res = await request(app)
+      .put(`/fhir/R4/ClientApplication/${client.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('X-Medplum', 'extended')
+      .send({ ...client, secret: 'foo' } satisfies ClientApplication);
+    expect(res.status).toBe(200);
+    const updated = res.body as ClientApplication;
+    expect(updated.secret).toEqual(client.secret);
+  });
+
   test('Secret is changed to new value', async () => {
     const { client, accessToken } = await createTestProject({
       withAccessToken: true,
