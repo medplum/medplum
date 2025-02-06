@@ -1,5 +1,5 @@
 import { HumanName, Practitioner, Reference, Task } from '@medplum/fhirtypes';
-import { CodeInput, DateTimeInput, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
+import { CodeInput, DateTimeInput, Loading, ResourceInput, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Box, Button, Card, Grid, Modal, Stack, Text, Textarea } from '@mantine/core';
@@ -65,6 +65,16 @@ export const TaskDetails = (): JSX.Element => {
       updatedTask.status = status;
     }
 
+    if (dueDate) {
+      updatedTask.restriction = {
+        ...updatedTask.restriction,
+        period: {
+          ...updatedTask.restriction?.period,
+          end: dueDate,
+        },
+      };
+    }
+
     if (practitioner) {
       updatedTask.owner = { reference: getReferenceString(practitioner) } as Reference<Practitioner>;
     }
@@ -88,6 +98,10 @@ export const TaskDetails = (): JSX.Element => {
     }
   };
 
+  if (!task) {
+    return <Loading />;
+  }
+
   return (
     <Modal
       opened={isOpened}
@@ -100,7 +114,7 @@ export const TaskDetails = (): JSX.Element => {
       <Stack h="100%" justify="space-between" gap={0}>
         <Box flex={1} miw={0}>
           <Grid p="md" h="100%">
-            <Grid.Col span={6} pr="md">
+            <Grid.Col span={6} pr="lg">
               <Stack gap="sm">
                 <Card p="md" radius="md" className={classes.taskDetails}>
                   <Stack gap="sm">
@@ -157,8 +171,9 @@ export const TaskDetails = (): JSX.Element => {
             <Grid.Col span={6} pr="md">
               <Stack gap="sm">
                 <Text>Note</Text>
+                <Text c="dimmed">Optional free form details about this task</Text>
                 <Textarea
-                  placeholder="Add note"
+                  placeholder="Add note to this task"
                   minRows={3}
                   value={note}
                   onChange={(event) => setNote(event.currentTarget.value)}

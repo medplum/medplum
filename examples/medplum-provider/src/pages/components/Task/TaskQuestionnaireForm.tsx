@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Questionnaire, QuestionnaireResponse, Reference, Task } from '@medplum/fhirtypes';
-import { useMedplum, QuestionnaireForm } from '@medplum/react';
+import { useMedplum, QuestionnaireForm, Loading } from '@medplum/react';
 import { Box, Stack, Text } from '@mantine/core';
 
 interface TaskQuestionnaireFormProps {
@@ -27,7 +27,13 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   }, [medplum, task]);
 
   if (!questionnaire) {
-    return <div>Loading...</div>;
+    return (
+      <Box p="md">
+        <Text>
+          <Loading />
+        </Text>
+      </Box>
+    );
   }
 
   return (

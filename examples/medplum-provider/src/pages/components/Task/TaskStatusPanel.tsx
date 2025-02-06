@@ -62,8 +62,8 @@ export const TaskStatusPanel = ({
       >
         <Grid.Col span={6}>
           <Stack gap={0}>
-            <Text c="black">Current status</Text>
-            <Text fw="bold">{task.status}</Text>
+            <Text>Current status</Text>
+            <Text fw="bold">{task.status.replace(/-/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</Text>
           </Stack>
         </Grid.Col>
 
