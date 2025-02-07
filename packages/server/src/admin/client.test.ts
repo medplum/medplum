@@ -44,7 +44,6 @@ describe('Client admin', () => {
     expect(res2.status).toBe(201);
     expect(res2.body.resourceType).toBe('ClientApplication');
     expect(res2.body.id).toBeDefined();
-    expect(res2.body.secret).toBeDefined();
     expect(res2.body.secret).toHaveLength(64);
 
     // Read the client
