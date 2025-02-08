@@ -15,7 +15,7 @@ Follow these instructions to get the complete Medplum stack running directly on 
 ## Prerequisites
 
 1. **[Git](https://git-scm.com/)**
-2. **[Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)** (version 18+ required, version 20+ recommended)
+2. **[Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm)** (version 20+ required)
 3. **[Docker](https://docs.docker.com/engine/install/)**
 4. [Clone the Medplum repo](./local-dev-setup#clone-the-repo)
 
@@ -72,14 +72,14 @@ This will:
 When `docker-compose` completes, you should see something like this in your terminal:
 
 ```bash
-medplum-postgres-1  | PostgreSQL init process complete; ready for start up.
-medplum-postgres-1  |
-medplum-postgres-1  | 2022-07-29 00:37:44.639 GMT [1] LOG:  starting PostgreSQL 12.10 (Debian 12.10-1.pgdg110+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 10.2.1-6) 10.2.1 20210110, 64-bit
-medplum-postgres-1  | 2022-07-29 00:37:44.639 GMT [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
-medplum-postgres-1  | 2022-07-29 00:37:44.639 GMT [1] LOG:  listening on IPv6 address "::", port 5432
-medplum-postgres-1  | 2022-07-29 00:37:44.642 GMT [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
-medplum-postgres-1  | 2022-07-29 00:37:44.650 GMT [88] LOG:  database system was shut down at 2022-07-29 00:37:44 GMT
-medplum-postgres-1  | 2022-07-29 00:37:44.654 GMT [1] LOG:  database system is ready to accept connections
+postgres-1  | PostgreSQL init process complete; ready for start up.
+postgres-1  |
+postgres-1  | 2024-12-13 17:27:57.492 GMT [1] LOG:  starting PostgreSQL 16.5 (Debian 16.5-1.pgdg120+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit
+postgres-1  | 2024-12-13 17:27:57.492 GMT [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+postgres-1  | 2024-12-13 17:27:57.492 GMT [1] LOG:  listening on IPv6 address "::", port 5432
+postgres-1  | 2024-12-13 17:27:57.493 GMT [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+postgres-1  | 2024-12-13 17:27:57.495 GMT [67] LOG:  database system was shut down at 2024-12-13 17:27:57 GMT
+postgres-1  | 2024-12-13 17:27:57.508 GMT [1] LOG:  database system is ready to accept connections
 ```
 
 **(Optional)** If you'd like to run a `psql` to shell to inspect the database, you can run
@@ -94,8 +94,8 @@ Where `medplum-postgres-1` can be replaced with the name of your postgres docker
 
 If you'd prefer to install the dependencies directly, you can find installation instructions for the required services below:
 
-1. [Install PostgreSQL](https://www.postgresql.org/download/)
-2. [Install Redis](https://redis.io/download)
+1. [Install PostgreSQL](https://www.postgresql.org/download/) (version 13+ required)
+2. [Install Redis](https://redis.io/download) (version 6+ required)
 
 After that, you will have to update the file `packages/server/medplum.config.json`
 

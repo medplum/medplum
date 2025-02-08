@@ -28,7 +28,7 @@ If you want to run bots locally, you should use a VM Context. For more details s
 
 The first thing we'll do is set up a Git repository to host your Bot code. While you can set up bots in any git repository, we provide a [template Git repository](https://github.com/medplum/medplum-demo-bots) to help you get started.
 
-The Medplum Bot SDK requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm). Version 18+ required, but version 20+ is recommended.
+The Medplum Bot SDK requires [Node.js](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm). Version 20+ is required.
 
 Clone the repo and install the dependencies
 
