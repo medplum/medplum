@@ -27,7 +27,6 @@ When we this implementation is complete we will:
 - Make sure you have an account on Medplum, if not, [register](https://app.medplum.com/register).
 - Create a [ClientApplication](https://app.medplum.com/admin/project) on Medplum called "ADT Bot Client Application".
 - (Optional) Create a very restrictive [AccessPolicy](https://app.medplum.com/AccessPolicy) called "ADT Bot Policy", make it so that the policy only allows readwrite on the Patient object.
-- (Optional) In the [ProjectAdmin dashboard](https://app.medplum.com/admin/project) apply the "ADT Bot Policy" policy to the `ClientApplication` by clicking `Access`.
 
 ### Bot Setup
 
