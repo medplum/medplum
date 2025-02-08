@@ -69,6 +69,20 @@ jobs:
           MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
           GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
           RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+      - name: Static generation check
+        run: |
+          set -e
+
+          npm run generate
+
+          # Check if we have a clean working directory after running generate
+          if git diff --quiet; then
+            echo "No uncommitted changes detected after running `generate` in `packages/generator`."
+            exit 0
+          else
+            echo "Uncommitted changes detected. Run `npm run generate` in `packages/generator` and commit the generated changes."
+            exit 1
+          fi
 
   eslint:
     name: Run eslint
