@@ -66,7 +66,7 @@
     "@medplum/react": "3.2.31",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.2.0",
-    "@types/node": "22.13.0",
+    "@types/node": "22.13.1",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
@@ -75,7 +75,7 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.28.0",
     "rimraf": "5.0.9",
-    "vitest": "3.0.4"
+    "vitest": "3.0.5"
   },
   "peerDependencies": {
     "@medplum/core": "3.2.31",
