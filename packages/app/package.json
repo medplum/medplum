@@ -1,6 +1,6 @@
 {
   "name": "@medplum/app",
-  "version": "3.2.28",
+  "version": "3.2.31",
   "description": "Medplum App",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -30,15 +30,15 @@
     "last 1 Chrome versions"
   ],
   "devDependencies": {
-    "@mantine/core": "7.16.2",
-    "@mantine/dropzone": "7.16.2",
-    "@mantine/hooks": "7.16.2",
-    "@mantine/notifications": "7.16.2",
-    "@medplum/core": "3.2.28",
-    "@medplum/definitions": "3.2.28",
-    "@medplum/fhirtypes": "3.2.28",
-    "@medplum/mock": "3.2.28",
-    "@medplum/react": "3.2.28",
+    "@mantine/core": "7.16.3",
+    "@mantine/dropzone": "7.16.3",
+    "@mantine/hooks": "7.16.3",
+    "@mantine/notifications": "7.16.3",
+    "@medplum/core": "3.2.31",
+    "@medplum/definitions": "3.2.31",
+    "@medplum/fhirtypes": "3.2.31",
+    "@medplum/mock": "3.2.31",
+    "@medplum/react": "3.2.31",
     "@tabler/icons-react": "3.17.0",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.2.0",
@@ -51,7 +51,7 @@
     "react-dom": "18.2.0",
     "react-router-dom": "6.28.0",
     "rfc6902": "5.1.2",
-    "vite": "6.0.11"
+    "vite": "6.1.0"
   },
   "engines": {
     "node": ">=18.0.0"

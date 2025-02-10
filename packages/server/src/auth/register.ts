@@ -75,7 +75,7 @@ export async function registerNew(request: RegisterRequest): Promise<RegisterRes
       membership: createReference(membership as ProjectMembership),
     },
     createReference(profile as ProfileResource),
-    client.refreshTokenLifetime
+    { accessLifetime: client.accessTokenLifetime, refreshLifetime: client.refreshTokenLifetime }
   );
 
   return {

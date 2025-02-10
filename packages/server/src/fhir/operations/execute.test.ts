@@ -344,6 +344,7 @@ describe('Execute', () => {
         resourceType: 'Bot',
         name: 'Test Bot',
         runtimeVersion: 'vmcontext',
+        runAsUser: true,
       });
     expect(res1.status).toBe(201);
     const bot = res1.body as Bot;
@@ -390,10 +391,11 @@ describe('Execute', () => {
       .send({
         code: `
           const { getReferenceString } = require("@medplum/core");
-          exports.handler = async function (_medplum, event) {
+          exports.handler = async function (medplum, event) {
             return {
               patient: getReferenceString({ resourceType: 'Patient', id: '123' }),
               bot: getReferenceString(event.bot),
+              defaultHeaders: medplum.getDefaultHeaders(),
             }
           };
       `,
@@ -405,11 +407,15 @@ describe('Execute', () => {
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
+      .set('Cookie', '__medplum-test-cookie=123')
       .send({});
     expect(res6.status).toBe(200);
     expect(res6.body).toMatchObject({
       patient: 'Patient/123',
       bot: 'Bot/' + bot.id,
+      defaultHeaders: {
+        Cookie: '__medplum-test-cookie=123',
+      },
     });
 
     // Disable VM context bots

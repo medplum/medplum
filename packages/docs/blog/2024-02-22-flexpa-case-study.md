@@ -48,5 +48,6 @@ Medplum’s open source implementation provides Flexpa with the ability to contr
 ## Related Resources
 
 - [Flexpa](https://www.flexpa.com/) website
+- [Flexpa/Medplum Integration Guide](https://www.flexpa.com/docs/guides/medplum)
 - [Flexpa Blog](https://www.flexpa.com/blog)
 - [CMS FHIR](/docs/compliance/cms-fhir) compliance documentation

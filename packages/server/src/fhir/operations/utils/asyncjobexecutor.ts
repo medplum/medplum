@@ -61,7 +61,7 @@ export class AsyncJobExecutor {
         await this.failJob(systemRepo, err);
       })
       .finally(() => {
-        this.repo.close();
+        this.repo[Symbol.dispose]();
       });
   }
 

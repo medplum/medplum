@@ -168,8 +168,10 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
       profile: profile.reference as string,
     },
     {
-      subscription_id: subscriptionId,
-    } satisfies AdditionalWsBindingClaims
+      additionalClaims: {
+        subscription_id: subscriptionId,
+      } satisfies AdditionalWsBindingClaims,
+    }
   );
 
   const output = {

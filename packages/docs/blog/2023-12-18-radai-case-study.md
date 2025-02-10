@@ -48,6 +48,7 @@ Founded in 2018 by the [youngest radiologist in U.S. history](https://www.radai.
 - [IRA Specification](https://profiles.ihe.net/RAD/IRA/)
 - [Omni Reporting](https://www.radai.com/news/rad-ai-to-unveil-next-generation-intelligent-radiology-reporting-solution-at-launch-event) Press Release
 - [Medplum FHIRcast](/docs/fhircast)
+- [IRA Demo Video](https://www.youtube.com/watch?v=Je5GMelw1-Q&t=110s) on YouTube
 - [The Evolution of Radiology Reporting: Embracing FHIRcast for Seamless Integration](https://www.radai.com/blogs/the-evolution-of-radiology-reporting-embracing-fhircast-for-seamless-integration) on Rad AI Blog
 - [FHIRcast Setup](https://app.radai.com/docs/fhircast/setup/)
 - [The Evolution of Radiology Reporting](https://eng.radai.com/p/the-evolution-of-radiology-reporting) on Rad AI Substack
