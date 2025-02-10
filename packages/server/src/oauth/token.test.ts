@@ -76,6 +76,10 @@ describe('OAuth2 Token', () => {
     // Create a test project
     ({ project, client } = await createTestProject({ withClient: true }));
 
+    // Add secondary secret for testing
+    client.retiringSecret = generateSecret(32);
+    client = await systemRepo.updateResource(client);
+
     // Create a 2nd client with PKCE optional
     pkceOptionalClient = await systemRepo.createResource<ClientApplication>({
       resourceType: 'ClientApplication',
@@ -214,6 +218,17 @@ describe('OAuth2 Token', () => {
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('invalid_request');
     expect(res.body.error_description).toBe('Invalid secret');
+  });
+
+  test('Token for client credentials with secondary client_secret', async () => {
+    const res = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'client_credentials',
+      client_id: client.id,
+      client_secret: client.retiringSecret,
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.access_token).toBeDefined();
   });
 
   test('Token for client credentials authentication header success', async () => {
@@ -493,6 +508,25 @@ describe('OAuth2 Token', () => {
     expect(res2.status).toBe(400);
     expect(res2.body.error).toBe('invalid_request');
     expect(res2.body.error_description).toBe('Invalid secret');
+  });
+
+  test('Authorization code token with secondary client secret', async () => {
+    const res = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+    });
+    expect(res.status).toBe(200);
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res.body.code,
+      client_id: client.id,
+      client_secret: client.retiringSecret,
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.error).toBeUndefined();
+    expect(res2.body.access_token).toBeDefined();
   });
 
   test('Authorization code token with client secret success', async () => {

@@ -273,6 +273,22 @@
       "inherited": false
     },
     {
+      "name": "retiringSecret",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "string"
+        }
+      ],
+      "path": "ClientApplication.retiringSecret",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "Old version of the client secret that is being rotated out.  Instances of the client using this value should update to use the value in ClientApplication.secret",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "jwksUri",
       "depth": 1,
       "types": [

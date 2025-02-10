@@ -51,7 +51,7 @@ export type CodeSystemImportParameters = {
 /**
  * Handles a request to import codes and their properties into a CodeSystem.
  *
- * Endpoint - Project resource type
+ * Endpoint - CodeSystem resource type
  *   [fhir base]/CodeSystem/$import
  *
  * @param req - The FHIR request.
@@ -68,7 +68,7 @@ export async function codeSystemImportHandler(req: FhirRequest): Promise<FhirRes
 
   let codeSystem: CodeSystem;
   if (req.params.id) {
-    codeSystem = await getAuthenticatedContext().repo.readResource<CodeSystem>('CodeSystem', req.params.id);
+    codeSystem = await repo.readResource<CodeSystem>('CodeSystem', req.params.id);
   } else if (params.system) {
     codeSystem = await findTerminologyResource<CodeSystem>('CodeSystem', params.system, {
       ownProjectOnly: !isSuperAdmin,
