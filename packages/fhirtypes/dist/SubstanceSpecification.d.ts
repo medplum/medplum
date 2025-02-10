@@ -10,6 +10,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
@@ -40,6 +41,12 @@ export interface SubstanceSpecification {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -55,9 +62,22 @@ export interface SubstanceSpecification {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -130,6 +150,11 @@ export interface SubstanceSpecification {
   description?: string;
 
   /**
+   * Textual description of the substance.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * Supporting literature.
    */
   source?: Reference<DocumentReference>[];
@@ -138,6 +163,11 @@ export interface SubstanceSpecification {
    * Textual comment about this record of a substance.
    */
   comment?: string;
+
+  /**
+   * Textual comment about this record of a substance.
+   */
+  _comment?: PrimitiveExtension;
 
   /**
    * Moiety, for structural modifications.
@@ -215,6 +245,12 @@ export interface SubstanceSpecificationCode {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -260,9 +296,20 @@ export interface SubstanceSpecificationCode {
   statusDate?: string;
 
   /**
+   * The date at which the code status is changed as part of the
+   * terminology maintenance.
+   */
+  _statusDate?: PrimitiveExtension;
+
+  /**
    * Any comment can be provided in this field, if necessary.
    */
   comment?: string;
+
+  /**
+   * Any comment can be provided in this field, if necessary.
+   */
+  _comment?: PrimitiveExtension;
 
   /**
    * Supporting literature.
@@ -280,6 +327,12 @@ export interface SubstanceSpecificationMoiety {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -326,6 +379,11 @@ export interface SubstanceSpecificationMoiety {
   name?: string;
 
   /**
+   * Textual name for this moiety substance.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Stereochemistry type.
    */
   stereochemistry?: CodeableConcept;
@@ -341,6 +399,11 @@ export interface SubstanceSpecificationMoiety {
   molecularFormula?: string;
 
   /**
+   * Molecular formula.
+   */
+  _molecularFormula?: PrimitiveExtension;
+
+  /**
    * Quantitative value for this moiety.
    */
   amountQuantity?: Quantity;
@@ -349,12 +412,17 @@ export interface SubstanceSpecificationMoiety {
    * Quantitative value for this moiety.
    */
   amountString?: string;
+
+  /**
+   * Quantitative value for this moiety.
+   */
+  _amountString?: PrimitiveExtension;
 }
 
 /**
  * Quantitative value for this moiety.
  */
-export type SubstanceSpecificationMoietyAmount = Quantity | string;
+export type SubstanceSpecificationMoietyAmount = PrimitiveExtension | Quantity | string;
 
 /**
  * Names applicable to this substance.
@@ -366,6 +434,12 @@ export interface SubstanceSpecificationName {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -402,6 +476,11 @@ export interface SubstanceSpecificationName {
   name: string;
 
   /**
+   * The actual name.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Name type.
    */
   type?: CodeableConcept;
@@ -415,6 +494,11 @@ export interface SubstanceSpecificationName {
    * If this is the preferred name for this substance.
    */
   preferred?: boolean;
+
+  /**
+   * If this is the preferred name for this substance.
+   */
+  _preferred?: PrimitiveExtension;
 
   /**
    * Language of the name.
@@ -465,6 +549,12 @@ export interface SubstanceSpecificationNameOfficial {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -507,6 +597,11 @@ export interface SubstanceSpecificationNameOfficial {
    * Date of official name change.
    */
   date?: string;
+
+  /**
+   * Date of official name change.
+   */
+  _date?: PrimitiveExtension;
 }
 
 /**
@@ -520,6 +615,12 @@ export interface SubstanceSpecificationProperty {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -567,6 +668,12 @@ export interface SubstanceSpecificationProperty {
   parameters?: string;
 
   /**
+   * Parameters that were used in the measurement of a property (e.g. for
+   * viscosity: measured at 20C with a pH of 7.1).
+   */
+  _parameters?: PrimitiveExtension;
+
+  /**
    * A substance upon which a defining property depends (e.g. for
    * solubility: in water, in alcohol).
    */
@@ -587,6 +694,11 @@ export interface SubstanceSpecificationProperty {
    * Quantitative value for this property.
    */
   amountString?: string;
+
+  /**
+   * Quantitative value for this property.
+   */
+  _amountString?: PrimitiveExtension;
 }
 
 /**
@@ -598,7 +710,7 @@ export type SubstanceSpecificationPropertyDefiningSubstance = CodeableConcept | 
 /**
  * Quantitative value for this property.
  */
-export type SubstanceSpecificationPropertyAmount = Quantity | string;
+export type SubstanceSpecificationPropertyAmount = PrimitiveExtension | Quantity | string;
 
 /**
  * A link between this substance and another, with details of the
@@ -611,6 +723,12 @@ export interface SubstanceSpecificationRelationship {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -666,6 +784,13 @@ export interface SubstanceSpecificationRelationship {
   isDefining?: boolean;
 
   /**
+   * For example where an enzyme strongly bonds with a particular
+   * substance, this is a defining relationship for that enzyme, out of
+   * several possible substance relationships.
+   */
+  _isDefining?: PrimitiveExtension;
+
+  /**
    * A numeric factor for the relationship, for instance to express that
    * the salt of a substance has some percentage of the active substance in
    * relation to some other.
@@ -692,6 +817,13 @@ export interface SubstanceSpecificationRelationship {
    * relation to some other.
    */
   amountString?: string;
+
+  /**
+   * A numeric factor for the relationship, for instance to express that
+   * the salt of a substance has some percentage of the active substance in
+   * relation to some other.
+   */
+  _amountString?: PrimitiveExtension;
 
   /**
    * For use when the numeric.
@@ -721,7 +853,7 @@ export type SubstanceSpecificationRelationshipSubstance = CodeableConcept | Refe
  * the salt of a substance has some percentage of the active substance in
  * relation to some other.
  */
-export type SubstanceSpecificationRelationshipAmount = Quantity | Range | Ratio | string;
+export type SubstanceSpecificationRelationshipAmount = PrimitiveExtension | Quantity | Range | Ratio | string;
 
 /**
  * Structural information.
@@ -733,6 +865,12 @@ export interface SubstanceSpecificationStructure {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -779,10 +917,21 @@ export interface SubstanceSpecificationStructure {
   molecularFormula?: string;
 
   /**
+   * Molecular formula.
+   */
+  _molecularFormula?: PrimitiveExtension;
+
+  /**
    * Specified per moiety according to the Hill system, i.e. first C, then
    * H, then alphabetical, each moiety separated by a dot.
    */
   molecularFormulaByMoiety?: string;
+
+  /**
+   * Specified per moiety according to the Hill system, i.e. first C, then
+   * H, then alphabetical, each moiety separated by a dot.
+   */
+  _molecularFormulaByMoiety?: PrimitiveExtension;
 
   /**
    * Applicable for single substances that contain a radionuclide or a
@@ -818,6 +967,12 @@ export interface SubstanceSpecificationStructureIsotope {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -888,6 +1043,12 @@ export interface SubstanceSpecificationStructureIsotopeMolecularWeight {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -948,6 +1109,12 @@ export interface SubstanceSpecificationStructureRepresentation {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -986,6 +1153,12 @@ export interface SubstanceSpecificationStructureRepresentation {
    * SMILES, MOLFILE, CDX.
    */
   representation?: string;
+
+  /**
+   * The structural representation as text string in a format e.g. InChI,
+   * SMILES, MOLFILE, CDX.
+   */
+  _representation?: PrimitiveExtension;
 
   /**
    * An attached file with the structural representation.

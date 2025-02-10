@@ -14,6 +14,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
@@ -46,6 +47,12 @@ export interface Provenance {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -61,9 +68,22 @@ export interface Provenance {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -129,9 +149,19 @@ export interface Provenance {
   occurredDateTime?: string;
 
   /**
+   * The period during which the activity occurred.
+   */
+  _occurredDateTime?: PrimitiveExtension;
+
+  /**
    * The instant of time at which the activity was recorded.
    */
   recorded: string;
+
+  /**
+   * The instant of time at which the activity was recorded.
+   */
+  _recorded?: PrimitiveExtension;
 
   /**
    * Policy or plan the activity was defined by. Typically, a single
@@ -139,6 +169,13 @@ export interface Provenance {
    * patient consent, guarantor funding, etc.
    */
   policy?: string[];
+
+  /**
+   * Policy or plan the activity was defined by. Typically, a single
+   * activity may have multiple applicable policy documents, such as
+   * patient consent, guarantor funding, etc.
+   */
+  _policy?: (PrimitiveExtension | null)[];
 
   /**
    * Where the activity occurred, if relevant.
@@ -178,7 +215,7 @@ export interface Provenance {
 /**
  * The period during which the activity occurred.
  */
-export type ProvenanceOccurred = Period | string;
+export type ProvenanceOccurred = Period | PrimitiveExtension | string;
 
 /**
  * An actor taking a role in an activity  for which it can be assigned
@@ -191,6 +228,12 @@ export interface ProvenanceAgent {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -255,6 +298,12 @@ export interface ProvenanceEntity {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -287,6 +336,11 @@ export interface ProvenanceEntity {
    * How the entity was used during the activity.
    */
   role: 'derivation' | 'revision' | 'quotation' | 'source' | 'removal';
+
+  /**
+   * How the entity was used during the activity.
+   */
+  _role?: PrimitiveExtension;
 
   /**
    * Identity of the  Entity used. May be a logical or physical uri and

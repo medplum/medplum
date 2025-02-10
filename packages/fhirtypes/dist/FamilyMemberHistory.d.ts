@@ -17,6 +17,7 @@ import { Narrative } from './Narrative';
 import { Observation } from './Observation';
 import { Patient } from './Patient';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { QuestionnaireResponse } from './QuestionnaireResponse';
 import { Range } from './Range';
 import { Reference } from './Reference';
@@ -40,6 +41,12 @@ export interface FamilyMemberHistory {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -55,9 +62,22 @@ export interface FamilyMemberHistory {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -119,6 +139,13 @@ export interface FamilyMemberHistory {
   instantiatesCanonical?: string[];
 
   /**
+   * The URL pointing to a FHIR-defined protocol, guideline, orderset or
+   * other definition that is adhered to in whole or in part by this
+   * FamilyMemberHistory.
+   */
+  _instantiatesCanonical?: (PrimitiveExtension | null)[];
+
+  /**
    * The URL pointing to an externally maintained protocol, guideline,
    * orderset or other definition that is adhered to in whole or in part by
    * this FamilyMemberHistory.
@@ -126,10 +153,23 @@ export interface FamilyMemberHistory {
   instantiatesUri?: string[];
 
   /**
+   * The URL pointing to an externally maintained protocol, guideline,
+   * orderset or other definition that is adhered to in whole or in part by
+   * this FamilyMemberHistory.
+   */
+  _instantiatesUri?: (PrimitiveExtension | null)[];
+
+  /**
    * A code specifying the status of the record of the family history of a
    * specific family member.
    */
   status: 'partial' | 'completed' | 'entered-in-error' | 'health-unknown';
+
+  /**
+   * A code specifying the status of the record of the family history of a
+   * specific family member.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * Describes why the family member's history is not available.
@@ -148,10 +188,22 @@ export interface FamilyMemberHistory {
   date?: string;
 
   /**
+   * The date (and possibly time) when the family member history was
+   * recorded or last updated.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * This will either be a name or a description; e.g. &quot;Aunt Susan&quot;, &quot;my
    * cousin with the red hair&quot;.
    */
   name?: string;
+
+  /**
+   * This will either be a name or a description; e.g. &quot;Aunt Susan&quot;, &quot;my
+   * cousin with the red hair&quot;.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * The type of relationship this person has to the patient (father,
@@ -177,7 +229,17 @@ export interface FamilyMemberHistory {
   /**
    * The actual or approximate date of birth of the relative.
    */
+  _bornDate?: PrimitiveExtension;
+
+  /**
+   * The actual or approximate date of birth of the relative.
+   */
   bornString?: string;
+
+  /**
+   * The actual or approximate date of birth of the relative.
+   */
+  _bornString?: PrimitiveExtension;
 
   /**
    * The age of the relative at the time the family member history is
@@ -198,15 +260,32 @@ export interface FamilyMemberHistory {
   ageString?: string;
 
   /**
+   * The age of the relative at the time the family member history is
+   * recorded.
+   */
+  _ageString?: PrimitiveExtension;
+
+  /**
    * If true, indicates that the age value specified is an estimated value.
    */
   estimatedAge?: boolean;
+
+  /**
+   * If true, indicates that the age value specified is an estimated value.
+   */
+  _estimatedAge?: PrimitiveExtension;
 
   /**
    * Deceased flag or the actual or approximate age of the relative at the
    * time of death for the family member history record.
    */
   deceasedBoolean?: boolean;
+
+  /**
+   * Deceased flag or the actual or approximate age of the relative at the
+   * time of death for the family member history record.
+   */
+  _deceasedBoolean?: PrimitiveExtension;
 
   /**
    * Deceased flag or the actual or approximate age of the relative at the
@@ -230,7 +309,19 @@ export interface FamilyMemberHistory {
    * Deceased flag or the actual or approximate age of the relative at the
    * time of death for the family member history record.
    */
+  _deceasedDate?: PrimitiveExtension;
+
+  /**
+   * Deceased flag or the actual or approximate age of the relative at the
+   * time of death for the family member history record.
+   */
   deceasedString?: string;
+
+  /**
+   * Deceased flag or the actual or approximate age of the relative at the
+   * time of death for the family member history record.
+   */
+  _deceasedString?: PrimitiveExtension;
 
   /**
    * Describes why the family member history occurred in coded or textual
@@ -263,19 +354,19 @@ export interface FamilyMemberHistory {
 /**
  * The actual or approximate date of birth of the relative.
  */
-export type FamilyMemberHistoryBorn = Period | string;
+export type FamilyMemberHistoryBorn = Period | PrimitiveExtension | string;
 
 /**
  * The age of the relative at the time the family member history is
  * recorded.
  */
-export type FamilyMemberHistoryAge = Age | Range | string;
+export type FamilyMemberHistoryAge = Age | PrimitiveExtension | Range | string;
 
 /**
  * Deceased flag or the actual or approximate age of the relative at the
  * time of death for the family member history record.
  */
-export type FamilyMemberHistoryDeceased = Age | boolean | Range | string;
+export type FamilyMemberHistoryDeceased = Age | boolean | PrimitiveExtension | Range | string;
 
 /**
  * The significant Conditions (or condition) that the family member had.
@@ -290,6 +381,12 @@ export interface FamilyMemberHistoryCondition {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -341,6 +438,12 @@ export interface FamilyMemberHistoryCondition {
   contributedToDeath?: boolean;
 
   /**
+   * This condition contributed to the cause of death of the related
+   * person. If contributedToDeath is not populated, then it is unknown.
+   */
+  _contributedToDeath?: PrimitiveExtension;
+
+  /**
    * Either the age of onset, range of approximate age or descriptive
    * string can be recorded.  For conditions with multiple occurrences,
    * this describes the first known occurrence.
@@ -369,6 +472,13 @@ export interface FamilyMemberHistoryCondition {
   onsetString?: string;
 
   /**
+   * Either the age of onset, range of approximate age or descriptive
+   * string can be recorded.  For conditions with multiple occurrences,
+   * this describes the first known occurrence.
+   */
+  _onsetString?: PrimitiveExtension;
+
+  /**
    * An area where general notes can be placed about this specific
    * condition.
    */
@@ -380,4 +490,4 @@ export interface FamilyMemberHistoryCondition {
  * string can be recorded.  For conditions with multiple occurrences,
  * this describes the first known occurrence.
  */
-export type FamilyMemberHistoryConditionOnset = Age | Period | Range | string;
+export type FamilyMemberHistoryConditionOnset = Age | Period | PrimitiveExtension | Range | string;

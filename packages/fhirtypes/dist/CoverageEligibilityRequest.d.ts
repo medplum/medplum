@@ -17,6 +17,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -42,6 +43,12 @@ export interface CoverageEligibilityRequest {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -57,9 +64,22 @@ export interface CoverageEligibilityRequest {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -117,6 +137,11 @@ export interface CoverageEligibilityRequest {
   status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
+   * The status of the resource instance.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * When the requestor expects the processor to complete processing.
    */
   priority?: CodeableConcept;
@@ -129,6 +154,15 @@ export interface CoverageEligibilityRequest {
    * the date/period specified or 'now' if not specified.
    */
   purpose: ('auth-requirements' | 'benefits' | 'discovery' | 'validation')[];
+
+  /**
+   * Code to specify whether requesting: prior authorization requirements
+   * for some service categories or billing codes; benefits for coverages
+   * specified or discovered; discovery and return of coverages for the
+   * patient; and/or validation that the specified coverage is in-force at
+   * the date/period specified or 'now' if not specified.
+   */
+  _purpose?: (PrimitiveExtension | null)[];
 
   /**
    * The party who is the beneficiary of the supplied coverage and for whom
@@ -146,12 +180,23 @@ export interface CoverageEligibilityRequest {
    * The date or dates when the enclosed suite of services were performed
    * or completed.
    */
+  _servicedDate?: PrimitiveExtension;
+
+  /**
+   * The date or dates when the enclosed suite of services were performed
+   * or completed.
+   */
   servicedPeriod?: Period;
 
   /**
    * The date when this resource was created.
    */
   created: string;
+
+  /**
+   * The date when this resource was created.
+   */
+  _created?: PrimitiveExtension;
 
   /**
    * Person who created the request.
@@ -198,7 +243,7 @@ export interface CoverageEligibilityRequest {
  * The date or dates when the enclosed suite of services were performed
  * or completed.
  */
-export type CoverageEligibilityRequestServiced = Period | string;
+export type CoverageEligibilityRequestServiced = Period | PrimitiveExtension | string;
 
 /**
  * Financial instruments for reimbursement for the health care products
@@ -211,6 +256,12 @@ export interface CoverageEligibilityRequestInsurance {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -248,6 +299,12 @@ export interface CoverageEligibilityRequestInsurance {
   focal?: boolean;
 
   /**
+   * A flag to indicate that this Coverage is to be used for evaluation of
+   * this request when set to true.
+   */
+  _focal?: PrimitiveExtension;
+
+  /**
    * Reference to the insurance card level information contained in the
    * Coverage resource. The coverage issuing insurer will use these details
    * to locate the patient's actual coverage within the insurer's
@@ -260,6 +317,12 @@ export interface CoverageEligibilityRequestInsurance {
    * insurer for special business processing purposes.
    */
   businessArrangement?: string;
+
+  /**
+   * A business agreement number established between the provider and the
+   * insurer for special business processing purposes.
+   */
+  _businessArrangement?: PrimitiveExtension;
 }
 
 /**
@@ -274,6 +337,12 @@ export interface CoverageEligibilityRequestItem {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -309,6 +378,12 @@ export interface CoverageEligibilityRequestItem {
    * for this service or product line.
    */
   supportingInfoSequence?: number[];
+
+  /**
+   * Exceptions, special conditions and supporting information applicable
+   * for this service or product line.
+   */
+  _supportingInfoSequence?: (PrimitiveExtension | null)[];
 
   /**
    * Code to identify the general type of benefits under which products and
@@ -372,6 +447,12 @@ export interface CoverageEligibilityRequestItemDiagnosis {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -432,6 +513,12 @@ export interface CoverageEligibilityRequestSupportingInfo {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -466,6 +553,11 @@ export interface CoverageEligibilityRequestSupportingInfo {
   sequence: number;
 
   /**
+   * A number to uniquely identify supporting information entries.
+   */
+  _sequence?: PrimitiveExtension;
+
+  /**
    * Additional data or information such as resources, documents, images
    * etc. including references to the data or the actual inclusion of the
    * data.
@@ -477,4 +569,10 @@ export interface CoverageEligibilityRequestSupportingInfo {
    * product/servce categories and specific billing codes.
    */
   appliesToAll?: boolean;
+
+  /**
+   * The supporting materials are applicable for all detail items,
+   * product/servce categories and specific billing codes.
+   */
+  _appliesToAll?: PrimitiveExtension;
 }

@@ -5,6 +5,7 @@
 
 import { ContactDetail } from './ContactDetail';
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * A contributor to the content of a knowledge asset, including authors,
@@ -17,6 +18,12 @@ export interface Contributor {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -34,10 +41,21 @@ export interface Contributor {
   type: 'author' | 'editor' | 'reviewer' | 'endorser';
 
   /**
+   * The type of contributor.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * The name of the individual or organization responsible for the
    * contribution.
    */
   name: string;
+
+  /**
+   * The name of the individual or organization responsible for the
+   * contribution.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the

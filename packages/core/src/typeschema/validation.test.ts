@@ -125,7 +125,7 @@ describe('FHIR resource validation', () => {
   });
 
   test('Valid property name special cases', () => {
-    const primitiveExtension = {
+    const primitiveExtension: Patient = {
       resourceType: 'Patient',
       _birthDate: {
         extension: [
@@ -135,7 +135,7 @@ describe('FHIR resource validation', () => {
           },
         ],
       },
-    } as unknown as Patient;
+    };
     const choiceType: Patient = {
       resourceType: 'Patient',
       deceasedBoolean: false,
@@ -145,8 +145,14 @@ describe('FHIR resource validation', () => {
       deceasedBoolean: false,
       _deceasedBoolean: {
         id: '1',
+        extension: [
+          {
+            url: 'http://example.com/data-missing-reason',
+            valueString: 'Forgot to ask patient at check-in',
+          },
+        ],
       },
-    } as unknown as Patient;
+    };
     expect(() => validateResource(primitiveExtension)).not.toThrow();
     expect(() => validateResource(choiceType)).not.toThrow();
     expect(() => validateResource(choiceTypeExtension)).not.toThrow();

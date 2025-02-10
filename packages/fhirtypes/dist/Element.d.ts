@@ -4,6 +4,7 @@
  */
 
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * Base definition for all elements in a resource.
@@ -15,6 +16,12 @@ export interface Element {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

@@ -17,6 +17,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -40,6 +41,12 @@ export interface Specimen {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -55,9 +62,22 @@ export interface Specimen {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -122,6 +142,11 @@ export interface Specimen {
   status?: 'available' | 'unavailable' | 'unsatisfactory' | 'entered-in-error';
 
   /**
+   * The availability of the specimen.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The kind of material that forms the specimen.
    */
   type?: CodeableConcept;
@@ -137,6 +162,11 @@ export interface Specimen {
    * Time when specimen was received for processing or testing.
    */
   receivedTime?: string;
+
+  /**
+   * Time when specimen was received for processing or testing.
+   */
+  _receivedTime?: PrimitiveExtension;
 
   /**
    * Reference to the parent (source) specimen which is used when the
@@ -191,6 +221,12 @@ export interface SpecimenCollection {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -229,6 +265,12 @@ export interface SpecimenCollection {
    * relevant time.
    */
   collectedDateTime?: string;
+
+  /**
+   * Time when specimen was collected from subject - the physiologically
+   * relevant time.
+   */
+  _collectedDateTime?: PrimitiveExtension;
 
   /**
    * Time when specimen was collected from subject - the physiologically
@@ -277,7 +319,7 @@ export interface SpecimenCollection {
  * Time when specimen was collected from subject - the physiologically
  * relevant time.
  */
-export type SpecimenCollectionCollected = Period | string;
+export type SpecimenCollectionCollected = Period | PrimitiveExtension | string;
 
 /**
  * Abstinence or reduction from some or all food, drink, or both, for a
@@ -296,6 +338,12 @@ export interface SpecimenContainer {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -337,6 +385,11 @@ export interface SpecimenContainer {
    * Textual description of the container.
    */
   description?: string;
+
+  /**
+   * Textual description of the container.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The type of container associated with the specimen (e.g. slide,
@@ -386,6 +439,12 @@ export interface SpecimenProcessing {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -420,6 +479,11 @@ export interface SpecimenProcessing {
   description?: string;
 
   /**
+   * Textual description of procedure.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * A coded value specifying the procedure used to process the specimen.
    */
   procedure?: CodeableConcept;
@@ -441,6 +505,13 @@ export interface SpecimenProcessing {
    * For example the time of sample fixation or the period of time the
    * sample was in formalin.
    */
+  _timeDateTime?: PrimitiveExtension;
+
+  /**
+   * A record of the time or period when the specimen processing occurred.
+   * For example the time of sample fixation or the period of time the
+   * sample was in formalin.
+   */
   timePeriod?: Period;
 }
 
@@ -449,4 +520,4 @@ export interface SpecimenProcessing {
  * For example the time of sample fixation or the period of time the
  * sample was in formalin.
  */
-export type SpecimenProcessingTime = Period | string;
+export type SpecimenProcessingTime = Period | PrimitiveExtension | string;

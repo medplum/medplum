@@ -9,6 +9,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 import { ResourceType } from './ResourceType';
 import { UsageContext } from './UsageContext';
@@ -30,6 +31,12 @@ export interface ExampleScenario {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -45,9 +52,22 @@ export interface ExampleScenario {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -106,6 +126,17 @@ export interface ExampleScenario {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this example scenario when it
+   * is referenced in a specification, model, design or an instance; also
+   * called its canonical identifier. This SHOULD be globally unique and
+   * SHOULD be a literal address at which at which an authoritative
+   * instance of this example scenario is (or will be) published. This URL
+   * can be the target of a canonical reference. It SHALL remain the same
+   * when the example scenario is stored on different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this example scenario
    * when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
@@ -124,11 +155,29 @@ export interface ExampleScenario {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the example
+   * scenario when it is referenced in a specification, model, design or
+   * instance. This is an arbitrary value managed by the example scenario
+   * author and is not expected to be globally unique. For example, it
+   * might be a timestamp (e.g. yyyymmdd) if a managed version is not
+   * available. There is also no expectation that versions can be placed in
+   * a lexicographical sequence.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the example scenario. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
    */
   name?: string;
+
+  /**
+   * A natural language name identifying the example scenario. This name
+   * should be usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * The status of this example scenario. Enables tracking the life-cycle
@@ -137,11 +186,24 @@ export interface ExampleScenario {
   status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
+   * The status of this example scenario. Enables tracking the life-cycle
+   * of the content.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A Boolean value to indicate that this example scenario is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
   experimental?: boolean;
+
+  /**
+   * A Boolean value to indicate that this example scenario is authored for
+   * testing purposes (or education/evaluation/marketing) and is not
+   * intended to be used for genuine usage.
+   */
+  _experimental?: PrimitiveExtension;
 
   /**
    * The date  (and optionally time) when the example scenario was
@@ -153,10 +215,25 @@ export interface ExampleScenario {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the example scenario was
+   * published. The date must change when the business version changes and
+   * it must change if the status code changes. In addition, it should
+   * change when the substantive content of the example scenario changes.
+   * (e.g. the 'content logical definition').
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the example
    * scenario.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the example
+   * scenario.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -187,11 +264,25 @@ export interface ExampleScenario {
   copyright?: string;
 
   /**
+   * A copyright statement relating to the example scenario and/or its
+   * contents. Copyright statements are generally legal restrictions on the
+   * use and publishing of the example scenario.
+   */
+  _copyright?: PrimitiveExtension;
+
+  /**
    * What the example scenario resource is created for. This should not be
    * used to show the business purpose of the scenario itself, but the
    * purpose of documenting a scenario.
    */
   purpose?: string;
+
+  /**
+   * What the example scenario resource is created for. This should not be
+   * used to show the business purpose of the scenario itself, but the
+   * purpose of documenting a scenario.
+   */
+  _purpose?: PrimitiveExtension;
 
   /**
    * Actor participating in the resource.
@@ -212,6 +303,11 @@ export interface ExampleScenario {
    * Another nested workflow.
    */
   workflow?: string[];
+
+  /**
+   * Another nested workflow.
+   */
+  _workflow?: (PrimitiveExtension | null)[];
 }
 
 /**
@@ -224,6 +320,12 @@ export interface ExampleScenarioActor {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -260,9 +362,19 @@ export interface ExampleScenarioActor {
   actorId: string;
 
   /**
+   * ID or acronym of actor.
+   */
+  _actorId?: PrimitiveExtension;
+
+  /**
    * The type of actor - person or system.
    */
   type: 'person' | 'entity';
+
+  /**
+   * The type of actor - person or system.
+   */
+  _type?: PrimitiveExtension;
 
   /**
    * The name of the actor as shown in the page.
@@ -270,9 +382,19 @@ export interface ExampleScenarioActor {
   name?: string;
 
   /**
+   * The name of the actor as shown in the page.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The description of the actor.
    */
   description?: string;
+
+  /**
+   * The description of the actor.
+   */
+  _description?: PrimitiveExtension;
 }
 
 /**
@@ -285,6 +407,12 @@ export interface ExampleScenarioInstance {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -321,9 +449,19 @@ export interface ExampleScenarioInstance {
   resourceId: string;
 
   /**
+   * The id of the resource for referencing.
+   */
+  _resourceId?: PrimitiveExtension;
+
+  /**
    * The type of the resource.
    */
   resourceType: ResourceType;
+
+  /**
+   * The type of the resource.
+   */
+  _resourceType?: PrimitiveExtension;
 
   /**
    * A short name for the resource instance.
@@ -331,9 +469,19 @@ export interface ExampleScenarioInstance {
   name?: string;
 
   /**
+   * A short name for the resource instance.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Human-friendly description of the resource instance.
    */
   description?: string;
+
+  /**
+   * Human-friendly description of the resource instance.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * A specific version of the resource.
@@ -358,6 +506,12 @@ export interface ExampleScenarioInstanceContainedInstance {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -394,9 +548,19 @@ export interface ExampleScenarioInstanceContainedInstance {
   resourceId: string;
 
   /**
+   * Each resource contained in the instance.
+   */
+  _resourceId?: PrimitiveExtension;
+
+  /**
    * A specific version of a resource contained in the instance.
    */
   versionId?: string;
+
+  /**
+   * A specific version of a resource contained in the instance.
+   */
+  _versionId?: PrimitiveExtension;
 }
 
 /**
@@ -409,6 +573,12 @@ export interface ExampleScenarioInstanceVersion {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -445,9 +615,19 @@ export interface ExampleScenarioInstanceVersion {
   versionId: string;
 
   /**
+   * The identifier of a specific version of a resource.
+   */
+  _versionId?: PrimitiveExtension;
+
+  /**
    * The description of the resource version.
    */
   description: string;
+
+  /**
+   * The description of the resource version.
+   */
+  _description?: PrimitiveExtension;
 }
 
 /**
@@ -460,6 +640,12 @@ export interface ExampleScenarioProcess {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -496,9 +682,19 @@ export interface ExampleScenarioProcess {
   title: string;
 
   /**
+   * The diagram title of the group of operations.
+   */
+  _title?: PrimitiveExtension;
+
+  /**
    * A longer description of the group of operations.
    */
   description?: string;
+
+  /**
+   * A longer description of the group of operations.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Description of initial status before the process starts.
@@ -506,9 +702,19 @@ export interface ExampleScenarioProcess {
   preConditions?: string;
 
   /**
+   * Description of initial status before the process starts.
+   */
+  _preConditions?: PrimitiveExtension;
+
+  /**
    * Description of final status after the process ends.
    */
   postConditions?: string;
+
+  /**
+   * Description of final status after the process ends.
+   */
+  _postConditions?: PrimitiveExtension;
 
   /**
    * Each step of the process.
@@ -526,6 +732,12 @@ export interface ExampleScenarioProcessStep {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -567,6 +779,11 @@ export interface ExampleScenarioProcessStep {
   pause?: boolean;
 
   /**
+   * If there is a pause in the flow.
+   */
+  _pause?: PrimitiveExtension;
+
+  /**
    * Each interaction or action.
    */
   operation?: ExampleScenarioProcessStepOperation;
@@ -589,6 +806,12 @@ export interface ExampleScenarioProcessStepAlternative {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -626,10 +849,22 @@ export interface ExampleScenarioProcessStepAlternative {
   title: string;
 
   /**
+   * The label to display for the alternative that gives a sense of the
+   * circumstance in which the alternative should be invoked.
+   */
+  _title?: PrimitiveExtension;
+
+  /**
    * A human-readable description of the alternative explaining when the
    * alternative should occur rather than the base step.
    */
   description?: string;
+
+  /**
+   * A human-readable description of the alternative explaining when the
+   * alternative should occur rather than the base step.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * What happens in each alternative option.
@@ -647,6 +882,12 @@ export interface ExampleScenarioProcessStepOperation {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -683,9 +924,19 @@ export interface ExampleScenarioProcessStepOperation {
   number: string;
 
   /**
+   * The sequential number of the interaction, e.g. 1.2.5.
+   */
+  _number?: PrimitiveExtension;
+
+  /**
    * The type of operation - CRUD.
    */
   type?: string;
+
+  /**
+   * The type of operation - CRUD.
+   */
+  _type?: PrimitiveExtension;
 
   /**
    * The human-friendly name of the interaction.
@@ -693,9 +944,19 @@ export interface ExampleScenarioProcessStepOperation {
   name?: string;
 
   /**
+   * The human-friendly name of the interaction.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Who starts the transaction.
    */
   initiator?: string;
+
+  /**
+   * Who starts the transaction.
+   */
+  _initiator?: PrimitiveExtension;
 
   /**
    * Who receives the transaction.
@@ -703,9 +964,19 @@ export interface ExampleScenarioProcessStepOperation {
   receiver?: string;
 
   /**
+   * Who receives the transaction.
+   */
+  _receiver?: PrimitiveExtension;
+
+  /**
    * A comment to be inserted in the diagram.
    */
   description?: string;
+
+  /**
+   * A comment to be inserted in the diagram.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Whether the initiator is deactivated right after the transaction.
@@ -713,9 +984,19 @@ export interface ExampleScenarioProcessStepOperation {
   initiatorActive?: boolean;
 
   /**
+   * Whether the initiator is deactivated right after the transaction.
+   */
+  _initiatorActive?: PrimitiveExtension;
+
+  /**
    * Whether the receiver is deactivated right after the transaction.
    */
   receiverActive?: boolean;
+
+  /**
+   * Whether the receiver is deactivated right after the transaction.
+   */
+  _receiverActive?: PrimitiveExtension;
 
   /**
    * Each resource instance used by the initiator.

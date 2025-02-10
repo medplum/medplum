@@ -4,6 +4,7 @@
  */
 
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 
 /**
@@ -17,6 +18,12 @@ export interface SampledData {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -40,10 +47,21 @@ export interface SampledData {
   period: number;
 
   /**
+   * The length of time between sampling times, measured in milliseconds.
+   */
+  _period?: PrimitiveExtension;
+
+  /**
    * A correction factor that is applied to the sampled data points before
    * they are added to the origin.
    */
   factor?: number;
+
+  /**
+   * A correction factor that is applied to the sampled data points before
+   * they are added to the origin.
+   */
+  _factor?: PrimitiveExtension;
 
   /**
    * The lower limit of detection of the measured points. This is needed if
@@ -53,11 +71,25 @@ export interface SampledData {
   lowerLimit?: number;
 
   /**
+   * The lower limit of detection of the measured points. This is needed if
+   * any of the data points have the value &quot;L&quot; (lower than detection
+   * limit).
+   */
+  _lowerLimit?: PrimitiveExtension;
+
+  /**
    * The upper limit of detection of the measured points. This is needed if
    * any of the data points have the value &quot;U&quot; (higher than detection
    * limit).
    */
   upperLimit?: number;
+
+  /**
+   * The upper limit of detection of the measured points. This is needed if
+   * any of the data points have the value &quot;U&quot; (higher than detection
+   * limit).
+   */
+  _upperLimit?: PrimitiveExtension;
 
   /**
    * The number of sample points at each time point. If this value is
@@ -67,10 +99,25 @@ export interface SampledData {
   dimensions: number;
 
   /**
+   * The number of sample points at each time point. If this value is
+   * greater than one, then the dimensions will be interlaced - all the
+   * sample points for a point in time will be recorded at once.
+   */
+  _dimensions?: PrimitiveExtension;
+
+  /**
    * A series of data points which are decimal values separated by a single
    * space (character u20). The special values &quot;E&quot; (error), &quot;L&quot; (below
    * detection limit) and &quot;U&quot; (above detection limit) can also be used in
    * place of a decimal value.
    */
   data?: string;
+
+  /**
+   * A series of data points which are decimal values separated by a single
+   * space (character u20). The special values &quot;E&quot; (error), &quot;L&quot; (below
+   * detection limit) and &quot;U&quot; (above detection limit) can also be used in
+   * place of a decimal value.
+   */
+  _data?: PrimitiveExtension;
 }

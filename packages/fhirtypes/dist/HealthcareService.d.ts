@@ -14,6 +14,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Organization } from './Organization';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -34,6 +35,12 @@ export interface HealthcareService {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -49,9 +56,22 @@ export interface HealthcareService {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -111,6 +131,13 @@ export interface HealthcareService {
   active?: boolean;
 
   /**
+   * This flag is used to mark the record to not be used. This is not used
+   * when a center is closed for maintenance, or for holidays, the
+   * notAvailable period is to be used for this.
+   */
+  _active?: PrimitiveExtension;
+
+  /**
    * The organization that provides this healthcare service.
    */
   providedBy?: Reference<Organization>;
@@ -143,6 +170,12 @@ export interface HealthcareService {
   name?: string;
 
   /**
+   * Further description of the service as it would be presented to a
+   * consumer while searching.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Any additional description of the service and/or any specific issues
    * not covered by the other attributes, which can be displayed as further
    * detail under the serviceName.
@@ -150,10 +183,23 @@ export interface HealthcareService {
   comment?: string;
 
   /**
+   * Any additional description of the service and/or any specific issues
+   * not covered by the other attributes, which can be displayed as further
+   * detail under the serviceName.
+   */
+  _comment?: PrimitiveExtension;
+
+  /**
    * Extra details about the service that can't be placed in the other
    * fields.
    */
   extraDetails?: string;
+
+  /**
+   * Extra details about the service that can't be placed in the other
+   * fields.
+   */
+  _extraDetails?: PrimitiveExtension;
 
   /**
    * If there is a photo/symbol associated with this HealthcareService, it
@@ -218,6 +264,14 @@ export interface HealthcareService {
   appointmentRequired?: boolean;
 
   /**
+   * Indicates whether or not a prospective consumer will require an
+   * appointment for a particular service at a site to be provided by the
+   * Organization. Indicates if an appointment is required for access to
+   * this service.
+   */
+  _appointmentRequired?: PrimitiveExtension;
+
+  /**
    * A collection of times that the Service Site is available.
    */
   availableTime?: HealthcareServiceAvailableTime[];
@@ -237,6 +291,14 @@ export interface HealthcareService {
   availabilityExceptions?: string;
 
   /**
+   * A description of site availability exceptions, e.g. public holiday
+   * availability. Succinctly describing all possible exceptions to normal
+   * site availability as details in the available Times and not available
+   * Times.
+   */
+  _availabilityExceptions?: PrimitiveExtension;
+
+  /**
    * Technical endpoints providing access to services operated for the
    * specific healthcare services defined at this resource.
    */
@@ -253,6 +315,12 @@ export interface HealthcareServiceAvailableTime {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -290,10 +358,22 @@ export interface HealthcareServiceAvailableTime {
   daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
 
   /**
+   * Indicates which days of the week are available between the start and
+   * end Times.
+   */
+  _daysOfWeek?: (PrimitiveExtension | null)[];
+
+  /**
    * Is this always available? (hence times are irrelevant) e.g. 24 hour
    * service.
    */
   allDay?: boolean;
+
+  /**
+   * Is this always available? (hence times are irrelevant) e.g. 24 hour
+   * service.
+   */
+  _allDay?: PrimitiveExtension;
 
   /**
    * The opening time of day. Note: If the AllDay flag is set, then this
@@ -302,10 +382,22 @@ export interface HealthcareServiceAvailableTime {
   availableStartTime?: string;
 
   /**
+   * The opening time of day. Note: If the AllDay flag is set, then this
+   * time is ignored.
+   */
+  _availableStartTime?: PrimitiveExtension;
+
+  /**
    * The closing time of day. Note: If the AllDay flag is set, then this
    * time is ignored.
    */
   availableEndTime?: string;
+
+  /**
+   * The closing time of day. Note: If the AllDay flag is set, then this
+   * time is ignored.
+   */
+  _availableEndTime?: PrimitiveExtension;
 }
 
 /**
@@ -319,6 +411,12 @@ export interface HealthcareServiceEligibility {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -358,6 +456,11 @@ export interface HealthcareServiceEligibility {
    * Describes the eligibility conditions for the service.
    */
   comment?: string;
+
+  /**
+   * Describes the eligibility conditions for the service.
+   */
+  _comment?: PrimitiveExtension;
 }
 
 /**
@@ -371,6 +474,12 @@ export interface HealthcareServiceNotAvailable {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -406,6 +515,12 @@ export interface HealthcareServiceNotAvailable {
    * not available.
    */
   description: string;
+
+  /**
+   * The reason that can be presented to the user as to why this time is
+   * not available.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Service is not available (seasonally or for a public holiday) from

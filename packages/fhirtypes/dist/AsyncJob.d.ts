@@ -7,6 +7,7 @@ import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Parameters } from './Parameters';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 
 /**
@@ -26,6 +27,12 @@ export interface AsyncJob {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -41,9 +48,22 @@ export interface AsyncJob {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -96,9 +116,19 @@ export interface AsyncJob {
   status: 'accepted' | 'active' | 'completed' | 'error' | 'cancelled';
 
   /**
+   * The status of the request.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Indicates the server's time when the query is requested.
    */
   requestTime: string;
+
+  /**
+   * Indicates the server's time when the query is requested.
+   */
+  _requestTime?: PrimitiveExtension;
 
   /**
    * Indicates the server's time when the query is run. The response SHOULD
@@ -109,10 +139,24 @@ export interface AsyncJob {
   transactionTime?: string;
 
   /**
+   * Indicates the server's time when the query is run. The response SHOULD
+   * NOT include any resources modified after this instant, and SHALL
+   * include any matching resources modified up to and including this
+   * instant.
+   */
+  _transactionTime?: PrimitiveExtension;
+
+  /**
    * The full URL of the original kick-off request. In the case of a POST
    * request, this URL will not include the request parameters.
    */
   request: string;
+
+  /**
+   * The full URL of the original kick-off request. In the case of a POST
+   * request, this URL will not include the request parameters.
+   */
+  _request?: PrimitiveExtension;
 
   /**
    * Outputs resulting from the async job.
@@ -125,7 +169,17 @@ export interface AsyncJob {
   type?: 'data-migration';
 
   /**
+   * The type of the AsyncJob.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * The data version of the migration this job represents.
    */
   dataVersion?: number;
+
+  /**
+   * The data version of the migration this job represents.
+   */
+  _dataVersion?: PrimitiveExtension;
 }

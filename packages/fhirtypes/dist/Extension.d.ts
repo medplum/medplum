@@ -24,6 +24,7 @@ import { Meta } from './Meta';
 import { Money } from './Money';
 import { ParameterDefinition } from './ParameterDefinition';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
@@ -47,6 +48,12 @@ export interface Extension {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -63,10 +70,22 @@ export interface Extension {
   url: string;
 
   /**
+   * Source of the definition for the extension code - a logical name or a
+   * URL.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
   valueBase64Binary?: string;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueBase64Binary?: PrimitiveExtension;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -78,7 +97,19 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
   valueCanonical?: string;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueCanonical?: PrimitiveExtension;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -90,7 +121,19 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
+  _valueCode?: PrimitiveExtension;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
   valueDate?: string;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueDate?: PrimitiveExtension;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -102,7 +145,19 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
+  _valueDateTime?: PrimitiveExtension;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
   valueDecimal?: number;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueDecimal?: PrimitiveExtension;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -114,7 +169,19 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
+  _valueId?: PrimitiveExtension;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
   valueInstant?: string;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueInstant?: PrimitiveExtension;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -126,7 +193,19 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
+  _valueInteger?: PrimitiveExtension;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
   valueMarkdown?: string;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueMarkdown?: PrimitiveExtension;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -138,7 +217,19 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
+  _valueOid?: PrimitiveExtension;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
   valuePositiveInt?: number;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valuePositiveInt?: PrimitiveExtension;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -150,7 +241,19 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
+  _valueString?: PrimitiveExtension;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
   valueTime?: string;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueTime?: PrimitiveExtension;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -162,7 +265,19 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
+  _valueUnsignedInt?: PrimitiveExtension;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
   valueUri?: string;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueUri?: PrimitiveExtension;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -174,7 +289,19 @@ export interface Extension {
    * Value of extension - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
+  _valueUrl?: PrimitiveExtension;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
   valueUuid?: string;
+
+  /**
+   * Value of extension - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueUuid?: PrimitiveExtension;
 
   /**
    * Value of extension - must be one of a constrained set of the data
@@ -369,5 +496,5 @@ export interface Extension {
  */
 export type ExtensionValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
     ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
-    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
-    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | PrimitiveExtension | Quantity | Range |
+    Ratio | Reference | RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;

@@ -28,6 +28,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
 import { Questionnaire } from './Questionnaire';
@@ -57,6 +58,12 @@ export interface Contract {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -72,9 +79,22 @@ export interface Contract {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -134,16 +154,33 @@ export interface Contract {
   url?: string;
 
   /**
+   * Canonical identifier for this contract, represented as a URI (globally
+   * unique).
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * An edition identifier used for business purposes to label business
    * significant variants.
    */
   version?: string;
 
   /**
+   * An edition identifier used for business purposes to label business
+   * significant variants.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * The status of the resource instance.
    */
   status?: 'amended' | 'appended' | 'cancelled' | 'disputed' | 'entered-in-error' | 'executable' | 'executed' |
       'negotiable' | 'offered' | 'policy' | 'rejected' | 'renewed' | 'revoked' | 'resolved' | 'terminated';
+
+  /**
+   * The status of the resource instance.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * Legal states of the formation of a legal instrument, which is a
@@ -167,6 +204,12 @@ export interface Contract {
   instantiatesUri?: string;
 
   /**
+   * The URL pointing to an externally maintained definition that is
+   * adhered to in whole or in part by this Contract.
+   */
+  _instantiatesUri?: PrimitiveExtension;
+
+  /**
    * The minimal content derived from the basal information source at a
    * specific stage in its lifecycle.
    */
@@ -176,6 +219,11 @@ export interface Contract {
    * When this  Contract was issued.
    */
   issued?: string;
+
+  /**
+   * When this  Contract was issued.
+   */
+  _issued?: PrimitiveExtension;
 
   /**
    * Relevant time or time-period when this Contract is applicable.
@@ -225,11 +273,27 @@ export interface Contract {
   name?: string;
 
   /**
+   * A natural language name identifying this Contract definition,
+   * derivative, or instance in any legal state. Provides additional
+   * information about its content. This name should be usable as an
+   * identifier for the module by machine processing applications such as
+   * code generation.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A short, descriptive, user-friendly title for this Contract
    * definition, derivative, or instance in any legal state.t giving
    * additional information about its content.
    */
   title?: string;
+
+  /**
+   * A short, descriptive, user-friendly title for this Contract
+   * definition, derivative, or instance in any legal state.t giving
+   * additional information about its content.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * An explanatory or alternate user-friendly title for this Contract
@@ -239,11 +303,25 @@ export interface Contract {
   subtitle?: string;
 
   /**
+   * An explanatory or alternate user-friendly title for this Contract
+   * definition, derivative, or instance in any legal state.t giving
+   * additional information about its content.
+   */
+  _subtitle?: PrimitiveExtension;
+
+  /**
    * Alternative representation of the title for this Contract definition,
    * derivative, or instance in any legal state., e.g., a domain specific
    * contract number related to legislation.
    */
   alias?: string[];
+
+  /**
+   * Alternative representation of the title for this Contract definition,
+   * derivative, or instance in any legal state., e.g., a domain specific
+   * contract number related to legislation.
+   */
+  _alias?: (PrimitiveExtension | null)[];
 
   /**
    * The individual or organization that authored the Contract definition,
@@ -389,6 +467,12 @@ export interface ContractContentDefinition {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -444,6 +528,14 @@ export interface ContractContentDefinition {
   publicationDate?: string;
 
   /**
+   * The date (and optionally time) when the contract was published. The
+   * date must change when the business version changes and it must change
+   * if the status code changes. In addition, it should change when the
+   * substantive content of the contract changes.
+   */
+  _publicationDate?: PrimitiveExtension;
+
+  /**
    * amended | appended | cancelled | disputed | entered-in-error |
    * executable | executed | negotiable | offered | policy | rejected |
    * renewed | revoked | resolved | terminated.
@@ -452,11 +544,25 @@ export interface ContractContentDefinition {
       'executed' | 'negotiable' | 'offered' | 'policy' | 'rejected' | 'renewed' | 'revoked' | 'resolved' | 'terminated';
 
   /**
+   * amended | appended | cancelled | disputed | entered-in-error |
+   * executable | executed | negotiable | offered | policy | rejected |
+   * renewed | revoked | resolved | terminated.
+   */
+  _publicationStatus?: PrimitiveExtension;
+
+  /**
    * A copyright statement relating to Contract precursor content.
    * Copyright statements are generally legal restrictions on the use and
    * publishing of the Contract precursor content.
    */
   copyright?: string;
+
+  /**
+   * A copyright statement relating to Contract precursor content.
+   * Copyright statements are generally legal restrictions on the use and
+   * publishing of the Contract precursor content.
+   */
+  _copyright?: PrimitiveExtension;
 }
 
 /**
@@ -475,6 +581,12 @@ export interface ContractFriendly {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -539,6 +651,12 @@ export interface ContractLegal {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -594,6 +712,12 @@ export interface ContractRule {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -658,6 +782,12 @@ export interface ContractSigner {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -715,6 +845,12 @@ export interface ContractTerm {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -754,6 +890,11 @@ export interface ContractTerm {
   issued?: string;
 
   /**
+   * When this Contract Provision was issued.
+   */
+  _issued?: PrimitiveExtension;
+
+  /**
    * Relevant time or time-period when this Contract Provision is
    * applicable.
    */
@@ -787,6 +928,11 @@ export interface ContractTerm {
    * Statement of a provision in a policy or a contract.
    */
   text?: string;
+
+  /**
+   * Statement of a provision in a policy or a contract.
+   */
+  _text?: PrimitiveExtension;
 
   /**
    * Security labels that protect the handling of information about the
@@ -835,6 +981,12 @@ export interface ContractTermAction {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -869,6 +1021,11 @@ export interface ContractTermAction {
   doNotPerform?: boolean;
 
   /**
+   * True if the term prohibits the  action.
+   */
+  _doNotPerform?: PrimitiveExtension;
+
+  /**
    * Activity or service obligation to be done or not done, performed or
    * not performed, effectuated or not by this Contract term.
    */
@@ -892,6 +1049,12 @@ export interface ContractTermAction {
   linkId?: string[];
 
   /**
+   * Id [identifier??] of the clause or question text related to this
+   * action in the referenced form or QuestionnaireResponse.
+   */
+  _linkId?: (PrimitiveExtension | null)[];
+
+  /**
    * Current state of the term action.
    */
   status: CodeableConcept;
@@ -910,9 +1073,21 @@ export interface ContractTermAction {
   contextLinkId?: string[];
 
   /**
+   * Id [identifier??] of the clause or question text related to the
+   * requester of this action in the referenced form or
+   * QuestionnaireResponse.
+   */
+  _contextLinkId?: (PrimitiveExtension | null)[];
+
+  /**
    * When action happens.
    */
   occurrenceDateTime?: string;
+
+  /**
+   * When action happens.
+   */
+  _occurrenceDateTime?: PrimitiveExtension;
 
   /**
    * When action happens.
@@ -936,6 +1111,13 @@ export interface ContractTermAction {
    * QuestionnaireResponse.
    */
   requesterLinkId?: string[];
+
+  /**
+   * Id [identifier??] of the clause or question text related to the
+   * requester of this action in the referenced form or
+   * QuestionnaireResponse.
+   */
+  _requesterLinkId?: (PrimitiveExtension | null)[];
 
   /**
    * The type of individual that is desired or required to perform or not
@@ -963,6 +1145,13 @@ export interface ContractTermAction {
   performerLinkId?: string[];
 
   /**
+   * Id [identifier??] of the clause or question text related to the reason
+   * type or reference of this  action in the referenced form or
+   * QuestionnaireResponse.
+   */
+  _performerLinkId?: (PrimitiveExtension | null)[];
+
+  /**
    * Rationale for the action to be performed or not performed. Describes
    * why the action is permitted or prohibited.
    */
@@ -981,11 +1170,24 @@ export interface ContractTermAction {
   reason?: string[];
 
   /**
+   * Describes why the action is to be performed or not performed in
+   * textual form.
+   */
+  _reason?: (PrimitiveExtension | null)[];
+
+  /**
    * Id [identifier??] of the clause or question text related to the reason
    * type or reference of this  action in the referenced form or
    * QuestionnaireResponse.
    */
   reasonLinkId?: string[];
+
+  /**
+   * Id [identifier??] of the clause or question text related to the reason
+   * type or reference of this  action in the referenced form or
+   * QuestionnaireResponse.
+   */
+  _reasonLinkId?: (PrimitiveExtension | null)[];
 
   /**
    * Comments made about the term action made by the requester, performer,
@@ -997,12 +1199,17 @@ export interface ContractTermAction {
    * Security labels that protects the action.
    */
   securityLabelNumber?: number[];
+
+  /**
+   * Security labels that protects the action.
+   */
+  _securityLabelNumber?: (PrimitiveExtension | null)[];
 }
 
 /**
  * When action happens.
  */
-export type ContractTermActionOccurrence = Period | string | Timing;
+export type ContractTermActionOccurrence = Period | PrimitiveExtension | string | Timing;
 
 /**
  * Entity of the action.
@@ -1014,6 +1221,12 @@ export interface ContractTermActionSubject {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1065,6 +1278,12 @@ export interface ContractTermAsset {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1134,6 +1353,12 @@ export interface ContractTermAsset {
   condition?: string;
 
   /**
+   * Description of the quality and completeness of the asset that imay be
+   * a factor in its valuation.
+   */
+  _condition?: PrimitiveExtension;
+
+  /**
    * Type of Asset availability for use or ownership.
    */
   periodType?: CodeableConcept[];
@@ -1156,10 +1381,23 @@ export interface ContractTermAsset {
   text?: string;
 
   /**
+   * Clause or question text (Prose Object) concerning the asset in a
+   * linked form, such as a QuestionnaireResponse used in the formation of
+   * the contract.
+   */
+  _text?: PrimitiveExtension;
+
+  /**
    * Id [identifier??] of the clause or question text about the asset in
    * the referenced form or QuestionnaireResponse.
    */
   linkId?: string[];
+
+  /**
+   * Id [identifier??] of the clause or question text about the asset in
+   * the referenced form or QuestionnaireResponse.
+   */
+  _linkId?: (PrimitiveExtension | null)[];
 
   /**
    * Response to assets.
@@ -1170,6 +1408,11 @@ export interface ContractTermAsset {
    * Security labels that protects the asset.
    */
   securityLabelNumber?: number[];
+
+  /**
+   * Security labels that protects the asset.
+   */
+  _securityLabelNumber?: (PrimitiveExtension | null)[];
 
   /**
    * Contract Valued Item List.
@@ -1187,6 +1430,12 @@ export interface ContractTermAssetContext {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1234,6 +1483,11 @@ export interface ContractTermAssetContext {
    * Context description.
    */
   text?: string;
+
+  /**
+   * Context description.
+   */
+  _text?: PrimitiveExtension;
 }
 
 /**
@@ -1246,6 +1500,12 @@ export interface ContractTermAssetValuedItem {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1298,6 +1558,12 @@ export interface ContractTermAssetValuedItem {
   effectiveTime?: string;
 
   /**
+   * Indicates the time during which this Contract ValuedItem information
+   * is effective.
+   */
+  _effectiveTime?: PrimitiveExtension;
+
+  /**
    * Specifies the units by which the Contract Valued Item is measured or
    * counted, and quantifies the countable or measurable Contract Valued
    * Item instances.
@@ -1318,6 +1584,14 @@ export interface ContractTermAssetValuedItem {
   factor?: number;
 
   /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of the Contract Valued Item delivered. The concept of a
+   * Factor allows for a discount or surcharge multiplier to be applied to
+   * a monetary amount.
+   */
+  _factor?: PrimitiveExtension;
+
+  /**
    * An amount that expresses the weighting (based on difficulty, cost
    * and/or resource intensiveness) associated with the Contract Valued
    * Item delivered. The concept of Points allows for assignment of point
@@ -1325,6 +1599,15 @@ export interface ContractTermAssetValuedItem {
    * assigned to each point.
    */
   points?: number;
+
+  /**
+   * An amount that expresses the weighting (based on difficulty, cost
+   * and/or resource intensiveness) associated with the Contract Valued
+   * Item delivered. The concept of Points allows for assignment of point
+   * values for a Contract Valued Item, such that a monetary amount can be
+   * assigned to each point.
+   */
+  _points?: PrimitiveExtension;
 
   /**
    * Expresses the product of the Contract Valued Item unitQuantity and the
@@ -1340,9 +1623,19 @@ export interface ContractTermAssetValuedItem {
   payment?: string;
 
   /**
+   * Terms of valuation.
+   */
+  _payment?: PrimitiveExtension;
+
+  /**
    * When payment is due.
    */
   paymentDate?: string;
+
+  /**
+   * When payment is due.
+   */
+  _paymentDate?: PrimitiveExtension;
 
   /**
    * Who will make payment.
@@ -1361,10 +1654,22 @@ export interface ContractTermAssetValuedItem {
   linkId?: string[];
 
   /**
+   * Id  of the clause or question text related to the context of this
+   * valuedItem in the referenced form or QuestionnaireResponse.
+   */
+  _linkId?: (PrimitiveExtension | null)[];
+
+  /**
    * A set of security labels that define which terms are controlled by
    * this condition.
    */
   securityLabelNumber?: number[];
+
+  /**
+   * A set of security labels that define which terms are controlled by
+   * this condition.
+   */
+  _securityLabelNumber?: (PrimitiveExtension | null)[];
 }
 
 /**
@@ -1383,6 +1688,12 @@ export interface ContractTermOffer {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1459,15 +1770,31 @@ export interface ContractTermOffer {
   text?: string;
 
   /**
+   * Human readable form of this Contract Offer.
+   */
+  _text?: PrimitiveExtension;
+
+  /**
    * The id of the clause or question text of the offer in the referenced
    * questionnaire/response.
    */
   linkId?: string[];
 
   /**
+   * The id of the clause or question text of the offer in the referenced
+   * questionnaire/response.
+   */
+  _linkId?: (PrimitiveExtension | null)[];
+
+  /**
    * Security labels that protects the offer.
    */
   securityLabelNumber?: number[];
+
+  /**
+   * Security labels that protects the offer.
+   */
+  _securityLabelNumber?: (PrimitiveExtension | null)[];
 }
 
 /**
@@ -1480,6 +1807,12 @@ export interface ContractTermOfferAnswer {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1524,7 +1857,23 @@ export interface ContractTermOfferAnswer {
    * of occupancy of a rental, warrently duration, or whether biospecimen
    * may be used for further research.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
   valueDecimal?: number;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  _valueDecimal?: PrimitiveExtension;
 
   /**
    * Response to an offer clause or question text,  which enables selection
@@ -1540,7 +1889,23 @@ export interface ContractTermOfferAnswer {
    * of occupancy of a rental, warrently duration, or whether biospecimen
    * may be used for further research.
    */
+  _valueInteger?: PrimitiveExtension;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
   valueDate?: string;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  _valueDate?: PrimitiveExtension;
 
   /**
    * Response to an offer clause or question text,  which enables selection
@@ -1556,7 +1921,23 @@ export interface ContractTermOfferAnswer {
    * of occupancy of a rental, warrently duration, or whether biospecimen
    * may be used for further research.
    */
+  _valueDateTime?: PrimitiveExtension;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
   valueTime?: string;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  _valueTime?: PrimitiveExtension;
 
   /**
    * Response to an offer clause or question text,  which enables selection
@@ -1572,7 +1953,23 @@ export interface ContractTermOfferAnswer {
    * of occupancy of a rental, warrently duration, or whether biospecimen
    * may be used for further research.
    */
+  _valueString?: PrimitiveExtension;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
   valueUri?: string;
+
+  /**
+   * Response to an offer clause or question text,  which enables selection
+   * of values to be agreed to, e.g., the period of participation, the date
+   * of occupancy of a rental, warrently duration, or whether biospecimen
+   * may be used for further research.
+   */
+  _valueUri?: PrimitiveExtension;
 
   /**
    * Response to an offer clause or question text,  which enables selection
@@ -1613,7 +2010,7 @@ export interface ContractTermOfferAnswer {
  * of occupancy of a rental, warrently duration, or whether biospecimen
  * may be used for further research.
  */
-export type ContractTermOfferAnswerValue = Attachment | boolean | Coding | number | Quantity | Reference<Resource> | string;
+export type ContractTermOfferAnswerValue = Attachment | boolean | Coding | number | PrimitiveExtension | Quantity | Reference<Resource> | string;
 
 /**
  * Offer Recipient.
@@ -1625,6 +2022,12 @@ export interface ContractTermOfferParty {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1679,6 +2082,12 @@ export interface ContractTermSecurityLabel {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -1712,6 +2121,12 @@ export interface ContractTermSecurityLabel {
    * Security Label.
    */
   number?: number[];
+
+  /**
+   * Number used to link this term or term element to the applicable
+   * Security Label.
+   */
+  _number?: (PrimitiveExtension | null)[];
 
   /**
    * Security label privacy tag that species the level of confidentiality

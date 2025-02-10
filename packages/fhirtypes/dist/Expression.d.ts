@@ -4,6 +4,7 @@
  */
 
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * A expression that is evaluated in a specified context and returns a
@@ -18,6 +19,12 @@ export interface Expression {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -36,10 +43,22 @@ export interface Expression {
   description?: string;
 
   /**
+   * A brief, natural language description of the condition that
+   * effectively communicates the intended semantics.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * A short name assigned to the expression to allow for multiple reuse of
    * the expression in the context where it is defined.
    */
   name?: string;
+
+  /**
+   * A short name assigned to the expression to allow for multiple reuse of
+   * the expression in the context where it is defined.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * The media type of the language for the expression.
@@ -47,12 +66,27 @@ export interface Expression {
   language: 'text/cql' | 'text/fhirpath' | 'application/x-fhir-query';
 
   /**
+   * The media type of the language for the expression.
+   */
+  _language?: PrimitiveExtension;
+
+  /**
    * An expression in the specified language that returns a value.
    */
   expression?: string;
 
   /**
+   * An expression in the specified language that returns a value.
+   */
+  _expression?: PrimitiveExtension;
+
+  /**
    * A URI that defines where the expression is found.
    */
   reference?: string;
+
+  /**
+   * A URI that defines where the expression is found.
+   */
+  _reference?: PrimitiveExtension;
 }

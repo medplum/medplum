@@ -18,6 +18,7 @@ import { Organization } from './Organization';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -41,6 +42,12 @@ export interface Immunization {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -56,9 +63,22 @@ export interface Immunization {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -116,6 +136,11 @@ export interface Immunization {
   status: 'completed' | 'entered-in-error' | 'not-done';
 
   /**
+   * Indicates the current status of the immunization event.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Indicates the reason the immunization event was not performed.
    */
   statusReason?: CodeableConcept;
@@ -144,7 +169,17 @@ export interface Immunization {
   /**
    * Date vaccine administered or was to be administered.
    */
+  _occurrenceDateTime?: PrimitiveExtension;
+
+  /**
+   * Date vaccine administered or was to be administered.
+   */
   occurrenceString?: string;
+
+  /**
+   * Date vaccine administered or was to be administered.
+   */
+  _occurrenceString?: PrimitiveExtension;
 
   /**
    * The date the occurrence of the immunization was first captured in the
@@ -153,11 +188,24 @@ export interface Immunization {
   recorded?: string;
 
   /**
+   * The date the occurrence of the immunization was first captured in the
+   * record - potentially significantly after the occurrence of the event.
+   */
+  _recorded?: PrimitiveExtension;
+
+  /**
    * An indication that the content of the record is based on information
    * from the person who administered the vaccine. This reflects the
    * context under which the data was originally recorded.
    */
   primarySource?: boolean;
+
+  /**
+   * An indication that the content of the record is based on information
+   * from the person who administered the vaccine. This reflects the
+   * context under which the data was originally recorded.
+   */
+  _primarySource?: PrimitiveExtension;
 
   /**
    * The source of the data when the report of the immunization event is
@@ -182,9 +230,19 @@ export interface Immunization {
   lotNumber?: string;
 
   /**
+   * Lot number of the  vaccine product.
+   */
+  _lotNumber?: PrimitiveExtension;
+
+  /**
    * Date vaccine batch expires.
    */
   expirationDate?: string;
+
+  /**
+   * Date vaccine batch expires.
+   */
+  _expirationDate?: PrimitiveExtension;
 
   /**
    * Body site where vaccine was administered.
@@ -230,6 +288,12 @@ export interface Immunization {
   isSubpotent?: boolean;
 
   /**
+   * Indication if a dose is considered to be subpotent. By default, a dose
+   * should be considered to be potent.
+   */
+  _isSubpotent?: PrimitiveExtension;
+
+  /**
    * Reason why a dose is considered to be subpotent.
    */
   subpotentReason?: CodeableConcept[];
@@ -270,7 +334,7 @@ export interface Immunization {
 /**
  * Date vaccine administered or was to be administered.
  */
-export type ImmunizationOccurrence = string;
+export type ImmunizationOccurrence = PrimitiveExtension | string;
 
 /**
  * Educational material presented to the patient (or guardian) at the
@@ -283,6 +347,12 @@ export interface ImmunizationEducation {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -319,10 +389,21 @@ export interface ImmunizationEducation {
   documentType?: string;
 
   /**
+   * Identifier of the material presented to the patient.
+   */
+  _documentType?: PrimitiveExtension;
+
+  /**
    * Reference pointer to the educational material given to the patient if
    * the information was on line.
    */
   reference?: string;
+
+  /**
+   * Reference pointer to the educational material given to the patient if
+   * the information was on line.
+   */
+  _reference?: PrimitiveExtension;
 
   /**
    * Date the educational material was published.
@@ -330,9 +411,19 @@ export interface ImmunizationEducation {
   publicationDate?: string;
 
   /**
+   * Date the educational material was published.
+   */
+  _publicationDate?: PrimitiveExtension;
+
+  /**
    * Date the educational material was given to the patient.
    */
   presentationDate?: string;
+
+  /**
+   * Date the educational material was given to the patient.
+   */
+  _presentationDate?: PrimitiveExtension;
 }
 
 /**
@@ -345,6 +436,12 @@ export interface ImmunizationPerformer {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -400,6 +497,12 @@ export interface ImmunizationProtocolApplied {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -435,6 +538,12 @@ export interface ImmunizationProtocolApplied {
   series?: string;
 
   /**
+   * One possible path to achieve presumed immunity against a disease -
+   * within the context of an authority.
+   */
+  _series?: PrimitiveExtension;
+
+  /**
    * Indicates the authority who published the protocol (e.g. ACIP) that is
    * being followed.
    */
@@ -454,7 +563,17 @@ export interface ImmunizationProtocolApplied {
   /**
    * Nominal position in a series.
    */
+  _doseNumberPositiveInt?: PrimitiveExtension;
+
+  /**
+   * Nominal position in a series.
+   */
   doseNumberString?: string;
+
+  /**
+   * Nominal position in a series.
+   */
+  _doseNumberString?: PrimitiveExtension;
 
   /**
    * The recommended number of doses to achieve immunity.
@@ -464,18 +583,28 @@ export interface ImmunizationProtocolApplied {
   /**
    * The recommended number of doses to achieve immunity.
    */
+  _seriesDosesPositiveInt?: PrimitiveExtension;
+
+  /**
+   * The recommended number of doses to achieve immunity.
+   */
   seriesDosesString?: string;
+
+  /**
+   * The recommended number of doses to achieve immunity.
+   */
+  _seriesDosesString?: PrimitiveExtension;
 }
 
 /**
  * Nominal position in a series.
  */
-export type ImmunizationProtocolAppliedDoseNumber = number | string;
+export type ImmunizationProtocolAppliedDoseNumber = number | PrimitiveExtension | string;
 
 /**
  * The recommended number of doses to achieve immunity.
  */
-export type ImmunizationProtocolAppliedSeriesDoses = number | string;
+export type ImmunizationProtocolAppliedSeriesDoses = number | PrimitiveExtension | string;
 
 /**
  * Categorical data indicating that an adverse event is associated in
@@ -488,6 +617,12 @@ export interface ImmunizationReaction {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -524,6 +659,11 @@ export interface ImmunizationReaction {
   date?: string;
 
   /**
+   * Date of reaction to the immunization.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * Details of the reaction.
    */
   detail?: Reference<Observation>;
@@ -532,4 +672,9 @@ export interface ImmunizationReaction {
    * Self-reported indicator.
    */
   reported?: boolean;
+
+  /**
+   * Self-reported indicator.
+   */
+  _reported?: PrimitiveExtension;
 }

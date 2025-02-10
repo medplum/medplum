@@ -9,6 +9,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 
 /**
@@ -35,6 +36,12 @@ export interface SubstanceProtein {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -50,9 +57,22 @@ export interface SubstanceProtein {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -115,6 +135,14 @@ export interface SubstanceProtein {
   numberOfSubunits?: number;
 
   /**
+   * Number of linear sequences of amino acids linked through peptide
+   * bonds. The number of subunits constituting the SubstanceProtein shall
+   * be described. It is possible that the number of subunits can be
+   * variable.
+   */
+  _numberOfSubunits?: PrimitiveExtension;
+
+  /**
    * The disulphide bond between two cysteine residues either on the same
    * subunit or on two different subunits shall be described. The position
    * of the disulfide bonds in the SubstanceProtein shall be listed in
@@ -124,6 +152,17 @@ export interface SubstanceProtein {
    * Cysteine at the respective positions.
    */
   disulfideLinkage?: string[];
+
+  /**
+   * The disulphide bond between two cysteine residues either on the same
+   * subunit or on two different subunits shall be described. The position
+   * of the disulfide bonds in the SubstanceProtein shall be listed in
+   * increasing order of subunit number and position within subunit
+   * followed by the abbreviation of the amino acids involved. The
+   * disulfide linkage positions shall actually contain the amino acid
+   * Cysteine at the respective positions.
+   */
+  _disulfideLinkage?: (PrimitiveExtension | null)[];
 
   /**
    * This subclause refers to the description of each subunit constituting
@@ -157,6 +196,12 @@ export interface SubstanceProteinSubunit {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -196,6 +241,14 @@ export interface SubstanceProteinSubunit {
   subunit?: number;
 
   /**
+   * Index of primary sequences of amino acids linked through peptide bonds
+   * in order of decreasing length. Sequences of the same length will be
+   * ordered by molecular weight. Subunits that have identical sequences
+   * will be repeated and have sequential subscripts.
+   */
+  _subunit?: PrimitiveExtension;
+
+  /**
    * The sequence information shall be provided enumerating the amino acids
    * from N- to C-terminal end using standard single-letter amino acid
    * codes. Uppercase shall be used for L-amino acids and lowercase for
@@ -208,9 +261,26 @@ export interface SubstanceProteinSubunit {
   sequence?: string;
 
   /**
+   * The sequence information shall be provided enumerating the amino acids
+   * from N- to C-terminal end using standard single-letter amino acid
+   * codes. Uppercase shall be used for L-amino acids and lowercase for
+   * D-amino acids. Transcribed SubstanceProteins will always be described
+   * using the translated sequence; for synthetic peptide containing amino
+   * acids that are not represented with a single letter code an X should
+   * be used within the sequence. The modified amino acids will be
+   * distinguished by their position in the sequence.
+   */
+  _sequence?: PrimitiveExtension;
+
+  /**
    * Length of linear sequences of amino acids contained in the subunit.
    */
   length?: number;
+
+  /**
+   * Length of linear sequences of amino acids contained in the subunit.
+   */
+  _length?: PrimitiveExtension;
 
   /**
    * The sequence information shall be provided enumerating the amino acids
@@ -237,6 +307,12 @@ export interface SubstanceProteinSubunit {
   nTerminalModification?: string;
 
   /**
+   * The name of the fragment modified at the N-terminal of the
+   * SubstanceProtein shall be specified.
+   */
+  _nTerminalModification?: PrimitiveExtension;
+
+  /**
    * Unique identifier for molecular fragment modification based on the ISO
    * 11238 Substance ID.
    */
@@ -246,4 +322,9 @@ export interface SubstanceProteinSubunit {
    * The modification at the C-terminal shall be specified.
    */
   cTerminalModification?: string;
+
+  /**
+   * The modification at the C-terminal shall be specified.
+   */
+  _cTerminalModification?: PrimitiveExtension;
 }

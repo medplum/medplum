@@ -5,6 +5,7 @@
 
 import { Attachment } from './Attachment';
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * Related artifacts such as additional documentation, justification, or
@@ -17,6 +18,12 @@ export interface RelatedArtifact {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -34,10 +41,21 @@ export interface RelatedArtifact {
   type: 'documentation' | 'justification' | 'citation' | 'predecessor' | 'successor' | 'derived-from' | 'depends-on' | 'composed-of';
 
   /**
+   * The type of relationship to the related artifact.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * A short label that can be used to reference the citation from
    * elsewhere in the containing artifact, such as a footnote index.
    */
   label?: string;
+
+  /**
+   * A short label that can be used to reference the citation from
+   * elsewhere in the containing artifact, such as a footnote index.
+   */
+  _label?: PrimitiveExtension;
 
   /**
    * A brief description of the document or knowledge resource being
@@ -46,16 +64,34 @@ export interface RelatedArtifact {
   display?: string;
 
   /**
+   * A brief description of the document or knowledge resource being
+   * referenced, suitable for display to a consumer.
+   */
+  _display?: PrimitiveExtension;
+
+  /**
    * A bibliographic citation for the related artifact. This text SHOULD be
    * formatted according to an accepted citation format.
    */
   citation?: string;
 
   /**
+   * A bibliographic citation for the related artifact. This text SHOULD be
+   * formatted according to an accepted citation format.
+   */
+  _citation?: PrimitiveExtension;
+
+  /**
    * A url for the artifact that can be followed to access the actual
    * content.
    */
   url?: string;
+
+  /**
+   * A url for the artifact that can be followed to access the actual
+   * content.
+   */
+  _url?: PrimitiveExtension;
 
   /**
    * The document being referenced, represented as an attachment. This is
@@ -68,4 +104,10 @@ export interface RelatedArtifact {
    * knowledge resource.
    */
   resource?: string;
+
+  /**
+   * The related resource, such as a library, value set, profile, or other
+   * knowledge resource.
+   */
+  _resource?: PrimitiveExtension;
 }

@@ -21,6 +21,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Procedure } from './Procedure';
 import { QuestionnaireResponse } from './QuestionnaireResponse';
 import { Reference } from './Reference';
@@ -47,6 +48,12 @@ export interface DeviceUseStatement {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -62,9 +69,22 @@ export interface DeviceUseStatement {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -130,6 +150,13 @@ export interface DeviceUseStatement {
   status: 'active' | 'completed' | 'entered-in-error' | 'intended' | 'stopped' | 'on-hold';
 
   /**
+   * A code representing the patient or other source's judgment about the
+   * state of the device used that this statement is about.  Generally this
+   * will be active or completed.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The patient who used the device.
    */
   subject: Reference<Patient | Group>;
@@ -157,9 +184,19 @@ export interface DeviceUseStatement {
   timingDateTime?: string;
 
   /**
+   * How often the device was used.
+   */
+  _timingDateTime?: PrimitiveExtension;
+
+  /**
    * The time at which the statement was made/recorded.
    */
   recordedOn?: string;
+
+  /**
+   * The time at which the statement was made/recorded.
+   */
+  _recordedOn?: PrimitiveExtension;
 
   /**
    * Who reported the device was being used by the patient.
@@ -200,4 +237,4 @@ export interface DeviceUseStatement {
 /**
  * How often the device was used.
  */
-export type DeviceUseStatementTiming = Period | string | Timing;
+export type DeviceUseStatementTiming = Period | PrimitiveExtension | string | Timing;

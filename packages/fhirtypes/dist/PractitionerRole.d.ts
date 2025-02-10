@@ -15,6 +15,7 @@ import { Narrative } from './Narrative';
 import { Organization } from './Organization';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -36,6 +37,12 @@ export interface PractitionerRole {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -51,9 +58,22 @@ export interface PractitionerRole {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -109,6 +129,11 @@ export interface PractitionerRole {
    * Whether this practitioner role record is in active use.
    */
   active?: boolean;
+
+  /**
+   * Whether this practitioner role record is in active use.
+   */
+  _active?: PrimitiveExtension;
 
   /**
    * The period during which the person is authorized to act as a
@@ -175,6 +200,14 @@ export interface PractitionerRole {
   availabilityExceptions?: string;
 
   /**
+   * A description of site availability exceptions, e.g. public holiday
+   * availability. Succinctly describing all possible exceptions to normal
+   * site availability as details in the available Times and not available
+   * Times.
+   */
+  _availabilityExceptions?: PrimitiveExtension;
+
+  /**
    * Technical endpoints providing access to services operated for the
    * practitioner with this role.
    */
@@ -192,6 +225,12 @@ export interface PractitionerRoleAvailableTime {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -229,10 +268,22 @@ export interface PractitionerRoleAvailableTime {
   daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
 
   /**
+   * Indicates which days of the week are available between the start and
+   * end Times.
+   */
+  _daysOfWeek?: (PrimitiveExtension | null)[];
+
+  /**
    * Is this always available? (hence times are irrelevant) e.g. 24 hour
    * service.
    */
   allDay?: boolean;
+
+  /**
+   * Is this always available? (hence times are irrelevant) e.g. 24 hour
+   * service.
+   */
+  _allDay?: PrimitiveExtension;
 
   /**
    * The opening time of day. Note: If the AllDay flag is set, then this
@@ -241,10 +292,22 @@ export interface PractitionerRoleAvailableTime {
   availableStartTime?: string;
 
   /**
+   * The opening time of day. Note: If the AllDay flag is set, then this
+   * time is ignored.
+   */
+  _availableStartTime?: PrimitiveExtension;
+
+  /**
    * The closing time of day. Note: If the AllDay flag is set, then this
    * time is ignored.
    */
   availableEndTime?: string;
+
+  /**
+   * The closing time of day. Note: If the AllDay flag is set, then this
+   * time is ignored.
+   */
+  _availableEndTime?: PrimitiveExtension;
 }
 
 /**
@@ -258,6 +321,12 @@ export interface PractitionerRoleNotAvailable {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -293,6 +362,12 @@ export interface PractitionerRoleNotAvailable {
    * not available.
    */
   description: string;
+
+  /**
+   * The reason that can be presented to the user as to why this time is
+   * not available.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Service is not available (seasonally or for a public holiday) from

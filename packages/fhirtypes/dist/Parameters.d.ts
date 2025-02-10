@@ -25,6 +25,7 @@ import { Meta } from './Meta';
 import { Money } from './Money';
 import { ParameterDefinition } from './ParameterDefinition';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
@@ -56,6 +57,12 @@ export interface Parameters {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -71,9 +78,22 @@ export interface Parameters {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A parameter passed to or received from the operation.
@@ -91,6 +111,12 @@ export interface ParametersParameter {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -127,9 +153,19 @@ export interface ParametersParameter {
   name: string;
 
   /**
+   * The name of the parameter (reference to the operation definition).
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * If the parameter is a data type.
    */
   valueBase64Binary?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  _valueBase64Binary?: PrimitiveExtension;
 
   /**
    * If the parameter is a data type.
@@ -139,7 +175,17 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * If the parameter is a data type.
+   */
   valueCanonical?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  _valueCanonical?: PrimitiveExtension;
 
   /**
    * If the parameter is a data type.
@@ -149,7 +195,17 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
+  _valueCode?: PrimitiveExtension;
+
+  /**
+   * If the parameter is a data type.
+   */
   valueDate?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  _valueDate?: PrimitiveExtension;
 
   /**
    * If the parameter is a data type.
@@ -159,7 +215,17 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
+  _valueDateTime?: PrimitiveExtension;
+
+  /**
+   * If the parameter is a data type.
+   */
   valueDecimal?: number;
+
+  /**
+   * If the parameter is a data type.
+   */
+  _valueDecimal?: PrimitiveExtension;
 
   /**
    * If the parameter is a data type.
@@ -169,7 +235,17 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
+  _valueId?: PrimitiveExtension;
+
+  /**
+   * If the parameter is a data type.
+   */
   valueInstant?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  _valueInstant?: PrimitiveExtension;
 
   /**
    * If the parameter is a data type.
@@ -179,7 +255,17 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
+  _valueInteger?: PrimitiveExtension;
+
+  /**
+   * If the parameter is a data type.
+   */
   valueMarkdown?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  _valueMarkdown?: PrimitiveExtension;
 
   /**
    * If the parameter is a data type.
@@ -189,7 +275,17 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
+  _valueOid?: PrimitiveExtension;
+
+  /**
+   * If the parameter is a data type.
+   */
   valuePositiveInt?: number;
+
+  /**
+   * If the parameter is a data type.
+   */
+  _valuePositiveInt?: PrimitiveExtension;
 
   /**
    * If the parameter is a data type.
@@ -199,7 +295,17 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
+  _valueString?: PrimitiveExtension;
+
+  /**
+   * If the parameter is a data type.
+   */
   valueTime?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  _valueTime?: PrimitiveExtension;
 
   /**
    * If the parameter is a data type.
@@ -209,7 +315,17 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
+  _valueUnsignedInt?: PrimitiveExtension;
+
+  /**
+   * If the parameter is a data type.
+   */
   valueUri?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  _valueUri?: PrimitiveExtension;
 
   /**
    * If the parameter is a data type.
@@ -219,7 +335,17 @@ export interface ParametersParameter {
   /**
    * If the parameter is a data type.
    */
+  _valueUrl?: PrimitiveExtension;
+
+  /**
+   * If the parameter is a data type.
+   */
   valueUuid?: string;
+
+  /**
+   * If the parameter is a data type.
+   */
+  _valueUuid?: PrimitiveExtension;
 
   /**
    * If the parameter is a data type.
@@ -392,5 +518,5 @@ export interface ParametersParameter {
  */
 export type ParametersParameterValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
     ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
-    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
-    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | PrimitiveExtension | Quantity | Range |
+    Ratio | Reference | RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;

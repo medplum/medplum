@@ -5,6 +5,7 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
@@ -21,6 +22,12 @@ export interface Dosage {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -58,9 +65,20 @@ export interface Dosage {
   sequence?: number;
 
   /**
+   * Indicates the order in which the dosage instructions should be applied
+   * or interpreted.
+   */
+  _sequence?: PrimitiveExtension;
+
+  /**
    * Free text dosage instructions e.g. SIG.
    */
   text?: string;
+
+  /**
+   * Free text dosage instructions e.g. SIG.
+   */
+  _text?: PrimitiveExtension;
 
   /**
    * Supplemental instructions to the patient on how to take the medication
@@ -76,6 +94,11 @@ export interface Dosage {
   patientInstruction?: string;
 
   /**
+   * Instructions in terms that are understood by the patient or consumer.
+   */
+  _patientInstruction?: PrimitiveExtension;
+
+  /**
    * When medication should be administered.
    */
   timing?: Timing;
@@ -86,6 +109,13 @@ export interface Dosage {
    * precondition for taking the Medication (CodeableConcept).
    */
   asNeededBoolean?: boolean;
+
+  /**
+   * Indicates whether the Medication is only taken when needed within a
+   * specific dosing schedule (Boolean option), or it indicates the
+   * precondition for taking the Medication (CodeableConcept).
+   */
+  _asNeededBoolean?: PrimitiveExtension;
 
   /**
    * Indicates whether the Medication is only taken when needed within a
@@ -135,7 +165,7 @@ export interface Dosage {
  * specific dosing schedule (Boolean option), or it indicates the
  * precondition for taking the Medication (CodeableConcept).
  */
-export type DosageAsNeeded = boolean | CodeableConcept;
+export type DosageAsNeeded = boolean | CodeableConcept | PrimitiveExtension;
 
 /**
  * The amount of medication administered.
@@ -147,6 +177,12 @@ export interface DosageDoseAndRate {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

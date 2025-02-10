@@ -7,6 +7,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 import { TestScript } from './TestScript';
@@ -29,6 +30,12 @@ export interface TestReport {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -44,9 +51,22 @@ export interface TestReport {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -105,9 +125,19 @@ export interface TestReport {
   name?: string;
 
   /**
+   * A free text natural language name identifying the executed TestScript.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The current state of this test report.
    */
   status: 'completed' | 'in-progress' | 'waiting' | 'stopped' | 'entered-in-error';
+
+  /**
+   * The current state of this test report.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * Ideally this is an absolute URL that is used to identify the
@@ -122,10 +152,21 @@ export interface TestReport {
   result: 'pass' | 'fail' | 'pending';
 
   /**
+   * The overall result from the execution of the TestScript.
+   */
+  _result?: PrimitiveExtension;
+
+  /**
    * The final score (percentage of tests passed) resulting from the
    * execution of the TestScript.
    */
   score?: number;
+
+  /**
+   * The final score (percentage of tests passed) resulting from the
+   * execution of the TestScript.
+   */
+  _score?: PrimitiveExtension;
 
   /**
    * Name of the tester producing this report (Organization or individual).
@@ -133,9 +174,19 @@ export interface TestReport {
   tester?: string;
 
   /**
+   * Name of the tester producing this report (Organization or individual).
+   */
+  _tester?: PrimitiveExtension;
+
+  /**
    * When the TestScript was executed and this TestReport was generated.
    */
   issued?: string;
+
+  /**
+   * When the TestScript was executed and this TestReport was generated.
+   */
+  _issued?: PrimitiveExtension;
 
   /**
    * A participant in the test execution, either the execution engine, a
@@ -174,6 +225,12 @@ export interface TestReportParticipant {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -208,14 +265,29 @@ export interface TestReportParticipant {
   type: 'test-engine' | 'client' | 'server';
 
   /**
+   * The type of participant.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * The uri of the participant. An absolute URL is preferred.
    */
   uri: string;
 
   /**
+   * The uri of the participant. An absolute URL is preferred.
+   */
+  _uri?: PrimitiveExtension;
+
+  /**
    * The display name of the participant.
    */
   display?: string;
+
+  /**
+   * The display name of the participant.
+   */
+  _display?: PrimitiveExtension;
 }
 
 /**
@@ -229,6 +301,12 @@ export interface TestReportSetup {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -275,6 +353,12 @@ export interface TestReportSetupAction {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -328,6 +412,12 @@ export interface TestReportSetupActionAssert {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -362,14 +452,29 @@ export interface TestReportSetupActionAssert {
   result: 'pass' | 'skip' | 'fail' | 'warning' | 'error';
 
   /**
+   * The result of this assertion.
+   */
+  _result?: PrimitiveExtension;
+
+  /**
    * An explanatory message associated with the result.
    */
   message?: string;
 
   /**
+   * An explanatory message associated with the result.
+   */
+  _message?: PrimitiveExtension;
+
+  /**
    * A link to further details on the result.
    */
   detail?: string;
+
+  /**
+   * A link to further details on the result.
+   */
+  _detail?: PrimitiveExtension;
 }
 
 /**
@@ -382,6 +487,12 @@ export interface TestReportSetupActionOperation {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -418,14 +529,29 @@ export interface TestReportSetupActionOperation {
   result: 'pass' | 'skip' | 'fail' | 'warning' | 'error';
 
   /**
+   * The result of this operation.
+   */
+  _result?: PrimitiveExtension;
+
+  /**
    * An explanatory message associated with the result.
    */
   message?: string;
 
   /**
+   * An explanatory message associated with the result.
+   */
+  _message?: PrimitiveExtension;
+
+  /**
    * A link to further details on the result.
    */
   detail?: string;
+
+  /**
+   * A link to further details on the result.
+   */
+  _detail?: PrimitiveExtension;
 }
 
 /**
@@ -439,6 +565,12 @@ export interface TestReportTeardown {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -487,6 +619,12 @@ export interface TestReportTeardownAction {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -533,6 +671,12 @@ export interface TestReportTest {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -568,10 +712,22 @@ export interface TestReportTest {
   name?: string;
 
   /**
+   * The name of this test used for tracking/logging purposes by test
+   * engines.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A short description of the test used by test engines for tracking and
    * reporting purposes.
    */
   description?: string;
+
+  /**
+   * A short description of the test used by test engines for tracking and
+   * reporting purposes.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Action would contain either an operation or an assertion.
@@ -589,6 +745,12 @@ export interface TestReportTestAction {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

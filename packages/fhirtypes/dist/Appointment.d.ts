@@ -18,6 +18,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Procedure } from './Procedure';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
@@ -44,6 +45,12 @@ export interface Appointment {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -59,9 +66,22 @@ export interface Appointment {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -124,6 +144,13 @@ export interface Appointment {
   status: 'proposed' | 'pending' | 'booked' | 'arrived' | 'fulfilled' | 'cancelled' | 'noshow' | 'entered-in-error' | 'checked-in' | 'waitlist';
 
   /**
+   * The overall status of the Appointment. Each of the participants has
+   * their own participation status which indicates their involvement in
+   * the process, however this status indicates the shared status.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The coded reason for the appointment being cancelled. This is often
    * used in reporting/billing/futher processing to determine if further
    * actions are required, or specific fees apply.
@@ -176,11 +203,25 @@ export interface Appointment {
   priority?: number;
 
   /**
+   * The priority of the appointment. Can be used to make informed
+   * decisions if needing to re-prioritize appointments. (The iCal Standard
+   * specifies 0 as undefined, 1 as highest, 9 as lowest priority).
+   */
+  _priority?: PrimitiveExtension;
+
+  /**
    * The brief description of the appointment as would be shown on a
    * subject line in a meeting request, or appointment list. Detailed or
    * expanded information should be put in the comment field.
    */
   description?: string;
+
+  /**
+   * The brief description of the appointment as would be shown on a
+   * subject line in a meeting request, or appointment list. Detailed or
+   * expanded information should be put in the comment field.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Additional information to support the appointment provided when making
@@ -194,9 +235,19 @@ export interface Appointment {
   start?: string;
 
   /**
+   * Date/Time that the appointment is to take place.
+   */
+  _start?: PrimitiveExtension;
+
+  /**
    * Date/Time that the appointment is to conclude.
    */
   end?: string;
+
+  /**
+   * Date/Time that the appointment is to conclude.
+   */
+  _end?: PrimitiveExtension;
 
   /**
    * Number of minutes that the appointment is to take. This can be less
@@ -208,6 +259,17 @@ export interface Appointment {
    * difference between the start and end.
    */
   minutesDuration?: number;
+
+  /**
+   * Number of minutes that the appointment is to take. This can be less
+   * than the duration between the start and end times.  For example, where
+   * the actual time of appointment is only an estimate or if a 30 minute
+   * appointment is being requested, but any time would work.  Also, if
+   * there is, for example, a planned 15 minute break in the middle of a
+   * long appointment, the duration may be 15 minutes less than the
+   * difference between the start and end.
+   */
+  _minutesDuration?: PrimitiveExtension;
 
   /**
    * The slots from the participants' schedules that will be filled by the
@@ -224,9 +286,22 @@ export interface Appointment {
   created?: string;
 
   /**
+   * The date that this appointment was initially created. This could be
+   * different to the meta.lastModified value on the initial entry, as this
+   * could have been before the resource was created on the FHIR server,
+   * and should remain unchanged over the lifespan of the appointment.
+   */
+  _created?: PrimitiveExtension;
+
+  /**
    * Additional comments about the appointment.
    */
   comment?: string;
+
+  /**
+   * Additional comments about the appointment.
+   */
+  _comment?: PrimitiveExtension;
 
   /**
    * While Appointment.comment contains information for internal use,
@@ -235,6 +310,14 @@ export interface Appointment {
    * fast from 8pm night before).
    */
   patientInstruction?: string;
+
+  /**
+   * While Appointment.comment contains information for internal use,
+   * Appointment.patientInstructions is used to capture patient facing
+   * information about the Appointment (e.g. please bring your referral or
+   * fast from 8pm night before).
+   */
+  _patientInstruction?: PrimitiveExtension;
 
   /**
    * The service request this appointment is allocated to assess (e.g.
@@ -269,6 +352,12 @@ export interface AppointmentParticipant {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -319,9 +408,22 @@ export interface AppointmentParticipant {
   required?: 'required' | 'optional' | 'information-only';
 
   /**
+   * Whether this participant is required to be present at the meeting.
+   * This covers a use-case where two doctors need to meet to discuss the
+   * results for a specific patient, and the patient is not required to be
+   * present.
+   */
+  _required?: PrimitiveExtension;
+
+  /**
    * Participation status of the actor.
    */
   status: 'accepted' | 'declined' | 'tentative' | 'needs-action';
+
+  /**
+   * Participation status of the actor.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * Participation period of the actor.

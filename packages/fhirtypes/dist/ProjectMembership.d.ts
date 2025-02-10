@@ -12,6 +12,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Project } from './Project';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
@@ -37,6 +38,12 @@ export interface ProjectMembership {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -52,9 +59,22 @@ export interface ProjectMembership {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -112,6 +132,11 @@ export interface ProjectMembership {
   active?: boolean;
 
   /**
+   * Whether this project membership record is in active use.
+   */
+  _active?: PrimitiveExtension;
+
+  /**
    * Project where the memberships are available.
    */
   project: Reference<Project>;
@@ -145,6 +170,18 @@ export interface ProjectMembership {
   userName?: string;
 
   /**
+   * SCIM userName. A service provider's unique identifier for the user,
+   * typically used by the user to directly authenticate to the service
+   * provider. Often displayed to the user as their unique identifier
+   * within the system (as opposed to &quot;id&quot; or &quot;externalId&quot;, which are
+   * generally opaque and not user-friendly identifiers).  Each User MUST
+   * include a non-empty userName value.  This identifier MUST be unique
+   * across the service provider's entire set of Users.  This attribute is
+   * REQUIRED and is case insensitive.
+   */
+  _userName?: PrimitiveExtension;
+
+  /**
    * SCIM externalId. A String that is an identifier for the resource as
    * defined by the provisioning client.  The &quot;externalId&quot; may simplify
    * identification of a resource between the provisioning client and the
@@ -159,6 +196,22 @@ export interface ProjectMembership {
    * to the provisioning domain.
    */
   externalId?: string;
+
+  /**
+   * SCIM externalId. A String that is an identifier for the resource as
+   * defined by the provisioning client.  The &quot;externalId&quot; may simplify
+   * identification of a resource between the provisioning client and the
+   * service provider by allowing the client to use a filter to locate the
+   * resource with an identifier from the provisioning domain, obviating
+   * the need to store a local mapping between the provisioning domain's
+   * identifier of the resource and the identifier used by the service
+   * provider.  Each resource MAY include a non-empty &quot;externalId&quot; value.
+   * The value of the &quot;externalId&quot; attribute is always issued by the
+   * provisioning client and MUST NOT be specified by the service provider.
+   * The service provider MUST always interpret the externalId as scoped
+   * to the provisioning domain.
+   */
+  _externalId?: PrimitiveExtension;
 
   /**
    * The access policy for the user within the project memebership.
@@ -180,6 +233,11 @@ export interface ProjectMembership {
    * Whether this user is a project administrator.
    */
   admin?: boolean;
+
+  /**
+   * Whether this user is a project administrator.
+   */
+  _admin?: PrimitiveExtension;
 }
 
 /**
@@ -210,10 +268,21 @@ export interface ProjectMembershipAccessParameter {
   name: string;
 
   /**
+   * The unique name of the parameter.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Value of the parameter - must be one of a constrained set of the data
    * types (see [Extensibility](extensibility.html) for a list).
    */
   valueString?: string;
+
+  /**
+   * Value of the parameter - must be one of a constrained set of the data
+   * types (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueString?: PrimitiveExtension;
 
   /**
    * Value of the parameter - must be one of a constrained set of the data
@@ -226,4 +295,4 @@ export interface ProjectMembershipAccessParameter {
  * Value of the parameter - must be one of a constrained set of the data
  * types (see [Extensibility](extensibility.html) for a list).
  */
-export type ProjectMembershipAccessParameterValue = Reference | string;
+export type ProjectMembershipAccessParameterValue = PrimitiveExtension | Reference | string;

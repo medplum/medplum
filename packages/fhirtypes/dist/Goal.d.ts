@@ -19,6 +19,7 @@ import { Organization } from './Organization';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
@@ -48,6 +49,12 @@ export interface Goal {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -63,9 +70,22 @@ export interface Goal {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -125,6 +145,11 @@ export interface Goal {
   lifecycleStatus: 'proposed' | 'planned' | 'accepted' | 'active' | 'on-hold' | 'completed' | 'cancelled' | 'entered-in-error' | 'rejected';
 
   /**
+   * The state of the goal throughout its lifecycle.
+   */
+  _lifecycleStatus?: PrimitiveExtension;
+
+  /**
    * Describes the progression, or lack thereof, towards the goal against
    * the target.
    */
@@ -162,6 +187,11 @@ export interface Goal {
   /**
    * The date or event after which the goal should begin being pursued.
    */
+  _startDate?: PrimitiveExtension;
+
+  /**
+   * The date or event after which the goal should begin being pursued.
+   */
   startCodeableConcept?: CodeableConcept;
 
   /**
@@ -176,9 +206,20 @@ export interface Goal {
   statusDate?: string;
 
   /**
+   * Identifies when the current status.  I.e. When initially created, when
+   * achieved, when cancelled, etc.
+   */
+  _statusDate?: PrimitiveExtension;
+
+  /**
    * Captures the reason for the current status.
    */
   statusReason?: string;
+
+  /**
+   * Captures the reason for the current status.
+   */
+  _statusReason?: PrimitiveExtension;
 
   /**
    * Indicates whose goal this is - patient goal, practitioner goal, etc.
@@ -211,7 +252,7 @@ export interface Goal {
 /**
  * The date or event after which the goal should begin being pursued.
  */
-export type GoalStart = CodeableConcept | string;
+export type GoalStart = CodeableConcept | PrimitiveExtension | string;
 
 /**
  * Indicates what should be done by when.
@@ -223,6 +264,12 @@ export interface GoalTarget {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -312,6 +359,17 @@ export interface GoalTarget {
    * indicates that the goal is achieved at any focus value at or above the
    * low value.
    */
+  _detailString?: PrimitiveExtension;
+
+  /**
+   * The target value of the focus to be achieved to signify the
+   * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+   * or both values of the range can be specified. When a low value is
+   * missing, it indicates that the goal is achieved at any focus value at
+   * or below the high value. Similarly, if the high value is missing, it
+   * indicates that the goal is achieved at any focus value at or above the
+   * low value.
+   */
   detailBoolean?: boolean;
 
   /**
@@ -323,7 +381,29 @@ export interface GoalTarget {
    * indicates that the goal is achieved at any focus value at or above the
    * low value.
    */
+  _detailBoolean?: PrimitiveExtension;
+
+  /**
+   * The target value of the focus to be achieved to signify the
+   * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+   * or both values of the range can be specified. When a low value is
+   * missing, it indicates that the goal is achieved at any focus value at
+   * or below the high value. Similarly, if the high value is missing, it
+   * indicates that the goal is achieved at any focus value at or above the
+   * low value.
+   */
   detailInteger?: number;
+
+  /**
+   * The target value of the focus to be achieved to signify the
+   * fulfillment of the goal, e.g. 150 pounds, 7.0%. Either the high or low
+   * or both values of the range can be specified. When a low value is
+   * missing, it indicates that the goal is achieved at any focus value at
+   * or below the high value. Similarly, if the high value is missing, it
+   * indicates that the goal is achieved at any focus value at or above the
+   * low value.
+   */
+  _detailInteger?: PrimitiveExtension;
 
   /**
    * The target value of the focus to be achieved to signify the
@@ -346,6 +426,12 @@ export interface GoalTarget {
    * Indicates either the date or the duration after start by which the
    * goal should be met.
    */
+  _dueDate?: PrimitiveExtension;
+
+  /**
+   * Indicates either the date or the duration after start by which the
+   * goal should be met.
+   */
   dueDuration?: Duration;
 }
 
@@ -358,10 +444,10 @@ export interface GoalTarget {
  * indicates that the goal is achieved at any focus value at or above the
  * low value.
  */
-export type GoalTargetDetail = boolean | CodeableConcept | number | Quantity | Range | Ratio | string;
+export type GoalTargetDetail = boolean | CodeableConcept | number | PrimitiveExtension | Quantity | Range | Ratio | string;
 
 /**
  * Indicates either the date or the duration after start by which the
  * goal should be met.
  */
-export type GoalTargetDue = Duration | string;
+export type GoalTargetDue = Duration | PrimitiveExtension | string;

@@ -15,6 +15,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
@@ -42,6 +43,12 @@ export interface Group {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -57,9 +64,22 @@ export interface Group {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -118,10 +138,22 @@ export interface Group {
   active?: boolean;
 
   /**
+   * Indicates whether the record for the group is available for use or is
+   * merely being retained for historical purposes.
+   */
+  _active?: PrimitiveExtension;
+
+  /**
    * Identifies the broad classification of the kind of resources the group
    * includes.
    */
   type: 'person' | 'animal' | 'practitioner' | 'device' | 'medication' | 'substance';
+
+  /**
+   * Identifies the broad classification of the kind of resources the group
+   * includes.
+   */
+  _type?: PrimitiveExtension;
 
   /**
    * If true, indicates that the resource refers to a specific group of
@@ -129,6 +161,13 @@ export interface Group {
    * individuals.
    */
   actual: boolean;
+
+  /**
+   * If true, indicates that the resource refers to a specific group of
+   * real individuals.  If false, the group defines a set of intended
+   * individuals.
+   */
+  _actual?: PrimitiveExtension;
 
   /**
    * Provides a specific type of resource the group includes; e.g. &quot;cow&quot;,
@@ -143,10 +182,22 @@ export interface Group {
   name?: string;
 
   /**
+   * A label assigned to the group for human identification and
+   * communication.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A count of the number of resource instances that are part of the
    * group.
    */
   quantity?: number;
+
+  /**
+   * A count of the number of resource instances that are part of the
+   * group.
+   */
+  _quantity?: PrimitiveExtension;
 
   /**
    * Entity responsible for defining and maintaining Group characteristics
@@ -177,6 +228,12 @@ export interface GroupCharacteristic {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -228,6 +285,12 @@ export interface GroupCharacteristic {
    * The value of the trait that holds (or does not hold - see 'exclude')
    * for members of the group.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * The value of the trait that holds (or does not hold - see 'exclude')
+   * for members of the group.
+   */
   valueQuantity?: Quantity;
 
   /**
@@ -249,6 +312,12 @@ export interface GroupCharacteristic {
   exclude: boolean;
 
   /**
+   * If true, indicates the characteristic is one that is NOT held by
+   * members of the group.
+   */
+  _exclude?: PrimitiveExtension;
+
+  /**
    * The period over which the characteristic is tested; e.g. the patient
    * had an operation during the month of June.
    */
@@ -259,7 +328,7 @@ export interface GroupCharacteristic {
  * The value of the trait that holds (or does not hold - see 'exclude')
  * for members of the group.
  */
-export type GroupCharacteristicValue = boolean | CodeableConcept | Quantity | Range | Reference;
+export type GroupCharacteristicValue = boolean | CodeableConcept | PrimitiveExtension | Quantity | Range | Reference;
 
 /**
  * Identifies the resource instances that are members of the group.
@@ -271,6 +340,12 @@ export interface GroupMember {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -318,4 +393,10 @@ export interface GroupMember {
    * previously may have been a member.
    */
   inactive?: boolean;
+
+  /**
+   * A flag to indicate that the member is no longer in the group, but
+   * previously may have been a member.
+   */
+  _inactive?: PrimitiveExtension;
 }

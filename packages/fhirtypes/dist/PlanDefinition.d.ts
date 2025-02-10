@@ -15,6 +15,7 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
@@ -45,6 +46,12 @@ export interface PlanDefinition {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -60,9 +67,22 @@ export interface PlanDefinition {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -121,6 +141,17 @@ export interface PlanDefinition {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this plan definition when it
+   * is referenced in a specification, model, design or an instance; also
+   * called its canonical identifier. This SHOULD be globally unique and
+   * SHOULD be a literal address at which at which an authoritative
+   * instance of this plan definition is (or will be) published. This URL
+   * can be the target of a canonical reference. It SHALL remain the same
+   * when the plan definition is stored on different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this plan definition when
    * it is represented in other formats, or referenced in a specification,
    * model, design or an instance.
@@ -143,6 +174,21 @@ export interface PlanDefinition {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the plan
+   * definition when it is referenced in a specification, model, design or
+   * instance. This is an arbitrary value managed by the plan definition
+   * author and is not expected to be globally unique. For example, it
+   * might be a timestamp (e.g. yyyymmdd) if a managed version is not
+   * available. There is also no expectation that versions can be placed in
+   * a lexicographical sequence. To provide a version consistent with the
+   * Decision Support Service specification, use the format
+   * Major.Minor.Revision (e.g. 1.0.0). For more information on versioning
+   * knowledge assets, refer to the Decision Support Service specification.
+   * Note that a version is required for non-experimental active artifacts.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the plan definition. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
@@ -150,15 +196,33 @@ export interface PlanDefinition {
   name?: string;
 
   /**
+   * A natural language name identifying the plan definition. This name
+   * should be usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A short, descriptive, user-friendly title for the plan definition.
    */
   title?: string;
+
+  /**
+   * A short, descriptive, user-friendly title for the plan definition.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * An explanatory or alternate title for the plan definition giving
    * additional information about its content.
    */
   subtitle?: string;
+
+  /**
+   * An explanatory or alternate title for the plan definition giving
+   * additional information about its content.
+   */
+  _subtitle?: PrimitiveExtension;
 
   /**
    * A high-level category for the plan definition that distinguishes the
@@ -173,11 +237,24 @@ export interface PlanDefinition {
   status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
+   * The status of this plan definition. Enables tracking the life-cycle of
+   * the content.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A Boolean value to indicate that this plan definition is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
   experimental?: boolean;
+
+  /**
+   * A Boolean value to indicate that this plan definition is authored for
+   * testing purposes (or education/evaluation/marketing) and is not
+   * intended to be used for genuine usage.
+   */
+  _experimental?: PrimitiveExtension;
 
   /**
    * A code or group definition that describes the intended subject of the
@@ -200,10 +277,24 @@ export interface PlanDefinition {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the plan definition was
+   * published. The date must change when the business version changes and
+   * it must change if the status code changes. In addition, it should
+   * change when the substantive content of the plan definition changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the plan
    * definition.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the plan
+   * definition.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -216,6 +307,12 @@ export interface PlanDefinition {
    * consumer's perspective.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the plan definition from a
+   * consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -239,10 +336,22 @@ export interface PlanDefinition {
   purpose?: string;
 
   /**
+   * Explanation of why this plan definition is needed and why it has been
+   * designed as it has.
+   */
+  _purpose?: PrimitiveExtension;
+
+  /**
    * A detailed description of how the plan definition is used from a
    * clinical perspective.
    */
   usage?: string;
+
+  /**
+   * A detailed description of how the plan definition is used from a
+   * clinical perspective.
+   */
+  _usage?: PrimitiveExtension;
 
   /**
    * A copyright statement relating to the plan definition and/or its
@@ -252,6 +361,13 @@ export interface PlanDefinition {
   copyright?: string;
 
   /**
+   * A copyright statement relating to the plan definition and/or its
+   * contents. Copyright statements are generally legal restrictions on the
+   * use and publishing of the plan definition.
+   */
+  _copyright?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
@@ -259,11 +375,25 @@ export interface PlanDefinition {
   approvalDate?: string;
 
   /**
+   * The date on which the resource content was approved by the publisher.
+   * Approval happens once when the content is officially approved for
+   * usage.
+   */
+  _approvalDate?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
   lastReviewDate?: string;
+
+  /**
+   * The date on which the resource content was last reviewed. Review
+   * happens periodically after approval but does not change the original
+   * approval date.
+   */
+  _lastReviewDate?: PrimitiveExtension;
 
   /**
    * The period during which the plan definition content was or is planned
@@ -315,6 +445,12 @@ export interface PlanDefinition {
   library?: string[];
 
   /**
+   * A reference to a Library resource containing any formal logic used by
+   * the plan definition.
+   */
+  _library?: (PrimitiveExtension | null)[];
+
+  /**
    * Goals that describe what the activities within the plan are intended
    * to achieve. For example, weight loss, restoring an activity of daily
    * living, obtaining herd immunity via immunization, meeting a process
@@ -344,6 +480,12 @@ export interface PlanDefinitionAction {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -380,15 +522,31 @@ export interface PlanDefinitionAction {
   prefix?: string;
 
   /**
+   * A user-visible prefix for the action.
+   */
+  _prefix?: PrimitiveExtension;
+
+  /**
    * The title of the action displayed to a user.
    */
   title?: string;
+
+  /**
+   * The title of the action displayed to a user.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * A brief description of the action used to provide a summary to display
    * to the user.
    */
   description?: string;
+
+  /**
+   * A brief description of the action used to provide a summary to display
+   * to the user.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * A text equivalent of the action to be performed. This provides a
@@ -399,10 +557,24 @@ export interface PlanDefinitionAction {
   textEquivalent?: string;
 
   /**
+   * A text equivalent of the action to be performed. This provides a
+   * human-interpretable description of the action when the definition is
+   * consumed by a system that might not be capable of interpreting it
+   * dynamically.
+   */
+  _textEquivalent?: PrimitiveExtension;
+
+  /**
    * Indicates how quickly the action should be addressed with respect to
    * other actions.
    */
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
+
+  /**
+   * Indicates how quickly the action should be addressed with respect to
+   * other actions.
+   */
+  _priority?: PrimitiveExtension;
 
   /**
    * A code that provides meaning for the action or action group. For
@@ -428,6 +600,12 @@ export interface PlanDefinitionAction {
    * goal element defined within this plan definition.
    */
   goalId?: string[];
+
+  /**
+   * Identifies goals that this action supports. The reference must be to a
+   * goal element defined within this plan definition.
+   */
+  _goalId?: (PrimitiveExtension | null)[];
 
   /**
    * A code or group definition that describes the intended subject of the
@@ -476,6 +654,11 @@ export interface PlanDefinitionAction {
   /**
    * An optional value describing when the action should be performed.
    */
+  _timingDateTime?: PrimitiveExtension;
+
+  /**
+   * An optional value describing when the action should be performed.
+   */
   timingAge?: Age;
 
   /**
@@ -514,9 +697,19 @@ export interface PlanDefinitionAction {
   groupingBehavior?: 'visual-group' | 'logical-group' | 'sentence-group';
 
   /**
+   * Defines the grouping behavior for the action and its children.
+   */
+  _groupingBehavior?: PrimitiveExtension;
+
+  /**
    * Defines the selection behavior for the action and its children.
    */
   selectionBehavior?: 'any' | 'all' | 'all-or-none' | 'exactly-one' | 'at-most-one' | 'one-or-more';
+
+  /**
+   * Defines the selection behavior for the action and its children.
+   */
+  _selectionBehavior?: PrimitiveExtension;
 
   /**
    * Defines the required behavior for the action.
@@ -524,14 +717,29 @@ export interface PlanDefinitionAction {
   requiredBehavior?: 'must' | 'could' | 'must-unless-documented';
 
   /**
+   * Defines the required behavior for the action.
+   */
+  _requiredBehavior?: PrimitiveExtension;
+
+  /**
    * Defines whether the action should usually be preselected.
    */
   precheckBehavior?: 'yes' | 'no';
 
   /**
+   * Defines whether the action should usually be preselected.
+   */
+  _precheckBehavior?: PrimitiveExtension;
+
+  /**
    * Defines whether the action can be selected multiple times.
    */
   cardinalityBehavior?: 'single' | 'multiple';
+
+  /**
+   * Defines whether the action can be selected multiple times.
+   */
+  _cardinalityBehavior?: PrimitiveExtension;
 
   /**
    * A reference to an ActivityDefinition that describes the action to be
@@ -545,7 +753,21 @@ export interface PlanDefinitionAction {
    * taken in detail, or a PlanDefinition that describes a series of
    * actions to be taken.
    */
+  _definitionCanonical?: PrimitiveExtension;
+
+  /**
+   * A reference to an ActivityDefinition that describes the action to be
+   * taken in detail, or a PlanDefinition that describes a series of
+   * actions to be taken.
+   */
   definitionUri?: string;
+
+  /**
+   * A reference to an ActivityDefinition that describes the action to be
+   * taken in detail, or a PlanDefinition that describes a series of
+   * actions to be taken.
+   */
+  _definitionUri?: PrimitiveExtension;
 
   /**
    * A reference to a StructureMap resource that defines a transform that
@@ -553,6 +775,13 @@ export interface PlanDefinitionAction {
    * ActivityDefinition instance as the input.
    */
   transform?: string;
+
+  /**
+   * A reference to a StructureMap resource that defines a transform that
+   * can be executed to produce the intent resource using the
+   * ActivityDefinition instance as the input.
+   */
+  _transform?: PrimitiveExtension;
 
   /**
    * Customizations that should be applied to the statically defined
@@ -581,14 +810,14 @@ export type PlanDefinitionActionSubject = CodeableConcept | Reference<Group>;
 /**
  * An optional value describing when the action should be performed.
  */
-export type PlanDefinitionActionTiming = Age | Duration | Period | Range | string | Timing;
+export type PlanDefinitionActionTiming = Age | Duration | Period | PrimitiveExtension | Range | string | Timing;
 
 /**
  * A reference to an ActivityDefinition that describes the action to be
  * taken in detail, or a PlanDefinition that describes a series of
  * actions to be taken.
  */
-export type PlanDefinitionActionDefinition = string;
+export type PlanDefinitionActionDefinition = PrimitiveExtension | string;
 
 /**
  * An expression that describes applicability criteria or start/stop
@@ -601,6 +830,12 @@ export interface PlanDefinitionActionCondition {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -637,6 +872,11 @@ export interface PlanDefinitionActionCondition {
   kind: 'applicability' | 'start' | 'stop';
 
   /**
+   * The kind of condition.
+   */
+  _kind?: PrimitiveExtension;
+
+  /**
    * An expression that returns true or false, indicating whether the
    * condition is satisfied.
    */
@@ -657,6 +897,12 @@ export interface PlanDefinitionActionDynamicValue {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -701,6 +947,19 @@ export interface PlanDefinitionActionDynamicValue {
   path?: string;
 
   /**
+   * The path to the element to be customized. This is the path on the
+   * resource that will hold the result of the calculation defined by the
+   * expression. The specified path SHALL be a FHIRPath resolveable on the
+   * specified target type of the ActivityDefinition, and SHALL consist
+   * only of identifiers, constant indexers, and a restricted subset of
+   * functions. The path is allowed to contain qualifiers (.) to traverse
+   * sub-elements, as well as indexers ([x]) to traverse
+   * multiple-cardinality sub-elements (see the [Simple FHIRPath
+   * Profile](fhirpath.html#simple) for full details).
+   */
+  _path?: PrimitiveExtension;
+
+  /**
    * An expression specifying the value of the customized element.
    */
   expression?: Expression;
@@ -716,6 +975,12 @@ export interface PlanDefinitionActionParticipant {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -752,6 +1017,11 @@ export interface PlanDefinitionActionParticipant {
   type: 'patient' | 'practitioner' | 'related-person' | 'device';
 
   /**
+   * The type of participant in the action.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * The role the participant should play in performing the described
    * action.
    */
@@ -769,6 +1039,12 @@ export interface PlanDefinitionActionRelatedAction {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -805,10 +1081,20 @@ export interface PlanDefinitionActionRelatedAction {
   actionId: string;
 
   /**
+   * The element id of the related action.
+   */
+  _actionId?: PrimitiveExtension;
+
+  /**
    * The relationship of this action to the related action.
    */
   relationship: 'before-start' | 'before' | 'before-end' | 'concurrent-with-start' | 'concurrent' |
       'concurrent-with-end' | 'after-start' | 'after' | 'after-end';
+
+  /**
+   * The relationship of this action to the related action.
+   */
+  _relationship?: PrimitiveExtension;
 
   /**
    * A duration or range of durations to apply to the relationship. For
@@ -842,6 +1128,12 @@ export interface PlanDefinitionGoal {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -925,6 +1217,12 @@ export interface PlanDefinitionGoalTarget {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

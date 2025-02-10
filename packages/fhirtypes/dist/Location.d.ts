@@ -13,6 +13,7 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Organization } from './Organization';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -35,6 +36,12 @@ export interface Location {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -50,9 +57,22 @@ export interface Location {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -112,6 +132,13 @@ export interface Location {
   status?: 'active' | 'suspended' | 'inactive';
 
   /**
+   * The status property covers the general availability of the resource,
+   * not the current value which may be covered by the operationStatus, or
+   * by a schedule/slots if they are configured for the location.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The operational status covers operation values most relevant to beds
    * (but can also apply to rooms/units/chairs/etc. such as an isolation
    * unit/dialysis chair). This typically covers concepts such as
@@ -125,10 +152,21 @@ export interface Location {
   name?: string;
 
   /**
+   * Name of the location as used by humans. Does not need to be unique.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A list of alternate names that the location is known as, or was known
    * as, in the past.
    */
   alias?: string[];
+
+  /**
+   * A list of alternate names that the location is known as, or was known
+   * as, in the past.
+   */
+  _alias?: (PrimitiveExtension | null)[];
 
   /**
    * Description of the Location, which helps in finding or referencing the
@@ -137,10 +175,22 @@ export interface Location {
   description?: string;
 
   /**
+   * Description of the Location, which helps in finding or referencing the
+   * place.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * Indicates whether a resource instance represents a specific location
    * or a class of locations.
    */
   mode?: 'instance' | 'kind';
+
+  /**
+   * Indicates whether a resource instance represents a specific location
+   * or a class of locations.
+   */
+  _mode?: PrimitiveExtension;
 
   /**
    * Indicates the type of function performed at the location.
@@ -195,6 +245,14 @@ export interface Location {
   availabilityExceptions?: string;
 
   /**
+   * A description of when the locations opening ours are different to
+   * normal, e.g. public holiday availability. Succinctly describing all
+   * possible exceptions to normal site availability as detailed in the
+   * opening hours Times.
+   */
+  _availabilityExceptions?: PrimitiveExtension;
+
+  /**
    * Technical endpoints providing access to services operated for the
    * location.
    */
@@ -211,6 +269,12 @@ export interface LocationHoursOfOperation {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -248,9 +312,20 @@ export interface LocationHoursOfOperation {
   daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
 
   /**
+   * Indicates which days of the week are available between the start and
+   * end Times.
+   */
+  _daysOfWeek?: (PrimitiveExtension | null)[];
+
+  /**
    * The Location is open all day.
    */
   allDay?: boolean;
+
+  /**
+   * The Location is open all day.
+   */
+  _allDay?: PrimitiveExtension;
 
   /**
    * Time that the Location opens.
@@ -258,9 +333,19 @@ export interface LocationHoursOfOperation {
   openingTime?: string;
 
   /**
+   * Time that the Location opens.
+   */
+  _openingTime?: PrimitiveExtension;
+
+  /**
    * Time that the Location closes.
    */
   closingTime?: string;
+
+  /**
+   * Time that the Location closes.
+   */
+  _closingTime?: PrimitiveExtension;
 }
 
 /**
@@ -274,6 +359,12 @@ export interface LocationPosition {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -311,14 +402,32 @@ export interface LocationPosition {
   longitude: number;
 
   /**
+   * Longitude. The value domain and the interpretation are the same as for
+   * the text of the longitude element in KML (see notes below).
+   */
+  _longitude?: PrimitiveExtension;
+
+  /**
    * Latitude. The value domain and the interpretation are the same as for
    * the text of the latitude element in KML (see notes below).
    */
   latitude: number;
 
   /**
+   * Latitude. The value domain and the interpretation are the same as for
+   * the text of the latitude element in KML (see notes below).
+   */
+  _latitude?: PrimitiveExtension;
+
+  /**
    * Altitude. The value domain and the interpretation are the same as for
    * the text of the altitude element in KML (see notes below).
    */
   altitude?: number;
+
+  /**
+   * Altitude. The value domain and the interpretation are the same as for
+   * the text of the altitude element in KML (see notes below).
+   */
+  _altitude?: PrimitiveExtension;
 }

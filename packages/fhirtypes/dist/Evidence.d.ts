@@ -12,6 +12,7 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { Resource } from './Resource';
@@ -37,6 +38,12 @@ export interface Evidence {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -52,9 +59,22 @@ export interface Evidence {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -113,6 +133,17 @@ export interface Evidence {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this evidence when it is
+   * referenced in a specification, model, design or an instance; also
+   * called its canonical identifier. This SHOULD be globally unique and
+   * SHOULD be a literal address at which at which an authoritative
+   * instance of this evidence is (or will be) published. This URL can be
+   * the target of a canonical reference. It SHALL remain the same when the
+   * evidence is stored on different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this evidence when it is
    * represented in other formats, or referenced in a specification, model,
    * design or an instance.
@@ -135,6 +166,21 @@ export interface Evidence {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the evidence
+   * when it is referenced in a specification, model, design or instance.
+   * This is an arbitrary value managed by the evidence author and is not
+   * expected to be globally unique. For example, it might be a timestamp
+   * (e.g. yyyymmdd) if a managed version is not available. There is also
+   * no expectation that versions can be placed in a lexicographical
+   * sequence. To provide a version consistent with the Decision Support
+   * Service specification, use the format Major.Minor.Revision (e.g.
+   * 1.0.0). For more information on versioning knowledge assets, refer to
+   * the Decision Support Service specification. Note that a version is
+   * required for non-experimental active artifacts.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the evidence. This name should be
    * usable as an identifier for the module by machine processing
    * applications such as code generation.
@@ -142,9 +188,21 @@ export interface Evidence {
   name?: string;
 
   /**
+   * A natural language name identifying the evidence. This name should be
+   * usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A short, descriptive, user-friendly title for the evidence.
    */
   title?: string;
+
+  /**
+   * A short, descriptive, user-friendly title for the evidence.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * The short title provides an alternate title for use in informal
@@ -153,16 +211,34 @@ export interface Evidence {
   shortTitle?: string;
 
   /**
+   * The short title provides an alternate title for use in informal
+   * descriptive contexts where the full, formal title is not necessary.
+   */
+  _shortTitle?: PrimitiveExtension;
+
+  /**
    * An explanatory or alternate title for the Evidence giving additional
    * information about its content.
    */
   subtitle?: string;
 
   /**
+   * An explanatory or alternate title for the Evidence giving additional
+   * information about its content.
+   */
+  _subtitle?: PrimitiveExtension;
+
+  /**
    * The status of this evidence. Enables tracking the life-cycle of the
    * content.
    */
   status: 'draft' | 'active' | 'retired' | 'unknown';
+
+  /**
+   * The status of this evidence. Enables tracking the life-cycle of the
+   * content.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * The date  (and optionally time) when the evidence was published. The
@@ -173,10 +249,24 @@ export interface Evidence {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the evidence was published. The
+   * date must change when the business version changes and it must change
+   * if the status code changes. In addition, it should change when the
+   * substantive content of the evidence changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the
    * evidence.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the
+   * evidence.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -189,6 +279,12 @@ export interface Evidence {
    * consumer's perspective.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the evidence from a
+   * consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * A human-readable string to clarify or explain concepts about the
@@ -219,6 +315,13 @@ export interface Evidence {
   copyright?: string;
 
   /**
+   * A copyright statement relating to the evidence and/or its contents.
+   * Copyright statements are generally legal restrictions on the use and
+   * publishing of the evidence.
+   */
+  _copyright?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
@@ -226,11 +329,25 @@ export interface Evidence {
   approvalDate?: string;
 
   /**
+   * The date on which the resource content was approved by the publisher.
+   * Approval happens once when the content is officially approved for
+   * usage.
+   */
+  _approvalDate?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
   lastReviewDate?: string;
+
+  /**
+   * The date on which the resource content was last reviewed. Review
+   * happens periodically after approval but does not change the original
+   * approval date.
+   */
+  _lastReviewDate?: PrimitiveExtension;
 
   /**
    * The period during which the evidence content was or is planned to be
