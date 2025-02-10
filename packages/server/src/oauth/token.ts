@@ -557,6 +557,8 @@ async function validateClientIdAndSecret(
   if (!timingSafeEqualStr(client.secret, clientSecret)) {
     failed = true;
   }
+  // Always perform a second comparison, in order to not leak timing information about the presence or absence of
+  // a retiring secret
   const secondarySecret = client.retiringSecret ?? client.secret;
   if (timingSafeEqualStr(secondarySecret, clientSecret)) {
     failed = false;
