@@ -9,6 +9,6 @@
   },
   "v3": {
     "serverVersion": "3.2.3",
-    "requiredBefore": "3.2.4"
+    "requiredBefore": "4.0.0"
   }
 }
