@@ -2,5 +2,13 @@
   "v1": {
     "serverVersion": "3.3.0",
     "requiredBefore": "4.0.0"
+  },
+  "v2": {
+    "serverVersion": "3.2.3",
+    "requiredBefore": "4.0.0"
+  },
+  "v3": {
+    "serverVersion": "3.2.3",
+    "requiredBefore": "3.2.4"
   }
 }
