@@ -139,7 +139,7 @@ async function initializeProject(config: ProjectConfig): Promise<void> {
     console.log(`Successfully created project ${config.projectName}!`);
     console.log(`Next steps:`);
     console.log(`  cd ${config.projectName}`);
-    console.log('  npm start');
+    console.log('  npm run dev');
   } catch (error) {
     console.error('Error initializing project:', error);
     // Clean up on failure

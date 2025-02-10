@@ -59828,6 +59828,10 @@
           "description": "Optional external Identity Provider (IdP) for the client application.",
           "$ref": "#/definitions/IdentityProvider"
         },
+        "accessTokenLifetime": {
+          "description": "Optional configuration to set the access token duration",
+          "$ref": "#/definitions/string"
+        },
         "refreshTokenLifetime": {
           "description": "Optional configuration to set the refresh token duration",
           "$ref": "#/definitions/string"

@@ -154,13 +154,13 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
       >
         <Stack h="100%" justify="space-between" gap={0}>
           <Box flex={1} miw={0}>
-            <Grid p="md" h="100%">
-              <Grid.Col span={6}>
+            <Grid p="md">
+              <Grid.Col span={6} pr="md">
                 <Box>
                   <Title order={5} mb="xs">
                     Select care template
                   </Title>
-                  <Text size="sm" color="dimmed" mb="md">
+                  <Text size="sm" c="dimmed" mb="md">
                     Care templates are predefined sets of actions that can be applied to encounters.
                   </Text>
 
@@ -179,58 +179,66 @@ export const AddPlanDefinition = ({ encounterId, patientId, onApply }: AddPlanDe
                     }}
                   />
 
-                  <ScrollArea.Autosize>
-                    {planDefinitions.map((plan) => (
-                      <Card
-                        key={plan.id}
-                        p="md"
-                        mb="xs"
-                        className={cx(classes.planDefinition, {
-                          [classes.selected]: selectedPlanDefinition?.id === plan.id,
-                        })}
-                        onClick={() => setSelectedPlanDefinition(plan)}
-                      >
-                        <Text fz="md" fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : undefined}>
-                          {plan.name}
-                        </Text>
-                        <Text fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : 'dimmed'}>
-                          {plan.subtitle}
-                        </Text>
-                      </Card>
-                    ))}
-                  </ScrollArea.Autosize>
+                  <ScrollArea style={{ height: 'calc(80vh - 250px)' }} type="scroll">
+                    {planDefinitions.length > 0 &&
+                      planDefinitions.map((plan) => (
+                        <Card
+                          key={plan.id}
+                          p="md"
+                          mb="xs"
+                          className={cx(classes.planDefinition, {
+                            [classes.selected]: selectedPlanDefinition?.id === plan.id,
+                          })}
+                          onClick={() => setSelectedPlanDefinition(plan)}
+                        >
+                          <Text fz="md" fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : undefined}>
+                            {plan.name}
+                          </Text>
+                          <Text fw={500} c={selectedPlanDefinition?.id === plan.id ? 'white' : 'dimmed'}>
+                            {plan.subtitle}
+                          </Text>
+                        </Card>
+                      ))}
+
+                    {planDefinitions.length === 0 && !isLoading && (
+                      <Paper className={classes.notFound} h={40}>
+                        <Text>Nothing found! Try searching for another name of the care plan.</Text>
+                      </Paper>
+                    )}
+                  </ScrollArea>
                 </Box>
               </Grid.Col>
 
-              <Grid.Col span={6} h="100%">
-                <Paper withBorder p="md" h="100%" className={classes.preview}>
-                  {selectedPlanDefinition ? (
-                    <Stack gap="sm" h="100%">
+              <Grid.Col span={6}>
+                <Paper withBorder className={classes.preview}>
+                  <ScrollArea style={{ height: 'calc(80vh - 110px)' }} type="scroll">
+                    <Stack gap="sm" px="md" pt="md">
                       <Title order={5}>Preview</Title>
+                      {selectedPlanDefinition ? (
+                        <>
+                          <Stack gap={0} p={0}>
+                            <Text fz="md" fw={500}>
+                              {selectedPlanDefinition.name}
+                            </Text>
+                            <Text fw={500} c="dimmed">
+                              {selectedPlanDefinition.subtitle}
+                            </Text>
+                          </Stack>
 
-                      <Stack gap={0}>
-                        <Text fz="md" fw={500}>
-                          {selectedPlanDefinition.name}
-                        </Text>
-                        <Text fw={500} c="dimmed">
-                          {selectedPlanDefinition.subtitle}
-                        </Text>
-                      </Stack>
-
-                      <ScrollArea>
-                        <Stack gap="xs">
-                          {selectedPlanDefinition.action?.map((action, index) => (
-                            <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
-                              <Text fw={500}>{action.title}</Text>
-                              {action.description && <Text c="dimmed">{action.description}</Text>}
-                            </Card>
-                          ))}
-                        </Stack>
-                      </ScrollArea>
+                          <Stack gap="xs" pb="md">
+                            {selectedPlanDefinition.action?.map((action, index) => (
+                              <Card key={`${action.id}-task-${index}`} withBorder shadow="sm">
+                                <Text fw={500}>{action.title}</Text>
+                                {action.description && <Text c="dimmed">{action.description}</Text>}
+                              </Card>
+                            ))}
+                          </Stack>
+                        </>
+                      ) : (
+                        <Text c="dimmed">Select a template to see preview.</Text>
+                      )}
                     </Stack>
-                  ) : (
-                    <Text c="dimmed">Select a template to see preview</Text>
-                  )}
+                  </ScrollArea>
                 </Paper>
               </Grid.Col>
             </Grid>

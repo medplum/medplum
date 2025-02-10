@@ -486,6 +486,14 @@ function matchesIpAccessRule(remoteAddress: string, ruleValue: string): boolean 
   return ruleValue === '*' || ruleValue === remoteAddress || remoteAddress.startsWith(ruleValue);
 }
 
+function matchesScope(existing: string, candidate: string): boolean {
+  if (!candidate.startsWith(existing)) {
+    // Must be at least prefix match
+    return false;
+  }
+  return candidate.length === existing.length || candidate[existing.length] === '?';
+}
+
 /**
  * Sets the login scope.
  * Ensures that the scope is the same or a subset of the originally requested scope.
@@ -509,8 +517,8 @@ export async function setLoginScope(login: Login, scope: string): Promise<Login>
   const submittedScopes = scope.split(' ');
 
   // If user requests any scope that is not in existing scope, then reject
-  for (const scope of submittedScopes) {
-    if (!existingScopes.includes(scope)) {
+  for (const candidate of submittedScopes) {
+    if (!existingScopes.some((existing) => matchesScope(existing, candidate))) {
       throw new OperationOutcomeError(badRequest('Invalid scope'));
     }
   }
@@ -527,7 +535,10 @@ export async function getAuthTokens(
   user: User | ClientApplication,
   login: Login,
   profile: Reference<ProfileResource>,
-  refreshLifetime?: string
+  options?: {
+    accessLifetime?: string;
+    refreshLifetime?: string;
+  }
 ): Promise<TokenResult> {
   assert.equal(getReferenceString(user), login.user?.reference);
 
@@ -556,14 +567,17 @@ export async function getAuthTokens(
     auth_time: (getDateProperty(login.authTime) as Date).getTime() / 1000,
   });
 
-  const accessToken = await generateAccessToken({
-    client_id: clientId,
-    login_id: login.id as string,
-    sub: user.id,
-    username: user.id as string,
-    scope: login.scope as string,
-    profile: profile.reference as string,
-  });
+  const accessToken = await generateAccessToken(
+    {
+      client_id: clientId,
+      login_id: login.id as string,
+      sub: user.id,
+      username: user.id as string,
+      scope: login.scope as string,
+      profile: profile.reference as string,
+    },
+    { lifetime: options?.accessLifetime }
+  );
 
   const refreshToken = login.refreshSecret
     ? await generateRefreshToken(
@@ -572,7 +586,7 @@ export async function getAuthTokens(
           login_id: login.id as string,
           refresh_secret: login.refreshSecret,
         },
-        refreshLifetime
+        options?.refreshLifetime
       )
     : undefined;
 

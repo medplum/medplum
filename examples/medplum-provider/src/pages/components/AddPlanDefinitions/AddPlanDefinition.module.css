@@ -19,6 +19,13 @@
   flex-direction: column;
 }
 
+.notFound {
+  display: flex;
+  background-color: var(--mantine-color-yellow-0);
+  color: var(--mantine-color-yellow-8);
+  align-items: center;
+  justify-content: center;
+}
 
 [data-mantine-color-scheme="dark"] .preview,
 [data-mantine-color-scheme="dark"] .planDefinition,
@@ -31,3 +38,4 @@
 [data-mantine-color-scheme="light"] .footer {
   background-color: var(--mantine-color-gray-1);
 }
+

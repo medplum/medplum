@@ -1308,8 +1308,8 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   }
 
   /**
-   * Signs out locally.
-   * Does not invalidate tokens with the server.
+   * Signs out the client.
+   * This revokes the current token and clears token from the local cache.
    * @category Authentication
    */
   async signOut(): Promise<void> {

@@ -149,6 +149,11 @@ export interface ClientApplication {
   identityProvider?: IdentityProvider;
 
   /**
+   * Optional configuration to set the access token duration
+   */
+  accessTokenLifetime?: string;
+
+  /**
    * Optional configuration to set the refresh token duration
    */
   refreshTokenLifetime?: string;

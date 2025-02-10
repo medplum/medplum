@@ -386,12 +386,15 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
   const botConsole = new MockConsole();
 
   const sandbox = {
+    console: botConsole,
+    fetch,
     require,
     ContentType,
     Hl7Message,
     MedplumClient,
-    fetch,
-    console: botConsole,
+    TextEncoder,
+    URL,
+    URLSearchParams,
     event: {
       bot: createReference(bot),
       baseUrl: config.vmContextBaseUrl ?? config.baseUrl,

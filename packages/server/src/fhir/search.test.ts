@@ -22,6 +22,7 @@ import {
   CareTeam,
   Coding,
   Communication,
+  Composition,
   Condition,
   DiagnosticReport,
   Encounter,
@@ -4219,6 +4220,45 @@ describe('FHIR Search', () => {
         expect(filterNotEqualsResult.entry).toHaveLength(1);
         expect(filterNotEqualsResult.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
       }));
+
+    test('Reference search with inline resource', async () =>
+      withTestContext(async () => {
+        // Test the Bundle-composition search parameter
+        // "expression" : "Bundle.entry[0].resource as Composition"
+        // This is a special case of inlined resource
+        // This only works if the Composition is a "real" Composition, and exists in the database,
+        // not a purely "virtual" Composition in the Bundle alone
+        // Create a Composition
+        const composition = await repo.createResource<Composition>({
+          resourceType: 'Composition',
+          status: 'final',
+          type: { text: 'test' },
+          date: '2025-01-01',
+          author: [{ reference: 'Practitioner/example' }],
+          title: 'Test Composition',
+        });
+
+        // Create a Bundle with the Composition
+        const bundle = await repo.createResource<Bundle>({
+          resourceType: 'Bundle',
+          type: 'searchset',
+          entry: [{ resource: composition }],
+        });
+
+        // Search for the bundle
+        const searchResult1 = await repo.search({
+          resourceType: 'Bundle',
+          filters: [{ code: 'composition', operator: Operator.EQUALS, value: getReferenceString(composition) }],
+        });
+        expect(searchResult1.entry).toHaveLength(1);
+        expect(searchResult1.entry?.[0]?.resource?.id).toBe(bundle.id);
+
+        // Chained search on the Composition
+        const searchResult2 = await repo.search(parseSearchRequest(`Bundle?composition.date=2025-01-01`));
+        expect(searchResult2.entry).toHaveLength(1);
+        expect(searchResult2.entry?.[0]?.resource?.id).toBe(bundle.id);
+      }));
+
     describe('searchByReference', () => {
       async function createPatients(repo: Repository, count: number): Promise<Patient[]> {
         const patients = [];
