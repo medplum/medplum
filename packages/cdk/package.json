@@ -26,10 +26,10 @@
   "dependencies": {
     "@aws-sdk/types": "3.734.0",
     "@medplum/core": "3.2.31",
-    "aws-cdk-lib": "2.177.0",
-    "cdk": "2.177.0",
-    "cdk-nag": "2.35.8",
-    "cdk-serverless-clamscan": "2.10.22",
+    "aws-cdk-lib": "2.178.1",
+    "cdk": "2.178.1",
+    "cdk-nag": "2.35.14",
+    "cdk-serverless-clamscan": "2.10.28",
     "constructs": "10.4.2",
     "object-hash": "3.0.0"
   },
