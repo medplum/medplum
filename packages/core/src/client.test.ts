@@ -1031,6 +1031,54 @@ describe('Client', () => {
     );
   });
 
+  test('startClientLogin send credentials in header with valid token.client_id', async () => {
+    const patientId = randomUUID();
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const accessToken = createFakeJwt({ cid: clientId });
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes(`Patient/${patientId}`)) {
+        return { resourceType: 'Patient', id: patientId };
+      }
+
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: accessToken,
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch, authCredentialsMethod: 'header' });
+    await client.startClientLogin(clientId, clientSecret);
+
+    const result2 = await client.readResource('Patient', patientId);
+    expect(result2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledWith(
+      `https://api.medplum.com/fhir/R4/Patient/${patientId}`,
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          Authorization: `Bearer ${accessToken}`,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      `https://api.medplum.com/oauth2/token`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + encodeBase64(clientId + ':' + clientSecret),
+          'Content-Type': ContentType.FORM_URL_ENCODED,
+        },
+        body: 'grant_type=client_credentials',
+      })
+    );
+  });
+
   test('Basic auth and startClientLogin with fetched token mismatched client id ', async () => {
     const clientId = 'test-client-id';
     const clientSecret = 'test-client-secret';
