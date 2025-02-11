@@ -110,6 +110,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     setLoading(true);
     const searchParams = new URLSearchParams(query);
     searchParams.append('_sort', '-sent');
+    searchParams.append('sent:missing', 'false');
     const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
     upsertCommunications(communicationsRef.current, searchResult, setCommunications);
     setLoading(false);
