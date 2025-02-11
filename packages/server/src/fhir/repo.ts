@@ -774,7 +774,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
 
   private async validateResourceStrictly(resource: Resource): Promise<void> {
     const logger = getLogger();
-    const start = process.hrtime.bigint();
+    const start = Date.now();
 
     const issues = validateResource(resource);
     for (const issue of issues) {
@@ -786,13 +786,12 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       await this.validateProfiles(resource, profileUrls);
     }
 
-    const elapsedTime = Number(process.hrtime.bigint() - start);
-    const MILLISECONDS = 1e6; // Conversion factor from ns to ms
-    if (elapsedTime > 10 * MILLISECONDS) {
+    const durationMs = Date.now() - start;
+    if (durationMs > 10) {
       logger.debug('High validator latency', {
         resourceType: resource.resourceType,
         id: resource.id,
-        time: elapsedTime / MILLISECONDS,
+        durationMs,
       });
     }
   }
