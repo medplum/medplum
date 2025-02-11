@@ -116,7 +116,7 @@ export const TaskDetails = (): JSX.Element => {
           height: '60vh',
         },
       }}
-      >
+    >
       <Stack h="100%" justify="space-between" gap={0}>
         <Box flex={1} miw={0}>
           <Grid p="md" h="100%">
