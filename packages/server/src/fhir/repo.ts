@@ -755,30 +755,45 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   async validateResource(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
-      const logger = getLogger();
-      const start = process.hrtime.bigint();
+      await this.validateResourceStrictly(resource);
+    } else {
+      // Perform loose validation first to detect any severe issues
+      validateResourceWithJsonSchema(resource);
 
-      const issues = validateResource(resource);
-      for (const issue of issues) {
-        logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0], issue });
-      }
-
-      const profileUrls = resource.meta?.profile;
-      if (profileUrls) {
-        await this.validateProfiles(resource, profileUrls);
-      }
-
-      const elapsedTime = Number(process.hrtime.bigint() - start);
-      const MILLISECONDS = 1e6; // Conversion factor from ns to ms
-      if (elapsedTime > 10 * MILLISECONDS) {
-        logger.debug('High validator latency', {
-          resourceType: resource.resourceType,
-          id: resource.id,
-          time: elapsedTime / MILLISECONDS,
+      // Attempt strict validation and log warnings on failure
+      try {
+        await this.validateResourceStrictly(resource);
+      } catch (err: any) {
+        getLogger().warn('Strict validation would fail', {
+          resource: getReferenceString(resource),
+          err,
         });
       }
-    } else {
-      validateResourceWithJsonSchema(resource);
+    }
+  }
+
+  private async validateResourceStrictly(resource: Resource): Promise<void> {
+    const logger = getLogger();
+    const start = process.hrtime.bigint();
+
+    const issues = validateResource(resource);
+    for (const issue of issues) {
+      logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0], issue });
+    }
+
+    const profileUrls = resource.meta?.profile;
+    if (profileUrls) {
+      await this.validateProfiles(resource, profileUrls);
+    }
+
+    const elapsedTime = Number(process.hrtime.bigint() - start);
+    const MILLISECONDS = 1e6; // Conversion factor from ns to ms
+    if (elapsedTime > 10 * MILLISECONDS) {
+      logger.debug('High validator latency', {
+        resourceType: resource.resourceType,
+        id: resource.id,
+        time: elapsedTime / MILLISECONDS,
+      });
     }
   }
 
