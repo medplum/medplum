@@ -241,7 +241,16 @@ describe('HumanName Lookup Table', () => {
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
-  test('Does not purge unrelated resource types', async () => {
+  test('Purges related resource type', async () => {
+    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+
+    const table = new HumanNameTable();
+    await table.purgeValuesBefore(db, 'Patient', '2024-01-01T00:00:00Z');
+
+    expect(db.query).toHaveBeenCalled();
+  });
+
+  test('Does not purge unrelated resource type', async () => {
     const db = { query: jest.fn() } as unknown as PoolClient;
 
     const table = new HumanNameTable();
