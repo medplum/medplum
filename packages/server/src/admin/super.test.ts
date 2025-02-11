@@ -1,5 +1,5 @@
 import { allOk, badRequest, createReference, getReferenceString } from '@medplum/core';
-import { Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
+import { AsyncJob, Bot, Login, Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
 import { Job, Queue } from 'bullmq';
 import express from 'express';
 import { randomUUID } from 'node:crypto';
@@ -8,6 +8,8 @@ import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
 import { AuthenticatedRequestContext } from '../context';
+import * as database from '../database';
+import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
@@ -541,17 +543,87 @@ describe('Super Admin routes', () => {
     await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
   });
 
-  test('Run data migrations', async () => {
-    const res1 = await request(app)
-      .post('/admin/super/migrate')
-      .set('Authorization', 'Bearer ' + adminAccessToken)
-      .set('Prefer', 'respond-async')
-      .type('json')
-      .send({});
+  describe('Data migrations', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
 
-    expect(res1.status).toStrictEqual(202);
-    expect(res1.headers['content-location']).toBeDefined();
-    await waitForAsyncJob(res1.headers['content-location'], app, adminAccessToken);
+    test('Run data migrations -- Migrations to run or already running', async () => {
+      const res1 = await request(app)
+        .post('/fhir/R4/AsyncJob')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .type('json')
+        .send({
+          resourceType: 'AsyncJob',
+          status: 'accepted',
+          request: 'mock-job',
+          requestTime: new Date().toISOString(),
+        } satisfies AsyncJob);
+
+      expect(res1.status).toStrictEqual(201);
+      expect(res1.body).toBeDefined();
+
+      const asyncJob: AsyncJob = res1.body;
+
+      const maybeStartDataMigrationSpy = jest
+        .spyOn(database, 'maybeStartDataMigration')
+        .mockImplementation(async () => asyncJob);
+
+      const res2 = await request(app)
+        .post('/admin/super/migrate')
+        .set('Authorization', 'Bearer ' + adminAccessToken)
+        .set('Prefer', 'respond-async')
+        .type('json')
+        .send({});
+
+      expect(res2.status).toStrictEqual(202);
+      expect(res2.headers['content-location']).toBeDefined();
+
+      setTimeout(async () => {
+        const exec = new AsyncJobExecutor(getSystemRepo(), asyncJob);
+        await exec.completeJob(getSystemRepo());
+      }, 250);
+
+      await waitForAsyncJob(res2.headers['content-location'], app, adminAccessToken);
+      expect(maybeStartDataMigrationSpy).toHaveBeenCalledTimes(1);
+    });
+
+    describe('Data version asserted', () => {
+      test('Run data migrations -- invalid dataVersion asserted', async () => {
+        const res1 = await request(app)
+          .post('/admin/super/migrate')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ dataVersion: true });
+
+        expect(res1.status).toStrictEqual(400);
+        expect(res1.headers['content-location']).not.toBeDefined();
+        expect(res1.body).toMatchObject(badRequest('dataVersion must be an integer'));
+      });
+
+      test('Run data migrations -- Asserted version is less than or equal to current version', async () => {
+        await database.markPendingDataMigrationCompleted({
+          resourceType: 'AsyncJob',
+          type: 'data-migration',
+          status: 'accepted',
+          request: 'mock-job',
+          requestTime: new Date().toISOString(),
+          dataVersion: 1,
+        });
+
+        const res1 = await request(app)
+          .post('/admin/super/migrate')
+          .set('Authorization', 'Bearer ' + adminAccessToken)
+          .set('Prefer', 'respond-async')
+          .type('json')
+          .send({ dataVersion: 1 });
+
+        expect(res1.status).toStrictEqual(200);
+        expect(res1.headers['content-location']).not.toBeDefined();
+        expect(res1.body).toMatchObject(allOk);
+      });
+    });
   });
 
   describe('Table settings', () => {
