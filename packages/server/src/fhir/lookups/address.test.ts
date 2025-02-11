@@ -5,6 +5,8 @@ import { initAppServices, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
+import { PoolClient } from 'pg';
+import { AddressTable } from './address';
 
 describe('Address Lookup Table', () => {
   const systemRepo = getSystemRepo();
@@ -207,4 +209,13 @@ describe('Address Lookup Table', () => {
       expect(bundle6.entry?.[0]?.resource?.id).toStrictEqual(resource1.id);
     })
   );
+
+  test('Does not purge unrelated resource types', async () => {
+    const db = { query: jest.fn() } as unknown as PoolClient;
+
+    const table = new AddressTable();
+    await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');
+
+    expect(db.query).not.toHaveBeenCalled();
+  });
 });
