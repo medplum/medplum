@@ -772,7 +772,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
-  private async validateResourceStrictly(resource: Resource): Promise<void> {
+  async validateResourceStrictly(resource: Resource): Promise<void> {
     const logger = getLogger();
     const start = Date.now();
 
