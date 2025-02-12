@@ -117,8 +117,6 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
   const editing = props.selectedKey === props.item.id;
   const hovering = props.hoverKey === props.item.id;
 
-  console.log(item.item)
-
   const itemRef = useRef<T>();
   itemRef.current = props.item;
 
