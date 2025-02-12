@@ -1834,7 +1834,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         // Log intentional writes to accounts on non-Patient resources
         if (
           !existing ||
-          new Set(this.extractAccountReferences(existing.meta)).difference(new Set(updatedAccounts)).size > 0
+          new Set(this.extractAccountReferences(existing.meta)).symmetricDifference(new Set(updatedAccounts)).size > 0
         ) {
           getLogger().warn('Write to accounts within compartment', { resource: getReferenceString(updated) });
         }
