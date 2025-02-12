@@ -35,7 +35,7 @@
     "@medplum/eslint-config": "3.2.31",
     "@medplum/fhirtypes": "3.2.31",
     "@medplum/mock": "3.2.31",
-    "@types/node": "22.13.1",
+    "@types/node": "20.17.17",
     "@types/node-fetch": "2.6.12",
     "@types/ssh2-sftp-client": "9.0.4",
     "@vitest/coverage-v8": "3.0.5",

@@ -73,6 +73,14 @@ export interface BaseChatProps extends PaperProps {
   readonly onError?: (err: Error) => void;
 }
 
+/**
+ * BaseChat component for displaying and managing communications.
+ *
+ * **NOTE: The component automatically filters `Communication` resources where the `sent` property is `undefined`.**
+ *
+ * @param props - The BaseChat React props.
+ * @returns The BaseChat React node.
+ */
 export function BaseChat(props: BaseChatProps): JSX.Element | null {
   const {
     title,
@@ -110,6 +118,7 @@ export function BaseChat(props: BaseChatProps): JSX.Element | null {
     setLoading(true);
     const searchParams = new URLSearchParams(query);
     searchParams.append('_sort', '-sent');
+    searchParams.append('sent:missing', 'false');
     const searchResult = await medplum.searchResources('Communication', searchParams, { cache: 'no-cache' });
     upsertCommunications(communicationsRef.current, searchResult, setCommunications);
     setLoading(false);
