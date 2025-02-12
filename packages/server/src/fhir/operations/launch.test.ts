@@ -9,7 +9,7 @@ import { createReference } from '@medplum/core';
 
 const app = express();
 
-describe('ClientApplication/:id/$launch', () => {
+describe('ClientApplication/:id/$smart-launch', () => {
   let accessToken: string;
   let client: ClientApplication;
   let repo: Repository;
@@ -37,7 +37,7 @@ describe('ClientApplication/:id/$launch', () => {
 
   test('Requires ID', async () => {
     const res = await request(app)
-      .get('/fhir/R4/ClientApplication/$launch')
+      .get('/fhir/R4/ClientApplication/$smart-launch')
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(res.status).toBe(404);
@@ -45,7 +45,7 @@ describe('ClientApplication/:id/$launch', () => {
 
   test('Requires launchUri to be configured', async () => {
     const res = await request(app)
-      .get(`/fhir/R4/ClientApplication/${client.id}/$launch`)
+      .get(`/fhir/R4/ClientApplication/${client.id}/$smart-launch`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(res.status).toBe(400);
@@ -57,7 +57,7 @@ describe('ClientApplication/:id/$launch', () => {
     client = await repo.updateResource({ ...client, launchUri });
 
     const res = await request(app)
-      .get(`/fhir/R4/ClientApplication/${client.id}/$launch`)
+      .get(`/fhir/R4/ClientApplication/${client.id}/$smart-launch`)
       .set('Authorization', 'Bearer ' + accessToken)
       .send();
     expect(res.status).toBe(302);
@@ -79,7 +79,7 @@ describe('ClientApplication/:id/$launch', () => {
     const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
 
     const res = await request(app)
-      .get(`/fhir/R4/ClientApplication/${client.id}/$launch`)
+      .get(`/fhir/R4/ClientApplication/${client.id}/$smart-launch`)
       .set('Authorization', 'Bearer ' + accessToken)
       .query({ patient: patient.id })
       .send();
@@ -107,7 +107,7 @@ describe('ClientApplication/:id/$launch', () => {
     });
 
     const res = await request(app)
-      .get(`/fhir/R4/ClientApplication/${client.id}/$launch`)
+      .get(`/fhir/R4/ClientApplication/${client.id}/$smart-launch`)
       .set('Authorization', 'Bearer ' + accessToken)
       .query({ patient: patient.id, encounter: encounter.id })
       .send();
