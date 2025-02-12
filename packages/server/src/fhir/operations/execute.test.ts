@@ -1,4 +1,4 @@
-import { ContentType, Operator, badRequest, createReference, getReferenceString } from '@medplum/core';
+import { ContentType, Operator, badRequest, createReference, getReferenceString, parseJWTPayload } from '@medplum/core';
 import {
   AsyncJob,
   AuditEvent,
@@ -537,7 +537,7 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({});
     expect(res6.status).toBe(200);
-    const selfToken = parseJwt(res6.body.token);
+    const selfToken = parseJWTPayload(res6.body.token);
     expect(selfToken.profile).toMatch(/^ClientApplication\//);
 
     // Execute the bot with ProjectMembership ID
@@ -548,7 +548,7 @@ describe('Execute', () => {
       .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
       .send({});
     expect(res7.status).toBe(200);
-    const membershipToken = parseJwt(res7.body.token);
+    const membershipToken = parseJWTPayload(res7.body.token);
     expect(membershipToken.profile).toEqual(getReferenceString(profile));
 
     // Execute the bot with profile resource ID
@@ -559,7 +559,7 @@ describe('Execute', () => {
       .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
       .send({});
     expect(res8.status).toBe(200);
-    const profileToken = parseJwt(res8.body.token);
+    const profileToken = parseJWTPayload(res8.body.token);
     expect(profileToken.profile).toEqual(getReferenceString(profile));
   });
 
@@ -840,19 +840,3 @@ describe('Execute', () => {
     });
   });
 });
-
-function parseJwt(token: string): Record<string, string> {
-  const base64Url = token.split('.')[1];
-  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-  const jsonPayload = decodeURIComponent(
-    globalThis
-      .atob(base64)
-      .split('')
-      .map(function (c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-      })
-      .join('')
-  );
-
-  return JSON.parse(jsonPayload);
-}
