@@ -536,6 +536,12 @@ Optional threshold for accurate count queries. The server will always perform an
 
 **Default:** `1000000`
 
+### maxSearchOffset
+
+Optional max offset for search queries. 
+
+**Default:** `10000`
+
 ### defaultBotRuntimeVersion
 
 Optional default bot runtime version. See [Bot runtime version](/docs/api/fhir/medplum/bot) for more details.
