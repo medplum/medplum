@@ -260,7 +260,7 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('POST', '/StructureDefinition/$expand-profile', structureDefinitionExpandProfileHandler);
 
   // ClientApplication $launch
-  router.add('GET', '/ClientApplication/:id/$launch', appLaunchHandler);
+  router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
 
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);

@@ -281,7 +281,8 @@ export function serverTimeout(msg?: string): OperationOutcome {
   };
 }
 
-export function redirect(url: string): OperationOutcome {
+export function redirect(url: URL): OperationOutcome {
+  const urlStr = url.toString();
   return {
     resourceType: 'OperationOutcome',
     id: FOUND_ID,
@@ -290,8 +291,8 @@ export function redirect(url: string): OperationOutcome {
         severity: 'information',
         code: 'informational',
         details: {
-          coding: [{ system: 'urn:ietf:rfc:3986', code: url }],
-          text: 'Redirect to ' + url,
+          coding: [{ system: 'urn:ietf:rfc:3986', code: urlStr }],
+          text: 'Redirect to ' + urlStr,
         },
       },
     ],

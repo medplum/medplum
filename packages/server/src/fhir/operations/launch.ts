@@ -1,4 +1,4 @@
-import { badRequest, redirect } from '@medplum/core';
+import { badRequest, concatUrls, redirect } from '@medplum/core';
 import { ClientApplication, OperationDefinition, SmartAppLaunch } from '@medplum/fhirtypes';
 import { getSystemRepo } from '../repo';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
@@ -8,10 +8,10 @@ import { getAuthenticatedContext } from '../../context';
 
 const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
-  name: 'clientapplication-launch',
+  name: 'clientapplication-smart-launch',
   status: 'active',
   kind: 'operation',
-  code: 'launch',
+  code: 'smart-launch',
   experimental: true,
   resource: ['ClientApplication'],
   system: false,
@@ -51,8 +51,8 @@ export async function appLaunchHandler(req: FhirRequest): Promise<FhirResponse> 
   });
 
   const url = new URL(clientApp.launchUri);
-  url.searchParams.set('iss', getConfig().baseUrl + 'fhir/R4/');
+  url.searchParams.set('iss', concatUrls(getConfig().baseUrl, 'fhir/R4/'));
   url.searchParams.set('launch', launch.id as string);
 
-  return [redirect(url.toString())];
+  return [redirect(url)];
 }

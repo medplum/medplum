@@ -90,7 +90,7 @@ describe('Outcomes', () => {
     [allOk, 200],
     [created, 201],
     [accepted('https://example.com'), 202],
-    [redirect('http://example.com'), 302],
+    [redirect(new URL('http://example.com')), 302],
     [notModified, 304],
     [badRequest('bad'), 400],
     [unauthorized, 401],
