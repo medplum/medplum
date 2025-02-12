@@ -264,7 +264,7 @@ function initInternalFhirRouter(): FhirRouter {
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await ctx.repo.validateResource(req.body);
+    await ctx.repo.validateResourceStrictly(req.body);
     return [allOk];
   });
 
