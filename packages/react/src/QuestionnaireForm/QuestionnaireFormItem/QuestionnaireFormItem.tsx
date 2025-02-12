@@ -37,7 +37,7 @@ import { QuestionnaireFormContext } from '../QuestionnaireForm.context';
 export interface QuestionnaireFormItemProps {
   readonly item: QuestionnaireItem;
   readonly index: number;
-  readonly isRequired: boolean | undefined;
+  readonly isRequired?: boolean;
   readonly response: QuestionnaireResponseItem;
   readonly onChange: (newResponseItem: QuestionnaireResponseItem) => void;
 }
