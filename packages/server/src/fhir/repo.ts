@@ -21,6 +21,7 @@ import {
   evalFhirPathTyped,
   forbidden,
   formatSearchQuery,
+  getReferenceString,
   getSearchParameters,
   getStatus,
   gone,
@@ -28,6 +29,7 @@ import {
   isNotFound,
   isObject,
   isOk,
+  isReference,
   isResource,
   normalizeErrorString,
   normalizeOperationOutcome,
@@ -223,6 +225,7 @@ export interface ProcessAllResourcesOptions {
 export class Repository extends FhirRepository<PoolClient> implements Disposable {
   private readonly context: RepositoryContext;
   private conn?: PoolClient;
+  private readonly disposable: boolean = true;
   private transactionDepth = 0;
   private closed = false;
   mode: RepositoryMode;
@@ -230,12 +233,17 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private preCommitCallbacks: (() => Promise<void>)[] = [];
   private postCommitCallbacks: (() => Promise<void>)[] = [];
 
-  constructor(context: RepositoryContext) {
+  constructor(context: RepositoryContext, conn?: PoolClient) {
     super();
     this.context = context;
     this.context.projects?.push?.(r4ProjectId);
     if (!this.context.author?.reference) {
       throw new Error('Invalid author reference');
+    }
+
+    if (conn) {
+      this.conn = conn;
+      this.disposable = false;
     }
 
     // Default to writer mode
@@ -245,7 +253,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   }
 
   clone(): Repository {
-    return new Repository(this.context);
+    return new Repository(this.context, this.conn);
   }
 
   setMode(mode: RepositoryMode): void {
@@ -747,30 +755,44 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    */
   async validateResource(resource: Resource): Promise<void> {
     if (this.context.strictMode) {
-      const logger = getLogger();
-      const start = process.hrtime.bigint();
+      await this.validateResourceStrictly(resource);
+    } else {
+      // Perform loose validation first to detect any severe issues
+      validateResourceWithJsonSchema(resource);
 
-      const issues = validateResource(resource);
-      for (const issue of issues) {
-        logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0], issue });
-      }
-
-      const profileUrls = resource.meta?.profile;
-      if (profileUrls) {
-        await this.validateProfiles(resource, profileUrls);
-      }
-
-      const elapsedTime = Number(process.hrtime.bigint() - start);
-      const MILLISECONDS = 1e6; // Conversion factor from ns to ms
-      if (elapsedTime > 10 * MILLISECONDS) {
-        logger.debug('High validator latency', {
-          resourceType: resource.resourceType,
-          id: resource.id,
-          time: elapsedTime / MILLISECONDS,
+      // Attempt strict validation and log warnings on failure
+      try {
+        await this.validateResourceStrictly(resource);
+      } catch (err: any) {
+        getLogger().warn('Strict validation would fail', {
+          resource: getReferenceString(resource),
+          err,
         });
       }
-    } else {
-      validateResourceWithJsonSchema(resource);
+    }
+  }
+
+  async validateResourceStrictly(resource: Resource): Promise<void> {
+    const logger = getLogger();
+    const start = Date.now();
+
+    const issues = validateResource(resource);
+    for (const issue of issues) {
+      logger.warn(`Validator warning: ${issue.details?.text}`, { project: this.context.projects?.[0], issue });
+    }
+
+    const profileUrls = resource.meta?.profile;
+    if (profileUrls) {
+      await this.validateProfiles(resource, profileUrls);
+    }
+
+    const durationMs = Date.now() - start;
+    if (durationMs > 10) {
+      logger.debug('High validator latency', {
+        resourceType: resource.resourceType,
+        id: resource.id,
+        durationMs,
+      });
     }
   }
 
@@ -1588,23 +1610,28 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
    * @returns The reference column value.
    */
   private buildReferenceColumns(value: any): string | undefined {
-    if (value) {
-      if (typeof value === 'string') {
-        // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
-        // This is a reference string that is not a FHIR reference
-        return value;
+    if (!value) {
+      return undefined;
+    }
+    if (typeof value === 'string') {
+      // Handle "canonical" properties such as QuestionnaireResponse.questionnaire
+      // This is a reference string that is not a FHIR reference
+      return value;
+    }
+    if (typeof value === 'object') {
+      if (isReference(value)) {
+        // Handle normal "reference" properties
+        return value.reference;
       }
-      if (typeof value === 'object') {
-        if (value.reference) {
-          // Handle normal "reference" properties
-          return value.reference;
-        }
-        if (typeof value.identifier === 'object') {
-          // Handle logical (identifier-only) references by putting a placeholder in the column
-          // NOTE(mattwiller 2023-11-01): This is done to enable searches using the :missing modifier;
-          // actual identifier search matching is handled by the `<ResourceType>_Token` lookup tables
-          return `identifier:${value.identifier.system}|${value.identifier.value}`;
-        }
+      if (isResource(value) && value.id) {
+        // Handle inline references
+        return getReferenceString(value);
+      }
+      if (typeof value.identifier === 'object') {
+        // Handle logical (identifier-only) references by putting a placeholder in the column
+        // NOTE(mattwiller 2023-11-01): This is done to enable searches using the :missing modifier;
+        // actual identifier search matching is handled by the `<ResourceType>_Token` lookup tables
+        return `identifier:${value.identifier.system}|${value.identifier.value}`;
       }
     }
     return undefined;
@@ -1825,7 +1852,8 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
         }
       }
     } else {
-      const patients = await getSystemRepo().readReferences(getPatients(updated));
+      const systemRepo = getSystemRepo(this.conn); // Re-use DB connection to preserve transaction state
+      const patients = await systemRepo.readReferences(getPatients(updated));
       for (const patient of patients) {
         if (patient instanceof Error) {
           getLogger().debug('Error setting patient compartment', patient);
@@ -2405,7 +2433,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       // Return early to avoid calling mget() with no args, which is an error
       return [];
     }
-    return (await getRedis().mget(...referenceKeys)).map((cachedValue) =>
+    return (await getRedis().mget(referenceKeys)).map((cachedValue) =>
       cachedValue ? (JSON.parse(cachedValue) as CacheEntry) : undefined
     );
   }
@@ -2480,21 +2508,19 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     return this.context;
   }
 
-  close(): void {
+  [Symbol.dispose](): void {
     this.assertNotClosed();
-    if (this.transactionDepth > 0) {
-      // Bad state, remove connection from pool
-      getLogger().error('Closing Repository with active transaction');
-      this.releaseConnection(new Error('Closing Repository with active transaction'));
-    } else {
-      // Good state, return healthy connection to pool
-      this.releaseConnection();
+    if (this.disposable) {
+      if (this.transactionDepth > 0) {
+        // Bad state, remove connection from pool
+        getLogger().error('Closing Repository with active transaction');
+        this.releaseConnection(new Error('Closing Repository with active transaction'));
+      } else {
+        // Good state, return healthy connection to pool
+        this.releaseConnection();
+      }
     }
     this.closed = true;
-  }
-
-  [Symbol.dispose](): void {
-    this.close();
   }
 
   private assertNotClosed(): void {
@@ -2555,16 +2581,19 @@ function getProfileCacheKey(projectId: string, url: string): string {
   return `Project/${projectId}/StructureDefinition/${url}`;
 }
 
-export function getSystemRepo(): Repository {
-  return new Repository({
-    superAdmin: true,
-    strictMode: true,
-    extendedMode: true,
-    author: {
-      reference: 'system',
+export function getSystemRepo(conn?: PoolClient): Repository {
+  return new Repository(
+    {
+      superAdmin: true,
+      strictMode: true,
+      extendedMode: true,
+      author: {
+        reference: 'system',
+      },
+      // System repo does not have an associated Project; it can write to any
     },
-    // System repo does not have an associated Project; it can write to any
-  });
+    conn
+  );
 }
 
 function lowercaseFirstLetter(str: string): string {

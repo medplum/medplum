@@ -59828,6 +59828,10 @@
           "description": "Optional external Identity Provider (IdP) for the client application.",
           "$ref": "#/definitions/IdentityProvider"
         },
+        "accessTokenLifetime": {
+          "description": "Optional configuration to set the access token duration",
+          "$ref": "#/definitions/string"
+        },
         "refreshTokenLifetime": {
           "description": "Optional configuration to set the refresh token duration",
           "$ref": "#/definitions/string"
@@ -61103,6 +61107,10 @@
         "dataVersion": {
           "description": "The data version of the migration this job represents.",
           "$ref": "#/definitions/integer"
+        },
+        "minServerVersion": {
+          "description": "The minimum Medplum server version required to run this job.",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,

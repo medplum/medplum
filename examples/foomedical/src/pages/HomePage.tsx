@@ -39,11 +39,11 @@ const carouselItems = [
   },
   {
     img: <IconChecklist />,
-    title: 'Verify Email',
+    title: 'Patient Intake Questionnaire',
     description:
       'Lorem ipsum at porta donec ultricies ut, arcu morbi amet arcu ornare, curabitur pharetra magna tempus',
-    url: '/account',
-    label: 'Send verification email',
+    url: '/patient-intake-questionnaire',
+    label: 'Start Form',
   },
   {
     img: <IconChecklist />,

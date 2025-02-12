@@ -916,6 +916,27 @@
             }
           },
           {
+            "id" : "ClientApplication.accessTokenLifetime",
+            "path" : "ClientApplication.accessTokenLifetime",
+            "definition" : "Optional configuration to set the access token duration",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "constraint" : [{
+              "key" : "clapp-1",
+              "severity" : "error",
+              "human" : "Token lifetime must be a valid string representing time duration (eg. 2w, 1h)",
+              "expression" : "$this.matches('^[0-9]+[smhdwy]$')"
+            }],
+            "base": {
+              "path" : "ClientApplication.accessTokenLifetime",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ClientApplication.refreshTokenLifetime",
             "path" : "ClientApplication.refreshTokenLifetime",
             "definition" : "Optional configuration to set the refresh token duration",
@@ -5197,7 +5218,15 @@
               "path" : "AsyncJob",
               "min" : 0,
               "max" : "*"
-            }
+            },
+            "constraint": [
+              {
+                "key" : "ajb-1",
+                "severity" : "error",
+                "human" : "Async jobs of type 'data-migration' require a 'dataVersion' and 'minServerVersion'.",
+                "expression" : "type.exists() and type = 'data-migration' implies dataVersion.exists() and minServerVersion.exists()"
+              }
+            ]
           },
           {
             "id" : "AsyncJob.id",
@@ -5437,6 +5466,21 @@
             },
             "type" : [{
               "code" : "integer"
+            }]
+          },
+          {
+            "id" : "AsyncJob.minServerVersion",
+            "path" : "AsyncJob.minServerVersion",
+            "definition" : "The minimum Medplum server version required to run this job.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.minServerVersion",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
             }]
           }
         ]
