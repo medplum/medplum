@@ -76,7 +76,7 @@ export interface BaseChatProps extends PaperProps {
 /**
  * BaseChat component for displaying and managing communications.
  * Component filters communcations where property sent is undefined.
- * 
+ *
  * @param props - TheBaseChat React props.
  * @returns The BaseChat React node.
  */
