@@ -1832,10 +1832,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (updatedAccounts && this.canWriteAccount()) {
       if (updated.resourceType !== 'Patient') {
         // Log intentional writes to accounts on non-Patient resources
-        if (
-          !existing ||
-          new Set(this.extractAccountReferences(existing.meta)).symmetricDifference(new Set(updatedAccounts)).size > 0
-        ) {
+        if (!existing || !this.sameReferences(this.extractAccountReferences(existing.meta), updatedAccounts)) {
           getLogger().warn('Write to accounts within compartment', { resource: getReferenceString(updated) });
         }
       }
@@ -1905,6 +1902,36 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     } else {
       return arrayify(meta.accounts ?? meta.account);
     }
+  }
+
+  private sameReferences(a: Reference[] | undefined, b: Reference[] | undefined): boolean {
+    if (!a && !b) {
+      return true;
+    }
+    if (!a || !b) {
+      return false;
+    }
+    if (a.length !== b.length) {
+      return false;
+    }
+
+    const aRefs = new Set<string>();
+    for (const ref of a) {
+      if (ref.reference) {
+        aRefs.add(ref.reference);
+      }
+    }
+
+    const bRefs = new Set<string>();
+    for (const ref of b) {
+      if (ref.reference) {
+        if (!aRefs.has(ref.reference)) {
+          return false;
+        }
+        bRefs.add(ref.reference);
+      }
+    }
+    return aRefs.size === bRefs.size;
   }
 
   /**
