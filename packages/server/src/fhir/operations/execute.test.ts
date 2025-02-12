@@ -521,7 +521,6 @@ describe('Execute', () => {
       .set('Authorization', 'Bearer ' + accessToken1)
       .send({
         code: `
-          const { getReferenceString } = require("@medplum/core");
           exports.handler = async function (medplum, event) {
             return {
               token: medplum.getAccessToken(),
@@ -536,7 +535,6 @@ describe('Execute', () => {
       .post(`/fhir/R4/Bot/${bot.id}/$execute`)
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
-      .set('Cookie', '__medplum-test-cookie=123')
       .send({});
     expect(res6.status).toBe(200);
     const selfToken = parseJwt(res6.body.token);
@@ -548,7 +546,6 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
-      .set('Cookie', '__medplum-test-cookie=123')
       .send({});
     expect(res7.status).toBe(200);
     const membershipToken = parseJwt(res7.body.token);
@@ -560,7 +557,6 @@ describe('Execute', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .set('Authorization', 'Bearer ' + accessToken1)
       .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
-      .set('Cookie', '__medplum-test-cookie=123')
       .send({});
     expect(res8.status).toBe(200);
     const profileToken = parseJwt(res8.body.token);
@@ -849,7 +845,7 @@ function parseJwt(token: string): Record<string, string> {
   const base64Url = token.split('.')[1];
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
   const jsonPayload = decodeURIComponent(
-    global
+    globalThis
       .atob(base64)
       .split('')
       .map(function (c) {
