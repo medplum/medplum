@@ -1830,15 +1830,6 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
   private async getAccounts(existing: Resource | undefined, updated: Resource): Promise<Reference[] | undefined> {
     const updatedAccounts = this.extractAccountReferences(updated.meta);
     if (updatedAccounts && this.canWriteAccount()) {
-      if (updated.resourceType !== 'Patient') {
-        // Log intentional writes to accounts on non-Patient resources
-        if (
-          !existing ||
-          new Set(this.extractAccountReferences(existing.meta)).symmetricDifference(new Set(updatedAccounts)).size > 0
-        ) {
-          getLogger().warn('Write to accounts within compartment', { resource: getReferenceString(updated) });
-        }
-      }
       // If the user specifies an account, allow it if they have permission.
       return updatedAccounts;
     }
