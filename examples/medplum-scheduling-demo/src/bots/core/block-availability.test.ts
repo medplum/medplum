@@ -85,7 +85,7 @@ describe('Block Availability', async () => {
     // Check that the slot was created
     const createdSlot = responseBundle.entry?.[0].resource as Slot;
     expect(createdSlot.resourceType).toBe('Slot');
-    expect(createdSlot.schedule).toEqual(createReference(schedule));
+    expect(createdSlot.schedule).toStrictEqual(createReference(schedule));
     expect(createdSlot.start).toBe(input.start);
     expect(createdSlot.end).toBe(input.end);
     expect(createdSlot.status).toBe('busy-unavailable');
@@ -152,7 +152,7 @@ describe('Block Availability', async () => {
     // Check that the slot was created
     const createdSlot = responseBundle.entry?.[0].resource as Slot;
     expect(createdSlot.resourceType).toBe('Slot');
-    expect(createdSlot.schedule).toEqual(createReference(schedule));
+    expect(createdSlot.schedule).toStrictEqual(createReference(schedule));
     expect(createdSlot.start).toBe(input.start);
     expect(createdSlot.end).toBe(input.end);
     expect(createdSlot.status).toBe('busy-unavailable');
@@ -188,7 +188,7 @@ describe('Block Availability', async () => {
     // Check that the slot was created
     const createdSlot = responseBundle.entry?.[0].resource as Slot;
     expect(createdSlot.resourceType).toBe('Slot');
-    expect(createdSlot.schedule).toEqual(createReference(schedule));
+    expect(createdSlot.schedule).toStrictEqual(createReference(schedule));
     expect(createdSlot.start).toBe(input.start);
     expect(createdSlot.end).toBe(input.end);
     expect(createdSlot.status).toBe('busy-unavailable');
@@ -224,7 +224,7 @@ describe('Block Availability', async () => {
     // Check that the slot was created
     const createdSlot = responseBundle.entry?.[0].resource as Slot;
     expect(createdSlot.resourceType).toBe('Slot');
-    expect(createdSlot.schedule).toEqual(createReference(schedule));
+    expect(createdSlot.schedule).toStrictEqual(createReference(schedule));
     expect(createdSlot.start).toBe(input.start);
     expect(createdSlot.end).toBe(input.end);
     expect(createdSlot.status).toBe('busy-unavailable');

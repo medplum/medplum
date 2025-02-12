@@ -50,7 +50,7 @@ EnSage leveraged a suite of Medplum features to create a comprehensive and effic
 4. [Subscriptions](/docs/subscriptions): In this implementation, in response to [questionnaires](/docs/questionnaires/basic-tutorial), subscriptions are triggered, setting off automated workflows like notifications, data synchronization and more.
 5. [Scheduling](/docs/scheduling): Integration between [Acuity](https://www.acuityscheduling.com/) and [FHIR Schedule](/docs/api/fhir/resources/schedule) provided a robust solution for managing appointments and optimizing healthcare service delivery.
 6. [Charting](/docs/charting): A system for documenting encounters, including details like CPT and diagnosis codes, was created. This facilitated a comprehensive and precise record-keeping process.
-7. [Billing and Revenue Cycle](/docs/billing): An automated integration with [Candid Health](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/candid-health) enabled Medicare (CMS) billing for providers on the platform.
+7. [Billing and Revenue Cycle](/docs/billing): An automated integration with [Candid Health](https://github.com/medplum/medplum-demo-bots/tree/main/src/candid-health) enabled Medicare (CMS) billing for providers on the platform.
 8. [Open source](https://github.com/medplum/medplum): The development team used Typescript for the entire stack. The Medplum open source code, [issue tracking](https://github.com/medplum/medplum/issues) and community features helped streamline development and speed learning.
 
 Below is an architecture diagram showing how the different components fit together.

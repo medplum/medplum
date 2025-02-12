@@ -38,13 +38,14 @@ Allow patients to message their provider or care team in a chat-like interface. 
 
 Giving patients access to only their data can be enabled via [access controls](/docs/access/access-policies).
 
-## Case Studies
-
-- At home lab provider [Lumba Health](https://lumba.health/) used the `foomedical` template to build [my.lumba.health](https://my.lumba.health/) patient records portal.
-
 ## Demos and Reference Material
 
 - Sample app [Foo Medical](https://www.foomedical.com) live for testing
 - [Foo Medical Source Code](https://github.com/medplum/foomedical)
-- [Sample data generation script](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/sample-account-setup.ts)
+- [Sample data generation script](https://github.com/medplum/medplum-demo-bots/blob/main/src/sample-account-setup.ts)
 - [UI components on Storybook](https://storybook.medplum.com)
+
+## Case Studies
+
+- At home lab provider [Lumba Health](https://lumba.health/) used the `foomedical` template to build [my.lumba.health](https://my.lumba.health/) patient records portal.
+

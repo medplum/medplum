@@ -1,3 +1,4 @@
+import { badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { createSign } from 'crypto';
 import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
@@ -60,7 +61,7 @@ export interface BinaryStorage {
 
   copyFile(sourceKey: string, destinationKey: string): Promise<void>;
 
-  getPresignedUrl(binary: Binary): string;
+  getPresignedUrl(binary: Binary): Promise<string>;
 }
 
 /**
@@ -126,18 +127,20 @@ class FileSystemStorage implements BinaryStorage {
     copyFileSync(resolve(this.baseDir, sourceKey), resolve(this.baseDir, destinationKey));
   }
 
-  getPresignedUrl(binary: Binary): string {
+  async getPresignedUrl(binary: Binary): Promise<string> {
     const config = getConfig();
     const storageBaseUrl = config.storageBaseUrl;
-    const result = new URL(`${storageBaseUrl}${binary.id}/${binary.meta?.versionId}`);
+    const result = new URL(concatUrls(storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`));
 
     const dateLessThan = new Date();
     dateLessThan.setHours(dateLessThan.getHours() + 1);
     result.searchParams.set('Expires', dateLessThan.getTime().toString());
 
-    const privateKey = { key: config.signingKey, passphrase: config.signingKeyPassphrase };
-    const signature = createSign('sha256').update(result.toString()).sign(privateKey, 'base64');
-    result.searchParams.set('Signature', signature);
+    if (config.signingKey) {
+      const privateKey = { key: config.signingKey, passphrase: config.signingKeyPassphrase };
+      const signature = createSign('sha256').update(result.toString()).sign(privateKey, 'base64');
+      result.searchParams.set('Signature', signature);
+    }
 
     return result.toString();
   }
@@ -232,10 +235,10 @@ const BLOCKED_CONTENT_TYPES = [
  */
 export function checkFileMetadata(filename: string | undefined, contentType: string | undefined): void {
   if (checkFileExtension(filename)) {
-    throw new Error('Invalid file extension');
+    throw new OperationOutcomeError(badRequest('Invalid file extension'));
   }
   if (checkContentType(contentType)) {
-    throw new Error('Invalid content type');
+    throw new OperationOutcomeError(badRequest('Invalid content type'));
   }
 }
 

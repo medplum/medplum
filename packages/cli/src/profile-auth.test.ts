@@ -88,7 +88,7 @@ describe('Profiles Auth', () => {
       '/oauth2/token',
     ]);
 
-    expect(profile.getObject('activeLogin')).toEqual({
+    expect(profile.getObject('activeLogin')).toStrictEqual({
       accessToken: accessTokenFromClientId,
     });
   });
@@ -156,7 +156,7 @@ describe('Profiles Auth', () => {
       jwtObj.audience,
     ]);
 
-    expect(profile.getObject('activeLogin')).toEqual({
+    expect(profile.getObject('activeLogin')).toStrictEqual({
       accessToken: accessTokenFromClientId,
     });
   });

@@ -27,5 +27,5 @@ test('Validate StructureDefinition with contentReference missing base', () => {
     code: { text: 'A test' },
   } satisfies Observation);
 
-  expect(issues.length).toEqual(0);
+  expect(issues.length).toStrictEqual(0);
 });

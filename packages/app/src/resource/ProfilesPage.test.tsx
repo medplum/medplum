@@ -103,6 +103,6 @@ describe('ProfilesPage', () => {
     });
 
     const updatedPatient = await medplum.readResource('Patient', patient.id as string);
-    expect(updatedPatient.meta?.profile?.includes(fishPatientProfile.url)).toEqual(false);
+    expect(updatedPatient.meta?.profile).toEqual(undefined);
   });
 });

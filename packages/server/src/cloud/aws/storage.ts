@@ -1,6 +1,8 @@
 import { CopyObjectCommand, GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl as s3GetSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { getSignedUrl } from '@aws-sdk/cloudfront-signer';
 import { Upload } from '@aws-sdk/lib-storage';
+import { concatUrls } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { Readable } from 'stream';
 import { getConfig } from '../../config';
@@ -112,10 +114,16 @@ export class S3Storage implements BinaryStorage {
    * @param binary - Binary resource.
    * @returns Presigned URL to access the binary data.
    */
-  getPresignedUrl(binary: Binary): string {
+  async getPresignedUrl(binary: Binary): Promise<string> {
     const config = getConfig();
+
+    if (!config.signingKey || !config.signingKeyId) {
+      const Key = this.getKey(binary);
+      return s3GetSignedUrl(this.client, new GetObjectCommand({ Bucket: this.bucket, Key }), { expiresIn: 3600 });
+    }
+
     const storageBaseUrl = config.storageBaseUrl;
-    const unsignedUrl = `${storageBaseUrl}${binary.id}/${binary.meta?.versionId}`;
+    const unsignedUrl = concatUrls(storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`);
     const dateLessThan = new Date();
     dateLessThan.setHours(dateLessThan.getHours() + 1);
     return getSignedUrl({

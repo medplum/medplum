@@ -1,6 +1,8 @@
 import {
   allOk,
   badRequest,
+  ContentType,
+  deepClone,
   DEFAULT_SEARCH_COUNT,
   forbidden,
   getResourceTypes,
@@ -38,7 +40,7 @@ import {
   validate,
   ValidationContext,
 } from 'graphql';
-import { FhirRequest, FhirResponse, FhirRouter } from '../fhirrouter';
+import { FhirRequest, FhirResponse, FhirRouteOptions, FhirRouter } from '../fhirrouter';
 import { FhirRepository, RepositoryMode } from '../repo';
 import { getGraphQLInputType } from './input-types';
 import { buildGraphQLOutputType, getGraphQLOutputType, outputTypeCache } from './output-types';
@@ -84,12 +86,14 @@ interface ConnectionEdge {
  * @param req - The request details.
  * @param repo - The current user FHIR repository.
  * @param router - The router for router options.
+ * @param options - Additional route options.
  * @returns The response.
  */
 export async function graphqlHandler(
   req: FhirRequest,
   repo: FhirRepository,
-  router: FhirRouter
+  router: FhirRouter,
+  options?: FhirRouteOptions
 ): Promise<FhirResponse> {
   const { query, operationName, variables } = req.body;
   if (!query) {
@@ -115,8 +119,8 @@ export async function graphqlHandler(
     return [forbidden];
   }
 
-  if (includesMutations(query)) {
-    repo.setMode(RepositoryMode.WRITER);
+  if (!options?.batch && !includesMutations(query)) {
+    repo.setMode(RepositoryMode.READER);
   }
 
   const dataLoader = new DataLoader<Reference, Resource>((keys) => repo.readReferences(keys));
@@ -140,7 +144,7 @@ export async function graphqlHandler(
     });
   }
 
-  return [allOk, result];
+  return [allOk, result, { contentType: ContentType.JSON }];
 }
 
 /**
@@ -384,7 +388,10 @@ async function resolveByCreate(
   if (resourceArgs.resourceType !== resourceType) {
     throw new OperationOutcomeError(badRequest('Invalid resourceType'));
   }
-  return ctx.repo.createResource(resourceArgs as Resource);
+  // We have to deep clone the args before we try to make them into a resource, since the args are parsed from the request
+  // as objects with a null prototype (via Object.create(null)), which means that tree of objects have no `valueOf` method which
+  // we need for evalFhirPath to work properly
+  return ctx.repo.createResource(deepClone(resourceArgs) as Resource);
 }
 
 /**
@@ -413,7 +420,10 @@ async function resolveByUpdate(
   if (resourceId !== resourceArgs.id) {
     throw new OperationOutcomeError(badRequest('Invalid ID'));
   }
-  return ctx.repo.updateResource(resourceArgs as Resource);
+  // We have to deep clone the args before we try to make them into a resource, since the args are parsed from the request
+  // as objects with a null prototype (via Object.create(null)), which means that tree of objects have no `valueOf` method which
+  // we need for evalFhirPath to work properly
+  return ctx.repo.updateResource(deepClone(resourceArgs) as Resource);
 }
 
 /**
@@ -559,10 +569,10 @@ class QueryCostVisitor {
   OperationDefinition(node: OperationDefinitionNode): void {
     let cost = 0;
     for (const child of node.selectionSet.selections) {
-      const startTime = process.hrtime.bigint();
+      const startTime = performance.now();
       const childCost = this.calculateCost(child);
       cost += childCost;
-      this.log(child.kind, 'node has final cost', childCost, '(', process.hrtime.bigint() - startTime, 'ns)');
+      this.log(child.kind, 'node has final cost', childCost, '(', performance.now() - startTime, 'ms)');
 
       if (cost > this.maxCost) {
         // this.context.reportError(

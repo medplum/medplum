@@ -1,18 +1,19 @@
 import {
   buildTypeName,
   capitalize,
+  FileBuilder,
   getAllDataTypes,
   indexStructureDefinitionBundle,
   InternalSchemaElement,
   InternalTypeSchema,
   isLowerCase,
   isResourceTypeSchema,
+  wordWrap,
 } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, ElementDefinitionType } from '@medplum/fhirtypes';
 import { mkdirSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
-import { FileBuilder, wordWrap } from './filebuilder';
 import { getValueSetValues } from './valuesets';
 
 export function main(): void {

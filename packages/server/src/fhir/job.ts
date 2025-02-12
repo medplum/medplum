@@ -1,9 +1,14 @@
-import { allOk } from '@medplum/core';
-import { AsyncJob } from '@medplum/fhirtypes';
+import { accepted, allOk, isOk } from '@medplum/core';
+import { FhirRequest, HttpMethod } from '@medplum/fhir-router';
+import { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
+import { getConfig } from '../config';
 import { getAuthenticatedContext } from '../context';
-import { sendResponse } from './response';
+import { asyncJobCancelHandler } from './operations/asyncjobcancel';
+import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
+import { sendOutcome } from './outcomes';
+import { sendFhirResponse } from './response';
 
 // Asychronous Job Status API
 // https://hl7.org/fhir/async-bundle.html
@@ -19,15 +24,56 @@ jobRouter.get(
     const { id } = req.params;
     const asyncJob = await ctx.repo.readResource<AsyncJob>('AsyncJob', id);
 
+    let outcome: OperationOutcome;
     if (!finalJobStatusCodes.includes(asyncJob.status as string)) {
-      res.status(202).send(asyncJob).end();
-      return;
+      const exec = new AsyncJobExecutor(ctx.repo, asyncJob);
+      outcome = accepted(exec.getContentLocation(getConfig().baseUrl));
+    } else {
+      outcome = allOk;
     }
 
-    await sendResponse(req, res, allOk, asyncJob);
+    return sendFhirResponse(req, res, outcome, asyncJob);
   })
 );
 
-jobRouter.delete('/:id/status', (req: Request, res: Response) => {
-  res.sendStatus(202);
-});
+jobRouter.delete(
+  '/:id/status',
+  asyncWrap(async (req: Request, res: Response) => {
+    let normalizedOutcome: OperationOutcome;
+    const request: FhirRequest = {
+      method: req.method as HttpMethod,
+      url: req.originalUrl.replace('/fhir/R4', ''),
+      pathname: '',
+      params: req.params,
+      query: {},
+      body: req.body,
+      headers: req.headers,
+    };
+    const [outcome] = await asyncJobCancelHandler(request);
+    if (isOk(outcome)) {
+      // We need an `accepted` outcome without the location set since the spec for async requests only wants the 202 header
+      // And an optional OperationOutcome body
+      // Source: https://www.hl7.org/fhir/R4/async.html#3.1.6.3.0.2
+      /* 3.1.6.3.0.2 Response - Success
+       * HTTP Status Code of 202 Accepted
+       * Optionally a FHIR OperationOutcome in the body
+       */
+      normalizedOutcome = {
+        resourceType: 'OperationOutcome',
+        id: 'accepted',
+        issue: [
+          {
+            severity: 'information',
+            code: 'informational',
+            details: {
+              text: 'Accepted',
+            },
+          },
+        ],
+      };
+    } else {
+      normalizedOutcome = outcome;
+    }
+    sendOutcome(res, normalizedOutcome);
+  })
+);

@@ -1,4 +1,4 @@
-import { OperationOutcomeError, Operator, notFound, parseSearchRequest, sleep } from '@medplum/core';
+import { OperationOutcomeError, Operator, conflict, notFound, parseSearchRequest, sleep } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
@@ -422,7 +422,7 @@ describe('FHIR Repo Transactions', () => {
       });
 
       const results = await Promise.allSettled([tx1, tx2]);
-      expect(results.map((r) => r.status)).toContain('rejected');
+      expect(results.map((r) => r.status)).not.toContain('rejected');
     }));
 
   test('Conflicting concurrent conditional creates', () =>
@@ -457,7 +457,7 @@ describe('FHIR Repo Transactions', () => {
       );
 
       const results = await Promise.allSettled([tx1, tx2]);
-      expect(results.map((r) => r.status)).toContain('rejected');
+      expect(results.map((r) => r.status)).not.toContain('rejected');
     }));
 
   test('Allowed concurrent conditional creates', () =>
@@ -493,6 +493,7 @@ describe('FHIR Repo Transactions', () => {
     withTestContext(async () => {
       const existing = await repo.createResource<Patient>({ resourceType: 'Patient' });
 
+      // Simulate patch operation with long delay in the middle to ensure conflict
       const tx1 = repo.withTransaction(async () => {
         await repo.searchResources(parseSearchRequest('Patient?_id=' + existing.id)); // Ensure request hits the DB
         await sleep(500);
@@ -506,6 +507,123 @@ describe('FHIR Repo Transactions', () => {
 
       const results = await Promise.allSettled([tx1, tx2]);
       await expect(repo.readResource(existing.resourceType, existing.id as string)).resolves.toBeDefined();
-      expect(results.map((r) => r.status)).toContain('rejected');
+      expect(results.map((r) => r.status)).not.toContain('rejected');
+    }));
+
+  test('Retry on conflict', () =>
+    withTestContext(async () => {
+      let returnValue: boolean | undefined;
+      const txFn = jest.fn(async (): Promise<boolean> => {
+        if (returnValue) {
+          return returnValue;
+        } else {
+          returnValue = true;
+          // Emit transaction conflict (Postgres error code 40001)
+          throw new OperationOutcomeError(conflict('transaction', '40001'));
+        }
+      });
+
+      await expect(repo.withTransaction(txFn)).resolves.toStrictEqual(true);
+      expect(txFn).toHaveBeenCalledTimes(2);
+    }));
+
+  test('Only retry specific transaction conflict', () =>
+    withTestContext(async () => {
+      let returnValue: boolean | undefined;
+      const txFn = jest.fn(async (): Promise<boolean> => {
+        if (returnValue) {
+          return returnValue;
+        } else {
+          returnValue = true;
+          // Emit some other conflict
+          throw new OperationOutcomeError(conflict('a different conflict', 'other-error'));
+        }
+      });
+
+      await expect(repo.withTransaction(txFn)).rejects.toThrow('a different conflict');
+      expect(txFn).toHaveBeenCalledTimes(1);
+    }));
+
+  test('Do not retry combined transaction conflict and other errors', () =>
+    withTestContext(async () => {
+      let returnValue: boolean | undefined;
+      const txFn = jest.fn(async (): Promise<boolean> => {
+        if (returnValue) {
+          return returnValue;
+        } else {
+          returnValue = true;
+          // Emit combined errors
+          const outcome = conflict('transaction conflict', '40001');
+          outcome.issue.push({ code: 'invalid', severity: 'error', details: { text: 'invalid data' } });
+          throw new OperationOutcomeError(outcome);
+        }
+      });
+
+      await expect(repo.withTransaction(txFn)).rejects.toThrow('transaction conflict; invalid data');
+      expect(txFn).toHaveBeenCalledTimes(1);
+    }));
+
+  test('Retry transaction only once before emitting failure', () =>
+    withTestContext(async () => {
+      const txFn = jest.fn(async (): Promise<boolean> => {
+        // Emit transaction conflict (Postgres error code 40001)
+        throw new OperationOutcomeError(conflict('transaction conflict', '40001'));
+      });
+
+      await expect(repo.withTransaction(txFn)).rejects.toThrow('transaction conflict');
+      expect(txFn).toHaveBeenCalledTimes(2);
+    }));
+
+  test('Retry nested transaction', () =>
+    withTestContext(async () => {
+      let returnValue: boolean | undefined;
+      const txFn = jest.fn(async (): Promise<boolean> => {
+        if (returnValue) {
+          return returnValue;
+        } else {
+          returnValue = true;
+          // Emit transaction conflict (Postgres error code 40001)
+          throw new OperationOutcomeError(conflict('transaction', '40001'));
+        }
+      });
+      const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
+
+      await expect(repo.withTransaction(outerTx)).resolves.toStrictEqual(true);
+      expect(txFn).toHaveBeenCalledTimes(2);
+      expect(outerTx).toHaveBeenCalledTimes(2);
+    }));
+
+  test('Retry nested transaction to failure', () =>
+    withTestContext(async () => {
+      const txFn = jest.fn(async (): Promise<boolean> => {
+        // Emit transaction conflict (Postgres error code 40001)
+        throw new OperationOutcomeError(conflict('transaction conflict', '40001'));
+      });
+      const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
+
+      await expect(repo.withTransaction(outerTx)).rejects.toThrow('transaction conflict');
+      expect(txFn).toHaveBeenCalledTimes(2);
+      expect(outerTx).toHaveBeenCalledTimes(2);
+    }));
+
+  test('Nested transaction does not retry independently', () =>
+    withTestContext(async () => {
+      const txFn = jest.fn(async (): Promise<boolean> => {
+        // Emit transaction conflict (Postgres error code 40001)
+        throw new OperationOutcomeError(conflict('transaction conflict', '40001'));
+      });
+      const outerTx = jest.fn(async (): Promise<boolean> => {
+        try {
+          await repo.withTransaction(txFn);
+          return true;
+        } catch (_) {
+          // Swallow the error
+          return false;
+        }
+      });
+
+      await expect(repo.withTransaction(outerTx)).resolves.toStrictEqual(false);
+      expect(txFn).toHaveBeenCalledTimes(1);
+      expect(outerTx).toHaveBeenCalledTimes(1);
     }));
 });

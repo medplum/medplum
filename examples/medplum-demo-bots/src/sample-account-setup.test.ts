@@ -43,7 +43,7 @@ describe('Sample Account Setup', async () => {
     expect(observations.length).toBeGreaterThanOrEqual(1);
 
     const tasks = await medplum.searchResources('Task', `owner=${getReferenceString(patient)}`);
-    expect(tasks.length).toEqual(3);
+    expect(tasks.length).toStrictEqual(3);
     expect(tasks.filter((t) => t.status === 'completed')).toHaveLength(2);
     expect(tasks.filter((t) => t.status === 'in-progress')).toHaveLength(1);
   });

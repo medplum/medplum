@@ -12514,6 +12514,17 @@
           ]
         },
         {
+          "id": "Bot.timeout",
+          "path": "Bot.timeout",
+          "min": 0,
+          "max": "1",
+          "type": [
+            {
+              "code": "integer"
+            }
+          ]
+        },
+        {
           "id": "Bot.photo",
           "path": "Bot.photo",
           "min": 0,

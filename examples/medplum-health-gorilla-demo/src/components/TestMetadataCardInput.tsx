@@ -53,7 +53,7 @@ export function TestMetadataCardInput({ test, metadata, error }: TestMetadataCar
 
             <TextInput
               label="Notes"
-              value={metadata.notes}
+              value={metadata.notes ?? ''}
               onChange={(event) => {
                 updateTestMetadata(test, { notes: event.currentTarget.value });
               }}

@@ -72,6 +72,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   "status": "active",
   "channel": [
     {
+      "name": "ADT Channel",
       "endpoint": {
         "reference": "Endpoint/my-endpoint-uuid",
         "display": "Test Endpoint"
@@ -155,6 +156,12 @@ For a more comprehensive end-to-end test of HL7 over MLLP, we recommend using [S
 
 ```bash
 docker run --rm -it -p 8000:8000 eu.gcr.io/simhospital-images/simhospital:latest health/simulator -output mllp -mllp_destination <ip_address>:<port> -pathways_per_hour 720
+```
+
+If you are testing your local setup on Linux/Mac with the agent running in docker you will need to do the following:
+
+```bash
+docker run --rm -it -p 8000:8000 eu.gcr.io/simhospital-images/simhospital:latest health/simulator -output mllp -mllp_destination host.docker.internal:<port> -pathways_per_hour 720
 ```
 
 ## Audit Events and Logging

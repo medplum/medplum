@@ -173,7 +173,7 @@ describe('Agent Push', () => {
         destination: getReferenceString(device),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Must specify agent ID or identifier');
+    expect(res.body.issue[0].details.text).toStrictEqual('Must specify agent ID or identifier');
   });
 
   test('Missing content type', async () => {
@@ -186,7 +186,7 @@ describe('Agent Push', () => {
         destination: getReferenceString(device),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Missing contentType parameter');
+    expect(res.body.issue[0].details.text).toStrictEqual('Missing contentType parameter');
   });
 
   test('Missing body', async () => {
@@ -199,7 +199,7 @@ describe('Agent Push', () => {
         destination: getReferenceString(device),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Missing body parameter');
+    expect(res.body.issue[0].details.text).toStrictEqual('Missing body parameter');
   });
 
   test('Missing destination', async () => {
@@ -212,7 +212,7 @@ describe('Agent Push', () => {
         body: 'input',
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Missing destination parameter');
+    expect(res.body.issue[0].details.text).toStrictEqual('Missing destination parameter');
   });
 
   test('Unrecognized device string', async () => {
@@ -226,7 +226,7 @@ describe('Agent Push', () => {
         destination: 'foo',
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Destination device not found');
+    expect(res.body.issue[0].details.text).toStrictEqual('Destination device not found');
   });
 
   test('Destination device not found', async () => {
@@ -240,7 +240,7 @@ describe('Agent Push', () => {
         destination: 'Device/' + randomUUID(),
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Destination device not found');
+    expect(res.body.issue[0].details.text).toStrictEqual('Destination device not found');
   });
 
   test('Destination device missing URL', async () => {
@@ -264,7 +264,7 @@ describe('Agent Push', () => {
         destination: getReferenceString(device2),
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Destination device missing url');
+    expect(res2.body.issue[0].details.text).toStrictEqual('Destination device missing url');
   });
 
   test('Invalid wait timeout', async () => {
@@ -279,7 +279,7 @@ describe('Agent Push', () => {
         waitTimeout: 60 * 60 * 1000,
       });
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Invalid wait timeout');
+    expect(res.body.issue[0].details.text).toStrictEqual('Invalid wait timeout');
   });
 
   test('Ping -- Successful ping to IP', async () => {
@@ -342,8 +342,8 @@ round-trip min/avg/max/stddev = 10.316/10.316/10.316/nan ms`,
     );
 
     const res = await deferredResponse;
-    expect(res.status).toEqual(200);
-    expect(res.text).toEqual(expect.stringMatching(/ping statistics/i));
+    expect(res.status).toStrictEqual(200);
+    expect(res.text).toStrictEqual(expect.stringMatching(/ping statistics/i));
 
     publishSpy.mockRestore();
   });
@@ -408,8 +408,8 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     );
 
     const res = await deferredResponse;
-    expect(res.status).toEqual(200);
-    expect(res.text).toEqual(expect.stringMatching(/ping statistics/i));
+    expect(res.status).toStrictEqual(200);
+    expect(res.text).toStrictEqual(expect.stringMatching(/ping statistics/i));
 
     publishSpy.mockRestore();
   });
@@ -468,12 +468,12 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
     );
 
     const res = await deferredResponse;
-    expect(res.status).toEqual(400);
+    expect(res.status).toStrictEqual(400);
 
     const body = res.body as OperationOutcome;
     expect(body).toBeDefined();
-    expect(body.issue[0].severity).toEqual('error');
-    expect(body.issue[0]?.details?.text).toEqual(expect.stringContaining('Error: Unable to ping "8.8.8.8"'));
+    expect(body.issue[0].severity).toStrictEqual('error');
+    expect(body.issue[0]?.details?.text).toStrictEqual(expect.stringContaining('Error: Unable to ping "8.8.8.8"'));
 
     publishSpy.mockRestore();
   });
@@ -540,7 +540,7 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
 
     const res = await deferredResponse;
 
-    expect(res.status).toEqual(202);
+    expect(res.status).toStrictEqual(202);
     expect(res.headers['content-location']).toBeDefined();
     const asyncJob = await waitForAsyncJob(res.headers['content-location'], app, accessToken);
     expect(asyncJob).toMatchObject<Partial<AsyncJob>>({
@@ -657,8 +657,8 @@ round-trip min/avg/max/stddev = 0.081/0.081/0.081/nan ms`,
         waitForResponse: true,
       } satisfies AgentPushParameters);
 
-    expect(res.status).toEqual(200);
-    expect(res.text).toEqual(expect.stringMatching(/ping statistics/i));
+    expect(res.status).toStrictEqual(200);
+    expect(res.text).toStrictEqual(expect.stringMatching(/ping statistics/i));
 
     cleanup();
   });

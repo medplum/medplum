@@ -1,0 +1,81 @@
+name: Build deb
+
+concurrency:
+  group: ci-build-deb-${{ github.sha }}
+  cancel-in-progress: true
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build_deb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NODE_VERSION: '20'
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci --maxsockets 1
+
+      - name: Build
+        run: npm run build:fast
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
+
+      - name: Build Deb
+        shell: bash
+        run: ./scripts/build-deb.sh
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.0'
+
+      - name: Install deb-s3
+        run: gem install deb-s3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Import GPG key
+        run: echo "${{ secrets.MEDPLUM_GPG_KEY }}" | gpg --batch --no-tty --import
+
+      - name: Upload to APT repository
+        run: |
+          deb-s3 upload \
+            --bucket apt.medplum.com \
+            --prefix debian \
+            --component main \
+            --visibility nil \
+            --preserve-versions \
+            --sign=${{ secrets.MEDPLUM_GPG_KEY_ID }} \
+            --gpg-options="--passphrase-fd 0 --pinentry-mode loopback" \
+            --cache-control="max-age=300" \
+            medplum_*.deb \
+            < <(echo "${{ secrets.MEDPLUM_GPG_PASSPHRASE }}")

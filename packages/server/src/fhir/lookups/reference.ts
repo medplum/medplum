@@ -1,7 +1,16 @@
-import { PropertyType, evalFhirPathTyped, getSearchParameters, isUUID, toTypedValue } from '@medplum/core';
+import {
+  PropertyType,
+  evalFhirPathTyped,
+  getSearchParameters,
+  isResource,
+  isUUID,
+  resolveId,
+  toTypedValue,
+} from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
+import { InsertQuery } from '../sql';
 
 /**
  * The ReferenceTable class represents a set of lookup tables for references between resources.
@@ -33,6 +42,31 @@ export class ReferenceTable extends LookupTable {
     const values = getSearchReferences(resource);
     await this.insertValuesForResource(client, resource.resourceType, values);
   }
+
+  /**
+   * Inserts reference values into the lookup table for a resource.
+   * @param client - The database client.
+   * @param resourceType - The resource type.
+   * @param values - The values to insert.
+   */
+  async insertValuesForResource(
+    client: Pool | PoolClient,
+    resourceType: ResourceType,
+    values: Record<string, any>[]
+  ): Promise<void> {
+    if (values.length === 0) {
+      return;
+    }
+    const tableName = this.getTableName(resourceType);
+
+    // Reference lookup tables have a covering primary key, so a conflict means
+    // that the exact desired row already exists in the database
+    for (let i = 0; i < values.length; i += 10_000) {
+      const batchedValues = values.slice(i, i + 10_000);
+      const insert = new InsertQuery(tableName, batchedValues).ignoreOnConflict();
+      await insert.execute(client);
+    }
+  }
 }
 
 interface ReferenceRow {
@@ -61,20 +95,39 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
 
     const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
     for (const value of typedValues) {
-      if (value.type !== PropertyType.Reference || !value.value.reference) {
-        continue;
+      if (value.type === PropertyType.Reference && value.value.reference) {
+        const targetId = resolveId(value.value);
+        if (targetId && isUUID(targetId)) {
+          addSearchReferenceResult(result, resource, searchParam, targetId);
+        }
       }
-      const [_targetType, targetId] = value.value.reference.split('/', 2);
-      if (isUUID(targetId)) {
-        result.set(`${searchParam.code}|${targetId}`, {
-          resourceId: resource.id as string,
-          targetId: targetId,
-          code: searchParam.code as string,
-        });
+
+      if (isResource(value.value) && value.value.id && isUUID(value.value.id)) {
+        addSearchReferenceResult(result, resource, searchParam, value.value.id);
       }
     }
   }
   return Array.from(result.values());
+}
+
+/**
+ * Adds a search reference result to the result map.
+ * @param result - The result map to add the reference to.
+ * @param resource - The resource being indexed.
+ * @param searchParam - The search parameter.
+ * @param targetId - The target ID.
+ */
+function addSearchReferenceResult(
+  result: Map<string, ReferenceRow>,
+  resource: Resource,
+  searchParam: SearchParameter,
+  targetId: string
+): void {
+  result.set(`${searchParam.code}|${targetId}`, {
+    resourceId: resource.id as string,
+    targetId: targetId,
+    code: searchParam.code as string,
+  });
 }
 
 /**

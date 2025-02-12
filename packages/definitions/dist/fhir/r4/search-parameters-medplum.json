@@ -782,6 +782,542 @@
         "expression": "DiagnosticReport.imagingStudy",
         "target": ["ImagingStudy"]
       }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-classifier",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-classifier",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-classifier",
+        "version" : "5.0.0",
+        "name" : "classifier",
+        "status" : "draft",
+        "description" : "Classification for the study",
+        "code" : "classifier",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.classifier"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-condition",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-condition",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-condition",
+        "version" : "5.0.0",
+        "name" : "condition",
+        "status" : "draft",
+        "description" : "Condition being studied",
+        "code" : "condition",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.condition"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-date",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-date",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-date",
+        "version" : "5.0.0",
+        "name" : "date",
+        "status" : "draft",
+        "description" : "When the study began and ended",
+        "code" : "date",
+        "base" : ["ResearchStudy"],
+        "type" : "date",
+        "expression" : "ResearchStudy.period",
+        "comparator" : ["eq",
+        "ne",
+        "gt",
+        "ge",
+        "lt",
+        "le",
+        "sa",
+        "eb",
+        "ap"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-description",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-description",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-description",
+        "version" : "5.0.0",
+        "name" : "description",
+        "status" : "draft",
+        "description" : "Detailed narrative of the study",
+        "code" : "description",
+        "base" : ["ResearchStudy"],
+        "type" : "string",
+        "expression" : "ResearchStudy.description"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-eligibility",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-eligibility",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-eligibility",
+        "version" : "5.0.0",
+        "name" : "eligibility",
+        "status" : "draft",
+        "description" : "Inclusion and exclusion criteria",
+        "code" : "eligibility",
+        "base" : ["ResearchStudy"],
+        "type" : "reference",
+        "expression" : "ResearchStudy.recruitment.eligibility",
+        "target" : ["Group",
+        "EvidenceVariable"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-identifier",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-identifier",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-identifier",
+        "version" : "5.0.0",
+        "name" : "identifier",
+        "status" : "draft",
+        "description" : "Business Identifier for study",
+        "code" : "identifier",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.identifier"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-keyword",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-keyword",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-keyword",
+        "version" : "5.0.0",
+        "name" : "keyword",
+        "status" : "draft",
+        "description" : "Used to search for the study",
+        "code" : "keyword",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.keyword"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-name",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-name",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-name",
+        "version" : "5.0.0",
+        "name" : "name",
+        "status" : "draft",
+        "description" : "Name for this study",
+        "code" : "name",
+        "base" : ["ResearchStudy"],
+        "type" : "string",
+        "expression" : "ResearchStudy.name"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-objective-description",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-objective-description",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-objective-description",
+        "version" : "5.0.0",
+        "name" : "objective-description",
+        "status" : "draft",
+        "description" : "Free text description of the objective of the study",
+        "code" : "objective-description",
+        "base" : ["ResearchStudy"],
+        "type" : "string",
+        "expression" : "ResearchStudy.objective.description"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-objective-type",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-objective-type",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-objective-type",
+        "version" : "5.0.0",
+        "name" : "objective-type",
+        "status" : "draft",
+        "description" : "The kind of study objective",
+        "code" : "objective-type",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.objective.type"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-part-of",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-part-of",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-part-of",
+        "version" : "5.0.0",
+        "name" : "part-of",
+        "status" : "draft",
+        "description" : "Part of larger study",
+        "code" : "part-of",
+        "base" : ["ResearchStudy"],
+        "type" : "reference",
+        "expression" : "ResearchStudy.partOf",
+        "target" : ["ResearchStudy"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-phase",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-phase",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-phase",
+        "version" : "5.0.0",
+        "name" : "phase",
+        "status" : "draft",
+        "description" : "The stage in the progression of a study",
+        "code" : "phase",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.phase"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-protocol",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-protocol",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-protocol",
+        "version" : "5.0.0",
+        "name" : "protocol",
+        "status" : "draft",
+        "description" : "Steps followed in executing study",
+        "code" : "protocol",
+        "base" : ["ResearchStudy"],
+        "type" : "reference",
+        "expression" : "ResearchStudy.protocol",
+        "target" : ["PlanDefinition"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-recruitment-actual",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-recruitment-actual",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-recruitment-actual",
+        "version" : "5.0.0",
+        "name" : "recruitment-actual",
+        "status" : "draft",
+        "description" : "Actual number of participants enrolled in study across all groups",
+        "code" : "recruitment-actual",
+        "base" : ["ResearchStudy"],
+        "type" : "number",
+        "expression" : "ResearchStudy.recruitment.actualNumber",
+        "comparator" : ["eq",
+        "ne",
+        "gt",
+        "ge",
+        "lt",
+        "le",
+        "sa",
+        "eb",
+        "ap"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-recruitment-target",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-recruitment-target",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-recruitment-target",
+        "version" : "5.0.0",
+        "name" : "recruitment-target",
+        "status" : "draft",
+        "description" : "Target number of participants enrolled in study across all groups",
+        "code" : "recruitment-target",
+        "base" : ["ResearchStudy"],
+        "type" : "number",
+        "expression" : "ResearchStudy.recruitment.targetNumber",
+        "comparator" : ["eq",
+        "ne",
+        "gt",
+        "ge",
+        "lt",
+        "le",
+        "sa",
+        "eb",
+        "ap"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-region",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-region",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-region",
+        "version" : "5.0.0",
+        "name" : "region",
+        "status" : "draft",
+        "description" : "Geographic area for the study",
+        "code" : "region",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.region"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-site",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-site",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-site",
+        "version" : "5.0.0",
+        "name" : "site",
+        "status" : "draft",
+        "description" : "Facility where study activities are conducted",
+        "code" : "site",
+        "base" : ["ResearchStudy"],
+        "type" : "reference",
+        "expression" : "ResearchStudy.site",
+        "target" : ["Organization",
+        "ResearchStudy",
+        "Location"]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-status",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-status",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-status",
+        "version" : "5.0.0",
+        "name" : "status",
+        "status" : "draft",
+        "description" : "active | active-but-not-recruiting | administratively-completed | approved | closed-to-accrual | closed-to-accrual-and-intervention | completed | disapproved | enrolling-by-invitation | in-review | not-yet-recruiting | recruiting | temporarily-closed-to-accrual | temporarily-closed-to-accrual-and-intervention | terminated | withdrawn",
+        "code" : "status",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.status"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-study-design",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-study-design",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-study-design",
+        "version" : "5.0.0",
+        "name" : "study-design",
+        "status" : "draft",
+        "description" : "Classifications of the study design characteristics",
+        "code" : "study-design",
+        "base" : ["ResearchStudy"],
+        "type" : "token",
+        "expression" : "ResearchStudy.studyDesign"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-title",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-title",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-title",
+        "version" : "5.0.0",
+        "name" : "title",
+        "status" : "draft",
+        "description" : "The human readable name of the research study",
+        "code" : "title",
+        "base" : ["ResearchStudy"],
+        "type" : "string",
+        "expression" : "ResearchStudy.title"
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-actual",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-progress-status-state-actual",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-actual",
+        "version" : "5.0.0",
+        "name" : "progress-status-state-actual",
+        "status" : "draft",
+        "description" : "Status of study by state and actual",
+        "code" : "progress-status-state-actual",
+        "base" : ["ResearchStudy"],
+        "type" : "composite",
+        "expression" : "ResearchStudy.progressStatus",
+        "multipleOr" : false,
+        "component" : [{
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-state",
+          "expression" : "state"
+        },
+        {
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-actual",
+          "expression" : "actual"
+        }]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-period",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-progress-status-state-period",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-period",
+        "version" : "5.0.0",
+        "name" : "progress-status-state-period",
+        "status" : "draft",
+        "description" : "Status of study by state and period",
+        "code" : "progress-status-state-period",
+        "base" : ["ResearchStudy"],
+        "type" : "composite",
+        "expression" : "ResearchStudy.progressStatus",
+        "multipleOr" : false,
+        "component" : [{
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-state",
+          "expression" : "state"
+        },
+        {
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-period",
+          "expression" : "period"
+        }]
+      }
+    },
+    {
+      "fullUrl" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-period-actual",
+      "resource" : {
+        "resourceType" : "SearchParameter",
+        "id" : "ResearchStudy-progress-status-state-period-actual",
+        "url" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-progress-status-state-period-actual",
+        "version" : "5.0.0",
+        "name" : "progress-status-state-period-actual",
+        "status" : "draft",
+        "description" : "Status of study by state, period and actual",
+        "code" : "progress-status-state-period-actual",
+        "base" : ["ResearchStudy"],
+        "type" : "composite",
+        "expression" : "ResearchStudy.progressStatus",
+        "multipleOr" : false,
+        "component" : [{
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-state",
+          "expression" : "state"
+        },
+        {
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-period",
+          "expression" : "period"
+        },
+        {
+          "definition" : "http://hl7.org/fhir/SearchParameter/ResearchStudy-actual",
+          "expression" : "actual"
+        }]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/ResearchStudy-outcome-measure-reference",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "ResearchStudy-outcome-measure-reference",
+        "url": "https://medplum.com/fhir/SearchParameter/ResearchStudy-outcome-measure-reference",
+        "version": "4.0.1",
+        "name": "outcome-measure-reference",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The research study outcome measure reference",
+        "code": "outcome-measure-reference",
+        "base": ["ResearchStudy"],
+        "type": "reference",
+        "target": ["EvidenceVariable"],
+        "expression": "ResearchStudy.outcomeMeasure.reference"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/EvidenceVariable-characteristic-type",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "EvidenceVariable-characteristic-type",
+        "url": "https://medplum.com/fhir/SearchParameter/EvidenceVariable-characteristic-type",
+        "version": "4.0.1",
+        "name": "characteristic-type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The evidence variable characteristic type",
+        "code": "characteristic-type",
+        "base": ["EvidenceVariable"],
+        "type": "token",
+        "expression": "EvidenceVariable.characteristic.definitionCodeableConcept | EvidenceVariable.characteristic.definitionByTypeAndValue.type"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Group-characteristic-range",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Group-characteristic-range",
+        "url": "https://medplum.com/fhir/SearchParameter/Group-characteristic-range",
+        "version": "4.0.1",
+        "name": "characteristic-range",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The name of the client application",
+        "code": "characteristic-range",
+        "base": ["Group"],
+        "type": "quantity",
+        "expression": "Group.characteristic.value.ofType(Range)"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/Flag-category",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "Flag-category",
+        "url": "https://medplum.com/fhir/SearchParameter/Flag-category",
+        "version": "4.0.1",
+        "name": "category",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "The category of the flag, such as clinical, administrative, etc.",
+        "code": "category",
+        "base": ["Flag"],
+        "type": "token",
+        "expression": "Flag.category"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-type",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AsyncJob-type",
+        "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-type",
+        "version": "4.0.1",
+        "name": "type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for AsyncJob by type",
+        "code": "type",
+        "base": ["AsyncJob"],
+        "type": "token",
+        "expression": "AsyncJob.type"
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/SearchParameter/AsyncJob-status",
+      "resource": {
+        "resourceType": "SearchParameter",
+        "id": "AsyncJob-status",
+        "url": "https://medplum.com/fhir/SearchParameter/AsyncJob-status",
+        "version": "4.0.1",
+        "name": "type",
+        "status": "draft",
+        "publisher": "Medplum",
+        "description": "Search for AsyncJob by status",
+        "code": "status",
+        "base": ["AsyncJob"],
+        "type": "token",
+        "expression": "AsyncJob.status"
+      }
     }
   ]
 }

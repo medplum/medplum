@@ -9,8 +9,9 @@ import {
   ValueSetComposeIncludeFilter,
   ValueSetExpansionContains,
 } from '@medplum/fhirtypes';
-import { getAuthenticatedContext, getLogger } from '../../context';
+import { getAuthenticatedContext } from '../../context';
 import { DatabaseMode, getDatabasePool } from '../../database';
+import { getLogger } from '../../logger';
 import {
   Column,
   Condition,
@@ -18,7 +19,7 @@ import {
   Disjunction,
   escapeLikeString,
   Expression,
-  Literal,
+  Parameter,
   SelectQuery,
   SqlFunction,
 } from '../sql';
@@ -417,7 +418,7 @@ export function expansionQuery(
             query = addDescendants(query, codeSystem, condition.value);
           }
           if (condition.op !== 'is-a') {
-            query.where('code', '!=', condition.value);
+            query.where(new Column('Coding', 'code'), '!=', condition.value);
           }
           break;
         case '=':
@@ -444,7 +445,7 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
     query
       .whereExpr(
         new Disjunction([
-          new Condition('code', '=', params.filter),
+          new Condition(new Column('Coding', 'code'), '=', params.filter),
           new Conjunction(
             params.filter
               .split(/\s+/g)
@@ -453,10 +454,7 @@ function addExpansionFilters(query: SelectQuery, params: ValueSetExpandParameter
         ])
       )
       .orderByExpr(
-        new SqlFunction('strict_word_similarity', [
-          new Column(undefined, 'display'),
-          new Literal(`'${params.filter}'`),
-        ]),
+        new SqlFunction('strict_word_similarity', [new Column(undefined, 'display'), new Parameter(params.filter)]),
         true
       );
   }

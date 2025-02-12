@@ -24,12 +24,13 @@ import {
   Project,
   ProjectMembership,
   Questionnaire,
+  ResearchDefinition,
   ResourceType,
   ServiceRequest,
   StructureDefinition,
   User,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
@@ -159,8 +160,8 @@ describe('FHIR Repo', () => {
         },
       });
       expect(version2).toBeDefined();
-      expect(version2.id).toEqual(version1.id);
-      expect(version2.meta?.versionId).not.toEqual(version1.meta?.versionId);
+      expect(version2.id).toStrictEqual(version1.id);
+      expect(version2.meta?.versionId).not.toStrictEqual(version1.meta?.versionId);
 
       const history = await systemRepo.readHistory('Patient', version1.id as string);
       expect(history).toBeDefined();
@@ -181,8 +182,8 @@ describe('FHIR Repo', () => {
         active: true,
       });
 
-      expect(patient2.id).toEqual(patient1.id);
-      expect(patient2.meta?.versionId).not.toEqual(patient1.meta?.versionId);
+      expect(patient2.id).toStrictEqual(patient1.id);
+      expect(patient2.meta?.versionId).not.toStrictEqual(patient1.meta?.versionId);
     }));
 
   test('Update patient remove meta.profile', () =>
@@ -193,8 +194,8 @@ describe('FHIR Repo', () => {
         meta: { profile: [profileUrl] },
         name: [{ given: ['Update1'], family: 'Update1' }],
       });
-      expect(patient1.meta?.profile).toEqual(expect.arrayContaining([profileUrl]));
-      expect(patient1.meta?.profile?.length).toEqual(1);
+      expect(patient1.meta?.profile).toStrictEqual(expect.arrayContaining([profileUrl]));
+      expect(patient1.meta?.profile?.length).toStrictEqual(1);
 
       const patientWithoutProfile = { ...patient1 };
       delete (patientWithoutProfile.meta as any).profile;
@@ -211,13 +212,13 @@ describe('FHIR Repo', () => {
         name: [{ given: ['Update1'], family: 'Update1' }],
       });
       expect(patient1.meta?.project).toBeDefined();
-      expect(patient1.meta?.project).toEqual(project.id);
+      expect(patient1.meta?.project).toStrictEqual(project.id);
 
       const patientWithoutProject = { ...patient1 };
       delete (patientWithoutProject.meta as any).project;
       const patient2 = await systemRepo.updateResource<Patient>(patientWithoutProject);
       expect(patient2.meta?.project).toBeDefined();
-      expect(patient2.meta?.project).toEqual(project.id);
+      expect(patient2.meta?.project).toStrictEqual(project.id);
     }));
 
   test('Update patient no changes', () =>
@@ -231,8 +232,8 @@ describe('FHIR Repo', () => {
         ...(patient1 as Patient),
       });
 
-      expect(patient2.id).toEqual(patient1.id);
-      expect(patient2.meta?.versionId).toEqual(patient1.meta?.versionId);
+      expect(patient2.id).toStrictEqual(patient1.id);
+      expect(patient2.meta?.versionId).toStrictEqual(patient1.meta?.versionId);
     }));
 
   test('Update patient multiple names', () =>
@@ -250,11 +251,11 @@ describe('FHIR Repo', () => {
         ],
       });
 
-      expect(patient2.id).toEqual(patient1.id);
-      expect(patient2.meta?.versionId).not.toEqual(patient1.meta?.versionId);
-      expect(patient2.name?.length).toEqual(2);
-      expect(patient2.name?.[0]?.family).toEqual('Smith');
-      expect(patient2.name?.[1]?.family).toEqual('Jones');
+      expect(patient2.id).toStrictEqual(patient1.id);
+      expect(patient2.meta?.versionId).not.toStrictEqual(patient1.meta?.versionId);
+      expect(patient2.name?.length).toStrictEqual(2);
+      expect(patient2.name?.[0]?.family).toStrictEqual('Smith');
+      expect(patient2.name?.[1]?.family).toStrictEqual('Jones');
     }));
 
   test('Create Patient with custom ID', async () => {
@@ -272,7 +273,7 @@ describe('FHIR Repo', () => {
         });
       } catch (err) {
         const outcome = (err as OperationOutcomeError).outcome;
-        expect(outcome.id).toEqual('not-found');
+        expect(outcome.id).toStrictEqual('not-found');
       }
     });
   });
@@ -284,7 +285,7 @@ describe('FHIR Repo', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      expect(patient.meta?.author?.reference).toEqual('system');
+      expect(patient.meta?.author?.reference).toStrictEqual('system');
     }));
 
   test('Create Patient as system on behalf of author', () =>
@@ -300,7 +301,7 @@ describe('FHIR Repo', () => {
         },
       });
 
-      expect(patient.meta?.author?.reference).toEqual(author);
+      expect(patient.meta?.author?.reference).toStrictEqual(author);
     }));
 
   test('Create Patient as ClientApplication with no author', () =>
@@ -310,9 +311,14 @@ describe('FHIR Repo', () => {
       const patient = await repo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ given: ['Alice'], family: 'Smith' }],
+        identifier: [],
       });
 
-      expect(patient.meta?.author?.reference).toEqual(getReferenceString(client));
+      expect(patient.meta?.author?.reference).toStrictEqual(getReferenceString(client));
+
+      // empty identifier array should removed when read from cache
+      const readPatient = await repo.readResource<Patient>('Patient', patient.id as string, { checkCacheOnly: true });
+      expect(readPatient.identifier).toBeUndefined();
     }));
 
   test('Create Patient as Practitioner with no author', () =>
@@ -331,7 +337,7 @@ describe('FHIR Repo', () => {
         name: [{ given: ['Alice'], family: 'Smith' }],
       });
 
-      expect(patient.meta?.author?.reference).toEqual(author);
+      expect(patient.meta?.author?.reference).toStrictEqual(author);
     }));
 
   test('Create Patient as Practitioner on behalf of author', () =>
@@ -360,7 +366,7 @@ describe('FHIR Repo', () => {
         },
       });
 
-      expect(patient.meta?.author?.reference).toEqual(author);
+      expect(patient.meta?.author?.reference).toStrictEqual(author);
     }));
 
   test('Create resource with lastUpdated', () =>
@@ -376,8 +382,33 @@ describe('FHIR Repo', () => {
         },
       });
 
-      expect(patient.meta?.lastUpdated).toEqual(lastUpdated);
+      expect(patient.meta?.lastUpdated).toStrictEqual(lastUpdated);
     }));
+
+  const fourByteChars = '𓃒𓃔𓃕𓃖𓃗𓃘𓃙𓃚𓃛𓃜𓃝𓃞𓃟𓃠𓃡𓃢𓃥𓃦𓃧𓃩𓃪𓃭𓃮𓃯𓃰𓃱𓃲𓄁𓅂𓅃𓅠𓅚';
+  test.each([
+    ['2736 chars, 2736 random bytes', randomBytes(2050).toString('base64')],
+    ['6668 chars, 6668 random bytes', randomBytes(5000).toString('base64')],
+    ['6400 chars, 12800 bytes', shuffleString(fourByteChars.repeat(100))],
+  ])('Create ResearchDefinition with long description (%s)', (_testTitle, description) =>
+    withTestContext(async () => {
+      const author = 'Practitioner/' + randomUUID();
+
+      const repo = new Repository({
+        extendedMode: true,
+        author: {
+          reference: author,
+        },
+      });
+
+      await repo.createResource<ResearchDefinition>({
+        resourceType: 'ResearchDefinition',
+        status: 'active',
+        population: { reference: '123' },
+        description,
+      });
+    })
+  );
 
   test('Update resource with lastUpdated', () =>
     withTestContext(async () => {
@@ -391,7 +422,7 @@ describe('FHIR Repo', () => {
           lastUpdated,
         },
       });
-      expect(patient1.meta?.lastUpdated).toEqual(lastUpdated);
+      expect(patient1.meta?.lastUpdated).toStrictEqual(lastUpdated);
 
       // But system cannot update the timestamp
       const patient2 = await systemRepo.updateResource<Patient>({
@@ -401,7 +432,7 @@ describe('FHIR Repo', () => {
           lastUpdated,
         },
       });
-      expect(patient2.meta?.lastUpdated).not.toEqual(lastUpdated);
+      expect(patient2.meta?.lastUpdated).not.toStrictEqual(lastUpdated);
     }));
 
   test('Update resource with missing id', () =>
@@ -430,25 +461,56 @@ describe('FHIR Repo', () => {
         name: [{ family: 'Test' }],
       });
 
-      (patient as Patient).name = [{ family: 'TestUpdated' }];
-
+      patient.name = [{ family: 'TestUpdated' }];
       await systemRepo.updateResource<Patient>(patient, { ifMatch: patient.meta?.versionId });
-      expect(patient.name?.at(0)?.family).toEqual('TestUpdated');
+      expect(patient.name?.at(0)?.family).toStrictEqual('TestUpdated');
     }));
 
   test('Update resource with different versionId', () =>
     withTestContext(async () => {
-      const patient1 = await systemRepo.createResource<Patient>({
+      const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ family: 'Test' }],
       });
 
-      try {
-        await systemRepo.updateResource<Patient>(patient1, { ifMatch: 'bad-id' });
-        fail('Should have thrown');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome).toMatchObject(preconditionFailed);
-      }
+      await expect(systemRepo.updateResource(patient, { ifMatch: 'bad-id' })).rejects.toThrow(
+        new OperationOutcomeError(preconditionFailed)
+      );
+    }));
+
+  test('Patch resource with matching versionId', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(
+        patient.resourceType,
+        patient.id as string,
+        [{ op: 'replace', path: '/name/0/family', value: 'TestUpdated' }],
+        {
+          ifMatch: patient.meta?.versionId,
+        }
+      );
+      expect(patched.name?.at(0)?.family).toStrictEqual('TestUpdated');
+    }));
+
+  test('Patch resource with different versionId', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      await expect(
+        systemRepo.patchResource<Patient>(
+          patient.resourceType,
+          patient.id as string,
+          [{ op: 'add', path: '/birthDate', value: '1993-09-14' }],
+          { ifMatch: 'bad-id' }
+        )
+      ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
     }));
 
   test('Compartment permissions', () =>
@@ -474,7 +536,7 @@ describe('FHIR Repo', () => {
 
       const patient2 = await repo1.readResource('Patient', patient1.id as string);
       expect(patient2).toBeDefined();
-      expect(patient2.id).toEqual(patient1.id);
+      expect(patient2.id).toStrictEqual(patient1.id);
 
       const registration2: RegisterRequest = {
         firstName: randomUUID(),
@@ -520,12 +582,12 @@ describe('FHIR Repo', () => {
       expect(history3.entry?.length).toBe(3);
 
       const entries = history3.entry as BundleEntry[];
-      expect(entries[0].response?.status).toEqual('200');
+      expect(entries[0].response?.status).toStrictEqual('200');
       expect(entries[0].resource).toBeDefined();
-      expect(entries[1].response?.status).toEqual('410');
+      expect(entries[1].response?.status).toStrictEqual('410');
       expect((entries[1].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toMatch(/Deleted on /);
       expect(entries[1].resource).toBeUndefined();
-      expect(entries[2].response?.status).toEqual('200');
+      expect(entries[2].response?.status).toStrictEqual('200');
       expect(entries[2].resource).toBeDefined();
     }));
 
@@ -572,7 +634,7 @@ describe('FHIR Repo', () => {
           },
         ],
       });
-      expect(bundle1.entry?.length).toEqual(1);
+      expect(bundle1.entry?.length).toStrictEqual(1);
 
       const { identifier, ...rest } = patient1;
       expect(identifier).toBeDefined();
@@ -593,7 +655,7 @@ describe('FHIR Repo', () => {
           },
         ],
       });
-      expect(bundle2.entry?.length).toEqual(0);
+      expect(bundle2.entry?.length).toStrictEqual(0);
     }));
 
   test('Delete Questionnaire.subjectType', () =>
@@ -616,7 +678,7 @@ describe('FHIR Repo', () => {
           },
         ],
       });
-      expect(resource2.entry?.length).toEqual(1);
+      expect(resource2.entry?.length).toStrictEqual(1);
 
       delete resource1.subjectType;
       await systemRepo.updateResource<Questionnaire>(resource1);
@@ -631,7 +693,7 @@ describe('FHIR Repo', () => {
           },
         ],
       });
-      expect(resource4.entry?.length).toEqual(0);
+      expect(resource4.entry?.length).toStrictEqual(0);
     }));
 
   test('Empty objects', () =>
@@ -658,7 +720,7 @@ describe('FHIR Repo', () => {
           },
         ],
       });
-      expect(patient2.id).toEqual(patient1.id);
+      expect(patient2.id).toStrictEqual(patient1.id);
     }));
 
   test('expungeResource forbidden', async () => {
@@ -738,7 +800,7 @@ describe('FHIR Repo', () => {
         total: 'accurate',
         count: 0,
       });
-      expect(bundle.total).toEqual(0);
+      expect(bundle.total).toStrictEqual(0);
     }));
 
   test('Duplicate :text tokens', () =>
@@ -796,7 +858,7 @@ describe('FHIR Repo', () => {
       throw new Error('expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid id');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid id');
     }
   });
 
@@ -830,7 +892,7 @@ describe('FHIR Repo', () => {
 
       await expect(repo.createResource(patient)).resolves.toBeTruthy();
       await repo.createResource(profile);
-      await expect(repo.createResource(patient)).rejects.toEqual(
+      await expect(repo.createResource(patient)).rejects.toThrow(
         new Error('Missing required property (Patient.gender)')
       );
     }));
@@ -879,7 +941,7 @@ describe('FHIR Repo', () => {
 
       // Now try to create another patient without an address
       // This should fail
-      await expect(repo.createResource(patient)).rejects.toEqual(
+      await expect(repo.createResource(patient)).rejects.toThrow(
         new Error('Missing required property (Patient.address)')
       );
     }));
@@ -918,7 +980,7 @@ describe('FHIR Repo', () => {
       });
       expect(create.resource.id).toBeDefined();
       const existing = create.resource;
-      expect(create.outcome.id).toEqual(created.id);
+      expect(create.outcome.id).toStrictEqual(created.id);
 
       // Update existing resource
       patient.gender = 'unknown';
@@ -926,9 +988,9 @@ describe('FHIR Repo', () => {
         resourceType: 'Patient',
         filters: [{ code: 'identifier', operator: Operator.EQUALS, value: 'http://example.com/mrn|' + mrn }],
       });
-      expect(update.resource.id).toEqual(existing.id);
-      expect(update.resource.gender).toEqual('unknown');
-      expect(update.outcome.id).toEqual(allOk.id);
+      expect(update.resource.id).toStrictEqual(existing.id);
+      expect(update.resource.gender).toStrictEqual('unknown');
+      expect(update.outcome.id).toStrictEqual(allOk.id);
 
       // Update with incorrect ID
       patient.id = randomUUID();
@@ -941,7 +1003,7 @@ describe('FHIR Repo', () => {
 
       // Create duplicate resource
       const duplicate = await systemRepo.createResource(patient);
-      expect(duplicate.id).not.toEqual(existing.id);
+      expect(duplicate.id).not.toStrictEqual(existing.id);
 
       // Invalid update with ambiguous target
       await expect(
@@ -976,8 +1038,8 @@ describe('FHIR Repo', () => {
         generalPractitioner: [conditionalReference],
       });
       const expectedPractitioner = getReferenceString(practitioner);
-      expect(patient.generalPractitioner?.[0]?.reference).toEqual(expectedPractitioner);
-      expect(patient.meta?.account?.reference).toEqual(expectedPractitioner);
+      expect(patient.generalPractitioner?.[0]?.reference).toStrictEqual(expectedPractitioner);
+      expect(patient.meta?.account?.reference).toStrictEqual(expectedPractitioner);
       expect(patient.meta?.accounts).toHaveLength(1);
       expect(patient.meta?.accounts).toContainEqual({ reference: expectedPractitioner });
     }));
@@ -1147,7 +1209,7 @@ describe('FHIR Repo', () => {
     };
 
     setTypedPropertyValue(toTypedValue(patient), 'photo[1].contentType', { type: 'string', value: 'image/jpeg' });
-    expect(patient.photo?.[1].contentType).toEqual('image/jpeg');
+    expect(patient.photo?.[1].contentType).toStrictEqual('image/jpeg');
   });
 
   test('Super admin can edit User.meta.project', async () =>
@@ -1161,7 +1223,7 @@ describe('FHIR Repo', () => {
         firstName: randomUUID(),
         lastName: randomUUID(),
       });
-      expect(user1.meta?.project).toEqual(project.id);
+      expect(user1.meta?.project).toStrictEqual(project.id);
 
       // Try to change the project as the normal user
       // Should silently fail, and preserve the meta.project
@@ -1169,7 +1231,7 @@ describe('FHIR Repo', () => {
         ...user1,
         meta: { project: undefined },
       });
-      expect(user2.meta?.project).toEqual(project.id);
+      expect(user2.meta?.project).toStrictEqual(project.id);
 
       // Now try to change the project as the super admin
       // Should succeed
@@ -1225,4 +1287,57 @@ describe('FHIR Repo', () => {
       });
       await expect(repo.createResource(patientJson)).resolves.toBeDefined();
     }));
+
+  test('Patch post-commit stores full resource in cache', async () =>
+    withTestContext(async () => {
+      const { project, repo, login, membership } = await createTestProject({
+        withRepo: { extendedMode: false },
+        withAccessToken: true,
+        withClient: true,
+      });
+      const extendedRepo = await getRepoForLogin({ login, project, membership }, true);
+
+      const patient = await repo.createResource<Patient>({ resourceType: 'Patient' });
+      expect(patient.meta?.project).toBeUndefined();
+      expect(patient.gender).toBeUndefined();
+
+      const updatedPatient = await repo.patchResource<Patient>('Patient', patient.id as string, [
+        { op: 'add', path: '/gender', value: 'unknown' },
+      ]);
+      expect(updatedPatient.meta?.project).toBeUndefined();
+      expect(updatedPatient.gender).toStrictEqual('unknown');
+
+      const cachedPatient = await extendedRepo.readResource<Patient>('Patient', patient.id as string);
+      expect(cachedPatient.meta?.project).toStrictEqual(project.id);
+      expect(cachedPatient.gender).toStrictEqual('unknown');
+    }));
+
+  test('Handles resources with many entries stored in lookup table', async () =>
+    withTestContext(async () => {
+      const { repo } = await createTestProject({ withRepo: true });
+
+      const patient: Patient = {
+        resourceType: 'Patient',
+        link: [],
+      };
+      // Postgres uses a 16-bit counter for placeholder formats internally,
+      // so 2^16 + 1 = 64k + 1 will definitely overflow it if not sent in smaller batches
+      for (let i = 0; i < 64 * 1024 + 1; i++) {
+        patient.link?.push({ type: 'seealso', other: { reference: 'Patient/' + randomUUID() } });
+      }
+
+      await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
+    }));
 });
+
+function shuffleString(s: string): string {
+  const arr = Array.from(s);
+  const len = arr.length;
+  for (let i = 0; i < len - 1; ++i) {
+    const j = Math.floor(Math.random() * len);
+    const temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+  }
+  return arr.join('');
+}

@@ -98,5 +98,5 @@ In the events section, select `Let me select specific events.` This demo impleme
 Medplum supports self-hosting, and provides a [hosted service](https://app.medplum.com/). Medplum Hello World uses the hosted service as a backend.
 
 - Read our [documentation](https://www.medplum.com/docs)
-- Browse our [react component library](https://docs.medplum.com/storybook/index.html?)
+- Browse our [react component library](https://storybook.medplum.com/)
 - Join our [Discord](https://discord.gg/medplum)

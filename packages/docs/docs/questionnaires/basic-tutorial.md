@@ -36,7 +36,7 @@ The [QuestionnaireResponse](/docs/api/fhir/resources/questionnaireresponse) reso
 
 Questionnaires are very powerful when embedded in custom applications and [paired with Bots](/docs/bots/bot-for-questionnaire-response). The Medplum App is a good example of use of a Questionnaire in an application and [related commits](https://github.com/medplum/medplum/pulls?q=is%3Apr+is%3Aclosed+label%3Aquestionnaires) can be useful for context.
 
-There are bots in the [medplum-demo-bot repository](https://github.com/medplum/medplum-demo-bots/tree/main/src/examples/questionnaire-bots) that show examples of how to create common FHIR resources like `Observation` or `Condition` from QuestionnaireResponse resources.
+There are bots in the [medplum-demo-bot repository](https://github.com/medplum/medplum-demo-bots/tree/main/src/questionnaire-bots) that show examples of how to create common FHIR resources like `Observation` or `Condition` from QuestionnaireResponse resources.
 
 ## Related Resources
 

@@ -34,7 +34,7 @@ export async function upgraderMain(argv: string[]): Promise<void> {
   if (argv[3] && !isValidMedplumSemver(argv[3])) {
     throw new Error('Invalid version specified');
   }
-  const version = argv[3] ?? (await fetchLatestVersionString());
+  const version = argv[3] ?? (await fetchLatestVersionString('agent-upgrader'));
   const binPath = getReleaseBinPath(version);
 
   // If release in not locally downloaded, download it first

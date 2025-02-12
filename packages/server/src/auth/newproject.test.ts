@@ -193,7 +193,7 @@ describe('New project', () => {
       .get(`/fhir/R4/Patient`)
       .set('Authorization', 'Bearer ' + res6.body.access_token);
     expect(res8.status).toBe(200);
-    expect(res8.body.entry.length).toEqual(0);
+    expect(res8.body.entry).toBeUndefined();
   });
 
   test('GraphQL is restricted to project', async () => {
@@ -289,6 +289,6 @@ describe('New project', () => {
     expect(res5.status).toBe(200);
     expect(res5.body.data).toBeDefined();
     expect(res5.body.data.PatientList).toBeDefined();
-    expect(res5.body.data.PatientList.length).toEqual(0);
+    expect(res5.body.data.PatientList.length).toStrictEqual(0);
   });
 });

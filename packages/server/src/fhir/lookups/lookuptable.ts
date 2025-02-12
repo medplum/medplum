@@ -8,12 +8,14 @@ import {
   DeleteQuery,
   Disjunction,
   Expression,
-  SqlFunction,
   InsertQuery,
   Negation,
   SelectQuery,
+  SqlFunction,
   escapeLikeString,
 } from '../sql';
+
+export const lookupTableBatchSize = 5_000;
 
 /**
  * The LookupTable interface is used for search parameters that are indexed in separate tables.
@@ -58,10 +60,17 @@ export abstract class LookupTable {
    * @param _selectQuery - The select query builder.
    * @param resourceType - The FHIR resource type.
    * @param table - The resource table.
+   * @param _param - The search parameter.
    * @param filter - The search filter details.
    * @returns The select query where expression.
    */
-  buildWhere(_selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
+  buildWhere(
+    _selectQuery: SelectQuery,
+    resourceType: ResourceType,
+    table: string,
+    _param: SearchParameter,
+    filter: Filter
+  ): Expression {
     const lookupTableName = this.getTableName(resourceType);
     const columnName = this.getColumnName(filter.code);
 
@@ -90,14 +99,12 @@ export abstract class LookupTable {
     }
 
     const exists = new SqlFunction('EXISTS', [
-      new SelectQuery(lookupTableName)
-        .column('resourceId')
-        .whereExpr(
-          new Conjunction([
-            new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
-            disjunction,
-          ])
-        ),
+      new SelectQuery(lookupTableName).whereExpr(
+        new Conjunction([
+          new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+          disjunction,
+        ])
+      ),
     ]);
 
     if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
@@ -142,8 +149,11 @@ export abstract class LookupTable {
       return;
     }
     const tableName = this.getTableName(resourceType);
-    const insert = new InsertQuery(tableName, values);
-    await insert.execute(client);
+    for (let i = 0; i < values.length; i += lookupTableBatchSize) {
+      const batchedValues = values.slice(i, i + lookupTableBatchSize);
+      const insert = new InsertQuery(tableName, batchedValues);
+      await insert.execute(client);
+    }
   }
 
   /**
@@ -155,5 +165,21 @@ export abstract class LookupTable {
     const tableName = this.getTableName(resource.resourceType);
     const resourceId = resource.id as string;
     await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
+  }
+
+  /**
+   * Purges resources of the specified type that were last updated before the specified date.
+   * This is only available to the system and super admin accounts.
+   * @param client - The database client.
+   * @param resourceType - The FHIR resource type.
+   * @param before - The date before which resources should be purged.
+   */
+  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+    const lookupTableName = this.getTableName(resourceType);
+    await new DeleteQuery(lookupTableName)
+      .using(resourceType)
+      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
+      .where(new Column(resourceType, 'lastUpdated'), '<', before)
+      .execute(client);
   }
 }

@@ -50,6 +50,7 @@ const baseStmt: CapabilityStatement = {
     'http://hl7.org/fhir/us/core/CapabilityStatement/us-core-server',
     'http://hl7.org/fhir/uv/bulkdata/CapabilityStatement/bulk-data',
   ],
+  implementationGuide: ['http://hl7.org/fhir/uv/fhircast/ImplementationGuide/hl7.fhir.uv.fhircast|3.0.0'],
   fhirVersion: '4.0.1',
   format: ['json'],
   patchFormat: [ContentType.JSON_PATCH],
@@ -69,7 +70,11 @@ const supportedProfiles: Record<string, string[]> = {
   AllergyIntolerance: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-allergyintolerance'],
   CarePlan: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-careplan'],
   CareTeam: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-careteam'],
-  Condition: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition'],
+  Condition: [
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-encounter-diagnosis',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns',
+  ],
+  Coverage: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-coverage'],
   Device: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-implantable-device'],
   DiagnosticReport: [
     'http://hl7.org/fhir/us/core/StructureDefinition/us-core-diagnosticreport-note',
@@ -81,8 +86,26 @@ const supportedProfiles: Record<string, string[]> = {
   Immunization: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization'],
   Location: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-location'],
   Medication: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-medication'],
+  MedicationDispense: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationdispense'],
   MedicationRequest: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest'],
   Observation: [
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-bmi',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-head-circumference',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-body-height',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-body-weight',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-body-temperature',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-heart-rate',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-respiratory-rate',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-clinical-result',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-occupation',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-pregnancyintent',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-pregnancystatus',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-screening-assessment',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-sexual-orientation',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-treatment-intervention-preference',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-care-experience-preference',
+    'http://hl7.org/fhir/us/core/StructureDefinition/us-core-average-blood-pressure',
     'http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus',
     'http://hl7.org/fhir/us/core/StructureDefinition/pediatric-weight-for-height',
     'http://hl7.org/fhir/us/core/StructureDefinition/us-core-observation-lab',
@@ -102,6 +125,9 @@ const supportedProfiles: Record<string, string[]> = {
   PractitionerRole: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitionerrole'],
   Procedure: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-procedure'],
   Provenance: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-provenance'],
+  RelatedPerson: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-relatedperson'],
+  ServiceRequest: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-servicerequest'],
+  Specimen: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-specimen'],
 };
 
 const supportedOperations: Record<string, CapabilityStatementRestResourceOperation[]> = {
@@ -185,6 +211,18 @@ function buildRest(config: MedplumServerConfig): CapabilityStatementRest[] {
       resource: buildResourceTypes(),
       interaction: [{ code: 'transaction' }, { code: 'batch' }],
       searchParam: supportedSearchParams,
+      extension: [
+        // See: https://build.fhir.org/ig/HL7/fhircast-docs/CapabilityStatement-fhircast-capabilitystatement-example.json
+        {
+          extension: [
+            {
+              url: 'hub.url',
+              valueUrl: `${config.baseUrl}fhircast/STU3`,
+            },
+          ],
+          url: 'http://hl7.org/fhir/uv/fhircast/StructureDefinition/fhircast-configuration-extension',
+        },
+      ],
     },
   ];
 }
@@ -213,32 +251,38 @@ function buildResourceTypes(): CapabilityStatementRestResource[] {
   return Object.entries(getAllDataTypes())
     .filter(
       ([resourceType, typeSchema]) =>
-        isResourceType(resourceType) && typeSchema.url?.startsWith('http://hl7.org/fhir/StructureDefinition/')
+        isResourceType(resourceType) &&
+        typeSchema.url?.startsWith('http://hl7.org/fhir/StructureDefinition/') &&
+        typeSchema.version === '4.0.1'
     )
-    .map(([resourceType, typeSchema]) => ({
-      type: resourceType as ResourceType,
-      profile: typeSchema.url,
-      supportedProfile: supportedProfiles[resourceType] || undefined,
-      interaction: [
-        { code: 'read' }, // Read the current state of the resource.
-        { code: 'vread' }, // Read the state of a specific version of the resource.
-        { code: 'update' }, // Update an existing resource by its id.
-        { code: 'patch' }, // Update an existing resource by posting a set of changes to it.
-        { code: 'delete' }, // Delete a resource.
-        { code: 'history-instance' }, // Retrieve the change history for a particular resource.
-        { code: 'create' }, // Create a new resource with a server assigned id.
-        { code: 'search-type' }, // Search all resources of the specified type based on some filter criteria.
-      ],
-      versioning: 'versioned',
-      readHistory: true,
-      updateCreate: false,
-      conditionalCreate: false,
-      conditionalRead: 'not-supported',
-      conditionalDelete: 'not-supported',
-      referencePolicy: ['literal', 'logical', 'local'],
-      searchParam: buildSearchParameters(typeSchema),
-      operation: supportedOperations[resourceType] || undefined,
-    }));
+    .map(
+      ([resourceType, typeSchema]) =>
+        ({
+          type: resourceType as ResourceType,
+          profile: typeSchema.url,
+          supportedProfile: supportedProfiles[resourceType] || undefined,
+          interaction: [
+            { code: 'read' }, // Read the current state of the resource.
+            { code: 'vread' }, // Read the state of a specific version of the resource.
+            { code: 'update' }, // Update an existing resource by its id.
+            { code: 'patch' }, // Update an existing resource by posting a set of changes to it.
+            { code: 'delete' }, // Delete a resource.
+            { code: 'history-instance' }, // Retrieve the change history for a particular resource.
+            { code: 'create' }, // Create a new resource with a server assigned id.
+            { code: 'search-type' }, // Search all resources of the specified type based on some filter criteria.
+          ],
+          versioning: 'versioned',
+          readHistory: true,
+          updateCreate: false,
+          conditionalCreate: true,
+          conditionalUpdate: true,
+          conditionalRead: 'not-supported',
+          conditionalDelete: 'single',
+          referencePolicy: ['literal', 'logical', 'local'],
+          searchParam: buildSearchParameters(typeSchema),
+          operation: supportedOperations[resourceType],
+        }) satisfies CapabilityStatementRestResource
+    );
 }
 
 function buildSearchParameters(

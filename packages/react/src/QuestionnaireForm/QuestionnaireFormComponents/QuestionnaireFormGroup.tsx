@@ -1,6 +1,6 @@
 import { Anchor, Stack, Title } from '@mantine/core';
 import { QuestionnaireItem, QuestionnaireResponseItem } from '@medplum/fhirtypes';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { QuestionnaireItemType, buildInitialResponseItem } from '../../utils/questionnaire';
 import { QuestionnaireRepeatableItem } from '../QuestionnaireFormItem/QuestionnaireRepeatableItem';
 
@@ -13,6 +13,10 @@ interface QuestionnaireRepeatableGroupProps {
 
 export function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupProps): JSX.Element | null {
   const [responses, setResponses] = useState(props.response);
+
+  useEffect(() => {
+    setResponses(props.response);
+  }, [props.response]);
 
   if (responses.length === 0) {
     return null;
@@ -97,6 +101,7 @@ export function QuestionnaireGroup(props: QuestionnaireGroupProps): JSX.Element 
               />
             );
           }
+
           return (
             <QuestionnaireRepeatableItem
               key={item.linkId}

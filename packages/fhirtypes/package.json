@@ -1,6 +1,6 @@
 {
   "name": "@medplum/fhirtypes",
-  "version": "3.2.17",
+  "version": "3.2.31",
   "description": "Medplum FHIR Type Definitions",
   "keywords": [
     "medplum",
@@ -35,7 +35,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "",
+    "build": "tsc",
     "clean": "",
     "test": ""
   },

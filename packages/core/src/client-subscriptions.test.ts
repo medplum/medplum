@@ -119,8 +119,8 @@ describe('MedplumClient -- Subscriptions', () => {
     sendHandshakeBundle(wsServer, MOCK_SUBSCRIPTION_ID);
 
     const connectEvent = await connectEventPromise;
-    expect(connectEvent?.type).toEqual('connect');
-    expect(connectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
+    expect(connectEvent?.type).toStrictEqual('connect');
+    expect(connectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
   });
 
   test('unsubscribeFromCriteria() -- SubscriptionManager exists', async () => {
@@ -141,8 +141,8 @@ describe('MedplumClient -- Subscriptions', () => {
 
     const connectEvent = await connectEventPromise;
 
-    expect(connectEvent?.type).toEqual('connect');
-    expect(connectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
+    expect(connectEvent?.type).toStrictEqual('connect');
+    expect(connectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
 
     const disconnectEvent = await new Promise<SubscriptionEventMap['disconnect']>((resolve) => {
       emitter.addEventListener('disconnect', (event) => {
@@ -150,8 +150,8 @@ describe('MedplumClient -- Subscriptions', () => {
       });
       expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
     });
-    expect(disconnectEvent?.type).toEqual('disconnect');
-    expect(disconnectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
+    expect(disconnectEvent?.type).toStrictEqual('disconnect');
+    expect(disconnectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
 
     expect(() => medplum.unsubscribeFromCriteria('Communication')).not.toThrow();
     expect(console.warn).toHaveBeenCalledTimes(1);
@@ -195,7 +195,7 @@ describe('MedplumClient -- More Subscription Tests', () => {
 
     const connectEvent = await connectEventPromise;
 
-    expect(connectEvent?.type).toEqual('connect');
-    expect(connectEvent?.payload?.subscriptionId).toEqual(MOCK_SUBSCRIPTION_ID);
+    expect(connectEvent?.type).toStrictEqual('connect');
+    expect(connectEvent?.payload?.subscriptionId).toStrictEqual(MOCK_SUBSCRIPTION_ID);
   });
 });

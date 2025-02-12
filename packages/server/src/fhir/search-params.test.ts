@@ -1,5 +1,5 @@
 import { createReference, getReferenceString, Operator } from '@medplum/core';
-import { Appointment, DiagnosticReport, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
+import { Appointment, DiagnosticReport, Flag, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig, MedplumServerConfig } from '../config';
@@ -98,8 +98,8 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(results1.entry).toHaveLength(1);
-      expect(results1.entry?.[0].resource?.resourceType).toEqual('Appointment');
-      expect((results1.entry?.[0].resource as Appointment).id).toEqual(appointment1.id);
+      expect(results1.entry?.[0].resource?.resourceType).toStrictEqual('Appointment');
+      expect((results1.entry?.[0].resource as Appointment).id).toStrictEqual(appointment1.id);
 
       const results2 = await repo.search({
         resourceType: 'Appointment',
@@ -159,8 +159,8 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(results1.entry).toHaveLength(1);
-      expect(results1.entry?.[0].resource?.resourceType).toEqual('Slot');
-      expect((results1.entry?.[0].resource as Slot).id).toEqual(slot1.id);
+      expect(results1.entry?.[0].resource?.resourceType).toStrictEqual('Slot');
+      expect((results1.entry?.[0].resource as Slot).id).toStrictEqual(slot1.id);
 
       const results2 = await repo.search({
         resourceType: 'Slot',
@@ -235,8 +235,8 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(results1.entry).toHaveLength(1);
-      expect(results1.entry?.[0].resource?.resourceType).toEqual('DiagnosticReport');
-      expect((results1.entry?.[0].resource as DiagnosticReport).id).toEqual(report1.id);
+      expect(results1.entry?.[0].resource?.resourceType).toStrictEqual('DiagnosticReport');
+      expect((results1.entry?.[0].resource as DiagnosticReport).id).toStrictEqual(report1.id);
 
       const results2 = await repo.search({
         resourceType: 'DiagnosticReport',
@@ -244,7 +244,86 @@ describe('Medplum Custom Search Parameters', () => {
       });
 
       expect(results2.entry).toHaveLength(1);
-      expect(results2.entry?.[0].resource?.resourceType).toEqual('DiagnosticReport');
-      expect((results2.entry?.[0].resource as DiagnosticReport).id).toEqual(report2.id);
+      expect(results2.entry?.[0].resource?.resourceType).toStrictEqual('DiagnosticReport');
+      expect((results2.entry?.[0].resource as DiagnosticReport).id).toStrictEqual(report2.id);
+    }));
+
+  test('Search by Flag.category', () =>
+    withTestContext(async () => {
+      const patient = await repo.createResource({ resourceType: 'Patient' });
+      expect(patient).toBeDefined();
+
+      const flag1: Flag = await repo.createResource({
+        resourceType: 'Flag',
+        status: 'active',
+        subject: createReference(patient),
+        category: [
+          {
+            coding: [{ system: 'http://terminology.hl7.org/CodeSystem/flag-category', code: 'drug', display: 'Drug' }],
+          },
+        ],
+        code: { coding: [{ system: 'http://snomed.info/sct', code: '3902000' }] },
+      });
+
+      const flag2: Flag = await repo.createResource({
+        resourceType: 'Flag',
+        status: 'active',
+        subject: createReference(patient),
+        category: [
+          {
+            coding: [{ system: 'http://terminology.hl7.org/CodeSystem/flag-category', code: 'lab', display: 'Lab' }],
+          },
+        ],
+        code: { coding: [{ system: 'http://snomed.info/sct', code: '3902000' }] },
+      });
+
+      expect(flag1).toBeDefined();
+      expect(flag2).toBeDefined();
+
+      const results = await repo.search({
+        resourceType: 'Flag',
+        filters: [
+          {
+            code: 'category',
+            operator: Operator.EQUALS,
+            value: 'http://terminology.hl7.org/CodeSystem/flag-category|drug',
+          },
+        ],
+      });
+
+      expect(results.entry).toHaveLength(1);
+      expect(results.entry?.[0].resource?.resourceType).toStrictEqual('Flag');
+      expect(results.entry?.[0].resource?.id as string).toStrictEqual(flag1.id as string);
+    }));
+
+  test('Search by AsyncJob.type and AsyncJob.status', () =>
+    withTestContext(async () => {
+      const dataMigrationJob = await repo.createResource({
+        resourceType: 'AsyncJob',
+        type: 'data-migration',
+        status: 'accepted',
+        request: 'data-migration',
+        requestTime: new Date().toISOString(),
+        dataVersion: 1,
+        minServerVersion: '3.2.31',
+      });
+      expect(dataMigrationJob).toBeDefined();
+
+      await repo.createResource({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        request: 'not-data-migration',
+        requestTime: new Date().toISOString(),
+      });
+
+      const result = await repo.search({
+        resourceType: 'AsyncJob',
+        filters: [
+          { code: 'type', operator: Operator.EQUALS, value: 'data-migration' },
+          { code: 'status', operator: Operator.EQUALS, value: 'accepted' },
+        ],
+      });
+
+      expect(result.entry).toHaveLength(1);
     }));
 });

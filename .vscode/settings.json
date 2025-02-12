@@ -20,5 +20,6 @@
   },
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": "never"
-  }
+  },
+  "cSpell.words": ["Medplum", "FHIR"]
 }

@@ -83,7 +83,7 @@ describe('Mock Repo', () => {
 
     const resource2 = await client.readResource('Patient', resource1.id as string);
     expect(resource2).toBeDefined();
-    expect(resource2.id).toEqual(resource1.id);
+    expect(resource2.id).toStrictEqual(resource1.id);
 
     await client.deleteResource('Patient', resource1.id as string);
 
@@ -92,7 +92,7 @@ describe('Mock Repo', () => {
       fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 

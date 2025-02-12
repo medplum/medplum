@@ -1,6 +1,5 @@
 import {
   Bundle,
-  BundleEntry,
   CodeableConcept,
   Coding,
   ElementDefinition,
@@ -8,11 +7,12 @@ import {
   Resource,
   ResourceType,
   SearchParameter,
+  StructureDefinition,
 } from '@medplum/fhirtypes';
 import { formatHumanName } from './format';
 import { SearchParameterDetails } from './search/details';
 import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
-import { capitalize, createReference, flatMapFilter } from './utils';
+import { capitalize, createReference } from './utils';
 
 export type TypeName<T> = T extends string
   ? 'string'
@@ -144,7 +144,7 @@ export interface TypeInfo {
  * @see {@link IndexedStructureDefinition} for more details on indexed StructureDefinitions.
  */
 export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): void {
-  for (const entry of bundle.entry as BundleEntry[]) {
+  for (const entry of bundle.entry ?? []) {
     const resource = entry.resource as SearchParameter;
     if (resource.resourceType === 'SearchParameter') {
       indexSearchParameter(resource);
@@ -152,12 +152,12 @@ export function indexSearchParameterBundle(bundle: Bundle<SearchParameter>): voi
   }
 }
 
-export function indexDefaultSearchParameters(bundle: Bundle): void {
-  const sds =
-    flatMapFilter(bundle.entry, (e) => (e.resource?.resourceType === 'StructureDefinition' ? e.resource : undefined)) ??
-    [];
-  for (const sd of sds) {
-    getOrInitTypeSchema(sd.type);
+export function indexDefaultSearchParameters(bundle: StructureDefinition[] | Bundle): void {
+  const maybeSDs = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource) ?? []);
+  for (const sd of maybeSDs) {
+    if (sd?.resourceType === 'StructureDefinition' && sd.kind === 'resource') {
+      getOrInitTypeSchema(sd.type);
+    }
   }
 }
 
@@ -494,7 +494,7 @@ export function stringifyTypedValue(v: TypedValue): string {
       return v.value.reference;
     default:
       if (isResource(v.value)) {
-        return createReference(v.value).reference as string;
+        return createReference(v.value).reference;
       }
       return JSON.stringify(v);
   }

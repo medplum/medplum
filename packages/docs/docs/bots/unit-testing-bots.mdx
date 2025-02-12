@@ -45,7 +45,7 @@ Most bot unit tests follow a common pattern:
 3. Invoke the handler function
 4. Query mock resources and assert test your test criteria
 
-The [finalize-report tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-report.ts) are a great example of this pattern.
+The [finalize-report tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-report.ts) are a great example of this pattern.
 
 ### Create a `MockClient`
 
@@ -72,7 +72,7 @@ The Medplum team is working on bringing these features to parity as soon as poss
 
 Most tests require setting up some resources in the mock environment before running the Bot. You can use `createResource()` and `updateResource()` to add resources to your mock server, just as you would with a regular `MedplumClient` instance.
 
-The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
+The [finalize-report bot](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) from [Medplum Demo Bots](https://github.com/medplum/medplum-demo-bots/) provides a good example. Each test sets up a [Patient](/docs/api/fhir/resources/patient), an [Observation](/docs/api/fhir/resources/observation), and a [DiagnosticReport](/docs/api/fhir/resources/diagnosticreport) before invoking the bot.
 
 <details>
   <summary>Example: Create Resources</summary>
@@ -135,7 +135,7 @@ Most of the time, Bots will create or modify resources on the Medplum server. To
 
 To check the bot's response, simply check the return value of your `handler` function.
 
-The after running the Bot, the [finalize-report bot's tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/examples/finalize-reports.test.ts) read the updated `DiagnosticReport` and `Observation` resources to confirm their status.
+The after running the Bot, the [finalize-report bot's tests](https://github.com/medplum/medplum-demo-bots/blob/main/src/finalize-reports.test.ts) read the updated `DiagnosticReport` and `Observation` resources to confirm their status.
 
 <details>
   <summary>Example: Query the results</summary>

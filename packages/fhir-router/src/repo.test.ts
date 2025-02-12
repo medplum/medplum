@@ -204,7 +204,7 @@ describe('MemoryRepository', () => {
 
       expectResultsContents(patients, patientObservations, { count, offset }, result);
       const resultRepoObservation = result[getReferenceString(patients[0])][0];
-      expect(resultRepoObservation).toEqual(observation);
+      expect(resultRepoObservation).toStrictEqual(observation);
       expect(resultRepoObservation.meta?.tag).toBeUndefined();
     });
 
@@ -225,8 +225,8 @@ describe('MemoryRepository', () => {
       );
 
       expectResultsContents(patients, patientObservations, { count, offset }, resultDesc);
-      expect(resultDesc[getReferenceString(patients[0])].map((o) => o.valueString)).toEqual(['2', '1', '0']);
-      expect(resultDesc[getReferenceString(patients[1])].map((o) => o.valueString)).toEqual(['1', '0']);
+      expect(resultDesc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['2', '1', '0']);
+      expect(resultDesc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['1', '0']);
 
       // ascending
       const resultAsc = await repo.searchByReference<Observation>(
@@ -235,8 +235,8 @@ describe('MemoryRepository', () => {
         patients.map((p) => getReferenceString(p))
       );
       expectResultsContents(patients, patientObservations, { count, offset }, resultAsc);
-      expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toEqual(['0', '1', '2']);
-      expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toEqual(['0', '1']);
+      expect(resultAsc[getReferenceString(patients[0])].map((o) => o.valueString)).toStrictEqual(['0', '1', '2']);
+      expect(resultAsc[getReferenceString(patients[1])].map((o) => o.valueString)).toStrictEqual(['0', '1']);
     });
   });
 });

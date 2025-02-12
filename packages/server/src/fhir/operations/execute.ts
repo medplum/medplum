@@ -38,7 +38,8 @@ import vm from 'node:vm';
 import { asyncWrap } from '../../async';
 import { runInLambda } from '../../cloud/aws/execute';
 import { getConfig } from '../../config';
-import { buildTracingExtension, getAuthenticatedContext, getLogger } from '../../context';
+import { buildTracingExtension, getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { generateAccessToken } from '../../oauth/keys';
 import { recordHistogramValue } from '../../otel/otel';
 import { AuditEventOutcome, logAuditEvent } from '../../util/auditevent';
@@ -47,11 +48,11 @@ import { readStreamToString } from '../../util/streams';
 import { createAuditEventEntities, findProjectMembership } from '../../workers/utils';
 import { sendOutcome } from '../outcomes';
 import { getSystemRepo, Repository } from '../repo';
-import { sendResponse } from '../response';
+import { sendFhirResponse } from '../response';
 import { getBinaryStorage } from '../storage';
 import { sendAsyncResponse } from './utils/asyncjobexecutor';
 
-export const EXECUTE_CONTENT_TYPES = [ContentType.JSON, ContentType.FHIR_JSON, ContentType.TEXT, ContentType.HL7_V2];
+export const DEFAULT_VM_CONTEXT_TIMEOUT = 10000;
 
 export interface BotExecutionRequest {
   readonly bot: Bot;
@@ -65,6 +66,7 @@ export interface BotExecutionRequest {
   readonly forwardedFor?: string;
   readonly requestTime?: string;
   readonly traceId?: string;
+  readonly defaultHeaders?: Record<string, string>;
 }
 
 export interface BotExecutionContext extends BotExecutionRequest {
@@ -105,7 +107,7 @@ export const executeHandler = asyncWrap(async (req: Request, res: Response) => {
     const outcome = result.success ? allOk : badRequest(result.logResult);
 
     if (isResource(responseBody) && responseBody.resourceType === 'Binary') {
-      await sendResponse(req, res, outcome, responseBody);
+      await sendFhirResponse(req, res, outcome, responseBody);
       return;
     }
 
@@ -132,8 +134,12 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
   // Otherwise, use the bot's project membership
   const project = bot.meta?.project as string;
   let runAs: ProjectMembership | undefined;
+  let defaultHeaders: Record<string, string> | undefined;
   if (bot.runAsUser) {
     runAs = ctx.membership;
+    defaultHeaders = {
+      Cookie: req.headers.cookie as string,
+    };
   } else {
     runAs = (await findProjectMembership(project, createReference(bot))) ?? ctx.membership;
   }
@@ -146,6 +152,7 @@ async function executeOperation(req: Request): Promise<OperationOutcome | BotExe
     runAs,
     input: req.method === 'POST' ? req.body : req.query,
     contentType: req.header('content-type') as string,
+    defaultHeaders,
   });
 
   return result;
@@ -379,25 +386,29 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
   const botConsole = new MockConsole();
 
   const sandbox = {
+    console: botConsole,
+    fetch,
     require,
     ContentType,
     Hl7Message,
     MedplumClient,
-    fetch,
-    console: botConsole,
+    TextEncoder,
+    URL,
+    URLSearchParams,
     event: {
       bot: createReference(bot),
-      baseUrl: config.baseUrl,
+      baseUrl: config.vmContextBaseUrl ?? config.baseUrl,
       accessToken: request.accessToken,
       input: input instanceof Hl7Message ? input.toString() : input,
       contentType,
       secrets: request.secrets,
       traceId,
+      defaultHeaders: request.defaultHeaders,
     },
   };
 
   const options: vm.RunningScriptOptions = {
-    timeout: 10000,
+    timeout: bot.timeout ? bot.timeout * 1000 : DEFAULT_VM_CONTEXT_TIMEOUT,
   };
 
   // Wrap code in an async block for top-level await support
@@ -410,9 +421,10 @@ async function runInVmContext(request: BotExecutionContext): Promise<BotExecutio
   // End user code
 
   (async () => {
-    const { bot, baseUrl, accessToken, contentType, secrets, traceId } = event;
+    const { bot, baseUrl, accessToken, contentType, secrets, traceId, defaultHeaders } = event;
     const medplum = new MedplumClient({
       baseUrl,
+      defaultHeaders,
       fetch: function(url, options = {}) {
         options.headers ||= {};
         options.headers['X-Trace-Id'] = traceId;
@@ -495,12 +507,12 @@ async function getBotAccessToken(runAs: ProjectMembership): Promise<string> {
  *   1. Most specific beats more general - the runAs project secrets override the bot project secrets
  *   2. Defer to local control" - project admin secrets override system secrets
  *
- * In order of precedence:
+ * From lowest to highest priority:
  *
- *   1. Bot project secrets
- *   2. Bot project system secrets (if bot.system is true)
- *   3. RunAs project secrets (if running in a different linked project)
- *   4. RunAs project system secrets (if bot.system is true and running in a different linked project)
+ *   1. Bot project system secrets (if bot.system is true)
+ *   2. Bot project secrets
+ *   3. RunAs project system secrets (if bot.system is true and running in a different linked project)
+ *   4. RunAs project secrets (if running in a different linked project)
  *
  * @param bot - The bot to get secrets for.
  * @param runAs - The project membership to get secrets for.
@@ -534,14 +546,16 @@ async function addBotSecrets(
   }
 }
 
+const MIRRORED_CONTENT_TYPES: string[] = [ContentType.TEXT, ContentType.HL7_V2];
+
 function getResponseContentType(req: Request): string {
   const requestContentType = req.get('Content-Type');
-  if (requestContentType && (EXECUTE_CONTENT_TYPES as string[]).includes(requestContentType)) {
+  if (requestContentType && MIRRORED_CONTENT_TYPES.includes(requestContentType)) {
     return requestContentType;
   }
 
-  // Default to FHIR
-  return ContentType.FHIR_JSON;
+  // Default to JSON
+  return ContentType.JSON;
 }
 
 /**

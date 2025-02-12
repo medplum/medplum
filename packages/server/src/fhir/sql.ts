@@ -2,7 +2,7 @@ import { OperationOutcomeError, append, conflict, normalizeOperationOutcome, ser
 import { Period } from '@medplum/fhirtypes';
 import { Client, Pool, PoolClient } from 'pg';
 import { env } from 'process';
-import { getLogger } from '../context';
+import { getLogger } from '../logger';
 
 const DEBUG = env['SQL_DEBUG'];
 
@@ -169,6 +169,10 @@ function formatTsquery(filter: string | undefined): string | undefined {
   return noPunctuation.replace(/\s+/g, ':* & ') + ':*';
 }
 
+export interface Expression {
+  buildSql(builder: SqlBuilder): void;
+}
+
 export class Column implements Expression {
   constructor(
     readonly tableName: string | undefined,
@@ -182,16 +186,12 @@ export class Column implements Expression {
   }
 }
 
-export class Literal implements Expression {
+export class Parameter implements Expression {
   constructor(readonly value: string) {}
 
   buildSql(sql: SqlBuilder): void {
-    sql.append(this.value);
+    sql.param(this.value);
   }
-}
-
-export interface Expression {
-  buildSql(builder: SqlBuilder): void;
 }
 
 export class Negation implements Expression {
@@ -445,10 +445,14 @@ export function normalizeDatabaseError(err: any): OperationOutcomeError {
       return new OperationOutcomeError(conflict(err.detail));
     case '40001': // serialization_failure
       // Transaction rollback due to serialization error -> 409 Conflict
-      return new OperationOutcomeError(conflict(err.message));
+      return new OperationOutcomeError(conflict(err.message, err.code));
     case '57014': // query_canceled
       // Statement timeout -> 504 Gateway Timeout
+      getLogger().warn('Database statement timeout', { error: err.message, stack: err.stack, code: err.code });
       return new OperationOutcomeError(serverTimeout(err.message));
+    case '25P02': // in_failed_sql_transaction
+      getLogger().warn('Statement in failed transaction', { stack: err.stack });
+      return new OperationOutcomeError(normalizeOperationOutcome(err));
   }
 
   getLogger().error('Database error', { error: err.message, stack: err.stack, code: err.code });
@@ -495,7 +499,7 @@ interface CTE {
 export class SelectQuery extends BaseQuery implements Expression {
   readonly innerQuery?: SelectQuery | Union | ValuesQuery;
   readonly distinctOns: Column[];
-  readonly columns: (Column | Literal)[];
+  readonly columns: Column[];
   readonly joins: Join[];
   readonly groupBys: GroupBy[];
   readonly orderBys: OrderBy[];
@@ -531,8 +535,8 @@ export class SelectQuery extends BaseQuery implements Expression {
     return this;
   }
 
-  column(column: Column | string | Literal): this {
-    this.columns.push(column instanceof Literal ? column : getColumn(column, this.tableName));
+  column(column: Column | string): this {
+    this.columns.push(getColumn(column, this.tableName));
     return this;
   }
 
@@ -635,18 +639,16 @@ export class SelectQuery extends BaseQuery implements Expression {
 
   private buildColumns(sql: SqlBuilder): void {
     if (this.columns.length === 0) {
-      throw new Error('No columns selected');
+      sql.append('1');
+      return;
     }
+
     let first = true;
     for (const column of this.columns) {
       if (!first) {
         sql.append(', ');
       }
-      if (column instanceof Literal) {
-        sql.appendParameters(column.value, false);
-      } else {
-        sql.appendColumn(column);
-      }
+      sql.appendColumn(column);
       first = false;
     }
   }
@@ -859,20 +861,31 @@ export class InsertQuery extends BaseQuery {
 }
 
 export class DeleteQuery extends BaseQuery {
-  returnColumns?: string[];
+  usingTables?: string[];
 
-  returnColumn(column: Column | string): this {
-    this.returnColumns = append(this.returnColumns, column instanceof Column ? column.columnName : column);
+  using(...tableNames: string[]): this {
+    this.usingTables = tableNames;
     return this;
   }
+
   async execute(conn: Pool | PoolClient): Promise<any[]> {
     const sql = new SqlBuilder();
     sql.append('DELETE FROM ');
     sql.appendIdentifier(this.tableName);
-    this.buildConditions(sql);
-    if (this.returnColumns) {
-      sql.append(` RETURNING (${this.returnColumns.join(', ')})`);
+
+    if (this.usingTables) {
+      sql.append(' USING ');
+      let first = true;
+      for (const tableName of this.usingTables) {
+        if (!first) {
+          sql.append(', ');
+        }
+        sql.appendIdentifier(tableName);
+        first = false;
+      }
     }
+
+    this.buildConditions(sql);
     return (await sql.execute(conn)).rows;
   }
 }

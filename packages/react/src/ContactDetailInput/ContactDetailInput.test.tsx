@@ -107,6 +107,6 @@ describe('ContactDetailInput', () => {
     });
 
     expect(lastValue).toBeDefined();
-    expect(stringify(lastValue)).toBeUndefined();
+    expect(stringify(lastValue)).toStrictEqual('');
   });
 });

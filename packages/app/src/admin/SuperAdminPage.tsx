@@ -41,6 +41,14 @@ export function SuperAdminPage(): JSX.Element {
     startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
   }
 
+  function reloadCron(): void {
+    startAsyncJob(medplum, 'Reload Cron Resources', 'admin/super/reloadcron');
+  }
+
+  function runPendingDataMigration(): void {
+    startAsyncJob(medplum, 'Run Pending Data Migration', 'admin/super/migrate');
+  }
+
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
@@ -62,12 +70,31 @@ export function SuperAdminPage(): JSX.Element {
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
-  function getDatabaseStats(): void {
+  function getDatabaseStats(formData: Record<string, string>): void {
     medplum
-      .post('fhir/R4/$db-stats', {})
+      .post(
+        'fhir/R4/$db-stats',
+        formData.tableNames
+          ? {
+              resourceType: 'Parameters',
+              parameter: [{ name: 'tableNames', valueString: formData.tableNames }],
+            }
+          : undefined
+      )
       .then((params: Parameters) => {
         setModalTitle('Database Stats');
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
+        open();
+      })
+      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+  }
+
+  function getSchemaDiff(): void {
+    medplum
+      .post('fhir/R4/$db-schema-diff')
+      .then((params: Parameters) => {
+        setModalTitle('Schema Diff');
+        setModalContent(<pre>{params.parameter?.find((p) => p.name === 'migrationString')?.valueString}</pre>);
         open();
       })
       .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
@@ -104,6 +131,17 @@ export function SuperAdminPage(): JSX.Element {
       </p>
       <Form>
         <Button onClick={rebuildValueSets}>Rebuild ValueSets</Button>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Run Pending Data Migration</Title>
+      <p>
+        When a Medplum version releases with data migrations to apply, you can run them here. Press this button to kick
+        off the background data migration process.
+      </p>
+      <Form onSubmit={runPendingDataMigration}>
+        <Stack>
+          <Button type="submit">Start Migration</Button>
+        </Stack>
       </Form>
       <Divider my="lg" />
       <Title order={2}>Reindex Resources</Title>
@@ -165,9 +203,31 @@ export function SuperAdminPage(): JSX.Element {
       <Title order={2}>Database Stats</Title>
       <p>Query current table statistics from the database.</p>
       <Form onSubmit={getDatabaseStats}>
-        <Button type="submit">Get Database Stats</Button>
+        <Stack>
+          <FormSection title="Table Names (comma-delimited)" htmlFor="tableNames">
+            <TextInput id="tableNames" name="tableNames" placeholder="Observation,Observation_History" />
+          </FormSection>
+          <Button type="submit">Get Database Stats</Button>
+        </Stack>
       </Form>
-      <Modal opened={opened} onClose={close} title={modalTitle} centered>
+      <Divider my="lg" />
+      <Title order={2}>Database Schema Drift</Title>
+      <p>Show the schema migration needed to match the expected database schema.</p>
+      <Form onSubmit={getSchemaDiff}>
+        <Stack>
+          <Button type="submit">Get Database Schema Drift</Button>
+        </Stack>
+      </Form>
+      <Divider my="lg" />
+      <Title order={2}>Reload Cron Resources</Title>
+      <p>Obliterates the cron queue and rebuilds all the cron job schedulers for cron resources (eg. cron bots).</p>
+      <Form onSubmit={reloadCron}>
+        <Stack>
+          <Button type="submit">Reload Cron Resources</Button>
+        </Stack>
+      </Form>
+
+      <Modal opened={opened} onClose={close} title={modalTitle} centered size="auto">
         {modalContent}
       </Modal>
     </Document>

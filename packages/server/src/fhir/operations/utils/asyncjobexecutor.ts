@@ -1,12 +1,14 @@
 import { OperationOutcomeError, accepted } from '@medplum/core';
+import { UpdateResourceOptions } from '@medplum/fhir-router';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { getLogger } from 'nodemailer/lib/shared';
 import { getConfig } from '../../../config';
 import { getAuthenticatedContext } from '../../../context';
+import { markPendingDataMigrationCompleted } from '../../../database';
 import { sendOutcome } from '../../outcomes';
 import { Repository, getSystemRepo } from '../../repo';
-import { getLogger } from 'nodemailer/lib/shared';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -59,7 +61,7 @@ export class AsyncJobExecutor {
         await this.failJob(systemRepo, err);
       })
       .finally(() => {
-        this.repo.close();
+        this.repo[Symbol.dispose]();
       });
   }
 
@@ -84,25 +86,36 @@ export class AsyncJobExecutor {
   }
 
   async completeJob(repo: Repository, output?: Parameters): Promise<AsyncJob | undefined> {
-    if (!this.resource) {
+    const job = this.resource;
+    if (!job) {
       return undefined;
     }
+    if (job.type === 'data-migration') {
+      await markPendingDataMigrationCompleted(job);
+    }
     return repo.updateResource<AsyncJob>({
-      ...this.resource,
+      ...job,
       status: 'completed',
       transactionTime: new Date().toISOString(),
       output,
     });
   }
 
-  async updateJobProgress(repo: Repository, output: Parameters): Promise<AsyncJob | undefined> {
+  async updateJobProgress(
+    repo: Repository,
+    output: Parameters,
+    options?: UpdateResourceOptions
+  ): Promise<AsyncJob | undefined> {
     if (!this.resource) {
       return undefined;
     }
-    return repo.updateResource<AsyncJob>({
-      ...this.resource,
-      output,
-    });
+    return repo.updateResource<AsyncJob>(
+      {
+        ...this.resource,
+        output,
+      },
+      options
+    );
   }
 
   async failJob(repo: Repository, err?: Error): Promise<AsyncJob | undefined> {

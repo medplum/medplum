@@ -25,11 +25,11 @@ describe('Config', () => {
     process.env.MEDPLUM_DATABASE_SSL = '{"require":true}';
     const config = await loadConfig('env');
     expect(config).toBeDefined();
-    expect(config.baseUrl).toEqual('http://localhost:3000');
-    expect(config.port).toEqual(3000);
-    expect(config.database.port).toEqual(5432);
-    expect(config.redis.tls).toEqual({});
-    expect(config.database.ssl).toEqual({ require: true });
+    expect(config.baseUrl).toStrictEqual('http://localhost:3000');
+    expect(config.port).toStrictEqual(3000);
+    expect(config.database.port).toStrictEqual(5432);
+    expect(config.redis.tls).toStrictEqual({});
+    expect(config.database.ssl).toStrictEqual({ require: true });
     expect(getConfig()).toBe(config);
   });
 });

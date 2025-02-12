@@ -157,7 +157,8 @@ describe('SqlBuilder', () => {
 
     test('Select missing columns', () => {
       const sql = new SqlBuilder();
-      expect(() => new SelectQuery('MyTable').buildSql(sql)).toThrow('No columns selected');
+      new SelectQuery('MyTable').buildSql(sql);
+      expect(sql.toString()).toEqual(`SELECT 1 FROM "MyTable"`);
     });
 
     test('periodToRangeString', () => {
@@ -192,7 +193,7 @@ describe('SqlBuilder', () => {
       expect(sql.toString()).toBe(
         `SELECT "MyTable"."id" FROM "MyTable" WHERE to_tsvector('${type}',"MyTable"."name") @@ to_tsquery('${type}',$1)`
       );
-      expect(sql.getValues()).toEqual(['Jimmy:* & James:* & Dean:*']);
+      expect(sql.getValues()).toStrictEqual(['Jimmy:* & James:* & Dean:*']);
     });
   });
 

@@ -101,4 +101,49 @@ describe('OAuthPage', () => {
       fireEvent.click(screen.getByText('Register'));
     });
   });
+
+  test('Fetch and render client info', async () => {
+    const mockClientInfo = {
+      welcomeString: 'Test Client',
+      logo: { contentType: 'image/png', url: 'https://example.com/logo.png', title: 'Test Logo' },
+    };
+    jest.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
+
+    await setup('/oauth?client_id=123');
+    await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
+    expect(screen.getByText('Test Client')).toBeInTheDocument();
+    const logo = screen.getByAltText('Welcome Logo');
+    expect(logo).toBeInTheDocument();
+    expect(logo).toHaveAttribute('src', 'https://example.com/logo.png');
+  });
+
+  test('Fetch empty payload and render default info', async () => {
+    const mockClientInfo = {};
+    jest.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
+
+    await setup('/oauth?client_id=123');
+    await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
+    expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
+    expect(screen.getByText('Medplum Logo')).toBeInTheDocument();
+  });
+
+  test('Fetch logo and render default welcome string', async () => {
+    const mockClientInfo = {
+      logo: { contentType: 'image/png', url: 'https://example.com/logo.png', title: 'Test Logo' },
+    };
+    jest.spyOn(medplum, 'get').mockResolvedValue(mockClientInfo);
+
+    await setup('/oauth?client_id=123');
+    await waitFor(() => expect(medplum.get).toHaveBeenCalledWith('/auth/clientinfo/123'));
+    expect(screen.getByText('Sign in to Medplum')).toBeInTheDocument();
+    const logo = screen.getByAltText('Welcome Logo');
+    expect(logo).toBeInTheDocument();
+  });
+
+  test('Do not fetch client info when client_id is medplum-cli', async () => {
+    jest.spyOn(medplum, 'get').mockReset();
+    const mockGet = jest.spyOn(medplum, 'get');
+    await setup('/oauth?client_id=medplum-cli');
+    expect(mockGet).not.toHaveBeenCalled();
+  });
 });

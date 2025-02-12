@@ -7,10 +7,12 @@ import {
   SearchRequest,
 } from '@medplum/core';
 import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
+import { Operation } from 'rfc6902';
 import { inviteUser } from '../admin/invite';
 import { getConfig } from '../config';
 import { getSystemRepo } from '../fhir/repo';
-import { ScimListResponse, ScimUser } from './types';
+import { patchObject } from '../util/patch';
+import { ScimListResponse, ScimPatchRequest, ScimUser } from './types';
 
 /**
  * Searches for users in the project.
@@ -147,17 +149,48 @@ export async function updateScimUser(project: Project, scimUser: ScimUser): Prom
   }
 
   let user = await systemRepo.readReference<User>(membership.user as Reference<User>);
-  user.firstName = scimUser.name?.givenName as string;
-  user.lastName = scimUser.name?.familyName as string;
-  user.externalId = scimUser.externalId;
 
-  if (scimUser.emails?.[0]?.value) {
-    user.email = scimUser.emails[0]?.value;
+  // Copy the updated properties from the SCIM user to the Medplum user and membership
+  scimUserToUserAndMembership(scimUser, user, membership);
+
+  // Save the updated user and membership
+  user = await systemRepo.updateResource(user);
+  membership = await systemRepo.updateResource(membership);
+
+  return convertToScimUser(user, membership);
+}
+
+/**
+ * Patches an existing user.
+ *
+ * See SCIM 3.5.2 - Modifying with PATCH
+ * https://www.rfc-editor.org/rfc/rfc7644#section-3.5.2
+ *
+ * @param project - The project.
+ * @param id - The user ID.
+ * @param request - The patch request.
+ * @returns The updated user.
+ */
+export async function patchScimUser(project: Project, id: string, request: ScimPatchRequest): Promise<ScimUser> {
+  const systemRepo = getSystemRepo();
+  let membership = await systemRepo.readResource<ProjectMembership>('ProjectMembership', id);
+  if (membership.project?.reference !== getReferenceString(project)) {
+    throw new OperationOutcomeError(forbidden);
   }
 
-  user = await systemRepo.updateResource(user);
+  let user = await systemRepo.readReference<User>(membership.user as Reference<User>);
 
-  membership.externalId = scimUser.externalId;
+  // Convert the user and membership to a SCIM user
+  const scimUser = convertToScimUser(user, membership);
+
+  // Apply the patch operations
+  patchObject(scimUser, convertScimToJsonPatch(request));
+
+  // Copy the updated properties from the SCIM user to the Medplum user and membership
+  scimUserToUserAndMembership(scimUser, user, membership);
+
+  // Save the updated user and membership
+  user = await systemRepo.updateResource(user);
   membership = await systemRepo.updateResource(membership);
 
   return convertToScimUser(user, membership);
@@ -226,8 +259,30 @@ export function convertToScimUser(user: User, membership: ProjectMembership): Sc
       familyName: user.lastName,
     },
     emails: [{ value: user.email }],
-    active: true,
+    active: membership.active ?? true, // Default to true
   };
+}
+
+/**
+ * Copies the SCIM user properties to the Medplum user and project membership.
+ * @param scimUser - The input SCIM user.
+ * @param user - The output Medplum user.
+ * @param membership - The output Medplum project membership.
+ */
+function scimUserToUserAndMembership(scimUser: ScimUser, user: User, membership: ProjectMembership): void {
+  user.firstName = scimUser.name?.givenName as string;
+  user.lastName = scimUser.name?.familyName as string;
+  user.externalId = scimUser.externalId;
+
+  if (scimUser.emails?.[0]?.value) {
+    user.email = scimUser.emails[0]?.value;
+  }
+
+  if (scimUser.active !== undefined) {
+    membership.active = scimUser.active;
+  }
+
+  membership.externalId = scimUser.externalId;
 }
 
 /**
@@ -243,4 +298,53 @@ export function convertToScimListResponse<T>(Resources: T[]): ScimListResponse<T
     startIndex: 1,
     Resources,
   };
+}
+
+/**
+ * Converts a SCIM patch request to a JSONPatch request.
+ * SCIM PATCH operations are not the same as JSONPatch operations.
+ * SCIM PATCH can omit "path" if the operation is "add" or "replace".
+ * SCIM PATCH "path" values can omit the leading "/".
+ *
+ * See: https://www.rfc-editor.org/rfc/rfc7644#section-3.5.2
+ *
+ * @param scimPatch - The original SCIM patch request.
+ * @returns The converted JSONPatch request.
+ */
+export function convertScimToJsonPatch(scimPatch: ScimPatchRequest): Operation[] {
+  if (scimPatch.schemas?.[0] !== 'urn:ietf:params:scim:api:messages:2.0:PatchOp') {
+    throw new Error('Invalid SCIM patch: missing required schema');
+  }
+
+  return scimPatch.Operations.flatMap((inputOperation) => {
+    const { op, path, value } = inputOperation;
+
+    if (op !== 'add' && op !== 'remove' && op !== 'replace') {
+      throw new Error('Invalid SCIM patch: unsupported operation');
+    }
+
+    if (path) {
+      if (path.startsWith('/')) {
+        throw new Error('Invalid SCIM patch: path must not start with "/"');
+      }
+      return { ...inputOperation, path: `/${path}` } as Operation;
+    }
+
+    if (op !== 'add' && op !== 'replace') {
+      // If "path" is missing, only "add" and "replace" operations are allowed
+      throw new Error('Invalid SCIM patch: missing required path');
+    }
+
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      // SCIM PATCH operations do not support arrays
+      throw new Error('Invalid SCIM patch: value must be an object if path is missing');
+    }
+
+    const entries = Object.entries(value);
+    return entries.map(([key, val]) => ({
+      op: op,
+      path: `/${key}`,
+      value: val,
+    }));
+  });
 }

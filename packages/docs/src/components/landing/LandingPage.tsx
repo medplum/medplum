@@ -62,7 +62,7 @@ export function LandingPage(): JSX.Element {
               </Card>
               <Card>
                 <div className={styles.cardImage}>
-                  <AnimatedCircle value={90} />
+                  <AnimatedCircle value={114} />
                 </div>
                 <h3>Elite healthcare dev contributors</h3>
                 <p>
@@ -72,14 +72,12 @@ export function LandingPage(): JSX.Element {
               </Card>
             </CardContainer>
           </Section>
+          <SectionHeader>
+            <h2>Get started, fast</h2>
+          </SectionHeader>
           <Section>
             <pre>
-              <code>
-                git clone https://github.com/medplum/medplum-hello-world.git{'\n'}
-                cd medplum-hello-world{'\n'}
-                npm i{'\n'}
-                npm run dev{'\n'}
-              </code>
+              <code className={styles.initCode}>$ npm init medplum</code>
             </pre>
           </Section>
           <SectionHeader>

@@ -190,7 +190,8 @@
       "ViewDefinitionSelectColumnTag": "#/definitions/ViewDefinitionSelectColumnTag",
       "ViewDefinitionSelectColumn": "#/definitions/ViewDefinitionSelectColumn",
       "ViewDefinitionSelect": "#/definitions/ViewDefinitionSelect",
-      "ViewDefinitionWhere": "#/definitions/ViewDefinitionWhere"
+      "ViewDefinitionWhere": "#/definitions/ViewDefinitionWhere",
+      "ClientApplicationSignInForm": "#/definitions/ClientApplicationSignInForm"
     }
   },
   "oneOf": [
@@ -751,6 +752,9 @@
     },
     {
       "$ref": "#/definitions/ViewDefinitionWhere"
+    },
+    {
+      "$ref": "#/definitions/ClientApplicationSignInForm"
     }
   ],
   "definitions": {
@@ -1313,6 +1317,9 @@
         },
         {
           "$ref": "#/definitions/ViewDefinitionWhere"
+        },
+        {
+          "$ref": "#/definitions/ClientApplicationSignInForm"
         }
       ]
     },
@@ -59682,6 +59689,10 @@
           },
           "type": "array"
         },
+        "active": {
+          "description": "Whether this project membership record is in active use.",
+          "$ref": "#/definitions/boolean"
+        },
         "project": {
           "description": "Project where the memberships are available.",
           "$ref": "#/definitions/Reference"
@@ -59789,6 +59800,10 @@
           "description": "A summary, characterization or explanation of the ClientApplication.",
           "$ref": "#/definitions/string"
         },
+        "signInForm": {
+          "description": "Custom values for the Log In form.",
+          "$ref": "#/definitions/ClientApplicationSignInForm"
+        },
         "secret": {
           "description": "Client secret string used to verify the identity of a client.",
           "$ref": "#/definitions/string"
@@ -59812,6 +59827,10 @@
         "identityProvider": {
           "description": "Optional external Identity Provider (IdP) for the client application.",
           "$ref": "#/definitions/IdentityProvider"
+        },
+        "accessTokenLifetime": {
+          "description": "Optional configuration to set the access token duration",
+          "$ref": "#/definitions/string"
         },
         "refreshTokenLifetime": {
           "description": "Optional configuration to set the refresh token duration",
@@ -60321,6 +60340,10 @@
           "description": "The identifier of the bot runtime environment (i.e., vmcontext, awslambda, etc).",
           "enum": ["awslambda", "vmcontext"]
         },
+        "timeout": {
+          "description": "The maximum allowed execution time of the bot in seconds.",
+          "$ref": "#/definitions/integer"
+        },
         "photo": {
           "description": "Image of the bot.",
           "$ref": "#/definitions/Attachment"
@@ -60782,7 +60805,7 @@
         },
         "status": {
           "description": "The status of the request.",
-          "enum": ["accepted", "active", "completed", "error"]
+          "enum": ["accepted", "active", "completed", "error", "cancelled"]
         },
         "requestTime": {
           "description": "Indicates the server\u0027s time when the query is requested.",
@@ -61059,7 +61082,7 @@
         },
         "status": {
           "description": "The status of the request.",
-          "enum": ["accepted", "active", "completed", "error"]
+          "enum": ["accepted", "active", "completed", "error", "cancelled"]
         },
         "requestTime": {
           "description": "Indicates the server\u0027s time when the query is requested.",
@@ -61076,6 +61099,18 @@
         "output": {
           "description": "Outputs resulting from the async job.",
           "$ref": "#/definitions/Parameters"
+        },
+        "type": {
+          "description": "The type of the AsyncJob.",
+          "enum": ["data-migration"]
+        },
+        "dataVersion": {
+          "description": "The data version of the migration this job represents.",
+          "$ref": "#/definitions/integer"
+        },
+        "minServerVersion": {
+          "description": "The minimum Medplum server version required to run this job.",
+          "$ref": "#/definitions/string"
         }
       },
       "additionalProperties": false,
@@ -62351,6 +62386,20 @@
       },
       "additionalProperties": false,
       "required": ["path"]
+    },
+    "ClientApplicationSignInForm": {
+      "description": "Custom values for the Log In form.",
+      "properties": {
+        "welcomeString": {
+          "description": "Welcome string for the Log In Form.",
+          "$ref": "#/definitions/string"
+        },
+        "logo": {
+          "description": "Logo for the Log In Form.",
+          "$ref": "#/definitions/Attachment"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

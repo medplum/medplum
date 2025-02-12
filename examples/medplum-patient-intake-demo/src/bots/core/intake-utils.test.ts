@@ -26,18 +26,18 @@ describe('getAnswers', async () => {
   test('returns correct number of answers', async () => {
     const repeatedAnswers = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
 
-    expect(repeatedAnswers.length).toEqual(2);
+    expect(repeatedAnswers.length).toStrictEqual(2);
   });
 
   test('answer objects have the correct keys', async () => {
     const repeatedAnswers = getGroupRepeatedAnswers(questionnaire, response, 'coverage-information');
 
-    expect(Object.keys(repeatedAnswers[0])).toEqual([
+    expect(Object.keys(repeatedAnswers[0])).toStrictEqual([
       'insurance-provider',
       'subscriber-id',
       'relationship-to-subscriber',
     ]);
-    expect(Object.keys(repeatedAnswers[1])).toEqual([
+    expect(Object.keys(repeatedAnswers[1])).toStrictEqual([
       'insurance-provider',
       'subscriber-id',
       'relationship-to-subscriber',

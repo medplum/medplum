@@ -6,8 +6,9 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
 import { loadTestConfig } from '../config';
-import { AuthenticatedRequestContext, requestContextStore } from '../context';
+import { AuthenticatedRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
+import { requestContextStore } from '../request-context-store';
 import { addTestUser, withTestContext } from '../test.setup';
 
 describe('SCIM Routes', () => {
@@ -111,6 +112,56 @@ describe('SCIM Routes', () => {
 
     const searchCheck2 = searchResponse2.body.Resources.find((user: any) => user.id === res1.body.id);
     expect(searchCheck2).toBeUndefined();
+  });
+
+  test('Create and patch user', async () => {
+    const res1 = await request(app)
+      .post(`/scim/v2/Users`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.SCIM_JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
+        userType: 'Patient',
+        name: {
+          givenName: 'SCIM',
+          familyName: 'User',
+        },
+        emails: [{ value: randomUUID() + '@example.com' }],
+      });
+    expect(res1.status).toBe(201);
+
+    const readResponse = await request(app)
+      .get(`/scim/v2/Users/${res1.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(readResponse.status).toBe(200);
+    expect(readResponse.body.id).toBe(res1.body.id);
+    expect(readResponse.body.active).toBe(true);
+
+    const searchResponse = await request(app)
+      .get(`/scim/v2/Users`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(searchResponse.status).toBe(200);
+
+    const searchCheck = searchResponse.body.Resources.find((user: any) => user.id === res1.body.id);
+    expect(searchCheck).toBeDefined();
+
+    const patchResponse = await request(app)
+      .patch(`/scim/v2/Users/${res1.body.id}`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.SCIM_JSON)
+      .send({
+        schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
+        Operations: [
+          {
+            op: 'replace',
+            value: {
+              active: false,
+            },
+          },
+        ],
+      });
+    expect(patchResponse.status).toBe(200);
+    expect(patchResponse.body.active).toBe(false);
   });
 
   test.skip('Create missing medplum user type', async () => {

@@ -1,26 +1,29 @@
-import { LogLevel, Logger, ProfileResource, isUUID, parseLogLevel } from '@medplum/core';
+import { Logger, ProfileResource, isUUID, parseLogLevel } from '@medplum/core';
 import { Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
-import { AsyncLocalStorage } from 'async_hooks';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';
+import { IRequestContext, requestContextStore } from './request-context-store';
 import { parseTraceparent } from './traceparent';
+import { systemLogger } from './logger';
 
-export class RequestContext {
+export class RequestContext implements IRequestContext {
   readonly requestId: string;
   readonly traceId: string;
   readonly logger: Logger;
 
-  constructor(requestId: string, traceId: string, logger?: Logger) {
+  constructor(requestId: string, traceId: string, logger?: Logger, loggerMetadata?: Record<string, any>) {
     this.requestId = requestId;
     this.traceId = traceId;
-    this.logger = logger ?? new Logger(write, { requestId, traceId }, parseLogLevel(getConfig().logLevel ?? 'info'));
+    this.logger =
+      logger ??
+      new Logger(write, { ...loggerMetadata, requestId, traceId }, parseLogLevel(getConfig().logLevel ?? 'info'));
   }
 
-  close(): void {
+  [Symbol.dispose](): void {
     // No-op, descendants may override
   }
 
@@ -29,15 +32,19 @@ export class RequestContext {
   }
 }
 
-const systemLogger = new Logger(write, undefined, LogLevel.ERROR);
-
 export class AuthenticatedRequestContext extends RequestContext {
   constructor(
-    ctx: RequestContext,
+    requestId: string,
+    traceId: string,
     readonly authState: Readonly<AuthState>,
-    readonly repo: Repository
+    readonly repo: Repository,
+    logger?: Logger
   ) {
-    super(ctx.requestId, ctx.traceId, ctx.logger);
+    let loggerMetadata: Record<string, any> | undefined;
+    if (repo.currentProject()?.id) {
+      loggerMetadata = { projectId: repo.currentProject()?.id };
+    }
+    super(requestId, traceId, logger, loggerMetadata);
   }
 
   get project(): Project {
@@ -56,26 +63,26 @@ export class AuthenticatedRequestContext extends RequestContext {
     return this.authState.membership.profile as Reference<ProfileResource>;
   }
 
-  close(): void {
-    this.repo.close();
+  [Symbol.dispose](): void {
+    this.repo[Symbol.dispose]();
   }
 
   static system(ctx?: { requestId?: string; traceId?: string }): AuthenticatedRequestContext {
     return new AuthenticatedRequestContext(
-      new RequestContext(ctx?.requestId ?? '', ctx?.traceId ?? '', systemLogger),
+      ctx?.requestId ?? '',
+      ctx?.traceId ?? '',
       {} as unknown as AuthState,
-      getSystemRepo()
+      getSystemRepo(),
+      systemLogger
     );
   }
 }
 
-export const requestContextStore = new AsyncLocalStorage<RequestContext>();
-
-export function tryGetRequestContext(): RequestContext | undefined {
+export function tryGetRequestContext(): IRequestContext | undefined {
   return requestContextStore.getStore();
 }
 
-export function getRequestContext(): RequestContext {
+export function getRequestContext(): IRequestContext {
   const ctx = requestContextStore.getStore();
   if (!ctx) {
     throw new Error('No request context available');
@@ -95,12 +102,13 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
   try {
     const { requestId, traceId } = requestIds(req);
 
-    let ctx = new RequestContext(requestId, traceId);
-
+    let ctx: RequestContext;
     const authState = await authenticateTokenImpl(req);
     if (authState) {
       const repo = await getRepoForLogin(authState, isExtendedMode(req));
-      ctx = new AuthenticatedRequestContext(ctx, authState, repo);
+      ctx = new AuthenticatedRequestContext(requestId, traceId, authState, repo);
+    } else {
+      ctx = new RequestContext(requestId, traceId);
     }
 
     requestContextStore.run(ctx, () => next());
@@ -112,13 +120,8 @@ export async function attachRequestContext(req: Request, res: Response, next: Ne
 export function closeRequestContext(): void {
   const ctx = requestContextStore.getStore();
   if (ctx) {
-    ctx.close();
+    ctx[Symbol.dispose]();
   }
-}
-
-export function getLogger(): Logger {
-  const ctx = requestContextStore.getStore();
-  return ctx ? ctx.logger : systemLogger;
 }
 
 export function tryRunInRequestContext<T>(requestId: string | undefined, traceId: string | undefined, fn: () => T): T {

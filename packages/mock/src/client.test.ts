@@ -10,6 +10,7 @@ import {
   OperationOutcomeError,
   SubscriptionEmitter,
   allOk,
+  badRequest,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
@@ -202,6 +203,23 @@ describe('MockClient', () => {
     expect(await client.post('auth/mfa/enroll', { token: 'foo' })).toMatchObject(allOk);
   });
 
+  test('MFA verify', async () => {
+    const client = new MockClient();
+    expect(await client.post('auth/mfa/verify', { token: 'foo' })).toMatchObject({ login: '123', code: 'xyz' });
+  });
+
+  test('MFA disable -- success', async () => {
+    const client = new MockClient();
+    expect(await client.post('auth/mfa/disable', { token: 'foo' })).toMatchObject(allOk);
+  });
+
+  test('MFA disable -- invalid token', async () => {
+    const client = new MockClient();
+    await expect(client.post('auth/mfa/disable', { token: 'INVALID_TOKEN' })).rejects.toThrow(
+      new OperationOutcomeError(badRequest('Invalid token'))
+    );
+  });
+
   test('Batch request', async () => {
     const client = new MockClient();
     await expect(
@@ -354,6 +372,12 @@ describe('MockClient', () => {
     expect(result.entry).toHaveLength(2);
   });
 
+  test('Search returning no results', async () => {
+    const client = new MockClient();
+    const result = await client.search('Patient', 'name=Simperson');
+    expect(result.entry).toBeUndefined();
+  });
+
   test('Create binary success', async () => {
     const client = new MockClient();
     const result = await client.createBinary('test', 'test.txt', ContentType.TEXT);
@@ -402,7 +426,7 @@ describe('MockClient', () => {
     expect(resource1).toBeDefined();
     const resource2 = await client.readResource('Patient', resource1.id as string);
     expect(resource2).toBeDefined();
-    expect(resource2).toEqual(resource1);
+    expect(resource2).toStrictEqual(resource1);
     expect(resource2).not.toBe(resource1);
   });
 
@@ -413,7 +437,7 @@ describe('MockClient', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 
@@ -426,7 +450,7 @@ describe('MockClient', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 
@@ -436,7 +460,7 @@ describe('MockClient', () => {
     expect(resource1).toBeDefined();
     const resource2 = await client.readHistory('Patient', resource1.id as string);
     expect(resource2).toBeDefined();
-    expect(resource2.resourceType).toEqual('Bundle');
+    expect(resource2.resourceType).toStrictEqual('Bundle');
   });
 
   test('Read history not found', async () => {
@@ -446,7 +470,7 @@ describe('MockClient', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 
@@ -456,7 +480,7 @@ describe('MockClient', () => {
     expect(resource1).toBeDefined();
     const resource2 = await client.readVersion('Patient', resource1.id as string, resource1.meta?.versionId as string);
     expect(resource2).toBeDefined();
-    expect(resource2).toEqual(resource1);
+    expect(resource2).toStrictEqual(resource1);
     expect(resource2).not.toBe(resource1);
   });
 
@@ -469,7 +493,7 @@ describe('MockClient', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 
@@ -483,8 +507,8 @@ describe('MockClient', () => {
 
     const resource2 = await client.updateResource({ ...resource1, active: true });
     expect(resource2).toBeDefined();
-    expect(resource2.id).toEqual(resource1.id);
-    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+    expect(resource2.id).toStrictEqual(resource1.id);
+    expect(resource2.meta?.versionId).not.toStrictEqual(resource1.meta?.versionId);
   });
 
   test('Patch resource', async () => {
@@ -503,8 +527,8 @@ describe('MockClient', () => {
       },
     ]);
     expect(resource2).toBeDefined();
-    expect(resource2.id).toEqual(resource1.id);
-    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+    expect(resource2.id).toStrictEqual(resource1.id);
+    expect(resource2.meta?.versionId).not.toStrictEqual(resource1.meta?.versionId);
   });
 
   test('Patch resource preserves original', async () => {
@@ -524,9 +548,9 @@ describe('MockClient', () => {
       },
     ]);
     expect(resource2).toBeDefined();
-    expect(resource2.name?.[0].given?.[0]).toEqual('Marge');
-    expect(resource1.name?.[0].given?.[0]).toEqual('Homer');
-    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+    expect(resource2.name?.[0].given?.[0]).toStrictEqual('Marge');
+    expect(resource1.name?.[0].given?.[0]).toStrictEqual('Homer');
+    expect(resource2.meta?.versionId).not.toStrictEqual(resource1.meta?.versionId);
   });
 
   test('Patch resource errors', async () => {
@@ -554,7 +578,7 @@ describe('MockClient', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0].details?.text).toEqual('Test failed: Bart != Homer');
+      expect(outcome.issue?.[0].details?.text).toStrictEqual('Test failed: Bart != Homer');
     }
   });
 
@@ -573,14 +597,14 @@ describe('MockClient', () => {
 
     const resource2 = await client.updateResource(resource1);
     expect(resource2).toBeDefined();
-    expect(resource2.id).toEqual(resource1.id);
-    expect(resource2.meta?.versionId).not.toEqual(resource1.meta?.versionId);
+    expect(resource2.id).toStrictEqual(resource1.id);
+    expect(resource2.meta?.versionId).not.toStrictEqual(resource1.meta?.versionId);
 
     const history = await client.readHistory('ServiceRequest', resource1.id as string);
     expect(history).toBeDefined();
     expect(history.entry).toHaveLength(2);
-    expect((history.entry?.[0]?.resource as ServiceRequest).orderDetail?.[0]?.text).toEqual('bar');
-    expect((history.entry?.[1]?.resource as ServiceRequest).orderDetail?.[0]?.text).toEqual('foo');
+    expect((history.entry?.[0]?.resource as ServiceRequest).orderDetail?.[0]?.text).toStrictEqual('bar');
+    expect((history.entry?.[1]?.resource as ServiceRequest).orderDetail?.[0]?.text).toStrictEqual('foo');
   });
 
   test('Delete resource', async () => {
@@ -593,7 +617,7 @@ describe('MockClient', () => {
 
     const resource2 = await client.readResource('Patient', resource1.id as string);
     expect(resource2).toBeDefined();
-    expect(resource2.id).toEqual(resource1.id);
+    expect(resource2.id).toStrictEqual(resource1.id);
 
     await client.deleteResource('Patient', resource1.id as string);
 
@@ -602,7 +626,7 @@ describe('MockClient', () => {
       fail('Should have thrown');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.id).toEqual('not-found');
+      expect(outcome.id).toStrictEqual('not-found');
     }
   });
 
@@ -675,7 +699,7 @@ describe('MockClient', () => {
     expect(patient1).toBeDefined();
 
     const existingPatients = await medplum.search('Patient', 'identifier=999-47-5984');
-    expect(existingPatients.total).toEqual(1);
+    expect(existingPatients.total).toStrictEqual(1);
   });
 
   test('Search one', async () => {
@@ -790,8 +814,8 @@ describe('MockClient', () => {
 
     const homer = result.data.PatientList.find((p: any) => p.id === HomerSimpson.id);
     expect(homer).toBeDefined();
-    expect(homer.name[0].given[0]).toEqual('Homer');
-    expect(homer.name[0].family).toEqual('Simpson');
+    expect(homer.name[0].given[0]).toStrictEqual('Homer');
+    expect(homer.name[0].family).toStrictEqual('Simpson');
   });
 
   test('setProfile()', async () => {
@@ -800,7 +824,7 @@ describe('MockClient', () => {
     const callback = jest.fn();
     medplum.addEventListener('change', callback);
     medplum.setProfile(DrAliceSmith);
-    expect(medplum.getProfile()).toEqual(DrAliceSmith);
+    expect(medplum.getProfile()).toStrictEqual(DrAliceSmith);
     expect(callback).toHaveBeenCalledTimes(1);
   });
 
@@ -859,7 +883,7 @@ describe('MockClient', () => {
     const emitter1 = medplum.subscribeToCriteria('Communication');
     expect(emitter1).toBeInstanceOf(SubscriptionEmitter);
     const emitter2 = medplum.subscribeToCriteria('Communication');
-    expect(emitter1).toEqual(emitter2);
+    expect(emitter1).toStrictEqual(emitter2);
   });
 
   test('unsubscribeFromCriteria()', () => {
@@ -867,11 +891,11 @@ describe('MockClient', () => {
 
     medplum.subscribeToCriteria('Communication');
     medplum.subscribeToCriteria('Communication');
-    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(1);
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toStrictEqual(1);
 
     medplum.unsubscribeFromCriteria('Communication');
     medplum.unsubscribeFromCriteria('Communication');
-    expect(medplum.getSubscriptionManager().getCriteriaCount()).toEqual(0);
+    expect(medplum.getSubscriptionManager().getCriteriaCount()).toStrictEqual(0);
   });
 });
 
@@ -888,11 +912,11 @@ describe('MockAsyncClientStorage', () => {
   });
 
   test('Calling .setInitialized() resolves initPromise', async () => {
-    expect(clientStorage.isInitialized).toEqual(false);
+    expect(clientStorage.isInitialized).toStrictEqual(false);
     const initPromise = clientStorage.getInitPromise();
     clientStorage.setInitialized();
     await expect(initPromise).resolves.toBeUndefined();
-    expect(clientStorage.isInitialized).toEqual(true);
+    expect(clientStorage.isInitialized).toStrictEqual(true);
   });
 
   test('Not calling .setInitialized() causes promise not to resolve', async () => {

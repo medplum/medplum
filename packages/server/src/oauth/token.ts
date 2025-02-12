@@ -152,7 +152,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
     return;
   }
 
-  await sendTokenResponse(res, login, client.refreshTokenLifetime);
+  await sendTokenResponse(res, login, client);
 }
 
 /**
@@ -248,7 +248,7 @@ async function handleAuthorizationCode(req: Request, res: Response): Promise<voi
     }
   }
 
-  await sendTokenResponse(res, login, client?.refreshTokenLifetime);
+  await sendTokenResponse(res, login, client);
 }
 
 /**
@@ -323,8 +323,6 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     }
   }
 
-  const refreshTokenLifetime = client?.refreshTokenLifetime;
-
   // Refresh token rotation
   // Generate a new refresh secret and update the login
   const updatedLogin = await systemRepo.updateResource<Login>({
@@ -334,7 +332,7 @@ async function handleRefreshToken(req: Request, res: Response): Promise<void> {
     userAgent: req.get('User-Agent'),
   });
 
-  await sendTokenResponse(res, updatedLogin, refreshTokenLifetime);
+  await sendTokenResponse(res, updatedLogin, client);
 }
 
 /**
@@ -417,7 +415,7 @@ export async function exchangeExternalAuthToken(
     userAgent: req.get('User-Agent'),
   });
 
-  await sendTokenResponse(res, login, client.refreshTokenLifetime);
+  await sendTokenResponse(res, login, client);
 }
 
 /**
@@ -566,9 +564,9 @@ async function validateClientIdAndSecret(
  * Sends a successful token response.
  * @param res - The HTTP response.
  * @param login - The user login.
- * @param refreshLifetime - The refresh token duration.
+ * @param client - The client application. Optional.
  */
-async function sendTokenResponse(res: Response, login: Login, refreshLifetime?: string): Promise<void> {
+async function sendTokenResponse(res: Response, login: Login, client?: ClientApplication): Promise<void> {
   const config = getConfig();
 
   const systemRepo = getSystemRepo();
@@ -577,7 +575,10 @@ async function sendTokenResponse(res: Response, login: Login, refreshLifetime?: 
     login.membership as Reference<ProjectMembership>
   );
 
-  const tokens = await getAuthTokens(user, login, membership.profile as Reference<ProfileResource>, refreshLifetime);
+  const tokens = await getAuthTokens(user, login, membership.profile as Reference<ProfileResource>, {
+    accessLifetime: client?.accessTokenLifetime,
+    refreshLifetime: client?.refreshTokenLifetime,
+  });
   let patient = undefined;
   let encounter = undefined;
 
@@ -601,13 +602,16 @@ async function sendTokenResponse(res: Response, login: Login, refreshLifetime?: 
       sendTokenError(res, normalizeErrorString(err));
       return;
     }
-    fhircastProps['hub.url'] = config.baseUrl + 'fhircast/STU3/'; // TODO: Figure out how to handle the split between STU2 and STU3...
+    fhircastProps['hub.url'] = `${config.baseUrl}fhircast/STU3`; // TODO: Figure out how to handle the split between STU2 and STU3...
     fhircastProps['hub.topic'] = topic;
   }
 
+  const decodedAccessToken = await verifyJwt(tokens.accessToken);
+  const { exp, iat } = decodedAccessToken.payload;
+
   res.status(200).json({
     token_type: 'Bearer',
-    expires_in: 3600,
+    expires_in: (exp ?? 0) - (iat ?? 0),
     scope: login.scope,
     id_token: tokens.idToken,
     access_token: tokens.accessToken,

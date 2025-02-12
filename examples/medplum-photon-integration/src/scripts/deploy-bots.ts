@@ -31,6 +31,10 @@ const Bots: BotDescription[] = [
     src: 'src/bots/sync-formulary.ts',
     dist: 'dist/bots/sync-formulary.js',
   },
+  {
+    src: 'src/bots/sync-patient-from-photon.ts',
+    dist: 'dist/bots/sync-patient-from-photon.js',
+  },
 ];
 
 async function main(): Promise<void> {

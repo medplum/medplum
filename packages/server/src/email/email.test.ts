@@ -238,8 +238,8 @@ describe('Email', () => {
       throw new Error('Expected to throw');
     } catch (err) {
       const outcome = normalizeOperationOutcome(err);
-      expect(outcome.issue?.[0]?.code).toEqual('invalid');
-      expect(outcome.issue?.[0]?.details?.text).toEqual(
+      expect(outcome.issue?.[0]?.code).toStrictEqual('invalid');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual(
         'Invalid email options: File access rejected for ./package.json'
       );
     }
@@ -265,8 +265,8 @@ describe('Email', () => {
       throw new Error('Expected to throw');
     } catch (err) {
       const outcome = normalizeOperationOutcome(err);
-      expect(outcome.issue?.[0]?.code).toEqual('invalid');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid email options: ERR_INVALID_ARG_TYPE');
+      expect(outcome.issue?.[0]?.code).toStrictEqual('invalid');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid email options: ERR_INVALID_ARG_TYPE');
     }
 
     expect(mockSESv2Client.send.callCount).toBe(0);

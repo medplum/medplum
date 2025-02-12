@@ -38,6 +38,12 @@ describe('Deploy', () => {
     accessToken = await initTestAuth();
   });
 
+  beforeEach(() => {
+    jest
+      .spyOn(awsDeploy, 'getLambdaTimeoutForBot')
+      .mockImplementation(async (_bot: Bot) => awsDeploy.DEFAULT_LAMBDA_TIMEOUT);
+  });
+
   afterAll(async () => {
     await shutdownApp();
   });
@@ -99,8 +105,7 @@ describe('Deploy', () => {
     const res3 = await request(app)
       .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
       .set('Content-Type', ContentType.FHIR_JSON)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send();
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
 
     expect(readBinarySpy).toHaveBeenCalledWith(
@@ -192,7 +197,7 @@ describe('Deploy', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send({ code: '' });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Bot missing executable code');
+    expect(res2.body.issue[0].details.text).toStrictEqual('Bot missing executable code');
   });
 
   test('Bots not enabled', async () => {
@@ -236,6 +241,6 @@ describe('Deploy', () => {
         `,
       });
     expect(res3.status).toBe(400);
-    expect(res3.body.issue[0].details.text).toEqual('Bots not enabled');
+    expect(res3.body.issue[0].details.text).toStrictEqual('Bots not enabled');
   });
 });

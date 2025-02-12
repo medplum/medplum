@@ -225,6 +225,22 @@
       "inherited": false
     },
     {
+      "name": "timeout",
+      "depth": 1,
+      "types": [
+        {
+          "datatype": "integer"
+        }
+      ],
+      "path": "Bot.timeout",
+      "min": 0,
+      "max": "1",
+      "short": "",
+      "definition": "The maximum allowed execution time of the bot in seconds.",
+      "comment": "",
+      "inherited": false
+    },
+    {
       "name": "photo",
       "depth": 1,
       "types": [

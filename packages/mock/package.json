@@ -1,6 +1,6 @@
 {
   "name": "@medplum/mock",
-  "version": "3.2.17",
+  "version": "3.2.31",
   "description": "Medplum Mock Client",
   "keywords": [
     "medplum",
@@ -54,16 +54,16 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "3.2.17",
-    "@medplum/definitions": "3.2.17",
-    "@medplum/fhir-router": "3.2.17",
-    "@medplum/fhirtypes": "3.2.17",
-    "dataloader": "2.2.2",
+    "@medplum/core": "3.2.31",
+    "@medplum/definitions": "3.2.31",
+    "@medplum/fhir-router": "3.2.31",
+    "@medplum/fhirtypes": "3.2.31",
+    "dataloader": "2.2.3",
     "jest-websocket-mock": "2.5.0",
-    "rfc6902": "5.1.1"
+    "rfc6902": "5.1.2"
   },
   "devDependencies": {
-    "@types/pdfmake": "0.2.9"
+    "@types/pdfmake": "0.2.11"
   },
   "engines": {
     "node": ">=18.0.0"

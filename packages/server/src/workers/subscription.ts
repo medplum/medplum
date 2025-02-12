@@ -23,11 +23,11 @@ import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch, { HeadersInit } from 'node-fetch';
 import { createHmac } from 'node:crypto';
 import { MedplumServerConfig } from '../config';
-import { getLogger, getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
+import { getRequestContext, tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { buildAccessPolicy } from '../fhir/accesspolicy';
 import { executeBot } from '../fhir/operations/execute';
 import { Repository, ResendSubscriptionsOptions, getSystemRepo } from '../fhir/repo';
-import { globalLogger } from '../logger';
+import { getLogger, globalLogger } from '../logger';
 import { getRedis } from '../redis';
 import { SubEventsOptions } from '../subscriptions/websockets';
 import { parseTraceparent } from '../traceparent';
@@ -344,11 +344,28 @@ async function getSubscriptions(resource: Resource, project: Project): Promise<S
       },
     ],
   });
-  const redisOnlySubRefStrs = await getRedis().smembers(`medplum:subscriptions:r4:project:${projectId}:active`);
+  const redis = getRedis();
+  const setKey = `medplum:subscriptions:r4:project:${projectId}:active`;
+  const redisOnlySubRefStrs = await redis.smembers(setKey);
   if (redisOnlySubRefStrs.length) {
-    const redisOnlySubStrs = await getRedis().mget(redisOnlySubRefStrs);
+    const redisOnlySubStrs = await redis.mget(redisOnlySubRefStrs);
     if (project.features?.includes('websocket-subscriptions')) {
-      const subArrStr = '[' + redisOnlySubStrs.filter(Boolean).join(',') + ']';
+      const activeSubStrs = redisOnlySubStrs.filter(Boolean);
+      if (redisOnlySubStrs.length - activeSubStrs.length >= 50) {
+        getLogger().warn('Excessive subscription cache miss', {
+          numKeys: redisOnlySubRefStrs.length,
+          hitRate: activeSubStrs.length / redisOnlySubStrs.length,
+          projectId,
+        });
+        const inactiveSubs: string[] = [];
+        for (let i = 0; i < redisOnlySubStrs.length; i++) {
+          if (!redisOnlySubStrs[i]) {
+            inactiveSubs.push(redisOnlySubRefStrs[i]);
+          }
+        }
+        await redis.srem(setKey, inactiveSubs);
+      }
+      const subArrStr = '[' + activeSubStrs.join(',') + ']';
       const inMemorySubs = JSON.parse(subArrStr) as { resource: Subscription; projectId: string }[];
       for (const { resource } of inMemorySubs) {
         subscriptions.push(resource);

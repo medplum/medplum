@@ -1,15 +1,15 @@
 import { ContentType, createReference, getReferenceString, isPopulated } from '@medplum/core';
-import { Binary, Encounter, Patient, Practitioner, Resource, ServiceRequest } from '@medplum/fhirtypes';
+import { Binary, Bundle, Encounter, Patient, Practitioner, Resource, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
 import { loadTestConfig } from '../../config';
+import { DatabaseMode, getDatabasePool } from '../../database';
 import { addTestUser, createTestProject, withTestContext } from '../../test.setup';
 import { Repository } from '../repo';
 import * as searchFile from '../search';
-import { DatabaseMode, getDatabasePool } from '../../database';
 
 const app = express();
 let practitioner: Practitioner;
@@ -122,6 +122,10 @@ describe('GraphQL', () => {
       bobAccessToken = bobRegistration.accessToken;
     })
   );
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   afterAll(async () => {
     await shutdownApp();
@@ -239,7 +243,7 @@ describe('GraphQL', () => {
       .set('Content-Type', ContentType.JSON)
       .send(introspectionRequest);
     expect(res2.status).toBe(200);
-    expect(res2.text).toEqual(res1.text);
+    expect(res2.text).toStrictEqual(res1.text);
   });
 
   test.skip('Get __schema', async () => {
@@ -276,6 +280,7 @@ describe('GraphQL', () => {
         }`,
       });
     expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe('application/json; charset=utf-8');
     expect(res.headers['cache-control']).toBe('no-store, no-cache, must-revalidate');
   });
 
@@ -318,7 +323,7 @@ describe('GraphQL', () => {
       });
     expect(res.status).toBe(200);
     expect(res.body.data.Patient).toBeNull();
-    expect(res.body.errors[0].message).toEqual('Not found');
+    expect(res.body.errors[0].message).toStrictEqual('Not found');
   });
 
   test('Search', async () => {
@@ -677,7 +682,7 @@ describe('GraphQL', () => {
     `,
       });
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual('Field "id" exceeds max depth (depth=13, max=12)');
+    expect(res2.body.issue[0].details.text).toStrictEqual('Field "id" exceeds max depth (depth=13, max=12)');
   });
 
   test('Hidden fields in nested lookups', async () => {
@@ -878,7 +883,7 @@ describe('GraphQL', () => {
     expect(res3.body.data.PatientList).toHaveLength(1);
     expect(res3.body.data.PatientList[0].encounters).toBeNull();
     expect(res3.body.errors).toHaveLength(1);
-    expect(res3.body.errors[0].message).toEqual('Maximum number of searches exceeded');
+    expect(res3.body.errors[0].message).toStrictEqual('Maximum number of searches exceeded');
   });
 
   describe('searchByReference', () => {
@@ -935,7 +940,9 @@ describe('GraphQL', () => {
 
       expect(project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')).toBeUndefined();
       const data = await runQuery(accessToken);
-      expect(data).toEqual({ PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: null }] }] });
+      expect(data).toStrictEqual({
+        PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: null }] }],
+      });
 
       expect(searchByReferenceSpy).not.toHaveBeenCalled();
     });
@@ -964,8 +971,12 @@ describe('GraphQL', () => {
         },
       });
 
-      expect(project1.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')?.valueInteger).toEqual(10);
-      expect(project2.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')?.valueInteger).toEqual(10);
+      expect(project1.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')?.valueInteger).toStrictEqual(
+        10
+      );
+      expect(project2.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')?.valueInteger).toStrictEqual(
+        10
+      );
 
       const patient1 = await repo1.createResource<Patient>({
         resourceType: 'Patient',
@@ -995,12 +1006,14 @@ describe('GraphQL', () => {
 
       const data1 = await runQuery(accessToken1);
       expect(searchByReferenceSpy).toHaveBeenCalledTimes(1);
-      expect(data1).toEqual({ PatientList: [{ id: patient1.id, ObservationList: [{ id: obs1.id, bodySite: null }] }] });
+      expect(data1).toStrictEqual({
+        PatientList: [{ id: patient1.id, ObservationList: [{ id: obs1.id, bodySite: null }] }],
+      });
 
       // obs2 is in project2 but has a reference to patient1 which is in project1, so expect no observations
       const data2 = await runQuery(accessToken2);
       expect(searchByReferenceSpy).toHaveBeenCalledTimes(2);
-      expect(data2).toEqual({ PatientList: [{ id: patient2.id, ObservationList: [] }] });
+      expect(data2).toStrictEqual({ PatientList: [{ id: patient2.id, ObservationList: [] }] });
     });
 
     test('Respect access policy', async () => {
@@ -1051,29 +1064,74 @@ describe('GraphQL', () => {
       // No AccessPolicy
       const data = await runQuery(accessToken);
       expect(searchByReferenceSpy).toHaveBeenCalledTimes(1);
-      expect(data).toEqual({
+      expect(data).toStrictEqual({
         PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: { text: 'left arm' } }] }],
       });
 
       // AccessPolicy excludes Observation
       const restrictedData = await runQuery(restrictedAccessToken);
       expect(searchByReferenceSpy).toHaveBeenCalledTimes(2);
-      expect(restrictedData).toEqual({ PatientList: [{ id: patient.id, ObservationList: null }] });
+      expect(restrictedData).toStrictEqual({ PatientList: [{ id: patient.id, ObservationList: null }] });
 
       // AccessPolicy hides BodySite
       const hiddenData = await runQuery(hiddenBodySiteAccessToken);
       expect(searchByReferenceSpy).toHaveBeenCalledTimes(3);
-      expect(hiddenData).toEqual({
+      expect(hiddenData).toStrictEqual({
         PatientList: [{ id: patient.id, ObservationList: [{ id: obs.id, bodySite: null }] }],
       });
     });
   });
 
+  test('Create Task with groupIdentifier', async () => {
+    const { accessToken } = await createTestProject({
+      withAccessToken: true,
+      withRepo: true,
+      accessPolicy: {
+        resourceType: 'AccessPolicy',
+        resource: [
+          {
+            resourceType: 'CodeSystem',
+            readonly: true,
+          },
+          {
+            resourceType: 'ValueSet',
+            readonly: true,
+          },
+          {
+            resourceType: 'Task',
+            criteria: 'Task?group-identifier=http://example.com/group-identifier-system|example',
+          },
+        ],
+      },
+    });
+
+    const res = await request(app)
+      .post('/fhir/R4/$graphql')
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.JSON)
+      .send({
+        query: `mutation {
+          TaskCreate(
+            res: {
+              resourceType: "Task"
+              status: "requested"
+              intent: "order"
+              groupIdentifier: {
+                system: "http://example.com/group-identifier-system"
+                value: "example"
+              }
+            }
+          )
+          { id }
+        }`,
+      });
+    expect('errors' in res.body).toStrictEqual(false);
+    expect(res.body?.data?.TaskCreate?.id).toBeDefined();
+  });
+
   test('Uses reader instance when available', async () => {
-    const reader = getDatabasePool(DatabaseMode.READER);
-    const readerSpy = jest.spyOn(reader, 'query');
-    const writer = getDatabasePool(DatabaseMode.WRITER);
-    const writerSpy = jest.spyOn(writer, 'query');
+    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
 
     const res = await request(app)
       .post('/fhir/R4/$graphql')
@@ -1083,6 +1141,39 @@ describe('GraphQL', () => {
     expect(res.status).toBe(200);
     expect(readerSpy).toHaveBeenCalledTimes(1);
     expect(writerSpy).toHaveBeenCalledTimes(0);
+  });
+
+  test('GraphQL in batch users writer', async () => {
+    const readerSpy = jest.spyOn(getDatabasePool(DatabaseMode.READER), 'query');
+    const writerSpy = jest.spyOn(getDatabasePool(DatabaseMode.WRITER), 'query');
+
+    const batch: Bundle = {
+      resourceType: 'Bundle',
+      type: 'batch',
+      entry: [
+        {
+          request: {
+            method: 'POST',
+            url: '$graphql',
+          },
+          resource: {
+            query: `{ PatientList(_id: "${patient.id}") { id } }`,
+          } as unknown as Resource,
+        },
+      ],
+    };
+    const res = await request(app)
+      .post(`/fhir/R4/`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .send(batch);
+    expect(res.status).toBe(200);
+    expect(res.body.resourceType).toStrictEqual('Bundle');
+    expect(res.body.entry[0].resource.data.PatientList).toHaveLength(1);
+    expect(res.body.entry[0].resource.data.PatientList[0].id).toBe(patient.id);
+
+    expect(readerSpy).toHaveBeenCalledTimes(0);
+    expect(writerSpy).toHaveBeenCalledTimes(1);
   });
 });
 

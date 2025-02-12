@@ -915,10 +915,10 @@ describe('Subscription Worker', () => {
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(1);
+      expect(bundle.entry?.length).toStrictEqual(1);
 
       const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
-      expect(auditEvent.outcomeDesc).toEqual('Bots not enabled');
+      expect(auditEvent.outcomeDesc).toStrictEqual('Bots not enabled');
       expect(auditEvent.period).toBeDefined();
       expect(auditEvent.entity).toHaveLength(3);
     }));
@@ -981,8 +981,8 @@ describe('Subscription Worker', () => {
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(1);
-      expect(bundle.entry?.[0]?.resource?.outcome).toEqual('0');
+      expect(bundle.entry?.length).toStrictEqual(1);
+      expect(bundle.entry?.[0]?.resource?.outcome).toStrictEqual('0');
     }));
 
   test('Stop retries if Subscription status not active', () =>
@@ -1033,7 +1033,7 @@ describe('Subscription Worker', () => {
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(0);
+      expect(bundle.entry?.length).toStrictEqual(0);
     }));
 
   test('Stop retries if Subscription deleted', () =>
@@ -1081,7 +1081,7 @@ describe('Subscription Worker', () => {
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(0);
+      expect(bundle.entry?.length).toStrictEqual(0);
     }));
 
   test('Stop retries if Resource deleted', () =>
@@ -1129,7 +1129,7 @@ describe('Subscription Worker', () => {
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(0);
+      expect(bundle.entry?.length).toStrictEqual(0);
     }));
 
   test('AuditEvent has Subscription account details', () =>
@@ -1184,10 +1184,10 @@ describe('Subscription Worker', () => {
           },
         ],
       });
-      expect(bundle.entry?.length).toEqual(1);
+      expect(bundle.entry?.length).toStrictEqual(1);
 
       const auditEvent = bundle.entry?.[0]?.resource as AuditEvent;
-      expect(auditEvent.meta?.account?.reference).toEqual(account.reference);
+      expect(auditEvent.meta?.account?.reference).toStrictEqual(account.reference);
       expect(auditEvent.meta?.accounts).toHaveLength(1);
       expect(auditEvent.meta?.accounts).toContainEqual({ reference: account.reference });
       expect(auditEvent.entity).toHaveLength(2);
@@ -1252,11 +1252,11 @@ describe('Subscription Worker', () => {
         ],
       });
 
-      expect(bundle.entry?.length).toEqual(1);
+      expect(bundle.entry?.length).toStrictEqual(1);
 
       const auditEvent = bundle.entry?.[0].resource as AuditEvent;
       // Should return a successful AuditEventOutcome with a normally failing status
-      expect(auditEvent.outcome).toEqual(AuditEventOutcome.Success);
+      expect(auditEvent.outcome).toStrictEqual(AuditEventOutcome.Success);
     }));
 
   test('FhirPathCriteria extension', () =>

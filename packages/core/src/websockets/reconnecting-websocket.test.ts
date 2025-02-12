@@ -26,7 +26,7 @@ describe('ReconnectingWebSocket', () => {
 
     reconnectingWebSocket.close();
     const closedEvent = await closedPromise;
-    expect(closedEvent.type).toEqual('close');
+    expect(closedEvent.type).toStrictEqual('close');
   });
 
   test('.reconnect()', async () => {
@@ -41,7 +41,7 @@ describe('ReconnectingWebSocket', () => {
 
     reconnectingWebSocket.close();
     const closedEvent = await closedPromise;
-    expect(closedEvent.type).toEqual('close');
+    expect(closedEvent.type).toStrictEqual('close');
 
     const openPromise = new Promise<WebSocketEventMap['open']>((resolve) => {
       reconnectingWebSocket.addEventListener('open', (event) => {
@@ -52,7 +52,7 @@ describe('ReconnectingWebSocket', () => {
     reconnectingWebSocket.reconnect();
 
     const openEvent = await openPromise;
-    expect(openEvent.type).toEqual('open');
+    expect(openEvent.type).toStrictEqual('open');
 
     const closedPromise2 = new Promise<WebSocketEventMap['close']>((resolve) => {
       reconnectingWebSocket.addEventListener('close', (event) => {
@@ -66,10 +66,10 @@ describe('ReconnectingWebSocket', () => {
     });
     reconnectingWebSocket.reconnect();
     const closedEvent2 = await closedPromise2;
-    expect(closedEvent2.type).toEqual('close');
+    expect(closedEvent2.type).toStrictEqual('close');
 
     const openEvent2 = await openPromise2;
-    expect(openEvent2.type).toEqual('open');
+    expect(openEvent2.type).toStrictEqual('open');
   });
 
   test('onopen', async () => {
@@ -77,7 +77,7 @@ describe('ReconnectingWebSocket', () => {
       reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws');
       reconnectingWebSocket.onopen = resolve;
     });
-    expect(event.type).toEqual('open');
+    expect(event.type).toStrictEqual('open');
   });
 
   test('onclose', async () => {
@@ -85,13 +85,13 @@ describe('ReconnectingWebSocket', () => {
       reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws');
       reconnectingWebSocket.onopen = resolve;
     });
-    expect(event1.type).toEqual('open');
+    expect(event1.type).toStrictEqual('open');
 
     const event2 = await new Promise<Event>((resolve) => {
       reconnectingWebSocket.onclose = resolve;
       reconnectingWebSocket.close();
     });
-    expect(event2.type).toEqual('close');
+    expect(event2.type).toStrictEqual('close');
   });
 
   test('onmessage', async () => {
@@ -99,13 +99,13 @@ describe('ReconnectingWebSocket', () => {
       reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws');
       reconnectingWebSocket.onopen = resolve;
     });
-    expect(event1.type).toEqual('open');
+    expect(event1.type).toStrictEqual('open');
 
     const event2 = await new Promise<Event>((resolve) => {
       reconnectingWebSocket.onmessage = resolve;
       wsServer.send('Hello, world!');
     });
-    expect(event2.type).toEqual('message');
+    expect(event2.type).toStrictEqual('message');
   });
 
   test('onerror', async () => {
@@ -113,18 +113,18 @@ describe('ReconnectingWebSocket', () => {
       reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws');
       reconnectingWebSocket.onopen = resolve;
     });
-    expect(event1.type).toEqual('open');
+    expect(event1.type).toStrictEqual('open');
 
     const event2 = await new Promise<Event>((resolve) => {
       reconnectingWebSocket.onerror = resolve;
       wsServer.error();
     });
-    expect(event2.type).toEqual('error');
+    expect(event2.type).toStrictEqual('error');
   });
 
   test('.bufferedAmount', async () => {
     reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws');
-    expect(reconnectingWebSocket.bufferedAmount).toEqual(0);
+    expect(reconnectingWebSocket.bufferedAmount).toStrictEqual(0);
 
     // Test buffering before WebSocket is open
     reconnectingWebSocket.send('Hello, Medplum!');
@@ -137,14 +137,14 @@ describe('ReconnectingWebSocket', () => {
     });
     await wsServer.connected;
     const openEvent = await openPromise;
-    expect(openEvent.type).toEqual('open');
+    expect(openEvent.type).toStrictEqual('open');
 
-    expect(reconnectingWebSocket.bufferedAmount).toEqual(0);
+    expect(reconnectingWebSocket.bufferedAmount).toStrictEqual(0);
   });
 
   test('.extensions', async () => {
     reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws');
-    expect(reconnectingWebSocket.bufferedAmount).toEqual(0);
+    expect(reconnectingWebSocket.bufferedAmount).toStrictEqual(0);
     const openPromise = new Promise<WebSocketEventMap['open']>((resolve) => {
       reconnectingWebSocket.addEventListener('open', (event) => {
         resolve(event);
@@ -152,14 +152,14 @@ describe('ReconnectingWebSocket', () => {
     });
     await wsServer.connected;
     const openEvent = await openPromise;
-    expect(openEvent.type).toEqual('open');
+    expect(openEvent.type).toStrictEqual('open');
 
-    expect(reconnectingWebSocket.extensions).toEqual('');
+    expect(reconnectingWebSocket.extensions).toStrictEqual('');
   });
 
   test('.binaryType', async () => {
     reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws');
-    expect(reconnectingWebSocket.bufferedAmount).toEqual(0);
+    expect(reconnectingWebSocket.bufferedAmount).toStrictEqual(0);
     const openPromise = new Promise<WebSocketEventMap['open']>((resolve) => {
       reconnectingWebSocket.addEventListener('open', (event) => {
         resolve(event);
@@ -167,19 +167,19 @@ describe('ReconnectingWebSocket', () => {
     });
     await wsServer.connected;
     const openEvent = await openPromise;
-    expect(openEvent.type).toEqual('open');
+    expect(openEvent.type).toStrictEqual('open');
 
-    expect(reconnectingWebSocket.binaryType).toEqual('blob');
+    expect(reconnectingWebSocket.binaryType).toStrictEqual('blob');
     expect(() => {
       reconnectingWebSocket.binaryType = 'arraybuffer';
     }).not.toThrow();
-    expect(reconnectingWebSocket.binaryType).toEqual('arraybuffer');
+    expect(reconnectingWebSocket.binaryType).toStrictEqual('arraybuffer');
   });
 
   test('options.startClosed', async () => {
     reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws', undefined, { startClosed: true });
     await sleep(200);
-    expect(reconnectingWebSocket.readyState).toEqual(WebSocket.CLOSED);
+    expect(reconnectingWebSocket.readyState).toStrictEqual(WebSocket.CLOSED);
     const openPromise = new Promise<WebSocketEventMap['open']>((resolve) => {
       reconnectingWebSocket.addEventListener('open', (event) => {
         resolve(event);
@@ -187,8 +187,8 @@ describe('ReconnectingWebSocket', () => {
     });
     reconnectingWebSocket.reconnect();
     const openEvent = await openPromise;
-    expect(openEvent.type).toEqual('open');
-    expect(reconnectingWebSocket.readyState).toEqual(WebSocket.OPEN);
+    expect(openEvent.type).toStrictEqual('open');
+    expect(reconnectingWebSocket.readyState).toStrictEqual(WebSocket.OPEN);
   });
 
   test('options.maxRetries', async () => {
@@ -230,7 +230,7 @@ describe('ReconnectingWebSocket', () => {
 
   test('Handle errors', async () => {
     reconnectingWebSocket = new ReconnectingWebSocket('wss://example.com/ws');
-    expect(reconnectingWebSocket.bufferedAmount).toEqual(0);
+    expect(reconnectingWebSocket.bufferedAmount).toStrictEqual(0);
     const openPromise = new Promise<WebSocketEventMap['open']>((resolve) => {
       reconnectingWebSocket.addEventListener('open', (event) => {
         resolve(event);
@@ -238,7 +238,7 @@ describe('ReconnectingWebSocket', () => {
     });
     await wsServer.connected;
     const openEvent = await openPromise;
-    expect(openEvent.type).toEqual('open');
+    expect(openEvent.type).toStrictEqual('open');
 
     const errorPromise = new Promise<WebSocketEventMap['error']>((resolve) => {
       reconnectingWebSocket.addEventListener('error', (event) => {
@@ -248,6 +248,6 @@ describe('ReconnectingWebSocket', () => {
     wsServer.error();
 
     const errorEvent = await errorPromise;
-    expect(errorEvent.type).toEqual('error');
+    expect(errorEvent.type).toStrictEqual('error');
   });
 });
