@@ -1193,6 +1193,30 @@ describe('FHIR Repo', () => {
       expect(results).toHaveLength(0);
     }));
 
+  test('Project Admin setting Resource.meta.accounts', async () =>
+    withTestContext(async () => {
+      const { repo, project } = await createTestProject({ withRepo: true, membership: { admin: true } });
+      const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      const observation = await repo.createResource<Observation>({
+        resourceType: 'Observation',
+        meta: { accounts: [createReference(practitioner)] },
+        status: 'final',
+        code: { text: 'Eye color' },
+        valueString: 'Hazel',
+      });
+      expect(observation.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(observation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner) });
+
+      const practitioner2 = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
+      const updatedObservation = await repo.updateResource<Observation>({
+        ...observation,
+        meta: { accounts: [createReference(practitioner), createReference(practitioner2)] },
+      });
+      expect(updatedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(updatedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner) });
+      expect(updatedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner2) });
+    }));
+
   test('setTypedValue', () => {
     const patient: Patient = {
       resourceType: 'Patient',
