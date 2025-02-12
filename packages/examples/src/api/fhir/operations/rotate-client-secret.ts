@@ -11,13 +11,10 @@ const clientApplication: ClientApplication & { id: string } = {
 };
 
 // start-block rotate
-const result = await medplum.post(
-  medplum.fhirUrl('ClientApplication', clientApplication.id, '$rotate-secret').toString(),
-  {
-    resourceType: 'Parameters',
-    parameter: [{ name: 'secret', valueString: clientApplication.secret }],
-  }
-);
+const result = await medplum.post(medplum.fhirUrl('ClientApplication', clientApplication.id, '$rotate-secret'), {
+  resourceType: 'Parameters',
+  parameter: [{ name: 'secret', valueString: clientApplication.secret }],
+});
 // end-block rotate
 
 console.log(result);
