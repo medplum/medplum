@@ -1209,18 +1209,27 @@ describe('FHIR Repo', () => {
       expect(observation.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
       expect(observation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner) });
 
-      // Update to add second account
+      // Update account
       const practitioner2 = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
       const updatedObservation = await repo.updateResource<Observation>({
         ...observation,
-        meta: { accounts: [createReference(practitioner), createReference(practitioner2)] },
+        meta: { accounts: [createReference(practitioner2)] },
       });
       expect(updatedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
-      expect(updatedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner) });
+      expect(updatedObservation.meta?.compartment).not.toContainEqual({ reference: getReferenceString(practitioner) });
       expect(updatedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner2) });
 
+      // Update to add second account
+      const sharedObservation = await repo.updateResource<Observation>({
+        ...updatedObservation,
+        meta: { accounts: [createReference(practitioner), createReference(practitioner2)] },
+      });
+      expect(sharedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(sharedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner) });
+      expect(sharedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner2) });
+
       // No-op update
-      const noopObservation = await repo.updateResource<Observation>(updatedObservation);
+      const noopObservation = await repo.updateResource<Observation>(sharedObservation);
       expect(noopObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
       expect(noopObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner) });
       expect(noopObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner2) });
