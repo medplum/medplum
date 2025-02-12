@@ -1196,6 +1196,8 @@ describe('FHIR Repo', () => {
   test('Project Admin setting Resource.meta.accounts', async () =>
     withTestContext(async () => {
       const { repo, project } = await createTestProject({ withRepo: true, membership: { admin: true } });
+
+      // Create resource with one account
       const practitioner = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
       const observation = await repo.createResource<Observation>({
         resourceType: 'Observation',
@@ -1207,6 +1209,7 @@ describe('FHIR Repo', () => {
       expect(observation.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
       expect(observation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner) });
 
+      // Update to add second account
       const practitioner2 = await repo.createResource<Practitioner>({ resourceType: 'Practitioner' });
       const updatedObservation = await repo.updateResource<Observation>({
         ...observation,
@@ -1215,6 +1218,25 @@ describe('FHIR Repo', () => {
       expect(updatedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
       expect(updatedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner) });
       expect(updatedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner2) });
+
+      // No-op update
+      const noopObservation = await repo.updateResource<Observation>(updatedObservation);
+      expect(noopObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(noopObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner) });
+      expect(noopObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(practitioner2) });
+
+      // Update without specifying meta.accounts - regenerate
+      const unspecifiedObservation = await repo.updateResource<Observation>({
+        ...noopObservation,
+        meta: { ...noopObservation.meta, account: undefined, accounts: undefined },
+      });
+      expect(unspecifiedObservation.meta?.compartment).toContainEqual({ reference: getReferenceString(project) });
+      expect(unspecifiedObservation.meta?.compartment).not.toContainEqual({
+        reference: getReferenceString(practitioner),
+      });
+      expect(unspecifiedObservation.meta?.compartment).not.toContainEqual({
+        reference: getReferenceString(practitioner2),
+      });
     }));
 
   test('setTypedValue', () => {
