@@ -3891,18 +3891,18 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private async fetchTokens(params: Record<string, string>): Promise<ProfileResource> {
     const formBody = new URLSearchParams(params);
     const headers: HeadersInit = { 'Content-Type': ContentType.FORM_URL_ENCODED, ...this.defaultHeaders };
-if (this.basicAuth) {
-  headers['Authorization'] = `Basic ${this.basicAuth}`;
-} 
+    if (this.basicAuth) {
+      headers['Authorization'] = `Basic ${this.basicAuth}`;
+    }
 
-if (this.credentialsInHeader) {
-  formBody.delete('client_id');
-  formBody.delete('client_secret');
+    if (this.credentialsInHeader) {
+      formBody.delete('client_id');
+      formBody.delete('client_secret');
 
-  if ((!this.basicAuth) && (params.client_id && params.client_secret)) {
-    headers['Authorization'] = `Basic ${encodeBase64(params.client_id + ':' + params.client_secret)}`;
-  }
-}
+      if (!this.basicAuth && params.client_id && params.client_secret) {
+        headers['Authorization'] = `Basic ${encodeBase64(params.client_id + ':' + params.client_secret)}`;
+      }
+    }
     const options: MedplumRequestOptions = {
       method: 'POST',
       headers,
