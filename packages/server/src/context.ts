@@ -52,7 +52,7 @@ export class AuthenticatedRequestContext extends RequestContext {
   }
 
   get membership(): ProjectMembership {
-    return this.authState.membership;
+    return this.authState.onBehalfOfMembership ?? this.authState.membership;
   }
 
   get login(): Login {
@@ -60,7 +60,7 @@ export class AuthenticatedRequestContext extends RequestContext {
   }
 
   get profile(): Reference<ProfileResource> {
-    return this.authState.membership.profile as Reference<ProfileResource>;
+    return this.membership.profile as Reference<ProfileResource>;
   }
 
   [Symbol.dispose](): void {
