@@ -44,6 +44,7 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
+import { appLaunchHandler } from './operations/launch';
 
 export const fhirRouter = Router();
 
@@ -257,6 +258,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // StructureDefinition $expand-profile operation
   router.add('POST', '/StructureDefinition/$expand-profile', structureDefinitionExpandProfileHandler);
+
+  // ClientApplication $launch
+  router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
 
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
