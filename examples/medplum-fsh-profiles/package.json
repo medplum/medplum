@@ -1,6 +1,6 @@
 {
   "name": "medplum-fsh-profiles",
-  "version": "3.2.31",
+  "version": "3.2.32",
   "description": "Medplum FSH Profiles Example",
   "private": true,
   "scripts": {
