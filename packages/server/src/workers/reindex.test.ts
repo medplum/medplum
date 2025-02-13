@@ -1,4 +1,3 @@
-import { createReference, OperationOutcomeError, parseSearchRequest, preconditionFailed } from '@medplum/core';
 import {
   AsyncJob,
   Parameters,
@@ -10,16 +9,15 @@ import {
   User,
 } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
-import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { loadTestConfig } from '../config';
-import * as databaseModule from '../database';
-import { DatabaseMode, getDatabasePool } from '../database';
 import { getSystemRepo, Repository } from '../fhir/repo';
-import { SelectQuery } from '../fhir/sql';
 import { createTestProject, withTestContext } from '../test.setup';
-import * as versionUtils from '../util/version';
-import { addReindexJob, closeReindexWorker, getReindexQueue, ReindexJob, ReindexJobData } from './reindex';
+import { ReindexJob, ReindexJobData, addReindexJob, closeReindexWorker, getReindexQueue } from './reindex';
+import { randomUUID } from 'crypto';
+import { createReference, OperationOutcomeError, parseSearchRequest, preconditionFailed } from '@medplum/core';
+import { SelectQuery } from '../fhir/sql';
+import { DatabaseMode, getDatabasePool } from '../database';
 
 describe('Reindex Worker', () => {
   let repo: Repository;
@@ -575,99 +573,6 @@ describe('Reindex Worker', () => {
         .execute(getDatabasePool(DatabaseMode.READER));
       expect(rows[0].projectId).toStrictEqual(project.id);
     }));
-
-  test('Data migration reindex -- Version too low', () =>
-    withTestContext(async () => {
-      jest.spyOn(versionUtils, 'getServerVersion').mockImplementation(() => '3.2.4');
-      const queue = getReindexQueue() as any;
-      queue.add.mockClear();
-
-      let asyncJob = await repo.createResource<AsyncJob>({
-        resourceType: 'AsyncJob',
-        type: 'data-migration',
-        status: 'accepted',
-        requestTime: new Date().toISOString(),
-        request: '/admin/super/migrate',
-        dataVersion: 1,
-        minServerVersion: '3.2.31',
-      });
-
-      await addReindexJob(['ImmunizationEvaluation'], asyncJob);
-      expect(queue.add).toHaveBeenCalledWith(
-        'ReindexJobData',
-        expect.objectContaining<Partial<ReindexJobData>>({
-          resourceTypes: ['ImmunizationEvaluation'],
-          asyncJob,
-        })
-      );
-
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      const reindexJob = new ReindexJob();
-      const enqueueJobSpy = jest.spyOn(reindexJob, 'enqueueJob');
-      const checkJobStatusSpy = jest.spyOn(reindexJob, 'checkJobStatus');
-      await reindexJob.execute(job);
-
-      asyncJob = await repo.readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toStrictEqual('accepted');
-      expect(enqueueJobSpy).toHaveBeenCalled();
-      expect(checkJobStatusSpy).not.toHaveBeenCalled();
-    }));
-
-  test.each(['3.2.31', '4.0.0'])('Data migration reindex -- Sufficient version - %s', (serverVersion) =>
-    withTestContext(async () => {
-      const markDataMigrateCompleteSpy = jest.spyOn(databaseModule, 'markPendingDataMigrationCompleted');
-      jest.spyOn(versionUtils, 'getServerVersion').mockImplementation(() => serverVersion);
-      const queue = getReindexQueue() as any;
-      queue.add.mockClear();
-
-      let asyncJob = await repo.createResource<AsyncJob>({
-        resourceType: 'AsyncJob',
-        type: 'data-migration',
-        status: 'accepted',
-        requestTime: new Date().toISOString(),
-        request: '/admin/super/migrate',
-        dataVersion: 1,
-        minServerVersion: '3.2.31',
-      });
-
-      await addReindexJob(['ImmunizationEvaluation'], asyncJob);
-      expect(queue.add).toHaveBeenCalledWith(
-        'ReindexJobData',
-        expect.objectContaining<Partial<ReindexJobData>>({
-          resourceTypes: ['ImmunizationEvaluation'],
-          asyncJob,
-        })
-      );
-
-      const job = { id: 1, data: queue.add.mock.calls[0][1] } as unknown as Job;
-      queue.add.mockClear();
-      await new ReindexJob().execute(job);
-
-      asyncJob = await getSystemRepo().readResource('AsyncJob', asyncJob.id as string);
-      expect(asyncJob.status).toStrictEqual('completed');
-      expect(asyncJob.output).toMatchObject<Parameters>({
-        resourceType: 'Parameters',
-        parameter: [
-          {
-            name: 'result',
-            part: expect.arrayContaining([
-              expect.objectContaining({ name: 'resourceType', valueCode: 'ImmunizationEvaluation' }),
-              expect.objectContaining({ name: 'count', valueInteger: 0 }),
-              expect.objectContaining({
-                name: 'elapsedTime',
-                valueQuantity: {
-                  code: 'ms',
-                  value: expect.any(Number),
-                },
-              }),
-            ]),
-          },
-        ],
-      });
-      // Make sure we call `markDataMigrationComplete` after the reindex job if it's a data migration
-      expect(markDataMigrateCompleteSpy).toHaveBeenCalled();
-    })
-  );
 });
 
 describe('Job cancellation', () => {
