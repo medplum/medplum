@@ -1,29 +1,37 @@
+import { Resource } from '@medplum/fhirtypes';
 import {
+  FHIRCAST_EVENT_RESOURCES,
   FhircastEventContext,
-  FhircastEventContextKey,
+  FhircastEventContextDetails,
+  FhircastEventKeys,
   FhircastEventName,
-  FhircastEventResource,
-  FhircastEventResourceType,
-  FhircastValidContextForEvent,
 } from '.';
-import { OperationOutcomeError, validationError } from '../outcomes';
+import { badRequest, OperationOutcomeError, validationError } from '../outcomes';
+import { isResource } from '../types';
+import { createReference } from '../utils';
 
 export function createFhircastMessageContext<
   EventName extends FhircastEventName = FhircastEventName,
-  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
->(
-  key: K,
-  resourceType: FhircastEventResourceType<EventName, K>,
-  resourceId: string
-): FhircastValidContextForEvent<EventName> {
-  if (!(resourceId && typeof resourceId === 'string')) {
-    throw new OperationOutcomeError(validationError('Must provide a resourceId.'));
+  K extends FhircastEventKeys<EventName> = FhircastEventKeys<EventName>,
+>(event: EventName, key: K, resource: Resource): FhircastEventContext<EventName> {
+  if (!(isResource(resource) && resource.id)) {
+    throw new OperationOutcomeError(validationError('Must provide a resource for the context.'));
+  }
+  const eventEntry = (FHIRCAST_EVENT_RESOURCES[event][key] as FhircastEventContextDetails) ?? {};
+  if (!eventEntry) {
+    throw new OperationOutcomeError(badRequest(`Key '${key.toString()}' does not exist for event '${event}'.`));
+  }
+  if (eventEntry.reference && eventEntry.array) {
+    throw new OperationOutcomeError(badRequest('TODO: support for select context'));
+  }
+  if (eventEntry.reference) {
+    return {
+      key,
+      reference: createReference(resource),
+    } as FhircastEventContext<EventName>;
   }
   return {
     key,
-    resource: {
-      resourceType,
-      id: resourceId,
-    } as FhircastEventResource<EventName, K>,
-  } as FhircastEventContext<EventName, K>;
+    resource,
+  } as FhircastEventContext<EventName>;
 }
