@@ -110,6 +110,12 @@ export const TaskDetails = (): JSX.Element => {
         setIsOpened(false);
       }}
       size="xl"
+      styles={{
+        body: {
+          padding: 0,
+          height: '60vh',
+        },
+      }}
     >
       <Stack h="100%" justify="space-between" gap={0}>
         <Box flex={1} miw={0}>
@@ -183,17 +189,11 @@ export const TaskDetails = (): JSX.Element => {
           </Grid>
         </Box>
 
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            marginTop: '1rem',
-          }}
-        >
+        <Box className={classes.footer} h={70} p="md">
           <Button variant="filled" onClick={handleOnSubmit}>
             Save Changes
           </Button>
-        </div>
+        </Box>
       </Stack>
     </Modal>
   );

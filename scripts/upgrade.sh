@@ -69,6 +69,8 @@ echo "Last completed step: $LAST_STEP"
 # storybook-addon-mantine - 4.1.0 seems to accidentally backported requirement for React 19 from v5: https://github.com/josiahayres/storybook-addon-mantine/issues/18
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
 EXCLUDE="@types/express @types/react @types/react-dom eslint node-fetch react react-dom react-router-dom rimraf supertest @tabler/icons-react react-native storybook-addon-mantine commander"
+# @types/node - We specifically don't want to increment major version for Node types since we need to make sure we satisfy backwards compat with the minimum version of Node that we support
+MAJOR_EXCLUDE="@types/node"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
@@ -120,7 +122,7 @@ if [ "$LAST_STEP" -lt 3 ]; then
     # Next, optimistically upgrade to the latest versions
     # "latest" - Upgrade to whatever the package's "latest" git tag points to.
     # `enginesNode` makes sure that packages can be run against the node requirement specified in the monorepo "engines.node"
-    npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE" --target latest --enginesNode
+    npx npm-check-updates --workspaces --root --upgrade --reject "$EXCLUDE $MAJOR_EXCLUDE" --target latest --enginesNode
 
     # Check for changes in the working directory
     if git diff --quiet; then
