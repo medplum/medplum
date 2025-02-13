@@ -3890,7 +3890,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    */
   private async fetchTokens(params: Record<string, string>): Promise<ProfileResource> {
     const formBody = new URLSearchParams(params);
-    const headers: HeadersInit = { 'Content-Type': ContentType.FORM_URL_ENCODED, ...this.defaultHeaders };
+    const headers: HeadersInit = { ...this.defaultHeaders, 'Content-Type': ContentType.FORM_URL_ENCODED };
     if (this.basicAuth) {
       headers['Authorization'] = `Basic ${this.basicAuth}`;
     }
