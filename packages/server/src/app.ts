@@ -256,10 +256,11 @@ const loggingMiddleware = (req: Request, res: Response, next: NextFunction): voi
     let userProfile: string | undefined;
     let projectId: string | undefined;
     if (ctx instanceof AuthenticatedRequestContext) {
-      if (ctx.profile.reference === ctx.realProfile.reference) {
+      const underlyingProfile = ctx.authState.membership.profile;
+      if (ctx.profile.reference === underlyingProfile.reference) {
         userProfile = ctx.profile.reference;
       } else {
-        userProfile = `${ctx.realProfile.reference} (as ${ctx.profile.reference})`;
+        userProfile = `${underlyingProfile.reference} (as ${ctx.profile.reference})`;
       }
       projectId = ctx.project.id;
     }

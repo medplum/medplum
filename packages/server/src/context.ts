@@ -63,10 +63,6 @@ export class AuthenticatedRequestContext extends RequestContext {
     return this.membership.profile;
   }
 
-  get realProfile(): Reference<ProfileResource | Bot | ClientApplication> {
-    return this.authState.membership.profile;
-  }
-
   [Symbol.dispose](): void {
     this.repo[Symbol.dispose]();
   }
