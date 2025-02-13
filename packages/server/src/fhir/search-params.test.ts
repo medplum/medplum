@@ -304,8 +304,6 @@ describe('Medplum Custom Search Parameters', () => {
         status: 'accepted',
         request: 'data-migration',
         requestTime: new Date().toISOString(),
-        dataVersion: 1,
-        minServerVersion: '3.2.31',
       });
       expect(dataMigrationJob).toBeDefined();
 
