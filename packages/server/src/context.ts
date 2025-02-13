@@ -1,5 +1,5 @@
 import { Logger, ProfileResource, isUUID, parseLogLevel } from '@medplum/core';
-import { Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
+import { Bot, ClientApplication, Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
 import { getConfig } from './config';
@@ -59,8 +59,8 @@ export class AuthenticatedRequestContext extends RequestContext {
     return this.authState.login;
   }
 
-  get profile(): Reference<ProfileResource> {
-    return this.membership.profile as Reference<ProfileResource>;
+  get profile(): Reference<ProfileResource | Bot | ClientApplication> {
+    return this.membership.profile;
   }
 
   [Symbol.dispose](): void {
