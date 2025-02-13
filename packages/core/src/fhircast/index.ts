@@ -225,11 +225,47 @@ export type FhircastEventContext<EventName extends FhircastEventName = FhircastR
                         ? FhircastSyncErrorContext
                         : never;
 
-export type CurrentContext<EventName extends FhircastResourceEventName = FhircastResourceEventName> = {
-  'context.type': FhircastAnchorResourceType | '';
-  'context.versionId'?: string;
-  context: (FhircastEventContext<EventName> | FhircastHubContentContext)[];
-};
+export type FhircastPatientEvents = 'Patient-open' | 'Patient-close';
+export type FhircastImagingStudyEvents = 'ImagingStudy-open' | 'ImagingStudy-close';
+export type FhircastEncounterEvents = 'Encounter-open' | 'Encounter-close';
+export type FhircastDiagnosticReportEvents =
+  | 'DiagnosticReport-open'
+  | 'DiagnosticReport-close'
+  | 'DiagnosticReport-update'
+  | 'DiagnosticReport-select';
+export type FhircastAnchorResourceEvents =
+  | FhircastPatientEvents
+  | FhircastImagingStudyEvents
+  | FhircastEncounterEvents
+  | FhircastDiagnosticReportEvents;
+
+export type FhircastExtractAnchorResource<EventName extends FhircastAnchorResourceEvents> =
+  EventName extends FhircastPatientEvents
+    ? 'Patient'
+    : EventName extends FhircastImagingStudyEvents
+      ? 'ImagingStudy'
+      : EventName extends FhircastEncounterEvents
+        ? 'Encounter'
+        : EventName extends FhircastDiagnosticReportEvents
+          ? 'DiagnosticReport'
+          : never;
+
+export type CurrentContext<EventName extends FhircastAnchorResourceEvents | '' = FhircastAnchorResourceEvents | ''> =
+  EventName extends ''
+    ? { 'context.type': ''; context: never[] }
+    : EventName extends FhircastDiagnosticReportEvents
+      ? {
+          'context.type': 'DiagnosticReport';
+          'context.versionId': string;
+          context: (FhircastEventContext<'DiagnosticReport-open'> | FhircastHubContentContext)[];
+        }
+      : EventName extends FhircastPatientEvents | FhircastEncounterEvents | FhircastImagingStudyEvents
+        ? {
+            'context.type': FhircastExtractAnchorResource<EventName>;
+            'context.versionId': string;
+            context: FhircastEventContext<'Patient-open' | 'Encounter-open' | 'ImagingStudy-open'>;
+          }
+        : never;
 
 export type PendingSubscriptionRequest = Omit<SubscriptionRequest, 'endpoint'>;
 
