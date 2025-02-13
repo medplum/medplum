@@ -7,11 +7,11 @@ import {
   CurrentContext,
   FhircastConnection,
   FhircastEventName,
+  FhircastPatientOpenContext,
   PendingSubscriptionRequest,
   SubscriptionRequest,
   serializeFhircastSubscriptionRequest,
 } from './fhircast';
-import { createFhircastMessageContext } from './fhircast/test-utils';
 import { OperationOutcomeError } from './outcomes';
 
 describe('FHIRcast', () => {
@@ -164,10 +164,10 @@ describe('FHIRcast', () => {
 
   describe('fhircastPublish', () => {
     test('Valid context published', async () => {
-      const context = createFhircastMessageContext('Patient-open', 'patient', {
-        id: '123',
-        resourceType: 'Patient',
-      });
+      const context = {
+        key: 'patient',
+        resource: { id: '123', resourceType: 'Patient' },
+      } satisfies FhircastPatientOpenContext;
       const fetch = mockFetch(201, { success: true, event: context });
       const client = new MedplumClient({ fetch });
       await expect(client.fhircastPublish('abc123', 'Patient-open', context)).resolves.toBeDefined();
@@ -183,16 +183,16 @@ describe('FHIRcast', () => {
       // Multiple contexts
       await expect(
         client.fhircastPublish('def456', 'ImagingStudy-open', [
-          createFhircastMessageContext('ImagingStudy-open', 'patient', {
-            id: '123',
-            resourceType: 'Patient',
-          }),
-          createFhircastMessageContext('ImagingStudy-open', 'study', {
-            id: '456',
-            resourceType: 'ImagingStudy',
-            status: 'available',
-            subject: { reference: 'Patient/123' },
-          }),
+          { key: 'patient', resource: { id: '123', resourceType: 'Patient' } },
+          {
+            key: 'study',
+            resource: {
+              id: '456',
+              resourceType: 'ImagingStudy',
+              status: 'available',
+              subject: { reference: 'Patient/123' },
+            },
+          },
         ])
       ).resolves.toBeDefined();
       expect(fetch).toHaveBeenCalledWith(
@@ -207,16 +207,22 @@ describe('FHIRcast', () => {
       // 'DiagnosticReport-open' requires both a report and a patient
       await expect(
         client.fhircastPublish('xyz-789', 'DiagnosticReport-open', [
-          createFhircastMessageContext('DiagnosticReport-open', 'report', {
-            id: '987',
-            resourceType: 'DiagnosticReport',
-            status: 'partial',
-            code: { coding: [{ code: 'test-code' }] },
-          }),
-          createFhircastMessageContext('DiagnosticReport-open', 'patient', {
-            id: '123',
-            resourceType: 'Patient',
-          }),
+          {
+            key: 'report',
+            resource: {
+              id: '987',
+              resourceType: 'DiagnosticReport',
+              status: 'partial',
+              code: { coding: [{ code: 'test-code' }] },
+            },
+          },
+          {
+            key: 'patient',
+            resource: {
+              id: '123',
+              resourceType: 'Patient',
+            },
+          },
         ])
       ).resolves.toBeDefined();
       expect(fetch).toHaveBeenCalledWith(
@@ -234,11 +240,10 @@ describe('FHIRcast', () => {
       const client = new MedplumClient({ fetch });
       await expect(
         // Topic needs to be a string with a length
-        client.fhircastPublish(
-          '',
-          'Patient-open',
-          createFhircastMessageContext('Patient-open', 'patient', { id: '123', resourceType: 'Patient' })
-        )
+        client.fhircastPublish('', 'Patient-open', {
+          key: 'patient',
+          resource: { id: '123', resourceType: 'Patient' },
+        })
       ).rejects.toBeInstanceOf(OperationOutcomeError);
       await expect(
         // @ts-expect-error Invalid context object
@@ -249,33 +254,32 @@ describe('FHIRcast', () => {
           'abc123',
           // @ts-expect-error Invalid event
           'random-event',
-          createFhircastMessageContext('Patient-open', 'patient', {
-            id: '123',
-            resourceType: 'Patient',
-          })
+          { key: 'patient', resource: { id: '123', resourceType: 'Patient' } }
         )
       ).rejects.toBeInstanceOf(OperationOutcomeError);
 
       // 'DiagnosticReport-open' requires both a report and a patient
       await expect(
-        client.fhircastPublish(
-          'xyz-789',
-          'DiagnosticReport-open',
-          createFhircastMessageContext('DiagnosticReport-open', 'report', {
+        client.fhircastPublish('xyz-789', 'DiagnosticReport-open', {
+          key: 'report',
+          resource: {
             id: '987',
             resourceType: 'DiagnosticReport',
             status: 'partial',
             code: { coding: [{ code: 'test-code' }] },
-          })
-        )
+          },
+        })
       ).rejects.toBeInstanceOf(OperationOutcomeError);
     });
 
     test('Setting `fhircastHubUrl`', async () => {
-      const context = createFhircastMessageContext('Patient-open', 'patient', {
-        id: '123',
-        resourceType: 'Patient',
-      });
+      const context = {
+        key: 'patient',
+        resource: {
+          id: '123',
+          resourceType: 'Patient',
+        },
+      } satisfies FhircastPatientOpenContext;
       const fetch = mockFetch(201, { success: true, event: context });
       const client = new MedplumClient({ fetch, fhircastHubUrl: 'http://example.com/foo/hub' });
       await expect(client.fhircastPublish('abc123', 'Patient-open', context)).resolves.toBeDefined();
@@ -302,12 +306,15 @@ describe('FHIRcast', () => {
         'context.type': 'DiagnosticReport',
         'context.versionId': generateId(),
         context: [
-          createFhircastMessageContext<'DiagnosticReport-open'>('DiagnosticReport-open', 'report', {
-            id: generateId(),
-            resourceType: 'DiagnosticReport',
-            status: 'partial',
-            code: { coding: [{ code: 'test-code' }] },
-          }),
+          {
+            key: 'report',
+            resource: {
+              id: generateId(),
+              resourceType: 'DiagnosticReport',
+              status: 'partial',
+              code: { coding: [{ code: 'test-code' }] },
+            },
+          },
         ],
       };
       const fetch = mockFetch(200, (url: string) => {
