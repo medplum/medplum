@@ -9,7 +9,7 @@ import { Request, Response } from 'express';
 import { getConfig } from '../config';
 import qs from 'node:querystring';
 
-const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(\*|c?r?u?d?s?|read|write)$/;
+const smartScopeFormat = /^(patient|user|system)\/(\w+|\*)\.(read|write|c?r?u?d?s?|\*)$/;
 
 export interface SmartScope {
   readonly permissionType: 'patient' | 'user' | 'system';
