@@ -8,6 +8,438 @@ export default {
   component: QuestionnaireForm,
 } as Meta;
 
+const pageSequenceResponse : QuestionnaireResponse =  {
+  resourceType: "QuestionnaireResponse",
+  status: "completed",
+  item: [
+    {
+      id: "id-26",
+      linkId: "group1",
+      text: "Page Sequence 1",
+      item: [
+        {
+          id: "id-27",
+          linkId: "question1",
+          text: "Question 1",
+          answer: [
+            {
+              valueString: "answer1"
+            }
+          ]
+        },
+        {
+          id: "id-28",
+          linkId: "question2",
+          text: "Question 2",
+          answer: [
+            {
+              valueString: "answer2"
+            }
+          ]
+        },
+        {
+          id: "id-29",
+          linkId: "q1",
+          text: "Question 1",
+          answer: [
+            {
+              valueString: "No"
+            }
+          ]
+        },
+        {
+          id: "id-30",
+          linkId: "question1-4",
+          text: "Multi Select Question",
+          answer: [
+            {
+              valueString: "value1"
+            },
+            {
+              valueString: "value2"
+            }
+          ]
+        }
+      ],
+      answer: []
+    },
+    {
+      id: "id-31",
+      linkId: "group2",
+      text: "Page Sequence 2",
+      item: [
+        {
+          id: "id-32",
+          linkId: "question3",
+          text: "Question 3",
+          answer: [
+            {
+              valueString: "answer3"
+            }
+          ]
+        },
+        {
+          id: "id-33",
+          linkId: "question4",
+          text: "Question 4",
+          answer: [
+            {
+              valueString: "answer4"
+            }
+          ]
+        }
+      ],
+      answer: []
+    }
+  ],
+  questionnaire: "Questionnaire/pages-example",
+  source: {
+    reference: "Practitioner/123",
+    display: "Alice Smith"
+  },
+  authored: "2025-02-12T23:35:57.965Z"
+};
+
+const kitchenSynkResponse: QuestionnaireResponse =  {
+  resourceType: "QuestionnaireResponse",
+  status: "completed",
+  item: [
+    {
+      id: "id-13",
+      linkId: "i1",
+      text: "This is an example of all question types.  See: https://www.hl7.org/fhir/valueset-item-type.html",
+      item: [],
+      answer: []
+    },
+    {
+      id: "id-14",
+      linkId: "boolean",
+      text: "Boolean",
+      answer: [
+        {
+          valueBoolean: true
+        }
+      ]
+    },
+    {
+      id: "id-15",
+      linkId: "decimal",
+      text: "Decimal",
+      answer: [
+        {
+          valueDecimal: 1
+        }
+      ]
+    },
+    {
+      id: "id-16",
+      linkId: "integer",
+      text: "Integer",
+      answer: [
+        {
+          valueInteger: 2
+        }
+      ]
+    },
+    {
+      id: "id-17",
+      linkId: "date",
+      text: "Date",
+      answer: [
+        {
+          valueDate: "2025-02-06"
+        }
+      ]
+    },
+    {
+      id: "id-18",
+      linkId: "dateTime",
+      text: "Date Time",
+      answer: [
+        {
+          valueDateTime: "2025-02-13T01:27:00.000Z"
+        }
+      ]
+    },
+    {
+      id: "id-19",
+      linkId: "time",
+      text: "Time",
+      answer: [
+        {
+          valueTime: "15:25"
+        }
+      ]
+    },
+    {
+      id: "id-20",
+      linkId: "string",
+      text: "String",
+      answer: [
+        {
+          valueString: "3"
+        }
+      ]
+    },
+    {
+      id: "id-21",
+      linkId: "text",
+      text: "Text",
+      answer: [
+        {
+          valueString: "4"
+        }
+      ]
+    },
+    {
+      id: "id-22",
+      linkId: "url",
+      text: "URL",
+      answer: [
+        {
+          valueString: "https://example.com"
+        }
+      ]
+    },
+    {
+      id: "id-23",
+      linkId: "choice",
+      text: "Choice",
+      answer: [
+        {
+          valueDate: "2020-01-01"
+        }
+      ]
+    },
+    {
+      id: "id-24",
+      linkId: "value-set-choice",
+      text: "Value Set Choice",
+      answer: [
+        {
+          valueCoding: {
+            system: "x",
+            code: "test-code-3",
+            display: "Test Display 3"
+          }
+        }
+      ]
+    },
+    {
+      id: "id-25",
+      linkId: "open-choice",
+      text: "Open Choice",
+      item: [],
+      answer: []
+    },
+    {
+      id: "id-26",
+      linkId: "attachment",
+      text: "Attachment",
+      item: [],
+      answer: []
+    },
+    {
+      id: "id-27",
+      linkId: "reference",
+      text: "Reference",
+      item: [],
+      answer: []
+    },
+    {
+      id: "id-28",
+      linkId: "quantity",
+      text: "Quantity",
+      answer: [
+        {
+          valueQuantity: {
+            comparator: "<",
+            value: 1,
+            unit: "2"
+          }
+        }
+      ]
+    }
+  ],
+  questionnaire: "Questionnaire/kitchen-sink",
+  source: {
+    reference: "Practitioner/123",
+    display: "Alice Smith"
+  },
+  authored: "2025-02-12T23:26:20.992Z"
+};
+
+
+const questionnaireResponsePageAndNonePage: QuestionnaireResponse = {
+  resourceType: "QuestionnaireResponse",
+  status: "completed",
+  item: [
+    {
+      id: "id-8",
+      linkId: "group1",
+      text: "Page Sequence 1",
+      item: [
+        {
+          id: "id-9",
+          linkId: "question1",
+          text: "Question 1",
+          answer: [
+            {
+              valueString: "answer1"
+            }
+          ]
+        },
+        {
+          id: "id-10",
+          linkId: "question2",
+          text: "Question 2",
+          answer: [
+            {
+              valueString: "answer2"
+            }
+          ]
+        },
+        {
+          id: "id-11",
+          linkId: "q1",
+          text: "Question 1",
+          answer: [
+            {
+              valueString: "Yes"
+            }
+          ]
+        }
+      ],
+      answer: []
+    },
+    {
+      id: "id-12",
+      linkId: "group2",
+      text: "Page Sequence 2",
+      item: [
+        {
+          id: "id-13",
+          linkId: "question3",
+          text: "Question 3",
+          answer: [
+            {
+              valueString: "answer3"
+            }
+          ]
+        },
+        {
+          id: "id-14",
+          linkId: "question4",
+          text: "Question 4",
+          answer: [
+            {
+              valueString: "answer4"
+            }
+          ]
+        }
+      ],
+      answer: []
+    },
+    {
+      id: "id-15",
+      linkId: "q3",
+      text: "Question 3",
+      answer: [
+        {
+          valueString: "Red"
+        }
+      ]
+    },
+    {
+      id: "id-16",
+      linkId: "boolean",
+      text: "Boolean",
+      answer: [
+        {
+          valueBoolean: false
+        }
+      ]
+    }
+  ],
+  questionnaire: "Questionnaire/groups-example",
+  source: {
+    reference: "Practitioner/123",
+    display: "Alice Smith"
+  },
+  authored: "2025-02-12T23:01:15.987Z"
+};
+
+
+const questionnaireResponseRepeatablesExample: QuestionnaireResponse = {
+  resourceType: "QuestionnaireResponse",
+  status: "completed",
+  item: [
+    {
+      id: "id-1",
+      linkId: "group1",
+      text: "Question Group",
+      item: [
+        {
+          id: "id-2",
+          linkId: "question1",
+          text: "Question 1",
+          item: [],
+          answer: []
+        },
+        {
+          id: "id-3",
+          linkId: "question2",
+          text: "Question 2",
+          item: [],
+          answer: []
+        }
+      ],
+      answer: []
+    },
+    {
+      id: "id-4",
+      linkId: "question3",
+      text: "Repeatable Question",
+      item: [],
+      answer: []
+    },
+    {
+      id: "id-5",
+      linkId: "question4",
+      text: "Repeatable Date",
+      item: [],
+      answer: []
+    },
+    {
+      id: "id-6",
+      linkId: "question5",
+      text: "Multi Select",
+      answer: [
+        {
+          valueString: "value1"
+        },
+        {
+          valueString: "value2"
+        }
+      ]
+    },
+    {
+      id: "id-7",
+      linkId: "boolean",
+      text: "Boolean",
+      item: [],
+      answer: []
+    }
+  ],
+  questionnaire: "Questionnaire/repeatables-example",
+  source: {
+    reference: "Practitioner/123",
+    display: "Alice Smith"
+  },
+  authored: "2025-02-12T22:58:47.065Z"
+};
+
+
 export const Basic = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
@@ -810,6 +1242,7 @@ export const PageSequence = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
       questionnaire={PagedQuestionnaire}
+      questionnaireResponse={pageSequenceResponse}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -938,6 +1371,7 @@ export const PageAndNonPageSequence = (): JSX.Element => (
           },
         ],
       }}
+      questionnaireResponse={questionnaireResponsePageAndNonePage}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -1230,6 +1664,7 @@ export const RepeatableItems = (): JSX.Element => (
           },
         ],
       }}
+      questionnaireResponse={questionnaireResponseRepeatablesExample}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}
@@ -1350,6 +1785,7 @@ export const KitchenSink = (): JSX.Element => (
           },
         ],
       }}
+      questionnaireResponse={kitchenSynkResponse}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
       }}

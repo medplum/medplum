@@ -25,6 +25,7 @@ export interface QuestionnaireFormProps {
   readonly questionnaire: Questionnaire | Reference<Questionnaire>;
   readonly subject?: Reference;
   readonly encounter?: Reference<Encounter>;
+  readonly questionnaireResponse?: QuestionnaireResponse;
   readonly source?: QuestionnaireResponse['source'];
   readonly disablePagination?: boolean;
   readonly excludeButtons?: boolean;
@@ -38,8 +39,10 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const { subject, source: sourceFromProps } = props;
   const questionnaire = useResource(props.questionnaire);
   const prevQuestionnaire = usePrevious(questionnaire);
-  const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
+  const [response, setResponse] = useState<QuestionnaireResponse | undefined>(props.questionnaireResponse);
   const [activePage, setActivePage] = useState(0);
+
+  console.log(props.questionnaireResponse)
 
   const onChangeRef = useRef(props.onChange);
   onChangeRef.current = props.onChange;
@@ -48,14 +51,21 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   onSubmitRef.current = props.onSubmit;
 
   useEffect(() => {
-    // If the Questionnaire remains "the same", keep the existing response
-    if (questionnaire && getQuestionnaireIdentity(prevQuestionnaire) === getQuestionnaireIdentity(questionnaire)) {
+   
+    if (response) {
       return;
     }
 
+    // If the Questionnaire remains "the same", keep the existing response
+    console.log("first")
+    if (questionnaire && getQuestionnaireIdentity(prevQuestionnaire) === getQuestionnaireIdentity(questionnaire)) {
+      return;
+    }
+    console.log("second")
     // throw out the existing response and start over
     setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
-  }, [questionnaire, prevQuestionnaire]);
+  }, [response, questionnaire, prevQuestionnaire]);
+
 
   useEffect(() => {
     if (response && onChangeRef.current) {
