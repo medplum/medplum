@@ -1,4 +1,4 @@
-import { ContentType, Operator, badRequest, createReference, getReferenceString } from '@medplum/core';
+import { ContentType, Operator, badRequest, createReference, getReferenceString, parseJWTPayload } from '@medplum/core';
 import {
   AsyncJob,
   AuditEvent,
@@ -19,6 +19,7 @@ import { getLoginForAccessToken } from '../../oauth/utils';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
+import { inviteUser } from '../../admin/invite';
 
 const botCodes = [
   [
@@ -115,6 +116,7 @@ describe('Execute', () => {
         ],
       },
       withAccessToken: true,
+      membership: { admin: true },
     });
     project1 = testSetup.project;
     accessToken1 = testSetup.accessToken;
@@ -489,6 +491,76 @@ describe('Execute', () => {
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/plain; charset=utf-8');
     expect(res.text).toStrictEqual('Hello, world!');
+  });
+
+  test('runAsUser respects onBehalfOf', async () => {
+    const { membership, profile } = await inviteUser({
+      resourceType: 'Practitioner',
+      project: project1,
+      firstName: 'Test',
+      lastName: 'User',
+    });
+    // Create a bot with empty code
+    const res1 = await request(app)
+      .post(`/fhir/R4/Bot`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({
+        resourceType: 'Bot',
+        name: 'Test Bot',
+        runtimeVersion: 'vmcontext',
+        runAsUser: true,
+      });
+    expect(res1.status).toBe(201);
+    const bot = res1.body as Bot;
+
+    // Deploy the bot
+    const res5 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({
+        code: `
+          exports.handler = async function (medplum, event) {
+            return {
+              token: medplum.getAccessToken(),
+            }
+          };
+      `,
+      });
+    expect(res5.status).toBe(200);
+
+    // Execute the bot as self
+    const res6 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .send({});
+    expect(res6.status).toBe(200);
+    const selfToken = parseJWTPayload(res6.body.token);
+    expect(selfToken.profile).toMatch(/^ClientApplication\//);
+
+    // Execute the bot with ProjectMembership ID
+    const res7 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
+      .send({});
+    expect(res7.status).toBe(200);
+    const membershipToken = parseJWTPayload(res7.body.token);
+    expect(membershipToken.profile).toEqual(getReferenceString(profile));
+
+    // Execute the bot with profile resource ID
+    const res8 = await request(app)
+      .post(`/fhir/R4/Bot/${bot.id}/$execute`)
+      .set('Content-Type', ContentType.FHIR_JSON)
+      .set('Authorization', 'Bearer ' + accessToken1)
+      .set('X-Medplum-On-Behalf-Of', getReferenceString(membership))
+      .send({});
+    expect(res8.status).toBe(200);
+    const profileToken = parseJWTPayload(res8.body.token);
+    expect(profileToken.profile).toEqual(getReferenceString(profile));
   });
 
   describe('linked project', () => {
