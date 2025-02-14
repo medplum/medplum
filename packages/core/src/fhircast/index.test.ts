@@ -1,20 +1,21 @@
 import { Reference } from '@medplum/fhirtypes';
 import WS from 'jest-websocket-mock';
 import {
+  assertContextVersionOptional,
+  createFhircastMessagePayload,
   FHIRCAST_EVENT_VERSION_REQUIRED,
   FhircastConnectEvent,
   FhircastConnection,
   FhircastDiagnosticReportOpenContext,
+  FhircastDiagnosticReportUpdateContext,
   FhircastDisconnectEvent,
   FhircastImagingStudyOpenContext,
   FhircastMessageEvent,
   FhircastMessagePayload,
   FhircastPatientOpenContext,
-  SubscriptionRequest,
-  assertContextVersionOptional,
-  createFhircastMessagePayload,
   isContextVersionRequired,
   serializeFhircastSubscriptionRequest,
+  SubscriptionRequest,
   validateFhircastSubscriptionRequest,
 } from '.';
 import { generateId } from '../crypto';
@@ -556,8 +557,20 @@ describe('createFhircastMessagePayload', () => {
           key: 'report',
           reference: { reference: 'DiagnosticReport/123' },
         },
-        // @ts-expect-error Should have an array of resources at 'resources'
+        // @ts-expect-error Should have an array of references at 'references'
         { key: 'select', reference: { reference: 'Observation/123' } as Reference },
+      ])
+    ).toThrow(OperationOutcomeError);
+  });
+
+  test('Invalid references array context', () => {
+    expect(() =>
+      createFhircastMessagePayload('abc-123', 'DiagnosticReport-select', [
+        {
+          key: 'report',
+          reference: { reference: 'DiagnosticReport/123' },
+        },
+        { key: 'select', reference: [{ resourceType: 'Patient' } as Reference] },
       ])
     ).toThrow(OperationOutcomeError);
   });
@@ -591,6 +604,21 @@ describe('createFhircastMessagePayload', () => {
     expect(messagePayload.event.context[0]).toBeDefined();
   });
 
+  test('Resource context instead of reference for report in `*-update` event', () => {
+    expect(() =>
+      createFhircastMessagePayload(
+        'abc-123',
+        'DiagnosticReport-update',
+        [
+          // This report should be a reference
+          { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
+          { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
+        ] as FhircastDiagnosticReportUpdateContext[],
+        generateId()
+      )
+    ).toThrow(OperationOutcomeError);
+  });
+
   test('Missing `context.versionId` in `*-update` event', () => {
     expect(() =>
       createFhircastMessagePayload(
@@ -598,7 +626,7 @@ describe('createFhircastMessagePayload', () => {
         // @ts-expect-error Missing `context.versionId` for test
         'DiagnosticReport-update',
         [
-          { key: 'report', resource: { resourceType: 'DiagnosticReport', id: 'report-123' } },
+          { key: 'report', reference: { reference: 'DiagnosticReport/123' } },
           { key: 'updates', resource: { resourceType: 'Bundle', id: 'bundle-123' } },
         ]
       )

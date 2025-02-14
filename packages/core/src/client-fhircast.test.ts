@@ -297,7 +297,7 @@ describe('FHIRcast', () => {
   describe('fhircastGetContext', () => {
     let client: MedplumClient;
     let topic: string;
-    let topicContext: CurrentContext<'DiagnosticReport-open'>;
+    let topicContext: CurrentContext<'DiagnosticReport'>;
     let medplumGetSpy: jest.SpyInstance;
 
     beforeAll(() => {
