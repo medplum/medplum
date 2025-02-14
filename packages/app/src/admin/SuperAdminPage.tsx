@@ -1,8 +1,8 @@
 import { Button, Divider, Modal, NativeSelect, PasswordInput, Stack, TextInput, Title } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications, showNotification } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 import { MedplumClient, MedplumRequestOptions, forbidden, normalizeErrorString } from '@medplum/core';
-import { Parameters } from '@medplum/fhirtypes';
+import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import {
   DateTimeInput,
   Document,
@@ -38,7 +38,7 @@ export function SuperAdminPage(): JSX.Element {
   }
 
   function reindexResourceType(formData: Record<string, string>): void {
-    startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', formData);
+    startAsyncJob(medplum, 'Reindexing Resources', 'admin/super/reindex', { body: formData, cancellable: true });
   }
 
   function reloadCron(): void {
@@ -48,22 +48,22 @@ export function SuperAdminPage(): JSX.Element {
   function removeBotIdJobsFromQueue(formData: Record<string, string>): void {
     medplum
       .post('admin/super/removebotidjobsfromqueue', formData)
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .then(() => notifications.show({ color: 'green', message: 'Done' }))
+      .catch((err) => notifications.show({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function purgeResources(formData: Record<string, string>): void {
     medplum
       .post('admin/super/purge', { ...formData, before: convertLocalToIso(formData.before) })
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .then(() => notifications.show({ color: 'green', message: 'Done' }))
+      .catch((err) => notifications.show({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function forceSetPassword(formData: Record<string, string>): void {
     medplum
       .post('admin/super/setpassword', formData)
-      .then(() => showNotification({ color: 'green', message: 'Done' }))
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .then(() => notifications.show({ color: 'green', message: 'Done' }))
+      .catch((err) => notifications.show({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function getDatabaseStats(formData: Record<string, string>): void {
@@ -82,7 +82,7 @@ export function SuperAdminPage(): JSX.Element {
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'tableString')?.valueString}</pre>);
         open();
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .catch((err) => notifications.show({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   function getSchemaDiff(): void {
@@ -93,7 +93,7 @@ export function SuperAdminPage(): JSX.Element {
         setModalContent(<pre>{params.parameter?.find((p) => p.name === 'migrationString')?.valueString}</pre>);
         open();
       })
-      .catch((err) => showNotification({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
+      .catch((err) => notifications.show({ color: 'red', message: normalizeErrorString(err), autoClose: false }));
   }
 
   return (
@@ -219,34 +219,89 @@ export function SuperAdminPage(): JSX.Element {
   );
 }
 
-function startAsyncJob(medplum: MedplumClient, title: string, url: string, body?: Record<string, string>): void {
+type AsyncJobOptions = {
+  body?: Record<string, string>;
+  cancellable?: boolean;
+};
+
+function startAsyncJob(medplum: MedplumClient, title: string, url: string, asyncJobOptions?: AsyncJobOptions): void {
+  let cancelledViaToast = false;
+
   notifications.show({
     id: url,
     loading: true,
     title,
     message: 'Running...',
     autoClose: false,
-    withCloseButton: false,
+    ...(asyncJobOptions?.cancellable
+      ? {
+          withCloseButton: true,
+          onClose: () => {
+            cancelledViaToast = true;
+            medplum.delete(url).catch(console.error);
+          },
+        }
+      : { withCloseButton: false }),
   });
 
-  const options: MedplumRequestOptions = { method: 'POST', pollStatusOnAccepted: true };
-  if (body) {
-    options.body = JSON.stringify(body);
+  const options: MedplumRequestOptions = {
+    method: 'POST',
+    pollStatusOnAccepted: true,
+  };
+
+  if (asyncJobOptions?.body) {
+    options.body = JSON.stringify(asyncJobOptions.body);
   }
 
   medplum
-    .startAsyncRequest(url, options)
-    .then(() => {
-      notifications.update({
-        id: url,
-        color: 'green',
-        title,
-        message: 'Done',
-        icon: <IconCheck size="1rem" />,
-        loading: false,
-        autoClose: false,
-        withCloseButton: true,
-      });
+    .startAsyncRequest<AsyncJob>(url, options)
+    .then((job) => {
+      switch (job.status) {
+        case 'completed':
+          notifications.update({
+            id: url,
+            color: 'green',
+            title,
+            message: 'Done',
+            icon: <IconCheck size="1rem" />,
+            loading: false,
+            autoClose: false,
+            withCloseButton: true,
+          });
+          break;
+        case 'cancelled': {
+          const cancelledNotif = {
+            id: url,
+            color: 'red',
+            title,
+            message: 'Job cancelled',
+            icon: <IconX size="1rem" />,
+            loading: false,
+            autoClose: false,
+            withCloseButton: true,
+          };
+          if (cancelledViaToast) {
+            notifications.show(cancelledNotif);
+          } else {
+            notifications.update(cancelledNotif);
+          }
+          break;
+        }
+        case 'error':
+          notifications.update({
+            id: url,
+            color: 'red',
+            title,
+            message: 'Error while processing job',
+            icon: <IconX size="1rem" />,
+            loading: false,
+            autoClose: false,
+            withCloseButton: true,
+          });
+          break;
+        default:
+          throw new Error('Invalid status for finalized job');
+      }
     })
     .catch((err) => {
       notifications.update({
