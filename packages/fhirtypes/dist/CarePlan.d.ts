@@ -31,6 +31,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
@@ -62,6 +63,12 @@ export interface CarePlan {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -77,9 +84,22 @@ export interface CarePlan {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -141,11 +161,25 @@ export interface CarePlan {
   instantiatesCanonical?: string[];
 
   /**
+   * The URL pointing to a FHIR-defined protocol, guideline, questionnaire
+   * or other definition that is adhered to in whole or in part by this
+   * CarePlan.
+   */
+  _instantiatesCanonical?: (PrimitiveExtension | null)[];
+
+  /**
    * The URL pointing to an externally maintained protocol, guideline,
    * questionnaire or other definition that is adhered to in whole or in
    * part by this CarePlan.
    */
   instantiatesUri?: string[];
+
+  /**
+   * The URL pointing to an externally maintained protocol, guideline,
+   * questionnaire or other definition that is adhered to in whole or in
+   * part by this CarePlan.
+   */
+  _instantiatesUri?: (PrimitiveExtension | null)[];
 
   /**
    * A care plan that is fulfilled in whole or in part by this care plan.
@@ -171,10 +205,22 @@ export interface CarePlan {
   status: 'draft' | 'active' | 'on-hold' | 'revoked' | 'completed' | 'entered-in-error' | 'unknown';
 
   /**
+   * Indicates whether the plan is currently being acted upon, represents
+   * future intentions or is now a historical record.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Indicates the level of authority/intentionality associated with the
    * care plan and where the care plan fits into the workflow chain.
    */
   intent: 'proposal' | 'plan' | 'order' | 'option';
+
+  /**
+   * Indicates the level of authority/intentionality associated with the
+   * care plan and where the care plan fits into the workflow chain.
+   */
+  _intent?: PrimitiveExtension;
 
   /**
    * Identifies what &quot;kind&quot; of plan this is to support differentiation
@@ -189,9 +235,19 @@ export interface CarePlan {
   title?: string;
 
   /**
+   * Human-friendly name for the care plan.
+   */
+  _title?: PrimitiveExtension;
+
+  /**
    * A description of the scope and nature of the plan.
    */
   description?: string;
+
+  /**
+   * A description of the scope and nature of the plan.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Identifies the patient or group whose intended care is described by
@@ -216,6 +272,12 @@ export interface CarePlan {
    * system, which is often a system-generated date.
    */
   created?: string;
+
+  /**
+   * Represents when this particular CarePlan record was created in the
+   * system, which is often a system-generated date.
+   */
+  _created?: PrimitiveExtension;
 
   /**
    * When populated, the author is responsible for the care plan.  The care
@@ -279,6 +341,12 @@ export interface CarePlanActivity {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -359,6 +427,12 @@ export interface CarePlanActivityDetail {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -397,6 +471,15 @@ export interface CarePlanActivityDetail {
   kind?: 'Appointment' | 'CommunicationRequest' | 'DeviceRequest' | 'MedicationRequest' | 'NutritionOrder' | 'Task' | 'ServiceRequest' | 'VisionPrescription';
 
   /**
+   * A description of the kind of resource the in-line definition of a care
+   * plan activity is representing.  The CarePlan.activity.detail is an
+   * in-line definition when a resource is not referenced using
+   * CarePlan.activity.reference.  For example, a MedicationRequest, a
+   * ServiceRequest, or a CommunicationRequest.
+   */
+  _kind?: PrimitiveExtension;
+
+  /**
    * The URL pointing to a FHIR-defined protocol, guideline, questionnaire
    * or other definition that is adhered to in whole or in part by this
    * CarePlan activity.
@@ -404,11 +487,25 @@ export interface CarePlanActivityDetail {
   instantiatesCanonical?: string[];
 
   /**
+   * The URL pointing to a FHIR-defined protocol, guideline, questionnaire
+   * or other definition that is adhered to in whole or in part by this
+   * CarePlan activity.
+   */
+  _instantiatesCanonical?: (PrimitiveExtension | null)[];
+
+  /**
    * The URL pointing to an externally maintained protocol, guideline,
    * questionnaire or other definition that is adhered to in whole or in
    * part by this CarePlan activity.
    */
   instantiatesUri?: string[];
+
+  /**
+   * The URL pointing to an externally maintained protocol, guideline,
+   * questionnaire or other definition that is adhered to in whole or in
+   * part by this CarePlan activity.
+   */
+  _instantiatesUri?: (PrimitiveExtension | null)[];
 
   /**
    * Detailed description of the type of planned activity; e.g. what lab
@@ -442,6 +539,11 @@ export interface CarePlanActivityDetail {
   status: 'not-started' | 'scheduled' | 'in-progress' | 'on-hold' | 'completed' | 'cancelled' | 'stopped' | 'unknown' | 'entered-in-error';
 
   /**
+   * Identifies what progress is being made for the specific activity.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Provides reason why the activity isn't yet started, is on hold, was
    * cancelled, etc.
    */
@@ -454,6 +556,14 @@ export interface CarePlanActivityDetail {
    * following the plan.
    */
   doNotPerform?: boolean;
+
+  /**
+   * If true, indicates that the described activity is one that must NOT be
+   * engaged in when following the plan.  If false, or missing, indicates
+   * that the described activity is one that should be engaged in when
+   * following the plan.
+   */
+  _doNotPerform?: PrimitiveExtension;
 
   /**
    * The period, timing or frequency upon which the described activity is
@@ -472,6 +582,12 @@ export interface CarePlanActivityDetail {
    * to occur.
    */
   scheduledString?: string;
+
+  /**
+   * The period, timing or frequency upon which the described activity is
+   * to occur.
+   */
+  _scheduledString?: PrimitiveExtension;
 
   /**
    * Identifies the facility where the activity will occur; e.g. home,
@@ -515,13 +631,22 @@ export interface CarePlanActivityDetail {
    * route, etc.
    */
   description?: string;
+
+  /**
+   * This provides a textual description of constraints on the intended
+   * activity occurrence, including relation to other activities.  It may
+   * also include objectives, pre-conditions and end-conditions.  Finally,
+   * it may convey specifics about the activity such as body site, method,
+   * route, etc.
+   */
+  _description?: PrimitiveExtension;
 }
 
 /**
  * The period, timing or frequency upon which the described activity is
  * to occur.
  */
-export type CarePlanActivityDetailScheduled = Period | string | Timing;
+export type CarePlanActivityDetailScheduled = Period | PrimitiveExtension | string | Timing;
 
 /**
  * Identifies the food, drug or other product to be consumed or supplied

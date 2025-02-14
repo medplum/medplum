@@ -11,6 +11,7 @@ import { Narrative } from './Narrative';
 import { Organization } from './Organization';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -34,6 +35,12 @@ export interface ObservationDefinition {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -49,9 +56,22 @@ export interface ObservationDefinition {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -128,10 +148,22 @@ export interface ObservationDefinition {
       'SampledData' | 'time' | 'dateTime' | 'Period')[];
 
   /**
+   * The data types allowed for the value element of the instance
+   * observations conforming to this ObservationDefinition.
+   */
+  _permittedDataType?: (PrimitiveExtension | null)[];
+
+  /**
    * Multiple results allowed for observations conforming to this
    * ObservationDefinition.
    */
   multipleResultsAllowed?: boolean;
+
+  /**
+   * Multiple results allowed for observations conforming to this
+   * ObservationDefinition.
+   */
+  _multipleResultsAllowed?: PrimitiveExtension;
 
   /**
    * The method or technique used to perform the observation.
@@ -143,6 +175,12 @@ export interface ObservationDefinition {
    * observations conforming to this ObservationDefinition.
    */
   preferredReportName?: string;
+
+  /**
+   * The preferred name to be used when reporting the results of
+   * observations conforming to this ObservationDefinition.
+   */
+  _preferredReportName?: PrimitiveExtension;
 
   /**
    * Characteristics for quantitative results of this observation.
@@ -195,6 +233,12 @@ export interface ObservationDefinitionQualifiedInterval {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -230,6 +274,12 @@ export interface ObservationDefinitionQualifiedInterval {
   category?: 'reference' | 'critical' | 'absolute';
 
   /**
+   * The category of interval of values for continuous or ordinal
+   * observations conforming to this ObservationDefinition.
+   */
+  _category?: PrimitiveExtension;
+
+  /**
    * The low and high values determining the interval. There may be only
    * one of the two.
    */
@@ -253,6 +303,11 @@ export interface ObservationDefinitionQualifiedInterval {
   gender?: 'male' | 'female' | 'other' | 'unknown';
 
   /**
+   * Sex of the population the range applies to.
+   */
+  _gender?: PrimitiveExtension;
+
+  /**
    * The age at which this reference range is applicable. This is a
    * neonatal age (e.g. number of weeks at term) if the meaning says so.
    */
@@ -268,6 +323,11 @@ export interface ObservationDefinitionQualifiedInterval {
    * Text based condition for which the reference range is valid.
    */
   condition?: string;
+
+  /**
+   * Text based condition for which the reference range is valid.
+   */
+  _condition?: PrimitiveExtension;
 }
 
 /**
@@ -280,6 +340,12 @@ export interface ObservationDefinitionQuantitativeDetails {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -329,8 +395,20 @@ export interface ObservationDefinitionQuantitativeDetails {
   conversionFactor?: number;
 
   /**
+   * Factor for converting value expressed with SI unit to value expressed
+   * with customary unit.
+   */
+  _conversionFactor?: PrimitiveExtension;
+
+  /**
    * Number of digits after decimal separator when the results of such
    * observations are of type Quantity.
    */
   decimalPrecision?: number;
+
+  /**
+   * Number of digits after decimal separator when the results of such
+   * observations are of type Quantity.
+   */
+  _decimalPrecision?: PrimitiveExtension;
 }

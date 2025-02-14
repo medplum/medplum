@@ -9,6 +9,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 
 /**
@@ -31,6 +32,12 @@ export interface SubstanceNucleicAcid {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -46,9 +53,22 @@ export interface SubstanceNucleicAcid {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -111,6 +131,15 @@ export interface SubstanceNucleicAcid {
   numberOfSubunits?: number;
 
   /**
+   * The number of linear sequences of nucleotides linked through
+   * phosphodiester bonds shall be described. Subunits would be strands of
+   * nucleic acids that are tightly associated typically through
+   * Watson-Crick base pairing. NOTE: If not specified in the reference
+   * source, the assumption is that there is 1 subunit.
+   */
+  _numberOfSubunits?: PrimitiveExtension;
+
+  /**
    * The area of hybridisation shall be described if applicable for double
    * stranded RNA or DNA. The number associated with the subunit followed
    * by the number associated to the residue shall be specified in
@@ -118,6 +147,15 @@ export interface SubstanceNucleicAcid {
    * follows: &ldquo;Subunitnumber Residue&rdquo;.
    */
   areaOfHybridisation?: string;
+
+  /**
+   * The area of hybridisation shall be described if applicable for double
+   * stranded RNA or DNA. The number associated with the subunit followed
+   * by the number associated to the residue shall be specified in
+   * increasing order. The underscore &ldquo;&rdquo; shall be used as separator as
+   * follows: &ldquo;Subunitnumber Residue&rdquo;.
+   */
+  _areaOfHybridisation?: PrimitiveExtension;
 
   /**
    * (TBC).
@@ -144,6 +182,12 @@ export interface SubstanceNucleicAcidSubunit {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -183,6 +227,14 @@ export interface SubstanceNucleicAcidSubunit {
   subunit?: number;
 
   /**
+   * Index of linear sequences of nucleic acids in order of decreasing
+   * length. Sequences of the same length will be ordered by molecular
+   * weight. Subunits that have identical sequences will be repeated and
+   * have sequential subscripts.
+   */
+  _subunit?: PrimitiveExtension;
+
+  /**
    * Actual nucleotide sequence notation from 5' to 3' end using standard
    * single letter codes. In addition to the base sequence, sugar and type
    * of phosphate or non-phosphate linkage should also be captured.
@@ -190,9 +242,21 @@ export interface SubstanceNucleicAcidSubunit {
   sequence?: string;
 
   /**
+   * Actual nucleotide sequence notation from 5' to 3' end using standard
+   * single letter codes. In addition to the base sequence, sugar and type
+   * of phosphate or non-phosphate linkage should also be captured.
+   */
+  _sequence?: PrimitiveExtension;
+
+  /**
    * The length of the sequence shall be captured.
    */
   length?: number;
+
+  /**
+   * The length of the sequence shall be captured.
+   */
+  _length?: PrimitiveExtension;
 
   /**
    * (TBC).
@@ -240,6 +304,12 @@ export interface SubstanceNucleicAcidSubunitLinkage {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -279,6 +349,16 @@ export interface SubstanceNucleicAcidSubunitLinkage {
   connectivity?: string;
 
   /**
+   * The entity that links the sugar residues together should also be
+   * captured for nearly all naturally occurring nucleic acid the linkage
+   * is a phosphate group. For many synthetic oligonucleotides
+   * phosphorothioate linkages are often seen. Linkage connectivity is
+   * assumed to be 3&rsquo;-5&rsquo;. If the linkage is either 3&rsquo;-3&rsquo; or 5&rsquo;-5&rsquo; this
+   * should be specified.
+   */
+  _connectivity?: PrimitiveExtension;
+
+  /**
    * Each linkage will be registered as a fragment and have an ID.
    */
   identifier?: Identifier;
@@ -290,9 +370,20 @@ export interface SubstanceNucleicAcidSubunitLinkage {
   name?: string;
 
   /**
+   * Each linkage will be registered as a fragment and have at least one
+   * name. A single name shall be assigned to each linkage.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Residues shall be captured as described in 5.3.6.8.3.
    */
   residueSite?: string;
+
+  /**
+   * Residues shall be captured as described in 5.3.6.8.3.
+   */
+  _residueSite?: PrimitiveExtension;
 }
 
 /**
@@ -305,6 +396,12 @@ export interface SubstanceNucleicAcidSubunitSugar {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -348,9 +445,22 @@ export interface SubstanceNucleicAcidSubunitSugar {
   name?: string;
 
   /**
+   * The name of the sugar or sugar-like component that make up the
+   * nucleotide.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The residues that contain a given sugar will be captured. The order of
    * given residues will be captured in the 5&lsquo;-3&lsquo;direction consistent with
    * the base sequences listed above.
    */
   residueSite?: string;
+
+  /**
+   * The residues that contain a given sugar will be captured. The order of
+   * given residues will be captured in the 5&lsquo;-3&lsquo;direction consistent with
+   * the base sequences listed above.
+   */
+  _residueSite?: PrimitiveExtension;
 }

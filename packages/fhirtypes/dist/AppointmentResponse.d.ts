@@ -15,6 +15,7 @@ import { Narrative } from './Narrative';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
@@ -37,6 +38,12 @@ export interface AppointmentResponse {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -52,9 +59,22 @@ export interface AppointmentResponse {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -121,11 +141,24 @@ export interface AppointmentResponse {
   start?: string;
 
   /**
+   * Date/Time that the appointment is to take place, or requested new
+   * start time.
+   */
+  _start?: PrimitiveExtension;
+
+  /**
    * This may be either the same as the appointment request to confirm the
    * details of the appointment, or alternately a new time to request a
    * re-negotiation of the end time.
    */
   end?: string;
+
+  /**
+   * This may be either the same as the appointment request to confirm the
+   * details of the appointment, or alternately a new time to request a
+   * re-negotiation of the end time.
+   */
+  _end?: PrimitiveExtension;
 
   /**
    * Role of participant in the appointment.
@@ -148,7 +181,21 @@ export interface AppointmentResponse {
   participantStatus: 'accepted' | 'declined' | 'tentative' | 'needs-action';
 
   /**
+   * Participation status of the participant. When the status is declined
+   * or tentative if the start/end times are different to the appointment,
+   * then these times should be interpreted as a requested time change.
+   * When the status is accepted, the times can either be the time of the
+   * appointment (as a confirmation of the time) or can be empty.
+   */
+  _participantStatus?: PrimitiveExtension;
+
+  /**
    * Additional comments about the appointment.
    */
   comment?: string;
+
+  /**
+   * Additional comments about the appointment.
+   */
+  _comment?: PrimitiveExtension;
 }

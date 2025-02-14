@@ -5,6 +5,7 @@
 
 import { Extension } from './Extension';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * A human's name with the ability to identify parts and usage.
@@ -16,6 +17,12 @@ export interface HumanName {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -33,11 +40,23 @@ export interface HumanName {
   use?: 'usual' | 'official' | 'temp' | 'nickname' | 'anonymous' | 'old' | 'maiden';
 
   /**
+   * Identifies the purpose for this name.
+   */
+  _use?: PrimitiveExtension;
+
+  /**
    * Specifies the entire name as it should be displayed e.g. on an
    * application UI. This may be provided instead of or as well as the
    * specific parts.
    */
   text?: string;
+
+  /**
+   * Specifies the entire name as it should be displayed e.g. on an
+   * application UI. This may be provided instead of or as well as the
+   * specific parts.
+   */
+  _text?: PrimitiveExtension;
 
   /**
    * The part of a name that links to the genealogy. In some cultures (e.g.
@@ -46,9 +65,20 @@ export interface HumanName {
   family?: string;
 
   /**
+   * The part of a name that links to the genealogy. In some cultures (e.g.
+   * Eritrea) the family name of a son is the first name of his father.
+   */
+  _family?: PrimitiveExtension;
+
+  /**
    * Given name.
    */
   given?: string[];
+
+  /**
+   * Given name.
+   */
+  _given?: (PrimitiveExtension | null)[];
 
   /**
    * Part of the name that is acquired as a title due to academic, legal,
@@ -59,10 +89,24 @@ export interface HumanName {
 
   /**
    * Part of the name that is acquired as a title due to academic, legal,
+   * employment or nobility status, etc. and that appears at the start of
+   * the name.
+   */
+  _prefix?: (PrimitiveExtension | null)[];
+
+  /**
+   * Part of the name that is acquired as a title due to academic, legal,
    * employment or nobility status, etc. and that appears at the end of the
    * name.
    */
   suffix?: string[];
+
+  /**
+   * Part of the name that is acquired as a title due to academic, legal,
+   * employment or nobility status, etc. and that appears at the end of the
+   * name.
+   */
+  _suffix?: (PrimitiveExtension | null)[];
 
   /**
    * Indicates the period of time when this name was valid for the named

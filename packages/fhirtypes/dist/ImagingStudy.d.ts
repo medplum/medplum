@@ -28,6 +28,7 @@ import { Organization } from './Organization';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Procedure } from './Procedure';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
@@ -58,6 +59,12 @@ export interface ImagingStudy {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -73,9 +80,22 @@ export interface ImagingStudy {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -134,6 +154,11 @@ export interface ImagingStudy {
   status: 'registered' | 'available' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
+   * The current state of the ImagingStudy.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A list of all the series.modality values that are actual acquisition
    * modalities, i.e. those in the DICOM Context Group 29 (value set OID
    * 1.2.840.10008.6.1.19).
@@ -155,6 +180,11 @@ export interface ImagingStudy {
    * Date and time the study started.
    */
   started?: string;
+
+  /**
+   * Date and time the study started.
+   */
+  _started?: PrimitiveExtension;
 
   /**
    * A list of the diagnostic requests that resulted in this imaging study
@@ -190,12 +220,28 @@ export interface ImagingStudy {
   numberOfSeries?: number;
 
   /**
+   * Number of Series in the Study. This value given may be larger than the
+   * number of series elements this Resource contains due to resource
+   * availability, security, or other factors. This element should be
+   * present if any series elements are present.
+   */
+  _numberOfSeries?: PrimitiveExtension;
+
+  /**
    * Number of SOP Instances in Study. This value given may be larger than
    * the number of instance elements this resource contains due to resource
    * availability, security, or other factors. This element should be
    * present if any instance elements are present.
    */
   numberOfInstances?: number;
+
+  /**
+   * Number of SOP Instances in Study. This value given may be larger than
+   * the number of instance elements this resource contains due to resource
+   * availability, security, or other factors. This element should be
+   * present if any instance elements are present.
+   */
+  _numberOfInstances?: PrimitiveExtension;
 
   /**
    * The procedure which this ImagingStudy was part of.
@@ -238,6 +284,12 @@ export interface ImagingStudy {
   description?: string;
 
   /**
+   * The Imaging Manager description of the study. Institution-generated
+   * description or classification of the Study (component) performed.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * Each study has one or more series of images or other content.
    */
   series?: ImagingStudySeries[];
@@ -253,6 +305,12 @@ export interface ImagingStudySeries {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -289,9 +347,19 @@ export interface ImagingStudySeries {
   uid: string;
 
   /**
+   * The DICOM Series Instance UID for the series.
+   */
+  _uid?: PrimitiveExtension;
+
+  /**
    * The numeric identifier of this series in the study.
    */
   number?: number;
+
+  /**
+   * The numeric identifier of this series in the study.
+   */
+  _number?: PrimitiveExtension;
 
   /**
    * The modality of this series sequence.
@@ -304,12 +372,25 @@ export interface ImagingStudySeries {
   description?: string;
 
   /**
+   * A description of the series.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * Number of SOP Instances in the Study. The value given may be larger
    * than the number of instance elements this resource contains due to
    * resource availability, security, or other factors. This element should
    * be present if any instance elements are present.
    */
   numberOfInstances?: number;
+
+  /**
+   * Number of SOP Instances in the Study. The value given may be larger
+   * than the number of instance elements this resource contains due to
+   * resource availability, security, or other factors. This element should
+   * be present if any instance elements are present.
+   */
+  _numberOfInstances?: PrimitiveExtension;
 
   /**
    * The network service providing access (e.g., query, view, or retrieval)
@@ -347,6 +428,11 @@ export interface ImagingStudySeries {
   started?: string;
 
   /**
+   * The date and time the series was started.
+   */
+  _started?: PrimitiveExtension;
+
+  /**
    * Indicates who or what performed the series and how they were involved.
    */
   performer?: ImagingStudySeriesPerformer[];
@@ -369,6 +455,12 @@ export interface ImagingStudySeriesInstance {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -405,6 +497,11 @@ export interface ImagingStudySeriesInstance {
   uid: string;
 
   /**
+   * The DICOM SOP Instance UID for this image or other DICOM content.
+   */
+  _uid?: PrimitiveExtension;
+
+  /**
    * DICOM instance  type.
    */
   sopClass: Coding;
@@ -415,9 +512,19 @@ export interface ImagingStudySeriesInstance {
   number?: number;
 
   /**
+   * The number of instance in the series.
+   */
+  _number?: PrimitiveExtension;
+
+  /**
    * The description of the instance.
    */
   title?: string;
+
+  /**
+   * The description of the instance.
+   */
+  _title?: PrimitiveExtension;
 }
 
 /**
@@ -430,6 +537,12 @@ export interface ImagingStudySeriesPerformer {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

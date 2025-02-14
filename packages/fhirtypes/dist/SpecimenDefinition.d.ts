@@ -9,6 +9,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Reference } from './Reference';
@@ -32,6 +33,12 @@ export interface SpecimenDefinition {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -47,9 +54,22 @@ export interface SpecimenDefinition {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -117,6 +137,11 @@ export interface SpecimenDefinition {
   timeAspect?: string;
 
   /**
+   * Time aspect of specimen collection (duration or offset).
+   */
+  _timeAspect?: PrimitiveExtension;
+
+  /**
    * The action to be performed for collecting the specimen.
    */
   collection?: CodeableConcept[];
@@ -139,6 +164,12 @@ export interface SpecimenDefinitionTypeTested {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -175,6 +206,11 @@ export interface SpecimenDefinitionTypeTested {
   isDerived?: boolean;
 
   /**
+   * Primary of secondary specimen.
+   */
+  _isDerived?: PrimitiveExtension;
+
+  /**
    * The kind of specimen conditioned for testing expected by lab.
    */
   type?: CodeableConcept;
@@ -183,6 +219,11 @@ export interface SpecimenDefinitionTypeTested {
    * The preference for this type of conditioned specimen.
    */
   preference: 'preferred' | 'alternate';
+
+  /**
+   * The preference for this type of conditioned specimen.
+   */
+  _preference?: PrimitiveExtension;
 
   /**
    * The specimen's container.
@@ -194,6 +235,12 @@ export interface SpecimenDefinitionTypeTested {
    * conditioned specimen.
    */
   requirement?: string;
+
+  /**
+   * Requirements for delivery and special handling of this kind of
+   * conditioned specimen.
+   */
+  _requirement?: PrimitiveExtension;
 
   /**
    * The usual time that a specimen of this kind is retained after the
@@ -224,6 +271,12 @@ export interface SpecimenDefinitionTypeTestedContainer {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -275,6 +328,11 @@ export interface SpecimenDefinitionTypeTestedContainer {
   description?: string;
 
   /**
+   * The textual description of the kind of container.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * The capacity (volume or other measure) of this kind of container.
    */
   capacity?: Quantity;
@@ -290,6 +348,11 @@ export interface SpecimenDefinitionTypeTestedContainer {
   minimumVolumeString?: string;
 
   /**
+   * The minimum volume to be conditioned in the container.
+   */
+  _minimumVolumeString?: PrimitiveExtension;
+
+  /**
    * Substance introduced in the kind of container to preserve, maintain or
    * enhance the specimen. Examples: Formalin, Citrate, EDTA.
    */
@@ -300,12 +363,18 @@ export interface SpecimenDefinitionTypeTestedContainer {
    * kind of specimen.
    */
   preparation?: string;
+
+  /**
+   * Special processing that should be applied to the container for this
+   * kind of specimen.
+   */
+  _preparation?: PrimitiveExtension;
 }
 
 /**
  * The minimum volume to be conditioned in the container.
  */
-export type SpecimenDefinitionTypeTestedContainerMinimumVolume = Quantity | string;
+export type SpecimenDefinitionTypeTestedContainerMinimumVolume = PrimitiveExtension | Quantity | string;
 
 /**
  * Substance introduced in the kind of container to preserve, maintain or
@@ -318,6 +387,12 @@ export interface SpecimenDefinitionTypeTestedContainerAdditive {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -380,6 +455,12 @@ export interface SpecimenDefinitionTypeTestedHandling {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -431,4 +512,10 @@ export interface SpecimenDefinitionTypeTestedHandling {
    * the specimen. For instance, 'Protect from light exposure'.
    */
   instruction?: string;
+
+  /**
+   * Additional textual instructions for the preservation or transport of
+   * the specimen. For instance, 'Protect from light exposure'.
+   */
+  _instruction?: PrimitiveExtension;
 }

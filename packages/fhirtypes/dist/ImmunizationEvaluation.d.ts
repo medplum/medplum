@@ -11,6 +11,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Organization } from './Organization';
 import { Patient } from './Patient';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -33,6 +34,12 @@ export interface ImmunizationEvaluation {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -48,9 +55,22 @@ export interface ImmunizationEvaluation {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -109,6 +129,12 @@ export interface ImmunizationEvaluation {
   status: 'completed' | 'entered-in-error';
 
   /**
+   * Indicates the current status of the evaluation of the vaccination
+   * administration event.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The individual for whom the evaluation is being done.
    */
   patient: Reference<Patient>;
@@ -118,6 +144,12 @@ export interface ImmunizationEvaluation {
    * performed.
    */
   date?: string;
+
+  /**
+   * The date the evaluation of the vaccine administration event was
+   * performed.
+   */
+  _date?: PrimitiveExtension;
 
   /**
    * Indicates the authority who published the protocol (e.g. ACIP).
@@ -152,10 +184,21 @@ export interface ImmunizationEvaluation {
   description?: string;
 
   /**
+   * Additional information about the evaluation.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * One possible path to achieve presumed immunity against a disease -
    * within the context of an authority.
    */
   series?: string;
+
+  /**
+   * One possible path to achieve presumed immunity against a disease -
+   * within the context of an authority.
+   */
+  _series?: PrimitiveExtension;
 
   /**
    * Nominal position in a series.
@@ -165,7 +208,17 @@ export interface ImmunizationEvaluation {
   /**
    * Nominal position in a series.
    */
+  _doseNumberPositiveInt?: PrimitiveExtension;
+
+  /**
+   * Nominal position in a series.
+   */
   doseNumberString?: string;
+
+  /**
+   * Nominal position in a series.
+   */
+  _doseNumberString?: PrimitiveExtension;
 
   /**
    * The recommended number of doses to achieve immunity.
@@ -175,15 +228,25 @@ export interface ImmunizationEvaluation {
   /**
    * The recommended number of doses to achieve immunity.
    */
+  _seriesDosesPositiveInt?: PrimitiveExtension;
+
+  /**
+   * The recommended number of doses to achieve immunity.
+   */
   seriesDosesString?: string;
+
+  /**
+   * The recommended number of doses to achieve immunity.
+   */
+  _seriesDosesString?: PrimitiveExtension;
 }
 
 /**
  * Nominal position in a series.
  */
-export type ImmunizationEvaluationDoseNumber = number | string;
+export type ImmunizationEvaluationDoseNumber = number | PrimitiveExtension | string;
 
 /**
  * The recommended number of doses to achieve immunity.
  */
-export type ImmunizationEvaluationSeriesDoses = number | string;
+export type ImmunizationEvaluationSeriesDoses = number | PrimitiveExtension | string;

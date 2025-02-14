@@ -14,6 +14,7 @@ import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedArtifact } from './RelatedArtifact';
 import { Resource } from './Resource';
@@ -38,6 +39,12 @@ export interface ResearchElementDefinition {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -53,9 +60,22 @@ export interface ResearchElementDefinition {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -115,6 +135,18 @@ export interface ResearchElementDefinition {
   url?: string;
 
   /**
+   * An absolute URI that is used to identify this research element
+   * definition when it is referenced in a specification, model, design or
+   * an instance; also called its canonical identifier. This SHOULD be
+   * globally unique and SHOULD be a literal address at which at which an
+   * authoritative instance of this research element definition is (or will
+   * be) published. This URL can be the target of a canonical reference. It
+   * SHALL remain the same when the research element definition is stored
+   * on different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this research element
    * definition when it is represented in other formats, or referenced in a
    * specification, model, design or an instance.
@@ -138,11 +170,34 @@ export interface ResearchElementDefinition {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the research
+   * element definition when it is referenced in a specification, model,
+   * design or instance. This is an arbitrary value managed by the research
+   * element definition author and is not expected to be globally unique.
+   * For example, it might be a timestamp (e.g. yyyymmdd) if a managed
+   * version is not available. There is also no expectation that versions
+   * can be placed in a lexicographical sequence. To provide a version
+   * consistent with the Decision Support Service specification, use the
+   * format Major.Minor.Revision (e.g. 1.0.0). For more information on
+   * versioning knowledge assets, refer to the Decision Support Service
+   * specification. Note that a version is required for non-experimental
+   * active artifacts.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the research element definition.
    * This name should be usable as an identifier for the module by machine
    * processing applications such as code generation.
    */
   name?: string;
+
+  /**
+   * A natural language name identifying the research element definition.
+   * This name should be usable as an identifier for the module by machine
+   * processing applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * A short, descriptive, user-friendly title for the research element
@@ -151,10 +206,22 @@ export interface ResearchElementDefinition {
   title?: string;
 
   /**
+   * A short, descriptive, user-friendly title for the research element
+   * definition.
+   */
+  _title?: PrimitiveExtension;
+
+  /**
    * The short title provides an alternate title for use in informal
    * descriptive contexts where the full, formal title is not necessary.
    */
   shortTitle?: string;
+
+  /**
+   * The short title provides an alternate title for use in informal
+   * descriptive contexts where the full, formal title is not necessary.
+   */
+  _shortTitle?: PrimitiveExtension;
 
   /**
    * An explanatory or alternate title for the ResearchElementDefinition
@@ -163,10 +230,22 @@ export interface ResearchElementDefinition {
   subtitle?: string;
 
   /**
+   * An explanatory or alternate title for the ResearchElementDefinition
+   * giving additional information about its content.
+   */
+  _subtitle?: PrimitiveExtension;
+
+  /**
    * The status of this research element definition. Enables tracking the
    * life-cycle of the content.
    */
   status: 'draft' | 'active' | 'retired' | 'unknown';
+
+  /**
+   * The status of this research element definition. Enables tracking the
+   * life-cycle of the content.
+   */
+  _status?: PrimitiveExtension;
 
   /**
    * A Boolean value to indicate that this research element definition is
@@ -174,6 +253,13 @@ export interface ResearchElementDefinition {
    * is not intended to be used for genuine usage.
    */
   experimental?: boolean;
+
+  /**
+   * A Boolean value to indicate that this research element definition is
+   * authored for testing purposes (or education/evaluation/marketing) and
+   * is not intended to be used for genuine usage.
+   */
+  _experimental?: PrimitiveExtension;
 
   /**
    * The intended subjects for the ResearchElementDefinition. If this
@@ -199,10 +285,25 @@ export interface ResearchElementDefinition {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the research element definition
+   * was published. The date must change when the business version changes
+   * and it must change if the status code changes. In addition, it should
+   * change when the substantive content of the research element definition
+   * changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the research
    * element definition.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the research
+   * element definition.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -217,10 +318,22 @@ export interface ResearchElementDefinition {
   description?: string;
 
   /**
+   * A free text natural language description of the research element
+   * definition from a consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * A human-readable string to clarify or explain concepts about the
    * resource.
    */
   comment?: string[];
+
+  /**
+   * A human-readable string to clarify or explain concepts about the
+   * resource.
+   */
+  _comment?: (PrimitiveExtension | null)[];
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -245,10 +358,22 @@ export interface ResearchElementDefinition {
   purpose?: string;
 
   /**
+   * Explanation of why this research element definition is needed and why
+   * it has been designed as it has.
+   */
+  _purpose?: PrimitiveExtension;
+
+  /**
    * A detailed description, from a clinical perspective, of how the
    * ResearchElementDefinition is used.
    */
   usage?: string;
+
+  /**
+   * A detailed description, from a clinical perspective, of how the
+   * ResearchElementDefinition is used.
+   */
+  _usage?: PrimitiveExtension;
 
   /**
    * A copyright statement relating to the research element definition
@@ -259,6 +384,14 @@ export interface ResearchElementDefinition {
   copyright?: string;
 
   /**
+   * A copyright statement relating to the research element definition
+   * and/or its contents. Copyright statements are generally legal
+   * restrictions on the use and publishing of the research element
+   * definition.
+   */
+  _copyright?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was approved by the publisher.
    * Approval happens once when the content is officially approved for
    * usage.
@@ -266,11 +399,25 @@ export interface ResearchElementDefinition {
   approvalDate?: string;
 
   /**
+   * The date on which the resource content was approved by the publisher.
+   * Approval happens once when the content is officially approved for
+   * usage.
+   */
+  _approvalDate?: PrimitiveExtension;
+
+  /**
    * The date on which the resource content was last reviewed. Review
    * happens periodically after approval but does not change the original
    * approval date.
    */
   lastReviewDate?: string;
+
+  /**
+   * The date on which the resource content was last reviewed. Review
+   * happens periodically after approval but does not change the original
+   * approval date.
+   */
+  _lastReviewDate?: PrimitiveExtension;
 
   /**
    * The period during which the research element definition content was or
@@ -323,16 +470,34 @@ export interface ResearchElementDefinition {
   library?: string[];
 
   /**
+   * A reference to a Library resource containing the formal logic used by
+   * the ResearchElementDefinition.
+   */
+  _library?: (PrimitiveExtension | null)[];
+
+  /**
    * The type of research element, a population, an exposure, or an
    * outcome.
    */
   type: 'population' | 'exposure' | 'outcome';
 
   /**
+   * The type of research element, a population, an exposure, or an
+   * outcome.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * The type of the outcome (e.g. Dichotomous, Continuous, or
    * Descriptive).
    */
   variableType?: 'dichotomous' | 'continuous' | 'descriptive';
+
+  /**
+   * The type of the outcome (e.g. Dichotomous, Continuous, or
+   * Descriptive).
+   */
+  _variableType?: PrimitiveExtension;
 
   /**
    * A characteristic that defines the members of the research element.
@@ -359,6 +524,12 @@ export interface ResearchElementDefinitionCharacteristic {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -411,6 +582,14 @@ export interface ResearchElementDefinitionCharacteristic {
    * language such as FHIRPath or CQL) or DataRequirements (such as
    * Diabetes diagnosis onset in the last year).
    */
+  _definitionCanonical?: PrimitiveExtension;
+
+  /**
+   * Define members of the research element using Codes (such as condition,
+   * medication, or observation), Expressions ( using an expression
+   * language such as FHIRPath or CQL) or DataRequirements (such as
+   * Diabetes diagnosis onset in the last year).
+   */
   definitionExpression?: Expression;
 
   /**
@@ -434,6 +613,12 @@ export interface ResearchElementDefinitionCharacteristic {
   exclude?: boolean;
 
   /**
+   * When true, members with this characteristic are excluded from the
+   * element.
+   */
+  _exclude?: PrimitiveExtension;
+
+  /**
    * Specifies the UCUM unit for the outcome.
    */
   unitOfMeasure?: CodeableConcept;
@@ -444,9 +629,19 @@ export interface ResearchElementDefinitionCharacteristic {
   studyEffectiveDescription?: string;
 
   /**
+   * A narrative description of the time period the study covers.
+   */
+  _studyEffectiveDescription?: PrimitiveExtension;
+
+  /**
    * Indicates what effective period the study covers.
    */
   studyEffectiveDateTime?: string;
+
+  /**
+   * Indicates what effective period the study covers.
+   */
+  _studyEffectiveDateTime?: PrimitiveExtension;
 
   /**
    * Indicates what effective period the study covers.
@@ -475,14 +670,30 @@ export interface ResearchElementDefinitionCharacteristic {
   studyEffectiveGroupMeasure?: 'mean' | 'median' | 'mean-of-mean' | 'mean-of-median' | 'median-of-mean' | 'median-of-median';
 
   /**
+   * Indicates how elements are aggregated within the study effective
+   * period.
+   */
+  _studyEffectiveGroupMeasure?: PrimitiveExtension;
+
+  /**
    * A narrative description of the time period the study covers.
    */
   participantEffectiveDescription?: string;
 
   /**
+   * A narrative description of the time period the study covers.
+   */
+  _participantEffectiveDescription?: PrimitiveExtension;
+
+  /**
    * Indicates what effective period the study covers.
    */
   participantEffectiveDateTime?: string;
+
+  /**
+   * Indicates what effective period the study covers.
+   */
+  _participantEffectiveDateTime?: PrimitiveExtension;
 
   /**
    * Indicates what effective period the study covers.
@@ -509,6 +720,12 @@ export interface ResearchElementDefinitionCharacteristic {
    * period.
    */
   participantEffectiveGroupMeasure?: 'mean' | 'median' | 'mean-of-mean' | 'mean-of-median' | 'median-of-mean' | 'median-of-median';
+
+  /**
+   * Indicates how elements are aggregated within the study effective
+   * period.
+   */
+  _participantEffectiveGroupMeasure?: PrimitiveExtension;
 }
 
 /**
@@ -517,14 +734,14 @@ export interface ResearchElementDefinitionCharacteristic {
  * language such as FHIRPath or CQL) or DataRequirements (such as
  * Diabetes diagnosis onset in the last year).
  */
-export type ResearchElementDefinitionCharacteristicDefinition = CodeableConcept | DataRequirement | Expression | string;
+export type ResearchElementDefinitionCharacteristicDefinition = CodeableConcept | DataRequirement | Expression | PrimitiveExtension | string;
 
 /**
  * Indicates what effective period the study covers.
  */
-export type ResearchElementDefinitionCharacteristicStudyEffective = Duration | Period | string | Timing;
+export type ResearchElementDefinitionCharacteristicStudyEffective = Duration | Period | PrimitiveExtension | string | Timing;
 
 /**
  * Indicates what effective period the study covers.
  */
-export type ResearchElementDefinitionCharacteristicParticipantEffective = Duration | Period | string | Timing;
+export type ResearchElementDefinitionCharacteristicParticipantEffective = Duration | Period | PrimitiveExtension | string | Timing;

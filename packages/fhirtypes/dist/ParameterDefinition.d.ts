@@ -4,6 +4,7 @@
  */
 
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * The parameters to the module. This collection specifies both the input
@@ -18,6 +19,12 @@ export interface ParameterDefinition {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -36,9 +43,20 @@ export interface ParameterDefinition {
   name?: string;
 
   /**
+   * The name of the parameter used to allow access to the value of the
+   * parameter in evaluation contexts.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Whether the parameter is input or output for the module.
    */
   use: 'in' | 'out';
+
+  /**
+   * Whether the parameter is input or output for the module.
+   */
+  _use?: PrimitiveExtension;
 
   /**
    * The minimum number of times this parameter SHALL appear in the request
@@ -47,10 +65,22 @@ export interface ParameterDefinition {
   min?: number;
 
   /**
+   * The minimum number of times this parameter SHALL appear in the request
+   * or response.
+   */
+  _min?: PrimitiveExtension;
+
+  /**
    * The maximum number of times this element is permitted to appear in the
    * request or response.
    */
   max?: string;
+
+  /**
+   * The maximum number of times this element is permitted to appear in the
+   * request or response.
+   */
+  _max?: PrimitiveExtension;
 
   /**
    * A brief discussion of what the parameter is for and how it is used by
@@ -59,13 +89,30 @@ export interface ParameterDefinition {
   documentation?: string;
 
   /**
+   * A brief discussion of what the parameter is for and how it is used by
+   * the module.
+   */
+  _documentation?: PrimitiveExtension;
+
+  /**
    * The type of the parameter.
    */
   type: string;
+
+  /**
+   * The type of the parameter.
+   */
+  _type?: PrimitiveExtension;
 
   /**
    * If specified, this indicates a profile that the input data must
    * conform to, or that the output data will conform to.
    */
   profile?: string;
+
+  /**
+   * If specified, this indicates a profile that the input data must
+   * conform to, or that the output data will conform to.
+   */
+  _profile?: PrimitiveExtension;
 }

@@ -25,6 +25,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Procedure } from './Procedure';
 import { Quantity } from './Quantity';
 import { Reference } from './Reference';
@@ -52,6 +53,12 @@ export interface ExplanationOfBenefit {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -67,9 +74,22 @@ export interface ExplanationOfBenefit {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -127,6 +147,11 @@ export interface ExplanationOfBenefit {
   status: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
+   * The status of the resource instance.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The category of claim, e.g. oral, pharmacy, vision, institutional,
    * professional.
    */
@@ -149,6 +174,15 @@ export interface ExplanationOfBenefit {
   use: 'claim' | 'preauthorization' | 'predetermination';
 
   /**
+   * A code to indicate whether the nature of the request is: to request
+   * adjudication of products and services previously rendered; or
+   * requesting authorization and adjudication for provision in the future;
+   * or requesting the non-binding adjudication of the listed products and
+   * services which could be provided in the future.
+   */
+  _use?: PrimitiveExtension;
+
+  /**
    * The party to whom the professional services and/or products have been
    * supplied or are being considered and for whom actual for forecast
    * reimbursement is sought.
@@ -164,6 +198,11 @@ export interface ExplanationOfBenefit {
    * The date this resource was created.
    */
   created: string;
+
+  /**
+   * The date this resource was created.
+   */
+  _created?: PrimitiveExtension;
 
   /**
    * Individual who created the claim, predetermination or
@@ -255,15 +294,32 @@ export interface ExplanationOfBenefit {
   outcome: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
+   * The outcome of the claim, predetermination, or preauthorization
+   * processing.
+   */
+  _outcome?: PrimitiveExtension;
+
+  /**
    * A human readable description of the status of the adjudication.
    */
   disposition?: string;
+
+  /**
+   * A human readable description of the status of the adjudication.
+   */
+  _disposition?: PrimitiveExtension;
 
   /**
    * Reference from the Insurer which is used in later communications which
    * refers to this adjudication.
    */
   preAuthRef?: string[];
+
+  /**
+   * Reference from the Insurer which is used in later communications which
+   * refers to this adjudication.
+   */
+  _preAuthRef?: (PrimitiveExtension | null)[];
 
   /**
    * The timeframe during which the supplied preauthorization reference may
@@ -298,6 +354,12 @@ export interface ExplanationOfBenefit {
    * different coverages for the same suite of services.
    */
   precedence?: number;
+
+  /**
+   * This indicates the relative order of a series of EOBs related to
+   * different coverages for the same suite of services.
+   */
+  _precedence?: PrimitiveExtension;
 
   /**
    * Financial instruments for reimbursement for the health care products
@@ -380,6 +442,12 @@ export interface ExplanationOfBenefitAccident {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -413,6 +481,12 @@ export interface ExplanationOfBenefitAccident {
    * contained in the claim.
    */
   date?: string;
+
+  /**
+   * Date of an accident event  related to the products and services
+   * contained in the claim.
+   */
+  _date?: PrimitiveExtension;
 
   /**
    * The type or context of the accident event for the purposes of
@@ -450,6 +524,12 @@ export interface ExplanationOfBenefitAddItem {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -484,16 +564,33 @@ export interface ExplanationOfBenefitAddItem {
   itemSequence?: number[];
 
   /**
+   * Claim items which this service line is intended to replace.
+   */
+  _itemSequence?: (PrimitiveExtension | null)[];
+
+  /**
    * The sequence number of the details within the claim item which this
    * line is intended to replace.
    */
   detailSequence?: number[];
 
   /**
+   * The sequence number of the details within the claim item which this
+   * line is intended to replace.
+   */
+  _detailSequence?: (PrimitiveExtension | null)[];
+
+  /**
    * The sequence number of the sub-details woithin the details within the
    * claim item which this line is intended to replace.
    */
   subDetailSequence?: number[];
+
+  /**
+   * The sequence number of the sub-details woithin the details within the
+   * claim item which this line is intended to replace.
+   */
+  _subDetailSequence?: (PrimitiveExtension | null)[];
 
   /**
    * The providers who are authorized for the services rendered to the
@@ -524,6 +621,12 @@ export interface ExplanationOfBenefitAddItem {
    * or completed.
    */
   servicedDate?: string;
+
+  /**
+   * The date or dates when the service or product was supplied, performed
+   * or completed.
+   */
+  _servicedDate?: PrimitiveExtension;
 
   /**
    * The date or dates when the service or product was supplied, performed
@@ -567,6 +670,14 @@ export interface ExplanationOfBenefitAddItem {
   factor?: number;
 
   /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  _factor?: PrimitiveExtension;
+
+  /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
@@ -590,6 +701,12 @@ export interface ExplanationOfBenefitAddItem {
   noteNumber?: number[];
 
   /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
+
+  /**
    * The adjudication results.
    */
   adjudication?: ExplanationOfBenefitItemAdjudication[];
@@ -604,7 +721,7 @@ export interface ExplanationOfBenefitAddItem {
  * The date or dates when the service or product was supplied, performed
  * or completed.
  */
-export type ExplanationOfBenefitAddItemServiced = Period | string;
+export type ExplanationOfBenefitAddItemServiced = Period | PrimitiveExtension | string;
 
 /**
  * Where the product or service was provided.
@@ -621,6 +738,12 @@ export interface ExplanationOfBenefitAddItemDetail {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -685,6 +808,14 @@ export interface ExplanationOfBenefitAddItemDetail {
   factor?: number;
 
   /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  _factor?: PrimitiveExtension;
+
+  /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
@@ -695,6 +826,12 @@ export interface ExplanationOfBenefitAddItemDetail {
    * adjudication of this item.
    */
   noteNumber?: number[];
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
 
   /**
    * The adjudication results.
@@ -719,6 +856,12 @@ export interface ExplanationOfBenefitAddItemDetailSubDetail {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -781,6 +924,14 @@ export interface ExplanationOfBenefitAddItemDetailSubDetail {
   factor?: number;
 
   /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  _factor?: PrimitiveExtension;
+
+  /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
@@ -791,6 +942,12 @@ export interface ExplanationOfBenefitAddItemDetailSubDetail {
    * adjudication of this item.
    */
   noteNumber?: number[];
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
 
   /**
    * The adjudication results.
@@ -808,6 +965,12 @@ export interface ExplanationOfBenefitBenefitBalance {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -852,14 +1015,31 @@ export interface ExplanationOfBenefitBenefitBalance {
   excluded?: boolean;
 
   /**
+   * True if the indicated class of service is excluded from the plan,
+   * missing or False indicates the product or service is included in the
+   * coverage.
+   */
+  _excluded?: PrimitiveExtension;
+
+  /**
    * A short name or tag for the benefit.
    */
   name?: string;
 
   /**
+   * A short name or tag for the benefit.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A richer description of the benefit or services covered.
    */
   description?: string;
+
+  /**
+   * A richer description of the benefit or services covered.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * Is a flag to indicate whether the benefits refer to in-network
@@ -894,6 +1074,12 @@ export interface ExplanationOfBenefitBenefitBalanceFinancial {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -937,7 +1123,17 @@ export interface ExplanationOfBenefitBenefitBalanceFinancial {
   /**
    * The quantity of the benefit which is permitted under the coverage.
    */
+  _allowedUnsignedInt?: PrimitiveExtension;
+
+  /**
+   * The quantity of the benefit which is permitted under the coverage.
+   */
   allowedString?: string;
+
+  /**
+   * The quantity of the benefit which is permitted under the coverage.
+   */
+  _allowedString?: PrimitiveExtension;
 
   /**
    * The quantity of the benefit which is permitted under the coverage.
@@ -952,18 +1148,23 @@ export interface ExplanationOfBenefitBenefitBalanceFinancial {
   /**
    * The quantity of the benefit which have been consumed to date.
    */
+  _usedUnsignedInt?: PrimitiveExtension;
+
+  /**
+   * The quantity of the benefit which have been consumed to date.
+   */
   usedMoney?: Money;
 }
 
 /**
  * The quantity of the benefit which is permitted under the coverage.
  */
-export type ExplanationOfBenefitBenefitBalanceFinancialAllowed = Money | number | string;
+export type ExplanationOfBenefitBenefitBalanceFinancialAllowed = Money | number | PrimitiveExtension | string;
 
 /**
  * The quantity of the benefit which have been consumed to date.
  */
-export type ExplanationOfBenefitBenefitBalanceFinancialUsed = Money | number;
+export type ExplanationOfBenefitBenefitBalanceFinancialUsed = Money | number | PrimitiveExtension;
 
 /**
  * The members of the team who provided the products and services.
@@ -975,6 +1176,12 @@ export interface ExplanationOfBenefitCareTeam {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1011,6 +1218,11 @@ export interface ExplanationOfBenefitCareTeam {
   sequence: number;
 
   /**
+   * A number to uniquely identify care team entries.
+   */
+  _sequence?: PrimitiveExtension;
+
+  /**
    * Member of the team who provided the product or service.
    */
   provider: Reference<Practitioner | PractitionerRole | Organization>;
@@ -1020,6 +1232,12 @@ export interface ExplanationOfBenefitCareTeam {
    * or services.
    */
   responsible?: boolean;
+
+  /**
+   * The party who is billing and/or responsible for the claimed products
+   * or services.
+   */
+  _responsible?: PrimitiveExtension;
 
   /**
    * The lead, assisting or supervising practitioner and their discipline
@@ -1044,6 +1262,12 @@ export interface ExplanationOfBenefitDiagnosis {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1078,6 +1302,11 @@ export interface ExplanationOfBenefitDiagnosis {
    * A number to uniquely identify diagnosis entries.
    */
   sequence: number;
+
+  /**
+   * A number to uniquely identify diagnosis entries.
+   */
+  _sequence?: PrimitiveExtension;
 
   /**
    * The nature of illness or problem in a coded form or as a reference to
@@ -1129,6 +1358,12 @@ export interface ExplanationOfBenefitInsurance {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -1164,6 +1399,12 @@ export interface ExplanationOfBenefitInsurance {
   focal: boolean;
 
   /**
+   * A flag to indicate that this Coverage is to be used for adjudication
+   * of this claim when set to true.
+   */
+  _focal?: PrimitiveExtension;
+
+  /**
    * Reference to the insurance card level information contained in the
    * Coverage resource. The coverage issuing insurer will use these details
    * to locate the patient's actual coverage within the insurer's
@@ -1177,6 +1418,13 @@ export interface ExplanationOfBenefitInsurance {
    * related to the prior authorization.
    */
   preAuthRef?: string[];
+
+  /**
+   * Reference numbers previously provided by the insurer to the provider
+   * to be quoted on subsequent claims containing services or products
+   * related to the prior authorization.
+   */
+  _preAuthRef?: (PrimitiveExtension | null)[];
 }
 
 /**
@@ -1190,6 +1438,12 @@ export interface ExplanationOfBenefitItem {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1226,9 +1480,19 @@ export interface ExplanationOfBenefitItem {
   sequence: number;
 
   /**
+   * A number to uniquely identify item entries.
+   */
+  _sequence?: PrimitiveExtension;
+
+  /**
    * Care team members related to this service or product.
    */
   careTeamSequence?: number[];
+
+  /**
+   * Care team members related to this service or product.
+   */
+  _careTeamSequence?: (PrimitiveExtension | null)[];
 
   /**
    * Diagnoses applicable for this service or product.
@@ -1236,15 +1500,31 @@ export interface ExplanationOfBenefitItem {
   diagnosisSequence?: number[];
 
   /**
+   * Diagnoses applicable for this service or product.
+   */
+  _diagnosisSequence?: (PrimitiveExtension | null)[];
+
+  /**
    * Procedures applicable for this service or product.
    */
   procedureSequence?: number[];
+
+  /**
+   * Procedures applicable for this service or product.
+   */
+  _procedureSequence?: (PrimitiveExtension | null)[];
 
   /**
    * Exceptions, special conditions and supporting information applicable
    * for this service or product.
    */
   informationSequence?: number[];
+
+  /**
+   * Exceptions, special conditions and supporting information applicable
+   * for this service or product.
+   */
+  _informationSequence?: (PrimitiveExtension | null)[];
 
   /**
    * The type of revenue or cost center providing the product and/or
@@ -1281,6 +1561,12 @@ export interface ExplanationOfBenefitItem {
    * or completed.
    */
   servicedDate?: string;
+
+  /**
+   * The date or dates when the service or product was supplied, performed
+   * or completed.
+   */
+  _servicedDate?: PrimitiveExtension;
 
   /**
    * The date or dates when the service or product was supplied, performed
@@ -1324,6 +1610,14 @@ export interface ExplanationOfBenefitItem {
   factor?: number;
 
   /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  _factor?: PrimitiveExtension;
+
+  /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
@@ -1358,6 +1652,12 @@ export interface ExplanationOfBenefitItem {
   noteNumber?: number[];
 
   /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
+
+  /**
    * If this item is a group then the values here are a summary of the
    * adjudication of the detail items. If this item is a simple product or
    * service then this is the result of the adjudication of this item.
@@ -1374,7 +1674,7 @@ export interface ExplanationOfBenefitItem {
  * The date or dates when the service or product was supplied, performed
  * or completed.
  */
-export type ExplanationOfBenefitItemServiced = Period | string;
+export type ExplanationOfBenefitItemServiced = Period | PrimitiveExtension | string;
 
 /**
  * Where the product or service was provided.
@@ -1393,6 +1693,12 @@ export interface ExplanationOfBenefitItemAdjudication {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1449,6 +1755,12 @@ export interface ExplanationOfBenefitItemAdjudication {
    * to the amount element above.
    */
   value?: number;
+
+  /**
+   * A non-monetary value associated with the category. Mutually exclusive
+   * to the amount element above.
+   */
+  _value?: PrimitiveExtension;
 }
 
 /**
@@ -1461,6 +1773,12 @@ export interface ExplanationOfBenefitItemDetail {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1496,6 +1814,12 @@ export interface ExplanationOfBenefitItemDetail {
    * 'group' of sub-details which are simple items.
    */
   sequence: number;
+
+  /**
+   * A claim detail line. Either a simple (a product or service) or a
+   * 'group' of sub-details which are simple items.
+   */
+  _sequence?: PrimitiveExtension;
 
   /**
    * The type of revenue or cost center providing the product and/or
@@ -1548,6 +1872,14 @@ export interface ExplanationOfBenefitItemDetail {
   factor?: number;
 
   /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  _factor?: PrimitiveExtension;
+
+  /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
@@ -1563,6 +1895,12 @@ export interface ExplanationOfBenefitItemDetail {
    * adjudication of this item.
    */
   noteNumber?: number[];
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
 
   /**
    * The adjudication results.
@@ -1587,6 +1925,12 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -1620,6 +1964,12 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
    * 'group' of sub-details which are simple items.
    */
   sequence: number;
+
+  /**
+   * A claim detail line. Either a simple (a product or service) or a
+   * 'group' of sub-details which are simple items.
+   */
+  _sequence?: PrimitiveExtension;
 
   /**
    * The type of revenue or cost center providing the product and/or
@@ -1672,6 +2022,14 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
   factor?: number;
 
   /**
+   * A real number that represents a multiplier used in determining the
+   * overall value of services delivered and/or goods received. The concept
+   * of a Factor allows for a discount or surcharge multiplier to be
+   * applied to a monetary amount.
+   */
+  _factor?: PrimitiveExtension;
+
+  /**
    * The quantity times the unit price for an additional service or product
    * or charge.
    */
@@ -1687,6 +2045,12 @@ export interface ExplanationOfBenefitItemDetailSubDetail {
    * adjudication of this item.
    */
   noteNumber?: number[];
+
+  /**
+   * The numbers associated with notes below which apply to the
+   * adjudication of this item.
+   */
+  _noteNumber?: (PrimitiveExtension | null)[];
 
   /**
    * The adjudication results.
@@ -1705,6 +2069,12 @@ export interface ExplanationOfBenefitPayee {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1759,6 +2129,12 @@ export interface ExplanationOfBenefitPayment {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -1811,6 +2187,12 @@ export interface ExplanationOfBenefitPayment {
   date?: string;
 
   /**
+   * Estimated date the payment will be issued or the actual issue date of
+   * payment.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * Benefits payable less any payment adjustment.
    */
   amount?: Money;
@@ -1832,6 +2214,12 @@ export interface ExplanationOfBenefitProcedure {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1868,6 +2256,11 @@ export interface ExplanationOfBenefitProcedure {
   sequence: number;
 
   /**
+   * A number to uniquely identify procedure entries.
+   */
+  _sequence?: PrimitiveExtension;
+
+  /**
    * When the condition was observed or the relative ranking.
    */
   type?: CodeableConcept[];
@@ -1876,6 +2269,11 @@ export interface ExplanationOfBenefitProcedure {
    * Date and optionally time the procedure was performed.
    */
   date?: string;
+
+  /**
+   * Date and optionally time the procedure was performed.
+   */
+  _date?: PrimitiveExtension;
 
   /**
    * The code or reference to a Procedure resource which identifies the
@@ -1914,6 +2312,12 @@ export interface ExplanationOfBenefitProcessNote {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -1948,14 +2352,29 @@ export interface ExplanationOfBenefitProcessNote {
   number?: number;
 
   /**
+   * A number to uniquely identify a note entry.
+   */
+  _number?: PrimitiveExtension;
+
+  /**
    * The business purpose of the note text.
    */
   type?: 'display' | 'print' | 'printoper';
 
   /**
+   * The business purpose of the note text.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * The explanation or description associated with the processing.
    */
   text?: string;
+
+  /**
+   * The explanation or description associated with the processing.
+   */
+  _text?: PrimitiveExtension;
 
   /**
    * A code to define the language used in the text of the note.
@@ -1974,6 +2393,12 @@ export interface ExplanationOfBenefitRelated {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -2034,6 +2459,12 @@ export interface ExplanationOfBenefitSupportingInfo {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -2068,6 +2499,11 @@ export interface ExplanationOfBenefitSupportingInfo {
   sequence: number;
 
   /**
+   * A number to uniquely identify supporting information entries.
+   */
+  _sequence?: PrimitiveExtension;
+
+  /**
    * The general class of the information supplied: information; exception;
    * accident, employment; onset, etc.
    */
@@ -2088,6 +2524,11 @@ export interface ExplanationOfBenefitSupportingInfo {
   /**
    * The date when or period to which this information refers.
    */
+  _timingDate?: PrimitiveExtension;
+
+  /**
+   * The date when or period to which this information refers.
+   */
   timingPeriod?: Period;
 
   /**
@@ -2102,7 +2543,21 @@ export interface ExplanationOfBenefitSupportingInfo {
    * etc. including references to the data or the actual inclusion of the
    * data.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * Additional data or information such as resources, documents, images
+   * etc. including references to the data or the actual inclusion of the
+   * data.
+   */
   valueString?: string;
+
+  /**
+   * Additional data or information such as resources, documents, images
+   * etc. including references to the data or the actual inclusion of the
+   * data.
+   */
+  _valueString?: PrimitiveExtension;
 
   /**
    * Additional data or information such as resources, documents, images
@@ -2135,14 +2590,14 @@ export interface ExplanationOfBenefitSupportingInfo {
 /**
  * The date when or period to which this information refers.
  */
-export type ExplanationOfBenefitSupportingInfoTiming = Period | string;
+export type ExplanationOfBenefitSupportingInfoTiming = Period | PrimitiveExtension | string;
 
 /**
  * Additional data or information such as resources, documents, images
  * etc. including references to the data or the actual inclusion of the
  * data.
  */
-export type ExplanationOfBenefitSupportingInfoValue = Attachment | boolean | Quantity | Reference<Resource> | string;
+export type ExplanationOfBenefitSupportingInfoValue = Attachment | boolean | PrimitiveExtension | Quantity | Reference<Resource> | string;
 
 /**
  * Categorized monetary totals for the adjudication.
@@ -2154,6 +2609,12 @@ export interface ExplanationOfBenefitTotal {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

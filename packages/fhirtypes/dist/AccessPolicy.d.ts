@@ -7,6 +7,7 @@ import { Expression } from './Expression';
 import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -28,6 +29,12 @@ export interface AccessPolicy {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -43,9 +50,22 @@ export interface AccessPolicy {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -98,6 +118,11 @@ export interface AccessPolicy {
   name?: string;
 
   /**
+   * A name associated with the AccessPolicy.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Other access policies used to derive this access policy.
    */
   basedOn?: Reference<AccessPolicy>[];
@@ -134,16 +159,34 @@ export interface AccessPolicyIpAccessRule {
   name?: string;
 
   /**
+   * Friendly name that will make it easy for you to identify the IP Access
+   * Rule in the future.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * An IP Access rule will apply a certain action to incoming traffic
    * based on the visitor IP address or IP range.
    */
   value: string;
 
   /**
+   * An IP Access rule will apply a certain action to incoming traffic
+   * based on the visitor IP address or IP range.
+   */
+  _value?: PrimitiveExtension;
+
+  /**
    * Access rule can perform one of the following actions: &quot;allow&quot; |
    * &quot;block&quot;.
    */
   action: 'allow' | 'block';
+
+  /**
+   * Access rule can perform one of the following actions: &quot;allow&quot; |
+   * &quot;block&quot;.
+   */
+  _action?: PrimitiveExtension;
 }
 
 /**
@@ -157,6 +200,11 @@ export interface AccessPolicyResource {
   resourceType: string;
 
   /**
+   * The resource type.
+   */
+  _resourceType?: PrimitiveExtension;
+
+  /**
    * @deprecated Optional compartment restriction for the resource type.
    */
   compartment?: Reference;
@@ -168,9 +216,20 @@ export interface AccessPolicyResource {
   criteria?: string;
 
   /**
+   * The rules that the server should use to determine which resources to
+   * allow.
+   */
+  _criteria?: PrimitiveExtension;
+
+  /**
    * Optional flag to indicate that the resource type is read-only.
    */
   readonly?: boolean;
+
+  /**
+   * Optional flag to indicate that the resource type is read-only.
+   */
+  _readonly?: PrimitiveExtension;
 
   /**
    * Optional list of hidden fields.  Hidden fields are not readable or
@@ -179,10 +238,22 @@ export interface AccessPolicyResource {
   hiddenFields?: string[];
 
   /**
+   * Optional list of hidden fields.  Hidden fields are not readable or
+   * writeable.
+   */
+  _hiddenFields?: (PrimitiveExtension | null)[];
+
+  /**
    * Optional list of read-only fields.  Read-only fields are readable but
    * not writeable.
    */
   readonlyFields?: string[];
+
+  /**
+   * Optional list of read-only fields.  Read-only fields are readable but
+   * not writeable.
+   */
+  _readonlyFields?: (PrimitiveExtension | null)[];
 
   /**
    * Invariants that must be satisfied for the resource to be written.  Can

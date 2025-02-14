@@ -4,6 +4,7 @@
  */
 
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * A measured amount (or an amount that can potentially be measured).
@@ -18,6 +19,12 @@ export interface Quantity {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -36,6 +43,12 @@ export interface Quantity {
   value?: number;
 
   /**
+   * The value of the measured amount. The value includes an implicit
+   * precision in the presentation of the value.
+   */
+  _value?: PrimitiveExtension;
+
+  /**
    * How the value should be understood and represented - whether the
    * actual value is greater or less than the stated value due to
    * measurement issues; e.g. if the comparator is &quot;&lt;&quot; , then the real
@@ -44,9 +57,22 @@ export interface Quantity {
   comparator?: '<' | '<=' | '>=' | '>';
 
   /**
+   * How the value should be understood and represented - whether the
+   * actual value is greater or less than the stated value due to
+   * measurement issues; e.g. if the comparator is &quot;&lt;&quot; , then the real
+   * value is &lt; stated value.
+   */
+  _comparator?: PrimitiveExtension;
+
+  /**
    * A human-readable form of the unit.
    */
   unit?: string;
+
+  /**
+   * A human-readable form of the unit.
+   */
+  _unit?: PrimitiveExtension;
 
   /**
    * The identification of the system that provides the coded form of the
@@ -55,8 +81,20 @@ export interface Quantity {
   system?: string;
 
   /**
+   * The identification of the system that provides the coded form of the
+   * unit.
+   */
+  _system?: PrimitiveExtension;
+
+  /**
    * A computer processable form of the unit in some unit representation
    * system.
    */
   code?: string;
+
+  /**
+   * A computer processable form of the unit in some unit representation
+   * system.
+   */
+  _code?: PrimitiveExtension;
 }

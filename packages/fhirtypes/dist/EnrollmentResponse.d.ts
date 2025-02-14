@@ -11,6 +11,7 @@ import { Narrative } from './Narrative';
 import { Organization } from './Organization';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -32,6 +33,12 @@ export interface EnrollmentResponse {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -47,9 +54,22 @@ export interface EnrollmentResponse {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -107,6 +127,11 @@ export interface EnrollmentResponse {
   status?: 'active' | 'cancelled' | 'draft' | 'entered-in-error';
 
   /**
+   * The status of the resource instance.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Original request resource reference.
    */
   request?: Reference<EnrollmentRequest>;
@@ -117,15 +142,31 @@ export interface EnrollmentResponse {
   outcome?: 'queued' | 'complete' | 'error' | 'partial';
 
   /**
+   * Processing status: error, complete.
+   */
+  _outcome?: PrimitiveExtension;
+
+  /**
    * A description of the status of the adjudication.
    */
   disposition?: string;
+
+  /**
+   * A description of the status of the adjudication.
+   */
+  _disposition?: PrimitiveExtension;
 
   /**
    * The date when the enclosed suite of services were performed or
    * completed.
    */
   created?: string;
+
+  /**
+   * The date when the enclosed suite of services were performed or
+   * completed.
+   */
+  _created?: PrimitiveExtension;
 
   /**
    * The Insurer who produced this adjudicated response.

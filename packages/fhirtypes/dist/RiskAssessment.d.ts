@@ -20,6 +20,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
@@ -42,6 +43,12 @@ export interface RiskAssessment {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -57,9 +64,22 @@ export interface RiskAssessment {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -129,6 +149,12 @@ export interface RiskAssessment {
   status: 'registered' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
+   * The status of the RiskAssessment, using the same statuses as an
+   * Observation.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * The algorithm, process or mechanism used to evaluate the risk.
    */
   method?: CodeableConcept;
@@ -152,6 +178,11 @@ export interface RiskAssessment {
    * The date (and possibly time) the risk assessment was performed.
    */
   occurrenceDateTime?: string;
+
+  /**
+   * The date (and possibly time) the risk assessment was performed.
+   */
+  _occurrenceDateTime?: PrimitiveExtension;
 
   /**
    * The date (and possibly time) the risk assessment was performed.
@@ -197,6 +228,12 @@ export interface RiskAssessment {
   mitigation?: string;
 
   /**
+   * A description of the steps that might be taken to reduce the
+   * identified risk(s).
+   */
+  _mitigation?: PrimitiveExtension;
+
+  /**
    * Additional comments about the risk assessment.
    */
   note?: Annotation[];
@@ -205,7 +242,7 @@ export interface RiskAssessment {
 /**
  * The date (and possibly time) the risk assessment was performed.
  */
-export type RiskAssessmentOccurrence = Period | string;
+export type RiskAssessmentOccurrence = Period | PrimitiveExtension | string;
 
 /**
  * Describes the expected outcome for the subject.
@@ -217,6 +254,12 @@ export interface RiskAssessmentPrediction {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -261,6 +304,11 @@ export interface RiskAssessmentPrediction {
   /**
    * Indicates how likely the outcome is (in the specified timeframe).
    */
+  _probabilityDecimal?: PrimitiveExtension;
+
+  /**
+   * Indicates how likely the outcome is (in the specified timeframe).
+   */
   probabilityRange?: Range;
 
   /**
@@ -278,6 +326,14 @@ export interface RiskAssessmentPrediction {
   relativeRisk?: number;
 
   /**
+   * Indicates the risk for this particular subject (with their specific
+   * characteristics) divided by the risk of the population in general.
+   * (Numbers greater than 1 = higher risk than the population, numbers
+   * less than 1 = lower risk.).
+   */
+  _relativeRisk?: PrimitiveExtension;
+
+  /**
    * Indicates the period of time or age range of the subject to which the
    * specified probability applies.
    */
@@ -293,12 +349,17 @@ export interface RiskAssessmentPrediction {
    * Additional information explaining the basis for the prediction.
    */
   rationale?: string;
+
+  /**
+   * Additional information explaining the basis for the prediction.
+   */
+  _rationale?: PrimitiveExtension;
 }
 
 /**
  * Indicates how likely the outcome is (in the specified timeframe).
  */
-export type RiskAssessmentPredictionProbability = number | Range;
+export type RiskAssessmentPredictionProbability = number | PrimitiveExtension | Range;
 
 /**
  * Indicates the period of time or age range of the subject to which the

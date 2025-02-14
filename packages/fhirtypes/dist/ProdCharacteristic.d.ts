@@ -6,6 +6,7 @@
 import { Attachment } from './Attachment';
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 
 /**
@@ -20,6 +21,12 @@ export interface ProdCharacteristic {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -106,6 +113,13 @@ export interface ProdCharacteristic {
   shape?: string;
 
   /**
+   * Where applicable, the shape can be specified An appropriate controlled
+   * vocabulary shall be used The term and the term identifier shall be
+   * used.
+   */
+  _shape?: PrimitiveExtension;
+
+  /**
    * Where applicable, the color can be specified An appropriate controlled
    * vocabulary shall be used The term and the term identifier shall be
    * used.
@@ -113,9 +127,21 @@ export interface ProdCharacteristic {
   color?: string[];
 
   /**
+   * Where applicable, the color can be specified An appropriate controlled
+   * vocabulary shall be used The term and the term identifier shall be
+   * used.
+   */
+  _color?: (PrimitiveExtension | null)[];
+
+  /**
    * Where applicable, the imprint can be specified as text.
    */
   imprint?: string[];
+
+  /**
+   * Where applicable, the imprint can be specified as text.
+   */
+  _imprint?: (PrimitiveExtension | null)[];
 
   /**
    * Where applicable, the image can be provided The format of the image

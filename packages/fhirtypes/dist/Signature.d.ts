@@ -10,6 +10,7 @@ import { Organization } from './Organization';
 import { Patient } from './Patient';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 
@@ -28,6 +29,12 @@ export interface Signature {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -53,6 +60,11 @@ export interface Signature {
   when: string;
 
   /**
+   * When the digital signature was signed.
+   */
+  _when?: PrimitiveExtension;
+
+  /**
    * A reference to an application-usable description of the identity that
    * signed  (e.g. the signature used their private key).
    */
@@ -71,6 +83,12 @@ export interface Signature {
   targetFormat?: string;
 
   /**
+   * A mime type that indicates the technical format of the target
+   * resources signed by the signature.
+   */
+  _targetFormat?: PrimitiveExtension;
+
+  /**
    * A mime type that indicates the technical format of the signature.
    * Important mime types are application/signature+xml for X ML DigSig,
    * application/jose for JWS, and image/* for a graphical image of a
@@ -79,8 +97,22 @@ export interface Signature {
   sigFormat?: string;
 
   /**
+   * A mime type that indicates the technical format of the signature.
+   * Important mime types are application/signature+xml for X ML DigSig,
+   * application/jose for JWS, and image/* for a graphical image of a
+   * signature, etc.
+   */
+  _sigFormat?: PrimitiveExtension;
+
+  /**
    * The base64 encoding of the Signature content. When signature is not
    * recorded electronically this element would be empty.
    */
   data?: string;
+
+  /**
+   * The base64 encoding of the Signature content. When signature is not
+   * recorded electronically this element would be empty.
+   */
+  _data?: PrimitiveExtension;
 }

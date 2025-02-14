@@ -5,6 +5,7 @@
 
 import { Coding } from './Coding';
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 
 /**
@@ -19,6 +20,12 @@ export interface Meta {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -38,9 +45,21 @@ export interface Meta {
   versionId?: string;
 
   /**
+   * The version specific identifier, as it appears in the version portion
+   * of the URL. This value changes when the resource is created, updated,
+   * or deleted.
+   */
+  _versionId?: PrimitiveExtension;
+
+  /**
    * When the resource last changed - e.g. when the version changed.
    */
   lastUpdated?: string;
+
+  /**
+   * When the resource last changed - e.g. when the version changed.
+   */
+  _lastUpdated?: PrimitiveExtension;
 
   /**
    * A uri that identifies the source system of the resource. This provides
@@ -52,12 +71,29 @@ export interface Meta {
   source?: string;
 
   /**
+   * A uri that identifies the source system of the resource. This provides
+   * a minimal amount of [Provenance](provenance.html#) information that
+   * can be used to track or differentiate the source of information in the
+   * resource. The source may identify another FHIR server, document,
+   * message, database, etc.
+   */
+  _source?: PrimitiveExtension;
+
+  /**
    * A list of profiles (references to
    * [StructureDefinition](structuredefinition.html#) resources) that this
    * resource claims to conform to. The URL is a reference to
    * [StructureDefinition.url](structuredefinition-definitions.html#StructureDefinition.url).
    */
   profile?: string[];
+
+  /**
+   * A list of profiles (references to
+   * [StructureDefinition](structuredefinition.html#) resources) that this
+   * resource claims to conform to. The URL is a reference to
+   * [StructureDefinition.url](structuredefinition-definitions.html#StructureDefinition.url).
+   */
+  _profile?: (PrimitiveExtension | null)[];
 
   /**
    * Security labels applied to this resource. These tags connect specific
@@ -77,6 +113,11 @@ export interface Meta {
    * The project that contains this resource.
    */
   project?: string;
+
+  /**
+   * The project that contains this resource.
+   */
+  _project?: PrimitiveExtension;
 
   /**
    * The individual, device or organization who initiated the last change.

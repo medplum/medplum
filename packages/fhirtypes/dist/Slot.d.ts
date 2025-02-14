@@ -8,6 +8,7 @@ import { Extension } from './Extension';
 import { Identifier } from './Identifier';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 import { Schedule } from './Schedule';
@@ -30,6 +31,12 @@ export interface Slot {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -45,9 +52,22 @@ export interface Slot {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -137,14 +157,29 @@ export interface Slot {
   status: 'busy' | 'free' | 'busy-unavailable' | 'busy-tentative' | 'entered-in-error';
 
   /**
+   * busy | free | busy-unavailable | busy-tentative | entered-in-error.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Date/Time that the slot is to begin.
    */
   start: string;
 
   /**
+   * Date/Time that the slot is to begin.
+   */
+  _start?: PrimitiveExtension;
+
+  /**
    * Date/Time that the slot is to conclude.
    */
   end: string;
+
+  /**
+   * Date/Time that the slot is to conclude.
+   */
+  _end?: PrimitiveExtension;
 
   /**
    * This slot has already been overbooked, appointments are unlikely to be
@@ -153,8 +188,20 @@ export interface Slot {
   overbooked?: boolean;
 
   /**
+   * This slot has already been overbooked, appointments are unlikely to be
+   * accepted for this time.
+   */
+  _overbooked?: PrimitiveExtension;
+
+  /**
    * Comments on the slot to describe any extended information. Such as
    * custom constraints on the slot.
    */
   comment?: string;
+
+  /**
+   * Comments on the slot to describe any extended information. Such as
+   * custom constraints on the slot.
+   */
+  _comment?: PrimitiveExtension;
 }

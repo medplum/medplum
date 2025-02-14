@@ -26,6 +26,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 import { ServiceRequest } from './ServiceRequest';
@@ -53,6 +54,12 @@ export interface DiagnosticReport {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -68,9 +75,22 @@ export interface DiagnosticReport {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -133,6 +153,11 @@ export interface DiagnosticReport {
   status: 'registered' | 'partial' | 'preliminary' | 'final' | 'amended' | 'corrected' | 'appended' | 'cancelled' | 'entered-in-error' | 'unknown';
 
   /**
+   * The status of the diagnostic report.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A code that classifies the clinical discipline, department or
    * diagnostic service that created the report (e.g. cardiology,
    * biochemistry, hematology, MRI). This is used for searching, sorting
@@ -172,6 +197,14 @@ export interface DiagnosticReport {
    * the procedure or of specimen collection(s), but very often the source
    * of the date/time is not known, only the date/time itself.
    */
+  _effectiveDateTime?: PrimitiveExtension;
+
+  /**
+   * The time or time-period the observed values are related to. When the
+   * subject of the report is a patient, this is usually either the time of
+   * the procedure or of specimen collection(s), but very often the source
+   * of the date/time is not known, only the date/time itself.
+   */
   effectivePeriod?: Period;
 
   /**
@@ -179,6 +212,12 @@ export interface DiagnosticReport {
    * to providers, typically after the report was reviewed and verified.
    */
   issued?: string;
+
+  /**
+   * The date and time that this version of the report was made available
+   * to providers, typically after the report was reviewed and verified.
+   */
+  _issued?: PrimitiveExtension;
 
   /**
    * The diagnostic service that is responsible for issuing the report.
@@ -225,6 +264,12 @@ export interface DiagnosticReport {
   conclusion?: string;
 
   /**
+   * Concise and clinically contextualized summary conclusion
+   * (interpretation/impression) of the diagnostic report.
+   */
+  _conclusion?: PrimitiveExtension;
+
+  /**
    * One or more codes that represent the summary conclusion
    * (interpretation/impression) of the diagnostic report.
    */
@@ -244,7 +289,7 @@ export interface DiagnosticReport {
  * the procedure or of specimen collection(s), but very often the source
  * of the date/time is not known, only the date/time itself.
  */
-export type DiagnosticReportEffective = Period | string;
+export type DiagnosticReportEffective = Period | PrimitiveExtension | string;
 
 /**
  * A list of key images associated with this report. The images are
@@ -258,6 +303,12 @@ export interface DiagnosticReportMedia {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -294,6 +345,13 @@ export interface DiagnosticReportMedia {
    * attention to important features.
    */
   comment?: string;
+
+  /**
+   * A comment about the image. Typically, this is used to provide an
+   * explanation for why the image is included, or to draw the viewer's
+   * attention to important features.
+   */
+  _comment?: PrimitiveExtension;
 
   /**
    * Reference to the image source.

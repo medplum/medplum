@@ -6,6 +6,7 @@
 import { Extension } from './Extension';
 import { Meta } from './Meta';
 import { Narrative } from './Narrative';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Resource } from './Resource';
 
 /**
@@ -25,6 +26,12 @@ export interface UserConfiguration {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -40,9 +47,22 @@ export interface UserConfiguration {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -95,6 +115,11 @@ export interface UserConfiguration {
   name?: string;
 
   /**
+   * A name associated with the UserConfiguration.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Optional menu of shortcuts to URLs.
    */
   menu?: UserConfigurationMenu[];
@@ -121,6 +146,11 @@ export interface UserConfigurationMenu {
   title: string;
 
   /**
+   * Title of the menu.
+   */
+  _title?: PrimitiveExtension;
+
+  /**
    * Shortcut links to URLs.
    */
   link?: UserConfigurationMenuLink[];
@@ -137,9 +167,19 @@ export interface UserConfigurationMenuLink {
   name: string;
 
   /**
+   * The human friendly name of the link.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The URL target of the link.
    */
   target: string;
+
+  /**
+   * The URL target of the link.
+   */
+  _target?: PrimitiveExtension;
 }
 
 /**
@@ -153,10 +193,21 @@ export interface UserConfigurationOption {
   id: string;
 
   /**
+   * The unique identifier of the option.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * Value of option - must be one of a constrained set of the data types
    * (see [Extensibility](extensibility.html) for a list).
    */
   valueBoolean?: boolean;
+
+  /**
+   * Value of option - must be one of a constrained set of the data types
+   * (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueBoolean?: PrimitiveExtension;
 
   /**
    * Value of option - must be one of a constrained set of the data types
@@ -168,7 +219,19 @@ export interface UserConfigurationOption {
    * Value of option - must be one of a constrained set of the data types
    * (see [Extensibility](extensibility.html) for a list).
    */
+  _valueCode?: PrimitiveExtension;
+
+  /**
+   * Value of option - must be one of a constrained set of the data types
+   * (see [Extensibility](extensibility.html) for a list).
+   */
   valueDecimal?: number;
+
+  /**
+   * Value of option - must be one of a constrained set of the data types
+   * (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueDecimal?: PrimitiveExtension;
 
   /**
    * Value of option - must be one of a constrained set of the data types
@@ -180,14 +243,26 @@ export interface UserConfigurationOption {
    * Value of option - must be one of a constrained set of the data types
    * (see [Extensibility](extensibility.html) for a list).
    */
+  _valueInteger?: PrimitiveExtension;
+
+  /**
+   * Value of option - must be one of a constrained set of the data types
+   * (see [Extensibility](extensibility.html) for a list).
+   */
   valueString?: string;
+
+  /**
+   * Value of option - must be one of a constrained set of the data types
+   * (see [Extensibility](extensibility.html) for a list).
+   */
+  _valueString?: PrimitiveExtension;
 }
 
 /**
  * Value of option - must be one of a constrained set of the data types
  * (see [Extensibility](extensibility.html) for a list).
  */
-export type UserConfigurationOptionValue = boolean | number | string;
+export type UserConfigurationOptionValue = boolean | number | PrimitiveExtension | string;
 
 /**
  * Shortcut links to URLs.
@@ -200,8 +275,19 @@ export interface UserConfigurationSearch {
   name: string;
 
   /**
+   * The human friendly name of the link.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * The rules that the server should use to determine which resources to
    * return.
    */
   criteria: string;
+
+  /**
+   * The rules that the server should use to determine which resources to
+   * return.
+   */
+  _criteria?: PrimitiveExtension;
 }

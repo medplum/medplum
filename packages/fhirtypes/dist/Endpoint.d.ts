@@ -12,6 +12,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Organization } from './Organization';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -35,6 +36,12 @@ export interface Endpoint {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -50,9 +57,22 @@ export interface Endpoint {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -111,6 +131,11 @@ export interface Endpoint {
   status: 'active' | 'suspended' | 'error' | 'off' | 'entered-in-error' | 'test';
 
   /**
+   * active | suspended | error | off | test.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A coded value that represents the technical details of the usage of
    * this endpoint, such as what WSDLs should be used in what way. (e.g.
    * XDS.b/DICOM/cds-hook).
@@ -121,6 +146,11 @@ export interface Endpoint {
    * A friendly name that this endpoint can be referred to with.
    */
   name?: string;
+
+  /**
+   * A friendly name that this endpoint can be referred to with.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * The organization that manages this endpoint (even if technically
@@ -155,12 +185,30 @@ export interface Endpoint {
   payloadMimeType?: string[];
 
   /**
+   * The mime type to send the payload in - e.g. application/fhir+xml,
+   * application/fhir+json. If the mime type is not specified, then the
+   * sender could send any content (including no content depending on the
+   * connectionType).
+   */
+  _payloadMimeType?: (PrimitiveExtension | null)[];
+
+  /**
    * The uri that describes the actual end-point to connect to.
    */
   address: string;
 
   /**
+   * The uri that describes the actual end-point to connect to.
+   */
+  _address?: PrimitiveExtension;
+
+  /**
    * Additional headers / information to send as part of the notification.
    */
   header?: string[];
+
+  /**
+   * Additional headers / information to send as part of the notification.
+   */
+  _header?: (PrimitiveExtension | null)[];
 }

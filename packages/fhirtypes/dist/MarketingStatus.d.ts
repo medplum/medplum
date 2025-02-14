@@ -6,6 +6,7 @@
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * The marketing status describes the date when a medicinal product is
@@ -19,6 +20,12 @@ export interface MarketingStatus {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -93,4 +100,15 @@ export interface MarketingStatus {
    * chain.
    */
   restoreDate?: string;
+
+  /**
+   * The date when the Medicinal Product is placed on the market by the
+   * Marketing Authorisation Holder (or where applicable, the
+   * manufacturer/distributor) in a country and/or jurisdiction shall be
+   * provided A complete date consisting of day, month and year shall be
+   * specified using the ISO 8601 date format NOTE &ldquo;Placed on the market&rdquo;
+   * refers to the release of the Medicinal Product into the distribution
+   * chain.
+   */
+  _restoreDate?: PrimitiveExtension;
 }

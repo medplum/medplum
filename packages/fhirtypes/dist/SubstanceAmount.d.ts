@@ -5,6 +5,7 @@
 
 import { CodeableConcept } from './CodeableConcept';
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 
@@ -24,6 +25,12 @@ export interface SubstanceAmount {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -79,6 +86,14 @@ export interface SubstanceAmount {
   amountString?: string;
 
   /**
+   * Used to capture quantitative values for a variety of elements. If only
+   * limits are given, the arithmetic mean would be the average. If only a
+   * single definite value for a given element is given, it would be
+   * captured in this field.
+   */
+  _amountString?: PrimitiveExtension;
+
+  /**
    * Most elements that require a quantitative value will also have a field
    * called amount type. Amount type should always be specified because the
    * actual value of the amount is often dependent on it. EXAMPLE: In
@@ -96,6 +111,11 @@ export interface SubstanceAmount {
   amountText?: string;
 
   /**
+   * A textual comment on a numeric value.
+   */
+  _amountText?: PrimitiveExtension;
+
+  /**
    * Reference range of possible or expected values.
    */
   referenceRange?: SubstanceAmountReferenceRange;
@@ -107,7 +127,7 @@ export interface SubstanceAmount {
  * single definite value for a given element is given, it would be
  * captured in this field.
  */
-export type SubstanceAmountAmount = Quantity | Range | string;
+export type SubstanceAmountAmount = PrimitiveExtension | Quantity | Range | string;
 
 /**
  * Reference range of possible or expected values.
@@ -119,6 +139,12 @@ export interface SubstanceAmountReferenceRange {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of

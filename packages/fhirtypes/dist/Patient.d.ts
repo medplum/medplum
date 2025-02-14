@@ -16,6 +16,7 @@ import { Organization } from './Organization';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
@@ -38,6 +39,12 @@ export interface Patient {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -53,9 +60,22 @@ export interface Patient {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -121,6 +141,19 @@ export interface Patient {
   active?: boolean;
 
   /**
+   * Whether this patient record is in active use.
+   * Many systems use this property to mark as non-current patients, such
+   * as those that have not been seen for a period of time based on an
+   * organization's business rules.
+   *
+   * It is often used to filter patient lists to exclude inactive patients
+   *
+   * Deceased patients may also be marked as inactive for the same reasons,
+   * but may be active for some time after death.
+   */
+  _active?: PrimitiveExtension;
+
+  /**
    * A name associated with the individual.
    */
   name?: HumanName[];
@@ -138,9 +171,20 @@ export interface Patient {
   gender?: 'male' | 'female' | 'other' | 'unknown';
 
   /**
+   * Administrative Gender - the gender that the patient is considered to
+   * have for administration and record keeping purposes.
+   */
+  _gender?: PrimitiveExtension;
+
+  /**
    * The date of birth for the individual.
    */
   birthDate?: string;
+
+  /**
+   * The date of birth for the individual.
+   */
+  _birthDate?: PrimitiveExtension;
 
   /**
    * Indicates if the individual is deceased or not.
@@ -150,7 +194,17 @@ export interface Patient {
   /**
    * Indicates if the individual is deceased or not.
    */
+  _deceasedBoolean?: PrimitiveExtension;
+
+  /**
+   * Indicates if the individual is deceased or not.
+   */
   deceasedDateTime?: string;
+
+  /**
+   * Indicates if the individual is deceased or not.
+   */
+  _deceasedDateTime?: PrimitiveExtension;
 
   /**
    * An address for the individual.
@@ -172,7 +226,19 @@ export interface Patient {
    * Indicates whether the patient is part of a multiple (boolean) or
    * indicates the actual birth order (integer).
    */
+  _multipleBirthBoolean?: PrimitiveExtension;
+
+  /**
+   * Indicates whether the patient is part of a multiple (boolean) or
+   * indicates the actual birth order (integer).
+   */
   multipleBirthInteger?: number;
+
+  /**
+   * Indicates whether the patient is part of a multiple (boolean) or
+   * indicates the actual birth order (integer).
+   */
+  _multipleBirthInteger?: PrimitiveExtension;
 
   /**
    * Image of the patient.
@@ -210,13 +276,13 @@ export interface Patient {
 /**
  * Indicates if the individual is deceased or not.
  */
-export type PatientDeceased = boolean | string;
+export type PatientDeceased = boolean | PrimitiveExtension | string;
 
 /**
  * Indicates whether the patient is part of a multiple (boolean) or
  * indicates the actual birth order (integer).
  */
-export type PatientMultipleBirth = boolean | number;
+export type PatientMultipleBirth = boolean | number | PrimitiveExtension;
 
 /**
  * A language which may be used to communicate with the patient about his
@@ -229,6 +295,12 @@ export interface PatientCommunication {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -272,6 +344,12 @@ export interface PatientCommunication {
    * languages he masters up a certain level).
    */
   preferred?: boolean;
+
+  /**
+   * Indicates whether or not the patient prefers this language (over other
+   * languages he masters up a certain level).
+   */
+  _preferred?: PrimitiveExtension;
 }
 
 /**
@@ -284,6 +362,12 @@ export interface PatientContact {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -343,6 +427,12 @@ export interface PatientContact {
   gender?: 'male' | 'female' | 'other' | 'unknown';
 
   /**
+   * Administrative Gender - the gender that the contact person is
+   * considered to have for administration and record keeping purposes.
+   */
+  _gender?: PrimitiveExtension;
+
+  /**
    * Organization on behalf of which the contact is acting or for which the
    * contact is working.
    */
@@ -366,6 +456,12 @@ export interface PatientLink {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -406,4 +502,10 @@ export interface PatientLink {
    * resource.
    */
   type: 'replaced-by' | 'replaces' | 'refer' | 'seealso';
+
+  /**
+   * The type of link between this patient resource and another patient
+   * resource.
+   */
+  _type?: PrimitiveExtension;
 }

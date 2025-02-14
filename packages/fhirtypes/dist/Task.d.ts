@@ -38,6 +38,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Provenance } from './Provenance';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
@@ -69,6 +70,12 @@ export interface Task {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -84,9 +91,22 @@ export interface Task {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -145,11 +165,24 @@ export interface Task {
   instantiatesCanonical?: string;
 
   /**
+   * The URL pointing to a *FHIR*-defined protocol, guideline, orderset or
+   * other definition that is adhered to in whole or in part by this Task.
+   */
+  _instantiatesCanonical?: PrimitiveExtension;
+
+  /**
    * The URL pointing to an *externally* maintained  protocol, guideline,
    * orderset or other definition that is adhered to in whole or in part by
    * this Task.
    */
   instantiatesUri?: string;
+
+  /**
+   * The URL pointing to an *externally* maintained  protocol, guideline,
+   * orderset or other definition that is adhered to in whole or in part by
+   * this Task.
+   */
+  _instantiatesUri?: PrimitiveExtension;
 
   /**
    * BasedOn refers to a higher-level authorization that triggered the
@@ -180,6 +213,11 @@ export interface Task {
       'on-hold' | 'failed' | 'completed' | 'entered-in-error';
 
   /**
+   * The current status of the task.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * An explanation as to why this task is held, failed, was refused, etc.
    */
   statusReason?: CodeableConcept;
@@ -197,10 +235,23 @@ export interface Task {
   intent: 'unknown' | 'proposal' | 'plan' | 'order' | 'original-order' | 'reflex-order' | 'filler-order' | 'instance-order' | 'option';
 
   /**
+   * Indicates the &quot;level&quot; of actionability associated with the Task, i.e.
+   * i+R[9]Cs this a proposed task, a planned task, an actionable task,
+   * etc.
+   */
+  _intent?: PrimitiveExtension;
+
+  /**
    * Indicates how quickly the Task should be addressed with respect to
    * other requests.
    */
   priority?: 'routine' | 'urgent' | 'asap' | 'stat';
+
+  /**
+   * Indicates how quickly the Task should be addressed with respect to
+   * other requests.
+   */
+  _priority?: PrimitiveExtension;
 
   /**
    * A name or code (or both) briefly describing what the task involves.
@@ -211,6 +262,11 @@ export interface Task {
    * A free-text description of what is to be performed.
    */
   description?: string;
+
+  /**
+   * A free-text description of what is to be performed.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The request being actioned or the resource being manipulated by this
@@ -243,9 +299,19 @@ export interface Task {
   authoredOn?: string;
 
   /**
+   * The date and time this task was created.
+   */
+  _authoredOn?: PrimitiveExtension;
+
+  /**
    * The date and time of last modification to this task.
    */
   lastModified?: string;
+
+  /**
+   * The date and time of last modification to this task.
+   */
+  _lastModified?: PrimitiveExtension;
 
   /**
    * The creator of the task.
@@ -329,6 +395,12 @@ export interface TaskInput {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -371,7 +443,17 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
+  _valueBase64Binary?: PrimitiveExtension;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
   valueBoolean?: boolean;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
+  _valueBoolean?: PrimitiveExtension;
 
   /**
    * The value of the input parameter as a basic type.
@@ -381,7 +463,17 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
+  _valueCanonical?: PrimitiveExtension;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
   valueCode?: string;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
+  _valueCode?: PrimitiveExtension;
 
   /**
    * The value of the input parameter as a basic type.
@@ -391,7 +483,17 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
+  _valueDate?: PrimitiveExtension;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
   valueDateTime?: string;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
+  _valueDateTime?: PrimitiveExtension;
 
   /**
    * The value of the input parameter as a basic type.
@@ -401,7 +503,17 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
+  _valueDecimal?: PrimitiveExtension;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
   valueId?: string;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
+  _valueId?: PrimitiveExtension;
 
   /**
    * The value of the input parameter as a basic type.
@@ -411,7 +523,17 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
+  _valueInstant?: PrimitiveExtension;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
   valueInteger?: number;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
+  _valueInteger?: PrimitiveExtension;
 
   /**
    * The value of the input parameter as a basic type.
@@ -421,7 +543,17 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
+  _valueMarkdown?: PrimitiveExtension;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
   valueOid?: string;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
+  _valueOid?: PrimitiveExtension;
 
   /**
    * The value of the input parameter as a basic type.
@@ -431,7 +563,17 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
+  _valuePositiveInt?: PrimitiveExtension;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
   valueString?: string;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
+  _valueString?: PrimitiveExtension;
 
   /**
    * The value of the input parameter as a basic type.
@@ -441,7 +583,17 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
+  _valueTime?: PrimitiveExtension;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
   valueUnsignedInt?: number;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
+  _valueUnsignedInt?: PrimitiveExtension;
 
   /**
    * The value of the input parameter as a basic type.
@@ -451,12 +603,27 @@ export interface TaskInput {
   /**
    * The value of the input parameter as a basic type.
    */
+  _valueUri?: PrimitiveExtension;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
   valueUrl?: string;
 
   /**
    * The value of the input parameter as a basic type.
    */
+  _valueUrl?: PrimitiveExtension;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
   valueUuid?: string;
+
+  /**
+   * The value of the input parameter as a basic type.
+   */
+  _valueUuid?: PrimitiveExtension;
 
   /**
    * The value of the input parameter as a basic type.
@@ -619,8 +786,8 @@ export interface TaskInput {
  */
 export type TaskInputValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
     ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
-    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
-    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | PrimitiveExtension | Quantity | Range |
+    Ratio | Reference | RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
 
 /**
  * Outputs produced by the Task.
@@ -632,6 +799,12 @@ export interface TaskOutput {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -675,7 +848,17 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
+  _valueBase64Binary?: PrimitiveExtension;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
   valueBoolean?: boolean;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
+  _valueBoolean?: PrimitiveExtension;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -685,7 +868,17 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
+  _valueCanonical?: PrimitiveExtension;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
   valueCode?: string;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
+  _valueCode?: PrimitiveExtension;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -695,7 +888,17 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
+  _valueDate?: PrimitiveExtension;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
   valueDateTime?: string;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
+  _valueDateTime?: PrimitiveExtension;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -705,7 +908,17 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
+  _valueDecimal?: PrimitiveExtension;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
   valueId?: string;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
+  _valueId?: PrimitiveExtension;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -715,7 +928,17 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
+  _valueInstant?: PrimitiveExtension;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
   valueInteger?: number;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
+  _valueInteger?: PrimitiveExtension;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -725,7 +948,17 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
+  _valueMarkdown?: PrimitiveExtension;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
   valueOid?: string;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
+  _valueOid?: PrimitiveExtension;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -735,7 +968,17 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
+  _valuePositiveInt?: PrimitiveExtension;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
   valueString?: string;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
+  _valueString?: PrimitiveExtension;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -745,7 +988,17 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
+  _valueTime?: PrimitiveExtension;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
   valueUnsignedInt?: number;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
+  _valueUnsignedInt?: PrimitiveExtension;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -755,12 +1008,27 @@ export interface TaskOutput {
   /**
    * The value of the Output parameter as a basic type.
    */
+  _valueUri?: PrimitiveExtension;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
   valueUrl?: string;
 
   /**
    * The value of the Output parameter as a basic type.
    */
+  _valueUrl?: PrimitiveExtension;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
   valueUuid?: string;
+
+  /**
+   * The value of the Output parameter as a basic type.
+   */
+  _valueUuid?: PrimitiveExtension;
 
   /**
    * The value of the Output parameter as a basic type.
@@ -923,8 +1191,8 @@ export interface TaskOutput {
  */
 export type TaskOutputValue = Address | Age | Annotation | Attachment | boolean | CodeableConcept | Coding |
     ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage | Duration | Expression |
-    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range | Ratio | Reference |
-    RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+    HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | PrimitiveExtension | Quantity | Range |
+    Ratio | Reference | RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
 
 /**
  * If the Task.focus is a request resource and the task is seeking
@@ -939,6 +1207,12 @@ export interface TaskRestriction {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -973,6 +1247,11 @@ export interface TaskRestriction {
    * Indicates the number of times the requested action should occur.
    */
   repetitions?: number;
+
+  /**
+   * Indicates the number of times the requested action should occur.
+   */
+  _repetitions?: PrimitiveExtension;
 
   /**
    * Over what time-period is fulfillment sought.

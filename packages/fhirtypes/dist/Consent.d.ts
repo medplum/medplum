@@ -20,6 +20,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { QuestionnaireResponse } from './QuestionnaireResponse';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
@@ -45,6 +46,12 @@ export interface Consent {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -60,9 +67,22 @@ export interface Consent {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -120,6 +140,11 @@ export interface Consent {
   status: 'draft' | 'proposed' | 'active' | 'rejected' | 'inactive' | 'entered-in-error';
 
   /**
+   * Indicates the current state of this consent.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A selector of the type of consent being presented: ADR, Privacy,
    * Treatment, Research.  This list is now extensible.
    */
@@ -140,6 +165,11 @@ export interface Consent {
    * When this  Consent was issued / created / indexed.
    */
   dateTime?: string;
+
+  /**
+   * When this  Consent was issued / created / indexed.
+   */
+  _dateTime?: PrimitiveExtension;
 
   /**
    * Either the Grantor, which is the entity responsible for granting the
@@ -220,6 +250,12 @@ export interface ConsentPolicy {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -256,11 +292,25 @@ export interface ConsentPolicy {
   authority?: string;
 
   /**
+   * Entity or Organization having regulatory jurisdiction or
+   * accountability for  enforcing policies pertaining to Consent
+   * Directives.
+   */
+  _authority?: PrimitiveExtension;
+
+  /**
    * The references to the policies that are included in this consent
    * scope. Policies may be organizational, but are often defined
    * jurisdictionally, or in law.
    */
   uri?: string;
+
+  /**
+   * The references to the policies that are included in this consent
+   * scope. Policies may be organizational, but are often defined
+   * jurisdictionally, or in law.
+   */
+  _uri?: PrimitiveExtension;
 }
 
 /**
@@ -274,6 +324,12 @@ export interface ConsentProvision {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -309,6 +365,12 @@ export interface ConsentProvision {
    * Not permitted in root rule, required in all nested rules.
    */
   type?: 'deny' | 'permit';
+
+  /**
+   * Action  to take - permit or deny - when the rule conditions are met.
+   * Not permitted in root rule, required in all nested rules.
+   */
+  _type?: PrimitiveExtension;
 
   /**
    * The timeframe in this rule is valid.
@@ -381,6 +443,12 @@ export interface ConsentProvisionActor {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -436,6 +504,12 @@ export interface ConsentProvisionData {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -471,6 +545,12 @@ export interface ConsentProvisionData {
   meaning: 'instance' | 'related' | 'dependents' | 'authoredby';
 
   /**
+   * How the resource reference is interpreted when testing consent
+   * restrictions.
+   */
+  _meaning?: PrimitiveExtension;
+
+  /**
    * A reference to a specific resource that defines which resources are
    * covered by this consent.
    */
@@ -489,6 +569,12 @@ export interface ConsentVerification {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -525,6 +611,11 @@ export interface ConsentVerification {
   verified: boolean;
 
   /**
+   * Has the instruction been verified.
+   */
+  _verified?: PrimitiveExtension;
+
+  /**
    * Who verified the instruction (Patient, Relative or other Authorized
    * Person).
    */
@@ -534,4 +625,9 @@ export interface ConsentVerification {
    * Date verification was collected.
    */
   verificationDate?: string;
+
+  /**
+   * Date verification was collected.
+   */
+  _verificationDate?: PrimitiveExtension;
 }

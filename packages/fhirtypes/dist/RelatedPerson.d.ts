@@ -14,6 +14,7 @@ import { Meta } from './Meta';
 import { Narrative } from './Narrative';
 import { Patient } from './Patient';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -36,6 +37,12 @@ export interface RelatedPerson {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -51,9 +58,22 @@ export interface RelatedPerson {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -111,6 +131,11 @@ export interface RelatedPerson {
   active?: boolean;
 
   /**
+   * Whether this related person record is in active use.
+   */
+  _active?: PrimitiveExtension;
+
+  /**
    * The patient this person is related to.
    */
   patient: Reference<Patient>;
@@ -139,9 +164,20 @@ export interface RelatedPerson {
   gender?: 'male' | 'female' | 'other' | 'unknown';
 
   /**
+   * Administrative Gender - the gender that the person is considered to
+   * have for administration and record keeping purposes.
+   */
+  _gender?: PrimitiveExtension;
+
+  /**
    * The date on which the related person was born.
    */
   birthDate?: string;
+
+  /**
+   * The date on which the related person was born.
+   */
+  _birthDate?: PrimitiveExtension;
 
   /**
    * Address where the related person can be contacted or visited.
@@ -177,6 +213,12 @@ export interface RelatedPersonCommunication {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -220,4 +262,10 @@ export interface RelatedPersonCommunication {
    * languages he masters up a certain level).
    */
   preferred?: boolean;
+
+  /**
+   * Indicates whether or not the patient prefers this language (over other
+   * languages he masters up a certain level).
+   */
+  _preferred?: PrimitiveExtension;
 }

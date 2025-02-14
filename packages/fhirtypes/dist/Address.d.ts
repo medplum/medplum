@@ -5,6 +5,7 @@
 
 import { Extension } from './Extension';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * An address expressed using postal conventions (as opposed to GPS or
@@ -22,6 +23,12 @@ export interface Address {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -37,11 +44,23 @@ export interface Address {
   use?: 'home' | 'work' | 'temp' | 'old' | 'billing';
 
   /**
+   * The purpose of this address.
+   */
+  _use?: PrimitiveExtension;
+
+  /**
    * Distinguishes between physical addresses (those you can visit) and
    * mailing addresses (e.g. PO Boxes and care-of addresses). Most
    * addresses are both.
    */
   type?: 'postal' | 'physical' | 'both';
+
+  /**
+   * Distinguishes between physical addresses (those you can visit) and
+   * mailing addresses (e.g. PO Boxes and care-of addresses). Most
+   * addresses are both.
+   */
+  _type?: PrimitiveExtension;
 
   /**
    * Specifies the entire address as it should be displayed e.g. on a
@@ -51,11 +70,25 @@ export interface Address {
   text?: string;
 
   /**
+   * Specifies the entire address as it should be displayed e.g. on a
+   * postal label. This may be provided instead of or as well as the
+   * specific parts.
+   */
+  _text?: PrimitiveExtension;
+
+  /**
    * This component contains the house number, apartment number, street
    * name, street direction,  P.O. Box number, delivery hints, and similar
    * address information.
    */
   line?: string[];
+
+  /**
+   * This component contains the house number, apartment number, street
+   * name, street direction,  P.O. Box number, delivery hints, and similar
+   * address information.
+   */
+  _line?: (PrimitiveExtension | null)[];
 
   /**
    * The name of the city, town, suburb, village or other community or
@@ -64,9 +97,20 @@ export interface Address {
   city?: string;
 
   /**
+   * The name of the city, town, suburb, village or other community or
+   * delivery center.
+   */
+  _city?: PrimitiveExtension;
+
+  /**
    * The name of the administrative area (county).
    */
   district?: string;
+
+  /**
+   * The name of the administrative area (county).
+   */
+  _district?: PrimitiveExtension;
 
   /**
    * Sub-unit of a country with limited sovereignty in a federally
@@ -76,14 +120,31 @@ export interface Address {
   state?: string;
 
   /**
+   * Sub-unit of a country with limited sovereignty in a federally
+   * organized country. A code may be used if codes are in common use (e.g.
+   * US 2 letter state codes).
+   */
+  _state?: PrimitiveExtension;
+
+  /**
    * A postal code designating a region defined by the postal service.
    */
   postalCode?: string;
 
   /**
+   * A postal code designating a region defined by the postal service.
+   */
+  _postalCode?: PrimitiveExtension;
+
+  /**
    * Country - a nation as commonly understood or generally accepted.
    */
   country?: string;
+
+  /**
+   * Country - a nation as commonly understood or generally accepted.
+   */
+  _country?: PrimitiveExtension;
 
   /**
    * Time period when address was/is in use.

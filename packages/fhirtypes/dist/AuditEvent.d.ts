@@ -17,6 +17,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
 import { Resource } from './Resource';
@@ -41,6 +42,12 @@ export interface AuditEvent {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -56,9 +63,22 @@ export interface AuditEvent {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -124,6 +144,12 @@ export interface AuditEvent {
   action?: 'C' | 'R' | 'U' | 'D' | 'E';
 
   /**
+   * Indicator for type of action performed during the event that generated
+   * the audit.
+   */
+  _action?: PrimitiveExtension;
+
+  /**
    * The period during which the activity occurred.
    */
   period?: Period;
@@ -134,14 +160,29 @@ export interface AuditEvent {
   recorded: string;
 
   /**
+   * The time when the event was recorded.
+   */
+  _recorded?: PrimitiveExtension;
+
+  /**
    * Indicates whether the event succeeded or failed.
    */
   outcome?: '0' | '4' | '8' | '12';
 
   /**
+   * Indicates whether the event succeeded or failed.
+   */
+  _outcome?: PrimitiveExtension;
+
+  /**
    * A free text description of the outcome of the event.
    */
   outcomeDesc?: string;
+
+  /**
+   * A free text description of the outcome of the event.
+   */
+  _outcomeDesc?: PrimitiveExtension;
 
   /**
    * The purposeOfUse (reason) that was used during the event being
@@ -177,6 +218,12 @@ export interface AuditEventAgent {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -234,15 +281,34 @@ export interface AuditEventAgent {
   altId?: string;
 
   /**
+   * Alternative agent Identifier. For a human, this should be a user
+   * identifier text string from authentication system. This identifier
+   * would be one known to a common authentication system (e.g. single
+   * sign-on), if available.
+   */
+  _altId?: PrimitiveExtension;
+
+  /**
    * Human-meaningful name for the agent.
    */
   name?: string;
+
+  /**
+   * Human-meaningful name for the agent.
+   */
+  _name?: PrimitiveExtension;
 
   /**
    * Indicator that the user is or is not the requestor, or initiator, for
    * the event being audited.
    */
   requestor: boolean;
+
+  /**
+   * Indicator that the user is or is not the requestor, or initiator, for
+   * the event being audited.
+   */
+  _requestor?: PrimitiveExtension;
 
   /**
    * Where the event occurred.
@@ -256,6 +322,14 @@ export interface AuditEventAgent {
    * indicate the security token used.
    */
   policy?: string[];
+
+  /**
+   * The policy or plan that authorized the activity being recorded.
+   * Typically, a single activity may have multiple applicable policies,
+   * such as patient consent, guarantor funding, etc. The policy would also
+   * indicate the security token used.
+   */
+  _policy?: (PrimitiveExtension | null)[];
 
   /**
    * Type of media involved. Used when the event is about
@@ -287,6 +361,12 @@ export interface AuditEventAgentNetwork {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -324,10 +404,22 @@ export interface AuditEventAgentNetwork {
   address?: string;
 
   /**
+   * An identifier for the network access point of the user device for the
+   * audit event.
+   */
+  _address?: PrimitiveExtension;
+
+  /**
    * An identifier for the type of network access point that originated the
    * audit event.
    */
   type?: '1' | '2' | '3' | '4' | '5';
+
+  /**
+   * An identifier for the type of network access point that originated the
+   * audit event.
+   */
+  _type?: PrimitiveExtension;
 }
 
 /**
@@ -340,6 +432,12 @@ export interface AuditEventEntity {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -403,14 +501,29 @@ export interface AuditEventEntity {
   name?: string;
 
   /**
+   * A name of the entity in the audit event.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Text that describes the entity in more detail.
    */
   description?: string;
 
   /**
+   * Text that describes the entity in more detail.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * The query parameters for a query-type entities.
    */
   query?: string;
+
+  /**
+   * The query parameters for a query-type entities.
+   */
+  _query?: PrimitiveExtension;
 
   /**
    * Tagged value pairs for conveying additional information about the
@@ -430,6 +543,12 @@ export interface AuditEventEntityDetail {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -466,6 +585,11 @@ export interface AuditEventEntityDetail {
   type: string;
 
   /**
+   * The type of extra detail provided in the value.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * The  value of the extra detail.
    */
   valueString?: string;
@@ -473,13 +597,23 @@ export interface AuditEventEntityDetail {
   /**
    * The  value of the extra detail.
    */
+  _valueString?: PrimitiveExtension;
+
+  /**
+   * The  value of the extra detail.
+   */
   valueBase64Binary?: string;
+
+  /**
+   * The  value of the extra detail.
+   */
+  _valueBase64Binary?: PrimitiveExtension;
 }
 
 /**
  * The  value of the extra detail.
  */
-export type AuditEventEntityDetailValue = string;
+export type AuditEventEntityDetailValue = PrimitiveExtension | string;
 
 /**
  * The system that is reporting the event.
@@ -491,6 +625,12 @@ export interface AuditEventSource {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -527,6 +667,13 @@ export interface AuditEventSource {
    * provider group.
    */
   site?: string;
+
+  /**
+   * Logical source location within the healthcare enterprise network.  For
+   * example, a hospital or other provider location within a multi-entity
+   * provider group.
+   */
+  _site?: PrimitiveExtension;
 
   /**
    * Identifier of the source where the event was detected.

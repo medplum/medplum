@@ -26,6 +26,7 @@ import { Money } from './Money';
 import { Narrative } from './Narrative';
 import { ParameterDefinition } from './ParameterDefinition';
 import { Period } from './Period';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Quantity } from './Quantity';
 import { Range } from './Range';
 import { Ratio } from './Ratio';
@@ -56,6 +57,12 @@ export interface StructureMap {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -71,9 +78,22 @@ export interface StructureMap {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -132,6 +152,17 @@ export interface StructureMap {
   url: string;
 
   /**
+   * An absolute URI that is used to identify this structure map when it is
+   * referenced in a specification, model, design or an instance; also
+   * called its canonical identifier. This SHOULD be globally unique and
+   * SHOULD be a literal address at which at which an authoritative
+   * instance of this structure map is (or will be) published. This URL can
+   * be the target of a canonical reference. It SHALL remain the same when
+   * the structure map is stored on different servers.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * A formal identifier that is used to identify this structure map when
    * it is represented in other formats, or referenced in a specification,
    * model, design or an instance.
@@ -150,6 +181,17 @@ export interface StructureMap {
   version?: string;
 
   /**
+   * The identifier that is used to identify this version of the structure
+   * map when it is referenced in a specification, model, design or
+   * instance. This is an arbitrary value managed by the structure map
+   * author and is not expected to be globally unique. For example, it
+   * might be a timestamp (e.g. yyyymmdd) if a managed version is not
+   * available. There is also no expectation that versions can be placed in
+   * a lexicographical sequence.
+   */
+  _version?: PrimitiveExtension;
+
+  /**
    * A natural language name identifying the structure map. This name
    * should be usable as an identifier for the module by machine processing
    * applications such as code generation.
@@ -157,9 +199,21 @@ export interface StructureMap {
   name: string;
 
   /**
+   * A natural language name identifying the structure map. This name
+   * should be usable as an identifier for the module by machine processing
+   * applications such as code generation.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * A short, descriptive, user-friendly title for the structure map.
    */
   title?: string;
+
+  /**
+   * A short, descriptive, user-friendly title for the structure map.
+   */
+  _title?: PrimitiveExtension;
 
   /**
    * The status of this structure map. Enables tracking the life-cycle of
@@ -168,11 +222,24 @@ export interface StructureMap {
   status: 'draft' | 'active' | 'retired' | 'unknown';
 
   /**
+   * The status of this structure map. Enables tracking the life-cycle of
+   * the content.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * A Boolean value to indicate that this structure map is authored for
    * testing purposes (or education/evaluation/marketing) and is not
    * intended to be used for genuine usage.
    */
   experimental?: boolean;
+
+  /**
+   * A Boolean value to indicate that this structure map is authored for
+   * testing purposes (or education/evaluation/marketing) and is not
+   * intended to be used for genuine usage.
+   */
+  _experimental?: PrimitiveExtension;
 
   /**
    * The date  (and optionally time) when the structure map was published.
@@ -183,10 +250,24 @@ export interface StructureMap {
   date?: string;
 
   /**
+   * The date  (and optionally time) when the structure map was published.
+   * The date must change when the business version changes and it must
+   * change if the status code changes. In addition, it should change when
+   * the substantive content of the structure map changes.
+   */
+  _date?: PrimitiveExtension;
+
+  /**
    * The name of the organization or individual that published the
    * structure map.
    */
   publisher?: string;
+
+  /**
+   * The name of the organization or individual that published the
+   * structure map.
+   */
+  _publisher?: PrimitiveExtension;
 
   /**
    * Contact details to assist a user in finding and communicating with the
@@ -199,6 +280,12 @@ export interface StructureMap {
    * consumer's perspective.
    */
   description?: string;
+
+  /**
+   * A free text natural language description of the structure map from a
+   * consumer's perspective.
+   */
+  _description?: PrimitiveExtension;
 
   /**
    * The content was developed with a focus and intent of supporting the
@@ -222,11 +309,24 @@ export interface StructureMap {
   purpose?: string;
 
   /**
+   * Explanation of why this structure map is needed and why it has been
+   * designed as it has.
+   */
+  _purpose?: PrimitiveExtension;
+
+  /**
    * A copyright statement relating to the structure map and/or its
    * contents. Copyright statements are generally legal restrictions on the
    * use and publishing of the structure map.
    */
   copyright?: string;
+
+  /**
+   * A copyright statement relating to the structure map and/or its
+   * contents. Copyright statements are generally legal restrictions on the
+   * use and publishing of the structure map.
+   */
+  _copyright?: PrimitiveExtension;
 
   /**
    * A structure definition used by this map. The structure definition may
@@ -239,6 +339,11 @@ export interface StructureMap {
    * Other maps used by this map (canonical URLs).
    */
   import?: string[];
+
+  /**
+   * Other maps used by this map (canonical URLs).
+   */
+  _import?: (PrimitiveExtension | null)[];
 
   /**
    * Organizes the mapping into manageable chunks for human review/ease of
@@ -258,6 +363,12 @@ export interface StructureMapGroup {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -294,9 +405,19 @@ export interface StructureMapGroup {
   name: string;
 
   /**
+   * A unique name for the group for the convenience of human readers.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Another group that this group adds rules to.
    */
   extends?: string;
+
+  /**
+   * Another group that this group adds rules to.
+   */
+  _extends?: PrimitiveExtension;
 
   /**
    * If this is the default rule set to apply for the source type or this
@@ -305,10 +426,22 @@ export interface StructureMapGroup {
   typeMode: 'none' | 'types' | 'type-and-types';
 
   /**
+   * If this is the default rule set to apply for the source type or this
+   * combination of types.
+   */
+  _typeMode?: PrimitiveExtension;
+
+  /**
    * Additional supporting documentation that explains the purpose of the
    * group and the types of mappings within it.
    */
   documentation?: string;
+
+  /**
+   * Additional supporting documentation that explains the purpose of the
+   * group and the types of mappings within it.
+   */
+  _documentation?: PrimitiveExtension;
 
   /**
    * A name assigned to an instance of data. The instance must be provided
@@ -333,6 +466,12 @@ export interface StructureMapGroupInput {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -369,9 +508,19 @@ export interface StructureMapGroupInput {
   name: string;
 
   /**
+   * Name for this instance of data.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Type for this instance of data.
    */
   type?: string;
+
+  /**
+   * Type for this instance of data.
+   */
+  _type?: PrimitiveExtension;
 
   /**
    * Mode for this instance of data.
@@ -379,9 +528,19 @@ export interface StructureMapGroupInput {
   mode: 'source' | 'target';
 
   /**
+   * Mode for this instance of data.
+   */
+  _mode?: PrimitiveExtension;
+
+  /**
    * Documentation for this instance of data.
    */
   documentation?: string;
+
+  /**
+   * Documentation for this instance of data.
+   */
+  _documentation?: PrimitiveExtension;
 }
 
 /**
@@ -394,6 +553,12 @@ export interface StructureMapGroupRule {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -430,6 +595,11 @@ export interface StructureMapGroupRule {
   name: string;
 
   /**
+   * Name of the rule for internal references.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Source inputs to the mapping.
    */
   source: StructureMapGroupRuleSource[];
@@ -453,6 +623,11 @@ export interface StructureMapGroupRule {
    * Documentation for this instance of data.
    */
   documentation?: string;
+
+  /**
+   * Documentation for this instance of data.
+   */
+  _documentation?: PrimitiveExtension;
 }
 
 /**
@@ -465,6 +640,12 @@ export interface StructureMapGroupRuleDependent {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -501,9 +682,19 @@ export interface StructureMapGroupRuleDependent {
   name: string;
 
   /**
+   * Name of a rule or group to apply.
+   */
+  _name?: PrimitiveExtension;
+
+  /**
    * Variable to pass to the rule or group.
    */
   variable: string[];
+
+  /**
+   * Variable to pass to the rule or group.
+   */
+  _variable?: (PrimitiveExtension | null)[];
 }
 
 /**
@@ -516,6 +707,12 @@ export interface StructureMapGroupRuleSource {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -552,10 +749,21 @@ export interface StructureMapGroupRuleSource {
   context: string;
 
   /**
+   * Type or variable this rule applies to.
+   */
+  _context?: PrimitiveExtension;
+
+  /**
    * Specified minimum cardinality for the element. This is optional; if
    * present, it acts an implicit check on the input content.
    */
   min?: number;
+
+  /**
+   * Specified minimum cardinality for the element. This is optional; if
+   * present, it acts an implicit check on the input content.
+   */
+  _min?: PrimitiveExtension;
 
   /**
    * Specified maximum cardinality for the element - a number or a &quot;*&quot;.
@@ -565,10 +773,23 @@ export interface StructureMapGroupRuleSource {
   max?: string;
 
   /**
+   * Specified maximum cardinality for the element - a number or a &quot;*&quot;.
+   * This is optional; if present, it acts an implicit check on the input
+   * content (* just serves as documentation; it's the default value).
+   */
+  _max?: PrimitiveExtension;
+
+  /**
    * Specified type for the element. This works as a condition on the
    * mapping - use for polymorphic elements.
    */
   type?: string;
+
+  /**
+   * Specified type for the element. This works as a condition on the
+   * mapping - use for polymorphic elements.
+   */
+  _type?: PrimitiveExtension;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -578,7 +799,17 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
+  _defaultValueBase64Binary?: PrimitiveExtension;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
   defaultValueBoolean?: boolean;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
+  _defaultValueBoolean?: PrimitiveExtension;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -588,7 +819,17 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
+  _defaultValueCanonical?: PrimitiveExtension;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
   defaultValueCode?: string;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
+  _defaultValueCode?: PrimitiveExtension;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -598,7 +839,17 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
+  _defaultValueDate?: PrimitiveExtension;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
   defaultValueDateTime?: string;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
+  _defaultValueDateTime?: PrimitiveExtension;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -608,7 +859,17 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
+  _defaultValueDecimal?: PrimitiveExtension;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
   defaultValueId?: string;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
+  _defaultValueId?: PrimitiveExtension;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -618,7 +879,17 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
+  _defaultValueInstant?: PrimitiveExtension;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
   defaultValueInteger?: number;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
+  _defaultValueInteger?: PrimitiveExtension;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -628,7 +899,17 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
+  _defaultValueMarkdown?: PrimitiveExtension;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
   defaultValueOid?: string;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
+  _defaultValueOid?: PrimitiveExtension;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -638,7 +919,17 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
+  _defaultValuePositiveInt?: PrimitiveExtension;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
   defaultValueString?: string;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
+  _defaultValueString?: PrimitiveExtension;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -648,7 +939,17 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
+  _defaultValueTime?: PrimitiveExtension;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
   defaultValueUnsignedInt?: number;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
+  _defaultValueUnsignedInt?: PrimitiveExtension;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -658,12 +959,27 @@ export interface StructureMapGroupRuleSource {
   /**
    * A value to use if there is no existing value in the source object.
    */
+  _defaultValueUri?: PrimitiveExtension;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
   defaultValueUrl?: string;
 
   /**
    * A value to use if there is no existing value in the source object.
    */
+  _defaultValueUrl?: PrimitiveExtension;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
   defaultValueUuid?: string;
+
+  /**
+   * A value to use if there is no existing value in the source object.
+   */
+  _defaultValueUuid?: PrimitiveExtension;
 
   /**
    * A value to use if there is no existing value in the source object.
@@ -826,9 +1142,19 @@ export interface StructureMapGroupRuleSource {
   element?: string;
 
   /**
+   * Optional field for this source.
+   */
+  _element?: PrimitiveExtension;
+
+  /**
    * How to handle the list mode for this element.
    */
   listMode?: 'first' | 'not_first' | 'last' | 'not_last' | 'only_one';
+
+  /**
+   * How to handle the list mode for this element.
+   */
+  _listMode?: PrimitiveExtension;
 
   /**
    * Named context for field, if a field is specified.
@@ -836,9 +1162,19 @@ export interface StructureMapGroupRuleSource {
   variable?: string;
 
   /**
+   * Named context for field, if a field is specified.
+   */
+  _variable?: PrimitiveExtension;
+
+  /**
    * FHIRPath expression  - must be true or the rule does not apply.
    */
   condition?: string;
+
+  /**
+   * FHIRPath expression  - must be true or the rule does not apply.
+   */
+  _condition?: PrimitiveExtension;
 
   /**
    * FHIRPath expression  - must be true or the mapping engine throws an
@@ -847,10 +1183,22 @@ export interface StructureMapGroupRuleSource {
   check?: string;
 
   /**
+   * FHIRPath expression  - must be true or the mapping engine throws an
+   * error instead of completing.
+   */
+  _check?: PrimitiveExtension;
+
+  /**
    * A FHIRPath expression which specifies a message to put in the
    * transform log when content matching the source rule is found.
    */
   logMessage?: string;
+
+  /**
+   * A FHIRPath expression which specifies a message to put in the
+   * transform log when content matching the source rule is found.
+   */
+  _logMessage?: PrimitiveExtension;
 }
 
 /**
@@ -858,8 +1206,9 @@ export interface StructureMapGroupRuleSource {
  */
 export type StructureMapGroupRuleSourceDefaultValue = Address | Age | Annotation | Attachment | boolean |
     CodeableConcept | Coding | ContactDetail | ContactPoint | Contributor | Count | DataRequirement | Distance | Dosage |
-    Duration | Expression | HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period | Quantity | Range
-    | Ratio | Reference | RelatedArtifact | SampledData | Signature | string | Timing | TriggerDefinition | UsageContext;
+    Duration | Expression | HumanName | Identifier | Meta | Money | number | ParameterDefinition | Period |
+    PrimitiveExtension | Quantity | Range | Ratio | Reference | RelatedArtifact | SampledData | Signature | string | Timing
+    | TriggerDefinition | UsageContext;
 
 /**
  * Content to create because of this mapping rule.
@@ -871,6 +1220,12 @@ export interface StructureMapGroupRuleTarget {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -907,9 +1262,19 @@ export interface StructureMapGroupRuleTarget {
   context?: string;
 
   /**
+   * Type or variable this rule applies to.
+   */
+  _context?: PrimitiveExtension;
+
+  /**
    * How to interpret the context.
    */
   contextType?: 'type' | 'variable';
+
+  /**
+   * How to interpret the context.
+   */
+  _contextType?: PrimitiveExtension;
 
   /**
    * Field to create in the context.
@@ -917,9 +1282,19 @@ export interface StructureMapGroupRuleTarget {
   element?: string;
 
   /**
+   * Field to create in the context.
+   */
+  _element?: PrimitiveExtension;
+
+  /**
    * Named context for field, if desired, and a field is specified.
    */
   variable?: string;
+
+  /**
+   * Named context for field, if desired, and a field is specified.
+   */
+  _variable?: PrimitiveExtension;
 
   /**
    * If field is a list, how to manage the list.
@@ -927,15 +1302,30 @@ export interface StructureMapGroupRuleTarget {
   listMode?: ('first' | 'share' | 'last' | 'collate')[];
 
   /**
+   * If field is a list, how to manage the list.
+   */
+  _listMode?: (PrimitiveExtension | null)[];
+
+  /**
    * Internal rule reference for shared list items.
    */
   listRuleId?: string;
+
+  /**
+   * Internal rule reference for shared list items.
+   */
+  _listRuleId?: PrimitiveExtension;
 
   /**
    * How the data is copied / created.
    */
   transform?: 'create' | 'copy' | 'truncate' | 'escape' | 'cast' | 'append' | 'translate' | 'reference' | 'dateOp' |
       'uuid' | 'pointer' | 'evaluate' | 'cc' | 'c' | 'qty' | 'id' | 'cp';
+
+  /**
+   * How the data is copied / created.
+   */
+  _transform?: PrimitiveExtension;
 
   /**
    * Parameters to the transform.
@@ -953,6 +1343,12 @@ export interface StructureMapGroupRuleTargetParameter {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -991,7 +1387,17 @@ export interface StructureMapGroupRuleTargetParameter {
   /**
    * Parameter value - variable or literal.
    */
+  _valueId?: PrimitiveExtension;
+
+  /**
+   * Parameter value - variable or literal.
+   */
   valueString?: string;
+
+  /**
+   * Parameter value - variable or literal.
+   */
+  _valueString?: PrimitiveExtension;
 
   /**
    * Parameter value - variable or literal.
@@ -1001,18 +1407,33 @@ export interface StructureMapGroupRuleTargetParameter {
   /**
    * Parameter value - variable or literal.
    */
+  _valueBoolean?: PrimitiveExtension;
+
+  /**
+   * Parameter value - variable or literal.
+   */
   valueInteger?: number;
 
   /**
    * Parameter value - variable or literal.
    */
+  _valueInteger?: PrimitiveExtension;
+
+  /**
+   * Parameter value - variable or literal.
+   */
   valueDecimal?: number;
+
+  /**
+   * Parameter value - variable or literal.
+   */
+  _valueDecimal?: PrimitiveExtension;
 }
 
 /**
  * Parameter value - variable or literal.
  */
-export type StructureMapGroupRuleTargetParameterValue = boolean | number | string;
+export type StructureMapGroupRuleTargetParameterValue = boolean | number | PrimitiveExtension | string;
 
 /**
  * A structure definition used by this map. The structure definition may
@@ -1026,6 +1447,12 @@ export interface StructureMapStructure {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -1062,9 +1489,19 @@ export interface StructureMapStructure {
   url: string;
 
   /**
+   * The canonical reference to the structure.
+   */
+  _url?: PrimitiveExtension;
+
+  /**
    * How the referenced structure is used in this mapping.
    */
   mode: 'source' | 'queried' | 'target' | 'produced';
+
+  /**
+   * How the referenced structure is used in this mapping.
+   */
+  _mode?: PrimitiveExtension;
 
   /**
    * The name used for this type in the map.
@@ -1072,7 +1509,17 @@ export interface StructureMapStructure {
   alias?: string;
 
   /**
+   * The name used for this type in the map.
+   */
+  _alias?: PrimitiveExtension;
+
+  /**
    * Documentation that describes how the structure is used in the mapping.
    */
   documentation?: string;
+
+  /**
+   * Documentation that describes how the structure is used in the mapping.
+   */
+  _documentation?: PrimitiveExtension;
 }

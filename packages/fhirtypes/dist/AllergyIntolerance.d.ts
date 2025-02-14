@@ -15,6 +15,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Range } from './Range';
 import { Reference } from './Reference';
 import { RelatedPerson } from './RelatedPerson';
@@ -38,6 +39,12 @@ export interface AllergyIntolerance {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -53,9 +60,22 @@ export interface AllergyIntolerance {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -128,15 +148,32 @@ export interface AllergyIntolerance {
   type?: 'allergy' | 'intolerance';
 
   /**
+   * Identification of the underlying physiological mechanism for the
+   * reaction risk.
+   */
+  _type?: PrimitiveExtension;
+
+  /**
    * Category of the identified substance.
    */
   category?: ('food' | 'medication' | 'environment' | 'biologic')[];
+
+  /**
+   * Category of the identified substance.
+   */
+  _category?: (PrimitiveExtension | null)[];
 
   /**
    * Estimate of the potential clinical harm, or seriousness, of the
    * reaction to the identified substance.
    */
   criticality?: 'low' | 'high' | 'unable-to-assess';
+
+  /**
+   * Estimate of the potential clinical harm, or seriousness, of the
+   * reaction to the identified substance.
+   */
+  _criticality?: PrimitiveExtension;
 
   /**
    * Code for an allergy or intolerance statement (either a positive or a
@@ -179,6 +216,12 @@ export interface AllergyIntolerance {
    * Estimated or actual date,  date-time, or age when allergy or
    * intolerance was identified.
    */
+  _onsetDateTime?: PrimitiveExtension;
+
+  /**
+   * Estimated or actual date,  date-time, or age when allergy or
+   * intolerance was identified.
+   */
   onsetAge?: Age;
 
   /**
@@ -200,11 +243,24 @@ export interface AllergyIntolerance {
   onsetString?: string;
 
   /**
+   * Estimated or actual date,  date-time, or age when allergy or
+   * intolerance was identified.
+   */
+  _onsetString?: PrimitiveExtension;
+
+  /**
    * The recordedDate represents when this particular AllergyIntolerance
    * record was created in the system, which is often a system-generated
    * date.
    */
   recordedDate?: string;
+
+  /**
+   * The recordedDate represents when this particular AllergyIntolerance
+   * record was created in the system, which is often a system-generated
+   * date.
+   */
+  _recordedDate?: PrimitiveExtension;
 
   /**
    * Individual who recorded the record and takes responsibility for its
@@ -224,6 +280,12 @@ export interface AllergyIntolerance {
   lastOccurrence?: string;
 
   /**
+   * Represents the date and/or time of the last known occurrence of a
+   * reaction event.
+   */
+  _lastOccurrence?: PrimitiveExtension;
+
+  /**
    * Additional narrative about the propensity for the Adverse Reaction,
    * not captured in other fields.
    */
@@ -240,7 +302,7 @@ export interface AllergyIntolerance {
  * Estimated or actual date,  date-time, or age when allergy or
  * intolerance was identified.
  */
-export type AllergyIntoleranceOnset = Age | Period | Range | string;
+export type AllergyIntoleranceOnset = Age | Period | PrimitiveExtension | Range | string;
 
 /**
  * Details about each adverse reaction event linked to exposure to the
@@ -253,6 +315,12 @@ export interface AllergyIntoleranceReaction {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -311,15 +379,32 @@ export interface AllergyIntoleranceReaction {
   description?: string;
 
   /**
+   * Text description about the reaction as a whole, including details of
+   * the manifestation if required.
+   */
+  _description?: PrimitiveExtension;
+
+  /**
    * Record of the date and/or time of the onset of the Reaction.
    */
   onset?: string;
+
+  /**
+   * Record of the date and/or time of the onset of the Reaction.
+   */
+  _onset?: PrimitiveExtension;
 
   /**
    * Clinical assessment of the severity of the reaction event as a whole,
    * potentially considering multiple different manifestations.
    */
   severity?: 'mild' | 'moderate' | 'severe';
+
+  /**
+   * Clinical assessment of the severity of the reaction event as a whole,
+   * potentially considering multiple different manifestations.
+   */
+  _severity?: PrimitiveExtension;
 
   /**
    * Identification of the route by which the subject was exposed to the

@@ -13,6 +13,7 @@ import { Patient } from './Patient';
 import { Period } from './Period';
 import { Practitioner } from './Practitioner';
 import { PractitionerRole } from './PractitionerRole';
+import { PrimitiveExtension } from './PrimitiveExtension';
 import { Reference } from './Reference';
 import { Resource } from './Resource';
 
@@ -36,6 +37,12 @@ export interface DetectedIssue {
   id?: string;
 
   /**
+   * The logical id of the resource, as used in the URL for the resource.
+   * Once assigned, this value never changes.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * The metadata about the resource. This is content that is maintained by
    * the infrastructure. Changes to the content might not always be
    * associated with version changes to the resource.
@@ -51,9 +58,22 @@ export interface DetectedIssue {
   implicitRules?: string;
 
   /**
+   * A reference to a set of rules that were followed when the resource was
+   * constructed, and which must be understood when processing the content.
+   * Often, this is a reference to an implementation guide that defines the
+   * special rules along with other profiles etc.
+   */
+  _implicitRules?: PrimitiveExtension;
+
+  /**
    * The base language in which the resource is written.
    */
   language?: string;
+
+  /**
+   * The base language in which the resource is written.
+   */
+  _language?: PrimitiveExtension;
 
   /**
    * A human-readable narrative that contains a summary of the resource and
@@ -111,6 +131,11 @@ export interface DetectedIssue {
   status: 'preliminary' | 'final' | 'entered-in-error' | 'mitigated';
 
   /**
+   * Indicates the status of the detected issue.
+   */
+  _status?: PrimitiveExtension;
+
+  /**
    * Identifies the general type of issue identified.
    */
   code?: CodeableConcept;
@@ -122,6 +147,12 @@ export interface DetectedIssue {
   severity?: 'high' | 'moderate' | 'low';
 
   /**
+   * Indicates the degree of importance associated with the identified
+   * issue based on the potential impact on the patient.
+   */
+  _severity?: PrimitiveExtension;
+
+  /**
    * Indicates the patient whose record the detected issue is associated
    * with.
    */
@@ -131,6 +162,11 @@ export interface DetectedIssue {
    * The date or period when the detected issue was initially identified.
    */
   identifiedDateTime?: string;
+
+  /**
+   * The date or period when the detected issue was initially identified.
+   */
+  _identifiedDateTime?: PrimitiveExtension;
 
   /**
    * The date or period when the detected issue was initially identified.
@@ -163,10 +199,21 @@ export interface DetectedIssue {
   detail?: string;
 
   /**
+   * A textual explanation of the detected issue.
+   */
+  _detail?: PrimitiveExtension;
+
+  /**
    * The literature, knowledge-base or similar reference that describes the
    * propensity for the detected issue identified.
    */
   reference?: string;
+
+  /**
+   * The literature, knowledge-base or similar reference that describes the
+   * propensity for the detected issue identified.
+   */
+  _reference?: PrimitiveExtension;
 
   /**
    * Indicates an action that has been taken or is committed to reduce or
@@ -180,7 +227,7 @@ export interface DetectedIssue {
 /**
  * The date or period when the detected issue was initially identified.
  */
-export type DetectedIssueIdentified = Period | string;
+export type DetectedIssueIdentified = Period | PrimitiveExtension | string;
 
 /**
  * Supporting evidence or manifestations that provide the basis for
@@ -194,6 +241,12 @@ export interface DetectedIssueEvidence {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -251,6 +304,12 @@ export interface DetectedIssueMitigation {
   id?: string;
 
   /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
+
+  /**
    * May be used to represent additional information that is not part of
    * the basic definition of the element. To make the use of extensions
    * safe and manageable, there is a strict set of governance  applied to
@@ -289,6 +348,11 @@ export interface DetectedIssueMitigation {
    * Indicates when the mitigating action was documented.
    */
   date?: string;
+
+  /**
+   * Indicates when the mitigating action was documented.
+   */
+  _date?: PrimitiveExtension;
 
   /**
    * Identifies the practitioner who determined the mitigation and takes

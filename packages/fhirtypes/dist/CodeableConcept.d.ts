@@ -5,6 +5,7 @@
 
 import { Coding } from './Coding';
 import { Extension } from './Extension';
+import { PrimitiveExtension } from './PrimitiveExtension';
 
 /**
  * A concept that may be defined by a formal reference to a terminology
@@ -17,6 +18,12 @@ export interface CodeableConcept {
    * This may be any string value that does not contain spaces.
    */
   id?: string;
+
+  /**
+   * Unique id for the element within a resource (for internal references).
+   * This may be any string value that does not contain spaces.
+   */
+  _id?: PrimitiveExtension;
 
   /**
    * May be used to represent additional information that is not part of
@@ -39,4 +46,11 @@ export interface CodeableConcept {
    * represents the intended meaning of the user.
    */
   text?: string;
+
+  /**
+   * A human language representation of the concept as
+   * seen/selected/uttered by the user who entered the data and/or which
+   * represents the intended meaning of the user.
+   */
+  _text?: PrimitiveExtension;
 }
