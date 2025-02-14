@@ -1,14 +1,13 @@
 import { OperationOutcomeError, accepted } from '@medplum/core';
-import { UpdateResourceOptions } from '@medplum/fhir-router';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { getLogger } from 'nodemailer/lib/shared';
 import { getConfig } from '../../../config';
 import { getAuthenticatedContext } from '../../../context';
-import { markPendingDataMigrationCompleted } from '../../../database';
 import { sendOutcome } from '../../outcomes';
 import { Repository, getSystemRepo } from '../../repo';
+import { getLogger } from 'nodemailer/lib/shared';
+import { UpdateResourceOptions } from '@medplum/fhir-router';
 
 export class AsyncJobExecutor {
   readonly repo: Repository;
@@ -86,15 +85,11 @@ export class AsyncJobExecutor {
   }
 
   async completeJob(repo: Repository, output?: Parameters): Promise<AsyncJob | undefined> {
-    const job = this.resource;
-    if (!job) {
+    if (!this.resource) {
       return undefined;
     }
-    if (job.type === 'data-migration') {
-      await markPendingDataMigrationCompleted(job);
-    }
     return repo.updateResource<AsyncJob>({
-      ...job,
+      ...this.resource,
       status: 'completed',
       transactionTime: new Date().toISOString(),
       output,

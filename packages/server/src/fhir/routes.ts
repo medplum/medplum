@@ -32,11 +32,13 @@ import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
+import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
 import { resourceGraphHandler } from './operations/resourcegraph';
+import { rotateSecretHandler } from './operations/rotatesecret';
 import { structureDefinitionExpandProfileHandler } from './operations/structuredefinitionexpandprofile';
 import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
@@ -44,7 +46,6 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { rotateSecretHandler } from './operations/rotatesecret';
 
 export const fhirRouter = Router();
 
@@ -259,13 +260,18 @@ function initInternalFhirRouter(): FhirRouter {
   // StructureDefinition $expand-profile operation
   router.add('POST', '/StructureDefinition/$expand-profile', structureDefinitionExpandProfileHandler);
 
+  // ClientApplication $launch
+  router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
+  // Rotate client secret
+  router.add('POST', '/ClientApplication/:id/$rotate-secret', rotateSecretHandler);
+
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
 
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await ctx.repo.validateResource(req.body);
+    await ctx.repo.validateResourceStrictly(req.body);
     return [allOk];
   });
 
@@ -289,9 +295,6 @@ function initInternalFhirRouter(): FhirRouter {
   // Super admin operations
   router.add('POST', '/$db-stats', dbStatsHandler);
   router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
-
-  // Rotate client secret
-  router.add('POST', '/ClientApplication/:id/$rotate-secret', rotateSecretHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();
