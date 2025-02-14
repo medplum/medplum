@@ -3,7 +3,6 @@ import { Bundle, MedicationRequest, Observation, Patient, StructureDefinition } 
 import { HTTP_HL7_ORG } from './constants';
 import {
   applyDefaultValuesToElement,
-  applyDefaultValuesToElementWithVisitor,
   applyDefaultValuesToResource,
   applyFixedOrPatternValue,
   getDefaultValuesForNewSliceEntry,
@@ -144,18 +143,6 @@ describe('apply default values', () => {
         expect(slice.elements['value[x]'].min).toStrictEqual(0);
 
         const result = applyDefaultValuesToElement(Object.create(null), slice.elements, 'value[x]');
-        expect(result).toEqual({ code: 'mm[Hg]', system: 'http://unitsofmeasure.org' });
-      });
-
-      test('value for Observation.component.value[x] in systolic slice with visitor', () => {
-        const slice = getSlice(schema, 'component', 'systolic');
-        const result = applyDefaultValuesToElementWithVisitor(
-          undefined,
-          'Observation.component.value[x]',
-          slice.elements['value[x]'],
-          slice.elements,
-          schema
-        );
         expect(result).toEqual({ code: 'mm[Hg]', system: 'http://unitsofmeasure.org' });
       });
     });

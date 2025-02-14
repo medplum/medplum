@@ -57,27 +57,6 @@ export function applyDefaultValuesToElement(
   return existingValue;
 }
 
-export function applyDefaultValuesToElementWithVisitor(
-  existingValue: any,
-  path: string,
-  element: InternalSchemaElement,
-  elements: Record<string, InternalSchemaElement>,
-  schema: InternalTypeSchema
-): any {
-  const inputValue: object = existingValue ?? Object.create(null);
-
-  const [parentPath, key] = splitOnceRight(path, '.');
-  const parent = Object.create(null);
-  setValueAtKey(parent, inputValue, key, element);
-
-  const visitor = new DefaultValueVisitor(parent, parentPath, 'element');
-  const crawler = new SchemaCrawler(schema, visitor, elements);
-  crawler.crawlElement(element, key, parentPath);
-  const modifiedContainer = visitor.getDefaultValue();
-
-  return getValueAtKey(modifiedContainer, key, element, elements);
-}
-
 export function getDefaultValuesForNewSliceEntry(
   key: string,
   slice: SliceDefinition,
@@ -419,23 +398,4 @@ function applyPattern(existingValue: any, pattern: any): any {
   }
 
   return existingValue;
-}
-
-/**
- * Splits a string on the last occurrence of the delimiter
- * @param str - The string to split
- * @param delim - The delimiter string
- * @returns An array of two strings; the first consisting of the beginning of the
- * string up to the last occurrence of the delimiter. the second is the remainder of the
- * string after the last occurrence of the delimiter. If the delimiter is not present
- * in the string, the first element is empty and the second is the input string.
- */
-function splitOnceRight(str: string, delim: string): [string, string] {
-  const delimIndex = str.lastIndexOf(delim);
-  if (delimIndex === -1) {
-    return ['', str];
-  }
-  const beginning = str.substring(0, delimIndex);
-  const last = str.substring(delimIndex + delim.length);
-  return [beginning, last];
 }
