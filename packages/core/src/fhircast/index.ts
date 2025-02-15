@@ -106,11 +106,15 @@ export const FHIRCAST_EVENT_RESOURCES = {
     patient: { resourceType: 'Patient' },
   },
   'DiagnosticReport-select': {
+    // Most event contexts contain a full resource, but `DiagnosticReport-select` context elements are actually references
+    // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-4-DiagnosticReport-select.html
     report: { resourceType: 'DiagnosticReport', reference: true },
     patient: { resourceType: 'Patient', optional: true, reference: true },
     select: { resourceType: '*', array: true, reference: true },
   },
   'DiagnosticReport-update': {
+    // `report` and `patient` are also references for `DiagnosticReport-update`:
+    // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-3-DiagnosticReport-update.html
     report: { resourceType: 'DiagnosticReport', reference: true },
     patient: { resourceType: 'Patient', optional: true, reference: true },
     updates: { resourceType: 'Bundle' },
@@ -153,6 +157,7 @@ export type FhircastUpdatesContext = { key: 'updates'; resource: Bundle };
 export type FhircastSelectContext = { key: 'select'; reference: Reference[] };
 export type FhircastOperationOutcomeContext = { key: 'operationoutcome'; resource: OperationOutcome };
 
+// These are all the contexts that contain a `resource` key
 export type FhircastResourceContext =
   | FhircastPatientContext
   | FhircastEncounterContext
@@ -161,7 +166,9 @@ export type FhircastResourceContext =
   | FhircastUpdatesContext
   | FhircastOperationOutcomeContext;
 
+// The reference contexts related to `*-select` and `*-update` events, which contain a `reference` key
 export type FhircastSingleReferenceContext = FhircastReportReferenceContext | FhircastPatientReferenceContext;
+// Multi-reference contexts contain a `reference` key with an array of references as the value, currently only the `select` context
 export type FhircastMultiReferenceContext = FhircastSelectContext;
 
 export type FhircastPatientOpenContext = FhircastPatientContext | FhircastEncounterContext;
@@ -186,6 +193,10 @@ export type FhircastDiagnosticReportSelectContext =
   | FhircastSelectContext;
 export type FhircastSyncErrorContext = FhircastOperationOutcomeContext;
 
+// This is the one key that only exists within a GetCurrentContext
+// Specifically related to the `DiagnosticReport-update` event in a `DiagnosticReport` context
+// See the FHIRcast docs regarding content sharing: https://build.fhir.org/ig/HL7/fhircast-docs/2-10-ContentSharing.html#updating-attributes-of-context-resources-and-addingremoving-context-resources
+// And the GetCurrentContext page that mentions the specifications of this key: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#context
 export type FhircastHubContentContext = {
   key: 'content';
   resource: Bundle;
