@@ -73,7 +73,7 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get well known', async () => {
-    let res;
+    let res: any;
 
     res = await request(server).get(`${STU2_BASE_ROUTE}/.well-known/fhircast-configuration`);
 
@@ -564,7 +564,7 @@ describe('FHIRCast routes', () => {
 
   test('Get context', async () => {
     const topic = randomUUID();
-    let res;
+    let res: any;
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
     res = await request(server)
       .get(`${STU2_BASE_ROUTE}/${topic}`)
@@ -580,7 +580,7 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get context after *-open event', async () => {
-    let contextRes;
+    let contextRes: any;
 
     const topic = randomUUID();
     const payload = createFhircastMessagePayload(topic, 'DiagnosticReport-open', [
@@ -689,8 +689,8 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get context after *-close event', async () => {
-    let beforeContextRes;
-    let afterContextRes;
+    let beforeContextRes: any;
+    let afterContextRes: any;
 
     const topic = randomUUID();
 
@@ -785,9 +785,9 @@ describe('FHIRCast routes', () => {
     const context = [
       {
         key: 'report',
-        resource: { id: 'abc-123', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+        reference: { reference: 'DiagnosticReport/123' },
       },
-      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'searchset' } },
+      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'transaction' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-update'>[];
 
     const versionId = randomUUID();
