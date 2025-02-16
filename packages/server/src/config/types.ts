@@ -51,17 +51,15 @@ export interface MedplumServerConfig {
   accurateCountThreshold: number;
   maxSearchOffset?: number;
   defaultBotRuntimeVersion: 'awslambda' | 'vmcontext';
-  defaultProjectFeatures?:
-    | (
-        | 'email'
-        | 'bots'
-        | 'cron'
-        | 'google-auth-required'
-        | 'graphql-introspection'
-        | 'terminology'
-        | 'websocket-subscriptions'
-      )[]
-    | undefined;
+  defaultProjectFeatures?: (
+    | 'email'
+    | 'bots'
+    | 'cron'
+    | 'google-auth-required'
+    | 'graphql-introspection'
+    | 'terminology'
+    | 'websocket-subscriptions'
+  )[];
   defaultRateLimit?: number;
   defaultAuthRateLimit?: number;
 

@@ -50,7 +50,7 @@ export async function loadConfig(configName: string): Promise<MedplumServerConfi
     default:
       throw new Error('Unrecognized config type: ' + configType);
   }
-  cachedConfig = addDefaults(cachedConfig as MedplumServerConfig);
+  cachedConfig = addDefaults(cachedConfig);
   return cachedConfig;
 }
 
