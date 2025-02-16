@@ -1,21 +1,21 @@
 import {
   allOk,
+  flatMapFilter,
   getReferenceString,
-  Operator,
-  sortStringArray,
   isReference,
   isResource,
-  flatMapFilter,
+  Operator,
+  sortStringArray,
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   Bundle,
+  BundleEntry,
   CompartmentDefinitionResource,
   Patient,
-  ResourceType,
-  Resource,
   Reference,
-  BundleEntry,
+  Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
@@ -27,12 +27,12 @@ const operation = getOperationDefinition('Patient', 'everything');
 
 const defaultMaxResults = 1000;
 
-export type PatientEverythingParameters = {
+export interface PatientEverythingParameters {
   _since?: string;
   _count?: number;
   _offset?: number;
   _type?: ResourceType[];
-};
+}
 
 // Patient everything operation.
 // https://hl7.org/fhir/operation-patient-everything.html
