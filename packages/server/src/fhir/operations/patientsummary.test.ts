@@ -15,7 +15,16 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
-import { OBSERVATION_CATEGORY_SYSTEM, PatientSummaryBuilder } from './patientsummary';
+import {
+  LOINC_MEDICATIONS_SECTION,
+  LOINC_PLAN_OF_TREATMENT_SECTION,
+  LOINC_PROCEDURES_SECTION,
+  LOINC_RESULTS_SECTION,
+  LOINC_SOCIAL_HISTORY_SECTION,
+  LOINC_VITAL_SIGNS_SECTION,
+  OBSERVATION_CATEGORY_SYSTEM,
+  PatientSummaryBuilder,
+} from './patientsummary';
 
 const app = express();
 let accessToken: string;
@@ -148,6 +157,16 @@ describe('Patient Summary Operation', () => {
       expect(result.entry?.length).toBe(2 + everything.length); // 1 for patient, 1 for composition
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
+
+      const composition = result.entry?.[0]?.resource as Composition;
+      expectSectionToContain(composition, '48765-2', 'AllergyIntolerance/allergy1');
+      expectSectionToContain(composition, '11450-4', 'Condition/condition1');
+      expectSectionToContain(composition, '30954-2', 'DiagnosticReport/report1');
+      expectSectionToContain(composition, '18776-5', 'Goal/goal1');
+      expectSectionToContain(composition, '11369-6', 'Immunization/imm1');
+      expectSectionToContain(composition, '10160-0', 'MedicationRequest/med1');
+      expectSectionToContain(composition, '47519-4', 'Procedure/proc1');
+      expectSectionToContain(composition, '47519-4', 'Task/task1');
     });
 
     test('Observations', () => {
@@ -155,15 +174,15 @@ describe('Patient Summary Operation', () => {
       const subject = createReference(patient);
 
       const categories = [
-        'social-history',
-        'vital-signs',
-        'imaging',
-        'laboratory',
-        'procedure',
-        'survey',
-        'exam',
-        'therapy',
-        'activity',
+        ['social-history', LOINC_SOCIAL_HISTORY_SECTION],
+        ['vital-signs', LOINC_VITAL_SIGNS_SECTION],
+        ['imaging', LOINC_RESULTS_SECTION],
+        ['laboratory', LOINC_RESULTS_SECTION],
+        ['procedure', LOINC_PROCEDURES_SECTION],
+        ['survey', LOINC_PLAN_OF_TREATMENT_SECTION],
+        ['exam', LOINC_PROCEDURES_SECTION],
+        ['therapy', LOINC_MEDICATIONS_SECTION],
+        ['activity', LOINC_RESULTS_SECTION],
       ];
 
       const everything = categories.map(
@@ -173,7 +192,7 @@ describe('Patient Summary Operation', () => {
             id: `obs${index}`,
             subject,
             status: 'final',
-            category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: category }] }],
+            category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: category[0] }] }],
             code: { text: 'test' },
           }) as Observation
       );
@@ -183,6 +202,12 @@ describe('Patient Summary Operation', () => {
       expect(result.entry?.length).toBe(2 + everything.length); // 1 for patient, 1 for composition
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
+
+      const composition = result.entry?.[0]?.resource as Composition;
+
+      for (let i = 0; i < categories.length; i++) {
+        expectSectionToContain(composition, categories[i][1], `Observation/obs${i}`);
+      }
     });
 
     test('Observation containing observation', () => {
@@ -268,3 +293,15 @@ describe('Patient Summary Operation', () => {
     });
   });
 });
+
+function expectSectionToContain(composition: Composition, code: string, reference: string): void {
+  const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === code);
+  if (!section) {
+    throw new Error(`Section not found: ${code}`);
+  }
+
+  const entry = section?.entry?.find((e) => e.reference === reference);
+  if (!entry) {
+    throw new Error(`Entry not found in section ${code}: ${reference}`);
+  }
+}

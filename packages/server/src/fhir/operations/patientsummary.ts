@@ -18,6 +18,16 @@ import { parseInputParameters } from './utils/parameters';
 
 export const OBSERVATION_CATEGORY_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/observation-category`;
 
+export const LOINC_ALLERGIES_SECTION = '48765-2';
+export const LOINC_IMMUNIZATIONS_SECTION = '11369-6';
+export const LOINC_MEDICATIONS_SECTION = '10160-0';
+export const LOINC_PROBLEMS_SECTION = '11450-4';
+export const LOINC_RESULTS_SECTION = '30954-2';
+export const LOINC_SOCIAL_HISTORY_SECTION = '29762-2';
+export const LOINC_VITAL_SIGNS_SECTION = '8716-3';
+export const LOINC_PROCEDURES_SECTION = '47519-4';
+export const LOINC_PLAN_OF_TREATMENT_SECTION = '18776-5';
+
 // International Patient Summary Implementation Guide
 // https://build.fhir.org/ig/HL7/fhir-ips/index.html
 
@@ -289,15 +299,15 @@ export class PatientSummaryBuilder {
       title: 'Medical Summary',
       confidentiality: 'N',
       section: [
-        createSection('48765-2', 'Allergies', this.allergies),
-        createSection('11369-6', 'Immunizations', this.immunizations),
-        createSection('10160-0', 'Medications', this.medications),
-        createSection('11450-4', 'Problem List', this.problemList),
-        createSection('30954-2', 'Results', this.results),
-        createSection('29762-2', 'Social History', this.socialHistory),
-        createSection('8716-3', 'Vital Signs', this.vitalSigns),
-        createSection('47519-4', 'Procedures', this.procedures),
-        createSection('18776-5', 'Plan of Treatment', this.planOfTreatment),
+        createSection(LOINC_ALLERGIES_SECTION, 'Allergies', this.allergies),
+        createSection(LOINC_IMMUNIZATIONS_SECTION, 'Immunizations', this.immunizations),
+        createSection(LOINC_MEDICATIONS_SECTION, 'Medications', this.medications),
+        createSection(LOINC_PROBLEMS_SECTION, 'Problem List', this.problemList),
+        createSection(LOINC_RESULTS_SECTION, 'Results', this.results),
+        createSection(LOINC_SOCIAL_HISTORY_SECTION, 'Social History', this.socialHistory),
+        createSection(LOINC_VITAL_SIGNS_SECTION, 'Vital Signs', this.vitalSigns),
+        createSection(LOINC_PROCEDURES_SECTION, 'Procedures', this.procedures),
+        createSection(LOINC_PLAN_OF_TREATMENT_SECTION, 'Plan of Treatment', this.planOfTreatment),
       ],
     };
     return composition;
