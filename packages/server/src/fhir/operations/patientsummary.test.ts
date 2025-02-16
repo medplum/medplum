@@ -16,8 +16,11 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
 import {
+  LOINC_ALLERGIES_SECTION,
+  LOINC_IMMUNIZATIONS_SECTION,
   LOINC_MEDICATIONS_SECTION,
   LOINC_PLAN_OF_TREATMENT_SECTION,
+  LOINC_PROBLEMS_SECTION,
   LOINC_PROCEDURES_SECTION,
   LOINC_RESULTS_SECTION,
   LOINC_SOCIAL_HISTORY_SECTION,
@@ -85,11 +88,13 @@ describe('Patient Summary Operation', () => {
       .send({
         resourceType: 'Observation',
         status: 'final',
+        category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: 'vital-signs' }] }],
         code: { coding: [{ system: LOINC, code: '12345-6' }] },
         subject: createReference(patient),
         performer: [createReference(practitioner), createReference(organization)],
       } satisfies Observation);
     expect(res2.status).toBe(201);
+    const observation = res2.body as Observation;
 
     // Create condition
     // This condition references the patient twice, once as subject and once as asserter
@@ -106,16 +111,22 @@ describe('Patient Summary Operation', () => {
         recorder: createReference(practitioner),
       } satisfies Condition);
     expect(res3.status).toBe(201);
+    const condition = res3.body as Condition;
 
     // Execute the operation
     const res4 = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}/$summary`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
+
     const result = res4.body as Bundle;
     expect(result.type).toBe('document');
     expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
     expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
+
+    const composition = result.entry?.[0]?.resource as Composition;
+    expectSectionToContain(composition, LOINC_VITAL_SIGNS_SECTION, getReferenceString(observation));
+    expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, getReferenceString(condition));
   });
 
   describe('PatientSummaryBuilder', () => {
@@ -159,14 +170,14 @@ describe('Patient Summary Operation', () => {
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
       const composition = result.entry?.[0]?.resource as Composition;
-      expectSectionToContain(composition, '48765-2', 'AllergyIntolerance/allergy1');
-      expectSectionToContain(composition, '11450-4', 'Condition/condition1');
-      expectSectionToContain(composition, '30954-2', 'DiagnosticReport/report1');
-      expectSectionToContain(composition, '18776-5', 'Goal/goal1');
-      expectSectionToContain(composition, '11369-6', 'Immunization/imm1');
-      expectSectionToContain(composition, '10160-0', 'MedicationRequest/med1');
-      expectSectionToContain(composition, '47519-4', 'Procedure/proc1');
-      expectSectionToContain(composition, '47519-4', 'Task/task1');
+      expectSectionToContain(composition, LOINC_ALLERGIES_SECTION, 'AllergyIntolerance/allergy1');
+      expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Condition/condition1');
+      expectSectionToContain(composition, LOINC_RESULTS_SECTION, 'DiagnosticReport/report1');
+      expectSectionToContain(composition, LOINC_PLAN_OF_TREATMENT_SECTION, 'Goal/goal1');
+      expectSectionToContain(composition, LOINC_IMMUNIZATIONS_SECTION, 'Immunization/imm1');
+      expectSectionToContain(composition, LOINC_MEDICATIONS_SECTION, 'MedicationRequest/med1');
+      expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Procedure/proc1');
+      expectSectionToContain(composition, LOINC_PROCEDURES_SECTION, 'Task/task1');
     });
 
     test('Observations', () => {
