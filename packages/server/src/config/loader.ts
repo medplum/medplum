@@ -131,5 +131,5 @@ function loadEnvConfig(): MedplumServerConfig {
  * @returns The configuration.
  */
 async function loadFileConfig(path: string): Promise<MedplumServerConfig> {
-  return JSON.parse(readFileSync(resolve(__dirname, '../', path), { encoding: 'utf8' }));
+  return JSON.parse(readFileSync(resolve(__dirname, '../../', path), { encoding: 'utf8' }));
 }
