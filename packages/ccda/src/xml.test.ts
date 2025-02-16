@@ -1,6 +1,14 @@
 import { convertToCompactXml, parseXml } from './xml';
 
 describe('convertToCompactXml', () => {
+  test('empty string', () => {
+    expect(convertToCompactXml('')).toEqual('');
+  });
+
+  test('string', () => {
+    expect(convertToCompactXml('Hello World')).toEqual('Hello World');
+  });
+
   test('should preserve attributes', () => {
     const original = '<myElement id="123">John Doe</myElement>';
     const parsed = parseXml(original);

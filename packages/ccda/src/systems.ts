@@ -66,7 +66,10 @@ export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
     if (!entry) {
       return undefined;
     }
-    return { coding: [{ system: this.fhirSystemUrl, code: entry.fhirValue, display: entry.displayName }] };
+    return {
+      coding: [{ system: this.fhirSystemUrl, code: entry.fhirValue, display: entry.displayName }],
+      text: entry.displayName,
+    };
   }
 
   mapFhirToCcda(fhir: TFhirValue | undefined): TCcdaValue | undefined {

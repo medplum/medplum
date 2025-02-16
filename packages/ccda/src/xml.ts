@@ -138,13 +138,3 @@ export function convertToCompactXml(obj: any): string {
     .map((line: string) => line.trim())
     .join('');
 }
-
-export function nodeToString(node: any): string | undefined {
-  if (typeof node === 'string') {
-    return node;
-  }
-  if (typeof node === 'object' && '#text' in node) {
-    return node['#text'];
-  }
-  return undefined;
-}

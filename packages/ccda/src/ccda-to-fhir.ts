@@ -89,7 +89,7 @@ import {
   CcdaTemplateId,
   CcdaText,
 } from './types';
-import { convertToCompactXml, nodeToString } from './xml';
+import { convertToCompactXml } from './xml';
 
 /**
  * Converts C-CDA documents to FHIR resources
@@ -917,12 +917,10 @@ class CcdaToFhirConverter {
 
   private processOrganizer(section: CcdaSection, organizer: CcdaOrganizer): Resource {
     const templateId = section.templateId[0]['@_root'];
-    switch (templateId) {
-      case '2.16.840.1.113883.10.20.22.2.500':
-        return this.processCareTeamOrganizer(organizer);
-      default:
-        return this.processVitalsOrganizer(organizer);
+    if (templateId === '2.16.840.1.113883.10.20.22.2.500') {
+      return this.processCareTeamOrganizer(organizer);
     }
+    return this.processVitalsOrganizer(organizer);
   }
 
   private processCareTeamOrganizer(organizer: CcdaOrganizer): CareTeam {
@@ -1306,4 +1304,17 @@ class CcdaToFhirConverter {
       },
     ];
   }
+}
+
+function nodeToString(node: CcdaText | string | undefined): string | undefined {
+  if (!node) {
+    return undefined;
+  }
+  if (typeof node === 'string') {
+    return node;
+  }
+  if (typeof node === 'object' && '#text' in node) {
+    return node['#text'];
+  }
+  return undefined;
 }
