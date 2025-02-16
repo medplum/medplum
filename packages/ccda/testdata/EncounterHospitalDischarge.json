@@ -64,9 +64,7 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": [
-              "Katherine"
-            ]
+            "given": ["Katherine"]
           }
         ]
       }
@@ -113,9 +111,7 @@
         },
         "type": [
           {
-            "coding": [
-              {}
-            ]
+            "coding": [{}]
           }
         ],
         "subject": {

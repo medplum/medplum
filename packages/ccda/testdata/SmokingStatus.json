@@ -69,9 +69,7 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": [
-              "Katherine"
-            ]
+            "given": ["Katherine"]
           }
         ]
       }
@@ -89,9 +87,7 @@
         "name": [
           {
             "family": "Seven",
-            "given": [
-              "Henry"
-            ]
+            "given": ["Henry"]
           }
         ],
         "telecom": [
@@ -127,9 +123,7 @@
         "name": [
           {
             "family": "Seven",
-            "given": [
-              "Henry"
-            ]
+            "given": ["Henry"]
           }
         ],
         "telecom": [

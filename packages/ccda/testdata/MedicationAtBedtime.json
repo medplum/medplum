@@ -64,9 +64,7 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": [
-              "Katherine"
-            ]
+            "given": ["Katherine"]
           }
         ]
       }
@@ -101,9 +99,7 @@
           }
         ],
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
-          ]
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"]
         },
         "status": "active",
         "intent": "order",
@@ -140,9 +136,7 @@
             },
             "timing": {
               "repeat": {
-                "when": [
-                  "HS"
-                ]
+                "when": ["HS"]
               }
             },
             "doseAndRate": [

@@ -528,25 +528,18 @@
           {
             "use": "official",
             "family": "Newman",
-            "given": [
-              "Alice",
-              "Jones"
-            ]
+            "given": ["Alice", "Jones"]
           },
           {
             "family": "Newman",
-            "given": [
-              "Alicia"
-            ]
+            "given": ["Alicia"]
           }
         ],
         "gender": "female",
         "birthDate": "1970-05-01",
         "address": [
           {
-            "line": [
-              "1357 Amber Dr"
-            ],
+            "line": ["1357 Amber Dr"],
             "city": "Beaverton",
             "state": "OR",
             "postalCode": "97006",
@@ -609,20 +602,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -649,20 +636,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -698,9 +679,7 @@
           ]
         },
         "type": "allergy",
-        "category": [
-          "food"
-        ],
+        "category": ["food"],
         "patient": {
           "reference": "Patient/9a31c29a-8daa-4457-beb9-9e2e08ae37e8",
           "display": "Alice Jones Newman"
@@ -784,9 +763,7 @@
           ]
         },
         "type": "allergy",
-        "category": [
-          "food"
-        ],
+        "category": ["food"],
         "patient": {
           "reference": "Patient/9a31c29a-8daa-4457-beb9-9e2e08ae37e8",
           "display": "Alice Jones Newman"
@@ -854,9 +831,7 @@
         "resourceType": "MedicationRequest",
         "id": "cdbd33f0-6cde-11db-9fe1-0800200c9a66",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
-          ]
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"]
         },
         "status": "active",
         "intent": "order",
@@ -907,9 +882,7 @@
             },
             "timing": {
               "repeat": {
-                "when": [
-                  "HS"
-                ]
+                "when": ["HS"]
               }
             },
             "doseAndRate": [
@@ -931,9 +904,7 @@
         "resourceType": "MedicationRequest",
         "id": "6c844c75-aa34-411c-b7bd-5e4a9f206e29",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
-          ]
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"]
         },
         "status": "active",
         "intent": "order",
@@ -984,9 +955,7 @@
             },
             "timing": {
               "repeat": {
-                "when": [
-                  "HS"
-                ]
+                "when": ["HS"]
               }
             },
             "doseAndRate": [
@@ -1008,9 +977,7 @@
         "resourceType": "MedicationRequest",
         "id": "cdbd33f0-6cde-11db-9fe1-0800200c9a67",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
-          ]
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"]
         },
         "status": "active",
         "intent": "order",
@@ -1060,9 +1027,7 @@
             },
             "timing": {
               "repeat": {
-                "when": [
-                  "HS"
-                ]
+                "when": ["HS"]
               }
             },
             "doseAndRate": [
@@ -1091,20 +1056,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -1131,20 +1090,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -1171,20 +1124,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -1211,20 +1158,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -1251,20 +1192,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -1291,20 +1226,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -1331,20 +1260,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -1371,20 +1294,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -1411,20 +1328,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -1451,20 +1362,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -1484,9 +1389,7 @@
         "resourceType": "Condition",
         "id": "ec8a6ff8-ed4b-4f7e-82c3-e98e58b45de7",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
-          ]
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"]
         },
         "clinicalStatus": {
           "coding": [
@@ -1551,9 +1454,7 @@
         "resourceType": "Condition",
         "id": "ec8a6ff8-ed4b-4f7e-82c3-e98e58b45de8",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
-          ]
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"]
         },
         "clinicalStatus": {
           "coding": [
@@ -1618,9 +1519,7 @@
         "resourceType": "Condition",
         "id": "ec8a6ff8-ed4b-4f7e-82c3-e98e58b45de9",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
-          ]
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"]
         },
         "clinicalStatus": {
           "coding": [
@@ -1685,9 +1584,7 @@
         "resourceType": "Condition",
         "id": "ec8a6ff8-ed4b-4f7e-82c3-e98e58b45df9",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
-          ]
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"]
         },
         "clinicalStatus": {
           "coding": [
@@ -1752,9 +1649,7 @@
         "resourceType": "Condition",
         "id": "ec8a6ff8-ed4b-4f7e-82c3-e98e58b45df8",
         "meta": {
-          "profile": [
-            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
-          ]
+          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"]
         },
         "clinicalStatus": {
           "coding": [
@@ -1857,9 +1752,7 @@
         },
         "type": [
           {
-            "coding": [
-              {}
-            ]
+            "coding": [{}]
           }
         ],
         "subject": {
@@ -3315,9 +3208,7 @@
           "reference": "Patient/9a31c29a-8daa-4457-beb9-9e2e08ae37e8",
           "display": "Alice Jones Newman"
         },
-        "referenceRange": [
-          {}
-        ],
+        "referenceRange": [{}],
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
@@ -3374,9 +3265,7 @@
           "reference": "Patient/9a31c29a-8daa-4457-beb9-9e2e08ae37e8",
           "display": "Alice Jones Newman"
         },
-        "referenceRange": [
-          {}
-        ],
+        "referenceRange": [{}],
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
@@ -3433,9 +3322,7 @@
           "reference": "Patient/9a31c29a-8daa-4457-beb9-9e2e08ae37e8",
           "display": "Alice Jones Newman"
         },
-        "referenceRange": [
-          {}
-        ],
+        "referenceRange": [{}],
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
@@ -3492,9 +3379,7 @@
           "reference": "Patient/9a31c29a-8daa-4457-beb9-9e2e08ae37e8",
           "display": "Alice Jones Newman"
         },
-        "referenceRange": [
-          {}
-        ],
+        "referenceRange": [{}],
         "valueQuantity": {
           "value": 5,
           "unit": "[pH]",
@@ -3557,9 +3442,7 @@
           "reference": "Patient/9a31c29a-8daa-4457-beb9-9e2e08ae37e8",
           "display": "Alice Jones Newman"
         },
-        "referenceRange": [
-          {}
-        ],
+        "referenceRange": [{}],
         "valueQuantity": {
           "value": 50,
           "unit": "mg/dL",
@@ -3622,9 +3505,7 @@
           "reference": "Patient/9a31c29a-8daa-4457-beb9-9e2e08ae37e8",
           "display": "Alice Jones Newman"
         },
-        "referenceRange": [
-          {}
-        ],
+        "referenceRange": [{}],
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
@@ -3681,9 +3562,7 @@
           "reference": "Patient/9a31c29a-8daa-4457-beb9-9e2e08ae37e8",
           "display": "Alice Jones Newman"
         },
-        "referenceRange": [
-          {}
-        ],
+        "referenceRange": [{}],
         "valueQuantity": {
           "value": 100,
           "unit": "mg/dL",
@@ -4011,9 +3890,7 @@
         "name": [
           {
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ]
       }
@@ -4050,9 +3927,7 @@
         "name": [
           {
             "family": "Davis",
-            "given": [
-              "Tracy"
-            ]
+            "given": ["Tracy"]
           }
         ]
       }
@@ -4136,9 +4011,7 @@
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky place"
-            ],
+            "line": ["2472 Rocky place"],
             "city": "Beaverton",
             "state": "OR",
             "postalCode": "97006",
@@ -4178,9 +4051,7 @@
         "name": "Neighborhood Physicians Practice",
         "address": [
           {
-            "line": [
-              "2472 Rocky place"
-            ],
+            "line": ["2472 Rocky place"],
             "city": "Beaverton",
             "state": "OR",
             "postalCode": "97006",

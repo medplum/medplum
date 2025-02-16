@@ -192,10 +192,7 @@
         "name": [
           {
             "family": "Newman",
-            "given": [
-              "Alice",
-              "Jones"
-            ]
+            "given": ["Alice", "Jones"]
           }
         ],
         "gender": "female",
@@ -242,20 +239,14 @@
         ],
         "name": [
           {
-            "prefix": [
-              "Dr"
-            ],
+            "prefix": ["Dr"],
             "family": "Davis",
-            "given": [
-              "Albert"
-            ]
+            "given": ["Albert"]
           }
         ],
         "address": [
           {
-            "line": [
-              "2472 Rocky Place"
-            ],
+            "line": ["2472 Rocky Place"],
             "city": "Beaverton",
             "state": "CO",
             "postalCode": "97006",
@@ -283,9 +274,7 @@
         "name": "Neighborhood Physicians Practice",
         "address": [
           {
-            "line": [
-              "2472 Rocky place"
-            ],
+            "line": ["2472 Rocky place"],
             "city": "Beaverton",
             "state": "OR",
             "postalCode": "97006",
