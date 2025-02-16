@@ -1,0 +1,1327 @@
+import { createReference, generateId, isUUID } from '@medplum/core';
+import {
+  Address,
+  AllergyIntolerance,
+  AllergyIntoleranceReaction,
+  Bundle,
+  CarePlan,
+  CareTeam,
+  CareTeamParticipant,
+  CodeableConcept,
+  Coding,
+  Composition,
+  CompositionEvent,
+  CompositionSection,
+  Condition,
+  ContactPoint,
+  Encounter,
+  EncounterDiagnosis,
+  Extension,
+  Goal,
+  HumanName,
+  Identifier,
+  Immunization,
+  ImmunizationPerformer,
+  Medication,
+  MedicationRequest,
+  Observation,
+  ObservationReferenceRange,
+  Organization,
+  Patient,
+  Period,
+  Practitioner,
+  PractitionerQualification,
+  PractitionerRole,
+  Procedure,
+  Reference,
+  Resource,
+} from '@medplum/fhirtypes';
+import { mapCcdaToFhirDate, mapCcdaToFhirDateTime } from './datetime';
+import {
+  ADDRESS_USE_MAPPER,
+  HUMAN_NAME_USE_MAPPER,
+  mapCcdaSystemToFhir,
+  MEDICATION_STATUS_MAPPER,
+  OBSERVATION_CATEGORY_MAPPER,
+  TELECOM_USE_MAPPER,
+} from './systems';
+import {
+  Ccda,
+  CcdaAct,
+  CcdaAddr,
+  CcdaAssignedEntity,
+  CcdaAuthor,
+  CcdaCode,
+  CcdaCustodian,
+  CcdaDocumentationOf,
+  CcdaEffectiveTime,
+  CcdaEncounter,
+  CcdaId,
+  CcdaName,
+  CcdaObservation,
+  CcdaOrganizer,
+  CcdaOrganizerComponent,
+  CcdaPatientRole,
+  CcdaPerformer,
+  CcdaProcedure,
+  CcdaReferenceRange,
+  CcdaSection,
+  CcdaSubstanceAdministration,
+  CcdaTelecom,
+  CcdaTemplateId,
+  CcdaText,
+} from './types';
+import { convertToCompactXml, nodeToString } from './xml';
+
+/**
+ * Converts C-CDA documents to FHIR resources
+ * Following Medplum TypeScript rules:
+ * - Generates new FHIR resource IDs
+ * - Preserves original C-CDA IDs as identifiers
+ * - Adds proper metadata and timestamps
+ *
+ * @param ccda - The C-CDA document to convert
+ * @returns The converted FHIR resources
+ */
+export function convertCcdaToFhir(ccda: Ccda): Bundle {
+  return new CcdaToFhirConverter(ccda).convert();
+}
+
+class CcdaToFhirConverter {
+  private ccda: Ccda;
+  private patient?: Patient;
+  private resources: Resource[] = [];
+
+  constructor(ccda: Ccda) {
+    this.ccda = ccda;
+  }
+
+  convert(): Bundle {
+    this.processHeader();
+    const composition = this.createComposition();
+
+    return {
+      resourceType: 'Bundle',
+      type: 'document',
+      entry: [
+        { resource: composition },
+        ...(this.patient ? [{ resource: this.patient }] : []),
+        ...this.resources.map((resource) => ({ resource })),
+      ],
+    };
+  }
+
+  private processHeader(): void {
+    const patientRole = this.ccda.recordTarget?.[0]?.patientRole;
+    if (patientRole) {
+      this.patient = this.createPatient(patientRole);
+    }
+  }
+
+  private createPatient(patientRole: CcdaPatientRole): Patient {
+    const patient = patientRole.patient;
+    const extensions: Extension[] = [];
+
+    if (patient.raceCode && patient.raceCode.length > 0) {
+      extensions.push({
+        url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
+        extension: patient.raceCode.map((raceCode) => ({
+          url: 'ombCategory',
+          valueCoding: this.mapCodeToCoding(raceCode),
+        })),
+      });
+    }
+
+    if (patient.ethnicGroupCode && patient.ethnicGroupCode.length > 0) {
+      extensions.push({
+        url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
+        extension: patient.ethnicGroupCode.map((ethnicGroupCode) => ({
+          url: 'ombCategory',
+          valueCoding: this.mapCodeToCoding(ethnicGroupCode),
+        })),
+      });
+    }
+
+    return {
+      resourceType: 'Patient',
+      id: this.mapId(patientRole.id),
+      identifier: this.mapIdentifiers(patientRole.id),
+      name: this.mapCcdaNameArrayFhirHumanNameArray(patient.name),
+      gender: this.mapGenderCode(patient.administrativeGenderCode?.['@_code']),
+      birthDate: mapCcdaToFhirDate(patient.birthTime?.['@_value']),
+      address: this.mapAddresses(patientRole.addr),
+      telecom: this.mapTelecom(patientRole.telecom),
+      extension: extensions.length > 0 ? extensions : undefined,
+    };
+  }
+
+  private mapId(ids: CcdaId[] | undefined): string {
+    // If there is an id without a root, then use that as the FHIR resource ID
+    const serverId = ids?.find((id) => !id['@_extension'] && id['@_root'] && isUUID(id['@_root']));
+    if (serverId) {
+      return serverId['@_root'] as string;
+    }
+
+    // Otherwise generate a UUID
+    return generateId();
+  }
+
+  private mapIdentifiers(ids: CcdaId[] | undefined): Identifier[] | undefined {
+    if (!ids) {
+      return undefined;
+    }
+    const result: Identifier[] = [];
+    for (const id of ids) {
+      if (!id['@_extension'] && id['@_root'] && isUUID(id['@_root'])) {
+        // By convention, we use id without a root as the FHIR resource ID
+        continue;
+      }
+      result.push({
+        system: mapCcdaSystemToFhir(id['@_root']),
+        value: id['@_extension'],
+      });
+    }
+    return result;
+  }
+
+  private mapCcdaNameArrayFhirHumanNameArray(names: CcdaName[] | undefined): HumanName[] | undefined {
+    return names?.map((n) => this.mapCcdaNameToFhirHumanName(n)).filter(Boolean) as HumanName[];
+  }
+
+  private mapCcdaNameToFhirHumanName(name: CcdaName | undefined): HumanName | undefined {
+    if (!name) {
+      return undefined;
+    }
+
+    const result: HumanName = {};
+
+    const use = name['@_use'] ? HUMAN_NAME_USE_MAPPER.mapCcdaToFhir(name['@_use']) : undefined;
+    if (use) {
+      result.use = use;
+    }
+
+    if (name.prefix) {
+      result.prefix = name.prefix.map(nodeToString)?.filter(Boolean) as string[];
+    }
+
+    if (name.family) {
+      result.family = nodeToString(name.family);
+    }
+
+    if (name.given) {
+      result.given = name.given.map(nodeToString)?.filter(Boolean) as string[];
+    }
+
+    if (name.suffix) {
+      result.suffix = name.suffix.map(nodeToString)?.filter(Boolean) as string[];
+    }
+
+    return result;
+  }
+
+  private mapAddresses(addresses: CcdaAddr[] | undefined): Address[] | undefined {
+    if (!addresses || addresses.length === 0 || addresses.every((addr) => addr['@_nullFlavor'] === 'UNK')) {
+      return undefined;
+    }
+    return addresses?.map((addr) => ({
+      '@_use': addr['@_use'] ? ADDRESS_USE_MAPPER.mapCcdaToFhir(addr['@_use']) : undefined,
+      line: addr.streetAddressLine,
+      city: addr.city,
+      state: addr.state,
+      postalCode: addr.postalCode,
+      country: addr.country,
+    }));
+  }
+
+  private mapTelecom(telecoms: CcdaTelecom[] | undefined): ContactPoint[] | undefined {
+    if (!telecoms || telecoms.length === 0 || telecoms.every((tel) => tel['@_nullFlavor'] === 'UNK')) {
+      return undefined;
+    }
+    return telecoms?.map((tel) => ({
+      '@_use': tel['@_use'] ? TELECOM_USE_MAPPER.mapCcdaToFhir(tel['@_use']) : undefined,
+      system: this.getTelecomSystem(tel['@_value'] || ''),
+      value: this.getTelecomValue(tel['@_value'] || ''),
+    }));
+  }
+
+  private createComposition(): Composition {
+    const components = this.ccda.component?.structuredBody?.component || [];
+    const sections: CompositionSection[] = [];
+
+    for (const component of components) {
+      for (const section of component.section) {
+        const resources = this.processSection(section);
+        sections.push({
+          title: section.title,
+          code: this.mapCode(section.code),
+          text: {
+            status: 'generated',
+            div: `<div xmlns="http://www.w3.org/1999/xhtml">${convertToCompactXml(section.text)}</div>`,
+          },
+          entry: resources.map(createReference),
+        });
+        this.resources.push(...resources);
+      }
+    }
+
+    return {
+      resourceType: 'Composition',
+      id: this.mapId(this.ccda.id),
+      language: this.ccda.languageCode?.['@_code'],
+      status: 'final',
+      type: this.ccda.code
+        ? (this.mapCode(this.ccda.code) as CodeableConcept)
+        : { coding: [{ system: 'http://loinc.org', code: '34133-9' }] },
+      confidentiality: this.ccda.confidentialityCode?.['@_code'] as Composition['confidentiality'],
+      author: this.ccda.author?.[0]
+        ? [
+            this.mapAuthorToReference(this.ccda.author?.[0]) as Reference<
+              Practitioner | Organization | Patient | PractitionerRole
+            >,
+          ]
+        : [{ display: 'Medplum' }],
+      custodian: this.mapCustodianToReference(this.ccda.custodian),
+      event: this.mapDocumentationOfToEvent(this.ccda.documentationOf),
+      date: mapCcdaToFhirDateTime(this.ccda.effectiveTime?.[0]?.['@_value']) || '2025-01-01T00:00:00.000Z',
+      title: this.ccda.title || 'Medical Summary',
+      section: sections,
+    };
+  }
+
+  private processSection(section: CcdaSection): Resource[] {
+    const resources: Resource[] = [];
+
+    if (section.entry) {
+      for (const entry of section.entry) {
+        if (entry.act) {
+          for (const act of entry.act) {
+            const resource = this.processAct(section, act);
+            if (resource) {
+              resources.push(resource);
+            }
+          }
+        }
+
+        if (entry.substanceAdministration) {
+          for (const substanceAdmin of entry.substanceAdministration) {
+            const resource = this.processSubstanceAdministration(section, substanceAdmin);
+            if (resource) {
+              resources.push(resource);
+            }
+          }
+        }
+
+        if (entry.organizer) {
+          for (const organizer of entry.organizer) {
+            resources.push(this.processOrganizer(section, organizer));
+          }
+        }
+
+        if (entry.observation) {
+          for (const observation of entry.observation) {
+            resources.push(this.processObservation(section, observation));
+          }
+        }
+
+        if (entry.encounter) {
+          for (const encounter of entry.encounter) {
+            resources.push(this.processEncounter(section, encounter));
+          }
+        }
+
+        if (entry.procedure) {
+          for (const procedure of entry.procedure) {
+            resources.push(this.processProcedure(section, procedure));
+          }
+        }
+      }
+    }
+
+    return resources;
+  }
+
+  private processAct(section: CcdaSection, act: CcdaAct): Resource | undefined {
+    const templateId = section.templateId[0]['@_root'];
+    switch (templateId) {
+      case '2.16.840.1.113883.10.20.22.2.6.1': // Allergies
+        return this.processAllergyIntoleranceAct(act);
+      case '2.16.840.1.113883.10.20.22.2.5.1': // Problems
+        return this.processConditionAct(act);
+      case '2.16.840.1.113883.10.20.22.2.10': // Care Plan
+        return this.processCarePlanAct(act);
+      case '2.16.840.1.113883.10.20.22.2.58': // Health Concerns
+        // return this.processHealthConcernsAct(act);
+        return this.processConditionAct(act);
+      case '2.16.840.1.113883.10.20.22.2.7.1': // Procedures
+        return this.processProcedureAct(act);
+      case '1.3.6.1.4.1.19376.1.5.3.1.3.1': // Reason for Referral
+        // This is part of USCDI v3, which is optional, and not yet implemented
+        return undefined;
+      case '2.16.840.1.113883.10.20.22.2.65': // Plan of Treatment
+        // TODO
+        return undefined;
+      case '2.16.840.1.113883.10.20.22.2.18': // Immunizations
+        // return this.processImmunizationAct(act);
+        return undefined;
+      default:
+        throw new Error('Unhandled act templateId: ' + templateId);
+    }
+  }
+
+  private processAllergyIntoleranceAct(act: CcdaAct): Resource | undefined {
+    const observation = act.entryRelationship?.find((rel) => rel['@_typeCode'] === 'SUBJ')?.observation?.[0];
+    if (!observation) {
+      return undefined;
+    }
+
+    const allergy: AllergyIntolerance = {
+      resourceType: 'AllergyIntolerance',
+      id: this.mapId(act.id),
+      clinicalStatus: this.createClinicalStatus(act),
+      verificationStatus: this.createVerificationStatus(),
+      type: 'allergy',
+      category: ['food'],
+      patient: createReference(this.patient as Patient),
+      recorder: this.mapAuthorToReference(act.author?.[0]),
+      recordedDate: this.mapEffectiveTimeToDateTime(act.effectiveTime?.[0]),
+      onsetDateTime: this.mapEffectiveTimeToDateTime(observation.effectiveTime?.[0]),
+    };
+
+    // Set category based on the observation.value code
+    if ((observation.value as CcdaCode)?.['@_code'] === '414285001') {
+      allergy.category = ['food'];
+    }
+
+    allergy.extension = this.mapTextReference(observation.text);
+
+    const allergenCode = observation.participant?.[0]?.participantRole?.playingEntity?.code;
+    if (allergenCode) {
+      allergy.code = this.mapCode(allergenCode);
+
+      // Add allergen reference
+      if (allergy.code && allergenCode.originalText?.reference?.['@_value']) {
+        allergy.code.extension = this.mapTextReference(allergenCode.originalText);
+      }
+    }
+
+    const reactionObservations = observation.entryRelationship?.find(
+      (rel) => rel['@_typeCode'] === 'MFST'
+    )?.observation;
+    if (reactionObservations) {
+      allergy.reaction = reactionObservations.map((ro) => this.processReaction(ro));
+    }
+
+    allergy.asserter = this.mapAuthorToReference(observation.author?.[0]);
+
+    return allergy;
+  }
+
+  private processConditionAct(act: CcdaAct): Resource | undefined {
+    const observation = act.entryRelationship?.find((rel) => rel['@_typeCode'] === 'SUBJ')?.observation?.[0];
+    // const observation = act.entryRelationship?.find((rel) => !!rel.observation?.[0])?.observation?.[0];
+    if (!observation) {
+      return undefined;
+    }
+
+    const result: Condition = {
+      resourceType: 'Condition',
+      id: this.mapId(act.id),
+      identifier: this.concatArrays(this.mapIdentifiers(act.id), this.mapIdentifiers(observation.id)),
+      meta: {
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition'],
+      },
+      clinicalStatus: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+            code: this.mapStatus(act.statusCode['@_code']),
+          },
+        ],
+      },
+      verificationStatus: {
+        coding: [
+          {
+            system: 'http://terminology.hl7.org/CodeSystem/condition-verification',
+            code: 'confirmed',
+          },
+        ],
+      },
+      category: [
+        {
+          coding: [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/condition-category',
+              code: 'problem-list-item',
+              display: 'Problem List Item',
+            },
+          ],
+        },
+      ],
+      code: this.mapCode(observation.value as CcdaCode),
+      subject: createReference(this.patient as Patient),
+      onsetDateTime: mapCcdaToFhirDateTime(observation.effectiveTime?.[0]?.low?.['@_value']),
+      abatementDateTime: mapCcdaToFhirDateTime(observation.effectiveTime?.[0]?.high?.['@_value']),
+      recordedDate: this.mapEffectiveTimeToDateTime(act.effectiveTime?.[0]),
+      recorder: this.mapAuthorToReference(observation.author?.[0]),
+      asserter: this.mapAuthorToReference(observation.author?.[0]),
+    };
+
+    result.extension = this.mapTextReference(observation.text);
+
+    return result;
+  }
+
+  private processCarePlanAct(act: CcdaAct): Resource | undefined {
+    const result: CarePlan = {
+      resourceType: 'CarePlan',
+      id: this.mapId(act.id),
+      identifier: this.mapIdentifiers(act.id),
+      status: 'active',
+      intent: 'plan',
+      title: 'CARE PLAN',
+      category: act.code ? [this.mapCode(act.code) as CodeableConcept] : undefined,
+      subject: createReference(this.patient as Patient),
+      description: nodeToString(act.text),
+    };
+
+    return result;
+  }
+
+  private processProcedureAct(act: CcdaAct): Resource | undefined {
+    const result: Procedure = {
+      resourceType: 'Procedure',
+      id: this.mapId(act.id),
+      identifier: this.mapIdentifiers(act.id),
+      status: 'completed',
+      code: this.mapCode(act.code),
+      subject: createReference(this.patient as Patient),
+      performedDateTime: mapCcdaToFhirDateTime(act.effectiveTime?.[0]?.['@_value']),
+      recorder: this.mapAuthorToReference(act.author?.[0]),
+      asserter: this.mapAuthorToReference(act.author?.[0]),
+      extension: this.mapTextReference(act.text),
+    };
+
+    return result;
+  }
+
+  private processSubstanceAdministration(
+    section: CcdaSection,
+    substanceAdmin: CcdaSubstanceAdministration
+  ): Resource | undefined {
+    const templateId = section.templateId[0]['@_root'];
+    switch (templateId) {
+      case '2.16.840.1.113883.10.20.22.2.1.1':
+      case '2.16.840.1.113883.10.20.22.2.10':
+        return this.processMedicationSubstanceAdministration(substanceAdmin);
+      case '2.16.840.1.113883.10.20.22.2.2':
+      case '2.16.840.1.113883.10.20.22.2.2.1':
+        return this.processImmunizationSubstanceAdministration(substanceAdmin);
+      default:
+        throw new Error('Unhandled substance administration templateId: ' + templateId);
+    }
+  }
+
+  private processMedicationSubstanceAdministration(substanceAdmin: CcdaSubstanceAdministration): Resource | undefined {
+    const cdaId = this.mapId(substanceAdmin.id);
+    const medicationCode = substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0];
+    const routeCode = substanceAdmin.routeCode;
+    const doseQuantity = substanceAdmin.doseQuantity;
+    const manufacturerOrg = substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0];
+
+    let medication: Medication | undefined = undefined;
+    let medicationCodeableConcept: CodeableConcept | undefined = undefined;
+
+    if (manufacturerOrg) {
+      // If there is a manufacturer, create a Medication resource
+      // We need to do this to fully represent the medication for round trip data preservation
+      medication = {
+        resourceType: 'Medication',
+        id: 'med-' + cdaId,
+        code: this.mapCode(medicationCode),
+        extension: this.mapTextReference(medicationCode?.originalText),
+        manufacturer: manufacturerOrg
+          ? {
+              identifier: {
+                value: manufacturerOrg.id?.[0]?.['@_root'],
+              },
+              display: manufacturerOrg.name?.[0],
+            }
+          : undefined,
+      };
+    } else {
+      // Otherwise, create a CodeableConcept for the medication
+      // Avoid contained resources as much as possible
+      medicationCodeableConcept = {
+        ...this.mapCode(medicationCode),
+        extension: this.mapTextReference(medicationCode?.originalText),
+      };
+    }
+
+    return {
+      resourceType: 'MedicationRequest',
+      id: cdaId,
+      contained: medication ? [medication] : undefined,
+      meta: {
+        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest'],
+      },
+      status: MEDICATION_STATUS_MAPPER.mapCcdaToFhirWithDefault(
+        substanceAdmin.statusCode?.['@_code'],
+        'active'
+      ) as MedicationRequest['status'],
+      intent: 'order',
+      medicationReference: medication ? { reference: '#med-' + cdaId } : undefined,
+      medicationCodeableConcept,
+      subject: createReference(this.patient as Patient),
+      authoredOn: mapCcdaToFhirDateTime(substanceAdmin.author?.[0]?.time?.['@_value'] || ''),
+      dispenseRequest: substanceAdmin.effectiveTime?.[0]
+        ? {
+            validityPeriod: {
+              start: mapCcdaToFhirDateTime(substanceAdmin.effectiveTime?.[0]?.low?.['@_value']),
+              end: mapCcdaToFhirDateTime(substanceAdmin.effectiveTime?.[0]?.high?.['@_value']),
+            },
+          }
+        : undefined,
+      dosageInstruction: [
+        {
+          text: substanceAdmin.text?.reference?.['@_value'],
+          extension: this.mapTextReference(substanceAdmin.text),
+          route: routeCode ? this.mapCode(routeCode) : undefined,
+          timing: {
+            repeat: {
+              when: ['HS'],
+            },
+          },
+          doseAndRate: doseQuantity
+            ? [
+                {
+                  doseQuantity: {
+                    value: Number(doseQuantity['@_value']),
+                    code: '[IU]',
+                    unit: '[IU]',
+                    system: 'http://unitsofmeasure.org',
+                  },
+                },
+              ]
+            : undefined,
+        },
+      ],
+    };
+  }
+
+  private processImmunizationSubstanceAdministration(
+    substanceAdmin: CcdaSubstanceAdministration
+  ): Resource | undefined {
+    const consumable = substanceAdmin.consumable;
+    if (!consumable) {
+      return undefined;
+    }
+
+    const result: Immunization = {
+      resourceType: 'Immunization',
+      id: this.mapId(substanceAdmin.id),
+      identifier: this.mapIdentifiers(substanceAdmin.id),
+      status: 'completed',
+      vaccineCode: this.mapCode(
+        consumable.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0]
+      ) as CodeableConcept,
+      patient: createReference(this.patient as Patient),
+      occurrenceDateTime: mapCcdaToFhirDateTime(substanceAdmin.effectiveTime?.[0]?.['@_value']),
+      lotNumber: consumable.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.lotNumberText?.[0],
+    };
+
+    if (substanceAdmin.performer) {
+      result.performer = this.mapCcdaPerformerArrayToImmunizationPerformerArray(substanceAdmin.performer);
+    }
+
+    result.extension = this.mapTextReference(substanceAdmin.text);
+
+    if (substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]) {
+      result.manufacturer = {
+        // id: this.mapIdentifiers(substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.id),
+        display: substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.name?.[0],
+      };
+    }
+
+    return result;
+  }
+
+  private processReaction(reactionObs: CcdaObservation): AllergyIntoleranceReaction {
+    const reaction: AllergyIntoleranceReaction = {
+      id: this.mapId(reactionObs.id),
+      manifestation: [this.mapCode(reactionObs.value as CcdaCode)] as CodeableConcept[],
+      onset: mapCcdaToFhirDateTime(reactionObs.effectiveTime?.[0]?.low?.['@_value'] || ''),
+    };
+
+    this.processSeverity(reactionObs, reaction);
+
+    // Add reaction reference
+    if (reaction.manifestation && reaction.manifestation.length > 0 && reactionObs.text?.reference?.['@_value']) {
+      reaction.manifestation[0].extension = this.mapTextReference(reactionObs.text);
+    }
+
+    return reaction;
+  }
+
+  private processSeverity(reactionObs: CcdaObservation, reaction: AllergyIntoleranceReaction): void {
+    const severityObs = reactionObs.entryRelationship?.find((rel) => rel['@_typeCode'] === 'SUBJ')?.observation?.[0];
+    if (!severityObs) {
+      return;
+    }
+
+    reaction.severity = this.mapSeverity(severityObs);
+    reaction.extension = this.mapTextReference(severityObs.text);
+  }
+
+  private mapEffectiveTimeToDateTime(effectiveTime: CcdaEffectiveTime | undefined): string | undefined {
+    if (effectiveTime?.['@_value']) {
+      return mapCcdaToFhirDateTime(effectiveTime['@_value']);
+    }
+    return undefined;
+  }
+
+  private mapEffectiveTimeToPeriod(effectiveTime: CcdaEffectiveTime | undefined): Period | undefined {
+    if (!effectiveTime?.['@_value'] && (effectiveTime?.low || effectiveTime?.high)) {
+      return {
+        start: mapCcdaToFhirDateTime(effectiveTime?.low?.['@_value']),
+        end: mapCcdaToFhirDateTime(effectiveTime?.high?.['@_value']),
+      };
+    }
+    return undefined;
+  }
+
+  private mapGenderCode(code: string | undefined): Patient['gender'] {
+    if (!code) {
+      return undefined;
+    }
+    const map: { [key: string]: Patient['gender'] } = {
+      F: 'female',
+      M: 'male',
+      UN: 'unknown',
+    };
+    return map[code];
+  }
+
+  private getTelecomSystem(value: string): ContactPoint['system'] {
+    if (value.startsWith('tel:')) {
+      return 'phone';
+    }
+    if (value.startsWith('mailto:')) {
+      return 'email';
+    }
+    return 'other';
+  }
+
+  private getTelecomValue(value: string): string {
+    return value.replace(/^(tel:|mailto:)/, '');
+  }
+
+  private mapStatus(status: string): string {
+    const map: { [key: string]: string } = {
+      active: 'active',
+      suspended: 'inactive',
+      aborted: 'inactive',
+      completed: 'resolved',
+    };
+    return map[status] || 'active';
+  }
+
+  private mapSeverity(reaction: CcdaObservation): AllergyIntoleranceReaction['severity'] {
+    const severityObs = reaction.entryRelationship?.find((rel) => rel['@_typeCode'] === 'SUBJ')?.observation?.[0];
+
+    const severityCode = (severityObs?.value as CcdaCode)?.['@_code'];
+
+    const map: { [key: string]: AllergyIntoleranceReaction['severity'] } = {
+      '255604002': 'mild',
+      '6736007': 'moderate',
+      '24484000': 'severe',
+    };
+    return map[severityCode || ''] || 'moderate';
+  }
+
+  private mapCode(code: CcdaCode | undefined): CodeableConcept | undefined {
+    if (!code) {
+      return undefined;
+    }
+
+    return {
+      coding: [
+        {
+          system: mapCcdaSystemToFhir(code['@_codeSystem']),
+          code: code['@_code'],
+          display: code['@_displayName'],
+        },
+      ],
+
+      text: code['@_displayName'],
+    };
+  }
+
+  private mapCodeToCoding(code: CcdaCode | undefined): Coding | undefined {
+    if (!code) {
+      return undefined;
+    }
+
+    return {
+      system: mapCcdaSystemToFhir(code['@_codeSystem']),
+      code: code['@_code'],
+      display: code['@_displayName'],
+    };
+  }
+
+  private createClinicalStatus(act: CcdaAct): CodeableConcept {
+    return {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+          code: this.mapStatus(act.statusCode['@_code']),
+        },
+      ],
+    };
+  }
+
+  private createVerificationStatus(): CodeableConcept {
+    return {
+      coding: [
+        {
+          system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-verification',
+          code: 'confirmed',
+        },
+      ],
+    };
+  }
+
+  private mapAuthorToReference(author: CcdaAuthor | undefined): Reference<Practitioner> | undefined {
+    if (!author) {
+      return undefined;
+    }
+
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      id: this.mapId(author.assignedAuthor?.id),
+      identifier: this.mapIdentifiers(author.assignedAuthor?.id),
+      name: this.mapCcdaNameArrayFhirHumanNameArray(author.assignedAuthor?.assignedPerson?.name),
+      address: this.mapAddresses(author.assignedAuthor?.addr),
+      telecom: this.mapTelecom(author.assignedAuthor?.telecom),
+      qualification: author.assignedAuthor?.code
+        ? [this.mapCode(author.assignedAuthor?.code) as PractitionerQualification]
+        : undefined,
+    };
+
+    this.resources.push(practitioner);
+
+    return createReference(practitioner);
+  }
+
+  private mapAssignedEntityToReference(
+    assignedEntity: CcdaAssignedEntity | undefined
+  ): Reference<PractitionerRole> | undefined {
+    if (!assignedEntity) {
+      return undefined;
+    }
+
+    const assignedPerson = assignedEntity.assignedPerson;
+    const representedOrganization = assignedEntity.representedOrganization;
+
+    const practitioner: Practitioner = {
+      resourceType: 'Practitioner',
+      id: this.mapId(assignedEntity?.id),
+      identifier: this.mapIdentifiers(assignedEntity?.id),
+      name: this.mapCcdaNameArrayFhirHumanNameArray(assignedPerson?.name),
+      address: this.mapAddresses(assignedEntity?.addr),
+      telecom: this.mapTelecom(assignedEntity?.telecom),
+    };
+
+    this.resources.push(practitioner);
+
+    const organization: Organization = {
+      resourceType: 'Organization',
+      id: this.mapId(assignedEntity?.id),
+      identifier: this.mapIdentifiers(representedOrganization?.id),
+      name: representedOrganization?.name?.[0],
+      address: this.mapAddresses(representedOrganization?.addr),
+    };
+    this.resources.push(organization);
+
+    const practitionerRole: PractitionerRole = {
+      resourceType: 'PractitionerRole',
+      id: this.mapId(assignedEntity?.id),
+      practitioner: createReference(practitioner),
+      organization: createReference(organization),
+    };
+    this.resources.push(practitionerRole);
+
+    return createReference(practitionerRole);
+  }
+
+  private mapCustodianToReference(custodian: CcdaCustodian | undefined): Reference<Organization> | undefined {
+    if (!custodian) {
+      return undefined;
+    }
+
+    const organization: Organization = {
+      resourceType: 'Organization',
+      id: this.mapId(custodian.assignedCustodian.representedCustodianOrganization.id),
+      identifier: this.mapIdentifiers(custodian.assignedCustodian.representedCustodianOrganization.id),
+      name: custodian.assignedCustodian.representedCustodianOrganization.name?.[0],
+      address: this.mapAddresses(custodian.assignedCustodian.representedCustodianOrganization.addr),
+      telecom: this.mapTelecom(custodian.assignedCustodian.representedCustodianOrganization.telecom),
+    };
+
+    this.resources.push(organization);
+
+    return createReference(organization);
+  }
+
+  private mapDocumentationOfToEvent(documentationOf: CcdaDocumentationOf | undefined): CompositionEvent[] | undefined {
+    if (!documentationOf) {
+      return undefined;
+    }
+
+    const serviceEvent = documentationOf.serviceEvent;
+    if (!serviceEvent) {
+      return undefined;
+    }
+
+    return [
+      {
+        code: serviceEvent.code ? [this.mapCode(serviceEvent.code) as CodeableConcept] : undefined,
+        period: this.mapEffectiveTimeToPeriod(serviceEvent.effectiveTime?.[0]),
+      },
+    ];
+  }
+
+  private concatArrays<T>(array1: T[] | undefined, array2: T[] | undefined): T[] | undefined {
+    if (!array1) {
+      return array2;
+    }
+    if (!array2) {
+      return array1;
+    }
+    return [...array1, ...array2];
+  }
+
+  private mapCcdaPerformerArrayToImmunizationPerformerArray(performers: CcdaPerformer[]): ImmunizationPerformer[] {
+    const result: ImmunizationPerformer[] = [];
+
+    for (const performer of performers) {
+      const entity = performer.assignedEntity;
+      const reference = this.mapAssignedEntityToReference(entity);
+      if (reference) {
+        result.push({ actor: reference });
+      }
+    }
+
+    return result;
+  }
+
+  private processOrganizer(section: CcdaSection, organizer: CcdaOrganizer): Resource {
+    const templateId = section.templateId[0]['@_root'];
+    switch (templateId) {
+      case '2.16.840.1.113883.10.20.22.2.500':
+        return this.processCareTeamOrganizer(organizer);
+      default:
+        return this.processVitalsOrganizer(organizer);
+    }
+  }
+
+  private processCareTeamOrganizer(organizer: CcdaOrganizer): CareTeam {
+    const participants: CareTeamParticipant[] = [];
+
+    if (organizer.component) {
+      for (const component of organizer.component) {
+        const participant = this.processCareTeamMember(component);
+        if (participant) {
+          participants.push(participant);
+        }
+      }
+    }
+
+    const result: CareTeam = {
+      resourceType: 'CareTeam',
+      id: this.mapId(organizer.id),
+      identifier: this.mapIdentifiers(organizer.id),
+      participant: participants.length > 0 ? participants : undefined,
+    };
+
+    return result;
+  }
+
+  private processCareTeamMember(component: CcdaOrganizerComponent): CareTeamParticipant | undefined {
+    const act = component.act?.[0];
+    if (!act) {
+      return undefined;
+    }
+
+    const performer = act.performer?.[0];
+    if (!performer) {
+      return undefined;
+    }
+
+    return {
+      role: performer.functionCode ? [this.mapCode(performer.functionCode) as CodeableConcept] : undefined,
+      member: this.mapAssignedEntityToReference(performer.assignedEntity),
+      period: this.mapEffectiveTimeToPeriod(act.effectiveTime?.[0]),
+    };
+  }
+
+  private processVitalsOrganizer(organizer: CcdaOrganizer): Observation {
+    const result: Observation = {
+      resourceType: 'Observation',
+      id: this.mapId(organizer.id),
+      identifier: this.mapIdentifiers(organizer.id),
+      status: 'final',
+      category: this.mapObservationTemplateIdToObservationCategory(organizer.templateId),
+      code: this.mapCode(organizer.code) as CodeableConcept,
+      subject: createReference(this.patient as Patient),
+    };
+
+    if (organizer.effectiveTime?.[0]?.['@_value']) {
+      result.effectiveDateTime = mapCcdaToFhirDateTime(organizer.effectiveTime?.[0]?.['@_value']);
+    }
+
+    if (organizer.component) {
+      const members: Reference<Observation>[] = [];
+      for (const component of organizer.component) {
+        members.push(...this.processVitalsComponent(component));
+      }
+
+      if (members.length > 0) {
+        result.hasMember = members;
+      }
+    }
+    return result;
+  }
+
+  private processVitalsComponent(component: CcdaOrganizerComponent): Reference<Observation>[] {
+    const result: Reference<Observation>[] = [];
+    if (component.observation) {
+      for (const observation of component.observation) {
+        const child = this.processVitalsObservation(observation);
+        result.push(createReference(child));
+        this.resources.push(child);
+      }
+    }
+    return result;
+  }
+
+  private processObservation(section: CcdaSection, observation: CcdaObservation): Resource {
+    const observationTemplateId = observation.templateId[0]['@_root'];
+    if (
+      observationTemplateId === '2.16.840.1.113883.10.20.22.2.60' ||
+      observationTemplateId === '2.16.840.1.113883.10.20.22.4.121'
+    ) {
+      // Goal template
+      return this.processGoalObservation(observation);
+    }
+
+    const sectionTemplateId = section.templateId[0]['@_root'];
+    switch (sectionTemplateId) {
+      case '2.16.840.1.113883.10.20.22.2.10':
+      case '2.16.840.1.113883.10.20.22.2.60':
+        return this.processGoalObservation(observation);
+      default:
+        // Treat this as a normal observation by default
+        return this.processVitalsObservation(observation);
+    }
+  }
+
+  private processGoalObservation(observation: CcdaObservation): Goal {
+    const result: Goal = {
+      resourceType: 'Goal',
+      id: this.mapId(observation.id),
+      identifier: this.mapIdentifiers(observation.id),
+      lifecycleStatus: this.mapGoalLifecycleStatus(observation),
+      description: this.mapCode(observation.code) as CodeableConcept,
+      subject: createReference(this.patient as Patient),
+      startDate: mapCcdaToFhirDate(observation.effectiveTime?.[0]?.['@_value']),
+      // note: this.mapNote(observation.text),
+    };
+
+    result.target = observation.entryRelationship?.map((entryRelationship) => {
+      return {
+        measure: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
+        detailCodeableConcept: this.mapCode(entryRelationship.act?.[0]?.code) as CodeableConcept,
+        dueDate: mapCcdaToFhirDateTime(entryRelationship.act?.[0]?.effectiveTime?.[0]?.low?.['@_value']),
+      };
+    });
+
+    result.extension = this.mapTextReference(observation.text);
+
+    return result;
+  }
+
+  private mapGoalLifecycleStatus(observation: CcdaObservation): Goal['lifecycleStatus'] {
+    // - Map from observation's `statusCode/@code`
+    // - Mapping logic:
+    //   - If statusCode is "active" → "active"
+    //   - If statusCode is "completed" → "achieved"
+    //   - If statusCode is "cancelled" → "cancelled"
+    //   - If statusCode is "aborted" → "cancelled"
+    //   - If no status or other value → "active"
+    const map: { [key: string]: Goal['lifecycleStatus'] } = {
+      active: 'active',
+      completed: 'completed',
+      cancelled: 'cancelled',
+      aborted: 'cancelled',
+    };
+    return map[observation.statusCode['@_code'] || 'active'];
+  }
+
+  private processVitalsObservation(observation: CcdaObservation): Observation {
+    const result: Observation = {
+      resourceType: 'Observation',
+      id: this.mapId(observation.id),
+      identifier: this.mapIdentifiers(observation.id),
+      status: 'final',
+      category: this.mapObservationTemplateIdToObservationCategory(observation.templateId),
+      code: this.mapCode(observation.code) as CodeableConcept,
+      subject: createReference(this.patient as Patient),
+      referenceRange: this.mapReferenceRangeArray(observation.referenceRange),
+      performer: observation.author
+        ?.map((author) => this.mapAuthorToReference(author))
+        .filter(Boolean) as Reference<Practitioner>[],
+    };
+
+    if (observation.value?.['@_xsi:type']) {
+      switch (observation.value['@_xsi:type']) {
+        case 'PQ': // Physical Quantity
+        case 'CO': // Count of individuals
+          result.valueQuantity = {
+            value: observation.value['@_value'] ? parseFloat(observation.value['@_value']) : undefined,
+            unit: observation.value['@_unit'],
+            system: 'http://unitsofmeasure.org',
+            code: observation.value['@_unit'],
+          };
+          break;
+
+        case 'CD': // Code
+        case 'CE': // Code with Extensions
+          result.valueCodeableConcept = this.mapCode(observation.value);
+          break;
+
+        case 'ST': // String
+          result.valueString = observation.value['#text'] ?? '';
+          break;
+
+        default:
+          console.warn(`Unhandled observation value type: ${observation.value['@_xsi:type']}`);
+      }
+    }
+
+    if (observation.effectiveTime?.[0]?.['@_value']) {
+      result.effectiveDateTime = mapCcdaToFhirDateTime(observation.effectiveTime?.[0]?.['@_value']);
+    }
+
+    result.extension = this.mapTextReference(observation.text);
+
+    return result;
+  }
+
+  private mapObservationTemplateIdToObservationCategory(
+    templateIds: CcdaTemplateId[] | undefined
+  ): CodeableConcept[] | undefined {
+    if (!templateIds) {
+      return undefined;
+    }
+
+    const codes = new Set<string>();
+    const result: CodeableConcept[] = [];
+
+    for (const templateId of templateIds) {
+      const category = OBSERVATION_CATEGORY_MAPPER.mapCcdaToFhirCodeableConcept(templateId['@_root']);
+      if (category?.coding?.[0]?.code && !codes.has(category.coding[0].code)) {
+        codes.add(category.coding[0].code);
+        result.push(category);
+      }
+    }
+
+    for (const templateId of templateIds) {
+      result.push({
+        coding: [
+          {
+            system: 'http://hl7.org/cda/template',
+            code: templateId['@_root'],
+            version: templateId['@_extension'],
+          },
+        ],
+      });
+    }
+
+    return Array.from(result.values());
+  }
+
+  private mapReferenceRangeArray(
+    referenceRange: CcdaReferenceRange[] | undefined
+  ): ObservationReferenceRange[] | undefined {
+    if (!referenceRange || referenceRange.length === 0) {
+      return undefined;
+    }
+
+    return referenceRange.map((r) => this.mapReferenceRange(r)).filter(Boolean) as ObservationReferenceRange[];
+  }
+
+  private mapReferenceRange(referenceRange: CcdaReferenceRange | undefined): ObservationReferenceRange | undefined {
+    if (!referenceRange) {
+      return undefined;
+    }
+
+    const observationRange = referenceRange.observationRange;
+    if (!observationRange) {
+      return undefined;
+    }
+
+    const result: ObservationReferenceRange = {};
+
+    result.extension = this.mapTextReference(observationRange.text);
+
+    return result;
+  }
+
+  private processEncounter(section: CcdaSection, encounter: CcdaEncounter): Encounter {
+    // Create the main encounter resource
+    const result: Encounter = {
+      resourceType: 'Encounter',
+      id: this.mapId(encounter.id),
+      identifier: this.mapIdentifiers(encounter.id),
+      status: this.mapEncounterStatus(encounter.statusCode?.['@_code']),
+      class: {
+        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+        code: encounter.code?.['@_code'] || 'AMB',
+        display: encounter.code?.['@_displayName'] || 'Ambulatory',
+      },
+      type: encounter.code ? [this.mapCode(encounter.code) as CodeableConcept] : undefined,
+      subject: createReference(this.patient as Patient),
+      period: this.mapEffectiveTimeToPeriod(encounter.effectiveTime?.[0]),
+    };
+
+    // Add participant information
+    if (encounter.performer) {
+      result.participant = encounter.performer.map((performer) => ({
+        type: [
+          {
+            coding: [
+              {
+                system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
+                code: performer['@_typeCode'] || 'PPRF',
+                display: 'Primary Performer',
+              },
+            ],
+          },
+        ],
+        individual: this.mapAssignedEntityToReference(performer.assignedEntity),
+      }));
+    }
+
+    // Add diagnoses from entryRelationships
+    if (encounter.entryRelationship) {
+      const diagnoses = encounter.entryRelationship
+        .filter((rel) => rel['@_typeCode'] === 'RSON')
+        .map((rel) => {
+          const observation = rel.observation?.[0];
+          if (!observation) {
+            return undefined;
+          }
+
+          // Create Condition resource
+          const condition: Condition = {
+            resourceType: 'Condition',
+            id: this.mapId(observation.id),
+            identifier: this.mapIdentifiers(observation.id),
+            clinicalStatus: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                  code: 'active',
+                },
+              ],
+            },
+            verificationStatus: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/condition-ver-status',
+                  code: 'confirmed',
+                },
+              ],
+            },
+            code: this.mapCode(observation.value as CcdaCode),
+            subject: createReference(this.patient as Patient),
+            onsetDateTime: mapCcdaToFhirDateTime(observation.effectiveTime?.[0]?.low?.['@_value']),
+          };
+
+          // Add condition to resources array
+          this.resources.push(condition);
+
+          return {
+            condition: createReference(condition),
+            use: {
+              coding: [
+                {
+                  system: 'http://terminology.hl7.org/CodeSystem/diagnosis-role',
+                  code: 'AD',
+                  display: 'Admission diagnosis',
+                },
+              ],
+            },
+          };
+        })
+        .filter(Boolean) as EncounterDiagnosis[];
+
+      if (diagnoses.length > 0) {
+        result.diagnosis = diagnoses;
+      }
+    }
+
+    result.extension = this.mapTextReference(encounter.text);
+
+    return result;
+  }
+
+  private mapEncounterStatus(status: string | undefined): Encounter['status'] {
+    const map: Record<string, Encounter['status']> = {
+      active: 'in-progress',
+      completed: 'finished',
+      aborted: 'cancelled',
+      cancelled: 'cancelled',
+    };
+    return map[status || ''] || 'finished';
+  }
+
+  private processProcedure(section: CcdaSection, procedure: CcdaProcedure): Procedure {
+    const result: Procedure = {
+      resourceType: 'Procedure',
+      id: this.mapId(procedure.id),
+      identifier: this.mapIdentifiers(procedure.id),
+      status: this.mapProcedureStatus(procedure.statusCode?.['@_code']),
+      code: this.mapCode(procedure.code),
+      subject: createReference(this.patient as Patient),
+      performedDateTime: this.mapEffectiveTimeToDateTime(procedure.effectiveTime?.[0]),
+      performedPeriod: this.mapEffectiveTimeToPeriod(procedure.effectiveTime?.[0]),
+      bodySite: procedure.targetSiteCode ? [this.mapCode(procedure.targetSiteCode) as CodeableConcept] : undefined,
+      extension: this.mapTextReference(procedure.text),
+    };
+
+    return result;
+  }
+
+  private mapProcedureStatus(status: string | undefined): Procedure['status'] {
+    const map: Record<string, Procedure['status']> = {
+      completed: 'completed',
+      aborted: 'stopped',
+      cancelled: 'not-done',
+    };
+    return map[status || ''] || 'completed';
+  }
+
+  private mapTextReference(text: CcdaText | undefined): Extension[] | undefined {
+    if (!text?.reference?.['@_value']) {
+      return undefined;
+    }
+
+    return [
+      {
+        url: 'http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference',
+        valueString: text.reference?.['@_value'],
+      },
+    ];
+  }
+}
