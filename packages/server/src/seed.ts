@@ -1,18 +1,12 @@
 import { createReference } from '@medplum/core';
 import { Practitioner, Project, ProjectMembership, User } from '@medplum/fhirtypes';
-import { NIL as nullUuid, v5 } from 'uuid';
 import { bcryptHashPassword } from './auth/utils';
+import { r4ProjectId } from './constants';
 import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
 import { rebuildR4SearchParameters } from './seeds/searchparameters';
 import { rebuildR4StructureDefinitions } from './seeds/structuredefinitions';
 import { rebuildR4ValueSets } from './seeds/valuesets';
-
-/**
- * The hardcoded ID for the base FHIR R4 Project.
- * (161452d9-43b7-5c29-aa7b-c85680fa45c6)
- */
-export const r4ProjectId = v5('R4', nullUuid);
 
 export async function seedDatabase(): Promise<void> {
   if (await isSeeded()) {
