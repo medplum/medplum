@@ -2,7 +2,7 @@ import { allOk, badRequest, createReference, Operator, resolveId } from '@medplu
 import { User, UserSecurityRequest } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { body } from 'express-validator';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { sendEmail } from '../email/email';
 import { sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';

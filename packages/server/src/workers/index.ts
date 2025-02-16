@@ -1,6 +1,6 @@
 import { BackgroundJobContext } from '@medplum/core';
 import { Resource } from '@medplum/fhirtypes';
-import { MedplumServerConfig } from '../config';
+import { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import { closeBatchWorker, initBatchWorker } from './batch';
 import { addCronJobs, closeCronWorker, initCronWorker } from './cron';

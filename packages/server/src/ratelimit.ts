@@ -4,7 +4,7 @@ import rateLimit, { RateLimitRequestHandler } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import { AuthenticatedRequestContext, getRequestContext } from './context';
 import { getRedis } from './redis';
-import { MedplumServerConfig } from './config';
+import { MedplumServerConfig } from './config/types';
 
 // History:
 // Before, the default "auth rate limit" was 600 per 15 minutes, but used "MemoryStore" rather than "RedisStore"

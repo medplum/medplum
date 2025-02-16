@@ -11,15 +11,15 @@ import {
 import express from 'express';
 import { randomUUID } from 'node:crypto';
 import request from 'supertest';
+import { inviteUser } from '../../admin/invite';
 import { initApp, shutdownApp } from '../../app';
 import { registerNew } from '../../auth/register';
-import { getConfig, loadTestConfig } from '../../config';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import * as oathKeysModule from '../../oauth/keys';
 import { getLoginForAccessToken } from '../../oauth/utils';
 import { createTestProject, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { getBinaryStorage } from '../storage';
-import { inviteUser } from '../../admin/invite';
 
 const botCodes = [
   [

@@ -1,7 +1,7 @@
 import { OperationOutcomeError, Operator, conflict, notFound, parseSearchRequest, sleep } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import { Repository, getSystemRepo } from './repo';
 import { randomUUID } from 'node:crypto';

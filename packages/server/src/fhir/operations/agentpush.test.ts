@@ -21,7 +21,7 @@ import { Server } from 'node:http';
 import { AddressInfo } from 'node:net';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { getRedis } from '../../redis';
 import { initTestAuth, waitForAsyncJob } from '../../test.setup';
 import { AgentPushParameters } from './agentpush';

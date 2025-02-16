@@ -1,6 +1,6 @@
 import express from 'express';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { withTestContext, createTestProject } from '../../test.setup';
 import { ClientApplication, Encounter, Patient, SmartAppLaunch } from '@medplum/fhirtypes';
 import request from 'supertest';

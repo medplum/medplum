@@ -3,7 +3,7 @@ import { CodeSystem, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { DatabaseMode, getDatabasePool } from '../../database';
 import { createTestProject, initTestAuth } from '../../test.setup';
 import { Column, Condition, SelectQuery } from '../sql';

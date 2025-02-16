@@ -2,7 +2,7 @@ import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-sec
 import { GetParametersByPathCommand, SSMClient } from '@aws-sdk/client-ssm';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import { getConfig, loadConfig } from '../../config';
+import { getConfig, loadConfig } from '../../config/loader';
 
 describe('Config', () => {
   let mockSSMClient: AwsClientStub<SSMClient>;

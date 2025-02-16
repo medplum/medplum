@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { getConfig, loadTestConfig } from './config';
+import { getConfig, loadTestConfig } from './config/loader';
 import { corsOptions } from './cors';
 
 describe('CORS', () => {

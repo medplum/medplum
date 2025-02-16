@@ -2,7 +2,8 @@ import { createReference, getReferenceString, Operator } from '@medplum/core';
 import { Appointment, DiagnosticReport, Flag, Patient, Practitioner, Slot } from '@medplum/fhirtypes';
 import { randomUUID } from 'node:crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig, MedplumServerConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { createTestProject, withTestContext } from '../test.setup';
 import { Repository } from './repo';
 

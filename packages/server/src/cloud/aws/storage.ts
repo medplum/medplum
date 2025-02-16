@@ -5,7 +5,7 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { concatUrls } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { Readable } from 'stream';
-import { getConfig } from '../../config';
+import { getConfig } from '../../config/loader';
 import { BinarySource, BinaryStorage, checkFileMetadata } from '../../fhir/storage';
 
 /**

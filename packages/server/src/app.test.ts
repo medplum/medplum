@@ -2,13 +2,13 @@ import { badRequest, ContentType, getReferenceString } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import express, { json } from 'express';
 import request from 'supertest';
+import { inviteUser } from './admin/invite';
 import { initApp, JSON_TYPE, shutdownApp } from './app';
-import { getConfig, loadTestConfig } from './config';
+import { getConfig, loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { globalLogger } from './logger';
 import { getRedis } from './redis';
 import { createTestProject, initTestAuth } from './test.setup';
-import { inviteUser } from './admin/invite';
 
 describe('App', () => {
   test('Get HTTP config', async () => {
