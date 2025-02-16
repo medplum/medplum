@@ -80,11 +80,7 @@ export function convertXmlToCcda(xml: string): Ccda {
     attributeNamePrefix: '@_',
     parseAttributeValue: false,
     parseTagValue: false,
-    isArray: (_tagName, jPath, _isLeafNode, _isAttribute) => {
-      const result = ARRAY_PATHS.some((p) => jPath.endsWith(p));
-      // console.log(jPath, result);
-      return result;
-    },
+    isArray: (_tagName, jPath, _isLeafNode, _isAttribute) => ARRAY_PATHS.some((p) => jPath.endsWith(p)),
   });
 
   const parsedData = parser.parse(xml);

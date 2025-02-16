@@ -98,9 +98,9 @@ export function convertFhirToCcda(bundle: Bundle): Ccda {
  * The FhirToCcdaConverter class is responsible for converting a FHIR bundle to a C-CDA document.
  */
 class FhirToCcdaConverter {
-  private bundle: Bundle;
-  private composition: Composition;
-  private patient: Patient;
+  private readonly bundle: Bundle;
+  private readonly composition: Composition;
+  private readonly patient: Patient;
 
   /**
    * Creates a new FhirToCcdaConverter for the given FHIR bundle.
@@ -1108,7 +1108,6 @@ class FhirToCcdaConverter {
       return undefined;
     }
 
-    // let practitionerRole: PractitionerRole | undefined = undefined;
     let practitioner: Practitioner | undefined = undefined;
     let organization: Organization | undefined = undefined;
 

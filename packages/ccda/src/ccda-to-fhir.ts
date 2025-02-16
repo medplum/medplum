@@ -71,6 +71,7 @@ import {
   CcdaDocumentationOf,
   CcdaEffectiveTime,
   CcdaEncounter,
+  CcdaEntry,
   CcdaId,
   CcdaName,
   CcdaObservation,
@@ -103,9 +104,9 @@ export function convertCcdaToFhir(ccda: Ccda): Bundle {
 }
 
 class CcdaToFhirConverter {
-  private ccda: Ccda;
+  private readonly ccda: Ccda;
+  private readonly resources: Resource[] = [];
   private patient?: Patient;
-  private resources: Resource[] = [];
 
   constructor(ccda: Ccda) {
     this.ccda = ccda;
@@ -254,8 +255,8 @@ class CcdaToFhirConverter {
     }
     return telecoms?.map((tel) => ({
       '@_use': tel['@_use'] ? TELECOM_USE_MAPPER.mapCcdaToFhir(tel['@_use']) : undefined,
-      system: this.getTelecomSystem(tel['@_value'] || ''),
-      value: this.getTelecomValue(tel['@_value'] || ''),
+      system: this.getTelecomSystem(tel['@_value']),
+      value: this.getTelecomValue(tel['@_value']),
     }));
   }
 
@@ -297,7 +298,7 @@ class CcdaToFhirConverter {
         : [{ display: 'Medplum' }],
       custodian: this.mapCustodianToReference(this.ccda.custodian),
       event: this.mapDocumentationOfToEvent(this.ccda.documentationOf),
-      date: mapCcdaToFhirDateTime(this.ccda.effectiveTime?.[0]?.['@_value']) || '2025-01-01T00:00:00.000Z',
+      date: mapCcdaToFhirDateTime(this.ccda.effectiveTime?.[0]?.['@_value']) ?? new Date().toISOString(),
       title: this.ccda.title || 'Medical Summary',
       section: sections,
     };
@@ -308,51 +309,55 @@ class CcdaToFhirConverter {
 
     if (section.entry) {
       for (const entry of section.entry) {
-        if (entry.act) {
-          for (const act of entry.act) {
-            const resource = this.processAct(section, act);
-            if (resource) {
-              resources.push(resource);
-            }
-          }
-        }
-
-        if (entry.substanceAdministration) {
-          for (const substanceAdmin of entry.substanceAdministration) {
-            const resource = this.processSubstanceAdministration(section, substanceAdmin);
-            if (resource) {
-              resources.push(resource);
-            }
-          }
-        }
-
-        if (entry.organizer) {
-          for (const organizer of entry.organizer) {
-            resources.push(this.processOrganizer(section, organizer));
-          }
-        }
-
-        if (entry.observation) {
-          for (const observation of entry.observation) {
-            resources.push(this.processObservation(section, observation));
-          }
-        }
-
-        if (entry.encounter) {
-          for (const encounter of entry.encounter) {
-            resources.push(this.processEncounter(section, encounter));
-          }
-        }
-
-        if (entry.procedure) {
-          for (const procedure of entry.procedure) {
-            resources.push(this.processProcedure(section, procedure));
-          }
-        }
+        this.processEntry(section, entry, resources);
       }
     }
 
     return resources;
+  }
+
+  private processEntry(section: CcdaSection, entry: CcdaEntry, resources: Resource[]): void {
+    if (entry.act) {
+      for (const act of entry.act) {
+        const resource = this.processAct(section, act);
+        if (resource) {
+          resources.push(resource);
+        }
+      }
+    }
+
+    if (entry.substanceAdministration) {
+      for (const substanceAdmin of entry.substanceAdministration) {
+        const resource = this.processSubstanceAdministration(section, substanceAdmin);
+        if (resource) {
+          resources.push(resource);
+        }
+      }
+    }
+
+    if (entry.organizer) {
+      for (const organizer of entry.organizer) {
+        resources.push(this.processOrganizer(section, organizer));
+      }
+    }
+
+    if (entry.observation) {
+      for (const observation of entry.observation) {
+        resources.push(this.processObservation(section, observation));
+      }
+    }
+
+    if (entry.encounter) {
+      for (const encounter of entry.encounter) {
+        resources.push(this.processEncounter(section, encounter));
+      }
+    }
+
+    if (entry.procedure) {
+      for (const procedure of entry.procedure) {
+        resources.push(this.processProcedure(section, procedure));
+      }
+    }
   }
 
   private processAct(section: CcdaSection, act: CcdaAct): Resource | undefined {
@@ -373,7 +378,7 @@ class CcdaToFhirConverter {
         // This is part of USCDI v3, which is optional, and not yet implemented
         return undefined;
       case '2.16.840.1.113883.10.20.22.2.65': // Plan of Treatment
-        // TODO
+        // This is part of USCDI v3, which is optional, and not yet implemented
         return undefined;
       case '2.16.840.1.113883.10.20.22.2.18': // Immunizations
         // return this.processImmunizationAct(act);
@@ -652,7 +657,6 @@ class CcdaToFhirConverter {
 
     if (substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]) {
       result.manufacturer = {
-        // id: this.mapIdentifiers(substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.id),
         display: substanceAdmin.consumable?.manufacturedProduct?.[0]?.manufacturerOrganization?.[0]?.name?.[0],
       };
     }
@@ -664,7 +668,7 @@ class CcdaToFhirConverter {
     const reaction: AllergyIntoleranceReaction = {
       id: this.mapId(reactionObs.id),
       manifestation: [this.mapCode(reactionObs.value as CcdaCode)] as CodeableConcept[],
-      onset: mapCcdaToFhirDateTime(reactionObs.effectiveTime?.[0]?.low?.['@_value'] || ''),
+      onset: mapCcdaToFhirDateTime(reactionObs.effectiveTime?.[0]?.low?.['@_value']),
     };
 
     this.processSeverity(reactionObs, reaction);
@@ -716,7 +720,10 @@ class CcdaToFhirConverter {
     return map[code];
   }
 
-  private getTelecomSystem(value: string): ContactPoint['system'] {
+  private getTelecomSystem(value: string | undefined): ContactPoint['system'] {
+    if (!value) {
+      return undefined;
+    }
     if (value.startsWith('tel:')) {
       return 'phone';
     }
@@ -726,7 +733,10 @@ class CcdaToFhirConverter {
     return 'other';
   }
 
-  private getTelecomValue(value: string): string {
+  private getTelecomValue(value: string | undefined): string | undefined {
+    if (!value) {
+      return undefined;
+    }
     return value.replace(/^(tel:|mailto:)/, '');
   }
 
