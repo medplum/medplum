@@ -1,9 +1,9 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, Resource, StructureDefinition } from '@medplum/fhirtypes';
+import { r4ProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import { r4ProjectId } from '../seed';
 
 /**
  * Creates all StructureDefinition resources.

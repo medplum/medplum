@@ -68,11 +68,11 @@ import { Operation } from 'rfc6902';
 import { v7 } from 'uuid';
 import validator from 'validator';
 import { getConfig } from '../config';
+import { r4ProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';
 import { incrementCounter, recordHistogramValue } from '../otel/otel';
 import { getRedis } from '../redis';
-import { r4ProjectId } from '../seed';
 import {
   AuditEventOutcome,
   AuditEventSubtype,
