@@ -41,6 +41,7 @@ import {
   ACT_CODE_SYSTEM,
   ADDRESS_USE_MAPPER,
   ALLERGY_CLINICAL_CODE_SYSTEM,
+  ALLERGY_SEVERITY_MAPPER,
   ALLERGY_VERIFICATION_CODE_SYSTEM,
   CCDA_NARRATIVE_REFERENCE_URL,
   CCDA_TEMPLATE_CODE_SYSTEM,
@@ -49,11 +50,13 @@ import {
   CONDITION_VER_STATUS_CODE_SYSTEM,
   CONDITION_VERIFICATION_CODE_SYSTEM,
   DIAGNOSIS_ROLE_CODE_SYSTEM,
+  ENCOUNTER_STATUS_MAPPER,
   HUMAN_NAME_USE_MAPPER,
   mapCcdaSystemToFhir,
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
   PARTICIPATION_CODE_SYSTEM,
+  PROCEDURE_STATUS_MAPPER,
   TELECOM_USE_MAPPER,
   US_CORE_CONDITION_URL,
   US_CORE_ETHNICITY_URL,
@@ -438,7 +441,6 @@ class CcdaToFhirConverter {
 
   private processConditionAct(act: CcdaAct): Resource | undefined {
     const observation = act.entryRelationship?.find((rel) => rel['@_typeCode'] === 'SUBJ')?.observation?.[0];
-    // const observation = act.entryRelationship?.find((rel) => !!rel.observation?.[0])?.observation?.[0];
     if (!observation) {
       return undefined;
     }
@@ -592,7 +594,7 @@ class CcdaToFhirConverter {
       medicationReference: medication ? { reference: '#med-' + cdaId } : undefined,
       medicationCodeableConcept,
       subject: createReference(this.patient as Patient),
-      authoredOn: mapCcdaToFhirDateTime(substanceAdmin.author?.[0]?.time?.['@_value'] || ''),
+      authoredOn: mapCcdaToFhirDateTime(substanceAdmin.author?.[0]?.time?.['@_value']),
       dispenseRequest: substanceAdmin.effectiveTime?.[0]
         ? {
             validityPeriod: {
@@ -687,7 +689,11 @@ class CcdaToFhirConverter {
       return;
     }
 
-    reaction.severity = this.mapSeverity(severityObs);
+    const severityCode = (severityObs.value as CcdaCode)?.['@_code'];
+    if (severityCode) {
+      reaction.severity = ALLERGY_SEVERITY_MAPPER.mapCcdaToFhir(severityCode);
+    }
+
     reaction.extension = this.mapTextReference(severityObs.text);
   }
 
@@ -748,19 +754,6 @@ class CcdaToFhirConverter {
       completed: 'resolved',
     };
     return map[status] || 'active';
-  }
-
-  private mapSeverity(reaction: CcdaObservation): AllergyIntoleranceReaction['severity'] {
-    const severityObs = reaction.entryRelationship?.find((rel) => rel['@_typeCode'] === 'SUBJ')?.observation?.[0];
-
-    const severityCode = (severityObs?.value as CcdaCode)?.['@_code'];
-
-    const map: { [key: string]: AllergyIntoleranceReaction['severity'] } = {
-      '255604002': 'mild',
-      '6736007': 'moderate',
-      '24484000': 'severe',
-    };
-    return map[severityCode || ''] || 'moderate';
   }
 
   private mapCode(code: CcdaCode | undefined): CodeableConcept | undefined {
@@ -1208,7 +1201,7 @@ class CcdaToFhirConverter {
       resourceType: 'Encounter',
       id: this.mapId(encounter.id),
       identifier: this.mapIdentifiers(encounter.id),
-      status: this.mapEncounterStatus(encounter.statusCode?.['@_code']),
+      status: ENCOUNTER_STATUS_MAPPER.mapCcdaToFhirWithDefault(encounter.statusCode?.['@_code'], 'unknown'),
       class: {
         system: ACT_CODE_SYSTEM,
         code: encounter.code?.['@_code'] || 'AMB',
@@ -1301,22 +1294,12 @@ class CcdaToFhirConverter {
     return result;
   }
 
-  private mapEncounterStatus(status: string | undefined): Encounter['status'] {
-    const map: Record<string, Encounter['status']> = {
-      active: 'in-progress',
-      completed: 'finished',
-      aborted: 'cancelled',
-      cancelled: 'cancelled',
-    };
-    return map[status || ''] || 'finished';
-  }
-
   private processProcedure(section: CcdaSection, procedure: CcdaProcedure): Procedure {
     const result: Procedure = {
       resourceType: 'Procedure',
       id: this.mapId(procedure.id),
       identifier: this.mapIdentifiers(procedure.id),
-      status: this.mapProcedureStatus(procedure.statusCode?.['@_code']),
+      status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(procedure.statusCode?.['@_code'], 'completed'),
       code: this.mapCode(procedure.code),
       subject: createReference(this.patient as Patient),
       performedDateTime: this.mapEffectiveTimeToDateTime(procedure.effectiveTime?.[0]),
@@ -1326,15 +1309,6 @@ class CcdaToFhirConverter {
     };
 
     return result;
-  }
-
-  private mapProcedureStatus(status: string | undefined): Procedure['status'] {
-    const map: Record<string, Procedure['status']> = {
-      completed: 'completed',
-      aborted: 'stopped',
-      cancelled: 'not-done',
-    };
-    return map[status || ''] || 'completed';
   }
 
   private mapTextReference(text: CcdaText | undefined): Extension[] | undefined {

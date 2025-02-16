@@ -39,15 +39,19 @@ import {
 import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from './datetime';
 import {
   ADDRESS_USE_MAPPER,
+  ALLERGY_SEVERITY_MAPPER,
+  ALLERGY_STATUS_MAPPER,
   CCDA_NARRATIVE_REFERENCE_URL,
   CCDA_TEMPLATE_CODE_SYSTEM,
   CONFIDENTIALITY_MAPPER,
+  GENDER_MAPPER,
   HUMAN_NAME_USE_MAPPER,
   mapCodeableConceptToCcdaCode,
   mapCodeableConceptToCcdaValue,
   mapFhirSystemToCcda,
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
+  PROBLEM_STATUS_MAPPER,
   TELECOM_USE_MAPPER,
   US_CORE_ETHNICITY_URL,
   US_CORE_RACE_URL,
@@ -262,32 +266,17 @@ class FhirToCcdaConverter {
    * @returns The C-CDA gender.
    */
 
-  private mapGender(gender: string | undefined): CcdaCode | undefined {
+  private mapGender(gender: Patient['gender']): CcdaCode | undefined {
     if (!gender) {
       return undefined;
     }
     return {
       '@_xsi:type': 'CE',
-      '@_code': this.mapGenderCode(gender),
+      '@_code': GENDER_MAPPER.mapFhirToCcda(gender),
       '@_displayName': gender ? capitalize(gender) : 'Unknown',
       '@_codeSystem': '2.16.840.1.113883.5.1',
       '@_codeSystemName': 'AdministrativeGender',
     };
-  }
-
-  /**
-   * Map the gender code to the C-CDA gender code.
-   * @param gender - The gender to map.
-   * @returns The C-CDA gender code.
-   */
-  private mapGenderCode(gender: string | undefined): string {
-    const map: { [key: string]: string } = {
-      male: 'M',
-      female: 'F',
-      other: 'UN',
-      unknown: 'UN',
-    };
-    return map[gender || ''] || 'UN';
   }
 
   /**
@@ -390,7 +379,7 @@ class FhirToCcdaConverter {
 
     return [
       {
-        '@_languageCode': communication[0].language?.coding?.[0]?.code || '',
+        '@_languageCode': communication[0].language?.coding?.[0]?.code,
       },
     ];
   }
@@ -467,7 +456,7 @@ class FhirToCcdaConverter {
       return undefined;
     }
 
-    const result = parseXml(text.div || '')?.div;
+    const result = parseXml(text.div)?.div;
 
     if (result?.['@_xmlns']) {
       delete result['@_xmlns'];
@@ -503,7 +492,10 @@ class FhirToCcdaConverter {
             '@_codeSystem': '2.16.840.1.113883.5.6',
           },
           statusCode: {
-            '@_code': this.mapAllergyStatus(allergy.clinicalStatus?.coding?.[0]?.code),
+            '@_code': ALLERGY_STATUS_MAPPER.mapFhirToCcdaWithDefault(
+              allergy.clinicalStatus?.coding?.[0]?.code,
+              'active'
+            ),
           },
           effectiveTime: this.mapEffectiveTime(allergy.recordedDate, undefined),
           author: this.mapAuthor(allergy.recorder, allergy.recordedDate),
@@ -609,7 +601,10 @@ class FhirToCcdaConverter {
                                       },
                                       value: {
                                         '@_xsi:type': 'CD',
-                                        '@_code': this.mapSeverityCode(reaction.severity),
+                                        '@_code': ALLERGY_SEVERITY_MAPPER.mapFhirToCcdaWithDefault(
+                                          reaction.severity,
+                                          'M'
+                                        ),
                                         '@_displayName': reaction.severity ? capitalize(reaction.severity) : undefined,
                                         '@_codeSystem': '2.16.840.1.113883.6.96',
                                         '@_codeSystemName': 'SNOMED CT',
@@ -631,20 +626,6 @@ class FhirToCcdaConverter {
         },
       ],
     };
-  }
-
-  /**
-   * Map the FHIR allergy status to the C-CDA allergy status.
-   * @param status - The status to map.
-   * @returns The C-CDA allergy status.
-   */
-  private mapAllergyStatus(status: string | undefined): string {
-    const map: { [key: string]: string } = {
-      active: 'active',
-      inactive: 'suspended',
-      resolved: 'completed',
-    };
-    return map[status || ''] || 'active';
   }
 
   /**
@@ -749,25 +730,10 @@ class FhirToCcdaConverter {
   }
 
   /**
-   * Map the FHIR severity code to the C-CDA severity code.
-   * @param severity - The severity to map.
-   * @returns The C-CDA severity code.
-   */
-  private mapSeverityCode(severity: string | undefined): string {
-    const map: { [key: string]: string } = {
-      mild: '255604002',
-      moderate: '6736007',
-      severe: '24484000',
-    };
-    return map[severity || ''] || '6736007';
-  }
-
-  /**
    * Create the C-CDA medication entry for the FHIR medication.
    * @param med - The FHIR medication to create the C-CDA medication entry for.
    * @returns The C-CDA medication entry.
    */
-
   private createMedicationEntry(med: MedicationRequest): CcdaEntry {
     // Get medication details either from contained resource or inline concept
     const medication = med.contained?.find((r) => r.resourceType === 'Medication') as Medication | undefined;
@@ -812,7 +778,7 @@ class FhirToCcdaConverter {
                   ? [
                       {
                         id: this.mapIdentifiers(manufacturer.id, [manufacturer.identifier]),
-                        name: [manufacturer.display || ''],
+                        name: [manufacturer.display as string],
                       },
                     ]
                   : undefined,
@@ -878,8 +844,8 @@ class FhirToCcdaConverter {
 
     return {
       '@_xsi:type': 'PQ',
-      '@_value': doseAndRate.doseQuantity.value?.toString() || '',
-      '@_unit': doseAndRate.doseQuantity.unit || '',
+      '@_value': doseAndRate.doseQuantity.value?.toString(),
+      '@_unit': doseAndRate.doseQuantity.unit,
     };
   }
 
@@ -894,7 +860,7 @@ class FhirToCcdaConverter {
     }
     return contactPoints?.map((cp) => ({
       '@_use': cp.use ? TELECOM_USE_MAPPER.mapFhirToCcda(cp.use as 'home' | 'work') : undefined,
-      '@_value': `${this.mapTelecomSystem(cp.system)}:${cp.value}`,
+      '@_value': `${this.mapTelecomSystemToPrefix(cp.system)}${cp.value}`,
     }));
   }
 
@@ -903,13 +869,17 @@ class FhirToCcdaConverter {
    * @param system - The system to map.
    * @returns The C-CDA telecom system.
    */
-  private mapTelecomSystem(system: string | undefined): string {
-    const map: { [key: string]: string } = {
-      phone: 'tel',
-      email: 'mailto',
-      fax: 'fax',
-    };
-    return map[system || ''] || system || '';
+  private mapTelecomSystemToPrefix(system: string | undefined): string {
+    if (system === 'email') {
+      return 'mailto:';
+    }
+    if (system === 'phone') {
+      return 'tel:';
+    }
+    if (system === 'fax') {
+      return 'fax:';
+    }
+    return '';
   }
 
   /**
@@ -935,7 +905,7 @@ class FhirToCcdaConverter {
         if (id) {
           result.push({
             '@_root': mapFhirSystemToCcda(id.system),
-            '@_extension': id.value || '',
+            '@_extension': id.value,
           });
         }
       }
@@ -980,7 +950,13 @@ class FhirToCcdaConverter {
             '@_code': 'CONC',
             '@_codeSystem': '2.16.840.1.113883.5.6',
           },
-          statusCode: { '@_code': this.mapStatus(problem.clinicalStatus?.coding?.[0]?.code) },
+          // statusCode: { '@_code': this.mapStatus(problem.clinicalStatus?.coding?.[0]?.code) },
+          statusCode: {
+            '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(
+              problem.clinicalStatus?.coding?.[0]?.code,
+              'active'
+            ),
+          },
           effectiveTime: this.mapEffectiveTime(problem.recordedDate, undefined),
           entryRelationship: [
             {
@@ -1021,18 +997,6 @@ class FhirToCcdaConverter {
     };
   }
 
-  private mapStatus(status: string | undefined): string {
-    const map: { [key: string]: string } = {
-      active: 'active',
-      suspended: 'suspended',
-      aborted: 'aborted',
-      completed: 'completed',
-      inactive: 'suspended',
-      resolved: 'completed',
-    };
-    return map[status || ''] || 'active';
-  }
-
   private createImmunizationEntry(immunization: Immunization): CcdaEntry {
     const manufacturer = immunization?.manufacturer;
     const result = {
@@ -1067,7 +1031,7 @@ class FhirToCcdaConverter {
                   ? [
                       {
                         id: this.mapIdentifiers(manufacturer.id, [manufacturer.identifier]),
-                        name: [manufacturer.display || ''],
+                        name: [manufacturer.display as string],
                       },
                     ]
                   : undefined,

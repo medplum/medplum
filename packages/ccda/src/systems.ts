@@ -69,11 +69,17 @@ export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
     return { coding: [{ system: this.fhirSystemUrl, code: entry.fhirValue, display: entry.displayName }] };
   }
 
-  mapFhirToCcda(fhir: TFhirValue): TCcdaValue | undefined {
+  mapFhirToCcda(fhir: TFhirValue | undefined): TCcdaValue | undefined {
+    if (!fhir) {
+      return undefined;
+    }
     return this.fhirToCcdaMap[fhir]?.ccdaValue;
   }
 
-  mapFhirToCcdaCode(fhir: TFhirValue): CcdaCode | undefined {
+  mapFhirToCcdaCode(fhir: TFhirValue | undefined): CcdaCode | undefined {
+    if (!fhir) {
+      return undefined;
+    }
     const entry = this.fhirToCcdaMap[fhir];
     if (!entry) {
       return undefined;
@@ -320,6 +326,7 @@ export const GENDER_MAPPER = new EnumMapper('Gender', '', ADMINISTRATIVE_GENDER_
   { ccdaValue: 'F', fhirValue: 'female', displayName: 'Female' },
   { ccdaValue: 'M', fhirValue: 'male', displayName: 'Male' },
   { ccdaValue: 'UN', fhirValue: 'unknown', displayName: 'Unknown' },
+  { ccdaValue: 'UN', fhirValue: 'other', displayName: 'Other' },
 ]);
 
 export const ADDRESS_USE_MAPPER = new EnumMapper('AddressUse', '', ADDRESS_USE_VALUE_SET, [
@@ -330,6 +337,63 @@ export const ADDRESS_USE_MAPPER = new EnumMapper('AddressUse', '', ADDRESS_USE_V
 export const TELECOM_USE_MAPPER = new EnumMapper('TelecomUse', '', CONTACT_ENTITY_USE_VALUE_SET, [
   { ccdaValue: 'WP', fhirValue: 'work', displayName: 'Work' },
   { ccdaValue: 'HP', fhirValue: 'home', displayName: 'Home' },
+]);
+
+export const ALLERGY_STATUS_MAPPER = new EnumMapper<string, string>(
+  'AllergyStatus',
+  '',
+  ALLERGY_VERIFICATION_CODE_SYSTEM,
+  [
+    { ccdaValue: 'unconfirmed', fhirValue: 'unconfirmed', displayName: 'Unconfirmed' },
+    { ccdaValue: 'provisional', fhirValue: 'provisional', displayName: 'Provisional' },
+    { ccdaValue: 'differential', fhirValue: 'differential', displayName: 'Differential' },
+    { ccdaValue: 'confirmed', fhirValue: 'confirmed', displayName: 'Confirmed' },
+    { ccdaValue: 'refuted', fhirValue: 'refuted', displayName: 'Refuted' },
+    { ccdaValue: 'entered-in-error', fhirValue: 'entered-in-error', displayName: 'Entered in Error' },
+    { ccdaValue: 'unknown', fhirValue: 'unknown', displayName: 'Unknown' },
+  ]
+);
+
+export const ALLERGY_SEVERITY_MAPPER = new EnumMapper<'mild' | 'moderate' | 'severe', string>(
+  'AllergySeverity',
+  SNOMED,
+  ALLERGY_CLINICAL_CODE_SYSTEM,
+  [
+    { ccdaValue: '255604002', fhirValue: 'mild', displayName: 'Mild' },
+    { ccdaValue: '6736007', fhirValue: 'moderate', displayName: 'Moderate' },
+    { ccdaValue: '24484000', fhirValue: 'severe', displayName: 'Severe' },
+  ]
+);
+
+export const PROBLEM_STATUS_MAPPER = new EnumMapper<string, string>(
+  'ProblemStatus',
+  '',
+  CONDITION_VER_STATUS_CODE_SYSTEM,
+  [
+    { ccdaValue: 'active', fhirValue: 'active', displayName: 'Active' },
+    { ccdaValue: 'inactive', fhirValue: 'inactive', displayName: 'Inactive' },
+    { ccdaValue: 'resolved', fhirValue: 'inactive', displayName: 'Resolved' },
+    { ccdaValue: 'remission', fhirValue: 'inactive', displayName: 'In Remission' },
+    { ccdaValue: 'relapse', fhirValue: 'active', displayName: 'Relapse' },
+    { ccdaValue: 'resolved relapse', fhirValue: 'inactive', displayName: 'Resolved Relapse' },
+    { ccdaValue: 'aborted', fhirValue: 'aborted', displayName: 'Aborted' },
+  ]
+);
+
+export const ENCOUNTER_STATUS_MAPPER = new EnumMapper('EncounterStatus', '', '', [
+  { ccdaValue: 'active', fhirValue: 'in-progress', displayName: 'In Progress' },
+  { ccdaValue: 'completed', fhirValue: 'finished', displayName: 'Finished' },
+  { ccdaValue: 'aborted', fhirValue: 'cancelled', displayName: 'Cancelled' },
+  { ccdaValue: 'cancelled', fhirValue: 'cancelled', displayName: 'Cancelled' },
+  { ccdaValue: 'unknown', fhirValue: 'unknown', displayName: 'Unknown' },
+]);
+
+export const PROCEDURE_STATUS_MAPPER = new EnumMapper('ProcedureStatus', '', '', [
+  { ccdaValue: 'completed', fhirValue: 'completed', displayName: 'Completed' },
+  { ccdaValue: 'aborted', fhirValue: 'stopped', displayName: 'Stopped' },
+  { ccdaValue: 'cancelled', fhirValue: 'not-done', displayName: 'Not Done' },
+  { ccdaValue: 'new', fhirValue: 'not-done', displayName: 'Draft' },
+  { ccdaValue: 'unknown', fhirValue: 'unknown', displayName: 'Unknown' },
 ]);
 
 export const MEDICATION_STATUS_MAPPER = new EnumMapper<

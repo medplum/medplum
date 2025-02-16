@@ -77,9 +77,9 @@ export function mapFhirToCcdaDateTime(dateTime: string | undefined): string | un
 
   const [date, time] = dateTime.split('T');
 
-  const outDate = (date || '').replaceAll('-', ''); // Remove dashes
+  const outDate = date.replaceAll('-', ''); // Remove dashes
 
-  const outTime = (time || '')
+  const outTime = (time ?? '')
     .replaceAll(/\.\d+/g, '') // Remove decimal point seconds
     .replaceAll(/[:]/g, '') // Remove colons
     .replaceAll(/Z/g, '+0000'); // Replace Z with +0000

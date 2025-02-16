@@ -128,7 +128,7 @@ export interface CcdaEncounter {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code?: CcdaCode;
-  statusCode?: CcdaStatusCode;
+  statusCode?: CcdaStatusCode<'active' | 'completed' | 'aborted' | 'cancelled' | 'unknown'>;
   effectiveTime?: CcdaEffectiveTime[];
   performer?: CcdaPerformer[];
   participant?: CcdaParticipant[];
@@ -142,7 +142,7 @@ export interface CcdaProcedure {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code: CcdaCode;
-  statusCode: CcdaStatusCode;
+  statusCode: CcdaStatusCode<'completed' | 'aborted' | 'cancelled' | 'new' | 'unknown'>;
   effectiveTime?: CcdaEffectiveTime[];
   methodCode?: CcdaCode;
   targetSiteCode?: CcdaCode;
@@ -327,7 +327,7 @@ export interface CcdaManufacturedLabeledDrug {
 }
 
 export interface CcdaLanguageCommunication {
-  '@_languageCode': string;
+  '@_languageCode'?: string;
 }
 
 export interface CcdaPerformer {
