@@ -1,7 +1,7 @@
 import express from 'express';
 import { ClientApplication } from '@medplum/fhirtypes';
 import { initApp, initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { createTestClient } from '../test.setup';
 import request from 'supertest';
 

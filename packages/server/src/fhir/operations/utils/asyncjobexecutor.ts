@@ -2,7 +2,7 @@ import { OperationOutcomeError, accepted } from '@medplum/core';
 import { AsyncJob, Parameters } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { getConfig } from '../../../config';
+import { getConfig } from '../../../config/loader';
 import { getAuthenticatedContext } from '../../../context';
 import { sendOutcome } from '../../outcomes';
 import { Repository, getSystemRepo } from '../../repo';

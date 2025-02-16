@@ -2,7 +2,7 @@ import { Logger, ProfileResource, isUUID, parseLogLevel } from '@medplum/core';
 import { Bot, ClientApplication, Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
-import { getConfig } from './config';
+import { getConfig } from './config/loader';
 import { getRepoForLogin } from './fhir/accesspolicy';
 import { Repository, getSystemRepo } from './fhir/repo';
 import { AuthState, authenticateTokenImpl, isExtendedMode } from './oauth/middleware';

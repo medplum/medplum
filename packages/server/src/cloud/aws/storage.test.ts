@@ -6,7 +6,7 @@ import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { Request } from 'express';
 import internal, { Readable } from 'stream';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage, initBinaryStorage } from '../../fhir/storage';
 
 describe('Storage', () => {

@@ -3,7 +3,7 @@ import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { URL } from 'url';
 import { asyncWrap } from '../async';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
 import { MedplumIdTokenClaims, verifyJwt } from './keys';

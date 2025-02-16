@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { getConfig, loadConfig } from './config';
+import { getConfig, loadConfig } from './loader';
 
 describe('Config', () => {
   test('Unrecognized config', async () => {

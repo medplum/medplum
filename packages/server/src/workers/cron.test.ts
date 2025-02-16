@@ -3,7 +3,7 @@ import { AuditEvent, Bot, Project, ProjectMembership } from '@medplum/fhirtypes'
 import { Job } from 'bullmq';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { Repository, getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { CronJobData, convertTimingToCron, execBot, getCronQueue } from './cron';

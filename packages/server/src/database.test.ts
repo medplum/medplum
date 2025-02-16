@@ -3,7 +3,8 @@ import { EventEmitter } from 'node:events';
 import { Duplex } from 'node:stream';
 import pg, { Pool, PoolClient, PoolConfig, QueryArrayResult, QueryConfig, QueryResult, QueryResultRow } from 'pg';
 import { Readable, Writable } from 'stream';
-import { loadConfig, loadTestConfig, MedplumDatabaseConfig, MedplumDatabaseSslConfig } from './config';
+import { loadConfig, loadTestConfig } from './config/loader';
+import { MedplumDatabaseConfig, MedplumDatabaseSslConfig } from './config/types';
 import {
   acquireAdvisoryLock,
   closeDatabase,

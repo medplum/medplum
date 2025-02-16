@@ -5,7 +5,8 @@ import { once } from 'node:events';
 import { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig, MedplumServerConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { globalLogger } from '../logger';
 import { initTestAuth, withTestContext } from '../test.setup';
 

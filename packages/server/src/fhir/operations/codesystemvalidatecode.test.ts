@@ -1,6 +1,6 @@
 import { CodeSystem, OperationOutcome, Parameters } from '@medplum/fhirtypes';
 import express from 'express';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initApp, shutdownApp } from '../../app';
 import { initTestAuth } from '../../test.setup';
 import request from 'supertest';

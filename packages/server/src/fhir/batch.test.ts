@@ -1,6 +1,6 @@
 import express from 'express';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { initTestAuth, waitForAsyncJob } from '../test.setup';
 import request from 'supertest';
 import { ContentType, createReference, getReferenceString } from '@medplum/core';

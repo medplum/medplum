@@ -1,5 +1,5 @@
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
-import { MedplumServerConfig } from '../../config';
+import { MedplumServerConfig } from '../../config/types';
 import { loadGcpConfig } from './config';
 
 jest.mock('@google-cloud/secret-manager');

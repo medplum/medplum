@@ -9,7 +9,7 @@ import type {
   SchemaObject,
   TagObject,
 } from 'openapi3-ts/oas31';
-import { getConfig } from './config';
+import { getConfig } from './config/loader';
 import { getJsonSchemaDefinitions } from './fhir/jsonschema';
 
 type OpenAPIObjectWithPaths = OpenAPIObject & { paths: PathsObject };

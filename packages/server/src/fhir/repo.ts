@@ -67,7 +67,7 @@ import { Pool, PoolClient } from 'pg';
 import { Operation } from 'rfc6902';
 import { v7 } from 'uuid';
 import validator from 'validator';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { r4ProjectId } from '../constants';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { getLogger } from '../logger';

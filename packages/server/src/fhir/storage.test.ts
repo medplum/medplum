@@ -3,7 +3,7 @@ import { Binary } from '@medplum/fhirtypes';
 import { Request } from 'express';
 import fs from 'fs';
 import { Readable } from 'stream';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { streamToString } from '../test.setup';
 import { getBinaryStorage, initBinaryStorage } from './storage';
 
