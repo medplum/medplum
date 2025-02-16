@@ -25,13 +25,14 @@ export function mapCcdaToFhirDate(date: string | undefined): string | undefined 
     return undefined;
   }
 
-  const matches = date.match(/(\d{4})(\d{2})?(\d{2})?/);
+  // Use the "RegExp.exec()" method instead.
+  const matches = /(\d{4})(\d{2})?(\d{2})?/.exec(date);
   if (!matches) {
     return undefined;
   }
 
   const [_, year, month, day] = matches;
-  return `${year}-${month || '01'}-${day || '01'}`;
+  return `${year}-${month ?? '01'}-${day ?? '01'}`;
 }
 
 /**
@@ -44,13 +45,13 @@ export function mapCcdaToFhirDateTime(dateTime: string | undefined): string | un
     return undefined;
   }
 
-  const matches = dateTime.match(/(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?([-+]\d{2}:?\d{2})?/);
+  const matches = /(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?([-+]\d{2}:?\d{2}|Z)?/.exec(dateTime);
   if (!matches) {
     return undefined;
   }
 
   const [_, year, month, day, hour, minute, second, tz] = matches;
-  return `${year}-${month || '01'}-${day || '01'}T${hour || '00'}:${minute || '00'}:${second || '00'}${tz ? tz : 'Z'}`;
+  return `${year}-${month ?? '01'}-${day ?? '01'}T${hour ?? '00'}:${minute ?? '00'}:${second ?? '00'}${tz ?? 'Z'}`;
 }
 
 /**
@@ -81,7 +82,7 @@ export function mapFhirToCcdaDateTime(dateTime: string | undefined): string | un
 
   const outTime = (time ?? '')
     .replaceAll(/\.\d+/g, '') // Remove decimal point seconds
-    .replaceAll(/[:]/g, '') // Remove colons
+    .replaceAll(/:/g, '') // Remove colons
     .replaceAll(/Z/g, '+0000'); // Replace Z with +0000
 
   return `${outDate}${outTime}`;

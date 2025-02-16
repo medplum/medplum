@@ -21,7 +21,6 @@ import {
   Identifier,
   Immunization,
   ImmunizationPerformer,
-  Medication,
   MedicationRequest,
   Narrative,
   Observation,
@@ -30,7 +29,6 @@ import {
   Patient,
   Period,
   Practitioner,
-  PractitionerRole,
   Procedure,
   Reference,
   Resource,
@@ -662,8 +660,8 @@ class FhirToCcdaConverter {
       return undefined;
     }
 
-    const practitioner = this.findResourceByReference(author) as Practitioner | undefined;
-    if (!practitioner) {
+    const practitioner = this.findResourceByReference(author);
+    if (practitioner?.resourceType !== 'Practitioner') {
       return undefined;
     }
 
@@ -693,7 +691,7 @@ class FhirToCcdaConverter {
       return undefined;
     }
 
-    const organization = this.findResourceByReference(custodian) as Organization | undefined;
+    const organization = this.findResourceByReference(custodian);
     if (!organization) {
       return undefined;
     }
@@ -736,7 +734,7 @@ class FhirToCcdaConverter {
    */
   private createMedicationEntry(med: MedicationRequest): CcdaEntry {
     // Get medication details either from contained resource or inline concept
-    const medication = med.contained?.find((r) => r.resourceType === 'Medication') as Medication | undefined;
+    const medication = med.contained?.find((r) => r.resourceType === 'Medication');
     const medicationCode = medication?.code || med.medicationCodeableConcept;
     const manufacturer = medication?.manufacturer;
 
@@ -1063,11 +1061,7 @@ class FhirToCcdaConverter {
       return undefined;
     }
 
-    const resource = this.findResourceByReference(performer.actor) as
-      | PractitionerRole
-      | Practitioner
-      | Organization
-      | undefined;
+    const resource = this.findResourceByReference(performer.actor);
     if (!resource) {
       return undefined;
     }

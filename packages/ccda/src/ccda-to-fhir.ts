@@ -23,7 +23,6 @@ import {
   Immunization,
   ImmunizationPerformer,
   Medication,
-  MedicationRequest,
   Observation,
   ObservationReferenceRange,
   Organization,
@@ -302,7 +301,7 @@ class CcdaToFhirConverter {
       custodian: this.mapCustodianToReference(this.ccda.custodian),
       event: this.mapDocumentationOfToEvent(this.ccda.documentationOf),
       date: mapCcdaToFhirDateTime(this.ccda.effectiveTime?.[0]?.['@_value']) ?? new Date().toISOString(),
-      title: this.ccda.title || 'Medical Summary',
+      title: this.ccda.title ?? 'Medical Summary',
       section: sections,
     };
   }
@@ -320,46 +319,34 @@ class CcdaToFhirConverter {
   }
 
   private processEntry(section: CcdaSection, entry: CcdaEntry, resources: Resource[]): void {
-    if (entry.act) {
-      for (const act of entry.act) {
-        const resource = this.processAct(section, act);
-        if (resource) {
-          resources.push(resource);
-        }
+    for (const act of entry.act ?? []) {
+      const resource = this.processAct(section, act);
+      if (resource) {
+        resources.push(resource);
       }
     }
 
-    if (entry.substanceAdministration) {
-      for (const substanceAdmin of entry.substanceAdministration) {
-        const resource = this.processSubstanceAdministration(section, substanceAdmin);
-        if (resource) {
-          resources.push(resource);
-        }
+    for (const substanceAdmin of entry.substanceAdministration ?? []) {
+      const resource = this.processSubstanceAdministration(section, substanceAdmin);
+      if (resource) {
+        resources.push(resource);
       }
     }
 
-    if (entry.organizer) {
-      for (const organizer of entry.organizer) {
-        resources.push(this.processOrganizer(section, organizer));
-      }
+    for (const organizer of entry.organizer ?? []) {
+      resources.push(this.processOrganizer(section, organizer));
     }
 
-    if (entry.observation) {
-      for (const observation of entry.observation) {
-        resources.push(this.processObservation(section, observation));
-      }
+    for (const observation of entry.observation ?? []) {
+      resources.push(this.processObservation(section, observation));
     }
 
-    if (entry.encounter) {
-      for (const encounter of entry.encounter) {
-        resources.push(this.processEncounter(section, encounter));
-      }
+    for (const encounter of entry.encounter ?? []) {
+      resources.push(this.processEncounter(section, encounter));
     }
 
-    if (entry.procedure) {
-      for (const procedure of entry.procedure) {
-        resources.push(this.processProcedure(section, procedure));
-      }
+    for (const procedure of entry.procedure ?? []) {
+      resources.push(this.processProcedure(section, procedure));
     }
   }
 
@@ -373,7 +360,6 @@ class CcdaToFhirConverter {
       case '2.16.840.1.113883.10.20.22.2.10': // Care Plan
         return this.processCarePlanAct(act);
       case '2.16.840.1.113883.10.20.22.2.58': // Health Concerns
-        // return this.processHealthConcernsAct(act);
         return this.processConditionAct(act);
       case '2.16.840.1.113883.10.20.22.2.7.1': // Procedures
         return this.processProcedureAct(act);
@@ -384,7 +370,7 @@ class CcdaToFhirConverter {
         // This is part of USCDI v3, which is optional, and not yet implemented
         return undefined;
       case '2.16.840.1.113883.10.20.22.2.18': // Immunizations
-        // return this.processImmunizationAct(act);
+        // This is part of USCDI v3, which is optional, and not yet implemented
         return undefined;
       default:
         throw new Error('Unhandled act templateId: ' + templateId);
@@ -586,10 +572,7 @@ class CcdaToFhirConverter {
       meta: {
         profile: [US_CORE_MEDICATION_REQUEST_URL],
       },
-      status: MEDICATION_STATUS_MAPPER.mapCcdaToFhirWithDefault(
-        substanceAdmin.statusCode?.['@_code'],
-        'active'
-      ) as MedicationRequest['status'],
+      status: MEDICATION_STATUS_MAPPER.mapCcdaToFhirWithDefault(substanceAdmin.statusCode?.['@_code'], 'active'),
       intent: 'order',
       medicationReference: medication ? { reference: '#med-' + cdaId } : undefined,
       medicationCodeableConcept,
@@ -753,7 +736,7 @@ class CcdaToFhirConverter {
       aborted: 'inactive',
       completed: 'resolved',
     };
-    return map[status] || 'active';
+    return map[status] ?? 'active';
   }
 
   private mapCode(code: CcdaCode | undefined): CodeableConcept | undefined {
@@ -1082,7 +1065,7 @@ class CcdaToFhirConverter {
       cancelled: 'cancelled',
       aborted: 'cancelled',
     };
-    return map[observation.statusCode['@_code'] || 'active'];
+    return map[observation.statusCode['@_code'] ?? 'active'];
   }
 
   private processVitalsObservation(observation: CcdaObservation): Observation {
@@ -1204,8 +1187,8 @@ class CcdaToFhirConverter {
       status: ENCOUNTER_STATUS_MAPPER.mapCcdaToFhirWithDefault(encounter.statusCode?.['@_code'], 'unknown'),
       class: {
         system: ACT_CODE_SYSTEM,
-        code: encounter.code?.['@_code'] || 'AMB',
-        display: encounter.code?.['@_displayName'] || 'Ambulatory',
+        code: encounter.code?.['@_code'] ?? 'AMB',
+        display: encounter.code?.['@_displayName'] ?? 'Ambulatory',
       },
       type: encounter.code ? [this.mapCode(encounter.code) as CodeableConcept] : undefined,
       subject: createReference(this.patient as Patient),
@@ -1220,7 +1203,7 @@ class CcdaToFhirConverter {
             coding: [
               {
                 system: PARTICIPATION_CODE_SYSTEM,
-                code: performer['@_typeCode'] || 'PPRF',
+                code: performer['@_typeCode'] ?? 'PPRF',
                 display: 'Primary Performer',
               },
             ],

@@ -51,14 +51,14 @@ export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
     if (!ccda) {
       return defaultValue;
     }
-    return this.mapCcdaToFhir(ccda) || defaultValue;
+    return this.mapCcdaToFhir(ccda) ?? defaultValue;
   }
 
   mapFhirToCcdaWithDefault(fhir: TFhirValue | undefined, defaultValue: TCcdaValue): TCcdaValue {
     if (!fhir) {
       return defaultValue;
     }
-    return this.mapFhirToCcda(fhir) || defaultValue;
+    return this.mapFhirToCcda(fhir) ?? defaultValue;
   }
 
   mapCcdaToFhirCodeableConcept(ccda: TCcdaValue): CodeableConcept | undefined {
@@ -240,7 +240,7 @@ export function mapCcdaSystemToFhir(ccda: string | undefined): string | undefine
   if (!ccda) {
     return undefined;
   }
-  return SYSTEM_MAPPER.mapCcdaToFhir(ccda) || `urn:oid:${ccda}`;
+  return SYSTEM_MAPPER.mapCcdaToFhir(ccda) ?? `urn:oid:${ccda}`;
 }
 
 /**
