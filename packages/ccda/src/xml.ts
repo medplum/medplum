@@ -1,4 +1,5 @@
 import { XMLBuilder, XMLParser } from 'fast-xml-parser';
+import { XSI_URL } from './systems';
 import { Ccda } from './types';
 
 const ARRAY_PATHS = [
@@ -103,7 +104,7 @@ export function convertCcdaToXml(ccda: Ccda): string {
     '?xml-stylesheet': { '@_type': 'text/xsl', '@_href': 'CDA.xsl' },
     ClinicalDocument: {
       '@_xmlns': 'urn:hl7-org:v3',
-      '@_xmlns:xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+      '@_xmlns:xsi': XSI_URL,
       '@_xmlns:voc': 'urn:hl7-org:v3/voc',
       '@_xmlns:sdtc': 'urn:hl7-org:sdtc',
       ...ccda,

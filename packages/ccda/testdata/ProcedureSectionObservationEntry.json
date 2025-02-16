@@ -130,7 +130,7 @@
         "effectiveDateTime": "2014-03-29T09:15:22-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#Procedure2"
           }
         ]

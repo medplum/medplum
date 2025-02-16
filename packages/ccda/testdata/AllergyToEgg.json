@@ -174,7 +174,7 @@
         "onsetDateTime": "1998-01-01T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#allergy5"
           }
         ],
@@ -189,7 +189,7 @@
           "text": "Eggs (edible)",
           "extension": [
             {
-              "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+              "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
               "valueString": "#allergy5allergen"
             }
           ]
@@ -209,7 +209,7 @@
                 "text": "Wheal",
                 "extension": [
                   {
-                    "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                    "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                     "valueString": "#allergy5reaction"
                   }
                 ]
@@ -218,7 +218,7 @@
             "severity": "moderate",
             "extension": [
               {
-                "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                 "valueString": "#allergy5reactionseverity"
               }
             ]

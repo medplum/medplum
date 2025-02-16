@@ -89,7 +89,7 @@
             },
             "extension": [
               {
-                "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                 "valueString": "#MedicationName_6"
               }
             ],
@@ -120,7 +120,7 @@
             "text": "#Medication_6",
             "extension": [
               {
-                "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                 "valueString": "#Medication_6"
               }
             ],

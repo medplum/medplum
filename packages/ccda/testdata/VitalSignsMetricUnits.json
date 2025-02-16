@@ -126,7 +126,7 @@
         "effectiveDateTime": "2014-05-20T19:36:05-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#SystolicBP_1"
           }
         ]
@@ -188,7 +188,7 @@
         "effectiveDateTime": "2014-05-20T19:36:05-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#DiastolicBP_1"
           }
         ]
@@ -250,7 +250,7 @@
         "effectiveDateTime": "2014-05-20T19:36:05-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#Pulse_1"
           }
         ]
@@ -312,7 +312,7 @@
         "effectiveDateTime": "2014-05-20T19:36:05-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#Temp_1"
           }
         ]
@@ -374,7 +374,7 @@
         "effectiveDateTime": "2014-05-20T19:36:05-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#RespRate_1"
           }
         ]
@@ -436,7 +436,7 @@
         "effectiveDateTime": "2014-05-20T19:36:05-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#Height_1"
           }
         ]
@@ -498,7 +498,7 @@
         "effectiveDateTime": "2014-05-20T19:36:05-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#Weight_1"
           }
         ]
@@ -560,7 +560,7 @@
         "effectiveDateTime": "2014-05-20T19:36:05-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#BMI_1"
           }
         ]
@@ -622,7 +622,7 @@
         "effectiveDateTime": "2014-05-20T19:36:05-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#SPO2_1"
           }
         ]

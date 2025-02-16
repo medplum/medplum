@@ -39,6 +39,8 @@ import {
 import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from './datetime';
 import {
   ADDRESS_USE_MAPPER,
+  CCDA_NARRATIVE_REFERENCE_URL,
+  CCDA_TEMPLATE_CODE_SYSTEM,
   CONFIDENTIALITY_MAPPER,
   HUMAN_NAME_USE_MAPPER,
   mapCodeableConceptToCcdaCode,
@@ -47,6 +49,8 @@ import {
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
   TELECOM_USE_MAPPER,
+  US_CORE_ETHNICITY_URL,
+  US_CORE_RACE_URL,
 } from './systems';
 import { CCDA_TEMPLATE_IDS, LOINC_TO_TEMPLATE_IDS } from './templates';
 import {
@@ -334,7 +338,7 @@ class FhirToCcdaConverter {
    * @returns The C-CDA race.
    */
   private mapRace(extensions: Extension[] | undefined): CcdaCode[] | undefined {
-    const raceExt = extensions?.find((e) => e.url === 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race');
+    const raceExt = extensions?.find((e) => e.url === US_CORE_RACE_URL);
     const ombCategory = raceExt?.extension?.find((e) => e.url === 'ombCategory')?.valueCoding;
 
     if (!ombCategory) {
@@ -357,9 +361,7 @@ class FhirToCcdaConverter {
    * @returns The C-CDA ethnicity.
    */
   private mapEthnicity(extensions: Extension[] | undefined): CcdaCode[] | undefined {
-    const ethnicityExt = extensions?.find(
-      (e) => e.url === 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity'
-    );
+    const ethnicityExt = extensions?.find((e) => e.url === US_CORE_ETHNICITY_URL);
     const ombCategory = ethnicityExt?.extension?.find((e) => e.url === 'ombCategory')?.valueCoding;
 
     if (!ombCategory) {
@@ -948,9 +950,7 @@ class FhirToCcdaConverter {
    * @returns The C-CDA narrative reference.
    */
   private getNarrativeReference(extensions: Extension[] | undefined): CcdaReference | undefined {
-    const ref = extensions?.find(
-      (e) => e.url === 'http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference'
-    )?.valueString;
+    const ref = extensions?.find((e) => e.url === CCDA_NARRATIVE_REFERENCE_URL)?.valueString;
 
     return ref ? { '@_value': ref } : undefined;
   }
@@ -1276,8 +1276,8 @@ class FhirToCcdaConverter {
     // If the Observation.category includes at least one entry with system "http://hl7.org/cda/template",
     // then use those template IDs directly.
     const templateIds = observation.category
-      ?.filter((c) => c.coding?.some((coding) => coding.system === 'http://hl7.org/cda/template'))
-      .map((c) => c.coding?.find((coding) => coding.system === 'http://hl7.org/cda/template'))
+      ?.filter((c) => c.coding?.some((coding) => coding.system === CCDA_TEMPLATE_CODE_SYSTEM))
+      .map((c) => c.coding?.find((coding) => coding.system === CCDA_TEMPLATE_CODE_SYSTEM))
       .filter((c) => c?.code) as (Coding & { code: string })[];
 
     if (templateIds && templateIds.length > 0) {

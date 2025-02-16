@@ -1,4 +1,4 @@
-import { createReference, generateId } from '@medplum/core';
+import { createReference, generateId, RXNORM, SNOMED, UCUM } from '@medplum/core';
 import {
   AllergyIntolerance,
   Bundle,
@@ -9,6 +9,17 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { convertFhirToCcda } from './fhir-to-ccda';
+import {
+  ALLERGY_CLINICAL_CODE_SYSTEM,
+  CLINICAL_CONDITION_CODE_SYSTEM,
+  LANGUAGE_MODE_CODE_SYSTEM,
+  LANGUAGE_MODE_URL,
+  LANGUAGE_PROFICIENCY_CODE_SYSTEM,
+  LANGUAGE_PROFICIENCY_URL,
+  RACE_CODE_SYSTEM,
+  US_CORE_ETHNICITY_URL,
+  US_CORE_RACE_URL,
+} from './systems';
 import { CcdaCode, CcdaQuantity } from './types';
 
 describe('170.315(g)(9)', () => {
@@ -78,12 +89,12 @@ describe('170.315(g)(9)', () => {
         resourceType: 'Patient',
         extension: [
           {
-            url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
+            url: US_CORE_RACE_URL,
             extension: [
               {
                 url: 'ombCategory',
                 valueCoding: {
-                  system: 'http://terminology.hl7.org/CodeSystem/v3-Race',
+                  system: RACE_CODE_SYSTEM,
                   code: '2106-3',
                   display: 'White',
                 },
@@ -91,12 +102,12 @@ describe('170.315(g)(9)', () => {
             ],
           },
           {
-            url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
+            url: US_CORE_ETHNICITY_URL,
             extension: [
               {
                 url: 'ombCategory',
                 valueCoding: {
-                  system: 'http://terminology.hl7.org/CodeSystem/v3-Race',
+                  system: RACE_CODE_SYSTEM,
                   code: '2186-5',
                   display: 'Not Hispanic or Latino',
                 },
@@ -149,11 +160,11 @@ describe('170.315(g)(9)', () => {
             preferred: true,
             extension: [
               {
-                url: 'http://hl7.org/fhir/StructureDefinition/language-mode',
+                url: LANGUAGE_MODE_URL,
                 valueCodeableConcept: {
                   coding: [
                     {
-                      system: 'http://terminology.hl7.org/CodeSystem/v3-LanguageAbilityMode',
+                      system: LANGUAGE_MODE_CODE_SYSTEM,
                       code: 'ESP',
                       display: 'Expressed spoken',
                     },
@@ -161,11 +172,11 @@ describe('170.315(g)(9)', () => {
                 },
               },
               {
-                url: 'http://hl7.org/fhir/StructureDefinition/language-proficiency',
+                url: LANGUAGE_PROFICIENCY_URL,
                 valueCodeableConcept: {
                   coding: [
                     {
-                      system: 'http://terminology.hl7.org/CodeSystem/v3-LanguageAbilityProficiency',
+                      system: LANGUAGE_PROFICIENCY_CODE_SYSTEM,
                       code: 'E',
                       display: 'Excellent',
                     },
@@ -231,7 +242,7 @@ describe('170.315(g)(9)', () => {
         clinicalStatus: {
           coding: [
             {
-              system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+              system: ALLERGY_CLINICAL_CODE_SYSTEM,
               code: 'active',
             },
           ],
@@ -282,7 +293,7 @@ describe('170.315(g)(9)', () => {
         medicationCodeableConcept: {
           coding: [
             {
-              system: 'http://www.nlm.nih.gov/research/umls/rxnorm',
+              system: RXNORM,
               code: '1049221',
               display: 'Insulin Glargine 100 UNT/ML Injectable Solution',
             },
@@ -303,9 +314,9 @@ describe('170.315(g)(9)', () => {
             doseAndRate: [
               {
                 doseQuantity: {
+                  system: UCUM,
                   value: 40,
                   unit: '[IU]',
-                  system: 'http://unitsofmeasure.org',
                   code: '[IU]',
                 },
               },
@@ -313,7 +324,7 @@ describe('170.315(g)(9)', () => {
             route: {
               coding: [
                 {
-                  system: 'http://snomed.info/sct',
+                  system: SNOMED,
                   code: '34206005',
                   display: 'Subcutaneous route',
                 },
@@ -362,7 +373,7 @@ describe('170.315(g)(9)', () => {
           clinicalStatus: {
             coding: [
               {
-                system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                system: CLINICAL_CONDITION_CODE_SYSTEM,
                 code: 'active',
               },
             ],
@@ -372,7 +383,7 @@ describe('170.315(g)(9)', () => {
           code: {
             coding: [
               {
-                system: 'http://snomed.info/sct',
+                system: SNOMED,
                 code: '385093006',
                 display: 'Community acquired pneumonia',
               },

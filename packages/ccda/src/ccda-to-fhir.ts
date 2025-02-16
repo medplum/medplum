@@ -1,4 +1,4 @@
-import { createReference, generateId, isUUID } from '@medplum/core';
+import { createReference, generateId, isUUID, LOINC, UCUM } from '@medplum/core';
 import {
   Address,
   AllergyIntolerance,
@@ -38,12 +38,27 @@ import {
 } from '@medplum/fhirtypes';
 import { mapCcdaToFhirDate, mapCcdaToFhirDateTime } from './datetime';
 import {
+  ACT_CODE_SYSTEM,
   ADDRESS_USE_MAPPER,
+  ALLERGY_CLINICAL_CODE_SYSTEM,
+  ALLERGY_VERIFICATION_CODE_SYSTEM,
+  CCDA_NARRATIVE_REFERENCE_URL,
+  CCDA_TEMPLATE_CODE_SYSTEM,
+  CLINICAL_CONDITION_CODE_SYSTEM,
+  CONDITION_CATEGORY_CODE_SYSTEM,
+  CONDITION_VER_STATUS_CODE_SYSTEM,
+  CONDITION_VERIFICATION_CODE_SYSTEM,
+  DIAGNOSIS_ROLE_CODE_SYSTEM,
   HUMAN_NAME_USE_MAPPER,
   mapCcdaSystemToFhir,
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
+  PARTICIPATION_CODE_SYSTEM,
   TELECOM_USE_MAPPER,
+  US_CORE_CONDITION_URL,
+  US_CORE_ETHNICITY_URL,
+  US_CORE_MEDICATION_REQUEST_URL,
+  US_CORE_RACE_URL,
 } from './systems';
 import {
   Ccda,
@@ -124,7 +139,7 @@ class CcdaToFhirConverter {
 
     if (patient.raceCode && patient.raceCode.length > 0) {
       extensions.push({
-        url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-race',
+        url: US_CORE_RACE_URL,
         extension: patient.raceCode.map((raceCode) => ({
           url: 'ombCategory',
           valueCoding: this.mapCodeToCoding(raceCode),
@@ -134,7 +149,7 @@ class CcdaToFhirConverter {
 
     if (patient.ethnicGroupCode && patient.ethnicGroupCode.length > 0) {
       extensions.push({
-        url: 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity',
+        url: US_CORE_ETHNICITY_URL,
         extension: patient.ethnicGroupCode.map((ethnicGroupCode) => ({
           url: 'ombCategory',
           valueCoding: this.mapCodeToCoding(ethnicGroupCode),
@@ -271,7 +286,7 @@ class CcdaToFhirConverter {
       status: 'final',
       type: this.ccda.code
         ? (this.mapCode(this.ccda.code) as CodeableConcept)
-        : { coding: [{ system: 'http://loinc.org', code: '34133-9' }] },
+        : { coding: [{ system: LOINC, code: '34133-9' }] },
       confidentiality: this.ccda.confidentialityCode?.['@_code'] as Composition['confidentiality'],
       author: this.ccda.author?.[0]
         ? [
@@ -428,12 +443,12 @@ class CcdaToFhirConverter {
       id: this.mapId(act.id),
       identifier: this.concatArrays(this.mapIdentifiers(act.id), this.mapIdentifiers(observation.id)),
       meta: {
-        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition'],
+        profile: [US_CORE_CONDITION_URL],
       },
       clinicalStatus: {
         coding: [
           {
-            system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+            system: CLINICAL_CONDITION_CODE_SYSTEM,
             code: this.mapStatus(act.statusCode['@_code']),
           },
         ],
@@ -441,7 +456,7 @@ class CcdaToFhirConverter {
       verificationStatus: {
         coding: [
           {
-            system: 'http://terminology.hl7.org/CodeSystem/condition-verification',
+            system: CONDITION_VERIFICATION_CODE_SYSTEM,
             code: 'confirmed',
           },
         ],
@@ -450,7 +465,7 @@ class CcdaToFhirConverter {
         {
           coding: [
             {
-              system: 'http://terminology.hl7.org/CodeSystem/condition-category',
+              system: CONDITION_CATEGORY_CODE_SYSTEM,
               code: 'problem-list-item',
               display: 'Problem List Item',
             },
@@ -562,7 +577,7 @@ class CcdaToFhirConverter {
       id: cdaId,
       contained: medication ? [medication] : undefined,
       meta: {
-        profile: ['http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest'],
+        profile: [US_CORE_MEDICATION_REQUEST_URL],
       },
       status: MEDICATION_STATUS_MAPPER.mapCcdaToFhirWithDefault(
         substanceAdmin.statusCode?.['@_code'],
@@ -595,10 +610,10 @@ class CcdaToFhirConverter {
             ? [
                 {
                   doseQuantity: {
+                    system: UCUM,
                     value: Number(doseQuantity['@_value']),
                     code: '[IU]',
                     unit: '[IU]',
-                    system: 'http://unitsofmeasure.org',
                   },
                 },
               ]
@@ -772,7 +787,7 @@ class CcdaToFhirConverter {
     return {
       coding: [
         {
-          system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-clinical',
+          system: ALLERGY_CLINICAL_CODE_SYSTEM,
           code: this.mapStatus(act.statusCode['@_code']),
         },
       ],
@@ -783,7 +798,7 @@ class CcdaToFhirConverter {
     return {
       coding: [
         {
-          system: 'http://terminology.hl7.org/CodeSystem/allergyintolerance-verification',
+          system: ALLERGY_VERIFICATION_CODE_SYSTEM,
           code: 'confirmed',
         },
       ],
@@ -1089,7 +1104,7 @@ class CcdaToFhirConverter {
           result.valueQuantity = {
             value: observation.value['@_value'] ? parseFloat(observation.value['@_value']) : undefined,
             unit: observation.value['@_unit'],
-            system: 'http://unitsofmeasure.org',
+            system: UCUM,
             code: observation.value['@_unit'],
           };
           break;
@@ -1139,7 +1154,7 @@ class CcdaToFhirConverter {
       result.push({
         coding: [
           {
-            system: 'http://hl7.org/cda/template',
+            system: CCDA_TEMPLATE_CODE_SYSTEM,
             code: templateId['@_root'],
             version: templateId['@_extension'],
           },
@@ -1185,7 +1200,7 @@ class CcdaToFhirConverter {
       identifier: this.mapIdentifiers(encounter.id),
       status: this.mapEncounterStatus(encounter.statusCode?.['@_code']),
       class: {
-        system: 'http://terminology.hl7.org/CodeSystem/v3-ActCode',
+        system: ACT_CODE_SYSTEM,
         code: encounter.code?.['@_code'] || 'AMB',
         display: encounter.code?.['@_displayName'] || 'Ambulatory',
       },
@@ -1201,7 +1216,7 @@ class CcdaToFhirConverter {
           {
             coding: [
               {
-                system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
+                system: PARTICIPATION_CODE_SYSTEM,
                 code: performer['@_typeCode'] || 'PPRF',
                 display: 'Primary Performer',
               },
@@ -1230,7 +1245,7 @@ class CcdaToFhirConverter {
             clinicalStatus: {
               coding: [
                 {
-                  system: 'http://terminology.hl7.org/CodeSystem/condition-clinical',
+                  system: CLINICAL_CONDITION_CODE_SYSTEM,
                   code: 'active',
                 },
               ],
@@ -1238,7 +1253,7 @@ class CcdaToFhirConverter {
             verificationStatus: {
               coding: [
                 {
-                  system: 'http://terminology.hl7.org/CodeSystem/condition-ver-status',
+                  system: CONDITION_VER_STATUS_CODE_SYSTEM,
                   code: 'confirmed',
                 },
               ],
@@ -1256,7 +1271,7 @@ class CcdaToFhirConverter {
             use: {
               coding: [
                 {
-                  system: 'http://terminology.hl7.org/CodeSystem/diagnosis-role',
+                  system: DIAGNOSIS_ROLE_CODE_SYSTEM,
                   code: 'AD',
                   display: 'Admission diagnosis',
                 },
@@ -1319,7 +1334,7 @@ class CcdaToFhirConverter {
 
     return [
       {
-        url: 'http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference',
+        url: CCDA_NARRATIVE_REFERENCE_URL,
         valueString: text.reference?.['@_value'],
       },
     ];

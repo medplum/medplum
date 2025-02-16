@@ -141,7 +141,7 @@
         ],
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#immun1"
           }
         ],

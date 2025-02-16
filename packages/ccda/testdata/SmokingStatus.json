@@ -218,7 +218,7 @@
         "effectiveDateTime": "2014-06-06T10:32:00-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#SmokingStatus"
           }
         ]
@@ -290,7 +290,7 @@
         "effectiveDateTime": "2014-06-06T10:32:00-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#SmokingStatus"
           }
         ]

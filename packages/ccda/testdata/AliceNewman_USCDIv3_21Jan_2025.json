@@ -690,7 +690,7 @@
         },
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#allergy1"
           }
         ],
@@ -705,7 +705,7 @@
           "text": "penicillin G",
           "extension": [
             {
-              "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+              "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
               "valueString": "#allergy1allergen"
             }
           ]
@@ -725,7 +725,7 @@
                 "text": "Hives",
                 "extension": [
                   {
-                    "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                    "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                     "valueString": "#allergy1reaction"
                   }
                 ]
@@ -734,7 +734,7 @@
             "severity": "moderate",
             "extension": [
               {
-                "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                 "valueString": "#allergy1severity"
               }
             ]
@@ -774,7 +774,7 @@
         },
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#allergy2"
           }
         ],
@@ -789,7 +789,7 @@
           "text": "Ampicillin",
           "extension": [
             {
-              "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+              "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
               "valueString": "#allergy2allergen"
             }
           ]
@@ -809,7 +809,7 @@
                 "text": "Hives",
                 "extension": [
                   {
-                    "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                    "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                     "valueString": "#allergy2reaction"
                   }
                 ]
@@ -818,7 +818,7 @@
             "severity": "moderate",
             "extension": [
               {
-                "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                 "valueString": "#allergy2severity"
               }
             ]
@@ -846,7 +846,7 @@
           "text": "Ceftriaxone 100 MG/ML Injectable Solution",
           "extension": [
             {
-              "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+              "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
               "valueString": "#medication1_name"
             }
           ]
@@ -866,7 +866,7 @@
             "text": "#medication1",
             "extension": [
               {
-                "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                 "valueString": "#medication1"
               }
             ],
@@ -919,7 +919,7 @@
           "text": "Acetaminophen 500 MG Oral Tablet [Tylenol]",
           "extension": [
             {
-              "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+              "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
               "valueString": "#medication2_name"
             }
           ]
@@ -939,7 +939,7 @@
             "text": "#medication2",
             "extension": [
               {
-                "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                 "valueString": "#medication2"
               }
             ],
@@ -992,7 +992,7 @@
           "text": "1 ML darbepoetin alfa 0.5 MG/ML Prefilled Syringe",
           "extension": [
             {
-              "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+              "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
               "valueString": "#medication3_name"
             }
           ]
@@ -1011,7 +1011,7 @@
             "text": "#medication3",
             "extension": [
               {
-                "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+                "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
                 "valueString": "#medication3"
               }
             ],
@@ -1443,7 +1443,7 @@
         },
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#problem1"
           }
         ]
@@ -1508,7 +1508,7 @@
         },
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#problem2"
           }
         ]
@@ -1573,7 +1573,7 @@
         },
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#problem3"
           }
         ]
@@ -1638,7 +1638,7 @@
         },
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#problem4"
           }
         ]
@@ -1704,7 +1704,7 @@
         },
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#problem5"
           }
         ]
@@ -1802,7 +1802,7 @@
         "lotNumber": "1",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#immun1"
           }
         ],
@@ -1834,7 +1834,7 @@
         "lotNumber": "2",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#immun2"
           }
         ],
@@ -1866,7 +1866,7 @@
         "lotNumber": "1",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#immun3"
           }
         ],
@@ -1931,7 +1931,7 @@
         "effectiveDateTime": "2015-06-22T10:08:00-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#vitalsBodyHeight1"
           }
         ]
@@ -1993,7 +1993,7 @@
         "effectiveDateTime": "2015-06-22T10:08:00-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#vitalsBodyWeight1"
           }
         ]
@@ -2055,7 +2055,7 @@
         "effectiveDateTime": "2015-06-22T10:08:00-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#vitalsDiastolic1"
           }
         ]
@@ -2117,7 +2117,7 @@
         "effectiveDateTime": "2015-06-22T10:08:00-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#vitalsSystolic1"
           }
         ]
@@ -2179,7 +2179,7 @@
         "effectiveDateTime": "2015-06-22T10:08:00-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#vitalsHeartRate1"
           }
         ]
@@ -2241,7 +2241,7 @@
         "effectiveDateTime": "2015-06-22T10:08:00-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#vitalsOxygenSaturation1"
           }
         ]
@@ -2303,7 +2303,7 @@
         "effectiveDateTime": "2015-06-22T10:08:00-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#vitalsBodyTemperature1"
           }
         ]
@@ -2365,7 +2365,7 @@
         "effectiveDateTime": "2015-06-22T10:08:00-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#vitalsRespiratoryRate1"
           }
         ]
@@ -2514,7 +2514,7 @@
         },
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#smokingStatus1"
           }
         ]
@@ -2586,7 +2586,7 @@
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#smokingStatus2"
           }
         ]
@@ -2650,7 +2650,7 @@
         "effectiveDateTime": "1970-05-01T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#administrativeSex"
           }
         ]
@@ -2722,7 +2722,7 @@
         "effectiveDateTime": "1970-05-01T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#birthSex"
           }
         ]
@@ -3023,7 +3023,7 @@
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#pregnancyStatus"
           }
         ]
@@ -3087,7 +3087,7 @@
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#tribalAfflication"
           }
         ]
@@ -3212,7 +3212,7 @@
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#result2"
           }
         ]
@@ -3269,7 +3269,7 @@
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#result3"
           }
         ]
@@ -3326,7 +3326,7 @@
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#result4"
           }
         ]
@@ -3389,7 +3389,7 @@
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#result5"
           }
         ]
@@ -3452,7 +3452,7 @@
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#result6"
           }
         ]
@@ -3509,7 +3509,7 @@
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#result7"
           }
         ]
@@ -3572,7 +3572,7 @@
         "effectiveDateTime": "2015-06-22T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#result8"
           }
         ]
@@ -3707,7 +3707,7 @@
         "effectiveDateTime": "2015-06-22T09:08:23-0500",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#result9"
           }
         ]
@@ -3741,7 +3741,7 @@
         "performedDateTime": "2016-04-13T00:00:00Z",
         "extension": [
           {
-            "url": "http://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
             "valueString": "#SDOH_Intervention_1"
           }
         ]
