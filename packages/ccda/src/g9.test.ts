@@ -24,21 +24,21 @@ import { CcdaCode, CcdaQuantity } from './types';
 
 describe('170.315(g)(9)', () => {
   describe('Patient Demographics', () => {
-    it('should export first name', () => {
+    test('should export first name', () => {
       const input = createCompositionBundle({ resourceType: 'Patient', name: [{ given: ['John'] }] });
       const output = convertFhirToCcda(input);
       expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.given?.[0]).toEqual('John');
     });
 
     // Last Name
-    it('should export last name', () => {
+    test('should export last name', () => {
       const input = createCompositionBundle({ resourceType: 'Patient', name: [{ family: 'Doe' }] });
       const output = convertFhirToCcda(input);
       expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.family).toEqual('Doe');
     });
 
     // Previous Name (if applicable)
-    it('should export previous name', () => {
+    test('should export previous name', () => {
       const input = createCompositionBundle({
         resourceType: 'Patient',
         name: [
@@ -56,35 +56,35 @@ describe('170.315(g)(9)', () => {
     });
 
     // Middle Name
-    it('should export middle name', () => {
+    test('should export middle name', () => {
       const input = createCompositionBundle({ resourceType: 'Patient', name: [{ given: ['John', 'Doe'] }] });
       const output = convertFhirToCcda(input);
       expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.given?.[1]).toEqual('Doe');
     });
 
     // Suffix
-    it('should export suffix', () => {
+    test('should export suffix', () => {
       const input = createCompositionBundle({ resourceType: 'Patient', name: [{ given: ['John'], suffix: ['Jr.'] }] });
       const output = convertFhirToCcda(input);
       expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.suffix?.[0]).toEqual('Jr.');
     });
 
     // Birth Sex
-    it('should export birth sex', () => {
+    test('should export birth sex', () => {
       const input = createCompositionBundle({ resourceType: 'Patient', gender: 'male' });
       const output = convertFhirToCcda(input);
       expect(output.recordTarget?.[0]?.patientRole?.patient?.administrativeGenderCode?.['@_code']).toEqual('M');
     });
 
     // Date of Birth
-    it('should export date of birth', () => {
+    test('should export date of birth', () => {
       const input = createCompositionBundle({ resourceType: 'Patient', birthDate: '1990-01-01' });
       const output = convertFhirToCcda(input);
       expect(output.recordTarget?.[0]?.patientRole?.patient?.birthTime?.['@_value']).toEqual('19900101');
     });
 
     // Race and Ethnicity
-    it('should export race and ethnicity', () => {
+    test('should export race and ethnicity', () => {
       const patient: Patient = {
         resourceType: 'Patient',
         extension: [
@@ -144,7 +144,7 @@ describe('170.315(g)(9)', () => {
     });
 
     // Preferred Language
-    it('should export preferred language', () => {
+    test('should export preferred language', () => {
       const patient: Patient = {
         resourceType: 'Patient',
         communication: [
@@ -195,7 +195,7 @@ describe('170.315(g)(9)', () => {
     });
 
     // Current Address
-    it('should export current address', () => {
+    test('should export current address', () => {
       const input = createCompositionBundle({
         resourceType: 'Patient',
         address: [{ use: 'home', line: ['123 Main St'], city: 'Anytown', state: 'CA', postalCode: '12345' }],
@@ -209,7 +209,7 @@ describe('170.315(g)(9)', () => {
     });
 
     // Phone Number
-    it('should export phone number', () => {
+    test('should export phone number', () => {
       const input = createCompositionBundle({
         resourceType: 'Patient',
         telecom: [{ system: 'phone', value: '123-456-7890' }],
@@ -221,7 +221,7 @@ describe('170.315(g)(9)', () => {
 
   describe('Allergies', () => {
     // Must include reactions and severity
-    it('should export reactions and severity', () => {
+    test('should export reactions and severity', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
         { resourceType: 'AllergyIntolerance', reaction: [{ manifestation: [{ coding: [{ code: '123' }] }] }] }
@@ -236,7 +236,7 @@ describe('170.315(g)(9)', () => {
     });
 
     // Include timing information and concern status Reference: Section III.A in test data samples [2]
-    it('should export timing information and concern status', () => {
+    test('should export timing information and concern status', () => {
       const allergy: Partial<AllergyIntolerance> = {
         resourceType: 'AllergyIntolerance',
         clinicalStatus: {
@@ -286,7 +286,7 @@ describe('170.315(g)(9)', () => {
 
   // Medications
   describe('Medications', () => {
-    it('should export timing information and dosage', () => {
+    test('should export timing information and dosage', () => {
       const medication: Partial<MedicationRequest> = {
         resourceType: 'MedicationRequest',
         status: 'active',
@@ -363,7 +363,7 @@ describe('170.315(g)(9)', () => {
   });
 
   describe('Problems', () => {
-    it('should export problems', () => {
+    test('should export problems', () => {
       // Include timing information
       // - Include concern status Reference: Section III.C in test data samples [2]
       const input = createCompositionBundle(
@@ -414,7 +414,7 @@ describe('170.315(g)(9)', () => {
   });
 
   describe('Immunizations', () => {
-    it('should export immunizations', () => {
+    test('should export immunizations', () => {
       const input = createCompositionBundle({ resourceType: 'Patient' }, { resourceType: 'Immunization' });
       const output = convertFhirToCcda(input);
       expect(
@@ -422,7 +422,7 @@ describe('170.315(g)(9)', () => {
       ).toBeDefined();
     });
 
-    it('should include status and dates', () => {
+    test('should include status and dates', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
         { resourceType: 'Immunization', status: 'completed', occurrenceDateTime: '2010-08-15' }
@@ -438,7 +438,7 @@ describe('170.315(g)(9)', () => {
       ).toEqual('20100815');
     });
 
-    it('should include lot number and manufacturer', () => {
+    test('should include lot number and manufacturer', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
         { resourceType: 'Immunization', lotNumber: '1', manufacturer: { display: 'Manufacturer' } }
@@ -456,13 +456,13 @@ describe('170.315(g)(9)', () => {
   });
 
   describe('Vital Signs', () => {
-    it('should export vital signs', () => {
+    test('should export vital signs', () => {
       const input = createCompositionBundle({ resourceType: 'Patient' }, { resourceType: 'Observation' });
       const output = convertFhirToCcda(input);
       expect(output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.observation).toBeDefined();
     });
 
-    it('should include values and units', () => {
+    test('should include values and units', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
         { resourceType: 'Observation', valueQuantity: { value: 100, unit: 'mg' } }

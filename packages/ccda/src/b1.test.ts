@@ -15,7 +15,7 @@ const testData = [
 ];
 
 describe('170.315(b)(1)', () => {
-  it.each(testData)('should parse %s', (name) => {
+  test.each(testData)('should parse %s', (name) => {
     const ccda = convertXmlToCcda(readFileSync(join(testDataFolder, name), 'utf8'));
     const result = convertCcdaToFhir(ccda);
     expect(result).toBeDefined();

@@ -35,7 +35,7 @@ describe('convertCcdaToFhir', () => {
     writeFileSync(join(testDataFolder, `${name}.clean.xml`), convertCcdaToXml(ccda));
   });
 
-  it.each(testData)('should convert %s CCDA to FHIR', (name) => {
+  test.each(testData)('should convert %s CCDA to FHIR', (name) => {
     const ccda = convertXmlToCcda(readFileSync(join(testDataFolder, `${name}.xml`), 'utf8'));
     const bundle = normalizeFhir(convertCcdaToFhir(ccda));
 
@@ -49,7 +49,7 @@ describe('convertCcdaToFhir', () => {
 });
 
 describe('convertFhirToCcda', () => {
-  it.each(testData)('should convert %s FHIR to CCDA', (name) => {
+  test.each(testData)('should convert %s FHIR to CCDA', (name) => {
     const bundle = JSON.parse(readFileSync(join(testDataFolder, `${name}.json`), 'utf8')) as Bundle;
     const result = normalizeCcda(convertFhirToCcda(bundle));
     const expected = convertXmlToCcda(readFileSync(join(testDataFolder, `${name}.xml`), 'utf8'));
