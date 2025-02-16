@@ -1,11 +1,21 @@
-import { ContentType, LOINC, createReference } from '@medplum/core';
-import { Bundle, Condition, Observation, Organization, Patient, Practitioner, Resource } from '@medplum/fhirtypes';
+import { ContentType, LOINC, createReference, getReferenceString } from '@medplum/core';
+import {
+  Bundle,
+  Composition,
+  Condition,
+  DiagnosticReport,
+  Observation,
+  Organization,
+  Patient,
+  Practitioner,
+  Resource,
+} from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config';
 import { initTestAuth } from '../../test.setup';
-import { PatientSummaryBuilder } from './patientsummary';
+import { OBSERVATION_CATEGORY_SYSTEM, PatientSummaryBuilder } from './patientsummary';
 
 const app = express();
 let accessToken: string;
@@ -157,13 +167,14 @@ describe('Patient Summary Operation', () => {
       ];
 
       const everything = categories.map(
-        (code, index) =>
+        (category, index) =>
           ({
             resourceType: 'Observation',
             id: `obs${index}`,
             subject,
             status: 'final',
-            code: { coding: [{ system: LOINC, code }] },
+            category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: category }] }],
+            code: { text: 'test' },
           }) as Observation
       );
 
@@ -172,6 +183,88 @@ describe('Patient Summary Operation', () => {
       expect(result.entry?.length).toBe(2 + everything.length); // 1 for patient, 1 for composition
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
+    });
+
+    test('Observation containing observation', () => {
+      // If an Observation is a member of another Observation,
+      // then it should not be referenced directly by the Composition entries list.
+
+      const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
+      const subject = createReference(patient);
+
+      const childObs: Observation = {
+        resourceType: 'Observation',
+        id: `child`,
+        subject,
+        status: 'final',
+        category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: 'vital-signs' }] }],
+        code: { text: 'test' },
+      };
+
+      const parentObs: Observation = {
+        resourceType: 'Observation',
+        id: `parent`,
+        subject,
+        status: 'final',
+        category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: 'vital-signs' }] }],
+        code: { text: 'test' },
+        hasMember: [createReference(childObs)],
+      };
+
+      const everything = [parentObs, childObs];
+
+      const builder = new PatientSummaryBuilder(patient, everything);
+      const result = builder.build();
+      expect(result.entry?.length).toBe(2 + everything.length);
+      expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
+      expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
+
+      const composition = result.entry?.[0]?.resource as Composition;
+
+      const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === '8716-3');
+      expect(section).toBeDefined();
+      expect(section?.entry?.length).toBe(1);
+      expect(section?.entry?.[0]?.reference).toBe(getReferenceString(parentObs));
+    });
+
+    test('DiagnosticReport containing observation', () => {
+      // If an Observation is a member of a DiagnosticReport,
+      // then it should not be referenced directly by the Composition entries list.
+
+      const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
+      const subject = createReference(patient);
+
+      const childObs: Observation = {
+        resourceType: 'Observation',
+        id: `child`,
+        subject,
+        status: 'final',
+        code: { text: 'test' },
+      };
+
+      const parentReport: DiagnosticReport = {
+        resourceType: 'DiagnosticReport',
+        id: `parent`,
+        subject,
+        status: 'final',
+        code: { text: 'test' },
+        result: [createReference(childObs)],
+      };
+
+      const everything = [parentReport, childObs];
+
+      const builder = new PatientSummaryBuilder(patient, everything);
+      const result = builder.build();
+      expect(result.entry?.length).toBe(2 + everything.length);
+      expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
+      expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
+
+      const composition = result.entry?.[0]?.resource as Composition;
+
+      const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === '30954-2');
+      expect(section).toBeDefined();
+      expect(section?.entry?.length).toBe(1);
+      expect(section?.entry?.[0]?.reference).toBe(getReferenceString(parentReport));
     });
   });
 });

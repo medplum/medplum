@@ -1,4 +1,4 @@
-import { allOk, createReference, LOINC, resolveId } from '@medplum/core';
+import { allOk, createReference, HTTP_TERMINOLOGY_HL7_ORG, LOINC, resolveId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   Bundle,
@@ -15,6 +15,8 @@ import { getLogger } from '../../logger';
 import { Repository } from '../repo';
 import { getPatientEverything, PatientEverythingParameters } from './patienteverything';
 import { parseInputParameters } from './utils/parameters';
+
+export const OBSERVATION_CATEGORY_SYSTEM = `${HTTP_TERMINOLOGY_HL7_ORG}/CodeSystem/observation-category`;
 
 // International Patient Summary Implementation Guide
 // https://build.fhir.org/ig/HL7/fhir-ips/index.html
@@ -111,20 +113,20 @@ export async function getPatientSummary(
  * The main complexity is in the choice of which section to put each resource.
  */
 export class PatientSummaryBuilder {
-  private allergies: Resource[] = [];
-  private medications: Resource[] = [];
-  private problemList: Resource[] = [];
-  private results: Resource[] = [];
-  private socialHistory: Resource[] = [];
-  private vitalSigns: Resource[] = [];
-  private procedures: Resource[] = [];
-  private planOfTreatment: Resource[] = [];
-  private immunizations: Resource[] = [];
-  private nestedIds = new Set<string>();
+  private readonly allergies: Resource[] = [];
+  private readonly medications: Resource[] = [];
+  private readonly problemList: Resource[] = [];
+  private readonly results: Resource[] = [];
+  private readonly socialHistory: Resource[] = [];
+  private readonly vitalSigns: Resource[] = [];
+  private readonly procedures: Resource[] = [];
+  private readonly planOfTreatment: Resource[] = [];
+  private readonly immunizations: Resource[] = [];
+  private readonly nestedIds = new Set<string>();
 
   constructor(
-    readonly patient: Patient,
-    readonly everything: Resource[]
+    private readonly patient: Patient,
+    private readonly everything: Resource[]
   ) {}
 
   build(): Bundle {
@@ -218,9 +220,8 @@ export class PatientSummaryBuilder {
 
   private chooseSectionForObservation(obs: Observation): void {
     const categoryCode =
-      obs.category?.find(
-        (category) => category.coding?.[0]?.system === 'http://terminology.hl7.org/CodeSystem/observation-category'
-      )?.coding?.[0]?.code || '';
+      obs.category?.find((category) => category.coding?.[0]?.system === OBSERVATION_CATEGORY_SYSTEM)?.coding?.[0]
+        ?.code || '';
     switch (categoryCode) {
       case 'social-history':
         this.socialHistory.push(obs);
@@ -276,7 +277,7 @@ export class PatientSummaryBuilder {
       type: {
         coding: [
           {
-            system: 'http://loinc.org',
+            system: LOINC,
             code: '60591-5',
             display: 'Patient summary Document',
           },
