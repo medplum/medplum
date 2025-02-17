@@ -8,6 +8,7 @@ import {
   OperationDefinition,
   Patient,
   Resource,
+  ResourceType,
   Task,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -73,6 +74,19 @@ const operation: OperationDefinition = {
   ],
 };
 
+const resourceTypes: ResourceType[] = [
+  'AllergyIntolerance',
+  'Condition',
+  'DiagnosticReport',
+  'Encounter',
+  'Goal',
+  'Immunization',
+  'MedicationRequest',
+  'Observation',
+  'Procedure',
+  'Task',
+];
+
 export interface PatientSummaryParameters extends PatientEverythingParameters {
   identifier?: string;
   profile?: string;
@@ -109,8 +123,9 @@ export async function patientSummaryHandler(req: FhirRequest): Promise<FhirRespo
 export async function getPatientSummary(
   repo: Repository,
   patient: Patient,
-  params?: PatientSummaryParameters
+  params: PatientSummaryParameters = {}
 ): Promise<Bundle> {
+  params._type = resourceTypes;
   const everythingBundle = await getPatientEverything(repo, patient, params);
   const everything = (everythingBundle.entry?.map((e) => e.resource) ?? []) as Resource[];
   const builder = new PatientSummaryBuilder(patient, everything);
