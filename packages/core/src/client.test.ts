@@ -1440,6 +1440,17 @@ describe('Client', () => {
     );
   });
 
+  test('Read patient summary', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.readPatientSummary('123');
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient/123/$summary',
+      expect.objectContaining({ method: 'GET' })
+    );
+  });
+
   test('Create resource', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
