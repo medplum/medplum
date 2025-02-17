@@ -14,7 +14,7 @@ export const EncounterModal = (): JSX.Element => {
   const medplum = useMedplum();
   const patient = usePatient();
   const [isOpen, setIsOpen] = useState(true);
-  const [types, setTypes] = useState<ValueSetExpansionContains[]>([]);
+  const [serviceType, setServiceType] = useState<ValueSetExpansionContains[]>([]);
   const [encounterClass, setEncounterClass] = useState<Coding | undefined>();
   const [planDefinitionData, setPlanDefinitionData] = useState<PlanDefinition | undefined>();
   const [status, setStatus] = useState<Encounter['status'] | undefined>();
@@ -30,11 +30,9 @@ export const EncounterModal = (): JSX.Element => {
       statusHistory: [],
       class: encounterClass,
       classHistory: [],
-      type: [
-        {
-          coding: types,
-        },
-      ],
+      serviceType: {
+        coding: serviceType,
+      },
       subject: createReference(patient),
     };
 
@@ -100,11 +98,11 @@ export const EncounterModal = (): JSX.Element => {
 
                 <ValueSetAutocomplete
                   name="type"
-                  label="Type"
-                  binding="http://hl7.org/fhir/ValueSet/encounter-type"
+                  label="Service Type"
+                  binding="http://hl7.org/fhir/ValueSet/service-type"
                   withHelpText={true}
                   maxValues={1}
-                  onChange={(items: ValueSetExpansionContains[]) => setTypes(items)}
+                  onChange={(items: ValueSetExpansionContains[]) => setServiceType(items)}
                 />
 
                 <CodingInput

@@ -15,6 +15,7 @@ interface QuestionnaireRepeatableItemProps {
 export function QuestionnaireRepeatableItem(props: QuestionnaireRepeatableItemProps): JSX.Element | null {
   const { item, response, onChange } = props;
   const [number, setNumber] = useState(getNumberOfRepeats(item, response ?? { linkId: item.linkId }));
+  
   if (!props.checkForQuestionEnabled(item)) {
     return null;
   }
