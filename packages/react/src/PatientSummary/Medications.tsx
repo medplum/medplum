@@ -11,6 +11,7 @@ export interface MedicationsProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly medicationRequests: MedicationRequest[];
+  readonly onClickResource?: (resource: MedicationRequest) => void;
 }
 
 export function Medications(props: MedicationsProps): JSX.Element {
@@ -58,6 +59,7 @@ export function Medications(props: MedicationsProps): JSX.Element {
             <ConceptBadge<MedicationRequest>
               key={request.id}
               resource={request}
+              onClick={props.onClickResource}
               onEdit={(mr) => {
                 setEditMedication(mr);
                 open();
