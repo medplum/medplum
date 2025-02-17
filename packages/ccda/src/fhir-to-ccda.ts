@@ -36,6 +36,36 @@ import {
 } from '@medplum/fhirtypes';
 import { mapFhirToCcdaDate, mapFhirToCcdaDateTime } from './datetime';
 import {
+  OID_ACT_CLASS_CODE_SYSTEM,
+  OID_ACT_CODE_CODE_SYSTEM,
+  OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
+  OID_ALLERGY_OBSERVATION,
+  OID_ALLERGY_PROBLEM_ACT,
+  OID_AUTHOR_PARTICIPANT,
+  OID_CARE_TEAM_ORGANIZER_ENTRY,
+  OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
+  OID_ENCOUNTER_ACTIVITIES,
+  OID_ENCOUNTER_LOCATION,
+  OID_HL7_REGISTERED_MODELS,
+  OID_IMMUNIZATION_ACTIVITY,
+  OID_IMMUNIZATION_MEDICATION_INFORMATION,
+  OID_INSTRUCTIONS,
+  OID_LOINC_CODE_SYSTEM,
+  OID_MEDICATION_ACTIVITY,
+  OID_MEDICATION_FREE_TEXT_SIG,
+  OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL,
+  OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION,
+  OID_PROBLEM_ACT,
+  OID_PROBLEM_OBSERVATION,
+  OID_PROCEDURE_ACTIVITY_ACT,
+  OID_PROCEDURE_ACTIVITY_PROCEDURE,
+  OID_REACTION_OBSERVATION,
+  OID_SEVERITY_OBSERVATION,
+  OID_SNOMED_CT_CODE_SYSTEM,
+  OID_VITAL_SIGNS_OBSERVATION,
+  OID_VITAL_SIGNS_ORGANIZER,
+} from './oids';
+import {
   ADDRESS_USE_MAPPER,
   ALLERGY_SEVERITY_MAPPER,
   ALLERGY_STATUS_MAPPER,
@@ -139,8 +169,8 @@ class FhirToCcdaConverter {
         '@_code': 'US',
       },
       typeId: {
+        '@_root': OID_HL7_REGISTERED_MODELS,
         '@_extension': 'POCD_HD000040',
-        '@_root': '2.16.840.1.113883.1.3',
       },
       templateId: CCDA_TEMPLATE_IDS,
       id: this.mapIdentifiers(this.composition.id, undefined),
@@ -272,7 +302,7 @@ class FhirToCcdaConverter {
       '@_xsi:type': 'CE',
       '@_code': GENDER_MAPPER.mapFhirToCcda(gender),
       '@_displayName': gender ? capitalize(gender) : 'Unknown',
-      '@_codeSystem': '2.16.840.1.113883.5.1',
+      '@_codeSystem': OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
       '@_codeSystemName': 'AdministrativeGender',
     };
   }
@@ -336,7 +366,7 @@ class FhirToCcdaConverter {
       {
         '@_code': ombCategory.code,
         '@_displayName': ombCategory.display,
-        '@_codeSystem': '2.16.840.1.113883.6.238',
+        '@_codeSystem': OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
         '@_codeSystemName': 'CDC Race and Ethnicity',
       },
     ];
@@ -359,7 +389,7 @@ class FhirToCcdaConverter {
       {
         '@_code': ombCategory.code,
         '@_displayName': ombCategory.display,
-        '@_codeSystem': '2.16.840.1.113883.6.238',
+        '@_codeSystem': OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM,
         '@_codeSystemName': 'CDC Race and Ethnicity',
       },
     ];
@@ -477,17 +507,17 @@ class FhirToCcdaConverter {
           '@_moodCode': 'EVN',
           templateId: [
             {
-              '@_root': '2.16.840.1.113883.10.20.22.4.30',
+              '@_root': OID_ALLERGY_PROBLEM_ACT,
             },
             {
-              '@_root': '2.16.840.1.113883.10.20.22.4.30',
+              '@_root': OID_ALLERGY_PROBLEM_ACT,
               '@_extension': '2015-08-01',
             },
           ],
           id: this.mapIdentifiers(allergy.id, allergy.identifier),
           code: {
             '@_code': 'CONC',
-            '@_codeSystem': '2.16.840.1.113883.5.6',
+            '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
           },
           statusCode: {
             '@_code': ALLERGY_STATUS_MAPPER.mapFhirToCcdaWithDefault(
@@ -507,17 +537,17 @@ class FhirToCcdaConverter {
                   '@_moodCode': 'EVN',
                   templateId: [
                     {
-                      '@_root': '2.16.840.1.113883.10.20.22.4.7',
+                      '@_root': OID_ALLERGY_OBSERVATION,
                     },
                     {
-                      '@_root': '2.16.840.1.113883.10.20.22.4.7',
+                      '@_root': OID_ALLERGY_OBSERVATION,
                       '@_extension': '2014-06-09',
                     },
                   ],
                   id: this.mapIdentifiers(allergy.id, allergy.identifier),
                   code: {
                     '@_code': 'ASSERTION',
-                    '@_codeSystem': '2.16.840.1.113883.5.4',
+                    '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
                   },
                   statusCode: {
                     '@_code': 'completed',
@@ -554,17 +584,17 @@ class FhirToCcdaConverter {
                               '@_moodCode': 'EVN',
                               templateId: [
                                 {
-                                  '@_root': '2.16.840.1.113883.10.20.22.4.9',
+                                  '@_root': OID_REACTION_OBSERVATION,
                                 },
                                 {
-                                  '@_root': '2.16.840.1.113883.10.20.22.4.9',
+                                  '@_root': OID_REACTION_OBSERVATION,
                                   '@_extension': '2014-06-09',
                                 },
                               ],
                               id: this.mapIdentifiers(reaction.id, undefined),
                               code: {
                                 '@_code': 'ASSERTION',
-                                '@_codeSystem': '2.16.840.1.113883.5.4',
+                                '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
                               },
                               statusCode: {
                                 '@_code': 'completed',
@@ -582,16 +612,16 @@ class FhirToCcdaConverter {
                                       '@_moodCode': 'EVN',
                                       templateId: [
                                         {
-                                          '@_root': '2.16.840.1.113883.10.20.22.4.8',
+                                          '@_root': OID_SEVERITY_OBSERVATION,
                                         },
                                         {
-                                          '@_root': '2.16.840.1.113883.10.20.22.4.8',
+                                          '@_root': OID_SEVERITY_OBSERVATION,
                                           '@_extension': '2014-06-09',
                                         },
                                       ],
                                       code: {
                                         '@_code': 'SEV',
-                                        '@_codeSystem': '2.16.840.1.113883.5.4',
+                                        '@_codeSystem': OID_ACT_CODE_CODE_SYSTEM,
                                         '@_codeSystemName': 'ActCode',
                                       },
                                       statusCode: {
@@ -604,7 +634,7 @@ class FhirToCcdaConverter {
                                           'M'
                                         ),
                                         '@_displayName': reaction.severity ? capitalize(reaction.severity) : undefined,
-                                        '@_codeSystem': '2.16.840.1.113883.6.96',
+                                        '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
                                         '@_codeSystemName': 'SNOMED CT',
                                       },
                                       text: this.createTextFromExtensions(reaction.extension),
@@ -641,7 +671,7 @@ class FhirToCcdaConverter {
         '@_xsi:type': 'CD',
         '@_code': '414285001',
         '@_displayName': 'Allergy to food (finding)',
-        '@_codeSystem': '2.16.840.1.113883.6.96',
+        '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
         '@_codeSystemName': 'SNOMED CT',
       };
     }
@@ -669,7 +699,7 @@ class FhirToCcdaConverter {
       {
         templateId: [
           {
-            '@_root': '2.16.840.1.113883.10.20.22.4.119',
+            '@_root': OID_AUTHOR_PARTICIPANT,
           },
         ],
         time: time ? { '@_value': mapFhirToCcdaDateTime(time) } : undefined,
@@ -748,7 +778,7 @@ class FhirToCcdaConverter {
         {
           '@_classCode': 'SBADM',
           '@_moodCode': 'EVN',
-          templateId: [{ '@_root': '2.16.840.1.113883.10.20.22.4.16', '@_extension': '2014-06-09' }],
+          templateId: [{ '@_root': OID_MEDICATION_ACTIVITY, '@_extension': '2014-06-09' }],
           id: [{ '@_root': med.id || crypto.randomUUID() }],
           text: { reference: { '@_value': medicationRef } },
           statusCode: { '@_code': MEDICATION_STATUS_MAPPER.mapFhirToCcdaWithDefault(med.status, 'active') },
@@ -761,7 +791,9 @@ class FhirToCcdaConverter {
             manufacturedProduct: [
               {
                 '@_classCode': 'MANU',
-                templateId: [{ '@_root': '2.16.840.1.113883.10.20.22.4.23', '@_extension': '2014-06-09' }],
+                templateId: [
+                  { '@_root': OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL, '@_extension': '2014-06-09' },
+                ],
                 manufacturedMaterial: [
                   {
                     code: [
@@ -790,10 +822,10 @@ class FhirToCcdaConverter {
                 {
                   '@_classCode': 'SBADM',
                   '@_moodCode': 'EVN',
-                  templateId: [{ '@_root': '2.16.840.1.113883.10.20.22.4.147' }],
+                  templateId: [{ '@_root': OID_MEDICATION_FREE_TEXT_SIG }],
                   code: {
                     '@_code': '76662-6',
-                    '@_codeSystem': '2.16.840.1.113883.6.1',
+                    '@_codeSystem': OID_LOINC_CODE_SYSTEM,
                     '@_codeSystemName': 'LOINC',
                     '@_displayName': 'Medication Instructions',
                   },
@@ -939,14 +971,11 @@ class FhirToCcdaConverter {
         {
           '@_classCode': 'ACT',
           '@_moodCode': 'EVN',
-          templateId: [
-            { '@_root': '2.16.840.1.113883.10.20.22.4.3' },
-            { '@_root': '2.16.840.1.113883.10.20.22.4.3', '@_extension': '2015-08-01' },
-          ],
+          templateId: [{ '@_root': OID_PROBLEM_ACT }, { '@_root': OID_PROBLEM_ACT, '@_extension': '2015-08-01' }],
           id: this.mapIdentifiers(problem.id, undefined),
           code: {
             '@_code': 'CONC',
-            '@_codeSystem': '2.16.840.1.113883.5.6',
+            '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
           },
           // statusCode: { '@_code': this.mapStatus(problem.clinicalStatus?.coding?.[0]?.code) },
           statusCode: {
@@ -964,14 +993,14 @@ class FhirToCcdaConverter {
                   '@_classCode': 'OBS',
                   '@_moodCode': 'EVN',
                   templateId: [
-                    { '@_root': '2.16.840.1.113883.10.20.22.4.4' },
-                    { '@_root': '2.16.840.1.113883.10.20.22.4.4', '@_extension': '2015-08-01' },
+                    { '@_root': OID_PROBLEM_OBSERVATION },
+                    { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
                   ],
                   id: this.mapIdentifiers(undefined, problem.identifier),
                   text: this.createTextFromExtensions(problem.extension),
                   code: {
                     '@_code': '55607006',
-                    '@_codeSystem': '2.16.840.1.113883.6.96',
+                    '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
                     '@_codeSystemName': 'SNOMED CT',
                     '@_displayName': 'Problem',
                   },
@@ -1004,8 +1033,8 @@ class FhirToCcdaConverter {
           '@_moodCode': 'EVN',
           '@_negationInd': 'false',
           templateId: [
-            { '@_root': '2.16.840.1.113883.10.20.22.4.52' },
-            { '@_root': '2.16.840.1.113883.10.20.22.4.52', '@_extension': '2015-08-01' },
+            { '@_root': OID_IMMUNIZATION_ACTIVITY },
+            { '@_root': OID_IMMUNIZATION_ACTIVITY, '@_extension': '2015-08-01' },
           ],
           id: this.mapIdentifiers(immunization.id, immunization.identifier),
           text: this.createTextFromExtensions(immunization.extension),
@@ -1016,8 +1045,8 @@ class FhirToCcdaConverter {
               {
                 '@_classCode': 'MANU',
                 templateId: [
-                  { '@_root': '2.16.840.1.113883.10.20.22.4.54' },
-                  { '@_root': '2.16.840.1.113883.10.20.22.4.54', '@_extension': '2014-06-09' },
+                  { '@_root': OID_IMMUNIZATION_MEDICATION_INFORMATION },
+                  { '@_root': OID_IMMUNIZATION_MEDICATION_INFORMATION, '@_extension': '2014-06-09' },
                 ],
                 manufacturedMaterial: [
                   {
@@ -1123,7 +1152,7 @@ class FhirToCcdaConverter {
           '@_moodCode': 'INT',
           id: this.mapIdentifiers(resource.id, resource.identifier),
           code: mapCodeableConceptToCcdaValue(resource.category?.[0]) as CcdaCode,
-          templateId: [{ '@_root': '2.16.840.1.113883.10.20.22.4.20' }],
+          templateId: [{ '@_root': OID_INSTRUCTIONS }],
           statusCode: { '@_code': 'completed' },
           text: resource.description
             ? { '#text': resource.description }
@@ -1139,7 +1168,7 @@ class FhirToCcdaConverter {
         {
           '@_classCode': 'OBS',
           '@_moodCode': 'GOL',
-          templateId: [{ '@_root': '2.16.840.1.113883.10.20.22.4.44' }],
+          templateId: [{ '@_root': OID_PLAN_OF_CARE_ACTIVITY_OBSERVATION }],
           id: this.mapIdentifiers(resource.id, resource.identifier),
           code: mapCodeableConceptToCcdaCode(resource.description),
           statusCode: { '@_code': this.mapGoalStatus(resource.lifecycleStatus) },
@@ -1153,8 +1182,8 @@ class FhirToCcdaConverter {
                 '@_classCode': 'ACT',
                 '@_moodCode': 'EVN',
                 templateId: [
-                  { '@_root': '2.16.840.1.113883.10.20.22.4.12' },
-                  { '@_root': '2.16.840.1.113883.10.20.22.4.12', '@_extension': '2014-06-09' },
+                  { '@_root': OID_PROCEDURE_ACTIVITY_ACT },
+                  { '@_root': OID_PROCEDURE_ACTIVITY_ACT, '@_extension': '2014-06-09' },
                 ],
                 code: mapCodeableConceptToCcdaCode(target.measure) as CcdaCode,
                 statusCode: { '@_code': 'completed' },
@@ -1198,8 +1227,8 @@ class FhirToCcdaConverter {
       '@_classCode': 'CLUSTER',
       '@_moodCode': 'EVN',
       templateId: [
-        { '@_root': '2.16.840.1.113883.10.20.22.4.26' },
-        { '@_root': '2.16.840.1.113883.10.20.22.4.26', '@_extension': '2015-08-01' },
+        { '@_root': OID_VITAL_SIGNS_ORGANIZER },
+        { '@_root': OID_VITAL_SIGNS_ORGANIZER, '@_extension': '2015-08-01' },
       ],
       id: this.mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
       code: mapCodeableConceptToCcdaCode(observation.code) as CcdaCode,
@@ -1254,8 +1283,8 @@ class FhirToCcdaConverter {
 
     // Otherwise, fall back to the default template ID.
     return [
-      { '@_root': '2.16.840.1.113883.10.20.22.4.27' },
-      { '@_root': '2.16.840.1.113883.10.20.22.4.27', '@_extension': '2014-06-09' },
+      { '@_root': OID_VITAL_SIGNS_OBSERVATION },
+      { '@_root': OID_VITAL_SIGNS_OBSERVATION, '@_extension': '2014-06-09' },
     ];
   }
 
@@ -1340,8 +1369,8 @@ class FhirToCcdaConverter {
               '@_classCode': 'ACT',
               '@_moodCode': 'EVN',
               templateId: [
-                { '@_root': '2.16.840.1.113883.10.20.22.4.12' },
-                { '@_root': '2.16.840.1.113883.10.20.22.4.12', '@_extension': '2014-06-09' },
+                { '@_root': OID_PROCEDURE_ACTIVITY_ACT },
+                { '@_root': OID_PROCEDURE_ACTIVITY_ACT, '@_extension': '2014-06-09' },
               ],
               id: this.mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
               code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
@@ -1358,8 +1387,8 @@ class FhirToCcdaConverter {
             '@_classCode': 'PROC',
             '@_moodCode': 'EVN',
             templateId: [
-              { '@_root': '2.16.840.1.113883.10.20.22.4.14' },
-              { '@_root': '2.16.840.1.113883.10.20.22.4.14', '@_extension': '2014-06-09' },
+              { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE },
+              { '@_root': OID_PROCEDURE_ACTIVITY_PROCEDURE, '@_extension': '2014-06-09' },
             ],
             id: this.mapIdentifiers(resource.id, resource.identifier) as CcdaId[],
             code: mapCodeableConceptToCcdaCode(resource.code) as CcdaCode,
@@ -1442,10 +1471,10 @@ class FhirToCcdaConverter {
           '@_moodCode': 'EVN',
           templateId: [
             {
-              '@_root': '2.16.840.1.113883.10.20.22.4.49',
+              '@_root': OID_ENCOUNTER_ACTIVITIES,
             },
             {
-              '@_root': '2.16.840.1.113883.10.20.22.4.49',
+              '@_root': OID_ENCOUNTER_ACTIVITIES,
               '@_extension': '2015-08-01',
             },
           ],
@@ -1459,7 +1488,7 @@ class FhirToCcdaConverter {
               '@_classCode': 'SDLOC',
               templateId: [
                 {
-                  '@_root': '2.16.840.1.113883.10.20.22.4.32',
+                  '@_root': OID_ENCOUNTER_LOCATION,
                 },
               ],
               code: mapCodeableConceptToCcdaCode(participant.type?.[0]),
@@ -1478,11 +1507,11 @@ class FhirToCcdaConverter {
           '@_moodCode': 'EVN',
           templateId: [
             {
-              '@_root': '2.16.840.1.113883.10.20.22.4.500',
+              '@_root': OID_CARE_TEAM_ORGANIZER_ENTRY,
               '@_extension': '2022-07-01',
             },
             {
-              '@_root': '2.16.840.1.113883.10.20.22.4.500',
+              '@_root': OID_CARE_TEAM_ORGANIZER_ENTRY,
               '@_extension': '2022-06-01',
             },
           ],

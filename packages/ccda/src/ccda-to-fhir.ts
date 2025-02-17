@@ -37,6 +37,22 @@ import {
 } from '@medplum/fhirtypes';
 import { mapCcdaToFhirDate, mapCcdaToFhirDateTime } from './datetime';
 import {
+  OID_ALLERGIES_SECTION_ENTRIES_REQUIRED,
+  OID_CARE_TEAMS_SECTION,
+  OID_GOAL_OBSERVATION,
+  OID_GOALS_SECTION,
+  OID_HEALTH_CONCERNS_SECTION,
+  OID_IMMUNIZATIONS_SECTION_ENTRIES_OPTIONAL,
+  OID_IMMUNIZATIONS_SECTION_ENTRIES_REQUIRED,
+  OID_MEDICATIONS_SECTION_ENTRIES_REQUIRED,
+  OID_NOTES_SECTION,
+  OID_PAYERS_SECTION,
+  OID_PLAN_OF_CARE_SECTION,
+  OID_PROBLEMS_SECTION_ENTRIES_REQUIRED,
+  OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
+  OID_REASON_FOR_REFERRAL,
+} from './oids';
+import {
   ACT_CODE_SYSTEM,
   ADDRESS_USE_MAPPER,
   ALLERGY_CLINICAL_CODE_SYSTEM,
@@ -353,23 +369,23 @@ class CcdaToFhirConverter {
   private processAct(section: CcdaSection, act: CcdaAct): Resource | undefined {
     const templateId = section.templateId[0]['@_root'];
     switch (templateId) {
-      case '2.16.840.1.113883.10.20.22.2.6.1': // Allergies
+      case OID_ALLERGIES_SECTION_ENTRIES_REQUIRED:
         return this.processAllergyIntoleranceAct(act);
-      case '2.16.840.1.113883.10.20.22.2.5.1': // Problems
+      case OID_PROBLEMS_SECTION_ENTRIES_REQUIRED:
         return this.processConditionAct(act);
-      case '2.16.840.1.113883.10.20.22.2.10': // Care Plan
+      case OID_PLAN_OF_CARE_SECTION:
         return this.processCarePlanAct(act);
-      case '2.16.840.1.113883.10.20.22.2.58': // Health Concerns
+      case OID_HEALTH_CONCERNS_SECTION:
         return this.processConditionAct(act);
-      case '2.16.840.1.113883.10.20.22.2.7.1': // Procedures
+      case OID_PROCEDURES_SECTION_ENTRIES_REQUIRED:
         return this.processProcedureAct(act);
-      case '1.3.6.1.4.1.19376.1.5.3.1.3.1': // Reason for Referral
+      case OID_REASON_FOR_REFERRAL:
         // This is part of USCDI v3, which is optional, and not yet implemented
         return undefined;
-      case '2.16.840.1.113883.10.20.22.2.65': // Plan of Treatment
+      case OID_NOTES_SECTION:
         // This is part of USCDI v3, which is optional, and not yet implemented
         return undefined;
-      case '2.16.840.1.113883.10.20.22.2.18': // Immunizations
+      case OID_PAYERS_SECTION:
         // This is part of USCDI v3, which is optional, and not yet implemented
         return undefined;
       default:
@@ -518,11 +534,11 @@ class CcdaToFhirConverter {
   ): Resource | undefined {
     const templateId = section.templateId[0]['@_root'];
     switch (templateId) {
-      case '2.16.840.1.113883.10.20.22.2.1.1':
-      case '2.16.840.1.113883.10.20.22.2.10':
+      case OID_MEDICATIONS_SECTION_ENTRIES_REQUIRED:
+      case OID_PLAN_OF_CARE_SECTION:
         return this.processMedicationSubstanceAdministration(substanceAdmin);
-      case '2.16.840.1.113883.10.20.22.2.2':
-      case '2.16.840.1.113883.10.20.22.2.2.1':
+      case OID_IMMUNIZATIONS_SECTION_ENTRIES_OPTIONAL:
+      case OID_IMMUNIZATIONS_SECTION_ENTRIES_REQUIRED:
         return this.processImmunizationSubstanceAdministration(substanceAdmin);
       default:
         throw new Error('Unhandled substance administration templateId: ' + templateId);
@@ -917,7 +933,7 @@ class CcdaToFhirConverter {
 
   private processOrganizer(section: CcdaSection, organizer: CcdaOrganizer): Resource {
     const templateId = section.templateId[0]['@_root'];
-    if (templateId === '2.16.840.1.113883.10.20.22.2.500') {
+    if (templateId === OID_CARE_TEAMS_SECTION) {
       return this.processCareTeamOrganizer(organizer);
     }
     return this.processVitalsOrganizer(organizer);
@@ -1005,18 +1021,15 @@ class CcdaToFhirConverter {
 
   private processObservation(section: CcdaSection, observation: CcdaObservation): Resource {
     const observationTemplateId = observation.templateId[0]['@_root'];
-    if (
-      observationTemplateId === '2.16.840.1.113883.10.20.22.2.60' ||
-      observationTemplateId === '2.16.840.1.113883.10.20.22.4.121'
-    ) {
+    if (observationTemplateId === OID_GOALS_SECTION || observationTemplateId === OID_GOAL_OBSERVATION) {
       // Goal template
       return this.processGoalObservation(observation);
     }
 
     const sectionTemplateId = section.templateId[0]['@_root'];
     switch (sectionTemplateId) {
-      case '2.16.840.1.113883.10.20.22.2.10':
-      case '2.16.840.1.113883.10.20.22.2.60':
+      case OID_PLAN_OF_CARE_SECTION:
+      case OID_GOALS_SECTION:
         return this.processGoalObservation(observation);
       default:
         // Treat this as a normal observation by default

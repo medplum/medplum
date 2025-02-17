@@ -9,6 +9,7 @@ import {
   Resource,
 } from '@medplum/fhirtypes';
 import { convertFhirToCcda } from './fhir-to-ccda';
+import { OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM } from './oids';
 import {
   ALLERGY_CLINICAL_CODE_SYSTEM,
   CLINICAL_CONDITION_CODE_SYSTEM,
@@ -124,7 +125,7 @@ describe('170.315(g)(9)', () => {
       expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.[0]?.['@_code']).toEqual('2106-3');
       expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.[0]?.['@_displayName']).toEqual('White');
       expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.[0]?.['@_codeSystem']).toEqual(
-        '2.16.840.1.113883.6.238'
+        OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM
       );
       expect(output.recordTarget?.[0]?.patientRole?.patient?.raceCode?.[0]?.['@_codeSystemName']).toEqual(
         'CDC Race and Ethnicity'
@@ -136,7 +137,7 @@ describe('170.315(g)(9)', () => {
         'Not Hispanic or Latino'
       );
       expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.[0]?.['@_codeSystem']).toEqual(
-        '2.16.840.1.113883.6.238'
+        OID_CDC_RACE_AND_ETHNICITY_CODE_SYSTEM
       );
       expect(output.recordTarget?.[0]?.patientRole?.patient?.ethnicGroupCode?.[0]?.['@_codeSystemName']).toEqual(
         'CDC Race and Ethnicity'

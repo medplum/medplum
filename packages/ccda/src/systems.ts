@@ -1,5 +1,66 @@
 import { CPT, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, NDC, RXNORM, SNOMED } from '@medplum/core';
 import { CodeableConcept, MedicationRequest } from '@medplum/fhirtypes';
+import {
+  OID_ASSESSMENT_SCALE_OBSERVATION,
+  OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION,
+  OID_AVERAGE_BLOOD_PRESSURE_ORGANIZER,
+  OID_BASIC_INDUSTRY_OBSERVATION,
+  OID_BASIC_OCCUPATION_OBSERVATION,
+  OID_BIRTH_SEX,
+  OID_COGNITIVE_STATUS_RESULT_OBSERVATION,
+  OID_COGNITIVE_STATUS_RESULT_ORGANIZER,
+  OID_CONFIDENTIALITY_VALUE_SET,
+  OID_CPT_CODE_SYSTEM,
+  OID_CURRENT_SMOKING_STATUS_OBSERVATION,
+  OID_CVX_CODE_SYSTEM,
+  OID_DIET_STATEMENT_NUTRITION,
+  OID_FUNCTIONAL_STATUS_RESULT_OBSERVATION,
+  OID_FUNCTIONAL_STATUS_RESULT_ORGANIZER,
+  OID_LABORATORY_BATTERY_ID,
+  OID_LABORATORY_OBSERVATION_ID,
+  OID_LABORATORY_RESULT_ORGANIZER_ID,
+  OID_LOINC_CODE_SYSTEM,
+  OID_MDC_CODE_SYSTEM,
+  OID_MEDICATION_ADHERENCE,
+  OID_MONITORING_EVALUATION_AND_OUTCOME_NUTRITION,
+  OID_NCI_THESAURUS_CODE_SYSTEM,
+  OID_NDC_CODE_SYSTEM,
+  OID_NDF_RT_CODE_SYSTEM,
+  OID_NUCC_TAXONOMY_CODE_SYSTEM,
+  OID_NUTRITION_RECOMMENDATION_V2,
+  OID_PAN_CANADIAN_LOINC_OBSERVATION_CODE_SYSTEM,
+  OID_PREGNANCY_OBSERVATION,
+  OID_PRESSURE_ULCER_OBSERVATION,
+  OID_PROBLEM_OBSERVATION,
+  OID_PROBLEM_OBSSERVATION_V2,
+  OID_PROCEDURE_ACTIVITY_OBSERVATION,
+  OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
+  OID_RESULT_OBSERVATION,
+  OID_RESULT_OBSERVATION_V2,
+  OID_RESULT_ORGANIZER,
+  OID_RESULT_ORGANIZER_V2,
+  OID_RXNORM_CODE_SYSTEM,
+  OID_SECTION_TIME_RANGE,
+  OID_SEX_OBSERVATION,
+  OID_SEXUAL_ORIENTATION_OBSERVATION,
+  OID_SMOKING_STATUS_OBSERVATION,
+  OID_SNOMED_CT_CODE_SYSTEM,
+  OID_SOCIAL_HISTORY_OBSERVATION,
+  OID_SOCIAL_HISTORY_OBSERVATION_V2,
+  OID_TOBACCO_USE_OBSERVATION,
+  OID_TRIBAL_AFFILIATION_OBSERVATION,
+  OID_UNII_CODE_SYSTEM,
+  OID_US_DLN_CODE_SYSTEM,
+  OID_US_NPI_CODE_SYSTEM,
+  OID_US_SSN_CODE_SYSTEM,
+  OID_VA_MED_RT_CODE_SYSTEM,
+  OID_VITAL_SIGNS_OBSERVATION,
+  OID_VITAL_SIGNS_OBSERVATION_V2,
+  OID_VITAL_SIGNS_ORGANIZER,
+  OID_VITAL_SIGNS_ORGANIZER_V2,
+  OID_WOUND_MEASURMENTS_OBSERVATION,
+  OID_WOUND_OBSERVATION,
+} from './oids';
 import { CcdaCode, CcdaValue } from './types';
 
 export interface EnumEntry<TFhirValue extends string = string, TCcdaValue extends string = string> {
@@ -170,65 +231,65 @@ export const CCDA_NARRATIVE_REFERENCE_URL = 'https://medplum.com/fhir/StructureD
 
 export const SYSTEM_MAPPER = new EnumMapper<string, string>('System', '', '', [
   {
-    ccdaValue: '2.16.840.1.113883.2.20.5.1',
+    ccdaValue: OID_PAN_CANADIAN_LOINC_OBSERVATION_CODE_SYSTEM,
     fhirValue: 'https://fhir.infoway-inforoute.ca/CodeSystem/pCLOCD',
     displayName: 'pan-Canadian LOINC Observation Code Database (pCLOCD)',
   },
   {
-    ccdaValue: '2.16.840.1.113883.3.26.1.1',
+    ccdaValue: OID_NCI_THESAURUS_CODE_SYSTEM,
     fhirValue: NCI_THESAURUS_URL,
     displayName: 'NCI Thesaurus',
   },
-  { ccdaValue: '2.16.840.1.113883.4.1', fhirValue: US_SSN_URL, displayName: 'SSN' },
-  { ccdaValue: '2.16.840.1.113883.4.3', fhirValue: US_DRIVER_LICENSE_URL, displayName: 'DLN' },
-  { ccdaValue: '2.16.840.1.113883.4.6', fhirValue: US_NPI_URL, displayName: 'NPI' },
+  { ccdaValue: OID_US_SSN_CODE_SYSTEM, fhirValue: US_SSN_URL, displayName: 'SSN' },
+  { ccdaValue: OID_US_DLN_CODE_SYSTEM, fhirValue: US_DRIVER_LICENSE_URL, displayName: 'DLN' },
+  { ccdaValue: OID_US_NPI_CODE_SYSTEM, fhirValue: US_NPI_URL, displayName: 'NPI' },
   {
-    ccdaValue: '2.16.840.1.113883.4.9',
+    ccdaValue: OID_UNII_CODE_SYSTEM,
     fhirValue: UNII_URL,
     displayName: 'Unique Ingredient Identifier (UNII)',
   },
-  { ccdaValue: '2.16.840.1.113883.6.1', fhirValue: LOINC, displayName: 'LOINC' },
+  { ccdaValue: OID_LOINC_CODE_SYSTEM, fhirValue: LOINC, displayName: 'LOINC' },
   {
-    ccdaValue: '2.16.840.1.113883.6.12',
+    ccdaValue: OID_CPT_CODE_SYSTEM,
     fhirValue: CPT,
     displayName: 'Current Procedural Terminology (CPT)',
   },
   {
-    ccdaValue: '2.16.840.1.113883.6.24',
+    ccdaValue: OID_MDC_CODE_SYSTEM,
     fhirValue: 'urn:iso:std:iso:11073:10101',
     displayName: 'Medical Device Communications (MDC)',
   },
   {
-    ccdaValue: '2.16.840.1.113883.6.69',
+    ccdaValue: OID_NDC_CODE_SYSTEM,
     fhirValue: NDC,
     displayName: 'National Drug Code (NDC)',
   },
   {
-    ccdaValue: '2.16.840.1.113883.6.88',
+    ccdaValue: OID_RXNORM_CODE_SYSTEM,
     fhirValue: RXNORM,
     displayName: 'RxNorm',
   },
-  { ccdaValue: '2.16.840.1.113883.6.96', fhirValue: SNOMED, displayName: 'SNOMED CT' },
+  { ccdaValue: OID_SNOMED_CT_CODE_SYSTEM, fhirValue: SNOMED, displayName: 'SNOMED CT' },
   {
-    ccdaValue: '2.16.840.1.113883.6.101',
+    ccdaValue: OID_NUCC_TAXONOMY_CODE_SYSTEM,
     fhirValue: NUCC_TAXONOMY_URL,
     displayName: 'NUCC Health Care Provider Taxonomy',
   },
   {
-    ccdaValue: '2.16.840.1.113883.6.345',
+    ccdaValue: OID_VA_MED_RT_CODE_SYSTEM,
     fhirValue: VA_MEDRT_URL,
     displayName: 'Medication Reference Terminology (MED-RT)',
   },
   {
-    ccdaValue: '2.16.840.1.113883.6.209',
+    ccdaValue: OID_NDF_RT_CODE_SYSTEM,
     fhirValue: NDFRT_URL,
     displayName: 'National Drug File Reference Terminology (NDF-RT)',
   },
-  { ccdaValue: '2.16.840.1.113883.12.292', fhirValue: CVX_URL, displayName: 'CVX' },
+  { ccdaValue: OID_CVX_CODE_SYSTEM, fhirValue: CVX_URL, displayName: 'CVX' },
 
   // Alternate FHIR System:
   {
-    ccdaValue: '2.16.840.1.113883.12.292',
+    ccdaValue: OID_CVX_CODE_SYSTEM,
     fhirValue: FHIR_CVX_URL,
     displayName: 'Vaccine Administered Code Set (CVX)',
   },
@@ -303,7 +364,7 @@ export function mapCodeableConceptToCcdaValue(codeableConcept: CodeableConcept |
 
 export const CONFIDENTIALITY_MAPPER = new EnumMapper(
   'Confidentiality',
-  '2.16.840.1.113883.5.25',
+  OID_CONFIDENTIALITY_VALUE_SET,
   CONFIDENTIALITY_CODE_SYSTEM,
   [
     { ccdaValue: 'U', fhirValue: 'U', displayName: 'unrestricted' },
@@ -428,23 +489,23 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
     // - Basic Occupation Observation (2.16.840.1.113883.10.20.22.4.503)
     // - Basic Industry Observation (2.16.840.1.113883.10.20.22.4.504)
     // - Sexual Orientation Observation (2.16.840.1.113883.10.20.22.4.501)
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.38', fhirValue: 'social-history', displayName: 'Social History' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.38.1', fhirValue: 'social-history', displayName: 'Social History V2' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.78', fhirValue: 'social-history', displayName: 'Smoking Status' },
+    { ccdaValue: OID_SOCIAL_HISTORY_OBSERVATION, fhirValue: 'social-history', displayName: 'Social History' },
+    { ccdaValue: OID_SOCIAL_HISTORY_OBSERVATION_V2, fhirValue: 'social-history', displayName: 'Social History V2' },
+    { ccdaValue: OID_SMOKING_STATUS_OBSERVATION, fhirValue: 'social-history', displayName: 'Smoking Status' },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.78.2',
+      ccdaValue: OID_CURRENT_SMOKING_STATUS_OBSERVATION,
       fhirValue: 'social-history',
       displayName: 'Current Smoking Status',
     },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.85', fhirValue: 'social-history', displayName: 'Tobacco Use' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.503', fhirValue: 'social-history', displayName: 'Basic Occupation' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.504', fhirValue: 'social-history', displayName: 'Basic Industry' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.501', fhirValue: 'social-history', displayName: 'Sexual Orientation' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.507', fhirValue: 'social-history', displayName: 'Sex Observation' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.200', fhirValue: 'social-history', displayName: 'Gender Identity' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.201', fhirValue: 'social-history', displayName: 'Gender Identity V2' },
-    { ccdaValue: '2.16.840.1.113883.10.20.15.3.8', fhirValue: 'social-history', displayName: 'Pregnancy Status' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.506', fhirValue: 'social-history', displayName: 'Tribal Affiliation' },
+    { ccdaValue: OID_TOBACCO_USE_OBSERVATION, fhirValue: 'social-history', displayName: 'Tobacco Use' },
+    { ccdaValue: OID_BASIC_OCCUPATION_OBSERVATION, fhirValue: 'social-history', displayName: 'Basic Occupation' },
+    { ccdaValue: OID_BASIC_INDUSTRY_OBSERVATION, fhirValue: 'social-history', displayName: 'Basic Industry' },
+    { ccdaValue: OID_SEXUAL_ORIENTATION_OBSERVATION, fhirValue: 'social-history', displayName: 'Sexual Orientation' },
+    { ccdaValue: OID_SEX_OBSERVATION, fhirValue: 'social-history', displayName: 'Sex Observation' },
+    { ccdaValue: OID_BIRTH_SEX, fhirValue: 'social-history', displayName: 'Gender Identity' },
+    { ccdaValue: OID_SECTION_TIME_RANGE, fhirValue: 'social-history', displayName: 'Gender Identity V2' },
+    { ccdaValue: OID_PREGNANCY_OBSERVATION, fhirValue: 'social-history', displayName: 'Pregnancy Status' },
+    { ccdaValue: OID_TRIBAL_AFFILIATION_OBSERVATION, fhirValue: 'social-history', displayName: 'Tribal Affiliation' },
 
     // ## vital-signs
     // FHIR Definition: Clinical observations measure the body's basic functions such as blood pressure, heart rate, respiratory rate, height, weight, body mass index, head circumference, pulse oximetry, temperature, and body surface area.
@@ -454,20 +515,20 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
     // - Vital Signs Observation (2.16.840.1.113883.10.20.22.4.27)
     // - Vital Signs Observation V2 (2.16.840.1.113883.10.20.22.4.27.2)
     // - Average Blood Pressure Organizer (2.16.840.1.113883.10.20.22.4.512)
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.26', fhirValue: 'vital-signs', displayName: 'Vital Signs Organizer' },
+    { ccdaValue: OID_VITAL_SIGNS_ORGANIZER, fhirValue: 'vital-signs', displayName: 'Vital Signs Organizer' },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.26.2',
+      ccdaValue: OID_VITAL_SIGNS_ORGANIZER_V2,
       fhirValue: 'vital-signs',
       displayName: 'Vital Signs Organizer V2',
     },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.27', fhirValue: 'vital-signs', displayName: 'Vital Signs Observation' },
+    { ccdaValue: OID_VITAL_SIGNS_OBSERVATION, fhirValue: 'vital-signs', displayName: 'Vital Signs Observation' },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.27.2',
+      ccdaValue: OID_VITAL_SIGNS_OBSERVATION_V2,
       fhirValue: 'vital-signs',
       displayName: 'Vital Signs Observation V2',
     },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.512',
+      ccdaValue: OID_AVERAGE_BLOOD_PRESSURE_ORGANIZER,
       fhirValue: 'vital-signs',
       displayName: 'Average Blood Pressure Organizer',
     },
@@ -482,18 +543,18 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
     // - Laboratory Battery (ID) (2.16.840.1.113883.10.20.22.4.406)
     // - Laboratory Observation (ID) (2.16.840.1.113883.10.20.22.4.407)
     // - Laboratory Result Organizer (ID) (2.16.840.1.113883.10.20.22.4.416)
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.1', fhirValue: 'laboratory', displayName: 'Result Organizer' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.1.2', fhirValue: 'laboratory', displayName: 'Result Organizer V2' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.2', fhirValue: 'laboratory', displayName: 'Result Observation' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.2.2', fhirValue: 'laboratory', displayName: 'Result Observation V2' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.406', fhirValue: 'laboratory', displayName: 'Laboratory Battery (ID)' },
+    { ccdaValue: OID_RESULT_ORGANIZER, fhirValue: 'laboratory', displayName: 'Result Organizer' },
+    { ccdaValue: OID_RESULT_ORGANIZER_V2, fhirValue: 'laboratory', displayName: 'Result Organizer V2' },
+    { ccdaValue: OID_RESULT_OBSERVATION, fhirValue: 'laboratory', displayName: 'Result Observation' },
+    { ccdaValue: OID_RESULT_OBSERVATION_V2, fhirValue: 'laboratory', displayName: 'Result Observation V2' },
+    { ccdaValue: OID_LABORATORY_BATTERY_ID, fhirValue: 'laboratory', displayName: 'Laboratory Battery (ID)' },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.407',
+      ccdaValue: OID_LABORATORY_OBSERVATION_ID,
       fhirValue: 'laboratory',
       displayName: 'Laboratory Observation (ID)',
     },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.416',
+      ccdaValue: OID_LABORATORY_RESULT_ORGANIZER_ID,
       fhirValue: 'laboratory',
       displayName: 'Laboratory Result Organizer (ID)',
     },
@@ -507,29 +568,29 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
     // - Cognitive Status Result Organizer (2.16.840.1.113883.10.20.22.4.75)
     // - Functional Status Result Observation (2.16.840.1.113883.10.20.22.4.67)
     // - Functional Status Result Organizer (2.16.840.1.113883.10.20.22.4.66)
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.69', fhirValue: 'survey', displayName: 'Assessment Scale Observation' },
+    { ccdaValue: OID_ASSESSMENT_SCALE_OBSERVATION, fhirValue: 'survey', displayName: 'Assessment Scale Observation' },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.86',
+      ccdaValue: OID_ASSESSMENT_SCALE_SUPPORTING_OBSERVATION,
       fhirValue: 'survey',
       displayName: 'Assessment Scale Supporting Observation',
     },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.74',
+      ccdaValue: OID_COGNITIVE_STATUS_RESULT_OBSERVATION,
       fhirValue: 'survey',
       displayName: 'Cognitive Status Result Observation',
     },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.75',
+      ccdaValue: OID_COGNITIVE_STATUS_RESULT_ORGANIZER,
       fhirValue: 'survey',
       displayName: 'Cognitive Status Result Organizer',
     },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.67',
+      ccdaValue: OID_FUNCTIONAL_STATUS_RESULT_OBSERVATION,
       fhirValue: 'survey',
       displayName: 'Functional Status Result Observation',
     },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.66',
+      ccdaValue: OID_FUNCTIONAL_STATUS_RESULT_ORGANIZER,
       fhirValue: 'survey',
       displayName: 'Functional Status Result Organizer',
     },
@@ -542,13 +603,13 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
     // - Pressure Ulcer Observation (2.16.840.1.113883.10.20.22.4.70)
     // - Wound Observation (2.16.840.1.113883.10.20.22.4.114)
     // - Wound Measurements Observation (2.16.840.1.113883.10.20.22.4.133)
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.4', fhirValue: 'exam', displayName: 'Problem Observation' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.4.2', fhirValue: 'exam', displayName: 'Problem Observation V2' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.70', fhirValue: 'exam', displayName: 'Pressure Ulcer Observation' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.114', fhirValue: 'exam', displayName: 'Wound Observation' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.133', fhirValue: 'exam', displayName: 'Wound Measurements Observation' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.2.7.1', fhirValue: 'exam', displayName: 'Procedure Section' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.13', fhirValue: 'exam', displayName: 'Procedure Activity Observation' },
+    { ccdaValue: OID_PROBLEM_OBSERVATION, fhirValue: 'exam', displayName: 'Problem Observation' },
+    { ccdaValue: OID_PROBLEM_OBSSERVATION_V2, fhirValue: 'exam', displayName: 'Problem Observation V2' },
+    { ccdaValue: OID_PRESSURE_ULCER_OBSERVATION, fhirValue: 'exam', displayName: 'Pressure Ulcer Observation' },
+    { ccdaValue: OID_WOUND_OBSERVATION, fhirValue: 'exam', displayName: 'Wound Observation' },
+    { ccdaValue: OID_WOUND_MEASURMENTS_OBSERVATION, fhirValue: 'exam', displayName: 'Wound Measurements Observation' },
+    { ccdaValue: OID_PROCEDURES_SECTION_ENTRIES_REQUIRED, fhirValue: 'exam', displayName: 'Procedure Section' },
+    { ccdaValue: OID_PROCEDURE_ACTIVITY_OBSERVATION, fhirValue: 'exam', displayName: 'Procedure Activity Observation' },
 
     // ## therapy
     // FHIR Definition: Observations generated by non-interventional treatment protocols (e.g. occupational, physical, radiation, nutritional and medication therapy)
@@ -557,11 +618,11 @@ export const OBSERVATION_CATEGORY_MAPPER = new EnumMapper<string, string>(
     // - Nutrition Recommendations (2.16.840.1.113883.10.20.22.4.130)
     // - Diet Statement (Nutrition) (2.16.840.1.113883.10.20.22.4.244)
     // - Monitoring, Evaluation and Outcome (Nutrition) (2.16.840.1.113883.10.20.22.4.250)
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.508', fhirValue: 'therapy', displayName: 'Medication Adherence' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.130', fhirValue: 'therapy', displayName: 'Nutrition Recommendations' },
-    { ccdaValue: '2.16.840.1.113883.10.20.22.4.244', fhirValue: 'therapy', displayName: 'Diet Statement (Nutrition)' },
+    { ccdaValue: OID_MEDICATION_ADHERENCE, fhirValue: 'therapy', displayName: 'Medication Adherence' },
+    { ccdaValue: OID_NUTRITION_RECOMMENDATION_V2, fhirValue: 'therapy', displayName: 'Nutrition Recommendations' },
+    { ccdaValue: OID_DIET_STATEMENT_NUTRITION, fhirValue: 'therapy', displayName: 'Diet Statement (Nutrition)' },
     {
-      ccdaValue: '2.16.840.1.113883.10.20.22.4.250',
+      ccdaValue: OID_MONITORING_EVALUATION_AND_OUTCOME_NUTRITION,
       fhirValue: 'therapy',
       displayName: 'Monitoring, Evaluation and Outcome (Nutrition)',
     },

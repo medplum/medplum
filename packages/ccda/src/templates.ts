@@ -1,19 +1,43 @@
+import {
+  OID_ALLERGIES_SECTION_ENTRIES_REQUIRED,
+  OID_ASSESSMENTS_SECTION,
+  OID_CARE_TEAMS_SECTION,
+  OID_CONTINUITY_OF_CARE_DOCUMENT,
+  OID_ENCOUNTERS_SECTION_ENTRIES_REQUIRED,
+  OID_GOALS_SECTION,
+  OID_HEALTH_CONCERNS_SECTION,
+  OID_IMMUNIZATIONS_SECTION_ENTRIES_OPTIONAL,
+  OID_IMMUNIZATIONS_SECTION_ENTRIES_REQUIRED,
+  OID_MEDICAL_EQUIPMENT_ENTRIES_OPTIONAL,
+  OID_MEDICATIONS_SECTION_ENTRIES_REQUIRED,
+  OID_MENTAL_STATUS_SECTION,
+  OID_NOTES_SECTION,
+  OID_PAYERS_SECTION,
+  OID_PLAN_OF_CARE_SECTION,
+  OID_PROBLEMS_SECTION_ENTRIES_REQUIRED,
+  OID_PROCEDURES_SECTION_ENTRIES_REQUIRED,
+  OID_REASON_FOR_REFERRAL,
+  OID_RESULTS_SECTION_ENTRIES_REQUIRED,
+  OID_SOCIAL_HISTORY_SECTION_ENTRIES_OPTIONAL,
+  OID_US_REALM_CDA_HEADER,
+  OID_VITAL_SIGNS_SECTION_ENTRIES_REQUIRED,
+} from './oids';
 import { CcdaTemplateId } from './types';
 
 export const CCDA_TEMPLATE_IDS = [
   {
-    '@_root': '2.16.840.1.113883.10.20.22.1.1',
+    '@_root': OID_US_REALM_CDA_HEADER,
     '@_extension': '2015-08-01',
   },
   {
-    '@_root': '2.16.840.1.113883.10.20.22.1.1',
+    '@_root': OID_US_REALM_CDA_HEADER,
   },
   {
-    '@_root': '2.16.840.1.113883.10.20.22.1.2',
+    '@_root': OID_CONTINUITY_OF_CARE_DOCUMENT,
     '@_extension': '2015-08-01',
   },
   {
-    '@_root': '2.16.840.1.113883.10.20.22.1.2',
+    '@_root': OID_CONTINUITY_OF_CARE_DOCUMENT,
   },
 ];
 
@@ -51,125 +75,104 @@ export const CCDA_TEMPLATE_IDS = [
 // 11. Plan of Care (including Assessment and Plan of Treatment, Goals, and Health Concerns)
 
 // Allergies and Intolerances 2.16.840.1.113883.10.20.22.2.6.1 Allergies Section (entries required)
-export const ALLERGIES_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.6.1';
 export const ALLERGIES_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': ALLERGIES_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_ALLERGIES_SECTION_ENTRIES_REQUIRED, '@_extension': '2015-08-01' },
 ];
 
 // Medications 2.16.840.1.113883.10.20.22.2.1.1 Medications Section (entries required)
-export const MEDICATION_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.1.1';
 export const MEDICATIONS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': MEDICATION_SECTION_TEMPLATE_ID, '@_extension': '2014-06-09' },
+  { '@_root': OID_MEDICATIONS_SECTION_ENTRIES_REQUIRED, '@_extension': '2014-06-09' },
 ];
 
 // Problems 2.16.840.1.113883.10.20.22.2.5.1 Problem Section (entries required)
-export const PROBLEMS_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.5.1';
 export const PROBLEMS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': PROBLEMS_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_PROBLEMS_SECTION_ENTRIES_REQUIRED, '@_extension': '2015-08-01' },
 ];
 
 // Immunizations 2.16.840.1.113883.10.20.22.2.2.1 Immunizations Section (entries required)
-export const IMMUNIZATIONS_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.2.1';
 export const IMMUNIZATIONS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': '2.16.840.1.113883.10.20.22.2.2' },
-  { '@_root': '2.16.840.1.113883.10.20.22.2.2', '@_extension': '2015-08-01' },
-  { '@_root': '2.16.840.1.113883.10.20.22.2.2.1' },
-  { '@_root': '2.16.840.1.113883.10.20.22.2.2.1', '@_extension': '2015-08-01' },
+  { '@_root': OID_IMMUNIZATIONS_SECTION_ENTRIES_OPTIONAL },
+  { '@_root': OID_IMMUNIZATIONS_SECTION_ENTRIES_OPTIONAL, '@_extension': '2015-08-01' },
+  { '@_root': OID_IMMUNIZATIONS_SECTION_ENTRIES_REQUIRED },
+  { '@_root': OID_IMMUNIZATIONS_SECTION_ENTRIES_REQUIRED, '@_extension': '2015-08-01' },
 ];
 
 // Vital Signs 2.16.840.1.113883.10.20.22.2.4.1 Vital Signs Section (entries required)
-export const VITAL_SIGNS_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.4.1';
 export const VITAL_SIGNS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': VITAL_SIGNS_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_VITAL_SIGNS_SECTION_ENTRIES_REQUIRED, '@_extension': '2015-08-01' },
 ];
 
 // Smoking Status 2.16.840.1.113883.10.20.22.2.16 Social History Section (entries required) - Use appropriate entries within this section for smoking status.
-export const SOCIAL_HISTORY_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.17';
 export const SOCIAL_HISTORY_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': SOCIAL_HISTORY_SECTION_TEMPLATE_ID },
-  { '@_root': SOCIAL_HISTORY_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_SOCIAL_HISTORY_SECTION_ENTRIES_OPTIONAL },
+  { '@_root': OID_SOCIAL_HISTORY_SECTION_ENTRIES_OPTIONAL, '@_extension': '2015-08-01' },
 ];
 
 // Procedures 2.16.840.1.113883.10.20.22.2.7.1 Procedures Section (entries required)
 // 47519-4
-export const PROCEDURES_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.7.1';
 export const PROCEDURES_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': PROCEDURES_SECTION_TEMPLATE_ID, '@_extension': '2014-06-09' },
+  { '@_root': OID_PROCEDURES_SECTION_ENTRIES_REQUIRED, '@_extension': '2014-06-09' },
 ];
 
 // Clinical Notes 2.16.840.1.113883.10.20.22.2.10 General Header Constraints (entries required) - Clinical notes can be included in various sections using this template ID.
-export const CLINICAL_NOTES_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.10';
 export const CLINICAL_NOTES_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': CLINICAL_NOTES_SECTION_TEMPLATE_ID, '@_extension': '2014-06-09' },
+  { '@_root': OID_PLAN_OF_CARE_SECTION, '@_extension': '2014-06-09' },
 ];
 
 // Laboratory Tests (Orders) 2.16.840.1.113883.10.20.22.2.3.1 Results Section (entries required) - Lab orders would be included as entries in this section.
-export const LAB_TESTS_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.3.1';
 export const LAB_TESTS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': LAB_TESTS_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_RESULTS_SECTION_ENTRIES_REQUIRED, '@_extension': '2015-08-01' },
 ];
 
 // Laboratory Values/Results 2.16.840.1.113883.10.20.22.2.3.1 Results Section (entries required) - Lab results would also be included as entries in this section.
-export const RESULTS_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.3.1';
 export const RESULTS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': RESULTS_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_RESULTS_SECTION_ENTRIES_REQUIRED, '@_extension': '2015-08-01' },
 ];
 
 // Unique Device Identifiers for a Patient's Implantable Device(s) 2.16.840.1.113883.10.20.22.2.23 Medical Equipment Section - Use appropriate entries within this section for implantable devices.
-export const DEVICES_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.23';
 export const DEVICES_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': DEVICES_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_MEDICAL_EQUIPMENT_ENTRIES_OPTIONAL, '@_extension': '2015-08-01' },
 ];
 
-export const ASSESSMENTS_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.8';
-export const ASSESSMENTS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [{ '@_root': ASSESSMENTS_SECTION_TEMPLATE_ID }];
+export const ASSESSMENTS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [{ '@_root': OID_ASSESSMENTS_SECTION }];
 
 // Assessment and Plan of Treatment 2.16.840.1.113883.10.20.22.2.17 Assessment and Plan Section
-export const PLAN_OF_TREATMENT_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.10';
 export const PLAN_OF_TREATMENT_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': PLAN_OF_TREATMENT_SECTION_TEMPLATE_ID },
-  { '@_root': PLAN_OF_TREATMENT_SECTION_TEMPLATE_ID, '@_extension': '2014-06-09' },
+  { '@_root': OID_PLAN_OF_CARE_SECTION },
+  { '@_root': OID_PLAN_OF_CARE_SECTION, '@_extension': '2014-06-09' },
 ];
 
 // Encounters 2.16.840.1.113883.10.20.22.2.22.1 Encounters Section (entries required)
-export const ENCOUNTERS_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.22.1';
 export const ENCOUNTERS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': ENCOUNTERS_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_ENCOUNTERS_SECTION_ENTRIES_REQUIRED, '@_extension': '2015-08-01' },
 ];
 
 // Goals 2.16.840.1.113883.10.20.22.2.17 Assessment and Plan Section - Goals can be included as entries within this section.
-export const GOALS_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.60';
-export const GOALS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [{ '@_root': GOALS_SECTION_TEMPLATE_ID }];
+export const GOALS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [{ '@_root': OID_GOALS_SECTION }];
 
 // Health Concerns 2.16.840.1.113883.10.20.22.2.58  Health concerns can be represented as problems.
-export const HEALTH_CONCERNS_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.58';
 export const HEALTH_CONCERNS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': HEALTH_CONCERNS_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_HEALTH_CONCERNS_SECTION, '@_extension': '2015-08-01' },
 ];
 
-export const REASON_FOR_REFERRAL_SECTION_TEMPLATE_ID = '1.3.6.1.4.1.19376.1.5.3.1.3.1';
 export const REASON_FOR_REFERRAL_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': REASON_FOR_REFERRAL_SECTION_TEMPLATE_ID, '@_extension': '2014-06-09' },
+  { '@_root': OID_REASON_FOR_REFERRAL, '@_extension': '2014-06-09' },
 ];
 
-export const MENTAL_STATUS_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.56';
 export const MENTAL_STATUS_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': MENTAL_STATUS_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_MENTAL_STATUS_SECTION, '@_extension': '2015-08-01' },
 ];
 
-export const PATIENT_NOTES_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.65';
 export const PATIENT_NOTES_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': PATIENT_NOTES_SECTION_TEMPLATE_ID, '@_extension': '2016-11-01' },
+  { '@_root': OID_NOTES_SECTION, '@_extension': '2016-11-01' },
 ];
 
-export const CARE_TEAM_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.500';
 export const CARE_TEAM_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': CARE_TEAM_SECTION_TEMPLATE_ID, '@_extension': '2022-06-01' },
+  { '@_root': OID_CARE_TEAMS_SECTION, '@_extension': '2022-06-01' },
 ];
 
-export const INSURANCE_SECTION_TEMPLATE_ID = '2.16.840.1.113883.10.20.22.2.18';
 export const INSURANCE_SECTION_TEMPLATE_IDS: CcdaTemplateId[] = [
-  { '@_root': INSURANCE_SECTION_TEMPLATE_ID, '@_extension': '2015-08-01' },
+  { '@_root': OID_PAYERS_SECTION, '@_extension': '2015-08-01' },
 ];
 
 // 1. Allergies and Intolerances
