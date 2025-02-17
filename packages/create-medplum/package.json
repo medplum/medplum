@@ -43,7 +43,7 @@
     "test": "jest"
   },
   "devDependencies": {
-    "@types/node": "20.17.17"
+    "@types/node": "20.17.19"
   },
   "engines": {
     "node": ">=18.0.0"
