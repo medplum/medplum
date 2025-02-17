@@ -3,7 +3,7 @@ import { useDisclosure } from '@mantine/hooks';
 import { formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
 import { killEvent } from '../utils/dom';
 import { ConceptBadge } from './ConceptBadge';
@@ -179,7 +179,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
         {LOINC_CODES.map((meta) => {
           const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
           return (
-            <>
+            <Fragment key={meta.name}>
               <Grid.Col span={2} ta="right">
                 <Tooltip label={meta.title}>
                   <Text c="dimmed" size="xs">
@@ -199,7 +199,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
                   )}
                 </Text>
               </Grid.Col>
-            </>
+            </Fragment>
           );
         })}
       </Grid>
@@ -208,6 +208,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
           <SimpleGrid cols={2}>
             {LOINC_CODES.map((meta, index) => (
               <TextInput
+                key={meta.name}
                 name={meta.name}
                 label={meta.short}
                 description={meta.title}
