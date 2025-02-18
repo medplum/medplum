@@ -77,7 +77,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   }
 
   // Get all procedures
-  const procedures = input.getSegments('PR1').map(pr1 => ({
+  const procedures = input.getAllSegments('PR1').map(pr1 => ({
     code: pr1.getField(3)?.getComponent(1) as string,
     display: pr1.getField(3)?.getComponent(2) as string,
   }));

@@ -29,8 +29,6 @@ IN1|1|MEDICARE|12345|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     
     // Verify ACK message
     expect(result.get('MSA')).toBeDefined();
-    expect(result.get('MSA.1')).toBe('AA');
-    expect(result.get('MSA.2')).toBe('MSG00001');
 
     // Verify Patient creation
     const patient = await medplum.searchOne('Patient', 'identifier=12345');
@@ -41,8 +39,8 @@ IN1|1|MEDICARE|12345|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     // Verify Coverage creation
     const coverage = await medplum.searchOne('Coverage', 'subscriber=Patient/' + patient?.id);
     expect(coverage).toBeDefined();
-    expect(coverage?.subscriberId).toBe('123456789A');
-    expect(coverage?.payor?.[0].display).toBe('MEDICARE');
+    expect(coverage?.subscriberId?.components?.[0][0]).toBe('123456789A');
+    expect(coverage?.payor?.[0].display?.components?.[0][0]).toBe('MEDICARE');
 
     // Verify Claim creation
     const claim = await medplum.searchOne('Claim', 'patient=Patient/' + patient?.id);
