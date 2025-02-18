@@ -87,11 +87,11 @@ export async function getPatientEverything(
   ];
 
   if (params?.start) {
-    filters.push({ code: 'date', operator: Operator.GREATER_THAN_OR_EQUALS, value: params.start });
+    filters.push({ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: params.start });
   }
 
   if (params?.end) {
-    filters.push({ code: 'date', operator: Operator.LESS_THAN_OR_EQUALS, value: params.end });
+    filters.push({ code: '_lastUpdated', operator: Operator.LESS_THAN_OR_EQUALS, value: params.end });
   }
 
   if (params?._since) {

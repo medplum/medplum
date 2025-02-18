@@ -17,7 +17,7 @@ export function ExportPage(): JSX.Element | null {
       {resource.resourceType === 'Patient' ? (
         <PatientExportForm patient={resource} />
       ) : (
-        <Alert icon={<IconAlertCircle size={16} />} title="Unknown export type" color="red">
+        <Alert icon={<IconAlertCircle size={16} />} title="Unsupported export type" color="red">
           This page is only supported for Patient resources
         </Alert>
       )}

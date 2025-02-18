@@ -20,14 +20,7 @@ describe('PatientExportForm', () => {
     });
   }
 
-  test('Renders', async () => {
-    await setup({ patient: HomerSimpson });
-
-    const button = await screen.findByText('Request Export');
-    expect(button).toBeInTheDocument();
-  });
-
-  test('Submit', async () => {
+  beforeAll(() => {
     // Mock URL.createObjectURL
     URL.createObjectURL = jest.fn();
     URL.revokeObjectURL = jest.fn();
@@ -49,7 +42,16 @@ describe('PatientExportForm', () => {
       }
       return result;
     };
+  });
 
+  test('Renders', async () => {
+    await setup({ patient: HomerSimpson });
+
+    const button = await screen.findByText('Request Export');
+    expect(button).toBeInTheDocument();
+  });
+
+  test('Submit', async () => {
     // Mock the patient everything endpoint
     const medplum = new MockClient();
     medplum.router.add('GET', '/Patient/:id/$everything', async () => [
@@ -58,6 +60,38 @@ describe('PatientExportForm', () => {
     ]);
 
     await setup({ patient: HomerSimpson }, medplum);
+
+    const button = await screen.findByText('Request Export');
+    expect(button).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(button);
+    });
+
+    const exporting = await screen.findByText('Patient Export');
+    expect(exporting).toBeInTheDocument();
+
+    const done = await screen.findByText('Done');
+    expect(done).toBeInTheDocument();
+  });
+
+  test('Submit with start and end', async () => {
+    // Mock the patient everything endpoint
+    const medplum = new MockClient();
+    medplum.router.add('GET', '/Patient/:id/$everything', async () => [
+      allOk,
+      { resourceType: 'Bundle', type: 'document' },
+    ]);
+
+    await setup({ patient: HomerSimpson }, medplum);
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('Start date'), { target: { value: '2020-01-01T00:00:00' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByPlaceholderText('End date'), { target: { value: '2040-01-01T00:00:00' } });
+    });
 
     const button = await screen.findByText('Request Export');
     expect(button).toBeInTheDocument();
