@@ -16,6 +16,24 @@ export interface PatientExportFormProps {
 const NOTIFICATION_ID = 'patient-export';
 const NOTIFICATION_TITLE = 'Patient Export';
 
+const formats = {
+  everything: {
+    operation: '$everything',
+    extension: 'json',
+    contentType: ContentType.FHIR_JSON,
+  },
+  summary: {
+    operation: '$summary',
+    extension: 'json',
+    contentType: ContentType.FHIR_JSON,
+  },
+  ccda: {
+    operation: '$ccda-export',
+    extension: 'xml',
+    contentType: ContentType.CDA_XML,
+  },
+};
+
 export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
   const medplum = useMedplum();
   const { patient } = props;
@@ -23,7 +41,9 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
   const handleSubmit = useCallback(
     async (data: Record<string, string>) => {
       const patientId = resolveId(patient) as string;
-      const url = medplum.fhirUrl('Patient', patientId, data.format);
+      const format = data.format as keyof typeof formats;
+      const { operation, contentType, extension } = formats[format];
+      const url = medplum.fhirUrl('Patient', patientId, operation);
 
       if (data.startDate) {
         url.searchParams.append('start', data.startDate);
@@ -43,13 +63,11 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
       });
 
       try {
-        const response = await medplum.get(url, { cache: 'no-cache' });
+        const response = await medplum.get(url, { cache: 'no-cache', headers: { Accept: contentType } });
 
-        saveData(
-          response,
-          `Patient-export-${patientId}-${new Date().toISOString().replaceAll(':', '-')}.json`,
-          ContentType.FHIR_JSON
-        );
+        const fileName = `Patient-export-${patientId}-${new Date().toISOString().replaceAll(':', '-')}.${extension}`;
+
+        saveData(response, fileName, contentType);
 
         notifications.update({
           id: NOTIFICATION_ID,
@@ -84,9 +102,9 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
           <SegmentedControl
             name="format"
             data={[
-              { label: 'FHIR Everything', value: '$everything' },
-              { label: 'Patient Summary', value: '$summary' },
-              { label: 'C-CDA', value: '$ccda-export' },
+              { label: 'FHIR Everything', value: 'everything' },
+              { label: 'Patient Summary', value: 'summary' },
+              { label: 'C-CDA', value: 'ccda' },
             ]}
             fullWidth
           />
@@ -123,13 +141,13 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
  * @param fileName - The name of the file.
  * @param contentType - The content type of the file.
  */
-function saveData(data: any, fileName: string, contentType: string): void {
+function saveData(data: unknown, fileName: string, contentType: string): void {
+  const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  const blob = new Blob([content], { type: contentType });
+  const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   document.body.appendChild(a);
   a.style.display = 'none';
-  const json = JSON.stringify(data);
-  const blob = new Blob([json], { type: contentType });
-  const url = window.URL.createObjectURL(blob);
   a.href = url;
   a.download = fileName;
   a.click();
