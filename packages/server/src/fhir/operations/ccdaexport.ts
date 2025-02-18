@@ -1,33 +1,10 @@
 import { convertCcdaToXml, convertFhirToCcda } from '@medplum/ccda';
 import { allOk, ContentType } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Binary, OperationDefinition, OperationDefinitionParameter, Patient } from '@medplum/fhirtypes';
+import { Binary, Patient } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
-import { getPatientSummary, PatientSummaryParameters } from './patientsummary';
+import { getPatientSummary, operation, PatientSummaryParameters } from './patientsummary';
 import { parseInputParameters } from './utils/parameters';
-
-const operation: OperationDefinition = {
-  resourceType: 'OperationDefinition',
-  id: 'summary',
-  name: 'CcdaExport',
-  title: 'C-CDA Export',
-  status: 'active',
-  kind: 'operation',
-  affectsState: false,
-  code: 'summary',
-  resource: ['Patient'],
-  system: false,
-  type: true,
-  instance: true,
-  parameter: [
-    ['start', 'in', 0, 1, 'date'],
-    ['end', 'in', 0, 1, 'date'],
-    ['_since', 'in', 0, 1, 'instant'],
-    ['identifier', 'in', 0, 1, 'string'],
-    ['profile', 'in', 0, 1, 'canonical'],
-    ['return', 'out', 0, 1, 'Bundle'],
-  ].map(([name, use, min, max, type]) => ({ name, use, min, max, type }) as OperationDefinitionParameter),
-};
 
 /**
  * C-CDA export operation parameters.

@@ -36,7 +36,7 @@ export const LOINC_PLAN_OF_TREATMENT_SECTION = '18776-5';
 // Patient summary operation
 // https://build.fhir.org/ig/HL7/fhir-ips/OperationDefinition-summary.html
 
-const operation: OperationDefinition = {
+export const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
   id: 'summary',
   name: 'IpsSummary',
