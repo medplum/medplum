@@ -1,17 +1,17 @@
-import { createReference } from '@medplum/core';
+import { Notifications } from '@mantine/notifications';
+import { allOk } from '@medplum/core';
 import { HomerSimpson, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
-import { act, fireEvent, render, screen, waitFor } from '../test-utils/render';
 import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen } from '../test-utils/render';
 import { PatientExportForm, PatientExportFormProps } from './PatientExportForm';
 
-const medplum = new MockClient();
-
 describe('PatientExportForm', () => {
-  async function setup(args: PatientExportFormProps): Promise<void> {
+  async function setup(args: PatientExportFormProps, medplum = new MockClient()): Promise<void> {
     await act(async () => {
       render(
         <MemoryRouter>
+          <Notifications />
           <MedplumProvider medplum={medplum}>
             <PatientExportForm {...args} />
           </MedplumProvider>
@@ -20,71 +20,56 @@ describe('PatientExportForm', () => {
     });
   }
 
-  test('Renders reference', async () => {
-    await setup({ patient: createReference(HomerSimpson) });
-
-    await waitFor(() => screen.getAllByTestId('timeline-item'));
-
-    const items = screen.getAllByTestId('timeline-item');
-    expect(items).toBeDefined();
-    expect(screen.getByText('SERVICE_REQUEST_CODE')).toBeInTheDocument();
-  });
-
-  test('Renders resource', async () => {
+  test('Renders', async () => {
     await setup({ patient: HomerSimpson });
 
-    await waitFor(() => screen.getAllByTestId('timeline-item'));
-
-    const items = screen.getAllByTestId('timeline-item');
-    expect(items).toBeDefined();
-    expect(screen.getByText('SERVICE_REQUEST_CODE')).toBeInTheDocument();
+    const button = await screen.findByText('Request Export');
+    expect(button).toBeInTheDocument();
   });
 
-  test('Create comment', async () => {
-    await setup({ patient: HomerSimpson });
+  test('Submit', async () => {
+    // Mock URL.createObjectURL
+    URL.createObjectURL = jest.fn();
+    URL.revokeObjectURL = jest.fn();
 
-    // Wait for initial load
-    await waitFor(() => screen.getAllByTestId('timeline-item'));
+    // Mock document.createEvent
+    type MyDocument = typeof document & {
+      originalCreateElement: (tagName: string, options?: ElementCreationOptions) => any;
+    };
 
-    // Enter the comment text
+    // Save the original createElement function
+    (document as MyDocument).originalCreateElement = document.createElement;
+
+    // Create a wrapper function
+    document.createElement = (tagName: string, options?: ElementCreationOptions): any => {
+      const result = (document as MyDocument).originalCreateElement(tagName, options);
+      if (tagName === 'a') {
+        // jsdom does not support click() or download attributes, so we will implement them here
+        result.click = jest.fn();
+      }
+      return result;
+    };
+
+    // Mock the patient everything endpoint
+    const medplum = new MockClient();
+    medplum.router.add('GET', '/Patient/:id/$everything', async () => [
+      allOk,
+      { resourceType: 'Bundle', type: 'document' },
+    ]);
+
+    await setup({ patient: HomerSimpson }, medplum);
+
+    const button = await screen.findByText('Request Export');
+    expect(button).toBeInTheDocument();
+
     await act(async () => {
-      fireEvent.change(screen.getByPlaceholderText('Add comment'), {
-        target: { value: 'Test comment' },
-      });
+      fireEvent.click(button);
     });
 
-    // Submit the form
-    await act(async () => {
-      fireEvent.submit(screen.getByTestId('timeline-form'), {
-        target: { text: 'Test comment' },
-      });
-    });
+    const exporting = await screen.findByText('Patient Export');
+    expect(exporting).toBeInTheDocument();
 
-    // Wait for new comment
-    await waitFor(() => screen.getAllByTestId('timeline-item'));
-
-    const items = screen.getAllByTestId('timeline-item');
-    expect(items).toBeDefined();
-  });
-
-  test('Upload media', async () => {
-    await setup({ patient: HomerSimpson });
-
-    // Wait for initial load
-    await waitFor(() => screen.getAllByTestId('timeline-item'));
-
-    // Upload the file
-    await act(async () => {
-      const files = [new File(['hello'], 'hello.txt', { type: 'text/plain' })];
-      fireEvent.change(screen.getByTestId('upload-file-input'), {
-        target: { files },
-      });
-    });
-
-    // Wait for new media
-    await waitFor(() => screen.getAllByTestId('timeline-item'));
-
-    const items = screen.getAllByTestId('timeline-item');
-    expect(items).toBeDefined();
+    const done = await screen.findByText('Done');
+    expect(done).toBeInTheDocument();
   });
 });

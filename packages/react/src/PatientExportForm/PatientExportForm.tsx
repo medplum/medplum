@@ -61,8 +61,6 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
           autoClose: false,
           withCloseButton: true,
         });
-
-        console.log(response);
       } catch (err) {
         notifications.update({
           id: NOTIFICATION_ID,
@@ -97,13 +95,13 @@ export function PatientExportForm(props: PatientExportFormProps): JSX.Element {
           title="Start Date"
           description="If no start date is provided, all records prior to the end date are in scope."
         >
-          <DateTimeInput name="startDate" onChange={console.log} />
+          <DateTimeInput name="startDate" />
         </FormSection>
         <FormSection
           title="End Date"
           description="If no end date is provided, all records subsequent to the start date are in scope."
         >
-          <DateTimeInput name="endDate" onChange={console.log} />
+          <DateTimeInput name="endDate" />
         </FormSection>
         <Group justify="right">
           <Button type="submit">Request Export</Button>
