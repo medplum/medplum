@@ -50,6 +50,27 @@ const operation: OperationDefinition = {
   instance: true,
   parameter: [
     {
+      name: 'start',
+      use: 'in',
+      min: 0,
+      max: '1',
+      type: 'date',
+    },
+    {
+      name: 'end',
+      use: 'in',
+      min: 0,
+      max: '1',
+      type: 'date',
+    },
+    {
+      name: '_since',
+      use: 'in',
+      min: 0,
+      max: '1',
+      type: 'instant',
+    },
+    {
       name: 'identifier',
       use: 'in',
       min: 0,
