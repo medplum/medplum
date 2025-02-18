@@ -53,7 +53,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   // Process insurance information if present
   const in1Segment = input.getSegment('IN1');
   let coverage: Coverage | undefined;
-  
+
   if (in1Segment) {
     const insurerId = in1Segment.getField(3) as string;
     const insurerName = in1Segment.getField(4) as string;
@@ -77,7 +77,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   }
 
   // Get all procedures
-  const procedures = input.getAllSegments('PR1').map(pr1 => ({
+  const procedures = input.getAllSegments('PR1').map((pr1) => ({
     code: pr1.getField(3)?.getComponent(1) as string,
     display: pr1.getField(3)?.getComponent(2) as string,
   }));
@@ -109,7 +109,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
           },
         ],
       },
-      insurance:[
+      insurance: [
         {
           sequence: 1,
           focal: true,
@@ -132,4 +132,4 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   }
 
   return input.buildAck();
-} 
+}
