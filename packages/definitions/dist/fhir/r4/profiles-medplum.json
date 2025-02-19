@@ -5218,7 +5218,15 @@
               "path" : "AsyncJob",
               "min" : 0,
               "max" : "*"
-            }
+            },
+            "constraint": [
+              {
+                "key" : "ajb-1",
+                "severity" : "error",
+                "human" : "Async jobs of type 'data-migration' require a 'dataVersion' and 'minServerVersion'.",
+                "expression" : "type.exists() and type = 'data-migration' implies dataVersion.exists() and minServerVersion.exists()"
+              }
+            ]
           },
           {
             "id" : "AsyncJob.id",
@@ -5458,6 +5466,21 @@
             },
             "type" : [{
               "code" : "integer"
+            }]
+          },
+          {
+            "id" : "AsyncJob.minServerVersion",
+            "path" : "AsyncJob.minServerVersion",
+            "definition" : "The minimum Medplum server version required to run this job.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.minServerVersion",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "string"
             }]
           }
         ]
