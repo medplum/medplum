@@ -7,9 +7,9 @@ import { getPatientEverything } from './patienteverything';
 /**
  * Handles the Patient $update-account operation.
  * This operation updates the account reference for all resources in the patient compartment.
- * The operation only updates resources from the getPatientEverything bundle that are not 
+ * The operation only updates resources from the getPatientEverything bundle that are not
  * included in the patient's compartment, but are linked to the patient through a reference.
- * 
+ *
  * Note: the operation is currently capped at 1000 resources in the patient's compartment.
  * @param req - The FHIR request.
  * @returns The FHIR response.
@@ -44,6 +44,10 @@ export async function patientUpdateAccountHandler(req: FhirRequest): Promise<Fhi
 
     return [allOk, { resourceType: 'Parameters', parameter: [{ name: 'resourcesUpdated', valueInteger: count }] }];
   } catch (error) {
-    return [badRequest('Error updating patient compartment resources: ' + (error instanceof Error ? error.message : String(error)))];
+    return [
+      badRequest(
+        'Error updating patient compartment resources: ' + (error instanceof Error ? error.message : String(error))
+      ),
+    ];
   }
 }
