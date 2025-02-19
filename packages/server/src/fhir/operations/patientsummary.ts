@@ -1,13 +1,23 @@
-import { allOk, createReference, HTTP_TERMINOLOGY_HL7_ORG, LOINC, resolveId } from '@medplum/core';
+import {
+  allOk,
+  createReference,
+  generateId,
+  HTTP_TERMINOLOGY_HL7_ORG,
+  LOINC,
+  ProfileResource,
+  resolveId,
+} from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   Bundle,
   Composition,
+  CompositionEvent,
   CompositionSection,
   Observation,
   OperationDefinition,
   OperationDefinitionParameter,
   Patient,
+  Reference,
   Resource,
   ResourceType,
   Task,
@@ -88,11 +98,13 @@ export async function patientSummaryHandler(req: FhirRequest): Promise<FhirRespo
   const { id } = req.params;
   const params = parseInputParameters<PatientSummaryParameters>(operation, req);
 
+  const author = await ctx.repo.readReference(ctx.profile as Reference<ProfileResource>);
+
   // First read the patient to verify access
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
 
   // Then read all of the patient data
-  const bundle = await getPatientSummary(ctx.repo, patient, params);
+  const bundle = await getPatientSummary(ctx.repo, author, patient, params);
 
   return [allOk, bundle];
 }
@@ -101,19 +113,21 @@ export async function patientSummaryHandler(req: FhirRequest): Promise<FhirRespo
  * Executes the Patient $summary operation.
  * Searches for all resources related to the patient.
  * @param repo - The repository.
+ * @param author - The author of the summary.
  * @param patient - The root patient.
  * @param params - The operation input parameters.
  * @returns The patient summary search result bundle.
  */
 export async function getPatientSummary(
   repo: Repository,
+  author: ProfileResource,
   patient: Patient,
   params: PatientSummaryParameters = {}
 ): Promise<Bundle> {
   params._type = resourceTypes;
   const everythingBundle = await getPatientEverything(repo, patient, params);
   const everything = (everythingBundle.entry?.map((e) => e.resource) ?? []) as Resource[];
-  const builder = new PatientSummaryBuilder(patient, everything);
+  const builder = new PatientSummaryBuilder(author, patient, everything);
   return builder.build();
 }
 
@@ -135,6 +149,7 @@ export class PatientSummaryBuilder {
   private readonly nestedIds = new Set<string>();
 
   constructor(
+    private readonly author: ProfileResource,
     private readonly patient: Patient,
     private readonly everything: Resource[]
   ) {}
@@ -283,21 +298,16 @@ export class PatientSummaryBuilder {
 
     const composition: Composition = {
       resourceType: 'Composition',
+      id: generateId(),
       status: 'final',
-      type: {
-        coding: [
-          {
-            system: LOINC,
-            code: '60591-5',
-            display: 'Patient summary Document',
-          },
-        ],
-      },
+      type: { coding: [{ system: LOINC, code: '60591-5', display: 'Patient Summary' }] },
       subject: createReference(this.patient),
       date: new Date().toISOString(),
-      author: [{ display: 'Medplum' }],
+      author: [createReference(this.author)],
       title: 'Medical Summary',
       confidentiality: 'N',
+      custodian: this.patient.managingOrganization,
+      event: this.buildEvent(),
       section: [
         createSection(LOINC_ALLERGIES_SECTION, 'Allergies', this.allergies),
         createSection(LOINC_IMMUNIZATIONS_SECTION, 'Immunizations', this.immunizations),
@@ -313,8 +323,37 @@ export class PatientSummaryBuilder {
     return composition;
   }
 
+  private buildEvent(): CompositionEvent[] | undefined {
+    let start: string | undefined = undefined;
+    let end: string | undefined = undefined;
+
+    for (const resource of this.everything) {
+      if (resource.meta?.lastUpdated) {
+        if (!start || resource.meta.lastUpdated < start) {
+          start = resource.meta.lastUpdated;
+        }
+        if (!end || resource.meta.lastUpdated > end) {
+          end = resource.meta.lastUpdated;
+        }
+      }
+    }
+
+    if (!start && !end) {
+      return undefined;
+    }
+
+    return [
+      {
+        period: {
+          start,
+          end,
+        },
+      },
+    ];
+  }
+
   private buildBundle(composition: Composition): Bundle {
-    const allResources = [composition, this.patient, ...this.everything];
+    const allResources = [composition, this.patient, this.author, ...this.everything];
 
     // See International Patient Summary Implementation Guide
     // Bundle - Minimal Complete IPS - JSON Representation
