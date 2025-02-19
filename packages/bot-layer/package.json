@@ -36,7 +36,6 @@
     "@types/node-fetch": "2.6.12"
   },
   "peerDependencies": {
-    "@medplum/ccda": "3.2.32",
     "@medplum/core": "3.2.32",
     "form-data": "^4.0.0",
     "node-fetch": "^2.7.0",

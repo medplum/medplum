@@ -146,11 +146,5 @@ describe('Patient Everything Operation', () => {
     expect(bundle.link?.some((link) => link.relation === 'next')).toBeTruthy();
     expect(bundle.link?.some((link) => link.relation === 'first')).toBeTruthy();
     expect(bundle.link?.some((link) => link.relation === 'previous')).toBeTruthy();
-
-    // Execute the operation with "start" and "end" parameters
-    const res8 = await request(app)
-      .get(`/fhir/R4/Patient/${patient.id}/$everything?start=2020-01-01&end=2040-01-01`)
-      .set('Authorization', 'Bearer ' + accessToken);
-    expect(res8.status).toBe(200);
   });
 });

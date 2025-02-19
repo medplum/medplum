@@ -28,8 +28,6 @@ const operation = getOperationDefinition('Patient', 'everything');
 const defaultMaxResults = 1000;
 
 export interface PatientEverythingParameters {
-  start?: string;
-  end?: string;
   _since?: string;
   _count?: number;
   _offset?: number;
@@ -86,16 +84,12 @@ export async function getPatientEverything(
     },
   ];
 
-  if (params?.start) {
-    filters.push({ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: params.start });
-  }
-
-  if (params?.end) {
-    filters.push({ code: '_lastUpdated', operator: Operator.LESS_THAN_OR_EQUALS, value: params.end });
-  }
-
   if (params?._since) {
-    filters.push({ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: params._since });
+    filters.push({
+      code: '_lastUpdated',
+      operator: Operator.GREATER_THAN_OR_EQUALS,
+      value: params._since,
+    });
   }
 
   // Get initial bundle of compartment resources

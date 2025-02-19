@@ -40,7 +40,6 @@
     "@azure/identity": "4.6.0",
     "@azure/keyvault-secrets": "4.9.0",
     "@google-cloud/secret-manager": "5.6.0",
-    "@medplum/ccda": "3.2.32",
     "@medplum/core": "3.2.32",
     "@medplum/definitions": "3.2.32",
     "@medplum/fhir-router": "3.2.32",

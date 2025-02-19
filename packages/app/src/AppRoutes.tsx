@@ -40,7 +40,6 @@ import { ChecklistPage } from './resource/ChecklistPage';
 import { DeletePage } from './resource/DeletePage';
 import { DetailsPage } from './resource/DetailsPage';
 import { EditPage } from './resource/EditPage';
-import { ExportPage } from './resource/ExportPage';
 import { FormCreatePage } from './resource/FormCreatePage';
 import { HistoryPage } from './resource/HistoryPage';
 import { JsonCreatePage } from './resource/JsonCreatePage';
@@ -122,7 +121,6 @@ export function AppRoutes(): JSX.Element {
           <Route path="timeline" element={<TimelinePage />} />
           <Route path="tools" element={<ToolsPage />} />
           <Route path="profiles" element={<ProfilesPage />} />
-          <Route path="export" element={<ExportPage />} />
         </Route>
         <Route path="/:resourceType" element={<HomePage />} />
         <Route path="/" element={<HomePage />} />
