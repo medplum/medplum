@@ -57,7 +57,6 @@ export interface MedplumServerConfig {
     | 'cron'
     | 'google-auth-required'
     | 'graphql-introspection'
-    | 'terminology'
     | 'websocket-subscriptions'
   )[];
   defaultRateLimit?: number;
