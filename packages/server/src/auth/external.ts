@@ -11,7 +11,7 @@ import { ClientApplication, IdentityProvider } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 import fetch from 'node-fetch';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { sendOutcome } from '../fhir/outcomes';
 import { globalLogger } from '../logger';
 import { CodeChallengeMethod, getClientApplication, tryLogin } from '../oauth/utils';
@@ -66,9 +66,17 @@ export const externalCallbackHandler = async (req: Request, res: Response): Prom
   let email: string | undefined = undefined;
   let externalId: string | undefined = undefined;
   if (idp.useSubject) {
-    externalId = userInfo.sub as string;
+    externalId = userInfo.sub as string | undefined;
+    if (!externalId) {
+      sendOutcome(res, badRequest('External token does not contain subject'));
+      return;
+    }
   } else {
-    email = (userInfo.email as string).toLowerCase();
+    email = (userInfo.email as string | undefined)?.toLowerCase();
+    if (!email) {
+      sendOutcome(res, badRequest('External token does not contain email address'));
+      return;
+    }
   }
 
   if (body.domain && !email?.endsWith('@' + body.domain)) {

@@ -1,6 +1,6 @@
 import cors from 'cors';
 import { Request } from 'express';
-import { getConfig } from './config';
+import { getConfig } from './config/loader';
 
 const exposedHeaders = ['Content-Location', 'ETag', 'Last-Modified', 'Location'];
 
@@ -37,7 +37,17 @@ function isOriginAllowed(origin: string | undefined): boolean {
   return false;
 }
 
-const prefixes = ['/.well-known/', '/admin/', '/auth/', '/email/', '/fhir/', '/fhircast/', '/oauth2/', '/keyvalue/'];
+const prefixes = [
+  '/.well-known/',
+  '/admin/',
+  '/auth/',
+  '/email/',
+  '/fhir/',
+  '/fhircast/',
+  '/oauth2/',
+  '/keyvalue/',
+  '/storage/',
+];
 
 function isPathAllowed(path: string): boolean {
   return prefixes.some((prefix) => path.startsWith(prefix));

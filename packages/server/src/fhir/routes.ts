@@ -4,7 +4,7 @@ import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { awsTextractHandler } from '../cloud/aws/textract';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
@@ -16,11 +16,14 @@ import { agentPushHandler } from './operations/agentpush';
 import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
+import { asyncJobCancelHandler } from './operations/asyncjobcancel';
+import { ccdaExportHandler } from './operations/ccdaexport';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
+import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
 import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
@@ -30,7 +33,9 @@ import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
+import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
+import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
@@ -40,7 +45,7 @@ import { codeSystemSubsumesOperation } from './operations/subsumes';
 import { valueSetValidateOperation } from './operations/valuesetvalidatecode';
 import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
-import { sendResponse } from './response';
+import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
 
 export const fhirRouter = Router();
@@ -66,28 +71,30 @@ fhirRouter.use((req: Request, res: Response, next: NextFunction) => {
       return res.send();
     }
 
-    // Unless already set, use the FHIR content type
     if (!res.get('Content-Type')) {
-      res.contentType(ContentType.FHIR_JSON);
-    }
-
-    let legacyFhirJsonResponseFormat: boolean | undefined;
-    try {
-      const ctx = getAuthenticatedContext();
-      legacyFhirJsonResponseFormat = ctx.project.systemSetting?.find(
-        (s) => s.name === 'legacyFhirJsonResponseFormat'
-      )?.valueBoolean;
-    } catch (_err) {
-      // Ignore errors since unauthenticated requests also use this middleware
+      res.contentType(ContentType.JSON);
     }
 
     const pretty = req.query._pretty === 'true';
 
-    if (legacyFhirJsonResponseFormat) {
-      return res.send(JSON.stringify(data, undefined, pretty ? 2 : undefined));
-    } else {
-      return res.send(stringify(data, pretty));
+    if (res.get('Content-Type')?.startsWith(ContentType.FHIR_JSON)) {
+      let legacyFhirJsonResponseFormat: boolean | undefined;
+      try {
+        const ctx = getAuthenticatedContext();
+        legacyFhirJsonResponseFormat = ctx.project.systemSetting?.find(
+          (s) => s.name === 'legacyFhirJsonResponseFormat'
+        )?.valueBoolean;
+      } catch (_err) {
+        // Ignore errors since unauthenticated requests also use this middleware
+      }
+
+      if (!legacyFhirJsonResponseFormat) {
+        return res.send(stringify(data, pretty));
+      }
     }
+
+    // Default JSON response
+    return res.send(JSON.stringify(data, undefined, pretty ? 2 : undefined));
   };
   next();
 });
@@ -221,6 +228,9 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/$upgrade', agentUpgradeHandler);
   router.add('GET', '/Agent/:id/$upgrade', agentUpgradeHandler);
 
+  // AsyncJob $cancel operation
+  router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
+
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
@@ -242,6 +252,13 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
 
+  // Patient $summary operation
+  router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
+  router.add('POST', '/Patient/:id/$summary', patientSummaryHandler);
+
+  // Patient $ccda-export operation
+  router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
+
   // $expunge operation
   router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);
 
@@ -251,13 +268,16 @@ function initInternalFhirRouter(): FhirRouter {
   // StructureDefinition $expand-profile operation
   router.add('POST', '/StructureDefinition/$expand-profile', structureDefinitionExpandProfileHandler);
 
+  // ClientApplication $launch
+  router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
+
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
 
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await ctx.repo.validateResource(req.body);
+    await ctx.repo.validateResourceStrictly(req.body);
     return [allOk];
   });
 
@@ -280,6 +300,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Super admin operations
   router.add('POST', '/$db-stats', dbStatsHandler);
+  router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();
@@ -328,7 +349,6 @@ protectedRoutes.use(
         graphqlBatchedSearchSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlBatchedSearchSize')
           ?.valueInteger,
         graphqlMaxDepth: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxDepth')?.valueInteger,
-        graphqlMaxPageSize: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxPageSize')?.valueInteger,
         graphqlMaxSearches: ctx.project.systemSetting?.find((s) => s.name === 'graphqlMaxSearches')?.valueInteger,
         searchOnReader: ctx.project.systemSetting?.find((s) => s.name === 'searchOnReader')?.valueBoolean,
         transactions: ctx.project.features?.includes('transaction-bundles'),
@@ -341,8 +361,9 @@ protectedRoutes.use(
         throw new OperationOutcomeError(result[0]);
       }
       sendOutcome(res, result[0]);
-    } else {
-      await sendResponse(req, res, result[0], result[1]);
+      return;
     }
+
+    await sendFhirResponse(req, res, result[0], result[1], result[2]);
   })
 );

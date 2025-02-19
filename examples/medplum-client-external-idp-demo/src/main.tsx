@@ -10,10 +10,11 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 import { App } from './App';
+import { MEDPLUM_BASE_URL } from './SignInPage';
 
 const medplum = new MedplumClient({
   onUnauthenticated: () => (window.location.href = '/'),
-  baseUrl: 'http://localhost:8103/', // Uncomment this to run against the server on your localhost
+  baseUrl: MEDPLUM_BASE_URL,
   cacheTime: 600,
   autoBatchTime: 100,
 });

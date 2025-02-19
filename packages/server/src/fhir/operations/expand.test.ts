@@ -10,7 +10,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
 describe('Expand', () => {
@@ -55,7 +55,7 @@ describe('Expand', () => {
         status: 'active',
         url,
       });
-    expect(res1.status).toEqual(201);
+    expect(res1.status).toStrictEqual(201);
 
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
@@ -283,7 +283,7 @@ describe('Expand', () => {
       .post('/fhir/R4/CodeSystem')
       .set('Authorization', 'Bearer ' + accessToken)
       .send(codeSystem);
-    expect(res1.status).toEqual(201);
+    expect(res1.status).toStrictEqual(201);
     const res2 = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
@@ -296,7 +296,7 @@ describe('Expand', () => {
           { name: 'concept', valueCoding: { code: 'bar', display: 'Bar' } },
         ],
       });
-    expect(res2.status).toEqual(200);
+    expect(res2.status).toStrictEqual(200);
 
     // Second version of code system
     codeSystem.version = '2';
@@ -304,7 +304,7 @@ describe('Expand', () => {
       .post('/fhir/R4/CodeSystem')
       .set('Authorization', 'Bearer ' + accessToken)
       .send(codeSystem);
-    expect(res3.status).toEqual(201);
+    expect(res3.status).toStrictEqual(201);
     const res4 = await request(app)
       .post(`/fhir/R4/CodeSystem/$import`)
       .set('Authorization', 'Bearer ' + superAdminAccessToken)
@@ -317,7 +317,7 @@ describe('Expand', () => {
           { name: 'concept', valueCoding: { code: 'quux', display: 'Quux' } },
         ],
       });
-    expect(res4.status).toEqual(200);
+    expect(res4.status).toStrictEqual(200);
 
     // ValueSet containing all of target CodeSystem
     const res5 = await request(app)
@@ -331,13 +331,13 @@ describe('Expand', () => {
           include: [{ system: codeSystem.url }],
         },
       });
-    expect(res5.status).toEqual(201);
+    expect(res5.status).toStrictEqual(201);
     const valueSet = res5.body as ValueSet;
 
     const res6 = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res6.status).toEqual(200);
+    expect(res6.status).toStrictEqual(200);
   });
 
   test('ValueSet that uses expansion instead of compose', async () => {
@@ -383,7 +383,7 @@ describe('Expand', () => {
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(200);
-    expect(res2.body.expansion.contains).toEqual(
+    expect(res2.body.expansion.contains).toStrictEqual(
       expect.arrayContaining([
         {
           system: HTTP_HL7_ORG + '/fhir/resource-types',
@@ -413,7 +413,7 @@ describe('Expand', () => {
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}&filter=p`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
-    expect(res3.body.expansion.contains).toEqual(
+    expect(res3.body.expansion.contains).toStrictEqual(
       expect.arrayContaining([
         {
           system: HTTP_HL7_ORG + '/fhir/resource-types',
@@ -448,7 +448,7 @@ describe('Expand', () => {
     const res2 = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toEqual(400);
+    expect(res2.status).toStrictEqual(400);
   });
 
   test('Subsumption', async () => {
@@ -457,14 +457,14 @@ describe('Expand', () => {
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=200`
       )
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(
       expansion.contains?.find(
         (c) => c.system === 'http://terminology.hl7.org/CodeSystem/v3-RoleCode' && c.code === 'FRND'
       )?.display
-    ).toEqual('unrelated friend');
+    ).toStrictEqual('unrelated friend');
   });
 
   test('Returns error when CodeSystem not found', async () => {
@@ -499,7 +499,7 @@ describe('Expand', () => {
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(url)}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toBe(400);
-    expect(res2.body.issue[0].details.text).toEqual(
+    expect(res2.body.issue[0].details.text).toStrictEqual(
       'CodeSystem http://example.com/the-codesystem-does-not-exist not found'
     );
   });
@@ -516,7 +516,7 @@ describe('Expand', () => {
         content: 'complete',
         concept: [{ code: '314159265', display: 'Test SNOMED override' }],
       });
-    expect(res1.status).toEqual(201);
+    expect(res1.status).toStrictEqual(201);
 
     const res2 = await request(app)
       .post(`/fhir/R4/ValueSet`)
@@ -543,7 +543,7 @@ describe('Expand', () => {
     const coding = res3.body.expansion.contains[0];
     expect(coding.system).toBe(SNOMED);
     expect(coding.code).toBe('314159265');
-    expect(coding.display).toEqual('Test SNOMED override');
+    expect(coding.display).toStrictEqual('Test SNOMED override');
   });
 
   test('Prefers CodeSystem from linked Projects in link order', async () => {
@@ -562,7 +562,7 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + a2)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ ...codeSystem, concept: [{ code: '1', display: 'Incorrect coding' }] });
-    expect(cs2.status).toEqual(201);
+    expect(cs2.status).toStrictEqual(201);
 
     const { project: p1, accessToken: a1 } = await createTestProject({ withAccessToken: true });
     const cs1 = await request(app)
@@ -570,7 +570,7 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + a1)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ ...codeSystem, concept: [{ code: '1', display: 'Correct coding' }] });
-    expect(cs1.status).toEqual(201);
+    expect(cs1.status).toStrictEqual(201);
 
     const { project: p3, accessToken: a3 } = await createTestProject({ withAccessToken: true });
     const cs3 = await request(app)
@@ -578,7 +578,7 @@ describe('Expand', () => {
       .set('Authorization', 'Bearer ' + a3)
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ ...codeSystem, concept: [{ code: '1', display: 'Another incorrect coding' }] });
-    expect(cs3.status).toEqual(201);
+    expect(cs3.status).toStrictEqual(201);
 
     accessToken = await initTestAuth({
       project: {
@@ -605,7 +605,7 @@ describe('Expand', () => {
     const coding = res3.body.expansion.contains[0];
     expect(coding.system).toBe(url);
     expect(coding.code).toBe('1');
-    expect(coding.display).toEqual('Correct coding');
+    expect(coding.display).toStrictEqual('Correct coding');
   });
 
   test('Returns error when property filter is invalid for CodeSystem', async () => {
@@ -621,7 +621,7 @@ describe('Expand', () => {
         hierarchyMeaning: 'grouped-by',
         concept: [{ code: 'A', concept: [{ code: 'B' }] }],
       });
-    expect(res1.status).toEqual(201);
+    expect(res1.status).toStrictEqual(201);
 
     const res2 = await request(app)
       .post(`/fhir/R4/ValueSet`)
@@ -653,7 +653,7 @@ describe('Expand', () => {
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/care-team-category')}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(expansion.contains).toHaveLength(1);
@@ -668,12 +668,12 @@ describe('Expand', () => {
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/inactive')}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
     const system = 'http://terminology.hl7.org/CodeSystem/v3-ActMood';
 
     expect(expansion.contains).toHaveLength(5);
-    expect(expansion.contains).toEqual(
+    expect(expansion.contains).toStrictEqual(
       expect.arrayContaining([
         { system, code: 'CRT', display: 'criterion' },
         { system, code: 'GOL', display: 'goal' },
@@ -690,7 +690,7 @@ describe('Expand', () => {
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=200`
       )
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(
@@ -709,12 +709,12 @@ describe('Expand', () => {
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&filter=adopt&count=200`
       )
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     const expandedCodes = expansion.contains?.map((coding) => coding.code);
     expect(expandedCodes).toHaveLength(6);
-    expect(expandedCodes).toEqual(
+    expect(expandedCodes).toStrictEqual(
       expect.arrayContaining(['ADOPTP', 'ADOPTF', 'ADOPTM', 'CHLDADOPT', 'DAUADOPT', 'SONADOPT'])
     );
   });
@@ -725,7 +725,7 @@ describe('Expand', () => {
         `/fhir/R4/ValueSet/$expand?url=${encodeURIComponent('http://hl7.org/fhir/ValueSet/relatedperson-relationshiptype')}&count=200&excludeNotForUI=true`
       )
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(
@@ -759,10 +759,10 @@ describe('Expand', () => {
     const res2 = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toEqual(200);
+    expect(res2.status).toStrictEqual(200);
     const expansion = res2.body.expansion as ValueSetExpansion;
     expect(expansion.contains).toHaveLength(1);
-    expect(expansion.contains?.[0]?.code).toEqual('ERECCAP');
+    expect(expansion.contains?.[0]?.code).toStrictEqual('ERECCAP');
   });
 
   test('Property filter with multiple values', async () => {
@@ -789,10 +789,10 @@ describe('Expand', () => {
     const res2 = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toEqual(200);
+    expect(res2.status).toStrictEqual(200);
     const expansion = res2.body.expansion as ValueSetExpansion;
     expect(expansion.contains).toHaveLength(1);
-    expect(expansion.contains?.[0]?.code).toEqual('ERECCAP');
+    expect(expansion.contains?.[0]?.code).toStrictEqual('ERECCAP');
   });
 
   test('Reference to other ValueSet', async () => {
@@ -824,13 +824,13 @@ describe('Expand', () => {
       .post('/fhir/R4/ValueSet')
       .set('Authorization', 'Bearer ' + accessToken)
       .send(valueSetResource);
-    expect(valueSetRes.status).toEqual(201);
+    expect(valueSetRes.status).toStrictEqual(201);
     const valueSet = valueSetRes.body as ValueSet;
 
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&count=200`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(
@@ -843,9 +843,9 @@ describe('Expand', () => {
     const abstractCode = expansion.contains?.find((c) => c.code === '_PersonalRelationshipRoleType');
     expect(abstractCode).toBeDefined();
     const filterCode = expansion.contains?.find((c) => c.code === 'HPOWATT');
-    expect(filterCode?.display).toEqual('healthcare power of attorney');
+    expect(filterCode?.display).toStrictEqual('healthcare power of attorney');
     const explicitCode = expansion.contains?.find((c) => c.code === 'SEE');
-    expect(explicitCode?.display).toEqual('Seeing');
+    expect(explicitCode?.display).toStrictEqual('Seeing');
   });
 
   test('Display text override', async () => {
@@ -866,13 +866,13 @@ describe('Expand', () => {
       .post('/fhir/R4/ValueSet')
       .set('Authorization', 'Bearer ' + accessToken)
       .send(valueSetResource);
-    expect(valueSetRes.status).toEqual(201);
+    expect(valueSetRes.status).toStrictEqual(201);
     const valueSet = valueSetRes.body as ValueSet;
 
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&count=200&filter=doggo`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(expansion.contains).toHaveLength(1);
@@ -907,13 +907,13 @@ describe('Expand', () => {
       .post('/fhir/R4/ValueSet')
       .set('Authorization', 'Bearer ' + accessToken)
       .send(valueSetResource);
-    expect(valueSetRes.status).toEqual(201);
+    expect(valueSetRes.status).toStrictEqual(201);
     const valueSet = valueSetRes.body as ValueSet;
 
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=a&count=200`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(expansion.contains).toBeUndefined();
@@ -924,7 +924,7 @@ describe('Expand', () => {
       .get(`/fhir/R4/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/task-status|4.0.1&filter=`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
     expect(expansion.contains).toHaveLength(12);
   });
@@ -934,7 +934,7 @@ describe('Expand', () => {
       .get(`/fhir/R4/ValueSet/$expand?url=http://hl7.org/fhir/ValueSet/task-status|4.0.1&filter=a'`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
     expect(expansion.contains).toBeUndefined();
   });
@@ -944,7 +944,24 @@ describe('Expand', () => {
       .get(`/fhir/R4/ValueSet/$expand?url=http://terminology.hl7.org/ValueSet/v3-RoleCode&filter=MT`)
       .set('Authorization', 'Bearer ' + accessToken);
 
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains).toContainEqual<ValueSetExpansionContains>({
+      system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+      code: 'MT',
+      display: 'Meat',
+    });
+  });
+
+  test('Exact code match with abstract filter', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=http://terminology.hl7.org/ValueSet/v3-RoleCode&filter=MT&excludeNotForUI=true`
+      )
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
     expect(expansion.contains).toHaveLength(1);
     expect(expansion.contains).toContainEqual<ValueSetExpansionContains>({
@@ -981,7 +998,7 @@ describe('Expand', () => {
       .post('/fhir/R4/ValueSet')
       .set('Authorization', 'Bearer ' + accessToken)
       .send(preexpanded);
-    expect(preexpandedRes.status).toEqual(201);
+    expect(preexpandedRes.status).toStrictEqual(201);
     const preexpandedValueSet = preexpandedRes.body as ValueSet;
 
     const include: ValueSet = {
@@ -1005,17 +1022,17 @@ describe('Expand', () => {
       .post('/fhir/R4/ValueSet')
       .set('Authorization', 'Bearer ' + accessToken)
       .send(include);
-    expect(valueSetRes.status).toEqual(201);
+    expect(valueSetRes.status).toStrictEqual(201);
     const valueSet = valueSetRes.body as ValueSet;
 
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=${encodeURIComponent(valueSet.url as string)}&filter=reported`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toEqual(200);
+    expect(res.status).toStrictEqual(200);
     const expansion = res.body.expansion as ValueSetExpansion;
 
     expect(expansion.contains).toHaveLength(3);
-    expect(expansion.contains).toEqual(
+    expect(expansion.contains).toStrictEqual(
       expect.arrayContaining([
         {
           system: 'http://loinc.org',

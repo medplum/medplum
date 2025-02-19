@@ -71,7 +71,7 @@ By default, FHIR Subscriptions will execute on "create" and "update" operations.
 
 You can use extensions as follows for more fine-grained control over when Subscriptions execute. To confirm if your Subscriptions are executing, navigate to `https://app.medplum.com/Subscription/<id>/event` to view related [AuditEvents](/docs/api/fhir/resources/auditevent).
 
-### Subscriptions for "create"-only events
+### Subscriptions for "create"-only or "update"-only events
 
 To restrict the FHIR Subscription to only execute on "create", use the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `create`:
 
@@ -89,6 +89,27 @@ To restrict the FHIR Subscription to only execute on "create", use the `https://
     {
       "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
       "valueCode": "create"
+    }
+  ]
+}
+```
+
+You can also restrict the FHIR Subscription to only execute on "update", using the `https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction` extension with `valueCode` of `update`:
+
+```json
+{
+  "resourceType": "Subscription",
+  "reason": "test",
+  "status": "active",
+  "criteria": "Patient",
+  "channel": {
+    "type": "rest-hook",
+    "endpoint": "https://example.com/webhook"
+  },
+  "extension": [
+    {
+      "url": "https://medplum.com/fhir/StructureDefinition/subscription-supported-interaction",
+      "valueCode": "update"
     }
   ]
 }

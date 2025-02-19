@@ -1,5 +1,5 @@
+import { sendCommand } from '@medplum/react';
 import { RefObject } from 'react';
-import { sendCommand } from '../utils';
 
 export interface CodeEditorProps {
   readonly language: 'typescript' | 'json';

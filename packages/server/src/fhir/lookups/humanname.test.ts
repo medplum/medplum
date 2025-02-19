@@ -2,9 +2,11 @@ import { Operator } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
+import { PoolClient } from 'pg';
+import { HumanNameTable } from './humanname';
 
 describe('HumanName Lookup Table', () => {
   const systemRepo = getSystemRepo();
@@ -37,8 +39,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Search with spaces', () =>
@@ -62,8 +64,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Search with commas', () =>
@@ -89,7 +91,7 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(2);
+      expect(searchResult.entry?.length).toStrictEqual(2);
       expect(bundleContains(searchResult, patients[0])).toBeDefined();
       expect(bundleContains(searchResult, patients[1])).toBeDefined();
       expect(bundleContains(searchResult, patients[2])).toBeUndefined();
@@ -132,8 +134,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
 
       const searchResult2 = await systemRepo.search({
         resourceType: 'Patient',
@@ -145,8 +147,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult2.entry?.length).toEqual(1);
-      expect(searchResult2.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult2.entry?.length).toStrictEqual(1);
+      expect(searchResult2.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
 
   test('Update name', () =>
@@ -169,8 +171,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(bundle2.entry?.length).toEqual(1);
-      expect(bundle2.entry?.[0]?.resource?.id).toEqual(patient1.id);
+      expect(bundle2.entry?.length).toStrictEqual(1);
+      expect(bundle2.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
 
       const bundle3 = await systemRepo.search({
         resourceType: 'Patient',
@@ -182,7 +184,7 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(bundle3.entry?.length).toEqual(0);
+      expect(bundle3.entry?.length).toStrictEqual(0);
 
       await systemRepo.updateResource<Patient>({
         ...patient1,
@@ -199,7 +201,7 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(bundle5.entry?.length).toEqual(0);
+      expect(bundle5.entry?.length).toStrictEqual(0);
 
       const bundle6 = await systemRepo.search({
         resourceType: 'Patient',
@@ -211,8 +213,8 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(bundle6.entry?.length).toEqual(1);
-      expect(bundle6.entry?.[0]?.resource?.id).toEqual(patient1.id);
+      expect(bundle6.entry?.length).toStrictEqual(1);
+      expect(bundle6.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
     }));
 
   test('Search on text', () =>
@@ -235,7 +237,25 @@ describe('HumanName Lookup Table', () => {
           },
         ],
       });
-      expect(searchResult.entry?.length).toEqual(1);
-      expect(searchResult.entry?.[0]?.resource?.id).toEqual(patient.id);
+      expect(searchResult.entry?.length).toStrictEqual(1);
+      expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
+
+  test('Purges related resource type', async () => {
+    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+
+    const table = new HumanNameTable();
+    await table.purgeValuesBefore(db, 'Patient', '2024-01-01T00:00:00Z');
+
+    expect(db.query).toHaveBeenCalled();
+  });
+
+  test('Does not purge unrelated resource type', async () => {
+    const db = { query: jest.fn() } as unknown as PoolClient;
+
+    const table = new HumanNameTable();
+    await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');
+
+    expect(db.query).not.toHaveBeenCalled();
+  });
 });

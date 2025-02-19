@@ -10,7 +10,7 @@ import { DataTypesMap, inflateBaseSchema } from '../base-schema';
 import baseSchema from '../base-schema.json';
 import { getTypedPropertyValue } from '../fhirpath/utils';
 import { OperationOutcomeError, badRequest } from '../outcomes';
-import { TypedValue, getElementDefinitionTypeName, isResourceTypeSchema } from '../types';
+import { TypedValue, getElementDefinitionTypeName, indexDefaultSearchParameters, isResourceTypeSchema } from '../types';
 import { capitalize, getExtension, isEmpty } from '../utils';
 
 /**
@@ -22,6 +22,7 @@ export interface InternalTypeSchema {
   path: string;
   title?: string;
   url?: string;
+  version?: string;
   kind?: string;
   description?: string;
   elements: Record<string, InternalSchemaElement>;
@@ -123,7 +124,9 @@ function getDataTypesMap(profileUrl: string): DataTypesMap {
  * @param bundle - Bundle or array of structure definitions to be parsed and indexed
  */
 export function indexStructureDefinitionBundle(bundle: StructureDefinition[] | Bundle): void {
-  const sds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource as StructureDefinition) ?? []);
+  const maybeSds = Array.isArray(bundle) ? bundle : (bundle.entry?.map((e) => e.resource) ?? []);
+  const sds: StructureDefinition[] = maybeSds.filter((r) => r?.resourceType === 'StructureDefinition');
+  indexDefaultSearchParameters(sds);
   for (const sd of sds) {
     loadDataType(sd);
   }
@@ -260,6 +263,7 @@ class StructureDefinitionParser {
       title: sd.title,
       type: sd.type,
       url: sd.url as string,
+      version: sd.version,
       kind: sd.kind,
       description: getDescription(sd),
       elements: {},

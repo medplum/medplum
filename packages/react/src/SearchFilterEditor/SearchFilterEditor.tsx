@@ -1,7 +1,10 @@
-import { Button, Group, Modal, NativeSelect } from '@mantine/core';
-import { Filter, Operator, SearchRequest, getSearchParameters, stringify } from '@medplum/core';
+import { ActionIcon, Button, Group, Modal, NativeSelect } from '@mantine/core';
+import { Filter, Operator, SearchRequest, deepClone, getSearchParameters } from '@medplum/core';
 import { SearchParameter } from '@medplum/fhirtypes';
+import { IconX } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
+import { ArrayAddButton } from '../buttons/ArrayAddButton';
+import { Form } from '../Form/Form';
 import {
   addFilter,
   buildFieldNameString,
@@ -10,7 +13,6 @@ import {
   getSearchOperators,
   setFilters,
 } from '../SearchControl/SearchUtils';
-import { SearchFilterValueDisplay } from '../SearchFilterValueDisplay/SearchFilterValueDisplay';
 import { SearchFilterValueInput } from '../SearchFilterValueInput/SearchFilterValueInput';
 
 export interface SearchFilterEditorProps {
@@ -21,14 +23,13 @@ export interface SearchFilterEditorProps {
 }
 
 export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element | null {
-  const [search, setSearch] = useState<SearchRequest>(JSON.parse(stringify(props.search)) as SearchRequest);
-  const [editingIndex, setEditingIndex] = useState<number>(-1);
+  const [search, setSearch] = useState<SearchRequest>(deepClone(props.search) as SearchRequest);
 
   const searchRef = useRef<SearchRequest>(search);
   searchRef.current = search;
 
   useEffect(() => {
-    setSearch(JSON.parse(stringify(props.search)) as SearchRequest);
+    setSearch(deepClone(props.search) as SearchRequest);
   }, [props.search]);
 
   function onAddFilter(filter: Filter): void {
@@ -51,116 +52,81 @@ export function SearchFilterEditor(props: SearchFilterEditorProps): JSX.Element 
       opened={props.visible}
       onClose={props.onCancel}
     >
-      <div>
-        <table>
-          <colgroup>
-            <col style={{ width: 200 }} />
-            <col style={{ width: 200 }} />
-            <col style={{ width: 380 }} />
-            <col style={{ width: 120 }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Field</th>
-              <th>Operation</th>
-              <th>Value</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filters.map((filter: Filter, index: number) => {
-              if (index === editingIndex) {
-                return (
-                  <FilterRowInput
-                    key={`filter-${filter.code}-${filter.operator}-${filter.value}-input`}
-                    resourceType={resourceType}
-                    searchParams={searchParams}
-                    defaultValue={filter}
-                    okText="Save"
-                    onOk={(newFilter: Filter) => {
-                      const newFilters = [...filters];
-                      newFilters[index] = newFilter;
-                      setSearch(setFilters(searchRef.current, newFilters));
-                      setEditingIndex(-1);
-                    }}
-                    onCancel={() => setEditingIndex(-1)}
-                  />
-                );
-              } else {
-                return (
-                  <FilterRowDisplay
-                    key={`filter-${filter.code}-${filter.operator}-${filter.value}-display`}
-                    resourceType={resourceType}
-                    filter={filter}
-                    onEdit={() => setEditingIndex(index)}
-                    onDelete={() => setSearch(deleteFilter(searchRef.current, index))}
-                  />
-                );
-              }
-            })}
-            <FilterRowInput resourceType={resourceType} searchParams={searchParams} okText="Add" onOk={onAddFilter} />
-          </tbody>
-        </table>
-      </div>
-      <Group justify="flex-end" mt="xl">
-        <Button onClick={() => props.onOk(searchRef.current)}>OK</Button>
-      </Group>
+      <Form onSubmit={() => props.onOk(searchRef.current)}>
+        <div>
+          <table>
+            <colgroup>
+              <col style={{ width: 200 }} />
+              <col style={{ width: 200 }} />
+              <col style={{ width: 380 }} />
+              <col style={{ width: 40 }} />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Operation</th>
+                <th>Value</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filters.map((filter: Filter, index: number) => (
+                <FilterRowInput
+                  id={`filter-${index}-row`}
+                  key={`filter-${index}-row`}
+                  resourceType={resourceType}
+                  searchParams={searchParams}
+                  value={filter}
+                  onChange={(newFilter: Filter) => {
+                    const newFilters = [...filters];
+                    newFilters[index] = newFilter;
+                    setSearch(setFilters(searchRef.current, newFilters));
+                  }}
+                  onDelete={() => setSearch(deleteFilter(searchRef.current, index))}
+                />
+              ))}
+            </tbody>
+          </table>
+          <ArrayAddButton propertyDisplayName="Filter" onClick={() => onAddFilter({} as Filter)} />
+        </div>
+        <Group justify="flex-end" mt="xl">
+          <Button type="submit">OK</Button>
+        </Group>
+      </Form>
     </Modal>
   );
 }
 
-interface FilterRowDisplayProps {
-  readonly resourceType: string;
-  readonly filter: Filter;
-  readonly onEdit: () => void;
-  readonly onDelete: () => void;
-}
-
-function FilterRowDisplay(props: FilterRowDisplayProps): JSX.Element | null {
-  const { filter } = props;
-  return (
-    <tr>
-      <td>{buildFieldNameString(filter.code)}</td>
-      <td>{getOpString(filter.operator)}</td>
-      <td>
-        <SearchFilterValueDisplay resourceType={props.resourceType} filter={filter} />
-      </td>
-      <td>
-        <Button size="compact-md" variant="outline" onClick={props.onEdit}>
-          Edit
-        </Button>
-        <Button size="compact-md" variant="outline" onClick={props.onDelete}>
-          Delete
-        </Button>
-      </td>
-    </tr>
-  );
-}
-
 interface FilterRowInputProps {
+  readonly id: string;
   readonly resourceType: string;
   readonly searchParams: Record<string, SearchParameter>;
-  readonly defaultValue?: Filter;
-  readonly okText: string;
-  readonly onOk: (value: Filter) => void;
-  readonly onCancel?: () => void;
+  readonly value: Filter;
+  readonly onChange: (value: Filter) => void;
+  readonly onDelete?: () => void;
 }
 
 function FilterRowInput(props: FilterRowInputProps): JSX.Element {
-  const [value, setValue] = useState<Filter>(props.defaultValue ?? ({} as Filter));
+  const value: Filter = props.value;
   const valueRef = useRef<Filter>(value);
   valueRef.current = value;
 
   function setFilterCode(newCode: string): void {
-    setValue({ ...valueRef.current, code: newCode });
+    valueRef.current.code = newCode;
+    valueRef.current.operator = Operator.EQUALS;
+    valueRef.current.value = '';
+    props.onChange(valueRef.current);
   }
 
   function setFilterOperator(newOperator: Operator): void {
-    setValue({ ...valueRef.current, operator: newOperator });
+    valueRef.current.operator = newOperator;
+    valueRef.current.value = '';
+    props.onChange(valueRef.current);
   }
 
   function setFilterValue(newFilterValue: string): void {
-    setValue({ ...valueRef.current, value: newFilterValue });
+    valueRef.current.value = newFilterValue;
+    props.onChange(valueRef.current);
   }
 
   const searchParam = props.searchParams[value.code];
@@ -170,8 +136,8 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
     <tr>
       <td>
         <NativeSelect
-          data-testid="filter-field"
-          defaultValue={valueRef.current.code}
+          data-testid={`${props.id}-filter-field`}
+          defaultValue={props.value.code}
           onChange={(e) => setFilterCode(e.currentTarget.value)}
           data={[
             '',
@@ -182,7 +148,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {operators && (
           <NativeSelect
-            data-testid="filter-operation"
+            data-testid={`${props.id}-filter-operation`}
             defaultValue={value.operator}
             onChange={(e) => setFilterOperator(e.currentTarget.value as Operator)}
             data={['', ...operators.map((op) => ({ value: op, label: getOpString(op) }))]}
@@ -192,6 +158,7 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
       <td>
         {searchParam && value.operator && (
           <SearchFilterValueInput
+            name={`${props.id}-filter-value`}
             resourceType={props.resourceType}
             searchParam={searchParam}
             defaultValue={value.value}
@@ -200,22 +167,10 @@ function FilterRowInput(props: FilterRowInputProps): JSX.Element {
         )}
       </td>
       <td>
-        {value.code && value.operator && (
-          <Button
-            size="compact-md"
-            variant="outline"
-            onClick={() => {
-              props.onOk(valueRef.current);
-              setValue({} as Filter);
-            }}
-          >
-            {props.okText}
-          </Button>
-        )}
-        {props.onCancel && (
-          <Button size="compact-md" variant="outline" onClick={props.onCancel}>
-            Cancel
-          </Button>
+        {props.onDelete && (
+          <ActionIcon variant="outline" color="red" radius="xl" aria-label="Delete filter" onClick={props.onDelete}>
+            <IconX style={{ width: '70%', height: '70%' }} stroke={1.5} />
+          </ActionIcon>
         )}
       </td>
     </tr>

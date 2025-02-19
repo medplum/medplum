@@ -1,4 +1,4 @@
-import { OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
+import { CodeableConcept, OperationOutcome, OperationOutcomeIssue } from '@medplum/fhirtypes';
 import {
   accepted,
   allOk,
@@ -21,6 +21,7 @@ import {
   notModified,
   operationOutcomeToString,
   preconditionFailed,
+  redirect,
   serverError,
   serverTimeout,
   tooManyRequests,
@@ -73,7 +74,11 @@ describe('Outcomes', () => {
 
   test('Conflict', () => {
     expect(isOk(conflict('bad'))).toBe(false);
-    expect(conflict('bad').issue?.[0]?.details?.text).toBe('bad');
+    expect(conflict('bad').issue?.[0]?.details).toMatchObject<CodeableConcept>({ text: 'bad', coding: undefined });
+    expect(conflict('bad', 'errcode').issue?.[0]?.details).toMatchObject<CodeableConcept>({
+      coding: [{ code: 'errcode' }],
+      text: 'bad',
+    });
   });
 
   test('Bad Request', () => {
@@ -85,6 +90,7 @@ describe('Outcomes', () => {
     [allOk, 200],
     [created, 201],
     [accepted('https://example.com'), 202],
+    [redirect(new URL('http://example.com')), 302],
     [notModified, 304],
     [badRequest('bad'), 400],
     [unauthorized, 401],
@@ -98,7 +104,7 @@ describe('Outcomes', () => {
     [serverError(new Error('bad')), 500],
     [serverTimeout(), 504],
   ])('getStatus(%p) == %i', (outcome, expectedStatus) => {
-    expect(getStatus(outcome)).toEqual(expectedStatus);
+    expect(getStatus(outcome)).toStrictEqual(expectedStatus);
   });
 
   test('Assert OK', () => {
@@ -127,19 +133,21 @@ describe('Outcomes', () => {
   });
 
   test('operationOutcomeToString', () => {
-    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' } as OperationOutcome)).toEqual('Unknown error');
+    expect(operationOutcomeToString({ resourceType: 'OperationOutcome' } as OperationOutcome)).toStrictEqual(
+      'Unknown error'
+    );
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
         issue: [{ details: { text: 'foo' } } as OperationOutcomeIssue],
       })
-    ).toEqual('foo');
+    ).toStrictEqual('foo');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
         issue: [{ details: { text: 'foo' }, expression: ['bar'] } as OperationOutcomeIssue],
       })
-    ).toEqual('foo (bar)');
+    ).toStrictEqual('foo (bar)');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
@@ -148,7 +156,7 @@ describe('Outcomes', () => {
           { details: { text: 'error2' }, expression: ['expr2'] } as OperationOutcomeIssue,
         ],
       })
-    ).toEqual('error1 (expr1); error2 (expr2)');
+    ).toStrictEqual('error1 (expr1); error2 (expr2)');
     expect(
       operationOutcomeToString({
         resourceType: 'OperationOutcome',
@@ -160,6 +168,6 @@ describe('Outcomes', () => {
           },
         ],
       })
-    ).toEqual('Supplied Patient is unknown.');
+    ).toStrictEqual('Supplied Patient is unknown.');
   });
 });

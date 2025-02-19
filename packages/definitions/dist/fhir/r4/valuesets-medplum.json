@@ -463,6 +463,40 @@
       }
     },
     {
+      "fullUrl": "https://medplum.com/fhir/CodeSystem/async-job-type",
+      "resource": {
+        "resourceType": "CodeSystem",
+        "id": "async-job-type",
+        "url": "https://medplum.com/fhir/CodeSystem/async-job-type",
+        "status": "active",
+        "valueSet": "https://medplum.com/fhir/ValueSet/async-job-type",
+        "content": "complete",
+        "concept": [
+          {
+            "code": "data-migration",
+            "display": "Data Migration",
+            "definition": "Data Migration"
+          }
+        ]
+      }
+    },
+    {
+      "fullUrl": "https://medplum.com/fhir/ValueSet/async-job-type",
+      "resource": {
+        "resourceType": "ValueSet",
+        "id": "async-job-type",
+        "url": "https://medplum.com/fhir/ValueSet/async-job-type",
+        "status": "active",
+        "compose": {
+          "include": [
+            {
+              "system": "https://medplum.com/fhir/CodeSystem/async-job-type"
+            }
+          ]
+        }
+      }
+    },
+    {
       "fullUrl": "https://medplum.com/fhir/CodeSystem/async-job-status",
       "resource": {
         "resourceType": "CodeSystem",
@@ -491,6 +525,11 @@
             "code": "error",
             "display": "Error",
             "definition": "Error"
+          },
+          {
+            "code": "cancelled",
+            "display": "Cancelled",
+            "definition": "Cancelled"
           }
         ]
       }

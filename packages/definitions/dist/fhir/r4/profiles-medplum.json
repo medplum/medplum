@@ -781,6 +781,51 @@
             }
           },
           {
+            "id" : "ClientApplication.signInForm",
+            "path" : "ClientApplication.signInForm",
+            "definition" : "Custom values for the Log In form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "BackboneElement"
+            }],
+            "base" : {
+              "path" : "ClientApplication.signInForm",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.signInForm.welcomeString",
+            "path" : "ClientApplication.signInForm.welcomeString",
+            "definition" : "Welcome string for the Log In Form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "base": {
+              "path" : "ClientApplication.signInForm.welcomeString",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.signInForm.logo",
+            "path" : "ClientApplication.signInForm.logo",
+            "definition" : "Logo for the Log In Form.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "Attachment"
+            }],
+            "base": {
+              "path" : "ClientApplication.signInForm.logo",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
             "id" : "ClientApplication.secret",
             "path" : "ClientApplication.secret",
             "definition" : "Client secret string used to verify the identity of a client.",
@@ -866,6 +911,27 @@
             }],
             "base": {
               "path" : "ClientApplication.identityProvider",
+              "min" : 0,
+              "max" : "1"
+            }
+          },
+          {
+            "id" : "ClientApplication.accessTokenLifetime",
+            "path" : "ClientApplication.accessTokenLifetime",
+            "definition" : "Optional configuration to set the access token duration",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "string"
+            }],
+            "constraint" : [{
+              "key" : "clapp-1",
+              "severity" : "error",
+              "human" : "Token lifetime must be a valid string representing time duration (eg. 2w, 1h)",
+              "expression" : "$this.matches('^[0-9]+[smhdwy]$')"
+            }],
+            "base": {
+              "path" : "ClientApplication.accessTokenLifetime",
               "min" : 0,
               "max" : "1"
             }
@@ -1390,6 +1456,23 @@
             }
           },
           {
+            "id" : "ProjectMembership.active",
+            "path" : "ProjectMembership.active",
+            "short" : "Whether this patient's record is in active use",
+            "definition" : "Whether this project membership record is in active use.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "ProjectMembership.active",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "boolean"
+            }],
+            "meaningWhenMissing" : "This resource is generally assumed to be active if no value is provided for the active element"
+          },
+          {
             "id" : "ProjectMembership.project",
             "path" : "ProjectMembership.project",
             "definition" : "Project where the memberships are available.",
@@ -1840,6 +1923,21 @@
             "binding" : {
               "strength" : "required",
               "valueSet" : "https://medplum.com/fhir/ValueSet/bot-runtime-version|4.0.1"
+            }
+          },
+          {
+            "id" : "Bot.timeout",
+            "path" : "Bot.timeout",
+            "definition" : "The maximum allowed execution time of the bot in seconds.",
+            "min" : 0,
+            "max" : "1",
+            "type" : [{
+              "code" : "integer"
+            }],
+            "base" : {
+              "path" : "Bot.timeout",
+              "min" : 0,
+              "max" : "1"
             }
           },
           {
@@ -5250,7 +5348,7 @@
           {
             "id" : "AsyncJob.status",
             "path" : "AsyncJob.status",
-            "short" : "accepted | error | completed",
+            "short" : "accepted | error | completed | cancelled",
             "definition" : "The status of the request.",
             "min" : 1,
             "max" : "1",
@@ -5326,6 +5424,41 @@
               "min" : 0,
               "max" : "1"
             }
+          },
+          {
+            "id" : "AsyncJob.type",
+            "path" : "AsyncJob.type",
+            "short" : "data-migration",
+            "definition" : "The type of the AsyncJob.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.type",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "code"
+            }],
+            "binding" : {
+              "strength" : "required",
+              "valueSet" : "https://medplum.com/fhir/ValueSet/async-job-type|4.0.1"
+            }
+          },
+          {
+            "id" : "AsyncJob.dataVersion",
+            "path" : "AsyncJob.dataVersion",
+            "definition" : "The data version of the migration this job represents.",
+            "min" : 0,
+            "max" : "1",
+            "base" : {
+              "path" : "AsyncJob.dataVersion",
+              "min" : 0,
+              "max" : "1"
+            },
+            "type" : [{
+              "code" : "integer"
+            }]
           }
         ]
       }

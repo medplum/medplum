@@ -21,7 +21,8 @@ import {
   Resource,
   ResourceType,
 } from '@medplum/fhirtypes';
-import { getAuthenticatedContext, getLogger } from '../../context';
+import { getAuthenticatedContext } from '../../context';
+import { getLogger } from '../../logger';
 import { Repository } from '../repo';
 
 /**

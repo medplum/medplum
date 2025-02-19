@@ -29,7 +29,7 @@ describe('CLI utils', () => {
       extractor.end();
       throw new Error('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Tar extractor reached max number of files');
+      expect((err as Error).message).toStrictEqual('Tar extractor reached max number of files');
     }
   });
 
@@ -52,21 +52,21 @@ describe('CLI utils', () => {
       extractor.end();
       throw new Error('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Tar extractor reached max size');
+      expect((err as Error).message).toStrictEqual('Tar extractor reached max size');
     }
   });
 
   test('getCodeContentType', () => {
-    expect(getCodeContentType('foo.cjs')).toEqual(ContentType.JAVASCRIPT);
-    expect(getCodeContentType('foo.js')).toEqual(ContentType.JAVASCRIPT);
-    expect(getCodeContentType('foo.mjs')).toEqual(ContentType.JAVASCRIPT);
+    expect(getCodeContentType('foo.cjs')).toStrictEqual(ContentType.JAVASCRIPT);
+    expect(getCodeContentType('foo.js')).toStrictEqual(ContentType.JAVASCRIPT);
+    expect(getCodeContentType('foo.mjs')).toStrictEqual(ContentType.JAVASCRIPT);
 
-    expect(getCodeContentType('foo.cts')).toEqual(ContentType.TYPESCRIPT);
-    expect(getCodeContentType('foo.mts')).toEqual(ContentType.TYPESCRIPT);
-    expect(getCodeContentType('foo.ts')).toEqual(ContentType.TYPESCRIPT);
+    expect(getCodeContentType('foo.cts')).toStrictEqual(ContentType.TYPESCRIPT);
+    expect(getCodeContentType('foo.mts')).toStrictEqual(ContentType.TYPESCRIPT);
+    expect(getCodeContentType('foo.ts')).toStrictEqual(ContentType.TYPESCRIPT);
 
-    expect(getCodeContentType('foo.txt')).toEqual(ContentType.TEXT);
-    expect(getCodeContentType('foo')).toEqual(ContentType.TEXT);
+    expect(getCodeContentType('foo.txt')).toStrictEqual(ContentType.TEXT);
+    expect(getCodeContentType('foo')).toStrictEqual(ContentType.TEXT);
   });
 
   describe('MedplumCommand', () => {

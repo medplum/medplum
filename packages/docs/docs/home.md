@@ -10,7 +10,7 @@ import HomepageCallout from '@site/src/components/HomepageCallout'
 <section className="homepage-grid">
     <HomepageCallout title="Get Started" body="Write your first medical application in 5 minutes" linkText="Read more" linkRef="./docs/tutorials" />
     <HomepageCallout title="API Docs" body="Reference documentation about Medplum's client API for reading and writing healthcare data" linkText="Read more" linkRef="./docs/api" />
-    <HomepageCallout title="Medplum EHR" body="A strealined EHR that's easy to implement" linkText="Read more" linkRef="./solutions/medplum-ehr" />
+    <HomepageCallout title="Medplum EHR" body="A streamlined EHR that's easy to implement" linkText="Read more" linkRef="./solutions/medplum-ehr" />
     <HomepageCallout title="Basic Concepts" body="Learn the basic concepts behind Medplum and the FHIR standard for healthcare data" linkText="Read more" linkRef="./docs/fhir-basics" />
 </section>
 

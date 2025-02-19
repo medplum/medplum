@@ -129,7 +129,17 @@ export function SignInForm(props: SignInFormProps): JSX.Element {
             </AuthenticationForm>
           );
         } else if (mfaRequired) {
-          return <MfaForm login={login} handleAuthResponse={handleAuthResponse} />;
+          return (
+            <MfaForm
+              onSubmit={async (fields) => {
+                const res = await medplum.post('auth/mfa/verify', {
+                  login: login,
+                  token: fields.token,
+                });
+                handleAuthResponse(res);
+              }}
+            />
+          );
         } else if (memberships) {
           return <ChooseProfileForm login={login} memberships={memberships} handleAuthResponse={handleAuthResponse} />;
         } else if (props.projectId === 'new') {

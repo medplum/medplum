@@ -66,6 +66,7 @@ export enum Operator {
 
   // String
   CONTAINS = 'contains',
+  STARTS_WITH = 'sw',
   EXACT = 'exact',
 
   // Token
@@ -124,6 +125,7 @@ const PREFIX_OPERATORS: Record<string, Operator> = {
   sa: Operator.STARTS_AFTER,
   eb: Operator.ENDS_BEFORE,
   ap: Operator.APPROXIMATELY,
+  sw: Operator.STARTS_WITH,
 };
 
 /**
@@ -354,11 +356,12 @@ function parseSortRule(searchRequest: SearchRequest, value: string): void {
   }
 }
 
+const presenceOperators: Operator[] = [Operator.MISSING, Operator.PRESENT];
 export function parseParameter(searchParam: SearchParameter, modifier: string, value: string): Filter {
-  if (modifier === 'missing') {
+  if (presenceOperators.includes(modifier as Operator)) {
     return {
       code: searchParam.code,
-      operator: Operator.MISSING,
+      operator: modifier as Operator,
       value,
     };
   }

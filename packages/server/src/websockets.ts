@@ -4,11 +4,12 @@ import { randomUUID } from 'crypto';
 import http, { IncomingMessage } from 'http';
 import ws from 'ws';
 import { handleAgentConnection } from './agent/websockets';
-import { getConfig } from './config';
-import { RequestContext, requestContextStore } from './context';
-import { handleFhircastConnection } from './fhircast/websocket';
+import { getConfig } from './config/loader';
+import { RequestContext } from './context';
+import { handleFhircastConnection, initFhircastHeartbeat, stopFhircastHeartbeat } from './fhircast/websocket';
 import { globalLogger } from './logger';
 import { getRedis, getRedisSubscriber } from './redis';
+import { requestContextStore } from './request-context-store';
 import { handleR4SubscriptionConnection } from './subscriptions/websockets';
 
 const handlerMap = new Map<string, (socket: ws.WebSocket, request: IncomingMessage) => Promise<void>>();
@@ -88,6 +89,8 @@ export function initWebSockets(server: http.Server): void {
       socket.destroy();
     }
   });
+
+  initFhircastHeartbeat();
 }
 
 function getWebSocketPath(path: string): string {
@@ -127,6 +130,8 @@ async function handleEchoConnection(socket: ws.WebSocket): Promise<void> {
 }
 
 export async function closeWebSockets(): Promise<void> {
+  stopFhircastHeartbeat();
+
   if (wsServer) {
     wsServer.close();
     wsServer = undefined;

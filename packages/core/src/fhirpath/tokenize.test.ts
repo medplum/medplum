@@ -78,7 +78,7 @@ describe('Tokenizer', () => {
   });
 
   test('Empty string', () => {
-    expect(tokenize('')).toEqual([]);
+    expect(tokenize('')).toStrictEqual([]);
   });
 
   test('String escape sequence', () => {

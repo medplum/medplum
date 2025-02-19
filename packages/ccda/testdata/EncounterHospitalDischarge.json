@@ -1,0 +1,142 @@
+{
+  "resourceType": "Bundle",
+  "type": "document",
+  "entry": [
+    {
+      "resource": {
+        "resourceType": "Composition",
+        "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "status": "final",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "34133-9",
+              "display": "Summarization of Episode Note"
+            }
+          ],
+          "text": "Summarization of Episode Note"
+        },
+        "author": [
+          {
+            "display": "Medplum"
+          }
+        ],
+        "date": "2025-01-01T00:00:00-0500",
+        "title": "Medical Summary",
+        "section": [
+          {
+            "title": "ENCOUNTERS",
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "46240-8",
+                  "display": "History of Hospitalizations+Outpatient visits Narrative"
+                }
+              ],
+              "text": "History of Hospitalizations+Outpatient visits Narrative"
+            },
+            "text": {
+              "status": "generated",
+              "div": "<div xmlns=\"http://www.w3.org/1999/xhtml\"><table border=\"1\" width=\"100%\"><thead><tr><th>Encounter Diagnosis</th><th>Location</th><th>Date</th></tr></thead><tbody><tr><td ID=\"Encounter1\">Fever (finding)</td><td>Neighborhood Physicians Practice</td><td>June 22, 2015</td></tr></tbody></table></div>"
+            },
+            "entry": [
+              {
+                "reference": "Encounter/2a620155-9d12-439e-92b3-5d9815ff4de8"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Patient",
+        "id": "ce862cfe-6559-411e-92e9-e8d005b1c226",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-ssn",
+            "value": "111223333"
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Madison",
+            "given": ["Katherine"]
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "27aa3679-130e-498b-bfde-3964a2a1605a",
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "99999999"
+          }
+        ]
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Organization",
+        "id": "27aa3679-130e-498b-bfde-3964a2a1605a"
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "27aa3679-130e-498b-bfde-3964a2a1605a",
+        "practitioner": {
+          "reference": "Practitioner/27aa3679-130e-498b-bfde-3964a2a1605a"
+        },
+        "organization": {
+          "reference": "Organization/27aa3679-130e-498b-bfde-3964a2a1605a"
+        }
+      }
+    },
+    {
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "2a620155-9d12-439e-92b3-5d9815ff4de8",
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "Ambulatory"
+        },
+        "type": [
+          {
+            "coding": [{}]
+          }
+        ],
+        "subject": {
+          "reference": "Patient/ce862cfe-6559-411e-92e9-e8d005b1c226",
+          "display": "Katherine Madison"
+        },
+        "participant": [
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "PPRF",
+                    "display": "Primary Performer"
+                  }
+                ]
+              }
+            ],
+            "individual": {
+              "reference": "PractitionerRole/27aa3679-130e-498b-bfde-3964a2a1605a"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -20,7 +20,7 @@ describe('FHIR Mapper transform functions', () => {
     const input = [toTypedValue({ value: 123 })];
     const expected = [toTypedValue({ value: '123' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('cc with text', () => {

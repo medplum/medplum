@@ -12,7 +12,7 @@ import {
 import { parseFhirPath } from '../fhirpath/parse';
 import { PropertyType, getElementDefinition, globalSchema } from '../types';
 import { InternalSchemaElement } from '../typeschema/types';
-import { capitalize, lazy } from '../utils';
+import { lazy } from '../utils';
 
 export enum SearchParameterType {
   BOOLEAN = 'BOOLEAN',
@@ -28,7 +28,6 @@ export enum SearchParameterType {
 }
 
 export interface SearchParameterDetails {
-  readonly columnName: string;
   readonly type: SearchParameterType;
   readonly elementDefinitions?: InternalSchemaElement[];
   readonly array?: boolean;
@@ -76,7 +75,6 @@ function setSearchParameterDetails(resourceType: string, code: string, details: 
 
 function buildSearchParameterDetails(resourceType: string, searchParam: SearchParameter): SearchParameterDetails {
   const code = searchParam.code as string;
-  const columnName = convertCodeToColumnName(code);
   const expressions = getExpressionsForResourceType(resourceType, searchParam.expression as string);
 
   const builder: SearchParameterDetailsBuilder = {
@@ -91,6 +89,10 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
 
     if (atomArray.length === 1 && atomArray[0] instanceof BooleanInfixOperatorAtom) {
       builder.propertyTypes.add('boolean');
+    } else if (searchParam.code.endsWith(':identifier')) {
+      // This is a derived "identifier" search parameter
+      // See `deriveIdentifierSearchParameter`
+      builder.propertyTypes.add('Identifier');
     } else if (
       // To support US Core Patient search parameters without needing profile-aware logic,
       // assume expressions for `Extension.value[x].code` and `Extension.value[x].coding.code`
@@ -102,7 +104,7 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
       builder.array = true;
       builder.propertyTypes.add('code');
     } else {
-      crawlSearchParameterDetails(builder, flattenAtom(expression), resourceType, 1);
+      crawlSearchParameterDetails(builder, atomArray, resourceType, 1);
     }
 
     // To support US Core "us-core-condition-asserted-date" search parameter without
@@ -116,7 +118,6 @@ function buildSearchParameterDetails(resourceType: string, searchParam: SearchPa
   }
 
   const result: SearchParameterDetails = {
-    columnName,
     type: getSearchParameterType(searchParam, builder.propertyTypes),
     elementDefinitions: builder.elementDefinitions,
     array: builder.array,
@@ -211,15 +212,6 @@ function handleFunctionAtom(builder: SearchParameterDetailsBuilder, functionAtom
 
 function isBackboneElement(propertyType: string): boolean {
   return propertyType === 'Element' || propertyType === 'BackboneElement';
-}
-
-/**
- * Converts a hyphen-delimited code to camelCase string.
- * @param code - The search parameter code.
- * @returns The SQL column name.
- */
-function convertCodeToColumnName(code: string): string {
-  return code.split('-').reduce((result, word, index) => result + (index ? capitalize(word) : word), '');
 }
 
 function getSearchParameterType(searchParam: SearchParameter, propertyTypes: Set<string>): SearchParameterType {

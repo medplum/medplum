@@ -194,7 +194,7 @@ describe('getAutocompleteSearchFunction', () => {
 
     const searchFunc = getAutocompleteSearchFunction(medplum, BOT_IDENTIFIER);
     const result = await searchFunc({ type: 'lab', query: 'quest' });
-    expect(result).toEqual({
+    expect(result).toStrictEqual({
       type: 'lab',
       result: [QUEST_LAB],
     });

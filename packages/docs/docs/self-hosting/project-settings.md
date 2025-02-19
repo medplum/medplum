@@ -1,5 +1,5 @@
 ---
-sidebar_position: 6
+sidebar_position: 60
 ---
 
 # Project Settings
@@ -38,3 +38,17 @@ are:
 | `websocket-subscriptions` | Allows setting up a [Subscription](/docs/subscriptions) over Websockets                                                          |
 | `reference-lookups`       | Uses dedicated lookup tables for faster [chained search](/docs/search/chained-search)                                            |
 | `transaction-bundles`     | Use strong database transaction isolation for `transaction` Bundles                                                              |
+
+## Project system settings
+
+The supported options that can be specified by a Super Admin in `Project.systemSetting`:
+
+| systemSetting                  | Type    | Description                                                                                                                                                               | Default |
+| ------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `authRateLimit`                | integer | The maximum requests per minute allowed for authentication endpoints per IP address                                                                                       | 160     |
+| `graphqlBatchedSearchSize`     | integer | For some GraphQL nested searches, the maximum number of searches to batch per SQL query                                                                                   | 0       |
+| `graphqlMaxDepth`              | integer | The maximum allowed depth of a GraphQL query                                                                                                                              | 12      |
+| `graphqlMaxSearches`           | integer | The maximum number of searches allowed in a GraphQL query                                                                                                                 | none    |
+| `legacyFhirJsonResponseFormat` | boolean | If true, plain JSON formatting is incorrectly used instead of [FHIR JSON](https://hl7.org/fhir/R4/json.html) for some responses with content type `application/fhir+json` | false   |
+| `rateLimit`                    | integer | The maximum requests per minute allowed per IP address                                                                                                                    | 60000   |
+| `searchOnReader`               | boolean | If true, FHIR search requests (except in batch requests) are served by the reader database pool if available                                                              | false   |
