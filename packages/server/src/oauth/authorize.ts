@@ -64,52 +64,38 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     res.status(400).send('Client has no redirect URI');
     return false;
   }
-
   if (!URL.canParse(redirectUri)) {
     res.status(400).send('Invalid redirect URI');
     return false;
   }
-
   if (redirectUri !== params.redirect_uri) {
     res.status(400).send('Incorrect redirect_uri');
     return false;
   }
 
-  const state = params.state as string;
+  const state = params.state ?? '';
 
   // Then, validate all other parameters.
   // If these are invalid, redirect back to the redirect URI.
-  const scope = params.scope as string | undefined;
-  if (!scope) {
+  if (!params.scope) {
     sendErrorRedirect(res, redirectUri, 'invalid_request', state);
     return false;
   }
-
-  const responseType = params.response_type;
-  if (responseType !== 'code') {
+  if (params.response_type !== 'code') {
     sendErrorRedirect(res, redirectUri, 'unsupported_response_type', state);
     return false;
   }
-
-  const requestObject = params.request as string | undefined;
-  if (requestObject) {
+  if (params.request) {
     sendErrorRedirect(res, redirectUri, 'request_not_supported', state);
     return false;
   }
-
-  const aud = params.aud as string | undefined;
-  if (!isValidAudience(aud)) {
+  if (!isValidAudience(params.aud)) {
     sendErrorRedirect(res, redirectUri, 'invalid_request', state);
     return false;
   }
-
-  const codeChallenge = params.code_challenge;
-  if (codeChallenge) {
-    const codeChallengeMethod = params.code_challenge_method;
-    if (!codeChallengeMethod) {
-      sendErrorRedirect(res, redirectUri, 'invalid_request', state);
-      return false;
-    }
+  if (params.code_challenge && !params.code_challenge_method) {
+    sendErrorRedirect(res, redirectUri, 'invalid_request', state);
+    return false;
   }
 
   const existingLogin = await getExistingLogin(req, client);
