@@ -45,6 +45,11 @@ function getTabs(resourceType: string): string[] {
   }
 
   result.push('Details', 'Edit', 'Event', 'History', 'Blame', 'JSON', 'Apps', 'Profiles');
+
+  if (resourceType === 'Patient') {
+    result.push('Export');
+  }
+
   return result;
 }
 

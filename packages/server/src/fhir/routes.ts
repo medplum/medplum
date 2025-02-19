@@ -17,6 +17,7 @@ import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
+import { ccdaExportHandler } from './operations/ccdaexport';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
@@ -254,6 +255,9 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $summary operation
   router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
   router.add('POST', '/Patient/:id/$summary', patientSummaryHandler);
+
+  // Patient $ccda-export operation
+  router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
 
   // $expunge operation
   router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);
