@@ -1,21 +1,21 @@
 import {
   allOk,
+  flatMapFilter,
   getReferenceString,
-  Operator,
-  sortStringArray,
   isReference,
   isResource,
-  flatMapFilter,
+  Operator,
+  sortStringArray,
 } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   Bundle,
+  BundleEntry,
   CompartmentDefinitionResource,
   Patient,
-  ResourceType,
-  Resource,
   Reference,
-  BundleEntry,
+  Resource,
+  ResourceType,
 } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientCompartments } from '../patient';
@@ -27,12 +27,14 @@ const operation = getOperationDefinition('Patient', 'everything');
 
 const defaultMaxResults = 1000;
 
-export type PatientEverythingParameters = {
+export interface PatientEverythingParameters {
+  start?: string;
+  end?: string;
   _since?: string;
   _count?: number;
   _offset?: number;
   _type?: ResourceType[];
-};
+}
 
 // Patient everything operation.
 // https://hl7.org/fhir/operation-patient-everything.html
@@ -84,12 +86,16 @@ export async function getPatientEverything(
     },
   ];
 
+  if (params?.start) {
+    filters.push({ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: params.start });
+  }
+
+  if (params?.end) {
+    filters.push({ code: '_lastUpdated', operator: Operator.LESS_THAN_OR_EQUALS, value: params.end });
+  }
+
   if (params?._since) {
-    filters.push({
-      code: '_lastUpdated',
-      operator: Operator.GREATER_THAN_OR_EQUALS,
-      value: params._since,
-    });
+    filters.push({ code: '_lastUpdated', operator: Operator.GREATER_THAN_OR_EQUALS, value: params._since });
   }
 
   // Get initial bundle of compartment resources

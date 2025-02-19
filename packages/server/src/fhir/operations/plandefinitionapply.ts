@@ -1,6 +1,8 @@
 import { allOk, createReference, getReferenceString, ProfileResource } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
+  Bot,
+  ClientApplication,
   Encounter,
   Patient,
   PlanDefinition,
@@ -77,7 +79,7 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
  */
 async function createAction(
   repo: Repository,
-  requester: Reference<ProfileResource>,
+  requester: Reference<ProfileResource | Bot | ClientApplication>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
   encounter?: Reference<Encounter>
@@ -99,7 +101,7 @@ async function createAction(
  */
 async function createQuestionnaireTask(
   repo: Repository,
-  requester: Reference<ProfileResource>,
+  requester: Reference<ProfileResource | Bot | ClientApplication>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
   encounter?: Reference<Encounter>
@@ -129,7 +131,7 @@ async function createQuestionnaireTask(
  */
 async function createTask(
   repo: Repository,
-  requester: Reference<ProfileResource>,
+  requester: Reference<ProfileResource | Bot | ClientApplication>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
   encounter?: Reference<Encounter>,
@@ -143,7 +145,7 @@ async function createTask(
     intent: 'order',
     status: 'requested',
     authoredOn: new Date().toISOString(),
-    requester,
+    requester: requester as Task['requester'],
     for: subject,
     encounter: encounter,
     owner: subject,

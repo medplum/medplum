@@ -36,7 +36,7 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   { id: 'edit', url: 'edit', label: 'Edit' },
   {
     id: 'encounter',
-    url: 'Encounter?_count=20&_fields=_lastUpdated,period,status,type&_sort=-_lastUpdated&patient=%patient.id',
+    url: 'Encounter?_count=20&_fields=_lastUpdated,period,status,serviceType&_sort=-_lastUpdated&patient=%patient.id',
     label: 'Encounter',
   },
   {
@@ -81,4 +81,5 @@ export const PatientPageTabs: PatientPageTabInfo[] = [
   },
   { id: 'communication', url: 'communication', label: 'Communications' },
   { id: 'dosespot', url: 'dosespot', label: 'DoseSpot' },
+  { id: 'export', url: 'export', label: 'Export' },
 ];

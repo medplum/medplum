@@ -1,7 +1,7 @@
 import { allOk, badRequest, normalizeErrorString, resolveId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Subscription } from '@medplum/fhirtypes';
-import { getConfig } from '../../config';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
 import { buildOutputParameters } from './utils/parameters';

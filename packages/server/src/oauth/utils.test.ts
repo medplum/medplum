@@ -2,7 +2,7 @@ import { OperationOutcomeError } from '@medplum/core';
 import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { createTestClient, withTestContext } from '../test.setup';
 import {
   getAuthTokens,

@@ -9,7 +9,7 @@ import {
 import { Project, ProjectMembership, Reference, User } from '@medplum/fhirtypes';
 import { Operation } from 'rfc6902';
 import { inviteUser } from '../admin/invite';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { patchObject } from '../util/patch';
 import { ScimListResponse, ScimPatchRequest, ScimUser } from './types';

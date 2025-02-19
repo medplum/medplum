@@ -1,7 +1,17 @@
-import { Resource, ResourceType } from '@medplum/fhirtypes';
+import {
+  Bundle,
+  DiagnosticReport,
+  Encounter,
+  ImagingStudy,
+  OperationOutcome,
+  Patient,
+  Reference,
+  Resource,
+} from '@medplum/fhirtypes';
 import { generateId } from '../crypto';
 import { TypedEventTarget } from '../eventtarget';
 import { OperationOutcomeError, validationError } from '../outcomes';
+import { isReference } from '../types';
 
 // We currently try to satisfy both STU2 and STU3. Where STU3 removes a resource / key from STU2, we leave it in as a valid key but don't require it.
 
@@ -43,12 +53,14 @@ export function assertContextVersionOptional(event: string): asserts event is Fh
 export type FhircastEventName = keyof typeof FHIRCAST_EVENT_NAMES;
 export type FhircastResourceEventName = Exclude<FhircastEventName, 'syncerror'>;
 export type FhircastResourceType = (typeof FHIRCAST_RESOURCE_TYPES)[number];
+export type FhircastAnchorResourceType = 'Patient' | 'ImagingStudy' | 'Encounter' | 'DiagnosticReport';
 
 export type FhircastEventContextDetails = {
   resourceType: FhircastResourceType | '*';
   optional?: boolean; // NOTE: optional here is only referring to the schema, the spec often mentions that these are required if available as references for a given anchor resource
   manyAllowed?: boolean;
-  isArray?: boolean;
+  array?: boolean;
+  reference?: boolean;
 };
 
 // Key value pairs of { [FhircastEventName]: [required_resource1, required_resource2] }
@@ -94,13 +106,17 @@ export const FHIRCAST_EVENT_RESOURCES = {
     patient: { resourceType: 'Patient' },
   },
   'DiagnosticReport-select': {
-    report: { resourceType: 'DiagnosticReport' },
-    select: { resourceType: '*', isArray: true },
+    // Most event contexts contain a full resource, but `DiagnosticReport-select` context elements are actually references
+    // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-4-DiagnosticReport-select.html
+    report: { resourceType: 'DiagnosticReport', reference: true },
+    patient: { resourceType: 'Patient', optional: true, reference: true },
+    select: { resourceType: '*', array: true, reference: true },
   },
   'DiagnosticReport-update': {
-    report: { resourceType: 'DiagnosticReport' },
-    patient: { resourceType: 'Patient', optional: true },
-    study: { resourceType: 'ImagingStudy', optional: true },
+    // `report` and `patient` are also references for `DiagnosticReport-update`:
+    // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-3-DiagnosticReport-update.html
+    report: { resourceType: 'DiagnosticReport', reference: true },
+    patient: { resourceType: 'Patient', optional: true, reference: true },
     updates: { resourceType: 'Bundle' },
   },
   syncerror: {
@@ -131,66 +147,121 @@ export type SubscriptionRequest = {
   endpoint: string;
 };
 
-export type CurrentContext<EventName extends FhircastResourceEventName = FhircastResourceEventName> = {
-  'context.type': ResourceType | '';
-  'context.versionId'?: string;
-  context: FhircastEventContext<EventName>[];
+export type FhircastPatientContext = { key: 'patient'; resource: Patient };
+export type FhircastEncounterContext = { key: 'encounter'; resource: Encounter };
+export type FhircastStudyContext = { key: 'study'; resource: ImagingStudy };
+export type FhircastReportContext = { key: 'report'; resource: DiagnosticReport };
+export type FhircastReportReferenceContext = { key: 'report'; reference: Reference<DiagnosticReport> };
+export type FhircastPatientReferenceContext = { key: 'patient'; reference: Reference<Patient> };
+export type FhircastUpdatesContext = { key: 'updates'; resource: Bundle };
+export type FhircastSelectContext = { key: 'select'; reference: Reference[] };
+export type FhircastOperationOutcomeContext = { key: 'operationoutcome'; resource: OperationOutcome };
+
+// These are all the contexts that contain a `resource` key
+export type FhircastResourceContext =
+  | FhircastPatientContext
+  | FhircastEncounterContext
+  | FhircastStudyContext
+  | FhircastReportContext
+  | FhircastUpdatesContext
+  | FhircastOperationOutcomeContext;
+
+// The reference contexts related to `*-select` and `*-update` events, which contain a `reference` key
+export type FhircastSingleReferenceContext = FhircastReportReferenceContext | FhircastPatientReferenceContext;
+// Multi-reference contexts contain a `reference` key with an array of references as the value, currently only the `select` context
+export type FhircastMultiReferenceContext = FhircastSelectContext;
+
+export type FhircastPatientOpenContext = FhircastPatientContext | FhircastEncounterContext;
+export type FhircastPatientCloseContext = FhircastPatientOpenContext;
+export type FhircastImagingStudyOpenContext = FhircastStudyContext | FhircastEncounterContext | FhircastPatientContext;
+export type FhircastImagingStudyCloseContext = FhircastImagingStudyOpenContext;
+export type FhircastEncounterOpenContext = FhircastEncounterContext | FhircastPatientContext;
+export type FhircastEncounterCloseContext = FhircastEncounterOpenContext;
+export type FhircastDiagnosticReportOpenContext =
+  | FhircastReportContext
+  | FhircastEncounterContext
+  | FhircastStudyContext
+  | FhircastPatientContext;
+export type FhircastDiagnosticReportCloseContext = FhircastDiagnosticReportOpenContext;
+export type FhircastDiagnosticReportUpdateContext =
+  | FhircastReportReferenceContext
+  | FhircastPatientReferenceContext
+  | FhircastUpdatesContext;
+export type FhircastDiagnosticReportSelectContext =
+  | FhircastReportReferenceContext
+  | FhircastPatientReferenceContext
+  | FhircastSelectContext;
+export type FhircastSyncErrorContext = FhircastOperationOutcomeContext;
+
+// This is the one key that only exists within a GetCurrentContext
+// Specifically related to the `DiagnosticReport-update` event in a `DiagnosticReport` context
+// See the FHIRcast docs regarding content sharing: https://build.fhir.org/ig/HL7/fhircast-docs/2-10-ContentSharing.html#updating-attributes-of-context-resources-and-addingremoving-context-resources
+// And the GetCurrentContext page that mentions the specifications of this key: https://build.fhir.org/ig/HL7/fhircast-docs/2-9-GetCurrentContext.html#context
+export type FhircastHubContentContext = {
+  key: 'content';
+  resource: Bundle;
 };
+
+// Type utility to get keys for a specific event
+export type FhircastEventKeys<EventName extends FhircastEventName> = keyof (typeof FHIRCAST_EVENT_RESOURCES)[EventName];
+
+// Type utility to extract the resource type from an event and key
+export type FhircastContextResourceType<
+  EventName extends FhircastEventName,
+  K extends FhircastEventKeys<EventName>,
+> = (typeof FHIRCAST_EVENT_RESOURCES)[EventName][K] extends { resourceType: infer R } ? R : never;
+
+export type FhircastEventContext<EventName extends FhircastEventName = FhircastResourceEventName> =
+  EventName extends 'Patient-open'
+    ? FhircastPatientOpenContext
+    : EventName extends 'Patient-close'
+      ? FhircastPatientCloseContext
+      : EventName extends 'ImagingStudy-open'
+        ? FhircastImagingStudyOpenContext
+        : EventName extends 'ImagingStudy-close'
+          ? FhircastImagingStudyCloseContext
+          : EventName extends 'Encounter-open'
+            ? FhircastEncounterOpenContext
+            : EventName extends 'Encounter-close'
+              ? FhircastEncounterCloseContext
+              : EventName extends 'DiagnosticReport-open'
+                ? FhircastDiagnosticReportOpenContext
+                : EventName extends 'DiagnosticReport-close'
+                  ? FhircastDiagnosticReportCloseContext
+                  : EventName extends 'DiagnosticReport-update'
+                    ? FhircastDiagnosticReportUpdateContext
+                    : EventName extends 'DiagnosticReport-select'
+                      ? FhircastDiagnosticReportSelectContext
+                      : EventName extends 'syncerror'
+                        ? FhircastSyncErrorContext
+                        : never;
+
+export type AnchorResourceOpenEvent<T extends FhircastAnchorResourceType> = T extends FhircastAnchorResourceType
+  ? `${T}-open`
+  : never;
+
+export type CurrentContext<T extends FhircastAnchorResourceType | '' = FhircastAnchorResourceType | ''> = T extends ''
+  ? { 'context.type': ''; context: never[] }
+  : T extends 'DiagnosticReport'
+    ? {
+        'context.type': 'DiagnosticReport';
+        'context.versionId': string;
+        context: (FhircastEventContext<'DiagnosticReport-open'> | FhircastHubContentContext)[];
+      }
+    : T extends 'Patient' | 'Encounter' | 'ImagingStudy'
+      ? {
+          'context.type': T;
+          'context.versionId': string;
+          context: FhircastEventContext<AnchorResourceOpenEvent<T>>;
+        }
+      : never;
 
 export type PendingSubscriptionRequest = Omit<SubscriptionRequest, 'endpoint'>;
 
-export type FhircastEventContextMap<EventName extends FhircastEventName = FhircastEventName> =
-  (typeof FHIRCAST_EVENT_RESOURCES)[EventName];
-export type FhircastEventContextKey<EventName extends FhircastEventName = FhircastEventName> =
-  keyof FhircastEventContextMap<EventName>;
-
-export type FhircastEventResourceType<
-  EventName extends FhircastEventName = FhircastEventName,
-  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
-> = FhircastEventContextMap<EventName>[K] extends infer _Ev extends FhircastEventContextDetails
-  ? _Ev['resourceType']
-  : never;
-
-export type FhircastEventResource<
-  EventName extends FhircastEventName = FhircastEventName,
-  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
-> = FhircastEventContextMap<EventName>[K] extends infer _Ev extends FhircastEventContextDetails
-  ? FhircastEventResourceType<EventName, K> extends '*'
-    ? Resource & { id: string }
-    : Resource & { resourceType: FhircastEventResourceType<EventName, K>; id: string }
-  : never;
-
-export type FhircastSingleResourceContext<
-  EventName extends FhircastEventName = FhircastEventName,
-  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
-> = { key: K; resource: FhircastEventResource<EventName, K> };
-
-export type FhircastMultiResourceContext<
-  EventName extends FhircastEventName = FhircastEventName,
-  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
-> = { key: K; resources: FhircastEventResource<EventName, K>[] };
-
-export type FhircastEventContext<
-  EventName extends FhircastEventName = FhircastEventName,
-  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
-> = FhircastEventContextMap<EventName>[K] extends infer _Ev extends FhircastEventContextDetails
-  ? _Ev['isArray'] extends true
-    ? FhircastMultiResourceContext<EventName, K>
-    : FhircastSingleResourceContext<EventName, K>
-  : never;
-
-export type ConvertToUnion<T> = T[keyof T];
-export type FhircastValidContextForEvent<EventName extends FhircastEventName = FhircastEventName> = ConvertToUnion<{
-  [key in FhircastEventContextKey<EventName>]: FhircastEventContext<EventName, key>;
-}>;
-
-export type FhircastEventPayload<
-  EventName extends FhircastEventName = FhircastEventName,
-  K extends FhircastEventContextKey<EventName> = FhircastEventContextKey<EventName>,
-> = {
+export type FhircastEventPayload<EventName extends FhircastEventName = FhircastEventName> = {
   'hub.topic': string;
   'hub.event': EventName;
-  context: FhircastEventContext<EventName, K>[];
+  context: FhircastEventContext<EventName>[];
   'context.versionId'?: string;
   'context.priorVersionId'?: string;
 };
@@ -287,12 +358,9 @@ export function validateFhircastSubscriptionRequest(
  * @param i - The index of the current context in the context list.
  * @param keySchema - Schema for given key for FHIRcast event.
  */
-function validateSingleResourceContext<
-  EventName extends FhircastEventName,
-  K extends FhircastEventContextKey<EventName>,
->(
-  event: EventName,
-  resource: FhircastEventResource<EventName, K>,
+function validateSingleResourceContext(
+  event: FhircastEventName,
+  resource: Resource,
   i: number,
   keySchema: FhircastEventContextDetails
 ): void {
@@ -342,46 +410,45 @@ function validateSingleResourceContext<
  * @param keySchema - Schema for given key for FHIRcast event.
  * @param keysSeen - Set of keys seen so far. Used to prevent duplicate keys.
  */
-function validateFhircastContext<EventName extends FhircastEventName>(
+function validateFhircastContext<EventName extends FhircastEventName = FhircastEventName>(
   event: EventName,
   context: FhircastEventContext<EventName>,
   i: number,
   keySchema: FhircastEventContextDetails,
-  keysSeen: Map<FhircastEventContextKey<EventName>, number>
+  keysSeen: Map<FhircastEventContext<EventName>['key'], number>
 ): void {
   keysSeen.set(context.key, (keysSeen.get(context.key) ?? 0) + 1);
 
-  // Cases:
-  // 1. isArray, resourceType: *
-  //    Don't validate resource types, just check that they are resources
-  // 2. isArray, resourceType: not *
-  //    Validate all resources match resourceType
-  // 3. not isArray, resourceType: *
-  //    Validate that it is a resource
-  // not isArray, resourceType: not *
-  //    Validate that it matches expected resource type
-
-  if (!keySchema.isArray) {
-    // validateSingleResourceKey
-    validateSingleResourceContext(event, context.resource, i, keySchema);
-  } else {
-    // validateMultipleResourceKey
-    const { resources } = context as unknown as {
-      key: FhircastEventContextKey<EventName>;
-      resources: FhircastEventResource<EventName>[];
-    };
-    if (!resources) {
-      throw new OperationOutcomeError(
-        validationError(
-          `context[${i}] is invalid. context[${i}] for the '${event}' with key '${String(
-            context.key
-          )}' should contain an array of resources on the key 'resources'.`
+  if (keySchema.reference) {
+    if (keySchema.array) {
+      // Validate multi reference (namely `DiagnosticReport-select`.select)
+      if (
+        !(
+          typeof (context as FhircastMultiReferenceContext).reference === 'object' &&
+          Array.isArray((context as FhircastMultiReferenceContext).reference)
         )
+      ) {
+        throw new OperationOutcomeError(
+          validationError(`context[${i}] is invalid. Expected key '${context.key}' to be an array of references.`)
+        );
+      }
+      for (const reference of (context as FhircastMultiReferenceContext).reference) {
+        if (!isReference(reference)) {
+          throw new OperationOutcomeError(
+            validationError(
+              `context[${i}] is invalid. Expected key '${context.key}' to be an array of valid references.`
+            )
+          );
+        }
+      }
+    } else if (!isReference((context as FhircastSingleReferenceContext).reference)) {
+      // Validate single reference
+      throw new OperationOutcomeError(
+        validationError(`context[${i}] is invalid. Expected key '${context.key}' to be a reference.`)
       );
     }
-    for (const resource of resources) {
-      validateSingleResourceContext(event, resource, i, keySchema);
-    }
+  } else {
+    validateSingleResourceContext(event, (context as FhircastResourceContext).resource, i, keySchema);
   }
 }
 
@@ -395,10 +462,13 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
   event: EventName,
   contexts: FhircastEventContext<EventName>[]
 ): void {
-  const keysSeen = new Map<FhircastEventContextKey, number>();
-  const eventSchema = FHIRCAST_EVENT_RESOURCES[event] as Record<FhircastEventContextKey, FhircastEventContextDetails>;
+  const keysSeen = new Map<FhircastEventContext['key'], number>();
+  const eventSchema = FHIRCAST_EVENT_RESOURCES[event] as Record<
+    FhircastEventContext['key'],
+    FhircastEventContextDetails
+  >;
   for (let i = 0; i < contexts.length; i++) {
-    const key = contexts[i].key as FhircastEventContextKey;
+    const key = contexts[i].key as FhircastEventContext['key'];
     if (!eventSchema[key]) {
       throw new OperationOutcomeError(
         validationError(`Key '${key}' not found for event '${event}'. Make sure to add only valid keys.`)
@@ -408,7 +478,7 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
   }
   // Iterate each key, if conditions for keys are not met as confirmed by `keysSeen` map, throw an error
   for (const [key, details] of Object.entries(eventSchema) as [
-    FhircastEventContextKey,
+    FhircastEventContext['key'],
     FhircastEventContextDetails,
   ][]) {
     // If not optional and not keysSeen.has(key), throw
@@ -442,14 +512,14 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
 export function createFhircastMessagePayload<EventName extends FhircastEventVersionOptional>(
   topic: string,
   event: EventName,
-  context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[],
+  context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
   versionId?: never
 ): FhircastMessagePayload<EventName>;
 
 export function createFhircastMessagePayload<EventName extends FhircastEventVersionRequired>(
   topic: string,
   event: EventName,
-  context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[],
+  context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
   versionId: string
 ): FhircastMessagePayload<EventName>;
 
@@ -458,7 +528,7 @@ export function createFhircastMessagePayload<
 >(
   topic: string,
   event: EventName,
-  context: FhircastValidContextForEvent<EventName> | FhircastValidContextForEvent<EventName>[],
+  context: FhircastEventContext<EventName> | FhircastEventContext<EventName>[],
   versionId?: string
 ): FhircastMessagePayload<EventName> {
   if (!(topic && typeof topic === 'string')) {

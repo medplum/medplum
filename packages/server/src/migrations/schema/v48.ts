@@ -3,9 +3,9 @@
  * Do not edit manually.
  */
 
-import { PoolClient } from 'pg';
-import { r4ProjectId } from '../../seed';
 import { Project } from '@medplum/fhirtypes';
+import { PoolClient } from 'pg';
+import { r4ProjectId } from '../../constants';
 
 export async function run(client: PoolClient): Promise<void> {
   const r4Project: Project = {

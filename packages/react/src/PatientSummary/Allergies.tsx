@@ -11,6 +11,7 @@ export interface AllergiesProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly allergies: AllergyIntolerance[];
+  readonly onClickResource?: (resource: AllergyIntolerance) => void;
 }
 
 export function Allergies(props: AllergiesProps): JSX.Element {
@@ -58,6 +59,7 @@ export function Allergies(props: AllergiesProps): JSX.Element {
             <ConceptBadge
               key={allergy.id}
               resource={allergy}
+              onClick={props.onClickResource}
               onEdit={(a) => {
                 setEditAllergy(a);
                 open();

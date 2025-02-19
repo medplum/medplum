@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
 import { generateKeyPair, SignJWT } from 'jose';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig, MedplumServerConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import {
   generateAccessToken,
   generateIdToken,

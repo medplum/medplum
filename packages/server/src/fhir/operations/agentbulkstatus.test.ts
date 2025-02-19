@@ -13,7 +13,7 @@ import { randomUUID } from 'node:crypto';
 import request, { Response } from 'supertest';
 import { AgentConnectionState, AgentInfo } from '../../agent/utils';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { getRedis } from '../../redis';
 import { initTestAuth } from '../../test.setup';
 import { expectBundleToContainOutcome } from './utils/agenttestutils';

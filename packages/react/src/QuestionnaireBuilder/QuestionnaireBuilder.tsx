@@ -221,6 +221,7 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
               <QuestionnaireFormItem
                 item={item}
                 index={0}
+                required={false}
                 onChange={() => undefined}
                 response={{ linkId: item.linkId }}
               />

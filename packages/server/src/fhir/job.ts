@@ -3,7 +3,7 @@ import { FhirRequest, HttpMethod } from '@medplum/fhir-router';
 import { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
 import { Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
 import { AsyncJobExecutor } from './operations/utils/asyncjobexecutor';
