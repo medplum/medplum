@@ -5,6 +5,8 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { loadTestConfig } from '../config/loader';
+import { registerNew } from '../auth/register';
+import { getSystemRepo } from '../fhir/repo';
 
 const app = express();
 
@@ -49,9 +51,18 @@ describe('OAuth2 UserInfo', () => {
   });
 
   test('Get userinfo with profile email', async () => {
+    const email = `profile${randomUUID()}@example.com`;
+    const password = randomUUID();
+    const { user } = await registerNew({
+      email,
+      password,
+      firstName: 'Profile',
+      lastName: 'User',
+      projectName: 'Userinfo Test Project',
+    });
     const res = await request(app).post('/auth/login').type('json').send({
-      email: 'admin@example.com',
-      password: 'medplum_admin',
+      email,
+      password,
       scope: 'openid profile email phone address',
       codeChallenge: 'xyz',
       codeChallengeMethod: 'plain',
@@ -67,31 +78,21 @@ describe('OAuth2 UserInfo', () => {
     expect(res2.body.access_token).toBeDefined();
     const accessToken = res2.body.access_token;
 
-    const userId = parseJWTPayload(accessToken).sub;
-
-    // Temporarily clear out `email` field
-    const updateRes = await request(app)
-      .patch(`/fhir/R4/User/${userId}`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send([{ op: 'remove', path: '/email' }]);
-    expect(updateRes.status).toBe(200);
-
+    // Clear out `email` field
+    await getSystemRepo().updateResource({
+      ...user,
+      email: undefined,
+    });
     const res3 = await request(app)
       .get(`/oauth2/userinfo`)
-      .set('Authorization', 'Bearer ' + res2.body.access_token);
+      .set('Authorization', 'Bearer ' + accessToken);
     expect(res3.status).toBe(200);
     expect(res3.body.sub).toBeDefined();
     expect(res3.body.profile).toBeDefined();
-    expect(res3.body.name).toBe('Medplum Admin');
-    expect(res3.body.given_name).toBe('Medplum');
-    expect(res3.body.family_name).toBe('Admin');
-    expect(res3.body.email).toBe('admin@example.com');
-
-    const replaceRes = await request(app)
-      .patch(`/fhir/R4/User/${userId}`)
-      .set('Authorization', 'Bearer ' + accessToken)
-      .send([{ op: 'add', path: '/email', value: 'admin@example.com' }]);
-    expect(replaceRes.status).toBe(200);
+    expect(res3.body.name).toBe('Profile User');
+    expect(res3.body.given_name).toBe('Profile');
+    expect(res3.body.family_name).toBe('User');
+    expect(res3.body.email).toBe(email);
   });
 
   test('Get userinfo with phone', async () => {
