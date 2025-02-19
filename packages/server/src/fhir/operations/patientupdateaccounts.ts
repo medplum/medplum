@@ -21,9 +21,8 @@ export async function patientUpdateAccountHandler(req: FhirRequest): Promise<Fhi
   }
 
   const ctx = getAuthenticatedContext();
-  const patient = await ctx.repo.readResource<Patient>('Patient', id);
-
   try {
+    const patient = await ctx.repo.readResource<Patient>('Patient', id);
     const bundle = await getPatientEverything(ctx.repo, patient);
 
     // Update each resource to trigger meta.accounts refresh

@@ -5,6 +5,7 @@ import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { initTestAuth } from '../../test.setup';
+import { patientUpdateAccountHandler } from './patientupdateaccounts';
 
 const app = express();
 let accessToken: string;
@@ -23,7 +24,7 @@ describe('Patient Update Accounts Operation', () => {
     await shutdownApp();
   });
 
-  test('Success', async () => {
+  test('Happy path', async () => {
     // Create organization
     const orgRes = await request(app)
       .post(`/fhir/R4/Organization`)
@@ -110,11 +111,16 @@ describe('Patient Update Accounts Operation', () => {
     expect(updatedObservation.meta?.accounts).toEqual([{reference: createReference(organization).reference}]);
   });
 
-  test('Patient not found', async () => {
+  test("Patient with an invalid id", async () => {
     const res = await request(app)
-      .post(`/fhir/R4/Patient/not-found/$update-accounts`)
+      .post(`/fhir/R4/Patient/101010101/$update-accounts`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(400);
+    expect(res.body.issue?.[0]?.details?.text).toBe('Error updating patient compartment resources: Not found');
   });
 
+  test("patientUpdateAccountHandler() called without an id", async () => {
+    const res = await patientUpdateAccountHandler({params: {id: ''}, method: 'POST', url: '/fhir/R4/Patient/$update-accounts', pathname: '/fhir/R4/Patient/$update-accounts', body: {}, query: {}});
+    expect(res[0].issue?.[0]?.details?.text).toBe('Must specify Patient ID');
+  });
 });
