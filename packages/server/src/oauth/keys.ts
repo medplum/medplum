@@ -13,7 +13,7 @@ import {
   KeyLike,
   SignJWT,
 } from 'jose';
-import { MedplumServerConfig } from '../config';
+import { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 

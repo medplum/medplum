@@ -1,81 +1,113 @@
-import { Anchor, Button, Grid, Group, Modal, Stack, Text, Textarea, TextInput } from '@mantine/core';
+import { Anchor, Button, Grid, Group, Modal, SimpleGrid, Text, Textarea, TextInput, Tooltip } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { formatQuantity } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
-import { useCallback, useState } from 'react';
+import { Fragment, useCallback, useState } from 'react';
 import { Form } from '../Form/Form';
-import { QuantityDisplay } from '../QuantityDisplay/QuantityDisplay';
 import { killEvent } from '../utils/dom';
+import { ConceptBadge } from './ConceptBadge';
 import {
   createCompoundObservation,
   createLoincCode,
   createObservation,
   createQuantity,
-  getCompoundObservationValue,
   getObservationValue,
 } from './Vitals.utils';
 
 interface ObservationMeta {
+  readonly name: string;
+  readonly short: string;
   readonly code: string;
+  readonly component?: string;
   readonly title: string;
   readonly unit: string;
 }
 
-const LOINC_CODES: Record<string, ObservationMeta> = {
-  bloodPressure: {
-    code: '85354-9',
+const BP = '85354-9';
+const SYSTOLIC = '8480-6';
+const DIASTOLIC = '8462-4';
+
+const LOINC_CODES: ObservationMeta[] = [
+  {
+    name: 'systolic',
+    short: 'BP Sys',
+    code: BP,
+    component: SYSTOLIC,
     title: 'Blood Pressure',
     unit: 'mm[Hg]',
   },
-  heartRate: {
+  {
+    name: 'diastolic',
+    short: 'BP Dias',
+    code: BP,
+    component: DIASTOLIC,
+    title: 'Blood Pressure',
+    unit: 'mm[Hg]',
+  },
+  {
+    name: 'heartRate',
+    short: 'HR',
     code: '8867-4',
     title: 'Heart Rate',
     unit: '/min',
   },
-  bodyTemperature: {
+  {
+    name: 'bodyTemperature',
+    short: 'Temp',
     code: '8310-5',
     title: 'Body Temperature',
     unit: 'Cel',
   },
-  respiratoryRate: {
+  {
+    name: 'respiratoryRate',
+    short: 'RR',
     code: '9279-1',
     title: 'Respiratory Rate',
     unit: '/min',
   },
-  height: {
+  {
+    name: 'height',
+    short: 'Ht',
     code: '8302-2',
-    title: 'height',
+    title: 'Height',
     unit: 'cm',
   },
-  weight: {
+  {
+    name: 'weight',
+    short: 'Wt',
     code: '29463-7',
-    title: 'weight',
+    title: 'Weight',
     unit: 'kg',
   },
-  bmi: {
+  {
+    name: 'bmi',
+    short: 'BMI',
     code: '39156-5',
     title: 'BMI',
     unit: 'kg/m2',
   },
-  oxygen: {
+  {
+    name: 'oxygen',
+    short: 'O2',
     code: '2708-6',
     title: 'Oxygen',
     unit: '%',
   },
-  headCircumference: {
+  {
+    name: 'headCircumference',
+    short: 'HC',
     code: '9843-4',
     title: 'Head Circumference',
     unit: 'cm',
   },
-};
-
-const SYSTOLIC = '8480-6';
-const DIASTOLIC = '8462-4';
+];
 
 export interface VitalsProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly vitals: Observation[];
+  readonly onClickResource?: (resource: Observation) => void;
 }
 
 export function Vitals(props: VitalsProps): JSX.Element {
@@ -86,32 +118,39 @@ export function Vitals(props: VitalsProps): JSX.Element {
 
   const handleSubmit = useCallback(
     (formData: Record<string, string>) => {
-      const newObservations = Object.entries(LOINC_CODES)
-        .map(([name, meta]) => {
-          if (name === 'bloodPressure') {
-            return createCompoundObservation(patient, encounter, meta.code, meta.title, [
-              {
-                code: createLoincCode(SYSTOLIC, 'Systolic blood pressure'),
-                valueQuantity: createQuantity(parseFloat(formData['systolic']), 'mm[Hg]'),
-              },
-              {
-                code: createLoincCode(DIASTOLIC, 'Diastolic blood pressure'),
-                valueQuantity: createQuantity(parseFloat(formData['diastolic']), 'mm[Hg]'),
-              },
-            ]);
-          }
-          return createObservation(
+      const newObservations = [];
+
+      // Blood pressure is special because it has two components
+      newObservations.push(
+        createCompoundObservation(patient, encounter, BP, 'Blood pressure', [
+          {
+            code: createLoincCode(SYSTOLIC, 'Systolic blood pressure'),
+            valueQuantity: createQuantity(parseFloat(formData['systolic']), 'mm[Hg]'),
+          },
+          {
+            code: createLoincCode(DIASTOLIC, 'Diastolic blood pressure'),
+            valueQuantity: createQuantity(parseFloat(formData['diastolic']), 'mm[Hg]'),
+          },
+        ])
+      );
+
+      for (const meta of LOINC_CODES) {
+        if (meta.component) {
+          continue;
+        }
+        newObservations.push(
+          createObservation(
             patient,
             encounter,
             meta.code,
             meta.title,
-            createQuantity(parseFloat(formData[name]), meta.unit)
-          );
-        })
-        .filter(Boolean) as Observation[];
+            createQuantity(parseFloat(formData[meta.name]), meta.unit)
+          )
+        );
+      }
 
       // Execute all create requests in parallel to take advantage of autobatching
-      Promise.all(newObservations.map((obs) => medplum.createResource<Observation>(obs)))
+      Promise.all(newObservations.filter(Boolean).map((obs) => medplum.createResource<Observation>(obs as Observation)))
         .then((newVitals) => setVitals([...newVitals, ...vitals]))
         .catch(console.error);
 
@@ -137,92 +176,48 @@ export function Vitals(props: VitalsProps): JSX.Element {
         </Anchor>
       </Group>
       <Grid>
-        <Grid.Col span={3} ta="right" c="dimmed">
-          BP Sys
-        </Grid.Col>
-        <Grid.Col span={3}>
-          <QuantityDisplay value={getCompoundObservationValue(vitals, LOINC_CODES.bloodPressure.code, SYSTOLIC)} />
-        </Grid.Col>
-        <Grid.Col span={3} ta="right" c="dimmed">
-          BP Dias
-        </Grid.Col>
-        <Grid.Col span={3}>
-          <QuantityDisplay value={getCompoundObservationValue(vitals, LOINC_CODES.bloodPressure.code, DIASTOLIC)} />
-        </Grid.Col>
-        <Grid.Col span={3} ta="right" c="dimmed">
-          HR
-        </Grid.Col>
-        <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.heartRate.code)} />
-        </Grid.Col>
-        <Grid.Col span={3} ta="right" c="dimmed">
-          Temp
-        </Grid.Col>
-        <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.bodyTemperature.code)} />
-        </Grid.Col>
-        <Grid.Col span={3} ta="right" c="dimmed">
-          RR
-        </Grid.Col>
-        <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.respiratoryRate.code)} />
-        </Grid.Col>
-        <Grid.Col span={3} ta="right" c="dimmed">
-          Height
-        </Grid.Col>
-        <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.height.code)} />
-        </Grid.Col>
-        <Grid.Col span={3} ta="right" c="dimmed">
-          Weight
-        </Grid.Col>
-        <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.weight.code)} />
-        </Grid.Col>
-        <Grid.Col span={3} ta="right" c="dimmed">
-          BMI
-        </Grid.Col>
-        <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.bmi.code)} />
-        </Grid.Col>
-        <Grid.Col span={3} ta="right" c="dimmed">
-          O2
-        </Grid.Col>
-        <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.oxygen.code)} />
-        </Grid.Col>
-        <Grid.Col span={3} ta="right" c="dimmed">
-          HC
-        </Grid.Col>
-        <Grid.Col span={3}>
-          <QuantityDisplay value={getObservationValue(vitals, LOINC_CODES.headCircumference.code)} />
-        </Grid.Col>
+        {LOINC_CODES.map((meta) => {
+          const obs = vitals.find((o) => o.code?.coding?.[0].code === meta.code);
+          return (
+            <Fragment key={meta.name}>
+              <Grid.Col span={2} ta="right">
+                <Tooltip label={meta.title}>
+                  <Text c="dimmed" size="xs">
+                    {meta.short}
+                  </Text>
+                </Tooltip>
+              </Grid.Col>
+              <Grid.Col span={4}>
+                <Text size="xs">
+                  {obs && (
+                    <ConceptBadge<Observation>
+                      key={meta.name}
+                      resource={obs}
+                      display={formatQuantity(getObservationValue(obs, meta.component))}
+                      onClick={props.onClickResource}
+                    />
+                  )}
+                </Text>
+              </Grid.Col>
+            </Fragment>
+          );
+        })}
       </Grid>
       <Modal opened={opened} onClose={close} title="Add Vitals">
         <Form onSubmit={handleSubmit}>
-          <Stack>
-            <Group grow>
-              <TextInput name="systolic" label="BP Sys" data-autofocus={true} autoFocus />
-              <TextInput name="diastolic" label="BP Dias" />
-            </Group>
-            <Group grow>
-              <TextInput name="heartRate" label="HR" />
-              <TextInput name="bodyTemperature" label="Temp" />
-            </Group>
-            <Group grow>
-              <TextInput name="respiratoryRate" label="RR" />
-              <TextInput name="height" label="height" />
-            </Group>
-            <Group grow>
-              <TextInput name="weight" label="Wt" />
-              <TextInput name="bmi" label="BMI" />
-            </Group>
-            <Group grow>
-              <TextInput name="oxygen" label="O2" />
-              <TextInput name="headCircumference" label="HC" />
-            </Group>
-            <Textarea name="notes" label="Notes" />
-          </Stack>
+          <SimpleGrid cols={2}>
+            {LOINC_CODES.map((meta, index) => (
+              <TextInput
+                key={meta.name}
+                name={meta.name}
+                label={meta.short}
+                description={meta.title}
+                data-autofocus={index === 0}
+                autoFocus={index === 0}
+              />
+            ))}
+          </SimpleGrid>
+          <Textarea name="notes" label="Notes" />
           <Group justify="flex-end" gap={4} mt="md">
             <Button type="submit">Save</Button>
           </Group>

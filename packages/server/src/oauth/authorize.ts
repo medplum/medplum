@@ -3,10 +3,10 @@ import { ClientApplication, Login } from '@medplum/fhirtypes';
 import { Request, Response } from 'express';
 import { URL } from 'url';
 import { asyncWrap } from '../async';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { getLogger } from '../logger';
-import { MedplumIdTokenClaims, verifyJwt } from './keys';
+import { generateSecret, MedplumIdTokenClaims, verifyJwt } from './keys';
 import { getClientApplication } from './utils';
 
 /*
@@ -122,14 +122,17 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
 
   if (prompt !== 'login' && existingLogin) {
     const systemRepo = getSystemRepo();
-    await systemRepo.updateResource<Login>({
+    const updatedLogin = await systemRepo.updateResource<Login>({
       ...existingLogin,
       nonce: params.nonce as string,
+      codeChallenge: params.code_challenge ?? existingLogin.codeChallenge,
+      codeChallengeMethod: params.code_challenge_method ?? existingLogin.codeChallengeMethod,
+      code: generateSecret(16),
       granted: false,
     });
 
     const redirectUrl = new URL(params.redirect_uri as string);
-    redirectUrl.searchParams.append('code', existingLogin.code as string);
+    redirectUrl.searchParams.append('code', updatedLogin.code as string);
     redirectUrl.searchParams.append('state', state);
     res.redirect(redirectUrl.toString());
     return false;

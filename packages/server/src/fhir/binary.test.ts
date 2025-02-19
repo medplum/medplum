@@ -5,7 +5,7 @@ import { Duplex, Readable } from 'stream';
 import request from 'supertest';
 import zlib from 'zlib';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { initTestAuth, streamToString } from '../test.setup';
 import { getBinaryStorage } from './storage';
 

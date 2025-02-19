@@ -3,7 +3,8 @@ import { Attachment, Binary, Meta, Resource, ResourceType } from '@medplum/fhirt
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
-import { getConfig, MedplumServerConfig } from '../config';
+import { getConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { tryGetRequestContext, tryRunInRequestContext } from '../context';
 import { getSystemRepo } from '../fhir/repo';
 import { getBinaryStorage } from '../fhir/storage';

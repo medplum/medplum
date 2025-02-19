@@ -11,11 +11,13 @@ tags: [news, press]
 
 On occasion, the [Medplum team](/about) gives talks about our community, product and philosophy. You can find them here: 
 
-* [Omar Mousa](https://www.linkedin.com/in/omarmousa/) and [Angela Suthrave](https://www.linkedin.com/in/angela-suthrave/) interivew [Reshma Khilnani](https://www.linkedin.com/in/reshmakhilnani/) about the Medplum approach and product on the [Concept to Care Podcast](https://concepttocare.substack.com/p/6d5f8b3e-185d-4c7f-ad6f-dfca063dec81). 
+* [Omar Mousa](https://www.linkedin.com/in/omarmousa/) and [Angela Suthrave](https://www.linkedin.com/in/angela-suthrave/) interview [Reshma Khilnani](https://www.linkedin.com/in/reshmakhilnani/) about the Medplum approach and product on the [Concept to Care Podcast](https://concepttocare.substack.com/p/6d5f8b3e-185d-4c7f-ad6f-dfca063dec81). 
 
 * Katie Sanders interviews Reshma Khilnani about open source mom life on [The CTO Club](https://thectoclub.com/news/moms-on-a-mission/).
 
 * [Sam Taggart](https://se-radio.net/team/sam-taggart/) interviews [Cody Ebberson](https://www.linkedin.com/in/codyebberson/) about software for [regulated industries on Software Engineering Radio](https://se-radio.net/2024/10/se-radio-639-cody-ebberson-on-regulated-industries/).
+
+* [Zain Syed](https://www.linkedin.com/in/zainmsyed/) interviews Reshma Khilnani on [Digital Thoughts Podcast](https://zainsyed.substack.com/p/build-your-own-ehr-reshma-khilnani) about devtools and open source.
 
 * [Amanda Razani](https://www.linkedin.com/in/amanda-razani-990a7233/) interviews Reshma Khilnani on [Healthcare Transformation for Digital CxO magazine](https://digitalcxo.com/video/leadership-insights-health-care-transformation/).
 

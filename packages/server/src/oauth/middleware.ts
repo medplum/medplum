@@ -4,7 +4,7 @@ import { NextFunction, Request, Response } from 'express';
 import { IncomingMessage } from 'http';
 import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 
 export interface AuthState {
   login: Login;

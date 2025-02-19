@@ -1,7 +1,8 @@
 import { DefaultAzureCredential } from '@azure/identity';
 import { SecretClient } from '@azure/keyvault-secrets';
 import { splitN } from '@medplum/core';
-import { isBooleanConfig, isIntegerConfig, isObjectConfig, MedplumServerConfig } from '../../config';
+import { MedplumServerConfig } from '../../config/types';
+import { isBooleanConfig, isIntegerConfig, isObjectConfig } from '../../config/utils';
 
 /**
  * Gets the latest secret value from Key Vault.

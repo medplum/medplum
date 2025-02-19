@@ -1,6 +1,6 @@
 import { Project } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from './app';
-import { loadTestConfig } from './config';
+import { loadTestConfig } from './config/loader';
 import { DatabaseMode, getDatabasePool } from './database';
 import { SelectQuery } from './fhir/sql';
 import { seedDatabase } from './seed';

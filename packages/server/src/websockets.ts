@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import http, { IncomingMessage } from 'http';
 import ws from 'ws';
 import { handleAgentConnection } from './agent/websockets';
-import { getConfig } from './config';
+import { getConfig } from './config/loader';
 import { RequestContext } from './context';
 import { handleFhircastConnection, initFhircastHeartbeat, stopFhircastHeartbeat } from './fhircast/websocket';
 import { globalLogger } from './logger';

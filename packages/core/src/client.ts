@@ -1517,17 +1517,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     if (cached) {
       return cached.value;
     }
-    const promise = new ReadablePromise(
-      (async () => {
-        const bundle = await this.get<Bundle<ExtractResource<K>>>(url, options);
-        if (bundle.entry) {
-          for (const entry of bundle.entry) {
-            this.cacheResource(entry.resource);
-          }
-        }
-        return bundle;
-      })()
-    );
+    const promise = this.getBundle<ExtractResource<K>>(url, options);
     this.setCacheEntry(cacheKey, promise);
     return promise;
   }
@@ -1977,7 +1967,30 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns A Bundle of all Resources related to the Patient
    */
   readPatientEverything(id: string, options?: MedplumRequestOptions): ReadablePromise<Bundle> {
-    return this.get(this.fhirUrl('Patient', id, '$everything'), options);
+    return this.getBundle(this.fhirUrl('Patient', id, '$everything'), options);
+  }
+
+  /**
+   * Executes the Patient "summary" operation for a patient.
+   *
+   * @example
+   * Example:
+   *
+   * ```typescript
+   * const bundle = await medplum.readPatientSummary('123');
+   * console.log(bundle);
+   * ```
+   *
+   * See International Patient Summary Implementation Guide: https://build.fhir.org/ig/HL7/fhir-ips/index.html
+   *
+   * See Patient summary operation: https://build.fhir.org/ig/HL7/fhir-ips/OperationDefinition-summary.html
+   *
+   * @param id - The Patient ID.
+   * @param options - Optional fetch options.
+   * @returns A patient summary bundle, organized into the patient summary sections.
+   */
+  readPatientSummary(id: string, options?: MedplumRequestOptions): ReadablePromise<Bundle> {
+    return this.getBundle(this.fhirUrl('Patient', id, '$summary'), options);
   }
 
   /**
@@ -3138,6 +3151,31 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   //
   // Private helpers
   //
+
+  /**
+   * Internal helper method to get a bundle from a URL.
+   * In addition to returning the bundle, it also caches all of the resources in the bundle.
+   * This should be used by any method that returns a bundle of resources to be cached.
+   * @param url - The bundle URL.
+   * @param options - Optional fetch options.
+   * @returns Promise to the bundle.
+   */
+  private getBundle<T extends Resource = Resource>(
+    url: URL,
+    options?: MedplumRequestOptions
+  ): ReadablePromise<Bundle<T>> {
+    return new ReadablePromise(
+      (async () => {
+        const bundle = await this.get<Bundle<T>>(url, options);
+        if (bundle.entry) {
+          for (const entry of bundle.entry) {
+            this.cacheResource(entry.resource);
+          }
+        }
+        return bundle;
+      })()
+    );
+  }
 
   /**
    * Returns the cache entry if available and not expired.

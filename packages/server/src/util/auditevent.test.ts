@@ -7,7 +7,7 @@ import {
 import { AuditEvent } from '@medplum/fhirtypes';
 import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { waitFor } from '../test.setup';
 import { logAuditEvent } from './auditevent';
 

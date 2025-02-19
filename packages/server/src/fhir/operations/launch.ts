@@ -2,7 +2,7 @@ import { badRequest, concatUrls, redirect } from '@medplum/core';
 import { ClientApplication, OperationDefinition, SmartAppLaunch } from '@medplum/fhirtypes';
 import { getSystemRepo } from '../repo';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { getConfig } from '../../config';
+import { getConfig } from '../../config/loader';
 import { parseInputParameters } from './utils/parameters';
 import { getAuthenticatedContext } from '../../context';
 

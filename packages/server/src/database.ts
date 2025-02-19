@@ -1,8 +1,8 @@
+import { sleep } from '@medplum/core';
 import { Pool, PoolClient } from 'pg';
-import { MedplumDatabaseConfig, MedplumServerConfig } from './config';
+import { MedplumDatabaseConfig, MedplumServerConfig } from './config/types';
 import { globalLogger } from './logger';
 import * as migrations from './migrations/schema';
-import { sleep } from '@medplum/core';
 
 export enum DatabaseMode {
   READER = 'reader',

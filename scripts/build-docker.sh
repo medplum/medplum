@@ -24,6 +24,8 @@ tar \
   -czf medplum-server.tar.gz \
   package.json \
   package-lock.json \
+  packages/ccda/package.json \
+  packages/ccda/dist \
   packages/core/package.json \
   packages/core/dist \
   packages/definitions/package.json \
