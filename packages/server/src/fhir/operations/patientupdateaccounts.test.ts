@@ -109,7 +109,7 @@ describe('Patient Update Accounts Operation', () => {
     expect(updatedObservation.meta?.accounts).toEqual([{ reference: createReference(organization).reference }]);
   });
 
-  test("Patient with an invalid id", async () => {
+  test('Patient with an invalid id', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient/101010101/$update-accounts`)
       .set('Authorization', 'Bearer ' + accessToken);
@@ -117,8 +117,15 @@ describe('Patient Update Accounts Operation', () => {
     expect(res.body.issue?.[0]?.details?.text).toBe('Error updating patient compartment resources: Not found');
   });
 
-  test("patientUpdateAccountHandler() called without an id", async () => {
-    const res = await patientUpdateAccountHandler({params: {id: ''}, method: 'POST', url: '/fhir/R4/Patient/$update-accounts', pathname: '/fhir/R4/Patient/$update-accounts', body: {}, query: {}});
+  test('patientUpdateAccountHandler() called without an id', async () => {
+    const res = await patientUpdateAccountHandler({
+      params: { id: '' },
+      method: 'POST',
+      url: '/fhir/R4/Patient/$update-accounts',
+      pathname: '/fhir/R4/Patient/$update-accounts',
+      body: {},
+      query: {},
+    });
     expect(res[0].issue?.[0]?.details?.text).toBe('Must specify Patient ID');
   });
 });
