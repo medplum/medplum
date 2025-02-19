@@ -1,6 +1,7 @@
 ---
 toc_max_heading_level: 3
 sidebar_position: 4
+
 ---
 
 import ExampleCode from '!!raw-loader!@site/../examples/src/migration/migration-pipelines.ts';
@@ -50,7 +51,7 @@ The semantics of this operation are:
 
 This approach ensures that your operation is idempotent and can be safely repeated.
 
-You can read more about Conditional Updates [here](/docs/fhir-datastore/create-fhir-data#upsert).
+You can read more about Conditional Updates [here](/docs/fhir-datastore/working-with-fhir#upsert).
 
 ## Using Batches Requests for Efficiency
 

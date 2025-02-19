@@ -6,7 +6,7 @@ import { AwsClientStub, mockClient } from 'aws-sdk-client-mock';
 import 'aws-sdk-client-mock-jest';
 import { Request } from 'express';
 import internal, { Readable } from 'stream';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { getBinaryStorage, initBinaryStorage } from '../../fhir/storage';
 
 describe('Storage', () => {
@@ -114,7 +114,7 @@ describe('Storage', () => {
       await storage.writeBinary(binary, 'test.exe', ContentType.TEXT, stream);
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Invalid file extension');
+      expect((err as Error).message).toStrictEqual('Invalid file extension');
     }
     expect(mockS3Client).not.toHaveReceivedCommand(PutObjectCommand);
   });
@@ -131,7 +131,7 @@ describe('Storage', () => {
       await storage.writeBinary(binary, 'test.sh', 'application/x-sh', stream);
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Invalid content type');
+      expect((err as Error).message).toStrictEqual('Invalid content type');
     }
     expect(mockS3Client).not.toHaveReceivedCommand(PutObjectCommand);
   });

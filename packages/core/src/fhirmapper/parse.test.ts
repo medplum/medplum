@@ -112,7 +112,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.check).toEqual("type = 'reference'");
+    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.check).toStrictEqual("type = 'reference'");
   });
 
   test('Rule source list mode', () => {
@@ -124,7 +124,7 @@ describe('FHIR Mapping Language parser', () => {
     }`;
 
     const result = parseMappingLanguage(input);
-    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.listMode).toEqual('first');
+    expect(result.group?.[0]?.rule?.[0]?.source?.[0]?.listMode).toStrictEqual('first');
   });
 
   test('Rule source default', () => {

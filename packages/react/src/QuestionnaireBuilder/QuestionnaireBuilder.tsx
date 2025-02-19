@@ -216,11 +216,12 @@ function ItemBuilder<T extends Questionnaire | QuestionnaireItem>(props: ItemBui
         ) : (
           <>
             {resource.title && <Title>{resource.title}</Title>}
-            {item.text && <div>{item.text}</div>}
+            {item.text && <div className={classes.preserveBreaks}>{item.text}</div>}
             {!isContainer && (
               <QuestionnaireFormItem
                 item={item}
                 index={0}
+                required={false}
                 onChange={() => undefined}
                 response={{ linkId: item.linkId }}
               />

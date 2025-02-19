@@ -196,25 +196,59 @@ The AccessPolicy below grants access to all `Observation` resources that belong 
 
 For more advanced access control configurations, You can use `%` variables to parameterize the access policy.
 
-```json
-{
-  "resourceType": "AccessPolicy",
-  "id": "123",
-  "name": "Parameterized Access Policy",
-  "resource": [
-    {
-      "resourceType": "Patient",
-      "criteria": "Patient?organization=%provider_organization"
-    },
-    {
-      "resourceType": "DiagnosticReport",
-      "criteria": "DiagnosticReport?performer=%provider_organization"
-    }
-  ]
-}
-```
+Medplum provides the following built-in variables:
 
-This policy acts like a template, that can be instantiated (potentially multiple times) on a user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource.
+| Variable      | Description                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------- |
+| `%profile`    | Reference to the current user's profile resource (e.g., `Practitioner/123` or `Patient/123`) |
+| `%profile.id` | The ID portion of the user's profile resource (e.g., `123`)                                  |
+
+<details open>
+  <summary>
+    Example: General Practitioner Access Policy
+  </summary>
+  The following access policy grants access to all [`Patient`](/docs/api/fhir/resources/patient) resources where the current user (a [`Practitioner`](/docs/api/fhir/resources/practitioner)) is listed as the general practitioner:
+  ```json
+  {
+    "resourceType": "AccessPolicy",
+    "name": "GP Access Policy",
+    "resource": [
+      {
+        "resourceType": "Patient",
+        "criteria": "Patient?general-practitioner=%profile"
+      }
+    ]
+  }
+  ```
+</details>
+
+You can also set custom variables for access policies on the user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource.
+This policy then acts like a _template_, that can be instantiated, potentially multiple times, with different values for each variable.
+
+<details open>
+  <summary>
+    Example: Custom Access Policy Variables
+  </summary>
+  In this example, the user with the parameterized policy shown above will only have access to Patient and DiagnosticReport resources, filtered by the relevant organizations.
+
+    ```json
+    {
+      "resourceType": "AccessPolicy",
+      "id": "123",
+      "name": "Parameterized Access Policy",
+      "resource": [
+        {
+          "resourceType": "Patient",
+          "criteria": "Patient?organization=%provider_organization"
+        },
+        {
+          "resourceType": "DiagnosticReport",
+          "criteria": "DiagnosticReport?performer=%provider_organization"
+        }
+      ]
+    }
+    ```
+    We can set these variables on the user's [ProjectMembership](/docs/api/fhir/medplum/projectmembership) resource, as follows
 
 ```js
 {
@@ -244,7 +278,14 @@ This policy acts like a template, that can be instantiated (potentially multiple
 }
 ```
 
-In this example, the user with the parameterized policy shown above will only have access to Patient and DiagnosticReport resources, filtered by the relevant organizations. See this [video demo](https://www.youtube.com/watch?v=IDhsWiIxK3o) for an illustration.
+</details>
+
+Some common use cases for parameterized policies include:
+
+- Granting access to parents of pediatric patients
+- Granting clinicians access to patients in a specific state, based on the clinician's state license
+
+See this [video demo](https://www.youtube.com/watch?v=IDhsWiIxK3o) for an illustration.
 
 See [this Github Discussion](https://github.com/medplum/medplum/discussions/1453) for more examples of access scenarios that can be created using these policies.
 
@@ -290,7 +331,7 @@ This access policy grants read-only access to all Patients that are within that 
 
 The `meta.account` property is not FHIR standard. It is an extra `Reference` property in the `Meta` section.
 
-For example:
+For example, here's how the Patient resource would look:
 
 ```json
 {

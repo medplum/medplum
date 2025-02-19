@@ -21,7 +21,7 @@ describe('FHIR Mapper transform - errors', () => {
       structureMapTransform(parseMappingLanguage(map), []);
       throw new Error('Expected error');
     } catch (err: any) {
-      expect(err.message).toEqual('Missing source definitions');
+      expect(err.message).toStrictEqual('Missing source definitions');
     }
   });
 
@@ -35,7 +35,7 @@ describe('FHIR Mapper transform - errors', () => {
       structureMapTransform(parseMappingLanguage(map), []);
       throw new Error('Expected error');
     } catch (err: any) {
-      expect(err.message).toEqual('Missing target definitions');
+      expect(err.message).toStrictEqual('Missing target definitions');
     }
   });
 
@@ -49,7 +49,7 @@ describe('FHIR Mapper transform - errors', () => {
       structureMapTransform(parseMappingLanguage(map), []);
       throw new Error('Expected error');
     } catch (err: any) {
-      expect(err.message).toEqual('Not enough arguments (got 0, min 1)');
+      expect(err.message).toStrictEqual('Not enough arguments (got 0, min 1)');
     }
   });
 
@@ -63,7 +63,7 @@ describe('FHIR Mapper transform - errors', () => {
       structureMapTransform(parseMappingLanguage(map), [toTypedValue({}), toTypedValue({}), toTypedValue({})]);
       throw new Error('Expected error');
     } catch (err: any) {
-      expect(err.message).toEqual('Too many arguments (got 3, max 2)');
+      expect(err.message).toStrictEqual('Too many arguments (got 3, max 2)');
     }
   });
 
@@ -80,7 +80,7 @@ describe('FHIR Mapper transform - errors', () => {
     const input = [{ type: 'TLeft', value: { a: 'abc' } }];
     const expected = [{ type: 'TRight', value: {} }];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('Target not found', () => {
@@ -97,7 +97,7 @@ describe('FHIR Mapper transform - errors', () => {
       structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
       throw new Error('Expected error');
     } catch (err: any) {
-      expect(err.message).toEqual('Target not found: notFound');
+      expect(err.message).toStrictEqual('Target not found: notFound');
     }
   });
 
@@ -115,7 +115,7 @@ describe('FHIR Mapper transform - errors', () => {
       structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
       throw new Error('Expected error');
     } catch (err: any) {
-      expect(err.message).toEqual('Invalid key: prototype');
+      expect(err.message).toStrictEqual('Invalid key: prototype');
     }
   });
 
@@ -133,7 +133,7 @@ describe('FHIR Mapper transform - errors', () => {
       structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
       throw new Error('Expected error');
     } catch (err: any) {
-      expect(err.message).toEqual('Unsupported transform: unsupported');
+      expect(err.message).toStrictEqual('Unsupported transform: unsupported');
     }
   });
 
@@ -151,7 +151,7 @@ describe('FHIR Mapper transform - errors', () => {
       structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
       throw new Error('Expected error');
     } catch (err: any) {
-      expect(err.message).toEqual('Missing target parameter: undefined');
+      expect(err.message).toStrictEqual('Missing target parameter: undefined');
     }
   });
 
@@ -169,7 +169,7 @@ describe('FHIR Mapper transform - errors', () => {
       structureMapTransform(parseMappingLanguage(map), [toTypedValue({ a: 'abc' })]);
       throw new Error('Expected error');
     } catch (err: any) {
-      expect(err.message).toEqual('Variable not found: x');
+      expect(err.message).toStrictEqual('Variable not found: x');
     }
   });
 });

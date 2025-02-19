@@ -17,6 +17,7 @@ interface CreateUpdateSlotProps {
     readonly close: () => void;
     readonly toggle: () => void;
   };
+  readonly onSlotsUpdated: () => void;
 }
 
 /**
@@ -25,7 +26,7 @@ interface CreateUpdateSlotProps {
  * @returns A React component that displays the modal.
  */
 export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
-  const { event, opened, handlers } = props;
+  const { event, opened, handlers, onSlotsUpdated } = props;
   const medplum = useMedplum();
   const { schedule } = useContext(ScheduleContext);
 
@@ -70,6 +71,7 @@ export function CreateUpdateSlot(props: CreateUpdateSlotProps): JSX.Element {
         });
       }
 
+      onSlotsUpdated();
       showNotification({
         icon: <IconCircleCheck />,
         title: 'Success',

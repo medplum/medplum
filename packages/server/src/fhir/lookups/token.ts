@@ -23,17 +23,17 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import { PoolClient } from 'pg';
-import { getLogger } from '../../context';
+import { getLogger } from '../../logger';
 import {
   Column,
   Condition,
   Conjunction,
   Disjunction,
+  escapeLikeString,
   Expression,
-  SqlFunction,
   Negation,
   SelectQuery,
-  escapeLikeString,
+  SqlFunction,
 } from '../sql';
 import { LookupTable } from './lookuptable';
 import { deriveIdentifierSearchParameter } from './util';
@@ -42,6 +42,14 @@ interface Token {
   readonly code: string;
   readonly system: string | undefined;
   readonly value: string | undefined;
+}
+
+/** Context for building a WHERE condition on the token table. */
+interface FilterContext {
+  searchParam: SearchParameter;
+  lookupTableName: string;
+  caseSensitive: boolean;
+  filter: Filter;
 }
 
 /**
@@ -75,7 +83,7 @@ export class TokenTable extends LookupTable {
    * @returns True if the search parameter is an "token" parameter.
    */
   isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
-    return isIndexed(searchParam, resourceType);
+    return Boolean(getTokenIndexType(searchParam, resourceType));
   }
 
   /**
@@ -97,8 +105,9 @@ export class TokenTable extends LookupTable {
     const values = tokens.map((token) => ({
       resourceId,
       code: token.code,
-      system: token.system?.trim(),
-      value: token.value?.trim?.(),
+      // logical OR coalesce to ensure that empty strings are inserted as NULL
+      system: token.system?.trim?.() || undefined,
+      value: token.value?.trim?.() || undefined,
     }));
 
     await this.insertValuesForResource(client, resourceType, values);
@@ -108,26 +117,33 @@ export class TokenTable extends LookupTable {
    * Builds a "where" condition for the select query builder.
    * @param _selectQuery - The select query builder.
    * @param resourceType - The resource type.
-   * @param table - The resource table.
+   * @param resourceTableName - The resource table.
+   * @param param - The search parameter.
    * @param filter - The search filter details.
    * @returns The select query where expression.
    */
-  buildWhere(_selectQuery: SelectQuery, resourceType: ResourceType, table: string, filter: Filter): Expression {
+  buildWhere(
+    _selectQuery: SelectQuery,
+    resourceType: ResourceType,
+    resourceTableName: string,
+    param: SearchParameter,
+    filter: Filter
+  ): Expression {
     const lookupTableName = this.getTableName(resourceType);
 
     const conjunction = new Conjunction([
-      new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+      new Condition(new Column(resourceTableName, 'id'), '=', new Column(lookupTableName, 'resourceId')),
       new Condition(new Column(lookupTableName, 'code'), '=', filter.code),
     ]);
 
-    const whereExpression = buildWhereExpression(lookupTableName, filter);
+    const caseSensitive = isCaseSensitiveSearchParameter(param, resourceType);
+
+    const whereExpression = buildWhereExpression({ searchParam: param, lookupTableName, caseSensitive, filter });
     if (whereExpression) {
       conjunction.expressions.push(whereExpression);
     }
 
-    const exists = new SqlFunction('EXISTS', [
-      new SelectQuery(lookupTableName).column('resourceId').whereExpr(conjunction),
-    ]);
+    const exists = new SqlFunction('EXISTS', [new SelectQuery(lookupTableName).whereExpr(conjunction)]);
 
     if (shouldTokenRowExist(filter)) {
       return exists;
@@ -166,38 +182,63 @@ export class TokenTable extends LookupTable {
  * @param resourceType - The resource type.
  * @returns True if the search parameter is an "token" parameter.
  */
-function isIndexed(searchParam: SearchParameter, resourceType: string): boolean {
+function getTokenIndexType(searchParam: SearchParameter, resourceType: string): TokenIndexType | undefined {
   if (searchParam.type !== 'token') {
-    return false;
+    return undefined;
   }
 
   if (searchParam.code?.endsWith(':identifier')) {
-    return true;
+    return TokenIndexTypes.CASE_SENSITIVE;
   }
 
   const details = getSearchParameterDetails(resourceType, searchParam);
 
-  // Check for any "Identifier", "CodeableConcept", or "Coding"
+  if (!details.elementDefinitions?.length) {
+    return undefined;
+  }
+
+  // Check for any "ContactPoint", "Identifier", "CodeableConcept", "Coding"
   // Any of those value types require the "Token" table for full system|value search semantics.
   // The common case is that the "type" property only has one value,
   // but we need to support arrays of types for the choice-of-type properties such as "value[x]".
-  for (const elementDefinition of details.elementDefinitions ?? []) {
+
+  // Check for case-insensitive types first, as they are more specific than case-sensitive types
+  for (const elementDefinition of details.elementDefinitions) {
+    for (const type of elementDefinition.type ?? []) {
+      if (type.code === PropertyType.ContactPoint) {
+        return TokenIndexTypes.CASE_INSENSITIVE;
+      }
+    }
+  }
+
+  // In practice, search parameters covering an element definition with type  "ContactPoint"
+  // are mutually exclusive from those covering "Identifier", "CodeableConcept", or "Coding" types,
+  // but could technically be possible. A second set of nested for-loops with an early return should
+  // be more efficient in the common case than always exhaustively looping through every
+  // detail.elementDefinitions.type to see if "ContactPoint" is still to come.
+  for (const elementDefinition of details.elementDefinitions) {
     for (const type of elementDefinition.type ?? []) {
       if (
         type.code === PropertyType.Identifier ||
         type.code === PropertyType.CodeableConcept ||
-        type.code === PropertyType.Coding ||
-        type.code === PropertyType.ContactPoint
+        type.code === PropertyType.Coding
       ) {
-        return true;
+        return TokenIndexTypes.CASE_SENSITIVE;
       }
     }
   }
 
   // This is a "token" search parameter, but it is only "code", "string", or "boolean"
   // So we can use a simple column on the resource type table.
-  return false;
+  return undefined;
 }
+
+const TokenIndexTypes = {
+  CASE_SENSITIVE: 'CASE_SENSITIVE',
+  CASE_INSENSITIVE: 'CASE_INSENSITIVE',
+} as const;
+
+type TokenIndexType = (typeof TokenIndexTypes)[keyof typeof TokenIndexTypes];
 
 /**
  * Returns true if the filter value should be compared to the "value" column.
@@ -270,16 +311,15 @@ function getTableName(resourceType: ResourceType): string {
  * @returns An array of all tokens from the resource to be inserted into the database.
  */
 function getTokens(resource: Resource): Token[] {
-  const typedResource = [toTypedValue(resource)];
   const searchParams = getSearchParameters(resource.resourceType);
   const result: Token[] = [];
   if (searchParams) {
     for (const searchParam of Object.values(searchParams)) {
-      if (isIndexed(searchParam, resource.resourceType)) {
-        buildTokensForSearchParameter(result, typedResource, searchParam);
+      if (getTokenIndexType(searchParam, resource.resourceType)) {
+        buildTokensForSearchParameter(result, resource, searchParam);
       }
       if (searchParam.type === 'reference') {
-        buildTokensForSearchParameter(result, typedResource, deriveIdentifierSearchParameter(searchParam));
+        buildTokensForSearchParameter(result, resource, deriveIdentifierSearchParameter(searchParam));
       }
     }
   }
@@ -289,17 +329,13 @@ function getTokens(resource: Resource): Token[] {
 /**
  * Builds a list of zero or more tokens for a search parameter and resource.
  * @param result - The result array where tokens will be added.
- * @param typedResource - The typed resource.
+ * @param resource - The resource.
  * @param searchParam - The search parameter.
  */
-function buildTokensForSearchParameter(
-  result: Token[],
-  typedResource: TypedValue[],
-  searchParam: SearchParameter
-): void {
-  const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
+function buildTokensForSearchParameter(result: Token[], resource: Resource, searchParam: SearchParameter): void {
+  const typedValues = evalFhirPathTyped(searchParam.expression as string, [toTypedValue(resource)]);
   for (const typedValue of typedValues) {
-    buildTokens(result, searchParam, typedValue);
+    buildTokens(result, searchParam, resource, typedValue);
   }
 }
 
@@ -307,25 +343,29 @@ function buildTokensForSearchParameter(
  * Builds a list of zero or more tokens for a search parameter and value.
  * @param result - The result array where tokens will be added.
  * @param searchParam - The search parameter.
+ * @param resource - The resource.
  * @param typedValue - A typed value to be indexed for the search parameter.
  */
-function buildTokens(result: Token[], searchParam: SearchParameter, typedValue: TypedValue): void {
+function buildTokens(result: Token[], searchParam: SearchParameter, resource: Resource, typedValue: TypedValue): void {
   const { type, value } = typedValue;
+
+  const caseSensitive = isCaseSensitiveSearchParameter(searchParam, resource.resourceType);
+
   switch (type) {
     case PropertyType.Identifier:
-      buildIdentifierToken(result, searchParam, value as Identifier);
+      buildIdentifierToken(result, searchParam, caseSensitive, value as Identifier);
       break;
     case PropertyType.CodeableConcept:
-      buildCodeableConceptToken(result, searchParam, value as CodeableConcept);
+      buildCodeableConceptToken(result, searchParam, caseSensitive, value as CodeableConcept);
       break;
     case PropertyType.Coding:
-      buildCodingToken(result, searchParam, value as Coding);
+      buildCodingToken(result, searchParam, caseSensitive, value as Coding);
       break;
     case PropertyType.ContactPoint:
-      buildContactPointToken(result, searchParam, value as ContactPoint);
+      buildContactPointToken(result, searchParam, caseSensitive, value as ContactPoint);
       break;
     default:
-      buildSimpleToken(result, searchParam, undefined, value?.toString() as string | undefined);
+      buildSimpleToken(result, searchParam, caseSensitive, undefined, value?.toString() as string | undefined);
   }
 }
 
@@ -333,29 +373,37 @@ function buildTokens(result: Token[], searchParam: SearchParameter, typedValue: 
  * Builds an identifier token.
  * @param result - The result array where tokens will be added.
  * @param searchParam - The search parameter.
+ * @param caseSensitive - If the token value should be case sensitive.
  * @param identifier - The Identifier object to be indexed.
  */
-function buildIdentifierToken(result: Token[], searchParam: SearchParameter, identifier: Identifier | undefined): void {
-  buildSimpleToken(result, searchParam, identifier?.system, identifier?.value);
+function buildIdentifierToken(
+  result: Token[],
+  searchParam: SearchParameter,
+  caseSensitive: boolean,
+  identifier: Identifier | undefined
+): void {
+  buildSimpleToken(result, searchParam, caseSensitive, identifier?.system, identifier?.value);
 }
 
 /**
  * Builds zero or more CodeableConcept tokens.
  * @param result - The result array where tokens will be added.
  * @param searchParam - The search parameter.
+ * @param caseSensitive - If the token value should be case sensitive.
  * @param codeableConcept - The CodeableConcept object to be indexed.
  */
 function buildCodeableConceptToken(
   result: Token[],
   searchParam: SearchParameter,
+  caseSensitive: boolean,
   codeableConcept: CodeableConcept | undefined
 ): void {
   if (codeableConcept?.text) {
-    buildSimpleToken(result, searchParam, 'text', codeableConcept.text);
+    buildSimpleToken(result, searchParam, caseSensitive, 'text', codeableConcept.text);
   }
   if (codeableConcept?.coding) {
     for (const coding of codeableConcept.coding) {
-      buildCodingToken(result, searchParam, coding);
+      buildCodingToken(result, searchParam, caseSensitive, coding);
     }
   }
 }
@@ -364,14 +412,20 @@ function buildCodeableConceptToken(
  * Builds a Coding token.
  * @param result - The result array where tokens will be added.
  * @param searchParam - The search parameter.
+ * @param caseSensitive - If the token value should be case sensitive.
  * @param coding - The Coding object to be indexed.
  */
-function buildCodingToken(result: Token[], searchParam: SearchParameter, coding: Coding | undefined): void {
+function buildCodingToken(
+  result: Token[],
+  searchParam: SearchParameter,
+  caseSensitive: boolean,
+  coding: Coding | undefined
+): void {
   if (coding) {
     if (coding.display) {
-      buildSimpleToken(result, searchParam, 'text', coding.display);
+      buildSimpleToken(result, searchParam, caseSensitive, 'text', coding.display);
     }
-    buildSimpleToken(result, searchParam, coding.system, coding.code);
+    buildSimpleToken(result, searchParam, caseSensitive, coding.system, coding.code);
   }
 }
 
@@ -379,26 +433,36 @@ function buildCodingToken(result: Token[], searchParam: SearchParameter, coding:
  * Builds a ContactPoint token.
  * @param result - The result array where tokens will be added.
  * @param searchParam - The search parameter.
+ * @param caseSensitive - If the token value should be case sensitive.
  * @param contactPoint - The ContactPoint object to be indexed.
  */
 function buildContactPointToken(
   result: Token[],
   searchParam: SearchParameter,
+  caseSensitive: boolean,
   contactPoint: ContactPoint | undefined
 ): void {
-  buildSimpleToken(result, searchParam, contactPoint?.system, contactPoint?.value);
+  buildSimpleToken(
+    result,
+    searchParam,
+    caseSensitive,
+    contactPoint?.system,
+    contactPoint?.value ? contactPoint.value.toLocaleLowerCase() : contactPoint?.value
+  );
 }
 
 /**
  * Builds a simple token.
  * @param result - The result array where tokens will be added.
  * @param searchParam - The search parameter.
+ * @param caseSensitive - If the token value should be case sensitive.
  * @param system - The token system.
  * @param value - The token value.
  */
 function buildSimpleToken(
   result: Token[],
   searchParam: SearchParameter,
+  caseSensitive: boolean,
   system: string | undefined,
   value: string | undefined
 ): void {
@@ -410,7 +474,7 @@ function buildSimpleToken(
     result.push({
       code: searchParam.code as string,
       system,
-      value,
+      value: value && !caseSensitive ? value.toLocaleLowerCase() : value,
     });
   }
 }
@@ -420,15 +484,14 @@ function buildSimpleToken(
  * Returns a Disjunction of filters on the token table based on `filter.operator`, or `undefined` if no filters are required.
  * The Disjunction will contain one filter for each specified query value.
  *
- * @param tableName - The token table name
- * @param filter - The SearchRequest filter being performed on the token
+ * @param context - The context of the filter being performed.
  * @returns A Disjunction of filters on the token table based on `filter.operator`, or `undefined` if no filters are
  * required.
  */
-function buildWhereExpression(tableName: string, filter: Filter): Expression | undefined {
+function buildWhereExpression(context: FilterContext): Expression | undefined {
   const subExpressions = [];
-  for (const option of splitSearchOnComma(filter.value)) {
-    const expression = buildWhereCondition(tableName, filter.operator, option);
+  for (const option of splitSearchOnComma(context.filter.value)) {
+    const expression = buildWhereCondition(context, option);
     if (expression) {
       subExpressions.push(expression);
     }
@@ -444,28 +507,30 @@ function buildWhereExpression(tableName: string, filter: Filter): Expression | u
  *
  * Returns a WHERE Condition for a specific search query value, if applicable based on the `operator`
  *
- * @param tableName - The token table name
- * @param operator - The SearchRequest operator being performed on the token
+ * @param context - The context of the filter being performed.
  * @param query - The query value of the operator
  * @returns A WHERE Condition on the token table, if applicable, else undefined
  */
-function buildWhereCondition(tableName: string, operator: FhirOperator, query: string): Expression | undefined {
+function buildWhereCondition(context: FilterContext, query: string): Expression | undefined {
+  const operator = context.filter.operator;
   const parts = splitN(query, '|', 2);
   // Handle the case where the query value is a system|value pair (e.g. token or identifier search)
   if (parts.length === 2) {
-    const systemCondition = new Condition(new Column(tableName, 'system'), '=', parts[0]);
-    return parts[1]
-      ? new Conjunction([systemCondition, buildValueCondition(tableName, operator, parts[1])])
-      : systemCondition;
+    const system = parts[0] || null; // Logical OR coalesce to account for system being the empty string, i.e. [parameter]=|[code]
+    const value = parts[1];
+    const systemCondition = new Condition(new Column(context.lookupTableName, 'system'), '=', system);
+    return value ? new Conjunction([systemCondition, buildValueCondition(context, value)]) : systemCondition;
   } else {
     // If using the :in operator, build the condition for joining to the ValueSet table specified by `query`
     if (operator === FhirOperator.IN) {
-      return buildInValueSetCondition(tableName, query);
+      return buildInValueSetCondition(context.lookupTableName, query);
+    } else if (operator === FhirOperator.NOT_IN) {
+      return new Negation(buildInValueSetCondition(context.lookupTableName, query));
     }
     // If we we are searching for a particular token value, build a Condition that filters the lookup table on that
     //value
     if (shouldCompareTokenValue(operator)) {
-      return buildValueCondition(tableName, operator, query);
+      return buildValueCondition(context, query);
     }
     // Otherwise we are just looking for the presence / absence of a token (e.g. when using the FhirOperator.MISSING)
     // so we don't need to construct a filter Condition on the token table.
@@ -473,20 +538,37 @@ function buildWhereCondition(tableName: string, operator: FhirOperator, query: s
   }
 }
 
-function buildValueCondition(tableName: string, operator: FhirOperator, value: string): Expression {
+function buildValueCondition(context: FilterContext, value: string): Expression {
+  const { lookupTableName: tableName, caseSensitive } = context;
+  const operator = context.filter.operator;
   const column = new Column(tableName, 'value');
+  value = value.trim();
+
   if (operator === FhirOperator.TEXT) {
-    getLogger().warn('Potentially expensive token lookup query', { operator });
+    logExpensiveQuery(context, value);
     return new Conjunction([
       new Condition(new Column(tableName, 'system'), '=', 'text'),
-      new Condition(column, 'TSVECTOR_SIMPLE', value.trim() + ':*'),
+      new Condition(column, 'TSVECTOR_SIMPLE', value + ':*'),
     ]);
   } else if (operator === FhirOperator.CONTAINS) {
-    getLogger().warn('Potentially expensive token lookup query', { operator });
-    return new Condition(column, 'LIKE', escapeLikeString(value.trim()) + '%');
+    logExpensiveQuery(context, value);
+    return new Condition(column, 'LIKE', escapeLikeString(value) + '%');
+  } else if (caseSensitive) {
+    return new Condition(column, '=', value);
   } else {
-    return new Condition(column, '=', value.trim());
+    // In Medplum v4, or when there is a guarantee all resources have been reindexed, the IN (...) can be
+    // switched to an '=' of just the lower-cased value for a simplified query and potentially better performance.
+    return new Condition(column, 'IN', [value, value.toLocaleLowerCase()]);
   }
+}
+
+function logExpensiveQuery(context: FilterContext, value: string): void {
+  getLogger().warn('Potentially expensive token lookup query', {
+    operator: context.filter.operator,
+    searchParameter: { id: context.searchParam.id, code: context.searchParam.code },
+    filterValue: context.filter.value,
+    value,
+  });
 }
 
 /**
@@ -525,7 +607,7 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
   // In plain english:
   //
   //   We want the Condition resources
-  //   with a fixed "code" column value (referring to the "code" column in the "Condition" table)
+  //   with a fixed "code" column value (referring to the "code" column in the "Condition_Token" table)
   //   where the "system" column value is in the "reference" column of the "ValueSet" table
   //
   // Now imagine the query for just "Condition_Token" and "ValueSet":
@@ -567,4 +649,14 @@ function buildInValueSetCondition(tableName: string, value: string): Condition {
     new SelectQuery('ValueSet').column('reference').where('url', '=', value).limit(1),
     'TEXT[]'
   );
+}
+
+/**
+ * If the search parameter should be considered case-sensitive when searching for tokens.
+ * @param param - The search parameter.
+ * @param resourceType - The resource type being searched.
+ * @returns True if the search parameter should be considered case-sensitive when searching for tokens.
+ */
+function isCaseSensitiveSearchParameter(param: SearchParameter, resourceType: ResourceType): boolean {
+  return getTokenIndexType(param, resourceType) === TokenIndexTypes.CASE_SENSITIVE;
 }

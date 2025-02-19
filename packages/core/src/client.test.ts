@@ -43,6 +43,37 @@ import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
 import { ProfileResource, createReference, sleep } from './utils';
 
+const EXAMPLE_XML = `
+<note>
+  <to>Frodo</to>
+  <from>Gandalf</from>
+  <heading>Reminder</heading>
+  <body>Don't forget the ring in Gondor!</body>
+</note>`;
+
+const EXAMPLE_CCDA = `
+<ClinicalDocument xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:hl7-org:v3" xmlns:voc="urn:hl7-org:v3/voc" xmlns:sdtc="urn:hl7-org:sdtc">
+  <!-- ** CDA Header ** -->
+  <realmCode code="US"/>
+  <typeId extension="POCD_HD000040" root="2.16.840.1.113883.1.3"/>
+  <!-- CCD document template within C-CDA 2.0-->
+  <templateId root="2.16.840.1.113883.10.20.22.1.2" extension="2014-06-09"/>
+  <!-- Globally unique identifier for the document. Can only be [1..1] -->
+  <id extension="EHRVersion2.0" root="be84a8e4-a22e-4210-a4a6-b3c48273e84c"/>
+  <code code="34133-9" displayName="Summary of episode note" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
+  <!-- Title of this document -->
+  <title>Summary of Patient Chart</title>
+  <!-- This is the time of document generation -->
+  <effectiveTime value="20141015103026-0500"/>
+  <confidentialityCode code="N" displayName="normal" codeSystem="2.16.840.1.113883.5.25" codeSystemName="Confidentiality"/>
+  <!-- This is the document language code which uses internet standard RFC 4646. This often differs from patient language within recordTarget -->
+  <languageCode code="en-US"/>
+  <setId extension="sTT988" root="2.16.840.1.113883.19.5.99999.19"/>
+  <!-- Version of this document -->
+  <versionNumber value="1"/>
+</ClinicalDocument>
+`;
+
 const patientStructureDefinition: StructureDefinition = {
   resourceType: 'StructureDefinition',
   url: 'http://hl7.org/fhir/StructureDefinition/Patient',
@@ -254,6 +285,16 @@ describe('Client', () => {
     expect(client.getAuthorizeUrl()).toBe(authorizeUrl);
   });
 
+  test('getDefaultHeaders', () => {
+    const client = new MedplumClient({ defaultHeaders: { 'X-Test': '123', Cookie: 'abc' } });
+    const headers = client.getDefaultHeaders();
+    expect(headers).toBeDefined();
+    expect(headers['X-Test']).toBe('123');
+    expect(headers.Cookie).toBe('abc');
+    const clientWithoutDefaultHeaders = new MedplumClient();
+    expect(clientWithoutDefaultHeaders.getDefaultHeaders()).toStrictEqual({});
+  });
+
   test('Restore from localStorage', async () => {
     window.localStorage.setItem(
       'activeLogin',
@@ -290,7 +331,7 @@ describe('Client', () => {
     });
 
     const client = new MedplumClient({ baseUrl: 'https://x/', fetch });
-    expect(client.getBaseUrl()).toEqual('https://x/');
+    expect(client.getBaseUrl()).toStrictEqual('https://x/');
     expect(client.isLoading()).toBe(true);
     expect(client.getProject()).toBeUndefined();
     expect(client.getProjectMembership()).toBeUndefined();
@@ -356,7 +397,7 @@ describe('Client', () => {
   test('Clear', () => {
     const client = new MedplumClient({ fetch: mockFetch(200, {}) });
     expect(() => client.clear()).not.toThrow();
-    expect(sessionStorage.length).toEqual(0);
+    expect(sessionStorage.length).toStrictEqual(0);
   });
 
   test('SignOut', async () => {
@@ -549,7 +590,7 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
 
-    await expect(client.exchangeExternalAccessToken('we12e121')).rejects.toEqual(
+    await expect(client.exchangeExternalAccessToken('we12e121')).rejects.toStrictEqual(
       new Error('MedplumClient is missing clientId')
     );
   });
@@ -1091,7 +1132,47 @@ describe('Client', () => {
     const fetch = mockFetch(201, {});
     const client = new MedplumClient({ fetch });
     const result = await client.post(client.fhirUrl('Bot', randomUUID(), '$deploy'));
-    expect(result).toEqual({});
+    expect(result).toStrictEqual({});
+  });
+
+  test('HTTP CREATE with Content-Length 0', async () => {
+    const consoleErrorSpy = jest.spyOn(console, 'error');
+    const fetch: FetchLike = async (_url: string, _options: RequestInit): Promise<any> => {
+      let streamRead = false;
+      const streamReader = async (type: 'json' | 'blob' | 'text'): Promise<any> => {
+        if (streamRead) {
+          throw new Error('Stream already read');
+        }
+        streamRead = true;
+        switch (type) {
+          case 'json': {
+            // Simulate parsing non-JSON
+            // This will always throw
+            JSON.parse('EMPTY');
+            break;
+          }
+          default:
+            return '';
+        }
+        throw new Error('UNREACHABLE');
+      };
+      return Promise.resolve({
+        ok: true,
+        status: 201,
+        headers: new Map<string, string>([
+          ['content-type', 'application/json'],
+          ['content-length', '0'],
+        ]),
+        blob: () => streamReader('blob'),
+        json: () => streamReader('json'),
+        text: () => streamReader('text'),
+      });
+    };
+    const client = new MedplumClient({ fetch });
+    await expect(client.post('Practitioner/123', { resourceType: 'Practitioner' })).resolves.toStrictEqual(undefined);
+
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
   });
 
   test('Read expired and refresh', async () => {
@@ -1211,28 +1292,28 @@ describe('Client', () => {
       await client.readReference({});
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing reference');
+      expect((err as Error).message).toStrictEqual('Missing reference');
     }
 
     try {
       await client.readReference({ reference: '' });
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing reference');
+      expect((err as Error).message).toStrictEqual('Missing reference');
     }
 
     try {
       await client.readReference({ reference: 'xyz' });
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Invalid reference');
+      expect((err as Error).message).toStrictEqual('Invalid reference');
     }
 
     try {
       await client.readReference({ reference: 'xyz?abc' });
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Invalid reference');
+      expect((err as Error).message).toStrictEqual('Invalid reference');
     }
   });
 
@@ -1359,6 +1440,17 @@ describe('Client', () => {
     );
   });
 
+  test('Read patient summary', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.readPatientSummary('123');
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient/123/$summary',
+      expect.objectContaining({ method: 'GET' })
+    );
+  });
+
   test('Create resource', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
@@ -1384,7 +1476,7 @@ describe('Client', () => {
       await client.createResource({} as Patient);
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing resourceType');
+      expect((err as Error).message).toStrictEqual('Missing resourceType');
     }
   });
 
@@ -1402,7 +1494,7 @@ describe('Client', () => {
     expect(result.id).toBe('123'); // Expect existing patient
   });
 
-  test('Create resource if none exist creates new', async () => {
+  test.each([undefined, {}])('Create resource if none exist creates new', async (emptyOptions) => {
     const fetch = mockFetch(200, (_url, options) => {
       if (options.method === 'GET') {
         return { resourceType: 'Bundle', total: 0, entry: [] };
@@ -1416,11 +1508,54 @@ describe('Client', () => {
         resourceType: 'Patient',
         name: [{ given: ['Bob'], family: 'Smith' }],
       },
-      'name:contains=bob'
+      'name:contains=bob',
+      emptyOptions
     );
     expect(result).toBeDefined();
-    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          'Content-Type': ContentType.FHIR_JSON,
+          'X-Medplum': 'extended',
+          'If-None-Exist': 'name:contains=bob',
+        },
+      })
+    );
   });
+
+  test.each<HeadersInit>([[['foo', 'bar']], { foo: 'bar' }, new Headers({ foo: 'bar' })])(
+    'Conditional create merges passed-in headers',
+    async (headers) => {
+      const fetch = mockFetch(200, (_url, _options) => {
+        return { resourceType: 'Patient', id: '123' };
+      });
+      const client = new MedplumClient({ fetch });
+      const result = await client.createResourceIfNoneExist<Patient>(
+        {
+          resourceType: 'Patient',
+          name: [{ given: ['Bob'], family: 'Smith' }],
+        },
+        'name:contains=bob',
+        { headers }
+      );
+      expect(result).toBeDefined();
+      expect(fetch).toHaveBeenCalledTimes(1);
+
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhir/R4/Patient',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      );
+      const passedHeaders = new Headers(fetch.mock.calls[0][1].headers);
+      expect(passedHeaders.get('foo')).toStrictEqual('bar');
+      expect(passedHeaders.get('If-None-Exist')).toStrictEqual('name:contains=bob');
+    }
+  );
 
   test('Update resource', async () => {
     const fetch = mockFetch(200, {});
@@ -1471,13 +1606,13 @@ describe('Client', () => {
       await client.updateResource({} as Patient);
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing resourceType');
+      expect((err as Error).message).toStrictEqual('Missing resourceType');
     }
     try {
       await client.updateResource({ resourceType: 'Patient' });
       fail('Expected error');
     } catch (err) {
-      expect((err as Error).message).toEqual('Missing id');
+      expect((err as Error).message).toStrictEqual('Missing id');
     }
   });
 
@@ -1520,6 +1655,95 @@ describe('Client', () => {
         },
       })
     );
+  });
+
+  describe('Create attachment -- XML', () => {
+    test('Non-CDA XML', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+      const result = await client.createAttachment({
+        data: EXAMPLE_XML,
+        contentType: ContentType.XML,
+      });
+      expect(result).toBeDefined();
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhir/R4/Binary',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: DEFAULT_ACCEPT,
+            'Content-Type': ContentType.XML,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+    });
+
+    test('C-CDA -- String', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+      const result = await client.createAttachment({
+        data: EXAMPLE_CCDA,
+        contentType: ContentType.XML,
+      });
+      expect(result).toBeDefined();
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhir/R4/Binary',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: DEFAULT_ACCEPT,
+            // Make sure the content type is updated
+            'Content-Type': ContentType.CDA_XML,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+    });
+
+    test('C-CDA -- Encoded bytes', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+      const result = await client.createAttachment({
+        data: new TextEncoder().encode(EXAMPLE_CCDA),
+        contentType: ContentType.XML,
+      });
+      expect(result).toBeDefined();
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhir/R4/Binary',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: DEFAULT_ACCEPT,
+            // Make sure the content type is updated
+            'Content-Type': ContentType.CDA_XML,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+    });
+
+    test('C-CDA -- File', async () => {
+      const fetch = mockFetch(200, {});
+      const client = new MedplumClient({ fetch });
+      const result = await client.createAttachment({
+        data: new File([EXAMPLE_CCDA], 'cda.xml'),
+        contentType: ContentType.XML,
+      });
+      expect(result).toBeDefined();
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.medplum.com/fhir/R4/Binary',
+        expect.objectContaining({
+          method: 'POST',
+          headers: {
+            Accept: DEFAULT_ACCEPT,
+            // Make sure the content type is updated
+            'Content-Type': ContentType.CDA_XML,
+            'X-Medplum': 'extended',
+          },
+        })
+      );
+    });
   });
 
   test('Create attachment (deprecated legacy version)', async () => {
@@ -1659,7 +1883,7 @@ describe('Client', () => {
     try {
       await client.createPdf({ docDefinition: { content: ['Hello world'] } });
     } catch (err) {
-      expect((err as Error).message).toEqual('PDF creation not enabled');
+      expect((err as Error).message).toStrictEqual('PDF creation not enabled');
     }
   });
 
@@ -2514,7 +2738,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const accessToken = createFakeJwt({ login_id: '123' });
     client.setAccessToken(accessToken);
-    expect(client.getAccessToken()).toEqual(accessToken);
+    expect(client.getAccessToken()).toStrictEqual(accessToken);
 
     await expect(client.readResource('Patient', '123')).resolves.toMatchObject(patient);
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -2537,7 +2761,7 @@ describe('Client', () => {
 
     const accessToken = createFakeJwt({ login_id: '123' });
     const client = new MedplumClient({ fetch, accessToken });
-    expect(client.getAccessToken()).toEqual(accessToken);
+    expect(client.getAccessToken()).toStrictEqual(accessToken);
 
     await expect(client.readResource('Patient', '123')).resolves.toMatchObject(patient);
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -2726,7 +2950,7 @@ describe('Client', () => {
     const client = new MedplumClient({ fetch });
     const response = await client.post('/$process-message', 'MSH|^~\\&|1|\r\n', ContentType.HL7_V2);
     expect(response).toBeDefined();
-    expect(response).toEqual('MSH|^~\\&|1|\r\n');
+    expect(response).toStrictEqual('MSH|^~\\&|1|\r\n');
   });
 
   test('Log non-JSON response', async () => {
@@ -2973,7 +3197,7 @@ describe('Client', () => {
           },
         })
       );
-      expect(await blob.text()).toEqual(baseUrl);
+      expect(await blob.text()).toStrictEqual(baseUrl);
     });
 
     test('Downloading resources via `Binary/{id}` URL', async () => {
@@ -2988,7 +3212,7 @@ describe('Client', () => {
           },
         })
       );
-      expect(await blob.text()).toEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
+      expect(await blob.text()).toStrictEqual(`${baseUrl}${fhirUrlPath}Binary/fake-id`);
     });
   });
 
@@ -3012,9 +3236,9 @@ describe('Client', () => {
 
       const calls = fetch.mock.calls;
       expect(calls).toHaveLength(3);
-      expect(calls[0][0]).toEqual('https://api.medplum.com/fhir/R4/Media');
-      expect(calls[1][0]).toEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
-      expect(calls[2][0]).toEqual('https://api.medplum.com/fhir/R4/Media/123');
+      expect(calls[0][0]).toStrictEqual('https://api.medplum.com/fhir/R4/Media');
+      expect(calls[1][0]).toStrictEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
+      expect(calls[2][0]).toStrictEqual('https://api.medplum.com/fhir/R4/Media/123');
       expect(JSON.parse(calls[2][1].body)).toMatchObject({
         resourceType: 'Media',
         status: 'completed',
@@ -3041,9 +3265,9 @@ describe('Client', () => {
 
       const calls = fetch.mock.calls;
       expect(calls).toHaveLength(3);
-      expect(calls[0][0]).toEqual('https://api.medplum.com/fhir/R4/Media');
-      expect(calls[1][0]).toEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
-      expect(calls[2][0]).toEqual('https://api.medplum.com/fhir/R4/Media/123');
+      expect(calls[0][0]).toStrictEqual('https://api.medplum.com/fhir/R4/Media');
+      expect(calls[1][0]).toStrictEqual('https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt');
+      expect(calls[2][0]).toStrictEqual('https://api.medplum.com/fhir/R4/Media/123');
       expect(JSON.parse(calls[2][1].body)).toMatchObject({
         resourceType: 'Media',
         status: 'completed',
@@ -3098,7 +3322,7 @@ describe('Client', () => {
         followRedirectOnCreated: true,
       });
       expect(fetch).toHaveBeenCalledTimes(4);
-      expect((response as any).resourceType).toEqual('Patient');
+      expect((response as any).resourceType).toStrictEqual('Patient');
     });
   });
 
@@ -3192,6 +3416,54 @@ describe('Client', () => {
     expect(console.log).toHaveBeenCalledWith('< 200 OK');
     expect(console.log).toHaveBeenCalledWith('< foo: bar');
   });
+
+  test('Disable extended mode', async () => {
+    const fetch = mockFetch(200, () => ({ resourceType: 'Patient', id: '123' }));
+
+    const client = new MedplumClient({ fetch, extendedMode: false });
+    const result = await client.readResource('Patient', '123');
+    expect(result).toBeDefined();
+
+    const fetchArgs = fetch.mock.calls[0];
+    const fetchOptions = fetchArgs[1];
+    expect(fetchOptions.headers).not.toHaveProperty('X-Medplum');
+    expect(fetchOptions.headers).not.toHaveProperty('x-medplum');
+  });
+
+  test('Call-time auto-batch opt-out', async () => {
+    const fetch = mockFetch(200, { resourceType: 'Patient', id: '123' });
+    const client = new MedplumClient({ fetch, autoBatchTime: 50 });
+
+    // Make a request with disableAutoBatch=true
+    const promise1 = client.readResource('Patient', '123', { disableAutoBatch: true });
+
+    // Make normal requests that should be batched
+    const promise2 = client.readResource('Patient', '456');
+    expect(promise2).toBeDefined();
+    const promise3 = client.readResource('Patient', '789');
+    expect(promise3).toBeDefined();
+
+    // The first request should complete immediately
+    await promise1;
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Patient/123',
+      expect.objectContaining({
+        method: 'GET',
+      })
+    );
+
+    // The second request should be batched and not executed yet
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    // Wait for the batch timeout
+    await new Promise((resolve) => {
+      setTimeout(resolve, 100);
+    });
+
+    // Now the second request should have been executed
+    expect(fetch).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('Passed in async-backed `ClientStorage`', () => {
@@ -3199,12 +3471,12 @@ describe('Passed in async-backed `ClientStorage`', () => {
     const fetch = mockFetch(200, { success: true });
     const storage = new MockAsyncClientStorage();
     const medplum = new MedplumClient({ fetch, storage });
-    expect(storage.isInitialized).toEqual(false);
-    expect(medplum.isInitialized).toEqual(false);
+    expect(storage.isInitialized).toStrictEqual(false);
+    expect(medplum.isInitialized).toStrictEqual(false);
     storage.setInitialized();
     await medplum.getInitPromise();
-    expect(storage.isInitialized).toEqual(true);
-    expect(medplum.isInitialized).toEqual(true);
+    expect(storage.isInitialized).toStrictEqual(true);
+    expect(medplum.isInitialized).toStrictEqual(true);
   });
 
   test('MedplumClient should resolve initialized when sync storage used', async () => {

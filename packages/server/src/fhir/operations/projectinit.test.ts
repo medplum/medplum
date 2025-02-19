@@ -7,7 +7,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
 import { createUser } from '../../auth/newuser';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 
@@ -68,7 +68,7 @@ describe('Project $init', () => {
     const project = res.body as Project;
     expect(project.id).toBeDefined();
     expect(isUUID(project.id as string)).toBe(true);
-    expect(project.owner).toEqual(createReference(owner));
+    expect(project.owner).toStrictEqual(createReference(owner));
   });
 
   test('Requires project name', async () => {
@@ -197,7 +197,7 @@ describe('Project $init', () => {
     expect(res.status).toBe(201);
 
     const project = res.body as Project;
-    expect(project.owner).toEqual(createReference(owner));
+    expect(project.owner).toStrictEqual(createReference(owner));
   });
 
   test('Creates new owner User from email', async () => {

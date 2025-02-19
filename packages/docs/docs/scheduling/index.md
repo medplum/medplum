@@ -30,7 +30,7 @@ flowchart BT
 | **Resource**                                          | **Description**                                                                                                                                                                                                                                                                                             |
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`Slot`](/docs/api/fhir/resources/slot)               | Defines a unit of availability for a provider. It can be assigned different appointment and service types.                                                                                                                                                                                                  |
-| [`Schedule`](/docs/api/fhir/resources/schedule)       | A gropuing resource to collect a set of [`Slots`](/docs/api/fhir/resources/slot). Schedules can be assigned to [`Practitioner`](/docs/api/fhir/resources/practitioner), [`Location`](/docs/api/fhir/resources/location) (facilities or rooms), and [`Patient`](/docs/api/fhir/resources/patient) resources. |
+| [`Schedule`](/docs/api/fhir/resources/schedule)       | A grouping resource to collect a set of [`Slots`](/docs/api/fhir/resources/slot). Schedules can be assigned to [`Practitioner`](/docs/api/fhir/resources/practitioner), [`Location`](/docs/api/fhir/resources/location) (facilities or rooms), and [`Patient`](/docs/api/fhir/resources/patient) resources. |
 | [`Appointment`](/docs/api/fhir/resources/appointment) | A tracking resources to define a booked [`Slot`](/docs/api/fhir/resources/slot) that may result in one or more [`Encounters`](/docs/api/fhir/resources/encounter).                                                                                                                                          |
 
 ## Managing Availability
@@ -53,6 +53,7 @@ More advanced workflows can implement the [Appointment request/response model](/
 
 ## See Also
 
+- [Scheduling API and Workflow Video](https://youtu.be/6yAROc0KPos) on YouTube
 - [Scheduling Features and Fixes](https://github.com/medplum/medplum/pulls?q=is%3Apr+label%3Ascheduling) on Github, with sample data included.
 - [Schedules](https://app.medplum.com/Schedule) on the Medplum App
 - [Scheduling React Component](https://storybook.medplum.com/?path=/docs/medplum-scheduler--basic)

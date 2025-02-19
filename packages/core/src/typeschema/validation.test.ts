@@ -35,7 +35,8 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { HTTP_HL7_ORG, LOINC, RXNORM, SNOMED, UCUM } from '../constants';
 import { ContentType } from '../contenttype';
-import { OperationOutcomeError } from '../outcomes';
+import { generateId } from '../crypto';
+import { OperationOutcomeError, validationError } from '../outcomes';
 import { createReference, deepClone } from '../utils';
 import { indexStructureDefinitionBundle, loadDataType } from './types';
 import { validateResource, validateTypedValue } from './validation';
@@ -46,6 +47,7 @@ describe('FHIR resource validation', () => {
   let medplumBundle: Bundle;
   let observationProfile: StructureDefinition;
   let patientProfile: StructureDefinition;
+  let smokingStatusProfile: StructureDefinition;
 
   beforeAll(() => {
     console.log = jest.fn();
@@ -62,6 +64,9 @@ describe('FHIR resource validation', () => {
       readFileSync(resolve(__dirname, '__test__', 'us-core-blood-pressure.json'), 'utf8')
     );
     patientProfile = JSON.parse(readFileSync(resolve(__dirname, '__test__', 'us-core-patient.json'), 'utf8'));
+    smokingStatusProfile = JSON.parse(
+      readFileSync(resolve(__dirname, '__test__', 'us-core-smoking-status.json'), 'utf8')
+    );
   });
 
   test('Invalid resource', () => {
@@ -264,8 +269,8 @@ describe('FHIR resource validation', () => {
         fail('Expected error');
       } catch (err) {
         const outcome = (err as OperationOutcomeError).outcome;
-        expect(outcome.issue?.[0]?.details?.text).toEqual('Missing required property');
-        expect(outcome.issue?.[0]?.expression).toEqual(['Observation.component[2].code']);
+        expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Missing required property');
+        expect(outcome.issue?.[0]?.expression).toStrictEqual(['Observation.component[2].code']);
       }
     });
 
@@ -278,8 +283,8 @@ describe('FHIR resource validation', () => {
         fail('Expected error');
       } catch (err) {
         const outcome = (err as OperationOutcomeError).outcome;
-        expect(outcome.issue?.[0]?.details?.text).toEqual('Value did not match expected pattern');
-        expect(outcome.issue?.[0]?.expression).toEqual(['Observation.code']);
+        expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Value did not match expected pattern');
+        expect(outcome.issue?.[0]?.expression).toStrictEqual(['Observation.code']);
       }
     });
 
@@ -652,7 +657,7 @@ describe('FHIR resource validation', () => {
       }
     }`) as Patient;
     expect(() => validateResource(patient)).not.toThrow();
-    expect('hi'.trim()).toEqual('hi');
+    expect('hi'.trim()).toStrictEqual('hi');
   });
 
   test('Slice on value type', () => {
@@ -775,8 +780,8 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.name');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.name');
     }
   });
 
@@ -794,10 +799,10 @@ describe('FHIR resource validation', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue).toHaveLength(2);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('DiagnosticReport.status');
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('DiagnosticReport.code');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('DiagnosticReport.status');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('DiagnosticReport.code');
     }
   });
 
@@ -807,8 +812,8 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.name');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.name');
     }
   });
 
@@ -818,8 +823,8 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.name[0]');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.name[0]');
     }
   });
 
@@ -829,8 +834,8 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.name[0].given[0]');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.name[0].given[0]');
     }
   });
 
@@ -858,10 +863,10 @@ describe('FHIR resource validation', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue?.length).toBe(2);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Patient.identifier[0].system');
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Patient.name[1].given[1]');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Patient.identifier[0].system');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Patient.name[1].given[1]');
     }
   });
 
@@ -899,12 +904,12 @@ describe('FHIR resource validation', () => {
       fail('Expected error');
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
-      expect(outcome.issue?.length).toEqual(2);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual('Invalid null value');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Questionnaire.item[0].item[0].item[0].item[0].item');
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.code).toEqual('invariant');
+      expect(outcome.issue?.length).toStrictEqual(2);
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual('Invalid null value');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Questionnaire.item[0].item[0].item[0].item[0].item');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.code).toStrictEqual('invariant');
     }
   });
 
@@ -921,10 +926,10 @@ describe('FHIR resource validation', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue).toHaveLength(2);
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Slot.start');
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Slot.end');
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Slot.start');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Slot.end');
     }
   });
 
@@ -1168,15 +1173,15 @@ describe('FHIR resource validation', () => {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(outcome.issue).toHaveLength(2);
 
-      expect(outcome.issue?.[0]?.severity).toEqual('error');
-      expect(outcome.issue?.[0]?.details?.text).toEqual(
+      expect(outcome.issue?.[0]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[0]?.details?.text).toStrictEqual(
         'Constraint app-3 not met: Only proposed or cancelled appointments can be missing start/end dates'
       );
-      expect(outcome.issue?.[0]?.expression?.[0]).toEqual('Appointment');
+      expect(outcome.issue?.[0]?.expression?.[0]).toStrictEqual('Appointment');
 
-      expect(outcome.issue?.[1]?.severity).toEqual('error');
-      expect(outcome.issue?.[1]?.details?.text).toEqual('Missing required property');
-      expect(outcome.issue?.[1]?.expression?.[0]).toEqual('Appointment.participant[0].status');
+      expect(outcome.issue?.[1]?.severity).toStrictEqual('error');
+      expect(outcome.issue?.[1]?.details?.text).toStrictEqual('Missing required property');
+      expect(outcome.issue?.[1]?.expression?.[0]).toStrictEqual('Appointment.participant[0].status');
     }
   });
 
@@ -1366,7 +1371,7 @@ describe('FHIR resource validation', () => {
     expect(issues[0].details?.text).toContain(textContains);
   }
 
-  const DUPLICATE_CHOICE_OF_TYPE_PROPERTY = 'Duplicate choice of type property';
+  const DUPLICATE_CHOICE_OF_TYPE_PROPERTY = 'Conflicting choice of type properties';
   const PRIMITIVE_EXTENSION_TYPE_MISMATCH = 'Type of primitive extension does not match the type of property';
 
   test('Multiple values for choice of type property', () => {
@@ -1397,6 +1402,8 @@ describe('FHIR resource validation', () => {
     };
 
     expectOneWarning(carePlan, DUPLICATE_CHOICE_OF_TYPE_PROPERTY);
+    expectOneWarning(carePlan, 'scheduledTiming');
+    expectOneWarning(carePlan, 'scheduledPeriod');
   });
 
   test('Valid choice of type properties with primitive extensions', () => {
@@ -1697,6 +1704,59 @@ describe('FHIR resource validation', () => {
       },
     };
     expect(() => validateTypedValue({ type: 'Timing', value: timing2 })).toThrow('Constraint tim-9 not met');
+  });
+
+  test('Bundle constraint: bdl-8', () => {
+    // fullUrl not required in `Bundle.entry`
+    const noFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ resource: { resourceType: 'Patient' } }],
+    };
+    expect(() => validateResource(noFullUrlBdl)).not.toThrow();
+
+    // If it does exist, no `_history` version
+    const validFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [{ fullUrl: `http://example.com/fhir/R4/Patient/${generateId()}`, resource: { resourceType: 'Patient' } }],
+    };
+    expect(() => validateResource(validFullUrlBdl)).not.toThrow();
+
+    // This should fail since it contains `_history`
+    const invalidFullUrlBdl: Bundle = {
+      resourceType: 'Bundle',
+      type: 'searchset',
+      entry: [
+        {
+          fullUrl: `http://example.com/fhir/R4/Patient/${generateId()}/_history/${generateId()}`,
+          resource: { resourceType: 'Patient' },
+        },
+      ],
+    };
+    expect(() => validateResource(invalidFullUrlBdl)).toThrow(
+      new OperationOutcomeError(
+        validationError(
+          `Constraint bdl-8 not met: fullUrl cannot be a version specific reference ({"fhirpath":"fullUrl.exists() implies fullUrl.contains('/_history/').not()"}) (Bundle.entry[0])`
+        )
+      )
+    );
+  });
+
+  test('US Core Smoking Status profile', () => {
+    const resource: Observation = {
+      resourceType: 'Observation',
+      status: 'final',
+      category: [
+        { coding: [{ system: 'http://terminology.hl7.org/CodeSystem/observation-category', code: 'social-history' }] },
+      ],
+      code: { coding: [{ system: LOINC, code: '72166-2' }] },
+      effectivePeriod: { start: '2020-01-01' },
+      valueCodeableConcept: { text: 'Pipe smoker' },
+      subject: { reference: 'urn:uuid:8c45961c-26fa-42d3-91e1-2d1acba74748' },
+    };
+
+    expect(() => validateResource(resource, { profile: smokingStatusProfile })).not.toThrow();
   });
 });
 

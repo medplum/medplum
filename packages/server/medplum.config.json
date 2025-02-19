@@ -1,12 +1,6 @@
 {
   "port": 8103,
   "baseUrl": "http://localhost:8103/",
-  "issuer": "http://localhost:8103/",
-  "audience": "http://localhost:8103/",
-  "jwksUrl": "http://localhost:8103/.well-known/jwks.json",
-  "authorizeUrl": "http://localhost:8103/oauth2/authorize",
-  "tokenUrl": "http://localhost:8103/oauth2/token",
-  "userInfoUrl": "http://localhost:8103/oauth2/userinfo",
   "appBaseUrl": "http://localhost:3000/",
   "binaryStorage": "file:./binary/",
   "storageBaseUrl": "http://localhost:8103/storage/",

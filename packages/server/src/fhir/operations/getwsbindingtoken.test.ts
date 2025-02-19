@@ -3,7 +3,7 @@ import { OperationOutcome, Parameters, Subscription } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { verifyJwt } from '../../oauth/keys';
 import { initTestAuth, withTestContext } from '../../test.setup';
 
@@ -50,11 +50,11 @@ describe('Get WebSocket binding token', () => {
       expect(res2.body).toBeDefined();
 
       const params = res2.body as Parameters;
-      expect(params.resourceType).toEqual('Parameters');
+      expect(params.resourceType).toStrictEqual('Parameters');
       expect(params.parameter?.length).toBeDefined();
       expect([3, 4]).toContain(params.parameter?.length);
       expect(params.parameter?.[0]).toBeDefined();
-      expect(params.parameter?.[0]?.name).toEqual('token');
+      expect(params.parameter?.[0]?.name).toStrictEqual('token');
 
       const token = params.parameter?.[0]?.valueString as string;
       expect(token).toBeDefined();
@@ -67,17 +67,17 @@ describe('Get WebSocket binding token', () => {
       expect(payload?.subscription_id).toBeDefined();
 
       expect(params.parameter?.[1]).toBeDefined();
-      expect(params.parameter?.[1]?.name).toEqual('expiration');
+      expect(params.parameter?.[1]?.name).toStrictEqual('expiration');
       expect(params.parameter?.[1]?.valueDateTime).toBeDefined();
       expect(new Date(params.parameter?.[1]?.valueDateTime as string).getTime()).toBeGreaterThanOrEqual(Date.now());
 
       expect(params.parameter?.[2]).toBeDefined();
-      expect(params.parameter?.[2]?.name).toEqual('subscription');
+      expect(params.parameter?.[2]?.name).toStrictEqual('subscription');
       expect(params.parameter?.[2]?.valueString).toBeDefined();
-      expect(params.parameter?.[2]?.valueString).toEqual(createdSub.id);
+      expect(params.parameter?.[2]?.valueString).toStrictEqual(createdSub.id);
 
       expect(params.parameter?.[3]).toBeDefined();
-      expect(params.parameter?.[3]?.name).toEqual('websocket-url');
+      expect(params.parameter?.[3]?.name).toStrictEqual('websocket-url');
       expect(params.parameter?.[3]?.valueUrl).toBeDefined();
     }));
 

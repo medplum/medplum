@@ -119,7 +119,7 @@ Thanks to [Chromatic](https://www.chromatic.com/) for providing the visual testi
 
 [Apache 2.0](LICENSE.txt)
 
-Copyright &copy; Medplum 2024
+Copyright &copy; Medplum 2025
 
 FHIR&reg; is a registered trademark of HL7.
 

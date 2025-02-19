@@ -36,27 +36,10 @@ for dir in `ls examples`; do
   fi
 done
 
-
-# Combine test coverage
-PACKAGES=(
-  "agent"
-  "app"
-  "cdk"
-  "cli"
-  "core"
-  "expo-polyfills"
-  "fhir-router"
-  "health-gorilla-core"
-  "health-gorilla-react"
-  "hl7"
-  "mock"
-  "react"
-  "react-hooks"
-  "server"
-)
-
-for package in ${PACKAGES[@]}; do
-  cp "packages/$package/coverage/coverage-final.json" "coverage/packages/coverage-$package.json"
+# Find all coverage-final.json files in packages subdirectories
+for coverage_file in packages/*/coverage/coverage-final.json; do
+  package=$(echo "$coverage_file" | sed -E 's/packages\/([^/]+)\/coverage.*/\1/')
+  cp "$coverage_file" "coverage/packages/coverage-$package.json"
 done
 
 npx nyc merge coverage/packages coverage/combined/coverage.json

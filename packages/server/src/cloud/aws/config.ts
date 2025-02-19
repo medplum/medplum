@@ -1,7 +1,8 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { GetParametersByPathCommand, Parameter, SSMClient } from '@aws-sdk/client-ssm';
 import { splitN } from '@medplum/core';
-import { isBooleanConfig, isIntegerConfig, isObjectConfig, MedplumServerConfig } from '../../config';
+import { MedplumServerConfig } from '../../config/types';
+import { isBooleanConfig, isIntegerConfig, isObjectConfig } from '../../config/utils';
 
 const DEFAULT_AWS_REGION = 'us-east-1';
 

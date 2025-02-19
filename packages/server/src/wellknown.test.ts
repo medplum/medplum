@@ -2,7 +2,7 @@ import express from 'express';
 import request from 'supertest';
 import validator from 'validator';
 import { initApp, shutdownApp } from './app';
-import { loadTestConfig } from './config';
+import { loadTestConfig } from './config/loader';
 
 const app = express();
 
@@ -22,16 +22,16 @@ describe('Well Known', () => {
 
     const keys = res.body.keys;
     expect(keys).toBeDefined();
-    expect(Array.isArray(keys)).toEqual(true);
+    expect(Array.isArray(keys)).toStrictEqual(true);
     expect(keys.length).toBeGreaterThanOrEqual(1);
 
     for (const key of keys) {
       expect(key.kid).toBeDefined();
-      expect(key.kid.length).toEqual(36); // kid should be a UUID
-      expect(validator.isUUID(key.kid)).toEqual(true);
-      expect(key.alg).toEqual('RS256');
-      expect(key.kty).toEqual('RSA');
-      expect(key.use).toEqual('sig');
+      expect(key.kid.length).toStrictEqual(36); // kid should be a UUID
+      expect(validator.isUUID(key.kid)).toStrictEqual(true);
+      expect(key.alg).toStrictEqual('RS256');
+      expect(key.kty).toStrictEqual('RSA');
+      expect(key.use).toStrictEqual('sig');
 
       // Make sure public key properties are there
       expect(key.e).toBeDefined();

@@ -2,11 +2,10 @@ import { Button, Grid, Group, JsonInput, NativeSelect, Paper } from '@mantine/co
 import { showNotification } from '@mantine/notifications';
 import { ContentType, MedplumClient, PatchOperation, isUUID, normalizeErrorString } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
-import { useMedplum } from '@medplum/react';
+import { sendCommand, useMedplum } from '@medplum/react';
 import { IconCloudUpload, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-react';
 import { SyntheticEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { sendCommand } from '../utils';
 import classes from './BotEditor.module.css';
 import { BotRunner } from './BotRunner';
 import { CodeEditor } from './CodeEditor';
@@ -52,13 +51,13 @@ export function BotEditor(): JSX.Element | null {
   }, [medplum, id]);
 
   // Gets the uncompiled TS code
-  const getCode = useCallback(() => {
-    return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
+  const getCode = useCallback(async () => {
+    return sendCommand<undefined, string>(codeFrameRef.current as HTMLIFrameElement, { command: 'getValue' });
   }, []);
 
   // Gets the compiled JS output
-  const getCodeOutput = useCallback(() => {
-    return sendCommand(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
+  const getCodeOutput = useCallback(async () => {
+    return sendCommand<undefined, string>(codeFrameRef.current as HTMLIFrameElement, { command: 'getOutput' });
   }, []);
 
   const getSampleInput = useCallback(async () => {

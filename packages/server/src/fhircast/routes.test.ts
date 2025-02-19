@@ -13,7 +13,8 @@ import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
-import { MedplumServerConfig, loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
 
@@ -73,7 +74,7 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get well known', async () => {
-    let res;
+    let res: any;
 
     res = await request(server).get(`${STU2_BASE_ROUTE}/.well-known/fhircast-configuration`);
 
@@ -120,7 +121,7 @@ describe('FHIRCast routes', () => {
         'hub.events': 'Patient-open',
       });
       expect(res.status).toBe(401);
-      expect(res.body.issue[0].details.text).toEqual('Unauthorized');
+      expect(res.body.issue[0].details.text).toStrictEqual('Unauthorized');
     }
   });
 
@@ -136,7 +137,7 @@ describe('FHIRCast routes', () => {
           'hub.events': 'Patient-open',
         });
       expect(res.status).toBe(400);
-      expect(res.body.issue[0].details.text).toEqual('Missing hub.channel.type');
+      expect(res.body.issue[0].details.text).toStrictEqual('Missing hub.channel.type');
     }
   });
 
@@ -153,7 +154,7 @@ describe('FHIRCast routes', () => {
           'hub.events': 'Patient-open',
         });
       expect(res.status).toBe(400);
-      expect(res.body.issue[0].details.text).toEqual('Invalid hub.channel.type');
+      expect(res.body.issue[0].details.text).toStrictEqual('Invalid hub.channel.type');
     }
   });
 
@@ -170,7 +171,7 @@ describe('FHIRCast routes', () => {
           'hub.events': 'Patient-open',
         });
       expect(res.status).toBe(400);
-      expect(res.body.issue[0].details.text).toEqual('Invalid hub.mode');
+      expect(res.body.issue[0].details.text).toStrictEqual('Invalid hub.mode');
     }
   });
 
@@ -200,7 +201,7 @@ describe('FHIRCast routes', () => {
         'hub.events': 'Patient-open',
       });
     expect(res2.status).toBe(202);
-    expect(res2.body['hub.channel.endpoint']).toEqual(res1.body['hub.channel.endpoint']);
+    expect(res2.body['hub.channel.endpoint']).toStrictEqual(res1.body['hub.channel.endpoint']);
   });
 
   test('Subscribing to the same topic from a different project yields a different endpoint', async () => {
@@ -229,7 +230,7 @@ describe('FHIRCast routes', () => {
         'hub.events': 'Patient-open',
       });
     expect(res2.status).toBe(202);
-    expect(res2.body['hub.channel.endpoint']).not.toEqual(res1.body['hub.channel.endpoint']);
+    expect(res2.body['hub.channel.endpoint']).not.toStrictEqual(res1.body['hub.channel.endpoint']);
   });
 
   test('Redis returns `null`', async () => {
@@ -254,7 +255,7 @@ describe('FHIRCast routes', () => {
       });
 
     expect(res.status).toBe(500);
-    expect(isOperationOutcome(res.body)).toEqual(true);
+    expect(isOperationOutcome(res.body)).toStrictEqual(true);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
@@ -295,7 +296,7 @@ describe('FHIRCast routes', () => {
       });
 
     expect(res.status).toBe(500);
-    expect(isOperationOutcome(res.body)).toEqual(true);
+    expect(isOperationOutcome(res.body)).toStrictEqual(true);
     expect(res.body).toMatchObject({
       resourceType: 'OperationOutcome',
       issue: [
@@ -326,8 +327,10 @@ describe('FHIRCast routes', () => {
       expect(subRes.status).toBe(202);
       expect(subRes.body['hub.channel.endpoint']).toBeDefined();
 
+      const pathname = new URL(subRes.body['hub.channel.endpoint']).pathname;
+
       await request(server)
-        .ws('/ws/fhircast/topic')
+        .ws(pathname)
         .expectJson((obj) => {
           // Connection verification message
           expect(obj['hub.topic']).toBe('topic');
@@ -369,7 +372,7 @@ describe('FHIRCast routes', () => {
           event: {},
         });
       expect(res.status).toBe(400);
-      expect(res.body.issue[0].details.text).toEqual('Missing event timestamp');
+      expect(res.body.issue[0].details.text).toStrictEqual('Missing event timestamp');
     }
   });
 
@@ -494,7 +497,7 @@ describe('FHIRCast routes', () => {
           },
         });
       expect(res.status).toBe(400);
-      expect(res.body.issue[0].details.text).toEqual('Missing event["hub.topic"]');
+      expect(res.body.issue[0].details.text).toStrictEqual('Missing event["hub.topic"]');
     }
   });
 
@@ -536,7 +539,7 @@ describe('FHIRCast routes', () => {
           },
         });
       expect(res.status).toBe(400);
-      expect(res.body.issue[0].details.text).toEqual('Missing event["hub.event"]');
+      expect(res.body.issue[0].details.text).toStrictEqual('Missing event["hub.event"]');
     }
   });
 
@@ -556,29 +559,29 @@ describe('FHIRCast routes', () => {
           },
         });
       expect(res.status).toBe(400);
-      expect(res.body.issue[0].details.text).toEqual('Missing event.context');
+      expect(res.body.issue[0].details.text).toStrictEqual('Missing event.context');
     }
   });
 
   test('Get context', async () => {
     const topic = randomUUID();
-    let res;
+    let res: any;
     // Non-standard FHIRCast extension to support Nuance PowerCast Hub
     res = await request(server)
       .get(`${STU2_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body).toStrictEqual([]);
 
     res = await request(server)
       .get(`${STU3_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({ 'context.type': '', context: [] });
+    expect(res.body).toStrictEqual({ 'context.type': '', context: [] });
   });
 
   test('Get context after *-open event', async () => {
-    let contextRes;
+    let contextRes: any;
 
     const topic = randomUUID();
     const payload = createFhircastMessagePayload(topic, 'DiagnosticReport-open', [
@@ -599,7 +602,7 @@ describe('FHIRCast routes', () => {
       .get(`${STU2_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(contextRes.status).toBe(200);
-    expect(contextRes.body).toEqual(payload.event.context);
+    expect(contextRes.body).toStrictEqual(payload.event.context);
 
     contextRes = await request(server)
       .get(`${STU3_BASE_ROUTE}/${topic}`)
@@ -687,8 +690,8 @@ describe('FHIRCast routes', () => {
   });
 
   test('Get context after *-close event', async () => {
-    let beforeContextRes;
-    let afterContextRes;
+    let beforeContextRes: any;
+    let afterContextRes: any;
 
     const topic = randomUUID();
 
@@ -713,13 +716,13 @@ describe('FHIRCast routes', () => {
       .get(`${STU2_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(beforeContextRes.status).toBe(200);
-    expect(beforeContextRes.body).toEqual(context);
+    expect(beforeContextRes.body).toStrictEqual(context);
 
     beforeContextRes = await request(server)
       .get(`${STU3_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(beforeContextRes.status).toBe(200);
-    expect(beforeContextRes.body).toEqual({
+    expect(beforeContextRes.body).toStrictEqual({
       'context.type': 'DiagnosticReport',
       'context.versionId': expect.any(String),
       context,
@@ -736,13 +739,13 @@ describe('FHIRCast routes', () => {
       .get(`${STU2_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(afterContextRes.status).toBe(200);
-    expect(afterContextRes.body).toEqual([]);
+    expect(afterContextRes.body).toStrictEqual([]);
 
     afterContextRes = await request(server)
       .get(`${STU3_BASE_ROUTE}/${topic}`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(afterContextRes.status).toBe(200);
-    expect(afterContextRes.body).toEqual({ 'context.type': '', context: [] });
+    expect(afterContextRes.body).toStrictEqual({ 'context.type': '', context: [] });
   });
 
   test('Check for `context.versionId` on `DiagnosticReport-open`', async () => {
@@ -783,9 +786,9 @@ describe('FHIRCast routes', () => {
     const context = [
       {
         key: 'report',
-        resource: { id: 'abc-123', resourceType: 'DiagnosticReport', status: 'final', code: { text: 'test' } },
+        reference: { reference: 'DiagnosticReport/123' },
       },
-      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'searchset' } },
+      { key: 'updates', resource: { id: 'bundle-123', resourceType: 'Bundle', type: 'transaction' } },
     ] satisfies FhircastEventContext<'DiagnosticReport-update'>[];
 
     const versionId = randomUUID();

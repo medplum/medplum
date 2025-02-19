@@ -99,7 +99,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(labTestsResponse).toEqual(labTests);
+    expect(labTestsResponse).toStrictEqual(labTests);
   });
 
   test<Context>('Get Lab Tests with lab filter', async (ctx) => {
@@ -164,7 +164,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(labTestsResponse).toEqual(labTests.filter((lt) => lt.lab.id === 24));
+    expect(labTestsResponse).toStrictEqual(labTests.filter((lt) => lt.lab.id === 24));
   });
 
   test<Context>('Get Labs', async (ctx) => {
@@ -220,7 +220,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(labs).toEqual(labsMock);
+    expect(labs).toStrictEqual(labsMock);
   });
 
   test<Context>('Get Markers', async (ctx) => {
@@ -295,7 +295,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(markers).toEqual(labTests[0].markers);
+    expect(markers).toStrictEqual(labTests[0].markers);
   });
 
   test<Context>('Get AOEs', async (ctx) => {
@@ -359,7 +359,7 @@ describe('Vital API', () => {
       },
     });
 
-    expect(questionnaire).toEqual(buildQuestionnaire(labTests[0].markers));
+    expect(questionnaire).toStrictEqual(buildQuestionnaire(labTests[0].markers));
   });
 });
 

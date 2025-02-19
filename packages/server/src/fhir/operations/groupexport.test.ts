@@ -3,7 +3,7 @@ import { BulkDataExportOutput, Group, Patient } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { groupExportResources } from './groupexport';
@@ -225,7 +225,7 @@ describe('Group Export', () => {
     // Output format is "ndjson", new line delimited JSON
     // However, we only expect one Observation, so we can parse it as JSON
     expect(res7.text.trim().split('\n')).toHaveLength(1);
-    expect(JSON.parse(res7.text).id).toEqual(res2.body.id);
+    expect(JSON.parse(res7.text).id).toStrictEqual(res2.body.id);
   });
 
   test('Type filter', async () => {
@@ -318,7 +318,7 @@ describe('Group Export', () => {
   test('groupExportResources without members', async () => {
     const { project } = await createTestProject();
     expect(project).toBeDefined();
-    const exporter = new BulkExporter(systemRepo, undefined);
+    const exporter = new BulkExporter(systemRepo);
     const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
 
     const group: Group = await systemRepo.createResource<Group>({
@@ -327,7 +327,7 @@ describe('Group Export', () => {
       actual: true,
     });
     await exporter.start('http://example.com');
-    await groupExportResources(exporter, project, group, systemRepo);
+    await groupExportResources(systemRepo, exporter, project, group);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
     expect(exportWriteResourceSpy).toHaveBeenCalledTimes(0);
@@ -336,7 +336,7 @@ describe('Group Export', () => {
   test('groupExportResources members without reference', async () => {
     const { project } = await createTestProject();
     expect(project).toBeDefined();
-    const exporter = new BulkExporter(systemRepo, undefined);
+    const exporter = new BulkExporter(systemRepo);
 
     const patient: Patient = await systemRepo.createResource<Patient>({
       resourceType: 'Patient',
@@ -354,7 +354,7 @@ describe('Group Export', () => {
       member: [{ entity: { reference: '' } }, { entity: { reference: `Patient/${patient.id}` } }],
     });
     await exporter.start('http://example.com');
-    await groupExportResources(exporter, project, group, systemRepo);
+    await groupExportResources(systemRepo, exporter, project, group);
     const bulkDataExport = await exporter.close(project);
     expect(bulkDataExport.status).toBe('completed');
   });

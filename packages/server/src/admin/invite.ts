@@ -17,11 +17,12 @@ import { body, oneOf } from 'express-validator';
 import Mail from 'nodemailer/lib/mailer';
 import { resetPassword } from '../auth/resetpassword';
 import { bcryptHashPassword, createProfile, createProjectMembership } from '../auth/utils';
-import { getConfig } from '../config';
-import { getAuthenticatedContext, getLogger } from '../context';
+import { getConfig } from '../config/loader';
+import { getAuthenticatedContext } from '../context';
 import { sendEmail } from '../email/email';
 import { getSystemRepo, Repository } from '../fhir/repo';
-import { sendResponse } from '../fhir/response';
+import { sendFhirResponse } from '../fhir/response';
+import { getLogger } from '../logger';
 import { generateSecret } from '../oauth/keys';
 import { getUserByEmailInProject, getUserByEmailWithoutProject } from '../oauth/utils';
 import { makeValidationMiddleware } from '../util/validator';
@@ -52,7 +53,7 @@ export async function inviteHandler(req: Request, res: Response): Promise<void> 
   }
 
   const { membership } = await inviteUser(inviteRequest);
-  return sendResponse(req, res, allOk, membership);
+  return sendFhirResponse(req, res, allOk, membership);
 }
 
 export interface ServerInviteRequest extends InviteRequest {

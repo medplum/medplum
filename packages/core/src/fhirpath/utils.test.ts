@@ -1,7 +1,7 @@
 import { readJson } from '@medplum/definitions';
 import { Bundle, Questionnaire } from '@medplum/fhirtypes';
 import { PropertyType, TypedValue } from '../types';
-import { InternalSchemaElement, indexStructureDefinitionBundle } from '../typeschema/types';
+import { indexStructureDefinitionBundle, InternalSchemaElement } from '../typeschema/types';
 import {
   fhirPathArrayEquals,
   fhirPathArrayEquivalent,
@@ -9,6 +9,7 @@ import {
   fhirPathEquivalent,
   fhirPathIs,
   getTypedPropertyValue,
+  getTypedPropertyValueWithoutSchema,
   getTypedPropertyValueWithSchema,
   isDateString,
   isDateTimeString,
@@ -35,89 +36,97 @@ describe('FHIRPath utils', () => {
   });
 
   test('toJsBoolean', () => {
-    expect(toJsBoolean([{ type: PropertyType.BackboneElement, value: undefined }])).toEqual(false);
-    expect(toJsBoolean([{ type: PropertyType.BackboneElement, value: null }])).toEqual(false);
-    expect(toJsBoolean([{ type: PropertyType.boolean, value: false }])).toEqual(false);
-    expect(toJsBoolean([{ type: PropertyType.boolean, value: true }])).toEqual(true);
-    expect(toJsBoolean([{ type: PropertyType.string, value: '' }])).toEqual(false);
-    expect(toJsBoolean([{ type: PropertyType.string, value: 'hi' }])).toEqual(true);
+    expect(toJsBoolean([{ type: PropertyType.BackboneElement, value: undefined }])).toStrictEqual(false);
+    expect(toJsBoolean([{ type: PropertyType.BackboneElement, value: null }])).toStrictEqual(false);
+    expect(toJsBoolean([{ type: PropertyType.boolean, value: false }])).toStrictEqual(false);
+    expect(toJsBoolean([{ type: PropertyType.boolean, value: true }])).toStrictEqual(true);
+    expect(toJsBoolean([{ type: PropertyType.string, value: '' }])).toStrictEqual(false);
+    expect(toJsBoolean([{ type: PropertyType.string, value: 'hi' }])).toStrictEqual(true);
   });
 
   test('toTypedValue', () => {
-    expect(toTypedValue(1)).toEqual(TYPED_1);
-    expect(toTypedValue(1.5)).toEqual({ type: PropertyType.decimal, value: 1.5 });
-    expect(toTypedValue(true)).toEqual(TYPED_TRUE);
-    expect(toTypedValue(false)).toEqual(TYPED_FALSE);
-    expect(toTypedValue('xyz')).toEqual({ type: PropertyType.string, value: 'xyz' });
-    expect(toTypedValue({ value: 123, unit: 'mg' })).toEqual({
+    expect(toTypedValue(1)).toStrictEqual(TYPED_1);
+    expect(toTypedValue(1.5)).toStrictEqual({ type: PropertyType.decimal, value: 1.5 });
+    expect(toTypedValue(true)).toStrictEqual(TYPED_TRUE);
+    expect(toTypedValue(false)).toStrictEqual(TYPED_FALSE);
+    expect(toTypedValue('xyz')).toStrictEqual({ type: PropertyType.string, value: 'xyz' });
+    expect(toTypedValue({ code: 'x' })).toStrictEqual({
+      type: PropertyType.Coding,
+      value: { code: 'x' },
+    });
+    expect(toTypedValue({ coding: [{ code: 'y' }] })).toStrictEqual({
+      type: PropertyType.CodeableConcept,
+      value: { coding: [{ code: 'y' }] },
+    });
+    expect(toTypedValue({ value: 123, unit: 'mg' })).toStrictEqual({
       type: PropertyType.Quantity,
       value: { value: 123, unit: 'mg' },
     });
   });
 
   test('fhirPathIs', () => {
-    expect(fhirPathIs({ type: PropertyType.string, value: undefined }, 'string')).toEqual(false);
-    expect(fhirPathIs({ type: PropertyType.BackboneElement, value: {} }, 'Patient')).toEqual(false);
-    expect(fhirPathIs({ type: PropertyType.BackboneElement, value: { resourceType: 'Patient' } }, 'Patient')).toEqual(
-      true
-    );
+    expect(fhirPathIs({ type: PropertyType.string, value: undefined }, 'string')).toStrictEqual(false);
+    expect(fhirPathIs({ type: PropertyType.BackboneElement, value: {} }, 'Patient')).toStrictEqual(false);
+    expect(
+      fhirPathIs({ type: PropertyType.BackboneElement, value: { resourceType: 'Patient' } }, 'Patient')
+    ).toStrictEqual(true);
     expect(
       fhirPathIs({ type: PropertyType.BackboneElement, value: { resourceType: 'Observation' } }, 'Patient')
-    ).toEqual(false);
-    expect(fhirPathIs({ type: PropertyType.boolean, value: true }, 'Boolean')).toEqual(true);
-    expect(fhirPathIs({ type: PropertyType.boolean, value: false }, 'Boolean')).toEqual(true);
-    expect(fhirPathIs({ type: PropertyType.integer, value: 100 }, 'Boolean')).toEqual(false);
-    expect(fhirPathIs({ type: PropertyType.BackboneElement, value: {} }, 'Boolean')).toEqual(false);
+    ).toStrictEqual(false);
+    expect(fhirPathIs({ type: PropertyType.boolean, value: true }, 'Boolean')).toStrictEqual(true);
+    expect(fhirPathIs({ type: PropertyType.boolean, value: false }, 'Boolean')).toStrictEqual(true);
+    expect(fhirPathIs({ type: PropertyType.integer, value: 100 }, 'Boolean')).toStrictEqual(false);
+    expect(fhirPathIs({ type: PropertyType.BackboneElement, value: {} }, 'Boolean')).toStrictEqual(false);
   });
 
   test('fhirPathEquals', () => {
-    expect(fhirPathEquals(TYPED_TRUE, TYPED_TRUE)).toEqual([TYPED_TRUE]);
-    expect(fhirPathEquals(TYPED_TRUE, TYPED_FALSE)).toEqual([TYPED_FALSE]);
-    expect(fhirPathEquals(TYPED_1, TYPED_1)).toEqual([TYPED_TRUE]);
-    expect(fhirPathEquals(TYPED_1, TYPED_2)).toEqual([TYPED_FALSE]);
-    expect(fhirPathEquals(TYPED_2, TYPED_1)).toEqual([TYPED_FALSE]);
+    expect(fhirPathEquals(TYPED_TRUE, TYPED_TRUE)).toStrictEqual([TYPED_TRUE]);
+    expect(fhirPathEquals(TYPED_TRUE, TYPED_FALSE)).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathEquals(TYPED_1, TYPED_1)).toStrictEqual([TYPED_TRUE]);
+    expect(fhirPathEquals(TYPED_1, TYPED_2)).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathEquals(TYPED_2, TYPED_1)).toStrictEqual([TYPED_FALSE]);
   });
 
   test('fhirPathArrayEquals', () => {
-    expect(fhirPathArrayEquals([TYPED_1], [TYPED_1])).toEqual([TYPED_TRUE]);
-    expect(fhirPathArrayEquals([TYPED_1], [TYPED_2])).toEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquals([TYPED_1], [TYPED_1])).toStrictEqual([TYPED_TRUE]);
+    expect(fhirPathArrayEquals([TYPED_1], [TYPED_2])).toStrictEqual([TYPED_FALSE]);
 
     // Acceptable threshold
-    expect(fhirPathArrayEquals([toTypedValue(1.0)], [toTypedValue(1.0001)])).toEqual([TYPED_FALSE]);
-    expect(fhirPathArrayEquals([toTypedValue(1.0)], [toTypedValue(1.5)])).toEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquals([toTypedValue(1.0)], [toTypedValue(1.0001)])).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquals([toTypedValue(1.0)], [toTypedValue(1.5)])).toStrictEqual([TYPED_FALSE]);
 
     // Sort order does matter
-    expect(fhirPathArrayEquals([TYPED_1, TYPED_2], [TYPED_2, TYPED_1])).toEqual([TYPED_FALSE]);
-    expect(fhirPathArrayEquals([TYPED_1, TYPED_2], [TYPED_1, TYPED_1])).toEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquals([TYPED_1, TYPED_2], [TYPED_2, TYPED_1])).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquals([TYPED_1, TYPED_2], [TYPED_1, TYPED_1])).toStrictEqual([TYPED_FALSE]);
   });
 
   test('fhirPathEquivalent', () => {
-    expect(fhirPathEquivalent(TYPED_TRUE, TYPED_TRUE)).toEqual([TYPED_TRUE]);
-    expect(fhirPathEquivalent(TYPED_TRUE, TYPED_FALSE)).toEqual([TYPED_FALSE]);
-    expect(fhirPathEquivalent(TYPED_1, TYPED_1)).toEqual([TYPED_TRUE]);
-    expect(fhirPathEquivalent(TYPED_1, TYPED_2)).toEqual([TYPED_FALSE]);
-    expect(fhirPathEquivalent(TYPED_2, TYPED_1)).toEqual([TYPED_FALSE]);
+    expect(fhirPathEquivalent(TYPED_TRUE, TYPED_TRUE)).toStrictEqual([TYPED_TRUE]);
+    expect(fhirPathEquivalent(TYPED_TRUE, TYPED_FALSE)).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathEquivalent(TYPED_1, TYPED_1)).toStrictEqual([TYPED_TRUE]);
+    expect(fhirPathEquivalent(TYPED_1, TYPED_2)).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathEquivalent(TYPED_2, TYPED_1)).toStrictEqual([TYPED_FALSE]);
 
     // Test `Coding` equivalence
-    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123, TYPED_CODING_MEDPLUM123)).toEqual([TYPED_TRUE]);
-    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123, TYPED_CODING_MEDPLUM123_W_SYSTEM)).toEqual([TYPED_FALSE]);
-    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123, TYPED_CODING_NOT_MEDPLUM123)).toEqual([TYPED_FALSE]);
-    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123_W_SYSTEM, TYPED_CODING_MEDPLUM123_W_SYSTEM)).toEqual([
+    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123, TYPED_CODING_MEDPLUM123)).toStrictEqual([TYPED_TRUE]);
+    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123, TYPED_CODING_MEDPLUM123_W_SYSTEM)).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123, TYPED_CODING_NOT_MEDPLUM123)).toStrictEqual([TYPED_FALSE]);
+    expect(fhirPathEquivalent(TYPED_CODING_MEDPLUM123_W_SYSTEM, TYPED_CODING_MEDPLUM123_W_SYSTEM)).toStrictEqual([
       TYPED_TRUE,
     ]);
   });
 
   test('fhirPathArrayEquivalent', () => {
-    expect(fhirPathArrayEquivalent([TYPED_1], [TYPED_1])).toEqual([TYPED_TRUE]);
-    expect(fhirPathArrayEquivalent([TYPED_1], [TYPED_2])).toEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquivalent([TYPED_1], [TYPED_1])).toStrictEqual([TYPED_TRUE]);
+    expect(fhirPathArrayEquivalent([TYPED_1], [TYPED_2])).toStrictEqual([TYPED_FALSE]);
 
     // Acceptable threshold
-    expect(fhirPathArrayEquivalent([toTypedValue(1.0)], [toTypedValue(1.0001)])).toEqual([TYPED_TRUE]);
-    expect(fhirPathArrayEquivalent([toTypedValue(1.0)], [toTypedValue(1.5)])).toEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquivalent([toTypedValue(1.0)], [toTypedValue(1.0001)])).toStrictEqual([TYPED_TRUE]);
+    expect(fhirPathArrayEquivalent([toTypedValue(1.0)], [toTypedValue(1.5)])).toStrictEqual([TYPED_FALSE]);
 
     // Sort order does not matter
-    expect(fhirPathArrayEquivalent([TYPED_1, TYPED_2], [TYPED_2, TYPED_1])).toEqual([TYPED_TRUE]);
-    expect(fhirPathArrayEquivalent([TYPED_1, TYPED_2], [TYPED_1, TYPED_1])).toEqual([TYPED_FALSE]);
+    expect(fhirPathArrayEquivalent([TYPED_1, TYPED_2], [TYPED_2, TYPED_1])).toStrictEqual([TYPED_TRUE]);
+    expect(fhirPathArrayEquivalent([TYPED_1, TYPED_2], [TYPED_1, TYPED_1])).toStrictEqual([TYPED_FALSE]);
   });
 
   test('getTypedPropertyValue', () => {
@@ -127,9 +136,9 @@ describe('FHIRPath utils', () => {
     expect(getTypedPropertyValue({ type: 'integer', value: 123 }, 'x')).toBeUndefined();
 
     // Support missing schemas
-    expect(getTypedPropertyValue({ type: 'Foo', value: { x: 1 } }, 'x')).toEqual(TYPED_1);
-    expect(getTypedPropertyValue({ type: 'Foo', value: { x: [1] } }, 'x')).toEqual([TYPED_1]);
-    expect(getTypedPropertyValue({ type: 'Foo', value: { valueInteger: 1 } }, 'value')).toEqual(TYPED_1);
+    expect(getTypedPropertyValue({ type: 'Foo', value: { x: 1 } }, 'x')).toStrictEqual(TYPED_1);
+    expect(getTypedPropertyValue({ type: 'Foo', value: { x: [1] } }, 'x')).toStrictEqual([TYPED_1]);
+    expect(getTypedPropertyValue({ type: 'Foo', value: { valueInteger: 1 } }, 'value')).toStrictEqual(TYPED_1);
 
     // Only use valid property types
     expect(
@@ -144,7 +153,49 @@ describe('FHIRPath utils', () => {
     expect(getTypedPropertyValue({ type: 'X', value: { x: [] } }, 'x')).toBeUndefined();
 
     // Property path that is part of multi-type element in schema
-    expect(getTypedPropertyValue({ type: 'Extension', value: { valueBoolean: true } }, 'valueBoolean')).toEqual({
+    expect(getTypedPropertyValue({ type: 'Extension', value: { valueBoolean: true } }, 'valueBoolean')).toStrictEqual({
+      type: 'boolean',
+      value: true,
+    });
+  });
+
+  test('getTypedPropertyValueWithoutSchema', () => {
+    expect(getTypedPropertyValueWithoutSchema({ type: '', value: undefined }, 'x')).toBeUndefined();
+    expect(getTypedPropertyValueWithoutSchema({ type: '', value: null }, 'x')).toBeUndefined();
+    expect(getTypedPropertyValueWithoutSchema({ type: 'x', value: {} }, 'x')).toBeUndefined();
+    expect(getTypedPropertyValueWithoutSchema({ type: 'integer', value: 123 }, 'x')).toBeUndefined();
+
+    // Support missing schemas
+    expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { x: 1 } }, 'x')).toStrictEqual(TYPED_1);
+    expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { x: [1] } }, 'x')).toStrictEqual([TYPED_1]);
+    expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { valueInteger: 1 } }, 'value')).toStrictEqual(
+      TYPED_1
+    );
+    expect(getTypedPropertyValueWithoutSchema({ type: 'Foo', value: { valueInteger: 1 } }, 'value[x]')).toStrictEqual(
+      TYPED_1
+    );
+
+    // Only use valid property types
+    expect(
+      getTypedPropertyValueWithoutSchema(
+        toTypedValue({ resourceType: 'Patient', identifier: [{ value: 'foo' }] }),
+        'id'
+      )
+    ).toBeUndefined();
+    expect(
+      getTypedPropertyValueWithoutSchema(toTypedValue({ resourceType: 'AccessPolicy' }), 'resource')
+    ).toBeUndefined();
+
+    // Silently ignore empty arrays
+    expect(
+      getTypedPropertyValueWithoutSchema(toTypedValue({ resourceType: 'Patient', identifier: [] }), 'identifier')
+    ).toBeUndefined();
+    expect(getTypedPropertyValueWithoutSchema({ type: 'X', value: { x: [] } }, 'x')).toBeUndefined();
+
+    // Property path that is part of multi-type element in schema
+    expect(
+      getTypedPropertyValueWithoutSchema({ type: 'Extension', value: { valueBoolean: true } }, 'valueBoolean')
+    ).toStrictEqual({
       type: 'boolean',
       value: true,
     });
@@ -239,7 +290,10 @@ describe('FHIRPath utils', () => {
       max: 0,
       type: [{ code: 'boolean' }],
     };
-    expect(getTypedPropertyValueWithSchema(typedValue, path, goodElement)).toEqual({ type: 'boolean', value: true });
+    expect(getTypedPropertyValueWithSchema(typedValue, path, goodElement)).toStrictEqual({
+      type: 'boolean',
+      value: true,
+    });
 
     const choiceOfTypeTypedValue: TypedValue = { type: 'Extension', value: { valueBoolean: true } };
     const extensionValueX: InternalSchemaElement = {
@@ -249,7 +303,11 @@ describe('FHIRPath utils', () => {
       max: 1,
       type: [{ code: 'boolean' }],
     };
-    expect(getTypedPropertyValueWithSchema(choiceOfTypeTypedValue, 'value[x]', extensionValueX)).toEqual({
+    expect(getTypedPropertyValueWithSchema(choiceOfTypeTypedValue, 'value[x]', extensionValueX)).toStrictEqual({
+      type: 'boolean',
+      value: true,
+    });
+    expect(getTypedPropertyValueWithSchema(choiceOfTypeTypedValue, 'value', extensionValueX)).toStrictEqual({
       type: 'boolean',
       value: true,
     });
@@ -269,7 +327,7 @@ describe('FHIRPath utils', () => {
       type: [{ code: 'string' }],
     };
     getTypedPropertyValueWithSchema({ type: 'HumanName', value: humanName }, 'given', given);
-    expect(humanName.given).toEqual(expect.arrayContaining(['John', 'Johnny']));
+    expect(humanName.given).toStrictEqual(expect.arrayContaining(['John', 'Johnny']));
     // with primitive extensions, array values can be changed into a `String` type which has a typeof 'object'
     // ensure the original input array values is not mutated as such
     expect(humanName.given.every((g) => typeof g === 'string')).toBe(true);

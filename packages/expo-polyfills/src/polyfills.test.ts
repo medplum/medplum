@@ -24,7 +24,7 @@ describe('Medplum polyfills', () => {
         // @ts-expect-error TS expects location to always be defined
         window.location = undefined;
         polyfillMedplumWebAPIs({ location: true });
-        expect(window.location).not.toEqual(undefined);
+        expect(window.location).not.toStrictEqual(undefined);
         window.location = originalLocation;
       });
 
@@ -33,7 +33,7 @@ describe('Medplum polyfills', () => {
         // @ts-expect-error TS expects location to always be defined
         window.location = undefined;
         polyfillMedplumWebAPIs({ location: false });
-        expect(window.location).toEqual(undefined);
+        expect(window.location).toStrictEqual(undefined);
         window.location = originalLocation;
       });
 
@@ -52,11 +52,11 @@ describe('Medplum polyfills', () => {
 
         const event1 = new Event('foo');
         expect(event1).toBeInstanceOf(Event);
-        expect(event1.type).toEqual('foo');
+        expect(event1.type).toStrictEqual('foo');
 
         const event2 = new Event('foo', { bubbles: true, cancelable: true, composed: true });
         expect(event2).toBeInstanceOf(Event);
-        expect(event2.type).toEqual('foo');
+        expect(event2.type).toStrictEqual('foo');
       });
     });
 
@@ -64,22 +64,22 @@ describe('Medplum polyfills', () => {
       test('Cleans up after polyfillMedplumWebAPIs()', () => {
         const originalCrypto = window.crypto;
         // Check that before polyfilling that these
-        expect(window.location).toEqual(undefined);
+        expect(window.location).toStrictEqual(undefined);
 
         // After polyfilling, make sure it works
         polyfillMedplumWebAPIs();
-        expect(window.location).not.toEqual(undefined);
+        expect(window.location).not.toStrictEqual(undefined);
 
         cleanupMedplumWebAPIs();
         // Should be undefined again
-        expect(window.location).toEqual(undefined);
-        expect(window.crypto).toEqual(originalCrypto);
+        expect(window.location).toStrictEqual(undefined);
+        expect(window.crypto).toStrictEqual(originalCrypto);
       });
 
       test('No-ops if nothing to clean up', () => {
         const originalCrypto = window.crypto;
         expect(() => cleanupMedplumWebAPIs()).not.toThrow();
-        expect(window.crypto).toEqual(originalCrypto);
+        expect(window.crypto).toStrictEqual(originalCrypto);
       });
     });
   } else {
@@ -94,12 +94,12 @@ describe('Medplum polyfills', () => {
 
     test('polyfillMedplumWebAPIs() - noop', () => {
       polyfillMedplumWebAPIs();
-      expect(original).toEqual(window.location);
+      expect(original).toStrictEqual(window.location);
     });
 
     test('cleanupMedplumWebAPIs() - noop', () => {
       cleanupMedplumWebAPIs();
-      expect(original).toEqual(window.location);
+      expect(original).toStrictEqual(window.location);
     });
   }
 });

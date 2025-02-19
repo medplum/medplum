@@ -1,6 +1,7 @@
 import { formatAddress } from '@medplum/core';
 import { Address, Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
-import { PoolClient } from 'pg';
+import { Pool, PoolClient } from 'pg';
+import { Column, DeleteQuery } from '../sql';
 import { LookupTable } from './lookuptable';
 
 /**
@@ -101,7 +102,11 @@ export class AddressTable extends LookupTable {
    * @returns Promise on completion.
    */
   async indexResource(client: PoolClient, resource: Resource, create: boolean): Promise<void> {
-    if (!create && AddressTable.hasAddress(resource.resourceType)) {
+    if (!AddressTable.hasAddress(resource.resourceType)) {
+      return;
+    }
+
+    if (!create) {
       await this.deleteValuesForResource(client, resource);
     }
 
@@ -145,5 +150,40 @@ export class AddressTable extends LookupTable {
         resource.resourceType satisfies never;
         return undefined;
     }
+  }
+
+  /**
+   * Deletes the resource from the lookup table.
+   * @param client - The database client.
+   * @param resource - The resource to delete.
+   */
+  async deleteValuesForResource(client: Pool | PoolClient, resource: Resource): Promise<void> {
+    if (!AddressTable.hasAddress(resource.resourceType)) {
+      return;
+    }
+
+    const tableName = this.getTableName();
+    const resourceId = resource.id as string;
+    await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
+  }
+
+  /**
+   * Purges resources of the specified type that were last updated before the specified date.
+   * This is only available to the system and super admin accounts.
+   * @param client - The database client.
+   * @param resourceType - The FHIR resource type.
+   * @param before - The date before which resources should be purged.
+   */
+  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+    if (!AddressTable.hasAddress(resourceType)) {
+      return;
+    }
+
+    const lookupTableName = this.getTableName();
+    await new DeleteQuery(lookupTableName)
+      .using(resourceType)
+      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
+      .where(new Column(resourceType, 'lastUpdated'), '<', before)
+      .execute(client);
   }
 }

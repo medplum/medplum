@@ -1,0 +1,87 @@
+{
+  "name": "@medplum/dosespot-react",
+  "version": "3.2.32",
+  "description": "Medplum DoseSpot React SDK",
+  "keywords": [
+    "medplum",
+    "fhir",
+    "healthcare",
+    "interoperability",
+    "json",
+    "serialization",
+    "hl7",
+    "standards",
+    "clinical",
+    "dstu2",
+    "stu3",
+    "r4",
+    "normative",
+    "react",
+    "react-hooks"
+  ],
+  "homepage": "https://www.medplum.com/",
+  "bugs": {
+    "url": "https://github.com/medplum/medplum/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/medplum/medplum.git",
+    "directory": "packages/dosespot-react"
+  },
+  "license": "Apache-2.0",
+  "author": "Medplum <hello@medplum.com>",
+  "sideEffects": false,
+  "type": "module",
+  "exports": {
+    "import": {
+      "types": "./dist/esm/index.d.ts",
+      "default": "./dist/esm/index.mjs"
+    },
+    "require": {
+      "types": "./dist/cjs/index.d.ts",
+      "default": "./dist/cjs/index.cjs"
+    }
+  },
+  "main": "dist/cjs/index.cjs",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/esm/index.d.ts",
+  "files": [
+    "dist/cjs",
+    "dist/esm"
+  ],
+  "scripts": {
+    "api-documenter": "api-documenter markdown --input-folder ./dist/api/ --output-folder ./dist/docs/",
+    "api-extractor": "api-extractor run --local && cp dist/types.d.ts dist/cjs/index.d.ts && cp dist/types.d.ts dist/esm/index.d.ts",
+    "build": "npm run clean && tsc --project tsconfig.build.json && node esbuild.mjs && npm run api-extractor",
+    "clean": "rimraf dist",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest watch"
+  },
+  "devDependencies": {
+    "@medplum/core": "3.2.32",
+    "@medplum/fhirtypes": "3.2.32",
+    "@medplum/mock": "3.2.32",
+    "@medplum/react": "3.2.32",
+    "@testing-library/jest-dom": "6.6.3",
+    "@testing-library/react": "16.2.0",
+    "@types/node": "20.17.17",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "jsdom": "26.0.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "rimraf": "5.0.9",
+    "vitest": "3.0.5"
+  },
+  "peerDependencies": {
+    "@medplum/core": "3.2.32",
+    "@medplum/fhirtypes": "3.2.32",
+    "@medplum/react-hooks": "3.2.32",
+    "react": "^18.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

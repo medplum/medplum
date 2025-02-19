@@ -27,6 +27,8 @@ import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
 [reference]: /docs/api/fhir/datatypes/reference
 [codeableconcept]: /docs/api/fhir/datatypes/codeableconcept
 
+To follow along with the concepts described in this guide, you can download and import this [sample FHIR bundle](https://drive.google.com/file/d/1196wfX-aBMUK33GdQiIdBUNlYn_cymBU/view?usp=drive_link) into your Medplum project. For instructions on how to import the data, refer to our [Import Sample Data](/docs/tutorials/importing-sample-data) guide.
+
 ## Why FHIR?
 
 Medplum stores healthcare data using the FHIR standard. Storing data according to this standard provides developers with the following benefits:

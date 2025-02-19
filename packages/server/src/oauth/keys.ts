@@ -13,7 +13,7 @@ import {
   KeyLike,
   SignJWT,
 } from 'jose';
-import { MedplumServerConfig } from '../config';
+import { MedplumServerConfig } from '../config/types';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
 
@@ -79,6 +79,7 @@ export interface MedplumRefreshTokenClaims extends MedplumBaseClaims {
  * This is the algorithm used by AWS Cognito and Auth0.
  */
 const ALG = 'RS256';
+const DEFAULT_ACCESS_LIFETIME = '1h';
 const DEFAULT_REFRESH_LIFETIME = '2w';
 
 let issuer: string | undefined;
@@ -193,24 +194,27 @@ export function generateIdToken(claims: MedplumIdTokenClaims): Promise<string> {
 /**
  * Generates an access token JWT.
  * @param claims - The access token claims.
- * @param additionalClaims - Any additional custom claims. Optional.
+ * @param options - Optional parameters.
+ * @param options.additionalClaims - Any additional custom claims.
+ * @param options.lifetime - Access token duration.
  * @returns A well-formed JWT that can be used as an access token.
  */
 export function generateAccessToken(
   claims: MedplumAccessTokenClaims,
-  additionalClaims?: Record<string, string | number>
+  options?: { additionalClaims?: Record<string, string | number>; lifetime?: string }
 ): Promise<string> {
-  return generateJwt('1h', additionalClaims ? { ...claims, ...additionalClaims } : claims);
+  const duration = options?.lifetime ?? DEFAULT_ACCESS_LIFETIME;
+  return generateJwt(duration, options?.additionalClaims ? { ...claims, ...options.additionalClaims } : claims);
 }
 
 /**
  * Generates a refresh token JWT.
  * @param claims - The refresh token claims.
- * @param refreshLifetime - The refresh token duration.
+ * @param lifetime - The refresh token duration.
  * @returns A well-formed JWT that can be used as a refresh token.
  */
-export function generateRefreshToken(claims: MedplumRefreshTokenClaims, refreshLifetime?: string): Promise<string> {
-  const duration = refreshLifetime ?? DEFAULT_REFRESH_LIFETIME;
+export function generateRefreshToken(claims: MedplumRefreshTokenClaims, lifetime?: string): Promise<string> {
+  const duration = lifetime ?? DEFAULT_REFRESH_LIFETIME;
 
   return generateJwt(duration, claims);
 }

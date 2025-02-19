@@ -1387,6 +1387,102 @@ describe('QuestionnaireForm', () => {
     expect(searchInput).toBeInstanceOf(HTMLInputElement);
   });
 
+  test('Multi Select Code', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'default-values',
+        title: 'Default Values Example',
+        item: [
+          {
+            id: 'choice',
+            linkId: 'choice',
+            text: 'choice',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'multi-select',
+                      display: 'Multi Select',
+                    },
+                  ],
+                  text: 'Multi Select',
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    const dropDown = screen.getByText('choice');
+
+    await act(async () => {
+      fireEvent.click(dropDown);
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'Yes' });
+    });
+
+    await act(async () => {
+      fireEvent.change(dropDown, { target: 'No' });
+    });
+  });
+
+  test('Multi Select Code shows with no data', async () => {
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.choice,
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/StructureDefinition/questionnaire-itemControl',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://hl7.org/fhir/questionnaire-item-control',
+                      code: 'multi-select',
+                      display: 'Multi Select',
+                    },
+                  ],
+                  text: 'Multi Select',
+                },
+              },
+            ],
+            text: 'q1',
+            answerOption: [],
+          },
+        ],
+      },
+      onSubmit: jest.fn(),
+    });
+
+    expect(screen.getByText('q1')).toBeInTheDocument();
+
+    const searchInput = screen.getByPlaceholderText('No Answers Defined');
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toBeInstanceOf(HTMLInputElement);
+  });
+
   test('Nested repeat', async () => {
     const onSubmit = jest.fn();
     await setup({
@@ -1646,5 +1742,166 @@ describe('QuestionnaireForm', () => {
     const params = searchResources.mock.calls[0][1] as URLSearchParams;
     expect(params.get('subject')).toBe('Patient/123');
     expect(params.get('code')).toBe('Test');
+  });
+
+  test('Questionnaire CalculatedExpression with boolean field', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-threshold',
+        title: 'Temperature Threshold Check',
+        item: [
+          {
+            id: 'id-1',
+            linkId: 'q1',
+            type: 'string',
+            text: 'Fahrenheit',
+          },
+          {
+            id: 'id-2',
+            linkId: 'q2',
+            type: 'boolean',
+            text: 'Is temperature over 120?',
+            extension: [
+              {
+                url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                valueExpression: {
+                  language: 'text/fhirpath',
+                  expression:
+                    "iif(%resource.item.where(linkId='q1').answer.value.empty(), false, (%resource.item.where(linkId='q1').answer.value.toDecimal() > 120))",
+                },
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '125' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    const answers = getQuestionnaireAnswers(response);
+
+    expect(answers['q1']).toMatchObject({ valueString: '125' });
+    expect(answers['q2']).toMatchObject({ valueBoolean: true });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '100' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    const response2 = onSubmit.mock.calls[1][0];
+    const answers2 = getQuestionnaireAnswers(response2);
+
+    expect(answers2['q1']).toMatchObject({ valueString: '100' });
+    expect(answers2['q2']).toMatchObject({ valueBoolean: false });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    const response3 = onSubmit.mock.calls[2][0];
+    const answers3 = getQuestionnaireAnswers(response3);
+
+    expect(answers3['q1']).toMatchObject({ valueString: '' });
+    expect(answers3['q2']).toMatchObject({ valueBoolean: false });
+  });
+
+  test('Questionnaire CalculatedExpression with nested groups', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-conversion',
+        title: 'Temperature Conversion',
+        item: [
+          {
+            id: 'id-6',
+            linkId: 'g6',
+            type: 'group',
+            text: 'Temperature Group',
+            item: [
+              {
+                id: 'id-1',
+                linkId: 'q1',
+                type: 'decimal',
+                text: 'Fahrenheit',
+              },
+              {
+                id: 'id-2',
+                linkId: 'q2',
+                type: 'decimal',
+                text: 'Celsius',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                    valueExpression: {
+                      language: 'text/fhirpath',
+                      expression:
+                        "iif(%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value.empty(), '', ((%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value - 32) * 5 / 9).round(2))",
+                    },
+                  },
+                ],
+              },
+              {
+                id: 'id-3',
+                linkId: 'q3',
+                type: 'decimal',
+                text: 'Kelvin',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                    valueExpression: {
+                      language: 'text/fhirpath',
+                      expression:
+                        "iif(%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value.empty(), '', (((%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value - 32) * 5 / 9) + 273.15).round(2))",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Fahrenheit'), { target: { value: '100' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    const answers = getQuestionnaireAnswers(response);
+
+    expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
+    expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
+    expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
   });
 });

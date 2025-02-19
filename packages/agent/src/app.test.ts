@@ -159,9 +159,6 @@ describe('App', () => {
     state.mySocket = undefined;
     mockServer1.stop();
 
-    // Sleep for a bit to allow healthchecks while disconnected
-    await sleep(1000);
-
     // Start a new server
     const mockServer2 = new Server('wss://example.com/ws/agent');
     mockServer2.on('connection', mockConnectionHandler);
@@ -174,6 +171,70 @@ describe('App', () => {
     await app.stop();
     await app.stop();
     mockServer2.stop();
+  });
+
+  test('Attempt to reconnect after missed heartbeats', async () => {
+    const state = {
+      mySocket: undefined as Client | undefined,
+      heartbeatCount: 0,
+      connectRequestCount: 0,
+    };
+
+    function mockConnectionHandler(socket: Client): void {
+      state.mySocket = socket;
+      socket.on('message', (data) => {
+        const command = JSON.parse((data as Buffer).toString('utf8'));
+        if (command.type === 'agent:connect:request') {
+          state.connectRequestCount += 1;
+          socket.send(Buffer.from(JSON.stringify({ type: 'agent:connect:response' })));
+        } else if (command.type === 'agent:heartbeat:request') {
+          state.heartbeatCount += 1;
+        }
+      });
+    }
+
+    const mockServer = new Server('wss://example.com/ws/agent');
+    mockServer.on('connection', mockConnectionHandler);
+
+    const agent = await medplum.createResource<Agent>({
+      resourceType: 'Agent',
+      name: 'Test Agent',
+      status: 'active',
+    });
+
+    const app = new App(medplum, agent.id as string, LogLevel.INFO);
+
+    app.heartbeatPeriod = 200;
+    await app.start();
+
+    // Wait for the WebSocket to connect
+    while (!state.mySocket) {
+      await sleep(100);
+    }
+
+    while (state.connectRequestCount < 1) {
+      await sleep(100);
+    }
+
+    expect(state.connectRequestCount).toBe(1);
+
+    // Wait for 2 heartbeats to pass (we should disconnect)
+    while (state.heartbeatCount < 2) {
+      await sleep(100);
+    }
+
+    expect(state.connectRequestCount).toBe(1);
+
+    // Wait for another connect request (we reconnected)
+    while (state.connectRequestCount < 2) {
+      await sleep(100);
+    }
+
+    expect(state.connectRequestCount).toBe(2);
+
+    await app.stop();
+    await app.stop();
+    mockServer.stop();
   });
 
   test('Empty endpoint URL', async () => {
@@ -420,12 +481,12 @@ describe('App', () => {
     }
 
     // Test HL7 endpoint is there
-    expect(app.channels.has('hl7-test')).toEqual(true);
-    expect(app.channels.has('hl7-prod')).toEqual(true);
-    expect(app.channels.has('dicom-test')).toEqual(true);
-    expect(app.channels.has('dicom-prod')).toEqual(true);
-    expect(app.channels.has('hl7-staging')).toEqual(true);
-    expect(app.channels.size).toEqual(5);
+    expect(app.channels.has('hl7-test')).toStrictEqual(true);
+    expect(app.channels.has('hl7-prod')).toStrictEqual(true);
+    expect(app.channels.has('dicom-test')).toStrictEqual(true);
+    expect(app.channels.has('dicom-prod')).toStrictEqual(true);
+    expect(app.channels.has('hl7-staging')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(5);
 
     const stagingChannel = app.channels.get('hl7-staging') as AgentHl7Channel;
 
@@ -504,15 +565,15 @@ describe('App', () => {
     clearTimeout(timeout);
 
     // We should get back `agent:reloadconfig:response` message
-    expect(state.gotAgentReloadResponse).toEqual(true);
+    expect(state.gotAgentReloadResponse).toStrictEqual(true);
 
     // Check channels have been updated
-    expect(app.channels.has('hl7-test')).toEqual(true);
-    expect(app.channels.has('hl7-prod')).toEqual(true);
-    expect(app.channels.has('dicom-test')).toEqual(true);
-    expect(app.channels.has('dicom-prod')).toEqual(true);
-    expect(app.channels.has('hl7-dev')).toEqual(true);
-    expect(app.channels.size).toEqual(5);
+    expect(app.channels.has('hl7-test')).toStrictEqual(true);
+    expect(app.channels.has('hl7-prod')).toStrictEqual(true);
+    expect(app.channels.has('dicom-test')).toStrictEqual(true);
+    expect(app.channels.has('dicom-prod')).toStrictEqual(true);
+    expect(app.channels.has('hl7-dev')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(5);
 
     // Make sure old channel is closed
     shouldThrow = false;
@@ -617,16 +678,16 @@ describe('App', () => {
     clearTimeout(timeout);
 
     // We should get back `agent:error` message
-    expect(state.gotAgentReloadResponse).toEqual(false);
-    expect(state.gotAgentError).toEqual(true);
+    expect(state.gotAgentReloadResponse).toStrictEqual(false);
+    expect(state.gotAgentError).toStrictEqual(true);
 
     // Check channels have been updated
-    expect(app.channels.has('hl7-test')).toEqual(true);
-    expect(app.channels.has('hl7-prod')).toEqual(true);
-    expect(app.channels.has('dicom-test')).toEqual(true);
-    expect(app.channels.has('dicom-prod')).toEqual(true);
-    expect(app.channels.has('hl7-dev')).toEqual(true);
-    expect(app.channels.size).toEqual(5);
+    expect(app.channels.has('hl7-test')).toStrictEqual(true);
+    expect(app.channels.has('hl7-prod')).toStrictEqual(true);
+    expect(app.channels.has('dicom-test')).toStrictEqual(true);
+    expect(app.channels.has('dicom-prod')).toStrictEqual(true);
+    expect(app.channels.has('hl7-dev')).toStrictEqual(true);
+    expect(app.channels.size).toStrictEqual(5);
 
     await app.stop();
     await new Promise<void>((resolve) => {
@@ -711,7 +772,7 @@ describe('App', () => {
     await app.start();
 
     // There should be no channels
-    expect(app.channels.size).toEqual(0);
+    expect(app.channels.size).toStrictEqual(0);
 
     // Try to send HL7 message -- should fail
     let hl7Client = new Hl7Client({
@@ -741,7 +802,7 @@ describe('App', () => {
     if (error?.constructor.name === 'Error' || error?.constructor.name === 'AggregateError') {
       isError = true;
     }
-    expect(isError).toEqual(true);
+    expect(isError).toStrictEqual(true);
 
     hl7Client.close();
 
@@ -807,7 +868,7 @@ describe('App', () => {
     }
     clearTimeout(timeout);
 
-    expect(state.gotAgentError).toEqual(true);
+    expect(state.gotAgentError).toStrictEqual(true);
 
     state.mySocket.send(
       Buffer.from(
@@ -864,7 +925,7 @@ describe('App', () => {
     clearTimeout(timeout);
 
     // There should be 1 channel
-    expect(app.channels.size).toEqual(1);
+    expect(app.channels.size).toStrictEqual(1);
     expect(app.channels.get('test')).toBeDefined();
 
     // Try to send HL7 message -- should succeed
@@ -1029,8 +1090,8 @@ describe('App', () => {
     await app.start();
 
     // There should be only the prod channel
-    expect(app.channels.size).toEqual(1);
-    expect(app.channels.has('prod')).toEqual(true);
+    expect(app.channels.size).toStrictEqual(1);
+    expect(app.channels.has('prod')).toStrictEqual(true);
 
     // Try to send HL7 message -- should fail
     let hl7Client = new Hl7Client({
@@ -1060,7 +1121,7 @@ describe('App', () => {
     if (error?.constructor.name === 'Error' || error?.constructor.name === 'AggregateError') {
       isError = true;
     }
-    expect(isError).toEqual(true);
+    expect(isError).toStrictEqual(true);
 
     hl7Client.close();
 
@@ -1131,7 +1192,7 @@ describe('App', () => {
     clearTimeout(timeout);
 
     // There should be 2 channels
-    expect(app.channels.size).toEqual(2);
+    expect(app.channels.size).toStrictEqual(2);
     expect(app.channels.get('test')).toBeDefined();
     expect(app.channels.get('prod')).toBeDefined();
 
@@ -1271,7 +1332,7 @@ describe('App', () => {
       }
       clearTimeout(timeout);
 
-      expect(state.agentError.body).toEqual('Auto-upgrading is currently only supported on Windows');
+      expect(state.agentError.body).toStrictEqual('Auto-upgrading is currently only supported on Windows');
 
       await app.stop();
       await new Promise<void>((resolve) => {
@@ -1638,7 +1699,7 @@ describe('App', () => {
       clearTimeout(timeout);
 
       expect(state.agentError.body).toMatch(/'medplum' is not a valid version/);
-      expect(state.gotAgentUpgradeResponse).toEqual(false);
+      expect(state.gotAgentUpgradeResponse).toStrictEqual(false);
 
       await app.stop();
       await new Promise<void>((resolve) => {
@@ -1735,7 +1796,7 @@ describe('App', () => {
         await sleep(100);
       }
       clearTimeout(timeout);
-      expect(state.agentError.body).toEqual("Error during upgrading to version 'v3.1.6': Unable to open file");
+      expect(state.agentError.body).toStrictEqual("Error during upgrading to version 'v3.1.6': Unable to open file");
 
       await app.stop();
       await new Promise<void>((resolve) => {

@@ -45,7 +45,7 @@ describe('ConceptMap $translate', () => {
     ['with CodeableConcept', { codeableConcept: { coding: [{ system, code }] } }],
   ])('Success %s', async (_format, params) => {
     const output = conceptMapTranslate(conceptMap, params);
-    expect(output.result).toEqual(true);
+    expect(output.result).toStrictEqual(true);
 
     const matches = output.match;
     expect(matches).toHaveLength(2);
@@ -72,7 +72,7 @@ describe('ConceptMap $translate', () => {
       targetsystem: 'http://loinc.org',
       coding: { system, code },
     });
-    expect(output.result).toEqual(true);
+    expect(output.result).toStrictEqual(true);
 
     const matches = output.match;
     expect(matches).toHaveLength(1);
@@ -88,7 +88,7 @@ describe('ConceptMap $translate', () => {
 
   test('No match', async () => {
     const output = conceptMapTranslate(conceptMap, { coding: { system, code: 'BAD' } });
-    expect(output.result).toEqual(false);
+    expect(output.result).toStrictEqual(false);
   });
 
   test('Code without system', async () => {
@@ -148,7 +148,7 @@ describe('ConceptMap $translate', () => {
     };
 
     const output = conceptMapTranslate(conceptMap, { coding: { system, code } });
-    expect(output.result).toEqual(true);
+    expect(output.result).toStrictEqual(true);
 
     const matches = output.match;
     expect(matches).toHaveLength(2);
@@ -168,7 +168,7 @@ describe('ConceptMap $translate', () => {
 
   test('Handles empty CodeableConcept', async () => {
     const output = conceptMapTranslate(conceptMap, { codeableConcept: { text: 'Nebulous concept' } });
-    expect(output.result).toEqual(false);
+    expect(output.result).toStrictEqual(false);
   });
 
   test('Handles implicit system', async () => {
@@ -197,7 +197,7 @@ describe('ConceptMap $translate', () => {
     };
 
     const output = conceptMapTranslate(conceptMap, { codeableConcept: { coding: [{ code }] } });
-    expect(output.result).toEqual(true);
+    expect(output.result).toStrictEqual(true);
 
     const matches = output.match;
     expect(matches).toHaveLength(1);

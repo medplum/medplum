@@ -48,13 +48,13 @@ describe('polyfillMedplumWebAPIs', () => {
       test('Should be able to encode a string with the `TextEncoder`', () => {
         const encoder = new window.TextEncoder();
         const encoded = encoder.encode('Hello, World!');
-        expect(encoded).toEqual(new Uint8Array([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]));
+        expect(encoded).toStrictEqual(new Uint8Array([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]));
       });
 
       test('Should be able to decode a string with the `TextDecoder`', () => {
         const decoder = new window.TextDecoder();
         const decoded = decoder.decode(new Uint8Array([72, 101, 108, 108, 111, 44, 32, 87, 111, 114, 108, 100, 33]));
-        expect(decoded).toEqual('Hello, World!');
+        expect(decoded).toStrictEqual('Hello, World!');
       });
     });
 
@@ -65,11 +65,11 @@ describe('polyfillMedplumWebAPIs', () => {
       });
 
       test('btoa', () => {
-        expect(btoa('Medplum_is_cool')).toEqual('TWVkcGx1bV9pc19jb29s');
+        expect(btoa('Medplum_is_cool')).toStrictEqual('TWVkcGx1bV9pc19jb29s');
       });
 
       test('atob', () => {
-        expect(atob('TWVkcGx1bV9pc19jb29s')).toEqual('Medplum_is_cool');
+        expect(atob('TWVkcGx1bV9pc19jb29s')).toStrictEqual('Medplum_is_cool');
       });
     });
   });
@@ -85,7 +85,7 @@ describe('polyfillMedplumWebAPIs', () => {
   describe('Location', () => {
     test('Should be `http://localhost`', () => {
       expect(window.location).toBeDefined();
-      expect(window.location.toString()).toEqual('http://localhost/');
+      expect(window.location.toString()).toStrictEqual('http://localhost/');
     });
 
     test('Should have a callable .assign() function', () => {

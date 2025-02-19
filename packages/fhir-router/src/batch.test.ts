@@ -55,7 +55,7 @@ describe('Batch', () => {
     } catch (err) {
       const outcome = (err as OperationOutcomeError).outcome;
       expect(isOk(outcome)).toBe(false);
-      expect(outcome.issue?.[0].details?.text).toEqual('Unrecognized bundle type: undefined');
+      expect(outcome.issue?.[0].details?.text).toStrictEqual('Unrecognized bundle type: undefined');
     }
   });
 
@@ -143,18 +143,18 @@ describe('Batch', () => {
     });
 
     expect(bundle).toBeDefined();
-    expect(bundle.type).toEqual('batch-response');
+    expect(bundle.type).toStrictEqual('batch-response');
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(5);
-    expect(results[0].response?.status).toEqual('201');
-    expect(results[1].response?.status).toEqual('201');
-    expect(results[2].response?.status).toEqual('200');
+    expect(results.length).toStrictEqual(5);
+    expect(results[0].response?.status).toStrictEqual('201');
+    expect(results[1].response?.status).toStrictEqual('201');
+    expect(results[2].response?.status).toStrictEqual('200');
     expect(results[2].resource).toBeDefined();
-    expect((results[2].resource as Bundle).entry?.length).toEqual(1);
-    expect(results[3].response?.status).toEqual('404');
-    expect(results[4].response?.status).toEqual('404');
+    expect((results[2].resource as Bundle).entry?.length).toStrictEqual(1);
+    expect(results[3].response?.status).toStrictEqual('404');
+    expect(results[4].response?.status).toStrictEqual('404');
 
     const patient = await repo.readReference({
       reference: results[0].response?.location as string,
@@ -165,7 +165,7 @@ describe('Batch', () => {
       reference: results[1].response?.location as string,
     });
     expect(observation).toBeDefined();
-    expect((observation as Observation).subject?.reference).toEqual('Patient/' + patient.id);
+    expect((observation as Observation).subject?.reference).toStrictEqual('Patient/' + patient.id);
   });
 
   test('Process batch create success', async () => {
@@ -188,8 +188,8 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('201');
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('201');
   });
 
   test('Process batch create missing resource', async () => {
@@ -209,8 +209,8 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('400');
   });
 
   test('Process batch create missing resourceType', async () => {
@@ -228,7 +228,7 @@ describe('Batch', () => {
       ],
     });
     expect(bundle.entry).toHaveLength(1);
-    expect(bundle.entry?.[0]?.response?.status).toEqual('400');
+    expect(bundle.entry?.[0]?.response?.status).toStrictEqual('400');
   });
 
   test('Process batch create ignore http fullUrl', async () => {
@@ -252,8 +252,8 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('201');
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('201');
   });
 
   test('Process batch create does not rewrite identifier', async () => {
@@ -286,14 +286,14 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('201');
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('201');
 
     const readResult = await repo.readReference({
       reference: results[0].response?.location as string,
     });
     expect(readResult).toBeDefined();
-    expect((readResult as Patient).identifier?.[0]?.value).toEqual(id);
+    expect((readResult as Patient).identifier?.[0]?.value).toStrictEqual(id);
   });
 
   test('Process batch create ifNoneExist success', async () => {
@@ -341,10 +341,10 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(2);
-    expect(results[0].response?.status).toEqual('201');
-    expect(results[1].response?.status).toEqual('200');
-    expect(results[1].response?.location).toEqual(results[0].response?.location);
+    expect(results.length).toStrictEqual(2);
+    expect(results[0].response?.status).toStrictEqual('201');
+    expect(results[1].response?.status).toStrictEqual('200');
+    expect(results[1].response?.location).toStrictEqual(results[0].response?.location);
   });
 
   test('Process batch create ifNoneExist multiple matches', async () => {
@@ -410,10 +410,10 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(3);
-    expect(results[0].response?.status).toEqual('201');
-    expect(results[1].response?.status).toEqual('201');
-    expect(results[2].response?.status).toEqual('412');
+    expect(results.length).toStrictEqual(3);
+    expect(results[0].response?.status).toStrictEqual('201');
+    expect(results[1].response?.status).toStrictEqual('201');
+    expect(results[2].response?.status).toStrictEqual('412');
   });
 
   test('Use ifNoneExist result in other reference', async () => {
@@ -460,8 +460,8 @@ describe('Batch', () => {
     });
     expect(bundle).toBeDefined();
     expect(bundle.entry).toHaveLength(2);
-    expect(bundle.entry?.[0]?.response?.status).toEqual('200');
-    expect((bundle.entry?.[1]?.resource as ServiceRequest).requester?.reference).toEqual(
+    expect(bundle.entry?.[0]?.response?.status).toStrictEqual('200');
+    expect((bundle.entry?.[1]?.resource as ServiceRequest).requester?.reference).toStrictEqual(
       getReferenceString(practitioner)
     );
   });
@@ -491,8 +491,8 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('200');
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('200');
   });
 
   test('Process batch update missing resource', async () => {
@@ -512,8 +512,8 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('400');
   });
 
   test('Process batch patch', async () => {
@@ -567,12 +567,16 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(3);
-    expect(results[0].response?.status).toEqual('200');
-    expect(results[1].response?.status).toEqual('400');
-    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
-    expect(results[2].response?.status).toEqual('400');
-    expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
+    expect(results.length).toStrictEqual(3);
+    expect(results[0].response?.status).toStrictEqual('200');
+    expect(results[1].response?.status).toStrictEqual('400');
+    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toStrictEqual(
+      'Decoded PATCH body must be an array'
+    );
+    expect(results[2].response?.status).toStrictEqual('400');
+    expect(results[2].response?.outcome?.issue?.[0]?.details?.text).toStrictEqual(
+      'Decoded PATCH body must be an array'
+    );
   });
 
   test('Process batch patch Parameters', async () => {
@@ -636,13 +640,15 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(2);
-    expect(results[0].response?.status).toEqual('200');
+    expect(results.length).toStrictEqual(2);
+    expect(results[0].response?.status).toStrictEqual('200');
     const updatedPatient = results[0].resource as Patient;
-    expect(updatedPatient.name?.[0]?.given).toEqual(['Dave', 'Smith']);
+    expect(updatedPatient.name?.[0]?.given).toStrictEqual(['Dave', 'Smith']);
     expect(updatedPatient.gender).toBeUndefined();
-    expect(results[1].response?.status).toEqual('400');
-    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toEqual('Decoded PATCH body must be an array');
+    expect(results[1].response?.status).toStrictEqual('400');
+    expect(results[1].response?.outcome?.issue?.[0]?.details?.text).toStrictEqual(
+      'Decoded PATCH body must be an array'
+    );
   });
 
   test('JSONPath error messages', async () => {
@@ -676,9 +682,9 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Invalid JSON Pointer: status'
     );
   });
@@ -714,9 +720,9 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Invalid operation: not-an-op'
     );
   });
@@ -738,9 +744,9 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('404');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual('Not found');
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('404');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual('Not found');
   });
 
   test('Process batch patch missing resource', async () => {
@@ -760,9 +766,9 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Patch entry must include a Binary or Parameters resource'
     );
   });
@@ -787,9 +793,9 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Patch entry must include a Binary or Parameters resource'
     );
   });
@@ -814,9 +820,9 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Missing entry.resource.data'
     );
   });
@@ -842,8 +848,8 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('200');
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('200');
   });
 
   test('Process batch delete invalid URL', async () => {
@@ -863,8 +869,8 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('404');
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('404');
   });
 
   test('Process batch missing request', async () => {
@@ -881,9 +887,9 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Missing Bundle entry request method'
     );
   });
@@ -907,9 +913,9 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Missing Bundle entry request method'
     );
   });
@@ -932,7 +938,7 @@ describe('Batch', () => {
     });
 
     expect(bundle.entry).toHaveLength(1);
-    expect(bundle.entry?.[0]?.response?.status).toEqual('404');
+    expect(bundle.entry?.[0]?.response?.status).toStrictEqual('404');
   });
 
   test('Process batch missing request.url', async () => {
@@ -954,9 +960,9 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(1);
-    expect(results[0].response?.status).toEqual('400');
-    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toEqual(
+    expect(results.length).toStrictEqual(1);
+    expect(results[0].response?.status).toStrictEqual('400');
+    expect((results[0].response?.outcome as OperationOutcome).issue?.[0]?.details?.text).toStrictEqual(
       'Missing Bundle entry request URL'
     );
   });
@@ -990,9 +996,9 @@ describe('Batch', () => {
     expect(bundle.entry).toBeDefined();
 
     const results = bundle.entry as BundleEntry[];
-    expect(results.length).toEqual(3);
+    expect(results.length).toStrictEqual(3);
     for (const result of results) {
-      expect(result.response?.status).toEqual('404');
+      expect(result.response?.status).toStrictEqual('404');
     }
   });
 
@@ -1055,7 +1061,7 @@ describe('Batch', () => {
         },
       ],
     });
-    expect(bundle.entry?.map((e) => e.response?.status)).toEqual(['200', '201', '200']);
+    expect(bundle.entry?.map((e) => e.response?.status)).toStrictEqual(['200', '201', '200']);
   });
 
   describe('Process Transactions', () => {
@@ -1105,13 +1111,13 @@ describe('Batch', () => {
         ],
       });
       expect(bundle).toBeDefined();
-      expect(bundle.type).toEqual('transaction-response');
+      expect(bundle.type).toStrictEqual('transaction-response');
       expect(bundle.entry).toBeDefined();
 
       const results = bundle.entry as BundleEntry[];
-      expect(results.length).toEqual(2);
-      expect(results[0].response?.status).toEqual('201');
-      expect(results[1].response?.status).toEqual('201');
+      expect(results.length).toStrictEqual(2);
+      expect(results[0].response?.status).toStrictEqual('201');
+      expect(results[1].response?.status).toStrictEqual('201');
 
       const subscription = await repo.readReference<Subscription>({
         reference: results[1].response?.location as string,
@@ -1167,13 +1173,13 @@ describe('Batch', () => {
         ],
       });
       expect(bundle).toBeDefined();
-      expect(bundle.type).toEqual('transaction-response');
+      expect(bundle.type).toStrictEqual('transaction-response');
       expect(bundle.entry).toBeDefined();
 
       const results = bundle.entry as BundleEntry[];
-      expect(results.length).toEqual(2);
-      expect(results[0].response?.status).toEqual('201');
-      expect(results[1].response?.status).toEqual('201');
+      expect(results.length).toStrictEqual(2);
+      expect(results[0].response?.status).toStrictEqual('201');
+      expect(results[1].response?.status).toStrictEqual('201');
 
       const subscription = await repo.readReference<Subscription>({
         reference: results[1].response?.location as string,
@@ -1377,6 +1383,6 @@ describe('Batch', () => {
     };
     const result = await processBatch(req, repo, router, bundle);
     const report = result.entry?.[1]?.resource as DiagnosticReport;
-    expect(report.basedOn?.[0].reference).toEqual('ServiceRequest/12345');
+    expect(report.basedOn?.[0].reference).toStrictEqual('ServiceRequest/12345');
   });
 });

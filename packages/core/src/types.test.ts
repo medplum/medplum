@@ -25,32 +25,34 @@ import {
 
 describe('Type Utils', () => {
   test('getPathDisplayName', () => {
-    expect(getPathDisplayName('Patient.id')).toEqual('ID');
-    expect(getPathDisplayName('Patient.name')).toEqual('Name');
-    expect(getPathDisplayName('Patient.birthDate')).toEqual('Birth Date');
-    expect(getPathDisplayName('DeviceDefinition.manufacturer[x]')).toEqual('Manufacturer');
-    expect(getPathDisplayName('ClientApplication.jwksUri')).toEqual('JWKS URI');
-    expect(getPathDisplayName('ClientApplication.redirectUri')).toEqual('Redirect URI');
-    expect(getPathDisplayName('Device.udiCarrier')).toEqual('UDI Carrier');
-    expect(getPathDisplayName('Patient.withASingleCharacterWord')).toEqual('With A Single Character Word');
-    expect(getPathDisplayName('Device.udiCarrier.carrierAIDC')).toEqual('Carrier AIDC');
-    expect(getPathDisplayName('Device.udiCarrier.carrierHRF')).toEqual('Carrier HRF');
-    expect(getPathDisplayName('Patient.digitAtEnd8')).toEqual('Digit At End 8');
-    expect(getPathDisplayName('Patient.8digitAtStart')).toEqual('8 Digit At Start');
-    expect(getPathDisplayName('Patient.digit8InMiddle')).toEqual('Digit 8 In Middle');
+    expect(getPathDisplayName('Patient.id')).toStrictEqual('ID');
+    expect(getPathDisplayName('Patient.name')).toStrictEqual('Name');
+    expect(getPathDisplayName('Patient.birthDate')).toStrictEqual('Birth Date');
+    expect(getPathDisplayName('DeviceDefinition.manufacturer[x]')).toStrictEqual('Manufacturer');
+    expect(getPathDisplayName('ClientApplication.jwksUri')).toStrictEqual('JWKS URI');
+    expect(getPathDisplayName('ClientApplication.redirectUri')).toStrictEqual('Redirect URI');
+    expect(getPathDisplayName('Device.udiCarrier')).toStrictEqual('UDI Carrier');
+    expect(getPathDisplayName('Patient.withASingleCharacterWord')).toStrictEqual('With A Single Character Word');
+    expect(getPathDisplayName('Device.udiCarrier.carrierAIDC')).toStrictEqual('Carrier AIDC');
+    expect(getPathDisplayName('Device.udiCarrier.carrierHRF')).toStrictEqual('Carrier HRF');
+    expect(getPathDisplayName('Patient.digitAtEnd8')).toStrictEqual('Digit At End 8');
+    expect(getPathDisplayName('Patient.8digitAtStart')).toStrictEqual('8 Digit At Start');
+    expect(getPathDisplayName('Patient.digit8InMiddle')).toStrictEqual('Digit 8 In Middle');
   });
 
   test('getPropertyDisplayName', () => {
-    expect(getPropertyDisplayName('_lastUpdated')).toEqual('Last Updated');
+    expect(getPropertyDisplayName('_lastUpdated')).toStrictEqual('Last Updated');
   });
 
   test('getElementDefinitionTypeName', () => {
-    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] } as ElementDefinition)).toEqual('string');
-    expect(getElementDefinitionTypeName({ path: 'Patient.address', type: [{ code: 'Address' }] })).toEqual('Address');
-    expect(getElementDefinitionTypeName({ path: 'Patient.contact', type: [{ code: 'BackboneElement' }] })).toEqual(
-      'PatientContact'
+    expect(getElementDefinitionTypeName({ type: [{ code: 'string' }] } as ElementDefinition)).toStrictEqual('string');
+    expect(getElementDefinitionTypeName({ path: 'Patient.address', type: [{ code: 'Address' }] })).toStrictEqual(
+      'Address'
     );
-    expect(getElementDefinitionTypeName({ path: 'Timing.repeat', type: [{ code: 'Element' }] })).toEqual(
+    expect(
+      getElementDefinitionTypeName({ path: 'Patient.contact', type: [{ code: 'BackboneElement' }] })
+    ).toStrictEqual('PatientContact');
+    expect(getElementDefinitionTypeName({ path: 'Timing.repeat', type: [{ code: 'Element' }] })).toStrictEqual(
       'TimingRepeat'
     );
 
@@ -64,7 +66,7 @@ describe('Type Utils', () => {
         base: { path: 'Questionnaire.item', min: 0, max: '*' },
         type: [{ code: 'Element' }],
       })
-    ).toEqual('QuestionnaireItem');
+    ).toStrictEqual('QuestionnaireItem');
   });
 
   test('getElementDefinitionFromElements', () => {
@@ -78,7 +80,7 @@ describe('Type Utils', () => {
     expect(getElementDefinitionFromElements(elements, 'value[x]')).toBeDefined();
     expect(getElementDefinitionFromElements(elements, 'value')).toBeDefined();
 
-    expect(getElementDefinitionFromElements(elements, 'value')).toEqual(
+    expect(getElementDefinitionFromElements(elements, 'value')).toStrictEqual(
       getElementDefinitionFromElements(elements, 'value[x]')
     );
 
@@ -150,6 +152,6 @@ describe('Type Utils', () => {
     [{ type: 'Age', value: { code: 'a', system: UCUM, value: 34.9 } as Quantity }, `34.9|${UCUM}|a`],
   ])('formatTypedValue()', (value, expected) => {
     const actual = stringifyTypedValue(value);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 });

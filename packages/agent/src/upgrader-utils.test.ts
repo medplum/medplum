@@ -1,4 +1,4 @@
-import { GITHUB_RELEASES_URL, ReleaseManifest, clearReleaseCache } from '@medplum/core';
+import { MEDPLUM_RELEASES_URL, ReleaseManifest, clearReleaseCache } from '@medplum/core';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import { resolve } from 'node:path';
@@ -33,18 +33,18 @@ describe.each(ALL_PLATFORMS_LIST)('Upgrader Utils -- All Platforms -- %s', (_pla
         },
       ],
     } satisfies ReleaseManifest;
-    expect(parseDownloadUrl(manifest, 'win32')).toEqual('https://example.com/win32');
-    expect(parseDownloadUrl(manifest, 'linux')).toEqual('https://example.com/linux');
+    expect(parseDownloadUrl(manifest, 'win32')).toStrictEqual('https://example.com/win32');
+    expect(parseDownloadUrl(manifest, 'linux')).toStrictEqual('https://example.com/linux');
     expect(() => parseDownloadUrl(manifest, 'darwin')).toThrow('Unsupported platform: darwin');
   });
 
   test('getReleaseBinPath', () => {
     switch (_platform) {
       case 'win32':
-        expect(getReleaseBinPath('3.1.6')).toEqual(resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
+        expect(getReleaseBinPath('3.1.6')).toStrictEqual(resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
         break;
       case 'linux':
-        expect(getReleaseBinPath('3.1.6')).toEqual(resolve(__dirname, 'medplum-agent-3.1.6-linux'));
+        expect(getReleaseBinPath('3.1.6')).toStrictEqual(resolve(__dirname, 'medplum-agent-3.1.6-linux'));
         break;
       default:
         expect(() => getReleaseBinPath('3.1.6')).toThrow('Unsupported platform: darwin');
@@ -153,9 +153,9 @@ describe.each(VALID_PLATFORMS_LIST)('Upgrader Utils -- Valid Platforms -- %s', (
       );
 
       await downloadRelease('3.1.6', resolve(__dirname, 'tmp', 'test-release-binary'));
-      expect(fetchSpy).toHaveBeenNthCalledWith(1, `${GITHUB_RELEASES_URL}/tags/v3.1.6`);
+      expect(fetchSpy).toHaveBeenNthCalledWith(1, expect.stringContaining(`${MEDPLUM_RELEASES_URL}/v3.1.6.json`));
       expect(fetchSpy).toHaveBeenLastCalledWith(`https://example.com/${_platform}`);
-      expect(readFileSync(resolve(__dirname, 'tmp', 'test-release-binary'), { encoding: 'utf-8' })).toEqual(
+      expect(readFileSync(resolve(__dirname, 'tmp', 'test-release-binary'), { encoding: 'utf-8' })).toStrictEqual(
         'Hello, Medplum!'
       );
 
