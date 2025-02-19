@@ -6,7 +6,6 @@ import {
   CompositionSection,
   Observation,
   OperationDefinition,
-  OperationDefinitionParameter,
   Patient,
   Resource,
   ResourceType,
@@ -36,7 +35,7 @@ export const LOINC_PLAN_OF_TREATMENT_SECTION = '18776-5';
 // Patient summary operation
 // https://build.fhir.org/ig/HL7/fhir-ips/OperationDefinition-summary.html
 
-export const operation: OperationDefinition = {
+const operation: OperationDefinition = {
   resourceType: 'OperationDefinition',
   id: 'summary',
   name: 'IpsSummary',
@@ -50,13 +49,29 @@ export const operation: OperationDefinition = {
   type: true,
   instance: true,
   parameter: [
-    ['start', 'in', 0, 1, 'date'],
-    ['end', 'in', 0, 1, 'date'],
-    ['_since', 'in', 0, 1, 'instant'],
-    ['identifier', 'in', 0, 1, 'string'],
-    ['profile', 'in', 0, 1, 'canonical'],
-    ['return', 'out', 0, 1, 'Bundle'],
-  ].map(([name, use, min, max, type]) => ({ name, use, min, max, type }) as OperationDefinitionParameter),
+    {
+      name: 'identifier',
+      use: 'in',
+      min: 0,
+      max: '1',
+      type: 'string',
+      searchType: 'token',
+    },
+    {
+      name: 'profile',
+      use: 'in',
+      min: 0,
+      max: '1',
+      type: 'canonical',
+    },
+    {
+      name: 'return',
+      use: 'out',
+      min: 0,
+      max: '1',
+      type: 'Bundle',
+    },
+  ],
 };
 
 const resourceTypes: ResourceType[] = [
