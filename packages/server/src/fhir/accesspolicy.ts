@@ -249,11 +249,6 @@ function applyProjectAdminAccessPolicy(
       hiddenFields: ['passwordHash', 'mfaSecret'],
       readonlyFields: ['email', 'emailVerified', 'mfaEnrolled', 'project'],
     });
-
-    accessPolicy.resource.push({
-      resourceType: 'ClientApplication',
-      readonlyFields: ['secret', 'retiringSecret'],
-    });
   }
 
   return accessPolicy;

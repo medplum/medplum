@@ -1,6 +1,6 @@
 import express from 'express';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { createTestProject } from '../../test.setup';
 import { ContentType } from '@medplum/core';
 import request from 'supertest';
@@ -18,7 +18,7 @@ describe('ClientApplication $rotate-secret', () => {
     await shutdownApp();
   });
 
-  test('Secret cannot be changed directly', async () => {
+  test('Secret can be changed directly', async () => {
     const { client, accessToken } = await createTestProject({
       withAccessToken: true,
       withClient: true,
@@ -33,7 +33,7 @@ describe('ClientApplication $rotate-secret', () => {
       .send({ ...client, secret: 'foo' } satisfies ClientApplication);
     expect(res.status).toBe(200);
     const updated = res.body as ClientApplication;
-    expect(updated.secret).toEqual(client.secret);
+    expect(updated.secret).toEqual('foo');
   });
 
   test('Secret is changed to new value', async () => {

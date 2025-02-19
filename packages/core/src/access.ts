@@ -22,7 +22,6 @@ export const projectAdminResourceTypes = [
   'Project',
   'ProjectMembership',
   'User',
-  'ClientApplication',
 ];
 
 /**
