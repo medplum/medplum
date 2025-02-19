@@ -2,8 +2,9 @@ import { deepClone, parseSearchRequest, sleep } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import { Pool, PoolConfig } from 'pg';
 import { initAppServices, shutdownApp } from './app';
-import * as configModule from './config';
-import { loadTestConfig, MedplumServerConfig } from './config';
+import * as configLoaderModule from './config/loader';
+import { loadTestConfig } from './config/loader';
+import { MedplumServerConfig } from './config/types';
 import { getPendingDataMigration, markPendingDataMigrationCompleted, maybeStartDataMigration } from './database';
 import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
@@ -164,7 +165,7 @@ describe('Database migrations', () => {
     let getConfigSpy: jest.SpyInstance;
 
     beforeEach(async () => {
-      getConfigSpy = jest.spyOn(configModule, 'getConfig').mockImplementation(() => {
+      getConfigSpy = jest.spyOn(configLoaderModule, 'getConfig').mockImplementation(() => {
         return migrationsConfig;
       });
 
