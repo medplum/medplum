@@ -2199,7 +2199,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param requestOptions - Optional fetch options. **NOTE:** only `options.signal` is respected when `onProgress` is also provided.
    * @returns The result of the create operation.
    */
-  createBinary(createBinaryOptions: CreateBinaryOptions, requestOptions: MedplumRequestOptions = {}): Promise<WithId<Binary>> {
+  createBinary(
+    createBinaryOptions: CreateBinaryOptions,
+    requestOptions: MedplumRequestOptions = {}
+  ): Promise<WithId<Binary>> {
     const { data, contentType, filename, securityContext, onProgress } = createBinaryOptions;
 
     const url = this.fhirUrl('Binary');
@@ -2302,7 +2305,10 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @param requestOptions - Optional fetch options.
    * @returns The result of the create operation.
    */
-  async createPdf(createPdfOptions: CreatePdfOptions, requestOptions: MedplumRequestOptions = {}): Promise<WithId<Binary>> {
+  async createPdf(
+    createPdfOptions: CreatePdfOptions,
+    requestOptions: MedplumRequestOptions = {}
+  ): Promise<WithId<Binary>> {
     if (!this.createPdfImpl) {
       throw new Error('PDF creation not enabled');
     }
