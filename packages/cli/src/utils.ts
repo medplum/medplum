@@ -55,7 +55,11 @@ export async function saveBot(medplum: MedplumClient, botConfig: MedplumBotConfi
   }
 
   console.log('Saving source code...');
-  const sourceCode = await medplum.createAttachment(code, basename(codePath), getCodeContentType(codePath));
+  const sourceCode = await medplum.createAttachment({
+    data: code,
+    filename: basename(codePath),
+    contentType: getCodeContentType(codePath),
+  });
 
   console.log('Updating bot...');
   const updateResult = await medplum.updateResource({
