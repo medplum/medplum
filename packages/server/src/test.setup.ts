@@ -15,10 +15,11 @@ import { Express } from 'express';
 import internal from 'stream';
 import request from 'supertest';
 import { ServerInviteResponse, inviteUser } from './admin/invite';
-import { AuthenticatedRequestContext, requestContextStore } from './context';
+import { AuthenticatedRequestContext } from './context';
 import { Repository, RepositoryContext, getSystemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
+import { requestContextStore } from './request-context-store';
 
 export interface TestProjectOptions {
   project?: Partial<Project>;
@@ -83,6 +84,12 @@ export async function createTestProject<T extends StrictTestProjectOptions<T> = 
           project: project.id as string,
         },
         name: 'Test Client Application',
+        signInForm: {
+          welcomeString: 'Test Welcome String',
+          logo: {
+            url: 'https://example.com/logo.png',
+          },
+        },
       });
 
       if (options?.accessPolicy) {

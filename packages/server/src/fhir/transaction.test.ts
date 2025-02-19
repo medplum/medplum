@@ -1,7 +1,7 @@
 import { OperationOutcomeError, Operator, conflict, notFound, parseSearchRequest, sleep } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { createTestProject, withTestContext } from '../test.setup';
 import { Repository, getSystemRepo } from './repo';
 import { randomUUID } from 'node:crypto';
@@ -523,7 +523,7 @@ describe('FHIR Repo Transactions', () => {
         }
       });
 
-      await expect(repo.withTransaction(txFn)).resolves.toEqual(true);
+      await expect(repo.withTransaction(txFn)).resolves.toStrictEqual(true);
       expect(txFn).toHaveBeenCalledTimes(2);
     }));
 
@@ -588,7 +588,7 @@ describe('FHIR Repo Transactions', () => {
       });
       const outerTx = jest.fn(async (): Promise<boolean> => repo.withTransaction(txFn));
 
-      await expect(repo.withTransaction(outerTx)).resolves.toEqual(true);
+      await expect(repo.withTransaction(outerTx)).resolves.toStrictEqual(true);
       expect(txFn).toHaveBeenCalledTimes(2);
       expect(outerTx).toHaveBeenCalledTimes(2);
     }));
@@ -622,7 +622,7 @@ describe('FHIR Repo Transactions', () => {
         }
       });
 
-      await expect(repo.withTransaction(outerTx)).resolves.toEqual(false);
+      await expect(repo.withTransaction(outerTx)).resolves.toStrictEqual(false);
       expect(txFn).toHaveBeenCalledTimes(1);
       expect(outerTx).toHaveBeenCalledTimes(1);
     }));

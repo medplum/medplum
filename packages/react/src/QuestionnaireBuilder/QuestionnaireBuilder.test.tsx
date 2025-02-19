@@ -122,6 +122,45 @@ describe('QuestionnaireBuilder', () => {
     expect(onSubmit).toHaveBeenCalled();
   });
 
+  test('Handles submit with required items', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        item: [
+          {
+            linkId: 'q1',
+            type: QuestionnaireItemType.string,
+            required: true,
+            text: 'q1',
+          },
+          {
+            linkId: 'q2',
+            type: QuestionnaireItemType.integer,
+            required: true,
+            text: 'q1',
+          },
+          {
+            linkId: 'q3',
+            type: QuestionnaireItemType.date,
+            required: true,
+            text: 'q3',
+          },
+        ],
+      },
+      onSubmit,
+    });
+
+    expect(screen.getByText('Save')).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Save'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+  });
+
   test('Handles AutoSave', async () => {
     const onSubmit = jest.fn();
 

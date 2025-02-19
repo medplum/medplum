@@ -9,7 +9,7 @@ import fetch from 'node-fetch';
 import request from 'supertest';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -489,5 +489,40 @@ describe('Login', () => {
     expect(res.body.code).toBeUndefined();
     expect(res.body.memberships).toBeUndefined();
     expect(res.body.issue[0].details.text).toBe('User not found');
+  });
+
+  test('Inactive membership', async () => {
+    const email = `inactive-${randomUUID()}@example.com`;
+    const password = 'password!@#';
+
+    // Create a test user
+    const { membership } = await withTestContext(() =>
+      inviteUser({
+        project,
+        resourceType: 'Practitioner',
+        firstName: 'Test',
+        lastName: 'User',
+        email,
+        password,
+      })
+    );
+
+    // Mark the membership as inactive
+    await getSystemRepo().updateResource({ ...membership, active: false });
+
+    // User should not be able to login
+    const res = await request(app).post('/auth/login').type('json').send({
+      email,
+      password,
+      scope: 'openid offline',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+      projectId: project.id,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.login).toBeUndefined();
+    expect(res.body.code).toBeUndefined();
+    expect(res.body.memberships).toBeUndefined();
+    expect(res.body.issue[0].details.text).toBe('Profile not active');
   });
 });

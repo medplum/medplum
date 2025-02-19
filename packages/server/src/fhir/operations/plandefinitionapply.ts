@@ -1,6 +1,9 @@
 import { allOk, createReference, getReferenceString, ProfileResource } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
+  Bot,
+  ClientApplication,
+  Encounter,
   Patient,
   PlanDefinition,
   PlanDefinitionAction,
@@ -19,6 +22,7 @@ const operation = getOperationDefinition('PlanDefinition', 'apply');
 
 interface PlanDefinitionApplyParameters {
   readonly subject: string[];
+  readonly encounter?: string;
 }
 
 /**
@@ -38,10 +42,16 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
   const subject = await ctx.repo.readReference<Patient>({ reference: params.subject[0] });
   const subjectRef = createReference(subject);
 
+  let encounterRef: Reference<Encounter> | undefined = undefined;
+  if (params.encounter) {
+    const encounter = await ctx.repo.readReference<Encounter>({ reference: params.encounter });
+    encounterRef = createReference(encounter);
+  }
+
   const actions: RequestGroupAction[] = [];
   if (planDefinition.action) {
     for (const action of planDefinition.action) {
-      actions.push(await createAction(ctx.repo, ctx.profile, subjectRef, action));
+      actions.push(await createAction(ctx.repo, ctx.profile, subjectRef, action, encounterRef));
     }
   }
 
@@ -52,6 +62,7 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
     status: 'active',
     intent: 'order',
     action: actions,
+    encounter: encounterRef,
   });
 
   return [allOk, requestGroup];
@@ -63,18 +74,20 @@ export async function planDefinitionApplyHandler(req: FhirRequest): Promise<Fhir
  * @param requester - The user who requested the plan definition.
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
+ * @param encounter - Optional encounter reference.
  * @returns The RequestGroup action.
  */
 async function createAction(
   repo: Repository,
-  requester: Reference<ProfileResource>,
+  requester: Reference<ProfileResource | Bot | ClientApplication>,
   subject: Reference<Patient>,
-  action: PlanDefinitionAction
+  action: PlanDefinitionAction,
+  encounter?: Reference<Encounter>
 ): Promise<RequestGroupAction> {
   if (action.definitionCanonical?.startsWith('Questionnaire/')) {
-    return createQuestionnaireTask(repo, requester, subject, action);
+    return createQuestionnaireTask(repo, requester, subject, action, encounter);
   }
-  return createTask(repo, requester, subject, action);
+  return createTask(repo, requester, subject, action, encounter);
 }
 
 /**
@@ -83,15 +96,17 @@ async function createAction(
  * @param requester - The user who requested the plan definition.
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
+ * @param encounter - Optional encounter reference.
  * @returns The RequestGroup action.
  */
 async function createQuestionnaireTask(
   repo: Repository,
-  requester: Reference<ProfileResource>,
+  requester: Reference<ProfileResource | Bot | ClientApplication>,
   subject: Reference<Patient>,
-  action: PlanDefinitionAction
+  action: PlanDefinitionAction,
+  encounter?: Reference<Encounter>
 ): Promise<RequestGroupAction> {
-  return createTask(repo, requester, subject, action, [
+  return createTask(repo, requester, subject, action, encounter, [
     {
       type: {
         text: 'Questionnaire',
@@ -110,23 +125,29 @@ async function createQuestionnaireTask(
  * @param requester - The requester profile.
  * @param subject - The subject of the plan definition.
  * @param action - The PlanDefinition action.
+ * @param encounter - Optional encounter reference.
  * @param input - Optional input details.
  * @returns The RequestGroup action.
  */
 async function createTask(
   repo: Repository,
-  requester: Reference<ProfileResource>,
+  requester: Reference<ProfileResource | Bot | ClientApplication>,
   subject: Reference<Patient>,
   action: PlanDefinitionAction,
+  encounter?: Reference<Encounter>,
   input?: TaskInput[]
 ): Promise<RequestGroupAction> {
   const task = await repo.createResource<Task>({
     resourceType: 'Task',
+    code: {
+      text: action.title,
+    },
     intent: 'order',
     status: 'requested',
     authoredOn: new Date().toISOString(),
-    requester,
+    requester: requester as Task['requester'],
     for: subject,
+    encounter: encounter,
     owner: subject,
     description: action.description,
     focus: input?.[0]?.valueReference,

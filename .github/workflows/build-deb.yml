@@ -4,7 +4,11 @@ concurrency:
   group: ci-build-deb-${{ github.sha }}
   cancel-in-progress: true
 
-on: workflow_dispatch
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build_deb:
@@ -33,22 +37,16 @@ jobs:
 
       - name: Build
         run: npm run build:fast
+        env:
+          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
+          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
+          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
+          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
+          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
 
       - name: Build Deb
         shell: bash
         run: ./scripts/build-deb.sh
-
-      - name: Upload Deb
-        uses: actions/upload-artifact@v4
-        with:
-          name: medplum_${{ env.MEDPLUM_VERSION }}_all.deb
-          path: medplum_${{ env.MEDPLUM_VERSION }}_all.deb
-
-      - name: Upload Deb SHA256
-        uses: actions/upload-artifact@v4
-        with:
-          name: medplum_${{ env.MEDPLUM_VERSION }}_all.deb.sha256
-          path: medplum_${{ env.MEDPLUM_VERSION }}_all.deb.sha256
 
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
@@ -73,7 +71,6 @@ jobs:
           deb-s3 upload \
             --bucket apt.medplum.com \
             --prefix debian \
-            --codename "noble,jammy" \
             --component main \
             --visibility nil \
             --preserve-versions \

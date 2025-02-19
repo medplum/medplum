@@ -15,8 +15,8 @@ import { sleep } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
-import { getConfig } from '../../config';
-import { getLogger } from '../../context';
+import { getConfig } from '../../config/loader';
+import { getLogger } from '../../logger';
 
 export const LAMBDA_RUNTIME = 'nodejs18.x';
 export const LAMBDA_HANDLER = 'index.handler';
@@ -297,7 +297,8 @@ async function updateLambdaCode(client: LambdaClient, name: string, zipFile: Uin
       const isBusy = err instanceof ResourceConflictException;
       const isLastAttempt = attempt === maxAttempts - 1;
       if (isBusy && !isLastAttempt) {
-        await sleep(1000);
+        // 1 sec, 2 sec, 4 sec, 8 sec
+        await sleep(1000 * 2 ** attempt);
       } else {
         throw err;
       }

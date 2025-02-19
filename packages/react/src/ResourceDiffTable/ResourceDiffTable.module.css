@@ -10,6 +10,10 @@
   & td {
     padding: var(--mantine-spacing-sm) var(--mantine-spacing-sm);
     vertical-align: top;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal; 
+    min-width: 100px; 
   }
 }
 

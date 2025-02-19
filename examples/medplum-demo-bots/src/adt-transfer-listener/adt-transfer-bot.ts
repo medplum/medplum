@@ -1,4 +1,4 @@
-import { BotEvent, Hl7Message, MedplumClient } from '@medplum/core';
+import { BotEvent, createReference, Hl7Message, MedplumClient } from '@medplum/core';
 import { Encounter, Patient } from '@medplum/fhirtypes';
 
 export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message>): Promise<Hl7Message> {
@@ -92,7 +92,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
         reference: 'Patient/' + patient.id,
       },
       class: { code: 'AMB' },
-      location: [{ location: { reference: 'Location/' + location } }],
+      location: location ? [{ location: createReference(location) }] : undefined,
     });
   } else if (messageSubtype === 'A08') {
     let encounter = await medplum.searchOne('Encounter', 'subject=Patient/' + patient.id + '&status=arrived');

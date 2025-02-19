@@ -1,5 +1,6 @@
 import { Redis } from 'ioredis';
-import { MedplumServerConfig, loadTestConfig } from './config';
+import { loadTestConfig } from './config/loader';
+import { MedplumServerConfig } from './config/types';
 import { closeRedis, getRedis, getRedisSubscriber, getRedisSubscriberCount, initRedis } from './redis';
 
 describe('Redis', () => {
@@ -58,9 +59,9 @@ describe('Redis', () => {
 
     test('Disconnecting a subscriber removes it from the list', async () => {
       initRedis(config.redis);
-      expect(getRedisSubscriberCount()).toEqual(0);
+      expect(getRedisSubscriberCount()).toStrictEqual(0);
       const subscriber = getRedisSubscriber();
-      expect(getRedisSubscriberCount()).toEqual(1);
+      expect(getRedisSubscriberCount()).toStrictEqual(1);
       subscriber.disconnect();
 
       let reject: (err: Error) => void;
@@ -79,7 +80,7 @@ describe('Redis', () => {
       }, 3500);
 
       await expect(closePromise).resolves.toBeUndefined();
-      expect(getRedisSubscriberCount()).toEqual(0);
+      expect(getRedisSubscriberCount()).toStrictEqual(0);
       clearTimeout(timer);
 
       await closeRedis();

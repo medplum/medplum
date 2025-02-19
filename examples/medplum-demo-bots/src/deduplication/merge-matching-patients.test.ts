@@ -51,12 +51,12 @@ describe('Deduplication', () => {
     expect(result.src.id).toBe('src');
     expect(result.target.id).toBe('target');
 
-    expect(result.src.link).toEqual([
+    expect(result.src.link).toStrictEqual([
       { other: { reference: 'Patient/target', display: 'Lisa Simpson' }, type: 'replaced-by' },
     ]);
     expect(result.src.active).toBe(false);
 
-    expect(result.target.link).toEqual([
+    expect(result.target.link).toStrictEqual([
       { other: { reference: 'Patient/src', display: 'Homer Simpson' }, type: 'replaces' },
     ]);
   });
@@ -79,7 +79,7 @@ describe('Deduplication', () => {
 
     expect(result.src.link?.length).toBe(1);
     expect(result.target.link?.length).toBe(2);
-    expect(result.target.link?.[1]).toEqual({
+    expect(result.target.link?.[1]).toStrictEqual({
       other: { display: 'Homer Simpson', reference: 'Patient/src' },
       type: 'replaces',
     });
@@ -128,10 +128,10 @@ describe('Deduplication', () => {
     const result = mergePatientRecords(srcPatient, targetPatient, fields);
 
     // Assertions
-    expect(result.src).toEqual(srcPatient);
+    expect(result.src).toStrictEqual(srcPatient);
     expect(result.target.id).toBe('target');
     expect(result.target.address).toBe(fields.address);
-    expect(result.target.identifier).toEqual([
+    expect(result.target.identifier).toStrictEqual([
       { use: 'official', system: 'http://bar.org', value: '456' },
       { use: 'old', system: 'http://foo.org', value: '123' },
     ]);
@@ -155,10 +155,10 @@ describe('Deduplication', () => {
 
     const result = mergePatientRecords(srcPatient, targetPatient, fields);
 
-    expect(result.src).toEqual(srcPatient);
+    expect(result.src).toStrictEqual(srcPatient);
     expect(result.target.id).toBe('target');
     expect(result.target.address).toBe(fields.address);
-    expect(result.target.identifier).toEqual([{ use: 'usual', value: '123', system: 'http://example.org' }]);
+    expect(result.target.identifier).toStrictEqual([{ use: 'usual', value: '123', system: 'http://example.org' }]);
   });
 
   test('Should rewrite Clinical Resource to new patient', async () => {
@@ -195,7 +195,7 @@ describe('Deduplication', () => {
 
     await updateResourceReferences(client, srcPatient, targetPatient, 'ServiceRequest');
     const clinicalResourceUpdated = (await client.readResource('ServiceRequest', '123')) as ServiceRequest;
-    expect(clinicalResourceUpdated.subject).toEqual({ reference: 'Patient/target' });
+    expect(clinicalResourceUpdated.subject).toStrictEqual({ reference: 'Patient/target' });
   });
 
   describe('Patients already linked', async () => {

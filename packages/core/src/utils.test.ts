@@ -121,66 +121,74 @@ describe('Core Utils', () => {
     expect(() => parseReference({ reference: 'Patient' })).toThrow(OperationOutcomeError);
     expect(() => parseReference({ reference: '/' })).toThrow(OperationOutcomeError);
     expect(() => parseReference({ reference: 'Patient/' })).toThrow(OperationOutcomeError);
-    expect(parseReference({ reference: 'Patient/123' })).toEqual(['Patient', '123']);
+    expect(parseReference({ reference: 'Patient/123' })).toStrictEqual(['Patient', '123']);
 
     // Destructuring test
     const [resourceType, id] = parseReference({ reference: 'Patient/123' });
-    expect(resourceType).toEqual('Patient');
-    expect(id).toEqual('123');
+    expect(resourceType).toStrictEqual('Patient');
+    expect(id).toStrictEqual('123');
   });
 
   test('isProfileResource', () => {
-    expect(isProfileResource({ resourceType: 'Patient' })).toEqual(true);
-    expect(isProfileResource({ resourceType: 'Practitioner' })).toEqual(true);
-    expect(isProfileResource({ resourceType: 'RelatedPerson', patient: { reference: 'Patient/123' } })).toEqual(true);
-    expect(isProfileResource({ resourceType: 'Observation', status: 'final', code: { text: 'test' } })).toEqual(false);
+    expect(isProfileResource({ resourceType: 'Patient' })).toStrictEqual(true);
+    expect(isProfileResource({ resourceType: 'Practitioner' })).toStrictEqual(true);
+    expect(isProfileResource({ resourceType: 'RelatedPerson', patient: { reference: 'Patient/123' } })).toStrictEqual(
+      true
+    );
+    expect(isProfileResource({ resourceType: 'Observation', status: 'final', code: { text: 'test' } })).toStrictEqual(
+      false
+    );
   });
 
   test('getDisplayString', () => {
-    expect(getDisplayString({ resourceType: 'Patient', name: [{ family: 'Smith' }] })).toEqual('Smith');
-    expect(getDisplayString({ resourceType: 'Patient', id: '123', name: [] })).toEqual('Patient/123');
-    expect(getDisplayString({ resourceType: 'Observation', id: '123' } as Observation)).toEqual('Observation/123');
-    expect(getDisplayString({ resourceType: 'Observation', id: '123', code: {} } as Observation)).toEqual(
+    expect(getDisplayString({ resourceType: 'Patient', name: [{ family: 'Smith' }] })).toStrictEqual('Smith');
+    expect(getDisplayString({ resourceType: 'Patient', id: '123', name: [] })).toStrictEqual('Patient/123');
+    expect(getDisplayString({ resourceType: 'Observation', id: '123' } as Observation)).toStrictEqual(
+      'Observation/123'
+    );
+    expect(getDisplayString({ resourceType: 'Observation', id: '123', code: {} } as Observation)).toStrictEqual(
       'Observation/123'
     );
     expect(
       getDisplayString({ resourceType: 'Observation', id: '123', code: { text: 'TESTOSTERONE' } } as Observation)
-    ).toEqual('TESTOSTERONE');
-    expect(getDisplayString({ resourceType: 'ClientApplication', id: '123' })).toEqual('ClientApplication/123');
+    ).toStrictEqual('TESTOSTERONE');
+    expect(getDisplayString({ resourceType: 'ClientApplication', id: '123' })).toStrictEqual('ClientApplication/123');
     expect(
       getDisplayString({
         resourceType: 'ClientApplication',
         id: '123',
         name: 'foo',
       })
-    ).toEqual('foo');
+    ).toStrictEqual('foo');
     expect(
       getDisplayString({
         resourceType: 'Device',
         deviceName: [{ type: 'model-name', name: 'Foo' }],
       })
-    ).toEqual('Foo');
-    expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [{} as DeviceDeviceName] })).toEqual(
+    ).toStrictEqual('Foo');
+    expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [{} as DeviceDeviceName] })).toStrictEqual(
       'Device/123'
     );
-    expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [] })).toEqual('Device/123');
-    expect(getDisplayString({ resourceType: 'User', email: 'foo@example.com' } as User)).toEqual('foo@example.com');
-    expect(getDisplayString({ resourceType: 'User', id: '123' } as User)).toEqual('User/123');
-    expect(getDisplayString({ resourceType: 'Bot', id: '123', code: 'console.log()' })).toEqual('Bot/123');
+    expect(getDisplayString({ resourceType: 'Device', id: '123', deviceName: [] })).toStrictEqual('Device/123');
+    expect(getDisplayString({ resourceType: 'User', email: 'foo@example.com' } as User)).toStrictEqual(
+      'foo@example.com'
+    );
+    expect(getDisplayString({ resourceType: 'User', id: '123' } as User)).toStrictEqual('User/123');
+    expect(getDisplayString({ resourceType: 'Bot', id: '123', code: 'console.log()' })).toStrictEqual('Bot/123');
     expect(
       getDisplayString({
         resourceType: 'AllergyIntolerance',
         patient: { reference: 'Patient/123' },
         code: { text: 'Peanut' },
       })
-    ).toEqual('Peanut');
+    ).toStrictEqual('Peanut');
     expect(
       getDisplayString({
         resourceType: 'AllergyIntolerance',
         patient: { reference: 'Patient/123' },
         code: { coding: [{ code: 'Peanut' }] },
       })
-    ).toEqual('Peanut');
+    ).toStrictEqual('Peanut');
     expect(
       getDisplayString({
         resourceType: 'MedicationRequest',
@@ -189,7 +197,7 @@ describe('Core Utils', () => {
         intent: 'order',
         subject: { reference: 'Patient/123' },
       })
-    ).toEqual('MedicationRequest/123');
+    ).toStrictEqual('MedicationRequest/123');
     expect(
       getDisplayString({
         resourceType: 'MedicationRequest',
@@ -198,8 +206,8 @@ describe('Core Utils', () => {
         subject: { reference: 'Patient/123' },
         medicationCodeableConcept: { text: 'foo' },
       })
-    ).toEqual('foo');
-    expect(getDisplayString({ resourceType: 'PractitionerRole', code: [{ text: 'foo' }] })).toEqual('foo');
+    ).toStrictEqual('foo');
+    expect(getDisplayString({ resourceType: 'PractitionerRole', code: [{ text: 'foo' }] })).toStrictEqual('foo');
     expect(
       getDisplayString({
         resourceType: 'Subscription',
@@ -209,7 +217,7 @@ describe('Core Utils', () => {
         criteria: '',
         channel: { type: 'rest-hook' },
       })
-    ).toEqual('Subscription/123');
+    ).toStrictEqual('Subscription/123');
     expect(
       getDisplayString({
         resourceType: 'Subscription',
@@ -218,7 +226,7 @@ describe('Core Utils', () => {
         criteria: 'Observation?code=123',
         channel: { type: 'rest-hook' },
       })
-    ).toEqual('Observation?code=123');
+    ).toStrictEqual('Observation?code=123');
   });
 
   const EMPTY = [true, false];
@@ -292,7 +300,7 @@ describe('Core Utils', () => {
           },
         ],
       })
-    ).toEqual('http://abc/xyz.jpg');
+    ).toStrictEqual('http://abc/xyz.jpg');
     expect(
       getImageSrc({
         resourceType: 'Bot',
@@ -301,27 +309,37 @@ describe('Core Utils', () => {
           contentType: 'image/jpeg',
         },
       })
-    ).toEqual('http://abc/xyz.jpg');
+    ).toStrictEqual('http://abc/xyz.jpg');
     expect(getImageSrc({ resourceType: 'Bot' })).toBeUndefined();
     expect(getImageSrc({ resourceType: 'Bot', photo: {} })).toBeUndefined();
   });
 
   test('Convert ArrayBuffer to hex string', () => {
-    const input = new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const output = arrayBufferToHex(input);
-    expect(output).toBe('000102030405060708090a');
+    expect(arrayBufferToHex(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe('000102030405060708090a');
+    expect(arrayBufferToHex(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe('000102030405060708090a');
+    expect(arrayBufferToHex(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe(
+      '000000000100000002000000030000000400000005000000060000000700000008000000090000000a000000'
+    );
+    expect(arrayBufferToHex(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe(
+      '000000000100000002000000030000000400000005000000060000000700000008000000090000000a000000'
+    );
   });
 
   test('Convert ArrayBuffer to base-64 encoded string', () => {
-    const input = new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    const output = arrayBufferToBase64(input);
-    expect(output).toBe('AAECAwQFBgcICQo=');
+    expect(arrayBufferToBase64(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe('AAECAwQFBgcICQo=');
+    expect(arrayBufferToBase64(new Uint8Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe('AAECAwQFBgcICQo=');
+    expect(arrayBufferToBase64(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).toBe(
+      'AAAAAAEAAAACAAAAAwAAAAQAAAAFAAAABgAAAAcAAAAIAAAACQAAAAoAAAA='
+    );
+    expect(arrayBufferToBase64(new Uint32Array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).buffer)).toBe(
+      'AAAAAAEAAAACAAAAAwAAAAQAAAAFAAAABgAAAAcAAAAIAAAACQAAAAoAAAA='
+    );
   });
 
   test('Get date property', () => {
     expect(getDateProperty(undefined)).toBeUndefined();
     expect(getDateProperty('')).toBeUndefined();
-    expect(getDateProperty('2020-01-01')).toEqual(new Date('2020-01-01'));
+    expect(getDateProperty('2020-01-01')).toStrictEqual(new Date('2020-01-01'));
   });
 
   test('Calculate age', () => {
@@ -345,17 +363,17 @@ describe('Core Utils', () => {
   });
 
   test('Calculate age string', () => {
-    expect(calculateAgeString('2020-01-01', '2020-01-01')).toEqual('000D');
-    expect(calculateAgeString('2020-01-01', '2020-01-02')).toEqual('001D');
-    expect(calculateAgeString('2020-01-01', '2020-02-01')).toEqual('001M');
-    expect(calculateAgeString('2020-01-01', '2020-02-02')).toEqual('001M');
-    expect(calculateAgeString('2020-01-01', '2020-03-01')).toEqual('002M');
-    expect(calculateAgeString('2020-01-01', '2020-03-02')).toEqual('002M');
-    expect(calculateAgeString('2020-01-01', '2021-01-01')).toEqual('012M');
-    expect(calculateAgeString('2020-01-01', '2021-01-02')).toEqual('012M');
-    expect(calculateAgeString('2020-01-01', '2021-02-01')).toEqual('013M');
-    expect(calculateAgeString('2020-01-01', '2021-02-02')).toEqual('013M');
-    expect(calculateAgeString('2020-01-01', '2022-01-01')).toEqual('002Y');
+    expect(calculateAgeString('2020-01-01', '2020-01-01')).toStrictEqual('000D');
+    expect(calculateAgeString('2020-01-01', '2020-01-02')).toStrictEqual('001D');
+    expect(calculateAgeString('2020-01-01', '2020-02-01')).toStrictEqual('001M');
+    expect(calculateAgeString('2020-01-01', '2020-02-02')).toStrictEqual('001M');
+    expect(calculateAgeString('2020-01-01', '2020-03-01')).toStrictEqual('002M');
+    expect(calculateAgeString('2020-01-01', '2020-03-02')).toStrictEqual('002M');
+    expect(calculateAgeString('2020-01-01', '2021-01-01')).toStrictEqual('012M');
+    expect(calculateAgeString('2020-01-01', '2021-01-02')).toStrictEqual('012M');
+    expect(calculateAgeString('2020-01-01', '2021-02-01')).toStrictEqual('013M');
+    expect(calculateAgeString('2020-01-01', '2021-02-02')).toStrictEqual('013M');
+    expect(calculateAgeString('2020-01-01', '2022-01-01')).toStrictEqual('002Y');
   });
 
   test('Get Questionnaire answers', () => {
@@ -511,13 +529,15 @@ describe('Core Utils', () => {
     expect(getIdentifier({ identifier: {} } as unknown as Resource, 'x')).toBeUndefined();
 
     expect(getIdentifier({ resourceType: 'Patient', identifier: [] }, 'x')).toBeUndefined();
-    expect(getIdentifier({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] }, 'x')).toEqual('y');
+    expect(getIdentifier({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] }, 'x')).toStrictEqual(
+      'y'
+    );
     expect(getIdentifier({ resourceType: 'Patient', identifier: [{ system: 'y', value: 'y' }] }, 'x')).toBeUndefined();
 
     expect(getIdentifier({ resourceType: 'SpecimenDefinition', identifier: {} }, 'x')).toBeUndefined();
-    expect(getIdentifier({ resourceType: 'SpecimenDefinition', identifier: { system: 'x', value: 'y' } }, 'x')).toEqual(
-      'y'
-    );
+    expect(
+      getIdentifier({ resourceType: 'SpecimenDefinition', identifier: { system: 'x', value: 'y' } }, 'x')
+    ).toStrictEqual('y');
     expect(
       getIdentifier({ resourceType: 'SpecimenDefinition', identifier: { system: 'y', value: 'y' } }, 'x')
     ).toBeUndefined();
@@ -526,15 +546,15 @@ describe('Core Utils', () => {
   test('Set identifier', () => {
     const r1: Patient = { resourceType: 'Patient' };
     setIdentifier(r1, 'x', 'y');
-    expect(r1).toEqual({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] });
+    expect(r1).toStrictEqual({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] });
 
     const r2: Patient = { resourceType: 'Patient', identifier: [] };
     setIdentifier(r2, 'x', 'y');
-    expect(r2).toEqual({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] });
+    expect(r2).toStrictEqual({ resourceType: 'Patient', identifier: [{ system: 'x', value: 'y' }] });
 
     const r3: Patient = { resourceType: 'Patient', identifier: [{ system: 'a', value: 'b' }] };
     setIdentifier(r3, 'x', 'y');
-    expect(r3).toEqual({
+    expect(r3).toStrictEqual({
       resourceType: 'Patient',
       identifier: [
         { system: 'a', value: 'b' },
@@ -544,7 +564,7 @@ describe('Core Utils', () => {
 
     const r4: Patient = { resourceType: 'Patient', identifier: [{ system: 'x', value: 'b' }] };
     setIdentifier(r4, 'x', 'y');
-    expect(r4).toEqual({
+    expect(r4).toStrictEqual({
       resourceType: 'Patient',
       identifier: [{ system: 'x', value: 'y' }],
     });
@@ -621,17 +641,17 @@ describe('Core Utils', () => {
   });
 
   test('Stringify', () => {
-    expect(stringify(null)).toBeUndefined();
-    expect(stringify(undefined)).toBeUndefined();
-    expect(stringify('foo')).toEqual('"foo"');
-    expect(stringify({ x: 'y' })).toEqual('{"x":"y"}');
-    expect(stringify({ x: 123 })).toEqual('{"x":123}');
-    expect(stringify({ x: undefined })).toEqual('{}');
-    expect(stringify({ x: null })).toEqual('{}');
-    expect(stringify({ x: {} })).toEqual('{}');
-    expect(stringify({ x: { y: 'z' } })).toEqual('{"x":{"y":"z"}}');
-    expect(stringify({ x: 2 }, true)).toEqual('{\n  "x": 2\n}');
-    expect(stringify({ resourceType: 'Patient', address: [{ line: [''] }] })).toEqual(
+    expect(stringify(null)).toStrictEqual('');
+    expect(stringify(undefined)).toStrictEqual('');
+    expect(stringify('foo')).toStrictEqual('"foo"');
+    expect(stringify({ x: 'y' })).toStrictEqual('{"x":"y"}');
+    expect(stringify({ x: 123 })).toStrictEqual('{"x":123}');
+    expect(stringify({ x: undefined })).toStrictEqual('{}');
+    expect(stringify({ x: null })).toStrictEqual('{}');
+    expect(stringify({ x: {} })).toStrictEqual('{}');
+    expect(stringify({ x: { y: 'z' } })).toStrictEqual('{"x":{"y":"z"}}');
+    expect(stringify({ x: 2 }, true)).toStrictEqual('{\n  "x": 2\n}');
+    expect(stringify({ resourceType: 'Patient', address: [{ line: [''] }] })).toStrictEqual(
       '{"resourceType":"Patient","address":[{"line":[""]}]}'
     );
   });
@@ -649,68 +669,68 @@ describe('Core Utils', () => {
     expect(deepEquals('', '')).toBe(true);
 
     // Numbers
-    expect(deepEquals({ value: 0 }, { value: 0 })).toEqual(true);
-    expect(deepEquals({ value: 0 }, { value: 1 })).toEqual(false);
-    expect(deepEquals({ value: 0 }, { value: true })).toEqual(false);
-    expect(deepEquals({ value: 0 }, { value: 'x' })).toEqual(false);
-    expect(deepEquals({ value: 0 }, { value: {} })).toEqual(false);
+    expect(deepEquals({ value: 0 }, { value: 0 })).toStrictEqual(true);
+    expect(deepEquals({ value: 0 }, { value: 1 })).toStrictEqual(false);
+    expect(deepEquals({ value: 0 }, { value: true })).toStrictEqual(false);
+    expect(deepEquals({ value: 0 }, { value: 'x' })).toStrictEqual(false);
+    expect(deepEquals({ value: 0 }, { value: {} })).toStrictEqual(false);
 
     // Booleans
-    expect(deepEquals({ value: true }, { value: true })).toEqual(true);
-    expect(deepEquals({ value: true }, { value: false })).toEqual(false);
-    expect(deepEquals({ value: true }, { value: 0 })).toEqual(false);
-    expect(deepEquals({ value: true }, { value: 'x' })).toEqual(false);
-    expect(deepEquals({ value: true }, { value: {} })).toEqual(false);
+    expect(deepEquals({ value: true }, { value: true })).toStrictEqual(true);
+    expect(deepEquals({ value: true }, { value: false })).toStrictEqual(false);
+    expect(deepEquals({ value: true }, { value: 0 })).toStrictEqual(false);
+    expect(deepEquals({ value: true }, { value: 'x' })).toStrictEqual(false);
+    expect(deepEquals({ value: true }, { value: {} })).toStrictEqual(false);
 
     // Strings
-    expect(deepEquals({ value: 'x' }, { value: 'x' })).toEqual(true);
-    expect(deepEquals({ value: 'x' }, { value: 'y' })).toEqual(false);
-    expect(deepEquals({ value: 'x' }, { value: 0 })).toEqual(false);
-    expect(deepEquals({ value: 'x' }, { value: true })).toEqual(false);
-    expect(deepEquals({ value: 'x' }, { value: {} })).toEqual(false);
+    expect(deepEquals({ value: 'x' }, { value: 'x' })).toStrictEqual(true);
+    expect(deepEquals({ value: 'x' }, { value: 'y' })).toStrictEqual(false);
+    expect(deepEquals({ value: 'x' }, { value: 0 })).toStrictEqual(false);
+    expect(deepEquals({ value: 'x' }, { value: true })).toStrictEqual(false);
+    expect(deepEquals({ value: 'x' }, { value: {} })).toStrictEqual(false);
 
     // Objects
-    expect(deepEquals({ value: {} }, { value: {} })).toEqual(true);
-    expect(deepEquals({ value: { x: 1 } }, { value: { x: 1 } })).toEqual(true);
-    expect(deepEquals({ value: { x: 1, y: '2' } }, { value: { x: 1, y: '2' } })).toEqual(true);
-    expect(deepEquals({ value: { x: 1, y: '2' } }, { value: { y: '2', x: 1 } })).toEqual(true);
-    expect(deepEquals({ value: { x: 1, y: '2', z: { n: 1 } } }, { value: { x: 1, y: '2', z: { n: 1 } } })).toEqual(
-      true
-    );
-    expect(deepEquals({ value: { x: 1, y: '2', z: { n: 1 } } }, { value: { y: '2', x: 1, z: { n: 1 } } })).toEqual(
-      true
-    );
-    expect(deepEquals({ value: { x: 1 } }, { value: { x: 2 } })).toEqual(false);
-    expect(deepEquals({ value: { x: 1 } }, { value: { y: 1 } })).toEqual(false);
-    expect(deepEquals({ value: 1 }, { value: { value: 1 } })).toEqual(false);
+    expect(deepEquals({ value: {} }, { value: {} })).toStrictEqual(true);
+    expect(deepEquals({ value: { x: 1 } }, { value: { x: 1 } })).toStrictEqual(true);
+    expect(deepEquals({ value: { x: 1, y: '2' } }, { value: { x: 1, y: '2' } })).toStrictEqual(true);
+    expect(deepEquals({ value: { x: 1, y: '2' } }, { value: { y: '2', x: 1 } })).toStrictEqual(true);
+    expect(
+      deepEquals({ value: { x: 1, y: '2', z: { n: 1 } } }, { value: { x: 1, y: '2', z: { n: 1 } } })
+    ).toStrictEqual(true);
+    expect(
+      deepEquals({ value: { x: 1, y: '2', z: { n: 1 } } }, { value: { y: '2', x: 1, z: { n: 1 } } })
+    ).toStrictEqual(true);
+    expect(deepEquals({ value: { x: 1 } }, { value: { x: 2 } })).toStrictEqual(false);
+    expect(deepEquals({ value: { x: 1 } }, { value: { y: 1 } })).toStrictEqual(false);
+    expect(deepEquals({ value: 1 }, { value: { value: 1 } })).toStrictEqual(false);
 
     // Arrays
-    expect(deepEquals({ value: [] }, { value: [] })).toEqual(true);
-    expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2, 3] })).toEqual(true);
-    expect(deepEquals({ value: [] }, { value: [1] })).toEqual(false);
-    expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2] })).toEqual(false);
-    expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2, 4] })).toEqual(false);
-    expect(deepEquals({ value: [] }, { value: [true] })).toEqual(false);
-    expect(deepEquals({ value: [] }, { value: [{}] })).toEqual(false);
-    expect(deepEquals({ value: [1] }, { value: { value: 1 } })).toEqual(false);
+    expect(deepEquals({ value: [] }, { value: [] })).toStrictEqual(true);
+    expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2, 3] })).toStrictEqual(true);
+    expect(deepEquals({ value: [] }, { value: [1] })).toStrictEqual(false);
+    expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2] })).toStrictEqual(false);
+    expect(deepEquals({ value: [1, 2, 3] }, { value: [1, 2, 4] })).toStrictEqual(false);
+    expect(deepEquals({ value: [] }, { value: [true] })).toStrictEqual(false);
+    expect(deepEquals({ value: [] }, { value: [{}] })).toStrictEqual(false);
+    expect(deepEquals({ value: [1] }, { value: { value: 1 } })).toStrictEqual(false);
 
     // Resources
-    expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Patient' })).toEqual(true);
-    expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Observation' })).toEqual(false);
-    expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Patient', x: 'y' })).toEqual(false);
-    expect(deepEquals({ resourceType: 'Patient', x: 'y' }, { resourceType: 'Patient' })).toEqual(false);
+    expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Patient' })).toStrictEqual(true);
+    expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Observation' })).toStrictEqual(false);
+    expect(deepEquals({ resourceType: 'Patient' }, { resourceType: 'Patient', x: 'y' })).toStrictEqual(false);
+    expect(deepEquals({ resourceType: 'Patient', x: 'y' }, { resourceType: 'Patient' })).toStrictEqual(false);
     expect(
       deepEquals(
         { resourceType: 'Patient', meta: { versionId: '1' } },
         { resourceType: 'Patient', meta: { versionId: '1' } }
       )
-    ).toEqual(true);
+    ).toStrictEqual(true);
     expect(
       deepEquals(
         { resourceType: 'Patient', meta: { lastUpdated: '1' } },
         { resourceType: 'Patient', meta: { lastUpdated: '1' } }
       )
-    ).toEqual(true);
+    ).toStrictEqual(true);
 
     // Ignore changes to certain meta fields
     expect(
@@ -718,38 +738,38 @@ describe('Core Utils', () => {
         { resourceType: 'Patient', meta: { versionId: '1' } },
         { resourceType: 'Patient', meta: { versionId: '2' } }
       )
-    ).toEqual(true);
+    ).toStrictEqual(true);
     expect(
       deepEquals(
         { resourceType: 'Patient', meta: { lastUpdated: '1' } },
         { resourceType: 'Patient', meta: { lastUpdated: '2' } }
       )
-    ).toEqual(true);
+    ).toStrictEqual(true);
     expect(
       deepEquals({ resourceType: 'Patient', meta: { author: '1' } }, { resourceType: 'Patient', meta: { author: '2' } })
-    ).toEqual(true);
+    ).toStrictEqual(true);
 
     // Functions
     const onConnect = (): void => undefined;
-    expect(deepEquals({ onConnect }, { onConnect })).toEqual(true);
-    expect(deepEquals({ onConnect: () => undefined }, { onConnect: () => undefined })).toEqual(false);
+    expect(deepEquals({ onConnect }, { onConnect })).toStrictEqual(true);
+    expect(deepEquals({ onConnect: () => undefined }, { onConnect: () => undefined })).toStrictEqual(false);
   });
 
   test('deepIncludes', () => {
-    expect(deepIncludes({ value: 1 }, { value: 1 })).toEqual(true);
-    expect(deepIncludes({ value: 1 }, { value: 2 })).toEqual(false);
-    expect(deepIncludes({ value: 1 }, { value: {} })).toEqual(false);
-    expect(deepIncludes({ value: {} }, { value: {} })).toEqual(true);
-    expect(deepIncludes({ value: { x: 1 } }, { value: { x: 1 } })).toEqual(true);
+    expect(deepIncludes({ value: 1 }, { value: 1 })).toStrictEqual(true);
+    expect(deepIncludes({ value: 1 }, { value: 2 })).toStrictEqual(false);
+    expect(deepIncludes({ value: 1 }, { value: {} })).toStrictEqual(false);
+    expect(deepIncludes({ value: {} }, { value: {} })).toStrictEqual(true);
+    expect(deepIncludes({ value: { x: 1 } }, { value: { x: 1 } })).toStrictEqual(true);
 
-    expect(deepIncludes({ value: { x: 1, y: '2' } }, { value: { x: 1, y: '2', z: 4 } })).toEqual(false);
-    expect(deepIncludes({ value: { x: 1, y: '2', z: 4 } }, { value: { x: 1, y: '2' } })).toEqual(true);
+    expect(deepIncludes({ value: { x: 1, y: '2' } }, { value: { x: 1, y: '2', z: 4 } })).toStrictEqual(false);
+    expect(deepIncludes({ value: { x: 1, y: '2', z: 4 } }, { value: { x: 1, y: '2' } })).toStrictEqual(true);
 
-    expect(deepIncludes([{ value: 1 }, { value: 2 }], [{ value: 2 }, { value: 1 }, { y: 6 }])).toEqual(false);
-    expect(deepIncludes([{ value: 2 }, { value: 1 }, { y: 6 }], [{ value: 1 }, { value: 2 }])).toEqual(true);
+    expect(deepIncludes([{ value: 1 }, { value: 2 }], [{ value: 2 }, { value: 1 }, { y: 6 }])).toStrictEqual(false);
+    expect(deepIncludes([{ value: 2 }, { value: 1 }, { y: 6 }], [{ value: 1 }, { value: 2 }])).toStrictEqual(true);
 
-    expect(deepIncludes([{ value: 1 }], { value: 1 })).toEqual(false);
-    expect(deepIncludes([{ value: 1 }], [{ y: 2, z: 3 }])).toEqual(false);
+    expect(deepIncludes([{ value: 1 }], { value: 1 })).toStrictEqual(false);
+    expect(deepIncludes([{ value: 1 }], [{ y: 2, z: 3 }])).toStrictEqual(false);
 
     const value = {
       type: 'CodeableConcept',
@@ -764,49 +784,49 @@ describe('Core Utils', () => {
         coding: [{ system: 'http://loinc.org', code: '8480-6' }],
       },
     };
-    expect(deepIncludes(value, pattern)).toEqual(true);
-    expect(deepIncludes(pattern, value)).toEqual(false);
+    expect(deepIncludes(value, pattern)).toStrictEqual(true);
+    expect(deepIncludes(pattern, value)).toStrictEqual(false);
   });
 
   test('deepClone', () => {
     const input = { foo: 'bar' };
     const output = deepClone(input);
-    expect(output).toEqual(input);
+    expect(output).toStrictEqual(input);
     expect(output).not.toBe(input);
 
     expect(deepClone(undefined)).toBeUndefined();
   });
 
   test('Capitalize', () => {
-    expect(capitalize('id')).toEqual('Id');
-    expect(capitalize('Id')).toEqual('Id');
-    expect(capitalize('foo')).toEqual('Foo');
-    expect(capitalize('FOO')).toEqual('FOO');
-    expect(capitalize('你好')).toEqual('你好');
-    expect(capitalize('dinç')).toEqual('Dinç');
+    expect(capitalize('id')).toStrictEqual('Id');
+    expect(capitalize('Id')).toStrictEqual('Id');
+    expect(capitalize('foo')).toStrictEqual('Foo');
+    expect(capitalize('FOO')).toStrictEqual('FOO');
+    expect(capitalize('你好')).toStrictEqual('你好');
+    expect(capitalize('dinç')).toStrictEqual('Dinç');
   });
 
   test('isLowerCase', () => {
-    expect(isLowerCase('a')).toEqual(true);
-    expect(isLowerCase('A')).toEqual(false);
-    expect(isLowerCase('3')).toEqual(false);
+    expect(isLowerCase('a')).toStrictEqual(true);
+    expect(isLowerCase('A')).toStrictEqual(false);
+    expect(isLowerCase('3')).toStrictEqual(false);
   });
 
   test('isComplexTypeCode', () => {
-    expect(isComplexTypeCode('url')).toEqual(false);
-    expect(isComplexTypeCode(PropertyType.SystemString)).toEqual(false);
-    expect(isComplexTypeCode('')).toEqual(false);
+    expect(isComplexTypeCode('url')).toStrictEqual(false);
+    expect(isComplexTypeCode(PropertyType.SystemString)).toStrictEqual(false);
+    expect(isComplexTypeCode('')).toStrictEqual(false);
   });
 
   test('getPathDifference', () => {
-    expect(getPathDifference('a', 'b')).toEqual(undefined);
-    expect(getPathDifference('a', 'a')).toEqual(undefined);
-    expect(getPathDifference('A', 'A')).toEqual(undefined);
-    expect(getPathDifference('a.b', 'a')).toEqual(undefined);
+    expect(getPathDifference('a', 'b')).toStrictEqual(undefined);
+    expect(getPathDifference('a', 'a')).toStrictEqual(undefined);
+    expect(getPathDifference('A', 'A')).toStrictEqual(undefined);
+    expect(getPathDifference('a.b', 'a')).toStrictEqual(undefined);
 
-    expect(getPathDifference('a', 'a.b')).toEqual('b');
-    expect(getPathDifference('A.b', 'A.b.c.d')).toEqual('c.d');
-    expect(getPathDifference('Patient.extension', 'Patient.extension.extension.value[x]')).toEqual(
+    expect(getPathDifference('a', 'a.b')).toStrictEqual('b');
+    expect(getPathDifference('A.b', 'A.b.c.d')).toStrictEqual('c.d');
+    expect(getPathDifference('Patient.extension', 'Patient.extension.extension.value[x]')).toStrictEqual(
       'extension.value[x]'
     );
   });
@@ -1189,7 +1209,7 @@ describe('Core Utils', () => {
     const expectedResult = observations[0];
 
     const result = findResourceByCode(observations, codeToFind, system);
-    expect(result).toEqual(expectedResult);
+    expect(result).toStrictEqual(expectedResult);
   });
 
   test('Result is undefined for not finding any matching code', () => {
@@ -1214,7 +1234,7 @@ describe('Core Utils', () => {
     const system = 'http://medplum.com';
 
     const result = findResourceByCode(observations, codeToFind, system);
-    expect(result).toEqual(undefined);
+    expect(result).toStrictEqual(undefined);
   });
 
   test('Find by code if code is string', () => {
@@ -1239,15 +1259,19 @@ describe('Core Utils', () => {
     const system = 'codeString';
 
     const result = findResourceByCode(observations, codeToFindAsString, system);
-    expect(result).toEqual(observations[0]);
+    expect(result).toStrictEqual(observations[0]);
   });
 
   test('splitN', () => {
     expect(
       splitN('_has:Observation:subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status', ':', 3)
-    ).toEqual(['_has', 'Observation', 'subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status']);
-    expect(splitN('organization', ':', 2)).toEqual(['organization']);
-    expect(splitN('system|', '|', 2)).toEqual(['system', '']);
+    ).toStrictEqual([
+      '_has',
+      'Observation',
+      'subject:encounter:Encounter._has:DiagnosticReport:encounter:result.status',
+    ]);
+    expect(splitN('organization', ':', 2)).toStrictEqual(['organization']);
+    expect(splitN('system|', '|', 2)).toStrictEqual(['system', '']);
   });
 
   test('lazy', () => {
@@ -1267,73 +1291,73 @@ describe('Core Utils', () => {
   });
 
   test('sortStringArray', () => {
-    expect(sortStringArray(['a', 'c', 'b'])).toEqual(['a', 'b', 'c']);
+    expect(sortStringArray(['a', 'c', 'b'])).toStrictEqual(['a', 'b', 'c']);
 
     const code1 = '\u00e9\u0394'; // "éΔ"
     const code2 = '\u0065\u0301\u0394'; // "éΔ" using Unicode combining marks
     const code3 = '\u0065\u0394'; // "eΔ"
-    expect(sortStringArray([code1, code2, code3])).toEqual([code3, code1, code2]);
+    expect(sortStringArray([code1, code2, code3])).toStrictEqual([code3, code1, code2]);
   });
 
   test('concatUrls -- Valid URLs', () => {
     // String base path with no trailing slash, relative path
-    expect(concatUrls('https://foo.com', 'ws/subscriptions-r4')).toEqual('https://foo.com/ws/subscriptions-r4');
+    expect(concatUrls('https://foo.com', 'ws/subscriptions-r4')).toStrictEqual('https://foo.com/ws/subscriptions-r4');
     // String base path with no trailing slash, absolute path
-    expect(concatUrls('https://foo.com', '/ws/subscriptions-r4')).toEqual('https://foo.com/ws/subscriptions-r4');
+    expect(concatUrls('https://foo.com', '/ws/subscriptions-r4')).toStrictEqual('https://foo.com/ws/subscriptions-r4');
     // String base path with trailing slash, relative path
-    expect(concatUrls('https://foo.com/', 'ws/subscriptions-r4')).toEqual('https://foo.com/ws/subscriptions-r4');
+    expect(concatUrls('https://foo.com/', 'ws/subscriptions-r4')).toStrictEqual('https://foo.com/ws/subscriptions-r4');
     // String base path with trailing slash, absolute path
-    expect(concatUrls('https://foo.com/', '/ws/subscriptions-r4')).toEqual('https://foo.com/ws/subscriptions-r4');
+    expect(concatUrls('https://foo.com/', '/ws/subscriptions-r4')).toStrictEqual('https://foo.com/ws/subscriptions-r4');
     // String base path with path after domain and no trailing slash, relative path
-    expect(concatUrls('https://foo.com/foo/bar', 'ws/subscriptions-r4')).toEqual(
+    expect(concatUrls('https://foo.com/foo/bar', 'ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // String base path with path after domain and no trailing slash, absolute path
-    expect(concatUrls('https://foo.com/foo/bar', '/ws/subscriptions-r4')).toEqual(
+    expect(concatUrls('https://foo.com/foo/bar', '/ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // String base path with path after domain and WITH trailing slash, relative path
-    expect(concatUrls('https://foo.com/foo/bar/', 'ws/subscriptions-r4')).toEqual(
+    expect(concatUrls('https://foo.com/foo/bar/', 'ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // String base path with path after domain and WITH trailing slash, absolute path
-    expect(concatUrls('https://foo.com/foo/bar/', '/ws/subscriptions-r4')).toEqual(
+    expect(concatUrls('https://foo.com/foo/bar/', '/ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // URL base path with no trailing slash, relative path
-    expect(concatUrls(new URL('https://foo.com'), 'ws/subscriptions-r4')).toEqual(
+    expect(concatUrls(new URL('https://foo.com'), 'ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/ws/subscriptions-r4'
     );
     // URL base path with no trailing slash, absolute path
-    expect(concatUrls(new URL('https://foo.com'), '/ws/subscriptions-r4')).toEqual(
+    expect(concatUrls(new URL('https://foo.com'), '/ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/ws/subscriptions-r4'
     );
     // URL base path with trailing slash, relative path
-    expect(concatUrls(new URL('https://foo.com/'), 'ws/subscriptions-r4')).toEqual(
+    expect(concatUrls(new URL('https://foo.com/'), 'ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/ws/subscriptions-r4'
     );
     // URL base path with trailing slash, absolute path
-    expect(concatUrls(new URL('https://foo.com/'), '/ws/subscriptions-r4')).toEqual(
+    expect(concatUrls(new URL('https://foo.com/'), '/ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/ws/subscriptions-r4'
     );
     // URL base path with path after domain and no trailing slash, relative path
-    expect(concatUrls(new URL('https://foo.com/foo/bar'), 'ws/subscriptions-r4')).toEqual(
+    expect(concatUrls(new URL('https://foo.com/foo/bar'), 'ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // URL base path with path after domain and no trailing slash, absolute path
-    expect(concatUrls(new URL('https://foo.com/foo/bar'), '/ws/subscriptions-r4')).toEqual(
+    expect(concatUrls(new URL('https://foo.com/foo/bar'), '/ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // URL base path with path after domain and WITH trailing slash, relative path
-    expect(concatUrls(new URL('https://foo.com/foo/bar/'), 'ws/subscriptions-r4')).toEqual(
+    expect(concatUrls(new URL('https://foo.com/foo/bar/'), 'ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // URL base path with path after domain and WITH trailing slash, absolute path
-    expect(concatUrls(new URL('https://foo.com/foo/bar/'), '/ws/subscriptions-r4')).toEqual(
+    expect(concatUrls(new URL('https://foo.com/foo/bar/'), '/ws/subscriptions-r4')).toStrictEqual(
       'https://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // Concatenating two full urls (return latter)
-    expect(concatUrls('https://foo.com/bar', 'https://bar.org/foo')).toEqual('https://bar.org/foo');
+    expect(concatUrls('https://foo.com/bar', 'https://bar.org/foo')).toStrictEqual('https://bar.org/foo');
   });
 
   test('concatUrls -- Invalid URLs', () => {
@@ -1343,99 +1367,107 @@ describe('Core Utils', () => {
 
   test('getWebSocketUrl', () => {
     // String base path with no trailing slash, relative path
-    expect(getWebSocketUrl('https://foo.com', 'ws/subscriptions-r4')).toEqual('wss://foo.com/ws/subscriptions-r4');
+    expect(getWebSocketUrl('https://foo.com', 'ws/subscriptions-r4')).toStrictEqual(
+      'wss://foo.com/ws/subscriptions-r4'
+    );
     // String base path with no trailing slash, absolute path
-    expect(getWebSocketUrl('https://foo.com', '/ws/subscriptions-r4')).toEqual('wss://foo.com/ws/subscriptions-r4');
+    expect(getWebSocketUrl('https://foo.com', '/ws/subscriptions-r4')).toStrictEqual(
+      'wss://foo.com/ws/subscriptions-r4'
+    );
     // String base path with trailing slash, relative path
-    expect(getWebSocketUrl('https://foo.com/', 'ws/subscriptions-r4')).toEqual('wss://foo.com/ws/subscriptions-r4');
+    expect(getWebSocketUrl('https://foo.com/', 'ws/subscriptions-r4')).toStrictEqual(
+      'wss://foo.com/ws/subscriptions-r4'
+    );
     // String base path with trailing slash, absolute path
-    expect(getWebSocketUrl('https://foo.com/', '/ws/subscriptions-r4')).toEqual('wss://foo.com/ws/subscriptions-r4');
+    expect(getWebSocketUrl('https://foo.com/', '/ws/subscriptions-r4')).toStrictEqual(
+      'wss://foo.com/ws/subscriptions-r4'
+    );
     // String base path with path after domain and no trailing slash, relative path
-    expect(getWebSocketUrl('https://foo.com/foo/bar', 'ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl('https://foo.com/foo/bar', 'ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // String base path with path after domain and no trailing slash, absolute path
-    expect(getWebSocketUrl('https://foo.com/foo/bar', '/ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl('https://foo.com/foo/bar', '/ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // String base path with path after domain and WITH trailing slash, relative path
-    expect(getWebSocketUrl('https://foo.com/foo/bar/', 'ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl('https://foo.com/foo/bar/', 'ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // String base path with path after domain and WITH trailing slash, absolute path
-    expect(getWebSocketUrl('https://foo.com/foo/bar/', '/ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl('https://foo.com/foo/bar/', '/ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // URL base path with no trailing slash, relative path
-    expect(getWebSocketUrl(new URL('https://foo.com'), 'ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl(new URL('https://foo.com'), 'ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/ws/subscriptions-r4'
     );
     // URL base path with no trailing slash, absolute path
-    expect(getWebSocketUrl(new URL('https://foo.com'), '/ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl(new URL('https://foo.com'), '/ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/ws/subscriptions-r4'
     );
     // URL base path with trailing slash, relative path
-    expect(getWebSocketUrl(new URL('https://foo.com/'), 'ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl(new URL('https://foo.com/'), 'ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/ws/subscriptions-r4'
     );
     // URL base path with trailing slash, absolute path
-    expect(getWebSocketUrl(new URL('https://foo.com/'), '/ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl(new URL('https://foo.com/'), '/ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/ws/subscriptions-r4'
     );
     // URL base path with path after domain and no trailing slash, relative path
-    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar'), 'ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar'), 'ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // URL base path with path after domain and no trailing slash, absolute path
-    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar'), '/ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar'), '/ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // URL base path with path after domain and WITH trailing slash, relative path
-    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar/'), 'ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar/'), 'ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/foo/bar/ws/subscriptions-r4'
     );
     // URL base path with path after domain and WITH trailing slash, absolute path
-    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar/'), '/ws/subscriptions-r4')).toEqual(
+    expect(getWebSocketUrl(new URL('https://foo.com/foo/bar/'), '/ws/subscriptions-r4')).toStrictEqual(
       'wss://foo.com/foo/bar/ws/subscriptions-r4'
     );
   });
 
   test('getQueryString', () => {
-    expect(getQueryString('?bestEhr=medplum')).toEqual('bestEhr=medplum');
+    expect(getQueryString('?bestEhr=medplum')).toStrictEqual('bestEhr=medplum');
     expect(
       getQueryString([
         ['bestEhr', 'medplum'],
         ['foo', 'bar'],
       ])
-    ).toEqual('bestEhr=medplum&foo=bar');
-    expect(getQueryString({ bestEhr: 'medplum', numberOne: true, medplumRanking: 1 })).toEqual(
+    ).toStrictEqual('bestEhr=medplum&foo=bar');
+    expect(getQueryString({ bestEhr: 'medplum', numberOne: true, medplumRanking: 1 })).toStrictEqual(
       'bestEhr=medplum&numberOne=true&medplumRanking=1'
     );
     expect(
       getQueryString({ bestEhr: 'medplum', numberOne: true, medplumRanking: 1, betterThanMedplum: undefined })
-    ).toEqual('bestEhr=medplum&numberOne=true&medplumRanking=1');
-    expect(getQueryString(new URLSearchParams({ bestEhr: 'medplum', numberOne: 'true', medplumRanking: '1' }))).toEqual(
-      'bestEhr=medplum&numberOne=true&medplumRanking=1'
-    );
-    expect(getQueryString(undefined)).toEqual('');
+    ).toStrictEqual('bestEhr=medplum&numberOne=true&medplumRanking=1');
+    expect(
+      getQueryString(new URLSearchParams({ bestEhr: 'medplum', numberOne: 'true', medplumRanking: '1' }))
+    ).toStrictEqual('bestEhr=medplum&numberOne=true&medplumRanking=1');
+    expect(getQueryString(undefined)).toStrictEqual('');
   });
 
   test('isValidHostname', () => {
-    expect(isValidHostname('foo')).toEqual(true);
-    expect(isValidHostname('foo.com')).toEqual(true);
-    expect(isValidHostname('foo.bar.com')).toEqual(true);
-    expect(isValidHostname('foo.org')).toEqual(true);
-    expect(isValidHostname('foo.bar.co.uk')).toEqual(true);
-    expect(isValidHostname('localhost')).toEqual(true);
-    expect(isValidHostname('LOCALHOST')).toEqual(true);
-    expect(isValidHostname('foo-bar-baz')).toEqual(true);
-    expect(isValidHostname('foo_bar')).toEqual(true);
-    expect(isValidHostname('foobar123')).toEqual(true);
+    expect(isValidHostname('foo')).toStrictEqual(true);
+    expect(isValidHostname('foo.com')).toStrictEqual(true);
+    expect(isValidHostname('foo.bar.com')).toStrictEqual(true);
+    expect(isValidHostname('foo.org')).toStrictEqual(true);
+    expect(isValidHostname('foo.bar.co.uk')).toStrictEqual(true);
+    expect(isValidHostname('localhost')).toStrictEqual(true);
+    expect(isValidHostname('LOCALHOST')).toStrictEqual(true);
+    expect(isValidHostname('foo-bar-baz')).toStrictEqual(true);
+    expect(isValidHostname('foo_bar')).toStrictEqual(true);
+    expect(isValidHostname('foobar123')).toStrictEqual(true);
 
-    expect(isValidHostname('foo.com/bar')).toEqual(false);
-    expect(isValidHostname('https://foo.com')).toEqual(false);
-    expect(isValidHostname('foo_-bar_-')).toEqual(false);
-    expect(isValidHostname('foo | rm -rf /')).toEqual(false);
+    expect(isValidHostname('foo.com/bar')).toStrictEqual(false);
+    expect(isValidHostname('https://foo.com')).toStrictEqual(false);
+    expect(isValidHostname('foo_-bar_-')).toStrictEqual(false);
+    expect(isValidHostname('foo | rm -rf /')).toStrictEqual(false);
   });
 });
 
@@ -1447,8 +1479,8 @@ describe('addProfileToResource', () => {
       name: [{ given: ['Given'], family: 'Family' }],
     };
     addProfileToResource(patient, profileUrl);
-    expect(patient.meta?.profile?.length ?? -1).toEqual(1);
-    expect(patient.meta?.profile).toEqual(expect.arrayContaining([profileUrl]));
+    expect(patient.meta?.profile?.length ?? -1).toStrictEqual(1);
+    expect(patient.meta?.profile).toStrictEqual(expect.arrayContaining([profileUrl]));
   });
 
   test('add profile URL to resource with empty profile array', async () => {
@@ -1459,8 +1491,8 @@ describe('addProfileToResource', () => {
       name: [{ given: ['Given'], family: 'Family' }],
     };
     addProfileToResource(patient, profileUrl);
-    expect(patient.meta?.profile?.length ?? -1).toEqual(1);
-    expect(patient.meta?.profile).toEqual(expect.arrayContaining([profileUrl]));
+    expect(patient.meta?.profile?.length ?? -1).toStrictEqual(1);
+    expect(patient.meta?.profile).toStrictEqual(expect.arrayContaining([profileUrl]));
   });
 
   test('add profile URL to resource with populated profile array', async () => {
@@ -1472,8 +1504,8 @@ describe('addProfileToResource', () => {
       name: [{ given: ['Given'], family: 'Family' }],
     };
     addProfileToResource(patient, profileUrl);
-    expect(patient.meta?.profile?.length ?? -1).toEqual(2);
-    expect(patient.meta?.profile).toEqual(expect.arrayContaining([profileUrl, existingProfileUrl]));
+    expect(patient.meta?.profile?.length ?? -1).toStrictEqual(2);
+    expect(patient.meta?.profile).toStrictEqual(expect.arrayContaining([profileUrl, existingProfileUrl]));
   });
 });
 
@@ -1503,8 +1535,8 @@ describe('mapByIdentifier', () => {
     const map = mapByIdentifier(bundle, 'http://example.com');
 
     expect(map.size).toBe(2);
-    expect(map.get('123')).toEqual(bundle.entry?.[0].resource);
-    expect(map.get('456')).toEqual(bundle.entry?.[1].resource);
+    expect(map.get('123')).toStrictEqual(bundle.entry?.[0].resource);
+    expect(map.get('456')).toStrictEqual(bundle.entry?.[1].resource);
   });
 
   test('returns empty Map when no matching identifier system', () => {
@@ -1531,25 +1563,25 @@ describe('mapByIdentifier', () => {
 describe('flatMapFilter', () => {
   test('maps and filters scalar values', () => {
     const input = [1, 2, 3];
-    expect(flatMapFilter(input, (x) => (x >= 2 ? x * x : undefined))).toEqual([4, 9]);
+    expect(flatMapFilter(input, (x) => (x >= 2 ? x * x : undefined))).toStrictEqual([4, 9]);
   });
 
   test('flattens nested arrays', () => {
     const input = [1, 2, 3];
-    expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, [x, x]] : undefined))).toEqual([2, 2, 2]);
+    expect(flatMapFilter(input, (x) => (x % 2 !== 1 ? [x, [x, x]] : undefined))).toStrictEqual([2, 2, 2]);
   });
 });
 
 describe('singularize', () => {
   test('Passes through single value', () => {
-    expect(singularize('foo')).toEqual('foo');
-    expect(singularize(false)).toEqual(false);
+    expect(singularize('foo')).toStrictEqual('foo');
+    expect(singularize(false)).toStrictEqual(false);
     expect(singularize(undefined)).toBeUndefined();
   });
 
   test('Takes first element of array input', () => {
-    expect(singularize(['foo'])).toEqual('foo');
-    expect(singularize([false])).toEqual(false);
+    expect(singularize(['foo'])).toStrictEqual('foo');
+    expect(singularize([false])).toStrictEqual(false);
     expect(singularize([])).toBeUndefined();
   });
 });

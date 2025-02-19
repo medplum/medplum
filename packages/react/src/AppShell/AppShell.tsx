@@ -28,7 +28,7 @@ export function AppShell(props: AppShellProps): JSX.Element {
 
   useEffect(() => {
     function eventListener(): void {
-      showNotification({ color: 'red', message: 'No connection to server', autoClose: false });
+      showNotification({ id: 'offline', color: 'red', message: 'No connection to server', autoClose: false });
     }
     medplum.addEventListener('offline', eventListener);
     return () => medplum.removeEventListener('offline', eventListener);

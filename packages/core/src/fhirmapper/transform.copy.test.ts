@@ -23,7 +23,7 @@ describe('FHIR Mapper transform - copy', () => {
     const input = [toTypedValue({ name: 'bob' })];
     const expected = [toTypedValue({ name: 'bob' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('single rule, single source, existing target', () => {
@@ -35,7 +35,7 @@ describe('FHIR Mapper transform - copy', () => {
     const input = [toTypedValue({ name: 'bob' }), toTypedValue({ size: 'average' })];
     const expected = [toTypedValue({ name: 'bob', size: 'average' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('single rule, multiple source contexts, multiple target transforms', () => {
@@ -47,7 +47,7 @@ describe('FHIR Mapper transform - copy', () => {
     const input = [toTypedValue({ name: 'bob', size: 'small' })];
     const expected = [toTypedValue({ firstName: 'bob', size: 'small' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('single rule, single source, multiple target transforms', () => {
@@ -59,7 +59,7 @@ describe('FHIR Mapper transform - copy', () => {
     const input = [toTypedValue({ name: 'bob' })];
     const expected = [toTypedValue({ name: 'bob', oldName: 'bob' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('multiple rules, single source, new target', () => {
@@ -73,7 +73,7 @@ describe('FHIR Mapper transform - copy', () => {
     const input = [toTypedValue({ name: 'bob', size: 'small', active: true })];
     const expected = [toTypedValue({ name: 'bob', size: 'small', activeStatus: true })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('multiple rules, multiple sources, new target', () => {
@@ -86,7 +86,7 @@ describe('FHIR Mapper transform - copy', () => {
     const input = [toTypedValue({ name: 'bob' }), toTypedValue({ size: 'small' })];
     const expected = [toTypedValue({ name: 'bob', size: 'small' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('multiple rules, single source, multiple new actual', () => {
@@ -99,7 +99,7 @@ describe('FHIR Mapper transform - copy', () => {
     const input = [toTypedValue({ name: 'bob', size: 'small' })];
     const expected = [toTypedValue({ name: 'bob' }), toTypedValue({ size: 'small' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('multiple rules, multiple single sources, multiple exiting actual', () => {
@@ -121,6 +121,6 @@ describe('FHIR Mapper transform - copy', () => {
       toTypedValue({ name: 'bob', size: 'small', active: true }),
     ];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 });

@@ -8,10 +8,10 @@ import {
   DeleteQuery,
   Disjunction,
   Expression,
-  SqlFunction,
   InsertQuery,
   Negation,
   SelectQuery,
+  SqlFunction,
   escapeLikeString,
 } from '../sql';
 
@@ -99,14 +99,12 @@ export abstract class LookupTable {
     }
 
     const exists = new SqlFunction('EXISTS', [
-      new SelectQuery(lookupTableName)
-        .column('resourceId')
-        .whereExpr(
-          new Conjunction([
-            new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
-            disjunction,
-          ])
-        ),
+      new SelectQuery(lookupTableName).whereExpr(
+        new Conjunction([
+          new Condition(new Column(table, 'id'), '=', new Column(lookupTableName, 'resourceId')),
+          disjunction,
+        ])
+      ),
     ]);
 
     if (filter.operator === FhirOperator.NOT_EQUALS || filter.operator === FhirOperator.NOT) {
@@ -167,5 +165,21 @@ export abstract class LookupTable {
     const tableName = this.getTableName(resource.resourceType);
     const resourceId = resource.id as string;
     await new DeleteQuery(tableName).where('resourceId', '=', resourceId).execute(client);
+  }
+
+  /**
+   * Purges resources of the specified type that were last updated before the specified date.
+   * This is only available to the system and super admin accounts.
+   * @param client - The database client.
+   * @param resourceType - The FHIR resource type.
+   * @param before - The date before which resources should be purged.
+   */
+  async purgeValuesBefore(client: Pool | PoolClient, resourceType: ResourceType, before: string): Promise<void> {
+    const lookupTableName = this.getTableName(resourceType);
+    await new DeleteQuery(lookupTableName)
+      .using(resourceType)
+      .where(new Column(lookupTableName, 'resourceId'), '=', new Column(resourceType, 'id'))
+      .where(new Column(resourceType, 'lastUpdated'), '<', before)
+      .execute(client);
   }
 }

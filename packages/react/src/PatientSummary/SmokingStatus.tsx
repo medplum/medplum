@@ -1,12 +1,12 @@
-import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
+import { Anchor, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { HTTP_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
+import { HTTP_HL7_ORG, LOINC, SNOMED, createReference, formatCodeableConcept } from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
-import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { Form } from '../Form/Form';
 import { killEvent } from '../utils/dom';
+import { ConceptBadge } from './ConceptBadge';
 
 // Smoking Status widget
 // See: https://build.fhir.org/ig/HL7/US-Core/StructureDefinition-us-core-smokingstatus.html
@@ -26,6 +26,7 @@ export interface SmokingStatusProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly smokingStatus?: Observation;
+  readonly onClickResource?: (resource: Observation) => void;
 }
 
 export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
@@ -105,11 +106,13 @@ export function SmokingStatus(props: SmokingStatusProps): JSX.Element {
         </Anchor>
       </Group>
       {smokingStatus?.valueCodeableConcept ? (
-        <Box>
-          <Badge variant="light">
-            <CodeableConceptDisplay value={smokingStatus.valueCodeableConcept} />
-          </Badge>
-        </Box>
+        <ConceptBadge<Observation>
+          key={smokingStatus.id}
+          resource={smokingStatus}
+          display={formatCodeableConcept(smokingStatus.valueCodeableConcept)}
+          onClick={props.onClickResource}
+          onEdit={() => open()}
+        />
       ) : (
         <Text>(none)</Text>
       )}

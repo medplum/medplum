@@ -5,7 +5,7 @@ import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { addTestUser, bundleContains, createTestProject, initTestAuth, withTestContext } from '../test.setup';
 import { DatabaseMode, getDatabasePool } from '../database';
 
@@ -63,7 +63,7 @@ describe('FHIR Routes', () => {
   test('Get CapabilityStatement anonymously', async () => {
     const res = await request(app).get(`/fhir/R4/metadata`);
     expect(res.status).toBe(200);
-    expect(res.body.resourceType).toEqual('CapabilityStatement');
+    expect(res.body.resourceType).toStrictEqual('CapabilityStatement');
   });
 
   test('Get CapabilityStatement authenticated', async () => {
@@ -71,7 +71,7 @@ describe('FHIR Routes', () => {
       .get(`/fhir/R4/metadata`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.body.resourceType).toEqual('CapabilityStatement');
+    expect(res.body.resourceType).toStrictEqual('CapabilityStatement');
   });
 
   test('Get versions anonymously', async () => {
@@ -83,7 +83,7 @@ describe('FHIR Routes', () => {
   test('Get SMART-on-FHIR configuration', async () => {
     const res = await request(app).get(`/fhir/R4/.well-known/smart-configuration`);
     expect(res.status).toBe(200);
-    expect(res.headers['content-type']).toEqual('application/json; charset=utf-8');
+    expect(res.headers['content-type']).toStrictEqual('application/json; charset=utf-8');
 
     // Required fields: https://build.fhir.org/ig/HL7/smart-app-launch/conformance.html#response
     expect(res.body.authorization_endpoint).toBeDefined();
@@ -94,7 +94,7 @@ describe('FHIR Routes', () => {
 
     const res2 = await request(app).get(`/fhir/R4/.well-known/smart-styles.json`);
     expect(res2.status).toBe(200);
-    expect(res2.headers['content-type']).toEqual('application/json; charset=utf-8');
+    expect(res2.headers['content-type']).toStrictEqual('application/json; charset=utf-8');
   });
 
   test('Invalid JSON', async () => {
@@ -118,7 +118,7 @@ describe('FHIR Routes', () => {
         .set('Content-Type', ContentType.FHIR_JSON)
         .send(patientToCreate);
       expect(res.status).toBe(201);
-      expect(res.body.resourceType).toEqual('Patient');
+      expect(res.body.resourceType).toStrictEqual('Patient');
       expect(res.headers.location).toContain('Patient');
       expect(res.headers.location).toContain(res.body.id);
       const patient = res.body;
@@ -129,7 +129,7 @@ describe('FHIR Routes', () => {
       if (jsonFormat === 'standard') {
         expect(patient.identifier).toBeUndefined();
       } else {
-        expect(patient.identifier).toEqual([]);
+        expect(patient.identifier).toStrictEqual([]);
       }
     }
   );
@@ -173,7 +173,7 @@ describe('FHIR Routes', () => {
       .get(`/fhir/R4/Patient/${patientId}?_pretty=true`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
-    expect(res.text).toEqual(JSON.stringify(res.body, undefined, 2));
+    expect(res.text).toStrictEqual(JSON.stringify(res.body, undefined, 2));
   });
 
   test('Read resource invalid UUID', async () => {
@@ -203,7 +203,7 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Prefer', 'return=minimal');
     expect(res.status).toBe(200);
-    expect(res.text).toEqual('');
+    expect(res.text).toStrictEqual('');
   });
 
   test('Read resource history', async () => {
@@ -294,7 +294,7 @@ describe('FHIR Routes', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .send(patient);
     expect(res2.status).toBe(200);
-    expect(res2.body.meta.versionId).toEqual(patient.meta.versionId);
+    expect(res2.body.meta.versionId).toStrictEqual(patient.meta.versionId);
   });
 
   test('Update resource not modified with empty strings', async () => {
@@ -321,7 +321,7 @@ describe('FHIR Routes', () => {
         },
       });
     expect(res2.status).toBe(200);
-    expect(res2.body.meta.versionId).toEqual(patient.meta.versionId);
+    expect(res2.body.meta.versionId).toStrictEqual(patient.meta.versionId);
   });
 
   test('Update resource invalid', async () => {
@@ -500,7 +500,7 @@ describe('FHIR Routes', () => {
         .type('form');
       expect(res.status).toBe(200);
       const result = res.body as Bundle;
-      expect(result.type).toEqual('searchset');
+      expect(result.type).toStrictEqual('searchset');
       expect(result.entry?.length).toBeGreaterThan(0);
 
       if (repoMode === 'writer') {
@@ -585,7 +585,7 @@ describe('FHIR Routes', () => {
       .get(`/fhir/R4/ServiceRequest?basedOn=ServiceRequest/123`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(400);
-    expect(res.body.issue[0].details.text).toEqual('Unknown search parameter: basedOn');
+    expect(res.body.issue[0].details.text).toStrictEqual('Unknown search parameter: basedOn');
   });
 
   test('Validate create success', async () => {

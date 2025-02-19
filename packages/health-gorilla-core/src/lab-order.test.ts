@@ -1,13 +1,15 @@
 import {
+  getExtension,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
   MedplumClient,
 } from '@medplum/core';
 import { readJson as readDefinitionsJson, SEARCH_PARAMETER_BUNDLE_FILES } from '@medplum/definitions';
-import { Bundle, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
+import { Bundle, Organization, Patient, Practitioner, Questionnaire, SearchParameter } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import {
+  HEALTH_GORILLA_AUTHORIZED_BY_EXT,
   HEALTH_GORILLA_SYSTEM,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO,
   MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN,
@@ -155,10 +157,10 @@ describe('createLabOrderBundle', () => {
       },
     });
 
-    expect(bundle.type).toEqual('transaction');
+    expect(bundle.type).toStrictEqual('transaction');
 
     const txnResponse = await medplum.executeBatch(bundle);
-    expect(txnResponse.type).toEqual('transaction-response');
+    expect(txnResponse.type).toStrictEqual('transaction-response');
     expectBundleResultSuccessful(txnResponse);
 
     const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
@@ -167,7 +169,7 @@ describe('createLabOrderBundle', () => {
     });
 
     expectToBeDefined(orderServiceRequest);
-    expect(orderServiceRequest?.extension).toEqual([
+    expect(orderServiceRequest?.extension).toStrictEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'patient' },
     ]);
   });
@@ -202,10 +204,10 @@ describe('createLabOrderBundle', () => {
       },
     });
 
-    expect(bundle.type).toEqual('transaction');
+    expect(bundle.type).toStrictEqual('transaction');
 
     const txnResponse = await medplum.executeBatch(bundle);
-    expect(txnResponse.type).toEqual('transaction-response');
+    expect(txnResponse.type).toStrictEqual('transaction-response');
     expectBundleResultSuccessful(txnResponse);
 
     const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
@@ -214,8 +216,8 @@ describe('createLabOrderBundle', () => {
     });
 
     expectToBeDefined(orderServiceRequest);
-    expect(orderServiceRequest.insurance).toEqual([{ reference: 'Coverage/coverage-1' }]);
-    expect(orderServiceRequest.extension).toEqual([
+    expect(orderServiceRequest.insurance).toStrictEqual([{ reference: 'Coverage/coverage-1' }]);
+    expect(orderServiceRequest.extension).toStrictEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'insurance' },
     ]);
   });
@@ -250,7 +252,7 @@ describe('createLabOrderBundle', () => {
     });
 
     expectToBeDefined(orderServiceRequest);
-    expect(orderServiceRequest.extension).toEqual([
+    expect(orderServiceRequest.extension).toStrictEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'customer-account' },
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN, valueString: '123456' },
     ]);
@@ -304,10 +306,50 @@ describe('createLabOrderBundle', () => {
     });
 
     expectToBeDefined(orderServiceRequest);
-    expect(orderServiceRequest.extension).toEqual([
+    expect(orderServiceRequest.extension).toStrictEqual([
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_BILL_TO, valueString: 'customer-account' },
       { url: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_EXTENSION_URL_PERFORMING_LAB_AN, valueString: '123456' },
     ]);
+  });
+
+  test<TestContext>('requesting location', async (ctx) => {
+    const { medplum, patient, requester, performingLab } = ctx;
+    const requestingOrg = { resourceType: 'Organization', id: 'org-123' } satisfies Organization;
+
+    const selectedTests: TestCoding[] = [];
+    const testMetadata: Record<string, LabOrderTestMetadata> = {};
+    for (const code of TEST_CODES) {
+      selectedTests.push({ code } as TestCoding);
+    }
+
+    const bundle = createLabOrderBundle({
+      patient,
+      requester,
+      requestingLocation: requestingOrg,
+      selectedTests,
+      testMetadata,
+      performingLab,
+      billingInformation: {
+        billTo: 'patient',
+      },
+    });
+
+    expect(bundle.type).toStrictEqual('transaction');
+
+    const txnResponse = await medplum.executeBatch(bundle);
+    expect(txnResponse.type).toStrictEqual('transaction-response');
+    expectBundleResultSuccessful(txnResponse);
+
+    const orderServiceRequest = await medplum.searchOne('ServiceRequest', {
+      _profile: MEDPLUM_HEALTH_GORILLA_LAB_ORDER_PROFILE,
+      subject: getReferenceString(patient),
+    });
+
+    expectToBeDefined(orderServiceRequest);
+
+    const authorizedByExt = getExtension(orderServiceRequest, HEALTH_GORILLA_AUTHORIZED_BY_EXT);
+    expectToBeDefined(authorizedByExt);
+    expect(authorizedByExt.valueReference).toMatchObject({ reference: 'Organization/org-123' });
   });
 
   describe('Input validation', () => {

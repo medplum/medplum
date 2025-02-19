@@ -4,7 +4,7 @@ import { ResourceType } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response, Router } from 'express';
 import { asyncWrap } from '../async';
 import { awsTextractHandler } from '../cloud/aws/textract';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getAuthenticatedContext } from '../context';
 import { authenticateRequest } from '../oauth/middleware';
 import { recordHistogramValue } from '../otel/otel';
@@ -17,11 +17,13 @@ import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
+import { ccdaExportHandler } from './operations/ccdaexport';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
 import { codeSystemValidateCodeHandler } from './operations/codesystemvalidatecode';
 import { conceptMapTranslateHandler } from './operations/conceptmaptranslate';
 import { csvHandler } from './operations/csv';
+import { dbSchemaDiffHandler } from './operations/dbschemadiff';
 import { dbStatsHandler } from './operations/dbstats';
 import { deployHandler } from './operations/deploy';
 import { evaluateMeasureHandler } from './operations/evaluatemeasure';
@@ -31,7 +33,9 @@ import { bulkExportHandler, patientExportHandler } from './operations/export';
 import { expungeHandler } from './operations/expunge';
 import { getWsBindingTokenHandler } from './operations/getwsbindingtoken';
 import { groupExportHandler } from './operations/groupexport';
+import { appLaunchHandler } from './operations/launch';
 import { patientEverythingHandler } from './operations/patienteverything';
+import { patientSummaryHandler } from './operations/patientsummary';
 import { planDefinitionApplyHandler } from './operations/plandefinitionapply';
 import { projectCloneHandler } from './operations/projectclone';
 import { projectInitHandler } from './operations/projectinit';
@@ -123,9 +127,6 @@ protectedRoutes.get('/:resourceType/([$]|%24)csv', asyncWrap(csvHandler));
 // Agent $push operation (cannot use FhirRouter due to HL7 and DICOM output)
 protectedRoutes.post('/Agent/([$]|%24)push', agentPushHandler);
 protectedRoutes.post('/Agent/:id/([$]|%24)push', agentPushHandler);
-
-// AsyncJob $cancel operation
-protectedRoutes.post('/AsyncJob/:id/([$]|%24)cancel', asyncJobCancelHandler);
 
 // Bot $execute operation
 // Allow extra path content after the "$execute" to support external callers who append path info
@@ -227,6 +228,9 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Agent/$upgrade', agentUpgradeHandler);
   router.add('GET', '/Agent/:id/$upgrade', agentUpgradeHandler);
 
+  // AsyncJob $cancel operation
+  router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
+
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
 
@@ -248,6 +252,13 @@ function initInternalFhirRouter(): FhirRouter {
   // Patient $everything operation
   router.add('GET', '/Patient/:id/$everything', patientEverythingHandler);
 
+  // Patient $summary operation
+  router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
+  router.add('POST', '/Patient/:id/$summary', patientSummaryHandler);
+
+  // Patient $ccda-export operation
+  router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
+
   // $expunge operation
   router.add('POST', '/:resourceType/:id/$expunge', expungeHandler);
 
@@ -257,13 +268,16 @@ function initInternalFhirRouter(): FhirRouter {
   // StructureDefinition $expand-profile operation
   router.add('POST', '/StructureDefinition/$expand-profile', structureDefinitionExpandProfileHandler);
 
+  // ClientApplication $launch
+  router.add('GET', '/ClientApplication/:id/$smart-launch', appLaunchHandler);
+
   // AWS operations
   router.add('POST', '/:resourceType/:id/$aws-textract', awsTextractHandler);
 
   // Validate create resource
   router.add('POST', '/:resourceType/$validate', async (req: FhirRequest) => {
     const ctx = getAuthenticatedContext();
-    await ctx.repo.validateResource(req.body);
+    await ctx.repo.validateResourceStrictly(req.body);
     return [allOk];
   });
 
@@ -286,6 +300,7 @@ function initInternalFhirRouter(): FhirRouter {
 
   // Super admin operations
   router.add('POST', '/$db-stats', dbStatsHandler);
+  router.add('POST', '/$db-schema-diff', dbSchemaDiffHandler);
 
   router.addEventListener('warn', (e: any) => {
     const ctx = getAuthenticatedContext();

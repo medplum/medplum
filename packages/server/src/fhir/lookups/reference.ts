@@ -1,4 +1,12 @@
-import { PropertyType, evalFhirPathTyped, getSearchParameters, isUUID, toTypedValue } from '@medplum/core';
+import {
+  PropertyType,
+  evalFhirPathTyped,
+  getSearchParameters,
+  isResource,
+  isUUID,
+  resolveId,
+  toTypedValue,
+} from '@medplum/core';
 import { Resource, ResourceType, SearchParameter } from '@medplum/fhirtypes';
 import { Pool, PoolClient } from 'pg';
 import { LookupTable } from './lookuptable';
@@ -87,20 +95,39 @@ function getSearchReferences(resource: Resource): ReferenceRow[] {
 
     const typedValues = evalFhirPathTyped(searchParam.expression as string, typedResource);
     for (const value of typedValues) {
-      if (value.type !== PropertyType.Reference || !value.value.reference) {
-        continue;
+      if (value.type === PropertyType.Reference && value.value.reference) {
+        const targetId = resolveId(value.value);
+        if (targetId && isUUID(targetId)) {
+          addSearchReferenceResult(result, resource, searchParam, targetId);
+        }
       }
-      const [_targetType, targetId] = value.value.reference.split('/', 2);
-      if (isUUID(targetId)) {
-        result.set(`${searchParam.code}|${targetId}`, {
-          resourceId: resource.id as string,
-          targetId: targetId,
-          code: searchParam.code as string,
-        });
+
+      if (isResource(value.value) && value.value.id && isUUID(value.value.id)) {
+        addSearchReferenceResult(result, resource, searchParam, value.value.id);
       }
     }
   }
   return Array.from(result.values());
+}
+
+/**
+ * Adds a search reference result to the result map.
+ * @param result - The result map to add the reference to.
+ * @param resource - The resource being indexed.
+ * @param searchParam - The search parameter.
+ * @param targetId - The target ID.
+ */
+function addSearchReferenceResult(
+  result: Map<string, ReferenceRow>,
+  resource: Resource,
+  searchParam: SearchParameter,
+  targetId: string
+): void {
+  result.set(`${searchParam.code}|${targetId}`, {
+    resourceId: resource.id as string,
+    targetId: targetId,
+    code: searchParam.code as string,
+  });
 }
 
 /**

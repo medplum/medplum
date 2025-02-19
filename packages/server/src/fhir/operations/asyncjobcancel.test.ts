@@ -1,10 +1,12 @@
-import { allOk, badRequest, ContentType, sleep } from '@medplum/core';
+import { allOk, badRequest, ContentType } from '@medplum/core';
+import { FhirRequest } from '@medplum/fhir-router';
 import { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
-import { initTestAuth } from '../../test.setup';
+import { loadTestConfig } from '../../config/loader';
+import { initTestAuth, withTestContext } from '../../test.setup';
+import { getSystemRepo } from '../repo';
 import { asyncJobCancelHandler } from './asyncjobcancel';
 
 const app = express();
@@ -14,7 +16,7 @@ describe('AsyncJob/$cancel', () => {
 
   beforeAll(async () => {
     const config = await loadTestConfig();
-    await initApp(app, config);
+    await withTestContext(() => initApp(app, config));
   });
 
   beforeEach(async () => {
@@ -37,7 +39,7 @@ describe('AsyncJob/$cancel', () => {
         requestTime: new Date().toISOString(),
         request: 'random-request',
       } satisfies AsyncJob);
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
     expect(res.body).toBeDefined();
 
     const asyncJob = res.body as AsyncJob;
@@ -45,7 +47,7 @@ describe('AsyncJob/$cancel', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$cancel`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toEqual(200);
+    expect(res2.status).toStrictEqual(200);
     expect(res2.body).toMatchObject<OperationOutcome>(allOk);
 
     const res3 = await request(app)
@@ -53,7 +55,7 @@ describe('AsyncJob/$cancel', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
 
-    expect(res3.status).toEqual(200);
+    expect(res3.status).toStrictEqual(200);
     expect(res3.body).toMatchObject<AsyncJob>({
       id: asyncJob.id,
       resourceType: 'AsyncJob',
@@ -74,7 +76,7 @@ describe('AsyncJob/$cancel', () => {
         requestTime: new Date().toISOString(),
         request: 'random-request',
       } satisfies AsyncJob);
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
     expect(res.body).toBeDefined();
 
     const asyncJob = res.body as AsyncJob;
@@ -82,7 +84,7 @@ describe('AsyncJob/$cancel', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$cancel`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toEqual(200);
+    expect(res2.status).toStrictEqual(200);
     expect(res2.body).toMatchObject<OperationOutcome>(allOk);
 
     const res3 = await request(app)
@@ -90,7 +92,7 @@ describe('AsyncJob/$cancel', () => {
       .set('Authorization', 'Bearer ' + accessToken)
       .set('Content-Type', ContentType.FHIR_JSON);
 
-    expect(res3.status).toEqual(200);
+    expect(res3.status).toStrictEqual(200);
     expect(res3.body).toMatchObject<AsyncJob>({
       id: asyncJob.id,
       resourceType: 'AsyncJob',
@@ -111,7 +113,7 @@ describe('AsyncJob/$cancel', () => {
         requestTime: new Date().toISOString(),
         request: 'random-request',
       } satisfies AsyncJob);
-    expect(res.status).toEqual(201);
+    expect(res.status).toStrictEqual(201);
     expect(res.body).toBeDefined();
 
     const asyncJob = res.body as AsyncJob;
@@ -119,7 +121,7 @@ describe('AsyncJob/$cancel', () => {
     const res2 = await request(app)
       .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$cancel`)
       .set('Authorization', 'Bearer ' + accessToken);
-    expect(res2.status).toEqual(400);
+    expect(res2.status).toStrictEqual(400);
 
     const outcome = res2.body as OperationOutcome;
     expect(outcome).toMatchObject<OperationOutcome>(
@@ -128,11 +130,57 @@ describe('AsyncJob/$cancel', () => {
   });
 
   test('Fails if not executed on an instance (no ID given)', async () => {
-    const next = jest.fn();
-    expect(() => asyncJobCancelHandler({ params: {} } as express.Request, {} as express.Response, next)).not.toThrow();
-    while (next.mock.calls.length === 0) {
-      await sleep(100);
-    }
-    expect(next).toHaveBeenCalledWith(new Error('This operation can only be executed on an instance'));
+    const req = {
+      method: 'POST',
+      url: 'AsyncJob/$cancel',
+      pathname: '',
+      params: {},
+      query: {},
+      body: '',
+      headers: {},
+    } satisfies FhirRequest;
+    await expect(asyncJobCancelHandler(req)).rejects.toThrow(
+      new Error('This operation can only be executed on an instance')
+    );
   });
+
+  test('Cancelled job does not get added to super admin project', () =>
+    withTestContext(async () => {
+      // We create the resource with system repo so that it is like how system AsyncJobs get created
+      const asyncJob = await getSystemRepo().createResource<AsyncJob>({
+        resourceType: 'AsyncJob',
+        status: 'accepted',
+        requestTime: new Date().toISOString(),
+        request: 'random-request',
+      });
+
+      const res2 = await request(app)
+        .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$cancel`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum', 'extended');
+      expect(res2.status).toStrictEqual(200);
+      expect(res2.body).toMatchObject(allOk);
+
+      const res3 = await request(app)
+        .get(`/fhir/R4/AsyncJob/${asyncJob.id}`)
+        .set('Authorization', 'Bearer ' + accessToken)
+        .set('X-Medplum', 'extended');
+
+      expect(res3.status).toStrictEqual(200);
+      expect(res3.body).toStrictEqual({
+        id: asyncJob.id as string,
+        resourceType: 'AsyncJob',
+        requestTime: asyncJob.requestTime,
+        request: 'random-request',
+        status: 'cancelled',
+        meta: {
+          lastUpdated: expect.any(String),
+          versionId: expect.any(String),
+          author: {
+            reference: 'system',
+          },
+          // We make sure meta does not contain project
+        },
+      });
+    }));
 });

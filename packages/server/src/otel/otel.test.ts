@@ -1,15 +1,25 @@
-import { getGauge, incrementCounter, recordHistogramValue, setGauge } from '../otel/otel';
+import { Pool } from 'pg';
+import * as databaseModule from '../database';
+import { heartbeat } from '../heartbeat';
+import {
+  cleanupOtelHeartbeat,
+  getGauge,
+  incrementCounter,
+  initOtelHeartbeat,
+  recordHistogramValue,
+  setGauge,
+} from '../otel/otel';
 
 describe('OpenTelemetry', () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
     jest.resetModules();
-    jest.resetAllMocks();
+    jest.restoreAllMocks();
     process.env = { ...OLD_ENV };
   });
 
-  afterAll(() => {
+  afterAll(async () => {
     process.env = OLD_ENV;
   });
 
@@ -69,5 +79,46 @@ describe('OpenTelemetry', () => {
     process.env.OTLP_METRICS_ENDPOINT = 'http://localhost:4318/v1/metrics';
     expect(setGauge('test', 1, { options: { unit: 's' } })).toBe(true);
     getGauge('test');
+  });
+
+  test('initOtelHeartbeat', () => {
+    const heartbeatAddListenerSpy = jest.spyOn(heartbeat, 'addEventListener');
+    const heartbeatRemoveListenerSpy = jest.spyOn(heartbeat, 'removeEventListener');
+
+    // Init otel heartbeat
+    initOtelHeartbeat();
+    expect(heartbeatAddListenerSpy).toHaveBeenCalled();
+
+    heartbeatAddListenerSpy.mockClear();
+
+    // Call init again, no-op
+    initOtelHeartbeat();
+    expect(heartbeatAddListenerSpy).not.toHaveBeenCalled();
+
+    // Cleanup heartbeat
+    cleanupOtelHeartbeat();
+    expect(heartbeatRemoveListenerSpy).toHaveBeenCalled();
+
+    heartbeatRemoveListenerSpy.mockClear();
+
+    // Cleanup heartbeat again, no-op
+    cleanupOtelHeartbeat();
+    expect(heartbeatRemoveListenerSpy).not.toHaveBeenCalled();
+  });
+
+  test('Heartbeat listener is called after calling initOtelHeartbeat', async () => {
+    const getDatabasePoolSpy = jest.spyOn(databaseModule, 'getDatabasePool').mockImplementation(
+      () =>
+        ({
+          query: async () => undefined,
+        }) as unknown as Pool
+    );
+
+    initOtelHeartbeat();
+
+    heartbeat.dispatchEvent({ type: 'heartbeat' });
+
+    // We call getDatabasePool at the beginning of the listener callback
+    expect(getDatabasePoolSpy).toHaveBeenCalled();
   });
 });

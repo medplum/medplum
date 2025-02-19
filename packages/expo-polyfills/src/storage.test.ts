@@ -35,24 +35,24 @@ describe('SyncSecureStorage', () => {
   });
 
   test('storage.key() returns null', async () => {
-    expect(storage.key(0)).toEqual(null);
-    expect(storage.key(1)).toEqual(null);
+    expect(storage.key(0)).toStrictEqual(null);
+    expect(storage.key(1)).toStrictEqual(null);
   });
 
   test('removeItem -- setKeys = true', async () => {
     await SecureStore.setItemAsync('bestEhr', 'medplum');
-    await expect(SecureStore.getItemAsync('bestEhr')).resolves.toEqual('medplum');
+    await expect(SecureStore.getItemAsync('bestEhr')).resolves.toStrictEqual('medplum');
     storage.removeItem('bestEhr', true);
     await sleep(25);
-    await expect(SecureStore.getItemAsync('bestEhr')).resolves.toEqual(null);
+    await expect(SecureStore.getItemAsync('bestEhr')).resolves.toStrictEqual(null);
   });
 
   test.each(['', null])('setItem -- empty value', async (value) => {
     await SecureStore.setItemAsync('bestEhr', 'medplum');
-    await expect(SecureStore.getItemAsync('bestEhr')).resolves.toEqual('medplum');
+    await expect(SecureStore.getItemAsync('bestEhr')).resolves.toStrictEqual('medplum');
     storage.setItem('bestEhr', value);
     await sleep(25);
-    await expect(SecureStore.getItemAsync('bestEhr')).resolves.toEqual(null);
+    await expect(SecureStore.getItemAsync('bestEhr')).resolves.toStrictEqual(null);
   });
 });
 
@@ -78,7 +78,7 @@ describe('ExpoClientStorage', () => {
   });
 
   test('Getting a string', () => {
-    expect(clientStorage.getString('bestEhr')).toEqual('medplum');
+    expect(clientStorage.getString('bestEhr')).toStrictEqual('medplum');
   });
 
   test('Setting an object', async () => {
@@ -88,26 +88,26 @@ describe('ExpoClientStorage', () => {
   });
 
   test('Getting an object', () => {
-    expect(clientStorage.getObject('bestEhr')).toEqual({ med: 'plum' });
+    expect(clientStorage.getObject('bestEhr')).toStrictEqual({ med: 'plum' });
   });
 
   test('Making a new storage should fetch existing keys', async () => {
     const newStorage = new ExpoClientStorage();
     await newStorage.getInitPromise();
     // Assert size
-    expect(newStorage.length).toEqual(1);
+    expect(newStorage.length).toStrictEqual(1);
   });
 
   test('Clearing storage should empty it', () => {
     clientStorage.clear();
-    expect(clientStorage.length).toEqual(0);
+    expect(clientStorage.length).toStrictEqual(0);
   });
 
   test('After clearing, new storages should not get previous keys', async () => {
     const newStorage = new ExpoClientStorage();
     await newStorage.getInitPromise();
     // Assert size is 0
-    expect(newStorage.length).toEqual(0);
+    expect(newStorage.length).toStrictEqual(0);
   });
 
   test('Setting a key to a value larger than max (2000)', async () => {
@@ -115,24 +115,24 @@ describe('ExpoClientStorage', () => {
     await firstStorage.getInitPromise();
 
     const test1Str = 'Hello, world!'.repeat(200);
-    expect(test1Str.length).toEqual(2600);
+    expect(test1Str.length).toStrictEqual(2600);
 
     firstStorage.setString('test1', test1Str);
-    expect(firstStorage.getString('test1')).toEqual(test1Str);
+    expect(firstStorage.getString('test1')).toStrictEqual(test1Str);
     await sleep(100);
 
     const test2Str = test1Str.repeat(3);
-    expect(test2Str.length).toEqual(2600 * 3);
+    expect(test2Str.length).toStrictEqual(2600 * 3);
 
     firstStorage.setString('test2', test2Str);
-    expect(firstStorage.getString('test2')).toEqual(test2Str);
+    expect(firstStorage.getString('test2')).toStrictEqual(test2Str);
     await sleep(100);
 
     const newStorage = new ExpoClientStorage();
     await newStorage.getInitPromise();
 
-    expect(newStorage.getString('test1')).toEqual(test1Str);
-    expect(newStorage.getString('test2')).toEqual(test2Str);
+    expect(newStorage.getString('test1')).toStrictEqual(test1Str);
+    expect(newStorage.getString('test2')).toStrictEqual(test2Str);
   });
 
   if (Platform.OS !== 'web') {
@@ -144,15 +144,15 @@ describe('ExpoClientStorage', () => {
       const storage1 = new ExpoClientStorage();
       await expect(storage1.getInitPromise()).resolves.toBeUndefined();
       storage1.setString('bestEhr', 'medplum');
-      expect(storage1.length).toEqual(1);
+      expect(storage1.length).toStrictEqual(1);
 
       // Sleep for a bit to let async stuff settle
       await sleep(25);
 
       const storage2 = new ExpoClientStorage();
       await expect(storage2.getInitPromise()).resolves.toBeUndefined();
-      expect(storage2.length).toEqual(1);
-      expect(storage2.getString('bestEhr')).toEqual('medplum');
+      expect(storage2.length).toStrictEqual(1);
+      expect(storage2.getString('bestEhr')).toStrictEqual('medplum');
 
       const originalError = console.error;
       console.error = jest.fn();
@@ -165,7 +165,7 @@ describe('ExpoClientStorage', () => {
       expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('___keys___');
 
       // Assert size is 0 and key is undefined
-      expect(storage3.length).toEqual(0);
+      expect(storage3.length).toStrictEqual(0);
       expect(storage3.getString('bestEhr')).toBeUndefined();
 
       expect(console.error).toHaveBeenCalledTimes(1);

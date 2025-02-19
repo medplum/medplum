@@ -98,10 +98,10 @@ describe('Access', () => {
 
     expect(
       satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, undefined)?.resourceType
-    ).toEqual('*');
+    ).toStrictEqual('*');
     expect(
       satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, wildcardPolicy)?.resourceType
-    ).toEqual('*');
+    ).toStrictEqual('*');
 
     expect(
       satisfiedAccessPolicy({ resourceType: 'Patient' }, AccessPolicyInteraction.UPDATE, restrictedPolicy)
@@ -112,14 +112,14 @@ describe('Access', () => {
         AccessPolicyInteraction.UPDATE,
         restrictedPolicy
       )?.resourceType
-    ).toEqual('Observation');
+    ).toStrictEqual('Observation');
     expect(
       satisfiedAccessPolicy(
         { resourceType: 'Communication', status: 'in-progress' },
         AccessPolicyInteraction.UPDATE,
         restrictedPolicy
       )?.criteria
-    ).toEqual('Communication?status=in-progress');
+    ).toStrictEqual('Communication?status=in-progress');
     expect(
       satisfiedAccessPolicy(
         { resourceType: 'Communication', status: 'completed' },

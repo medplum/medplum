@@ -8,7 +8,7 @@ import { URL, URLSearchParams } from 'url';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { revokeLogin } from './utils';
@@ -56,6 +56,7 @@ describe('OAuth Authorize', () => {
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(400);
+    expect(res.text).toBe('Client not found');
   });
 
   test('Wrong redirect', async () => {
@@ -69,6 +70,7 @@ describe('OAuth Authorize', () => {
     });
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(400);
+    expect(res.text).toBe('Incorrect redirect_uri');
   });
 
   test('Invalid response_type', async () => {
@@ -84,7 +86,7 @@ describe('OAuth Authorize', () => {
     expect(res.status).toBe(302);
 
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('unsupported_response_type');
+    expect(location.searchParams.get('error')).toStrictEqual('unsupported_response_type');
   });
 
   test('Unsupported request', async () => {
@@ -101,7 +103,7 @@ describe('OAuth Authorize', () => {
     expect(res.status).toBe(302);
 
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('request_not_supported');
+    expect(location.searchParams.get('error')).toStrictEqual('request_not_supported');
   });
 
   test('Missing scope', async () => {
@@ -115,7 +117,7 @@ describe('OAuth Authorize', () => {
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('invalid_request');
+    expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
 
   test('Missing code_challenge_method', async () => {
@@ -130,7 +132,7 @@ describe('OAuth Authorize', () => {
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('invalid_request');
+    expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
 
   test('Invalid audience', async () => {
@@ -146,7 +148,7 @@ describe('OAuth Authorize', () => {
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('invalid_request');
+    expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
 
   test('Malformed audience', async () => {
@@ -162,7 +164,7 @@ describe('OAuth Authorize', () => {
     const res = await request(app).get('/oauth2/authorize?' + params.toString());
     expect(res.status).toBe(302);
     const location = new URL(res.headers.location);
-    expect(location.searchParams.get('error')).toEqual('invalid_request');
+    expect(location.searchParams.get('error')).toStrictEqual('invalid_request');
   });
 
   test('Server URL audience', async () => {
@@ -333,6 +335,59 @@ describe('OAuth Authorize', () => {
     expect(location.searchParams.get('error')).toBe('login_required');
   });
 
+  test('Multiple authorizations reusing same login', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+      scope: 'openid',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.code).toBeDefined();
+    expect(res1.headers['set-cookie']).toBeDefined();
+
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+    expect(login.codeChallenge).toEqual('xyz');
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res1.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.id_token).toBeDefined();
+
+    const cookies = setCookieParser.parse(res1.headers['set-cookie']);
+    expect(cookies.length).toBe(1);
+
+    const cookie = cookies[0];
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: client.redirectUri as string,
+      scope: 'openid',
+      code_challenge: 'abc',
+      code_challenge_method: 'plain',
+    });
+
+    const res3 = await request(app)
+      .get('/oauth2/authorize?' + params.toString())
+      .set('Cookie', cookie.name + '=' + cookie.value);
+    expect(res3.status).toBe(302);
+    expect(res3.headers.location).toBeDefined();
+
+    const location = new URL(res3.headers.location);
+    expect(location.host).toBe('example.com');
+    expect(location.searchParams.get('error')).toBeNull();
+    expect(location.searchParams.get('code')).not.toEqual(res1.body.code);
+
+    const updatedLogin = await systemRepo.readResource<Login>('Login', res1.body.login);
+    expect(updatedLogin.codeChallenge).toEqual('abc');
+  });
+
   test('Using id_token_hint', async () => {
     // 1) Authorize as normal
     // 2) Get tokens
@@ -422,5 +477,48 @@ describe('OAuth Authorize', () => {
 
     const res = await request(app).post('/oauth2/authorize').send(params.toString());
     expect(res.status).toBe(400);
+  });
+
+  test('Missing ClientApplication.redirectUri', async () => {
+    const client = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      secret: randomUUID(),
+      meta: { project: project.id as string },
+      name: 'Test Client Application',
+    });
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: 'https://example2.com',
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+    });
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Client has no redirect URI');
+  });
+
+  test('Invalid ClientApplication.redirectUri', async () => {
+    const client = await systemRepo.createResource<ClientApplication>({
+      resourceType: 'ClientApplication',
+      secret: randomUUID(),
+      meta: { project: project.id as string },
+      name: 'Test Client Application',
+      redirectUri: 'invalid',
+    });
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: 'https://example2.com',
+      scope: 'openid',
+      code_challenge: 'xyz',
+      code_challenge_method: 'plain',
+    });
+    const res = await request(app).get('/oauth2/authorize?' + params.toString());
+    expect(res.status).toBe(400);
+    expect(res.text).toBe('Invalid redirect URI');
   });
 });

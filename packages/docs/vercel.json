@@ -80,6 +80,10 @@
     {
       "source": "/docs/fhir-datastore/adoption-strategy",
       "destination": "/docs/migration"
+    },
+    {
+      "source": "/careers/solutions-engineer",
+      "destination": "/careers/forward-deployed-engineer"
     }
   ]
 }

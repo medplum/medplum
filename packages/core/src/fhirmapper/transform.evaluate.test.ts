@@ -20,7 +20,7 @@ describe('FHIR Mapper transform - evaluate', () => {
     const input = [toTypedValue({ value: 'foo' })];
     const expected = [toTypedValue({ value: 'foo_test' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('variable concatenation', () => {
@@ -32,6 +32,6 @@ describe('FHIR Mapper transform - evaluate', () => {
     const input = [toTypedValue({ value: { foo: 'bar' } })];
     const expected = [toTypedValue({ value: 'bar_test' })];
     const actual = structureMapTransform(parseMappingLanguage(map), input);
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 });

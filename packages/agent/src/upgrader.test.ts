@@ -63,9 +63,9 @@ describe('Upgrader', () => {
       });
 
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).resolves.toBeUndefined();
-      await expect(receivedMsgPromise).resolves.toEqual({ type: 'STARTED' });
+      await expect(receivedMsgPromise).resolves.toStrictEqual({ type: 'STARTED' });
       expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
-      expect(getReleaseBinPath('3.1.6').endsWith('medplum-agent-installer-3.1.6.exe')).toEqual(true);
+      expect(getReleaseBinPath('3.1.6').endsWith('medplum-agent-installer-3.1.6.exe')).toStrictEqual(true);
       expect(spawnSyncSpy).toHaveBeenLastCalledWith(getReleaseBinPath('3.1.6'), ['/S']);
       expect(execSyncSpy).toHaveBeenLastCalledWith('net stop "Medplum Agent"');
       expect(console.log).toHaveBeenLastCalledWith(expect.stringContaining('Finished upgrade'));
@@ -99,9 +99,9 @@ describe('Upgrader', () => {
       });
 
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).resolves.toBeUndefined();
-      await expect(receivedMsgPromise).resolves.toEqual({ type: 'STARTED' });
+      await expect(receivedMsgPromise).resolves.toStrictEqual({ type: 'STARTED' });
       expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
-      expect(getReleaseBinPath('3.1.6').endsWith('medplum-agent-installer-3.1.6.exe')).toEqual(true);
+      expect(getReleaseBinPath('3.1.6').endsWith('medplum-agent-installer-3.1.6.exe')).toStrictEqual(true);
       expect(spawnSyncSpy).toHaveBeenLastCalledWith(getReleaseBinPath('3.1.6'), ['/S']);
       expect(console.log).toHaveBeenCalledWith(
         expect.stringContaining('Agent service not running, skipping stopping the service')
@@ -137,9 +137,9 @@ describe('Upgrader', () => {
       });
 
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade'])).resolves.toBeUndefined();
-      await expect(receivedMsgPromise).resolves.toEqual({ type: 'STARTED' });
+      await expect(receivedMsgPromise).resolves.toStrictEqual({ type: 'STARTED' });
       expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-3.1.6.exe'));
-      expect(getReleaseBinPath('3.1.6').endsWith('medplum-agent-installer-3.1.6.exe')).toEqual(true);
+      expect(getReleaseBinPath('3.1.6').endsWith('medplum-agent-installer-3.1.6.exe')).toStrictEqual(true);
       expect(spawnSyncSpy).toHaveBeenLastCalledWith(getReleaseBinPath('3.1.6'), ['/S']);
       expect(execSyncSpy).toHaveBeenNthCalledWith(1, 'net stop "Medplum Agent"');
       expect(execSyncSpy).toHaveBeenLastCalledWith('net start "Medplum Agent"');
@@ -176,9 +176,9 @@ describe('Upgrader', () => {
       });
 
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', '3.1.5'])).resolves.toBeUndefined();
-      await expect(receivedMsgPromise).resolves.toEqual({ type: 'STARTED' });
+      await expect(receivedMsgPromise).resolves.toStrictEqual({ type: 'STARTED' });
       expect(existsSyncSpy).toHaveBeenNthCalledWith(1, resolve(__dirname, 'medplum-agent-installer-3.1.5.exe'));
-      expect(getReleaseBinPath('3.1.5').endsWith('medplum-agent-installer-3.1.5.exe')).toEqual(true);
+      expect(getReleaseBinPath('3.1.5').endsWith('medplum-agent-installer-3.1.5.exe')).toStrictEqual(true);
       expect(spawnSyncSpy).toHaveBeenLastCalledWith(getReleaseBinPath('3.1.5'), ['/S']);
       expect(execSyncSpy).toHaveBeenNthCalledWith(1, 'net stop "Medplum Agent"');
       expect(execSyncSpy).toHaveBeenLastCalledWith('net start "Medplum Agent"');
@@ -217,7 +217,7 @@ describe('Upgrader', () => {
       await expect(upgraderMain(['node', 'upgrader.js', '--upgrade', 'INVALID'])).rejects.toThrow(
         'Invalid version specified'
       );
-      await expect(receivedMsgPromise).resolves.toEqual({ type: 'STARTED' });
+      await expect(receivedMsgPromise).resolves.toStrictEqual({ type: 'STARTED' });
 
       for (const spy of [fetchSpy, existsSyncSpy, spawnSyncSpy, execSyncSpy]) {
         spy.mockRestore();

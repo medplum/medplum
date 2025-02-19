@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 
@@ -58,7 +58,7 @@ describe('Status', () => {
 
     const res = await request(app).get('/auth/login/' + login.id);
     expect(res.status).toBe(200);
-    expect(res.body.login).toEqual(login.id);
+    expect(res.body.login).toStrictEqual(login.id);
   });
 
   test('Granted', async () => {

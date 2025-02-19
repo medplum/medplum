@@ -11,6 +11,7 @@ export interface ProblemListProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly problems: Condition[];
+  readonly onClickResource?: (resource: Condition) => void;
 }
 
 export function ProblemList(props: ProblemListProps): JSX.Element {
@@ -61,6 +62,7 @@ export function ProblemList(props: ProblemListProps): JSX.Element {
                 <ConceptBadge<Condition>
                   key={problem.id}
                   resource={problem}
+                  onClick={props.onClickResource}
                   onEdit={(c) => {
                     setEditCondition(c);
                     open();

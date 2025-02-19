@@ -156,7 +156,7 @@ describe('CLI auth', () => {
 
     await main(['node', 'index.js', 'whoami']);
 
-    expect((console.log as unknown as jest.Mock).mock.calls).toEqual([
+    expect((console.log as unknown as jest.Mock).mock.calls).toStrictEqual([
       ['Server:  https://example.com/'],
       ['Profile: Alice Smith (Practitioner/123)'],
       ['Project: My Project (Project/456)'],
@@ -185,7 +185,7 @@ describe('CLI auth', () => {
     );
 
     await main(['node', 'index.js', 'token']);
-    expect((console.log as unknown as jest.Mock).mock.calls).toEqual([[expect.any(String)]]);
+    expect((console.log as unknown as jest.Mock).mock.calls).toStrictEqual([[expect.any(String)]]);
   });
 
   test('Get access token -- needs auth (expired or not logged in)', async () => {

@@ -3,7 +3,7 @@ import { Login, Patient, Project, ServiceRequest } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { AuthState } from '../oauth/middleware';
 import { createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
@@ -112,7 +112,7 @@ describe('Reference checks', () => {
         resourceType: 'Patient',
         link: [{ type: 'seealso', other: createReference(patient2) }],
       });
-      expect(patient.link?.[0]?.other).toEqual(createReference(patient2));
+      expect(patient.link?.[0]?.other).toStrictEqual(createReference(patient2));
 
       // Unlink Project and vaerify that access is revoked
       project.link = undefined;
@@ -156,10 +156,10 @@ describe('Reference checks', () => {
 
       // Checking the name change is ancillary; mostly confirming that the update
       // doesn't throw due to reference validation failure
-      expect(project.name).not.toEqual('new name');
+      expect(project.name).not.toStrictEqual('new name');
       project.name = 'new name';
       project = await repo.updateResource(project);
-      expect(project.name).toEqual('new name');
+      expect(project.name).toStrictEqual('new name');
     }));
 
   test('ProjectMembership reference validation', () =>
@@ -183,7 +183,7 @@ describe('Reference checks', () => {
       expect(membership.externalId).toBeUndefined();
       membership.externalId = id;
       membership = await repo.updateResource(membership);
-      expect(membership.externalId).toEqual(id);
+      expect(membership.externalId).toStrictEqual(id);
     }));
 
   test('Check references with non-literal reference', () =>

@@ -1,6 +1,6 @@
 import { OAuthGrantType, OAuthTokenAuthMethod } from '@medplum/core';
 import { Request, Response, Router } from 'express';
-import { getConfig } from './config';
+import { getConfig } from './config/loader';
 import { getJwks } from './oauth/keys';
 
 export const wellKnownRouter = Router();

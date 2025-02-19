@@ -1,8 +1,8 @@
 import { Operator } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
 import { Bundle, BundleEntry, CodeSystem, ValueSet } from '@medplum/fhirtypes';
+import { r4ProjectId } from '../constants';
 import { Repository, getSystemRepo } from '../fhir/repo';
-import { r4ProjectId } from '../seed';
 
 /**
  * Imports all built-in ValueSets and CodeSystems into the database.

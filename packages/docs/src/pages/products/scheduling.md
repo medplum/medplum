@@ -42,6 +42,7 @@ In general one Schedule has many Slots, one Appointment takes one or more Slots.
 
 ## Demos and Reference Material
 
+- [Scheduling API and Workflow Video](https://youtu.be/6yAROc0KPos) on Youtube
 - [Storybook Scheduler React Component](https://storybook.medplum.com/?path=/docs/medplum-scheduler--basic)
 - [Foo Medical Scheduling](https://foomedical.com/get-care) sample patient portal with appointment booking experience.
 - [Provider Demo](https://provider.medplum.com/) sample simple EHR with provider calendar and slot creation.

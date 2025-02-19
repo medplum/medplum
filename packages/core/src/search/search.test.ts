@@ -110,7 +110,7 @@ describe('Search Utils', () => {
   test('Parse Patient search name', () => {
     const result = parseSearchRequest('Patient?name=alice');
     expect(result.resourceType).toBe('Patient');
-    expect(result.filters).toEqual([
+    expect(result.filters).toStrictEqual([
       {
         code: 'name',
         operator: Operator.EQUALS,
@@ -122,19 +122,19 @@ describe('Search Utils', () => {
   test('Parse Patient search fields', () => {
     const result = parseSearchRequest('Patient?_fields=id,name,birthDate');
     expect(result.resourceType).toBe('Patient');
-    expect(result.fields).toEqual(['id', 'name', 'birthDate']);
+    expect(result.fields).toStrictEqual(['id', 'name', 'birthDate']);
   });
 
   test('Parse Patient search sort', () => {
     const result = parseSearchRequest('Patient?_sort=birthDate');
     expect(result.resourceType).toBe('Patient');
-    expect(result.sortRules).toEqual([{ code: 'birthDate', descending: false }]);
+    expect(result.sortRules).toStrictEqual([{ code: 'birthDate', descending: false }]);
   });
 
   test('Parse Patient search sort descending', () => {
     const result = parseSearchRequest('Patient?_sort=-birthDate');
     expect(result.resourceType).toBe('Patient');
-    expect(result.sortRules).toEqual([{ code: 'birthDate', descending: true }]);
+    expect(result.sortRules).toStrictEqual([{ code: 'birthDate', descending: true }]);
   });
 
   test('Parse Patient search total', () => {
@@ -258,12 +258,12 @@ describe('Search Utils', () => {
       count: 5,
       total: 'accurate',
     });
-    expect(result).toEqual('?_count=5&_fields=id,name&_offset=10&_total=accurate&name=alice');
+    expect(result).toStrictEqual('?_count=5&_fields=id,name&_offset=10&_total=accurate&name=alice');
   });
 
   test('Format empty search', () => {
     const result = formatSearchQuery({ resourceType: 'Patient' });
-    expect(result).toEqual('');
+    expect(result).toStrictEqual('');
   });
 
   test('Format Patient search sort', () => {
@@ -277,7 +277,7 @@ describe('Search Utils', () => {
         },
       ],
     });
-    expect(result).toEqual('?_fields=id,name&_sort=name');
+    expect(result).toStrictEqual('?_fields=id,name&_sort=name');
   });
 
   test('Format Patient search sort descending', () => {
@@ -292,7 +292,7 @@ describe('Search Utils', () => {
         },
       ],
     });
-    expect(result).toEqual('?_fields=id,name&_sort=-name');
+    expect(result).toStrictEqual('?_fields=id,name&_sort=-name');
   });
 
   test('Format Patient search total', () => {
@@ -300,7 +300,7 @@ describe('Search Utils', () => {
       resourceType: 'Patient',
       total: 'accurate',
     });
-    expect(result).toEqual('?_total=accurate');
+    expect(result).toStrictEqual('?_total=accurate');
   });
 
   test('Format number not equals', () => {
@@ -309,7 +309,7 @@ describe('Search Utils', () => {
         resourceType: 'RiskAssessment',
         filters: [{ code: 'probability', operator: Operator.NOT_EQUALS, value: '0.5' }],
       })
-    ).toEqual('?probability=ne0.5');
+    ).toStrictEqual('?probability=ne0.5');
   });
 
   test('Format number less than', () => {
@@ -318,7 +318,7 @@ describe('Search Utils', () => {
         resourceType: 'RiskAssessment',
         filters: [{ code: 'probability', operator: Operator.LESS_THAN, value: '0.5' }],
       })
-    ).toEqual('?probability=lt0.5');
+    ).toStrictEqual('?probability=lt0.5');
   });
 
   test('Format number less than or equal', () => {
@@ -327,7 +327,7 @@ describe('Search Utils', () => {
         resourceType: 'RiskAssessment',
         filters: [{ code: 'probability', operator: Operator.LESS_THAN_OR_EQUALS, value: '0.5' }],
       })
-    ).toEqual('?probability=le0.5');
+    ).toStrictEqual('?probability=le0.5');
   });
 
   test('Format number greater than', () => {
@@ -336,7 +336,7 @@ describe('Search Utils', () => {
         resourceType: 'RiskAssessment',
         filters: [{ code: 'probability', operator: Operator.GREATER_THAN, value: '0.5' }],
       })
-    ).toEqual('?probability=gt0.5');
+    ).toStrictEqual('?probability=gt0.5');
   });
 
   test('Format number greater than or equal', () => {
@@ -345,7 +345,7 @@ describe('Search Utils', () => {
         resourceType: 'RiskAssessment',
         filters: [{ code: 'probability', operator: Operator.GREATER_THAN_OR_EQUALS, value: '0.5' }],
       })
-    ).toEqual('?probability=ge0.5');
+    ).toStrictEqual('?probability=ge0.5');
   });
 
   test('Format URL below', () => {
@@ -354,7 +354,7 @@ describe('Search Utils', () => {
         resourceType: 'ValueSet',
         filters: [{ code: 'url', operator: Operator.BELOW, value: 'http://acme.org' }],
       })
-    ).toEqual('?url:below=http%3A%2F%2Facme.org');
+    ).toStrictEqual('?url:below=http%3A%2F%2Facme.org');
   });
 
   test('Format URL above', () => {
@@ -363,7 +363,7 @@ describe('Search Utils', () => {
         resourceType: 'ValueSet',
         filters: [{ code: 'url', operator: Operator.ABOVE, value: 'http://acme.org' }],
       })
-    ).toEqual('?url:above=http%3A%2F%2Facme.org');
+    ).toStrictEqual('?url:above=http%3A%2F%2Facme.org');
   });
 
   test('Format token not', () => {
@@ -372,7 +372,7 @@ describe('Search Utils', () => {
         resourceType: 'Condition',
         filters: [{ code: 'code', operator: Operator.NOT, value: 'x' }],
       })
-    ).toEqual('?code:not=x');
+    ).toStrictEqual('?code:not=x');
   });
 
   test('Format token not', () => {
@@ -381,7 +381,7 @@ describe('Search Utils', () => {
         resourceType: 'Condition',
         filters: [{ code: 'code', operator: Operator.NOT, value: 'x' }],
       })
-    ).toEqual('?code:not=x');
+    ).toStrictEqual('?code:not=x');
   });
 
   const maritalStatus = 'http://terminology.hl7.org/CodeSystem/v3-MaritalStatus';
@@ -396,7 +396,7 @@ describe('Search Utils', () => {
           },
         ],
       })
-    ).toEqual('?_include=Patient:organization');
+    ).toStrictEqual('?_include=Patient:organization');
   });
 
   test('Format _include:iterate', () => {
@@ -411,7 +411,7 @@ describe('Search Utils', () => {
           },
         ],
       })
-    ).toEqual('?_include:iterate=Patient:organization');
+    ).toStrictEqual('?_include:iterate=Patient:organization');
   });
 
   test.each<[string, SearchRequest]>([
@@ -459,20 +459,20 @@ describe('Search Utils', () => {
       generalPractitioner: [{ reference: 'Practitioner/98765' }],
     };
     const actual = parseXFhirQuery(query, { '%patient': { type: 'Patient', value: patient } });
-    expect(actual).toEqual(expected);
+    expect(actual).toStrictEqual(expected);
   });
 
   test('Split search value on comma', () => {
-    expect(splitSearchOnComma('')).toEqual(['']);
-    expect(splitSearchOnComma('x')).toEqual(['x']);
-    expect(splitSearchOnComma('x,y')).toEqual(['x', 'y']);
-    expect(splitSearchOnComma('x,y,z')).toEqual(['x', 'y', 'z']);
-    expect(splitSearchOnComma('x,')).toEqual(['x', '']);
-    expect(splitSearchOnComma(',y')).toEqual(['', 'y']);
-    expect(splitSearchOnComma('x,,y')).toEqual(['x', '', 'y']);
-    expect(splitSearchOnComma('x\\,y')).toEqual(['x,y']);
-    expect(splitSearchOnComma('x\\,')).toEqual(['x,']);
-    expect(splitSearchOnComma('\\,y')).toEqual([',y']);
-    expect(splitSearchOnComma('x\\,,y')).toEqual(['x,', 'y']);
+    expect(splitSearchOnComma('')).toStrictEqual(['']);
+    expect(splitSearchOnComma('x')).toStrictEqual(['x']);
+    expect(splitSearchOnComma('x,y')).toStrictEqual(['x', 'y']);
+    expect(splitSearchOnComma('x,y,z')).toStrictEqual(['x', 'y', 'z']);
+    expect(splitSearchOnComma('x,')).toStrictEqual(['x', '']);
+    expect(splitSearchOnComma(',y')).toStrictEqual(['', 'y']);
+    expect(splitSearchOnComma('x,,y')).toStrictEqual(['x', '', 'y']);
+    expect(splitSearchOnComma('x\\,y')).toStrictEqual(['x,y']);
+    expect(splitSearchOnComma('x\\,')).toStrictEqual(['x,']);
+    expect(splitSearchOnComma('\\,y')).toStrictEqual([',y']);
+    expect(splitSearchOnComma('x\\,,y')).toStrictEqual(['x,', 'y']);
   });
 });

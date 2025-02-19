@@ -5,7 +5,6 @@ import { FhirFilterComparison, FhirFilterConnective, FhirFilterNegation } from '
 describe('_filter Parameter parser', () => {
   test('Simple comparison', () => {
     const result = parseFilterParameter('name co "pet"');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterComparison);
 
     const comp = result as FhirFilterComparison;
@@ -16,7 +15,6 @@ describe('_filter Parameter parser', () => {
 
   test('Negation', () => {
     const result = parseFilterParameter('not (name co "pet")');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterNegation);
 
     const negation = result as FhirFilterNegation;
@@ -30,7 +28,6 @@ describe('_filter Parameter parser', () => {
 
   test('And connective', () => {
     const result = parseFilterParameter('given eq "peter" and birthdate ge 2014-10-10');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective = result as FhirFilterConnective;
@@ -51,7 +48,6 @@ describe('_filter Parameter parser', () => {
 
   test('Or connective', () => {
     const result = parseFilterParameter('given eq "peter" or birthdate ge 2014-10-10');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective = result as FhirFilterConnective;
@@ -72,7 +68,6 @@ describe('_filter Parameter parser', () => {
 
   test('Top level parentheses', () => {
     const result = parseFilterParameter('(given ne "alice" and given ne "bob")');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective = result as FhirFilterConnective;
@@ -92,7 +87,6 @@ describe('_filter Parameter parser', () => {
 
   test('Nested expressions', () => {
     const result = parseFilterParameter('given eq "alice" or (given eq "peter" and birthdate ge 2014-10-10)');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective1 = result as FhirFilterConnective;
@@ -123,7 +117,6 @@ describe('_filter Parameter parser', () => {
 
   test('Nested connectives', () => {
     const result = parseFilterParameter('(status eq preliminary and code eq 123) or (status eq final and code eq 456)');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective1 = result as FhirFilterConnective;
@@ -166,7 +159,6 @@ describe('_filter Parameter parser', () => {
     const result = parseFilterParameter(
       '(status eq preliminary and code eq 123) or (not (status eq preliminary) and code eq 456)'
     );
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterConnective);
 
     const connective1 = result as FhirFilterConnective;
@@ -208,7 +200,6 @@ describe('_filter Parameter parser', () => {
 
   test('Observation with system and code', () => {
     const result = parseFilterParameter('code eq http://loinc.org|1234-5');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterComparison);
 
     const comp = result as FhirFilterComparison;
@@ -219,7 +210,6 @@ describe('_filter Parameter parser', () => {
 
   test('Identifier search', () => {
     const result = parseFilterParameter('performer identifier https://example.com/1234');
-    expect(result).toBeDefined();
     expect(result).toBeInstanceOf(FhirFilterComparison);
 
     const comp = result as FhirFilterComparison;
@@ -228,12 +218,20 @@ describe('_filter Parameter parser', () => {
     expect(comp.value).toBe('https://example.com/1234');
   });
 
+  test('Starts with', () => {
+    const result = parseFilterParameter('name sw ali');
+    expect(result).toBeInstanceOf(FhirFilterComparison);
+
+    const comp = result as FhirFilterComparison;
+    expect(comp.operator).toEqual(Operator.STARTS_WITH);
+  });
+
   test('Unsupported search operator', () => {
     try {
-      parseFilterParameter('name sw ali');
+      parseFilterParameter('name ew ali');
       throw new Error('Expected error');
     } catch (err: any) {
-      expect(err.message).toBe('Invalid operator: sw');
+      expect(err.message).toBe('Invalid operator: ew');
     }
   });
 });
