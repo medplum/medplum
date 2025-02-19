@@ -1,11 +1,11 @@
-import { concatUrls } from '@medplum/core';
+import { badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { createSign } from 'crypto';
 import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { resolve, sep } from 'path';
 import { Readable, pipeline } from 'stream';
 import { S3Storage } from '../cloud/aws/storage';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 
 /**
  * Binary input type.
@@ -160,7 +160,6 @@ class FileSystemStorage implements BinaryStorage {
  * https://support.google.com/mail/answer/6590?hl=en#zippy=%2Cmessages-that-have-attachments
  */
 const BLOCKED_FILE_EXTENSIONS = [
-  '.7z',
   '.ade',
   '.adp',
   '.apk',
@@ -215,16 +214,10 @@ const BLOCKED_FILE_EXTENSIONS = [
  */
 const BLOCKED_CONTENT_TYPES = [
   'application/java-archive',
-  'application/x-7z-compressed',
-  'application/x-bzip',
-  'application/x-bzip2',
   'application/x-msdownload',
   'application/x-sh',
-  'application/x-tar',
   'application/vnd.apple.installer+xml',
   'application/vnd.microsoft.portable-executable',
-  'application/vnd.rar',
-  'application/zip',
 ];
 
 /**
@@ -235,10 +228,10 @@ const BLOCKED_CONTENT_TYPES = [
  */
 export function checkFileMetadata(filename: string | undefined, contentType: string | undefined): void {
   if (checkFileExtension(filename)) {
-    throw new Error('Invalid file extension');
+    throw new OperationOutcomeError(badRequest('Invalid file extension'));
   }
   if (checkContentType(contentType)) {
-    throw new Error('Invalid content type');
+    throw new OperationOutcomeError(badRequest('Invalid content type'));
   }
 }
 

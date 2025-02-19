@@ -51,7 +51,7 @@ export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
       pg_size_pretty(pg_indexes_size(i.relid)) AS all_indexes_size,
       reltuples::bigint AS estimated_row_count,
       indexrelname AS index_name,
-      pg_size_pretty(pg_relation_size(indexrelid)) AS index_size,
+      pg_size_pretty(pg_relation_size(i.indexrelid)) AS index_size,
       i.idx_scan AS index_scans,
       i.idx_tup_read AS index_entries_read,
       i.idx_tup_fetch AS index_rows_fetched,
@@ -59,8 +59,13 @@ export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
       n_live_tup AS live_tuples,
       n_dead_tup AS dead_tuples,
       last_autovacuum,
-      last_autoanalyze
-    FROM pg_stat_user_indexes i JOIN pg_class c ON i.relid = c.oid JOIN pg_stat_user_tables u ON i.relname = u.relname
+      last_autoanalyze,
+      indisvalid
+    FROM
+      pg_stat_user_indexes i
+      JOIN pg_class c ON i.relid = c.oid
+      JOIN pg_stat_user_tables u ON i.relname = u.relname
+      JOIN pg_index x ON i.indexrelid = x.indexrelid
     ${tableNames ? 'WHERE i.relname = ANY($1::text[])' : ''}
   ) t
   WHERE raw_size > 0
@@ -86,7 +91,9 @@ export async function dbStatsHandler(req: FhirRequest): Promise<FhirResponse> {
     }
     output.push(
       `    ${row.index_name}: ${row.index_size}`,
-      `      [scans: ${row.index_scans} entries read: ${row.index_entries_read} rows fetched: ${row.index_rows_fetched}]`
+      row.indisvalid
+        ? `      [scans: ${row.index_scans} entries read: ${row.index_entries_read} rows fetched: ${row.index_rows_fetched}]`
+        : `      [!INVALID!]`
     );
   }
 

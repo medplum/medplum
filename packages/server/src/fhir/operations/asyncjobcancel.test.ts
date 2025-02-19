@@ -4,7 +4,7 @@ import { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { initTestAuth, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { asyncJobCancelHandler } from './asyncjobcancel';

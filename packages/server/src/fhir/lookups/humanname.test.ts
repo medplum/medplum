@@ -2,9 +2,11 @@ import { Operator } from '@medplum/core';
 import { Patient } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { bundleContains, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
+import { PoolClient } from 'pg';
+import { HumanNameTable } from './humanname';
 
 describe('HumanName Lookup Table', () => {
   const systemRepo = getSystemRepo();
@@ -238,4 +240,22 @@ describe('HumanName Lookup Table', () => {
       expect(searchResult.entry?.length).toStrictEqual(1);
       expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
     }));
+
+  test('Purges related resource type', async () => {
+    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+
+    const table = new HumanNameTable();
+    await table.purgeValuesBefore(db, 'Patient', '2024-01-01T00:00:00Z');
+
+    expect(db.query).toHaveBeenCalled();
+  });
+
+  test('Does not purge unrelated resource type', async () => {
+    const db = { query: jest.fn() } as unknown as PoolClient;
+
+    const table = new HumanNameTable();
+    await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');
+
+    expect(db.query).not.toHaveBeenCalled();
+  });
 });

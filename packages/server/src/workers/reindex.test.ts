@@ -10,7 +10,7 @@ import {
 } from '@medplum/fhirtypes';
 import { Job } from 'bullmq';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo, Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { ReindexJob, ReindexJobData, addReindexJob, closeReindexWorker, getReindexQueue } from './reindex';

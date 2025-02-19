@@ -1,7 +1,7 @@
 import { allOk, badRequest, normalizeErrorString, resolveId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { OperationDefinition, Subscription } from '@medplum/fhirtypes';
-import { getConfig } from '../../config';
+import { getConfig } from '../../config/loader';
 import { getAuthenticatedContext } from '../../context';
 import { generateAccessToken } from '../../oauth/keys';
 import { buildOutputParameters } from './utils/parameters';
@@ -168,8 +168,10 @@ export async function getWsBindingTokenHandler(req: FhirRequest): Promise<FhirRe
       profile: profile.reference as string,
     },
     {
-      subscription_id: subscriptionId,
-    } satisfies AdditionalWsBindingClaims
+      additionalClaims: {
+        subscription_id: subscriptionId,
+      } satisfies AdditionalWsBindingClaims,
+    }
   );
 
   const output = {

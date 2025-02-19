@@ -1,12 +1,19 @@
-import { Anchor, Badge, Box, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
+import { Anchor, Button, Group, Modal, Radio, Stack, Text } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, createReference } from '@medplum/core';
+import {
+  HTTP_HL7_ORG,
+  HTTP_TERMINOLOGY_HL7_ORG,
+  LOINC,
+  SNOMED,
+  createReference,
+  formatCodeableConcept,
+} from '@medplum/core';
 import { Encounter, Observation, Patient } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { useCallback, useState } from 'react';
-import { CodeableConceptDisplay } from '../CodeableConceptDisplay/CodeableConceptDisplay';
 import { Form } from '../Form/Form';
 import { killEvent } from '../utils/dom';
+import { ConceptBadge } from './ConceptBadge';
 
 const NULLFLAVOR = HTTP_TERMINOLOGY_HL7_ORG + '/CodeSystem/v3-NullFlavor';
 
@@ -35,6 +42,7 @@ export interface SexualOrientationProps {
   readonly patient: Patient;
   readonly encounter?: Encounter;
   readonly sexualOrientation?: Observation;
+  readonly onClickResource?: (resource: Observation) => void;
 }
 
 export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
@@ -114,11 +122,13 @@ export function SexualOrientation(props: SexualOrientationProps): JSX.Element {
         </Anchor>
       </Group>
       {sexualOrientation?.valueCodeableConcept ? (
-        <Box>
-          <Badge variant="light">
-            <CodeableConceptDisplay value={sexualOrientation.valueCodeableConcept} />
-          </Badge>
-        </Box>
+        <ConceptBadge<Observation>
+          key={sexualOrientation.id}
+          resource={sexualOrientation}
+          display={formatCodeableConcept(sexualOrientation.valueCodeableConcept)}
+          onClick={props.onClickResource}
+          onEdit={() => open()}
+        />
       ) : (
         <Text>(none)</Text>
       )}

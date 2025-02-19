@@ -174,6 +174,37 @@ describe('SuperAdminPage', () => {
     );
   });
 
+  test('Database Schema Drift', async () => {
+    setup();
+
+    const returnValue = 'This is a fake return value';
+    medplum.router.add('POST', '$db-schema-diff', async () => {
+      return [
+        allOk,
+        {
+          resourceType: 'Parameters',
+          parameter: [{ name: 'migrationString', valueString: returnValue }],
+        },
+      ];
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Get Database Schema Drift' }));
+    });
+
+    expect(await screen.findByText(returnValue)).toBeInTheDocument();
+  });
+
+  test('Reload cron resources', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Reload Cron Resources' }));
+    });
+
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
   test('Access denied', async () => {
     jest.spyOn(medplum, 'isSuperAdmin').mockImplementationOnce(() => false);
     setup();

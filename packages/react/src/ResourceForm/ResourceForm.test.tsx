@@ -1,6 +1,15 @@
 import { HTTP_HL7_ORG, createReference, deepClone, indexStructureDefinitionBundle, loadDataType } from '@medplum/core';
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, OperationOutcome, Patient, Specimen, StructureDefinition } from '@medplum/fhirtypes';
+import {
+  Bot,
+  Bundle,
+  Condition,
+  Observation,
+  OperationOutcome,
+  Patient,
+  Specimen,
+  StructureDefinition,
+} from '@medplum/fhirtypes';
 import { HomerObservation1, MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react-hooks';
 import { convertIsoToLocal, convertLocalToIso } from '../DateTimeInput/DateTimeInput.utils';
@@ -277,6 +286,66 @@ describe('ResourceForm', () => {
     const patient = onSubmit.mock.calls[0][0] as Patient;
     expect(patient.resourceType).toBe('Patient');
     expect(patient.active).toBe(true);
+  });
+
+  test('Clear choice-of-type string', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      defaultValue: { resourceType: 'Bot', id: '123', cronString: '0 0 0 0 0 0' },
+      onSubmit,
+    });
+
+    const cronStringInput = await screen.findByTestId('cron[x]');
+    expect(cronStringInput).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.change(cronStringInput, { target: { value: '' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Update'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const bot = onSubmit.mock.calls[0][0] as Bot;
+    expect(bot.resourceType).toBe('Bot');
+    expect(bot.cronString).toBeUndefined();
+  });
+
+  test('Remove CodeableConcept', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      defaultValue: {
+        resourceType: 'Condition',
+        id: '123',
+        clinicalStatus: { coding: [{ system: 'http://system.com', code: 'foo' }] },
+        verificationStatus: { coding: [{ system: 'http://system.com', code: 'bar' }] },
+      },
+      onSubmit,
+    });
+
+    const fooSpan = await screen.findByText('foo');
+    expect(fooSpan).toBeInTheDocument();
+
+    const fooClearButton = fooSpan.nextSibling as HTMLElement;
+    expect(fooClearButton).toBeDefined();
+
+    await act(async () => {
+      fireEvent.click(fooClearButton);
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Update'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const condition = onSubmit.mock.calls[0][0] as Condition;
+    expect(condition.resourceType).toBe('Condition');
+    expect(condition.clinicalStatus).toBeUndefined();
   });
 
   test('With profileUrl specified', async () => {

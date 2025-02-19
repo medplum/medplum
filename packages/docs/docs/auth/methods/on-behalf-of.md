@@ -36,7 +36,9 @@ Then, when making API requests, the Customer Server Side App must include an `X-
 
 For more information on `ProjectMemberships` and profile resources, see the [User Management Guide](https://www.medplum.com/docs/auth/user-management-guide).
 
-At this time, the `ClientApplication` must use Basic Authentication to authenticate with Medplum Server. This bypasses the need for managing expiring access tokens and refresh tokens.
+The `X-Medplum-On-Behalf-Of` header is only valid for the current request. It is not stored or persisted in any way.
+
+The `X-Medplum-On-Behalf-Of` feature is compatible with both JWT access tokens and Basic Authentication.
 
 ## How it Works
 

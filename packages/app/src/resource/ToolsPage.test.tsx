@@ -2,7 +2,7 @@ import { MantineProvider } from '@mantine/core';
 import { Notifications, cleanNotifications } from '@mantine/notifications';
 import {
   ContentType,
-  GITHUB_RELEASES_URL,
+  MEDPLUM_RELEASES_URL,
   MEDPLUM_VERSION,
   allOk,
   clearReleaseCache,
@@ -266,7 +266,7 @@ describe('ToolsPage', () => {
   test('Upgrade -- Success', async () => {
     clearReleaseCache();
     globalThis.fetch = mockFetch(200, (url) => {
-      if (url.startsWith(`${GITHUB_RELEASES_URL}/latest`)) {
+      if (url.startsWith(`${MEDPLUM_RELEASES_URL}/latest`)) {
         return {
           tag_name: 'v3.2.14',
           assets: [
@@ -349,7 +349,7 @@ describe('ToolsPage', () => {
   test('Upgrade -- Already up-to-date', async () => {
     clearReleaseCache();
     globalThis.fetch = mockFetch(200, (url) => {
-      if (url.startsWith(`${GITHUB_RELEASES_URL}/latest`)) {
+      if (url.startsWith(`${MEDPLUM_RELEASES_URL}/latest`)) {
         return {
           tag_name: 'v3.2.14',
           assets: [
@@ -428,7 +428,7 @@ describe('ToolsPage', () => {
   test('Upgrade -- Unable to get version', async () => {
     clearReleaseCache();
     globalThis.fetch = mockFetch(200, (url) => {
-      if (url.startsWith(`${GITHUB_RELEASES_URL}/latest`)) {
+      if (url.startsWith(`${MEDPLUM_RELEASES_URL}/latest`)) {
         return {
           tag_name: 'v3.2.14',
           assets: [
@@ -505,7 +505,7 @@ describe('ToolsPage', () => {
   test('Upgrade -- Error', async () => {
     clearReleaseCache();
     globalThis.fetch = mockFetch(200, (url) => {
-      if (url.startsWith(`${GITHUB_RELEASES_URL}/latest`)) {
+      if (url.startsWith(`${MEDPLUM_RELEASES_URL}/latest`)) {
         return {
           tag_name: 'v3.2.14',
           assets: [

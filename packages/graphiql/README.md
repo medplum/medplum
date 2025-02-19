@@ -8,17 +8,15 @@ The FHIR GraphQL schema is approximately 40 MB of compact JSON. It is large, and
 
 However, GraphiQL needs the schema for helpful functionality such as tooltips and autocomplete.
 
-To use GraphiQL on localhost, you need a copy of the schema "introspection query" response in the `public/schema` directory.
+To use GraphiQL on localhost, you need a copy of the schema.
+Historically to get the schema locally, you needed to manually download the schema yourself, but this is no longer the case.
+The schema will be retrieved automatically at runtime from the URL present in the `MEDPLUM_INTROSPECTION_URL` environment variable.
 
-The easy way is to simply copy the publicly hosted schema:
+By default, the `.env.defaults` dotenv file comes with `MEDPLUM_INTROSPECTION_URL` set to the official Medplum-hosted schema at https://graphiql.medplum.com/schema/schema-latest.json, so you don't need to configure anything yourself.
 
-```bash
-mkdir -p public/schema
-cd public/schema
-wget https://graphiql.medplum.com/schema/schema-v1.json
-```
+## Schema Regeneration
 
-The harder way is to regenerate the schema from the current GraphQL model.
+Although almost never necessary, you can manually regenerate the schema from the current GraphQL model by following the following instructions:
 
 1. Make sure your Medplum user account has access to GraphQL schema/introspection queries
 2. Disable the `operationName === 'IntrospectionQuery'` guard in `src/index.tsx`

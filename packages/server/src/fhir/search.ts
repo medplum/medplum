@@ -14,7 +14,6 @@ import {
   getDataType,
   getReferenceString,
   getSearchParameter,
-  getSearchParameterDetails,
   IncludeTarget,
   isResource,
   OperationOutcomeError,
@@ -22,7 +21,6 @@ import {
   parseFilterParameter,
   parseParameter,
   PropertyType,
-  SearchParameterDetails,
   SearchParameterType,
   SearchRequest,
   serverError,
@@ -44,11 +42,12 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import validator from 'validator';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
-import { getLookupTable, Repository } from './repo';
+import { Repository } from './repo';
 import { getFullUrl } from './response';
+import { ColumnSearchParameterImplementation, getSearchParameterImplementation } from './searchparameter';
 import {
   ArraySubquery,
   Column,
@@ -96,7 +95,7 @@ interface ChainedSearchLink {
   originType: string;
   targetType: string;
   code: string;
-  details: SearchParameterDetails;
+  implementation: ColumnSearchParameterImplementation;
   direction: (typeof Direction)['FORWARD'] | (typeof Direction)['REVERSE'];
 }
 
@@ -157,8 +156,13 @@ export async function searchByReferenceImpl<T extends Resource>(
           badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
         );
       }
-      const details = getSearchParameterDetails(resourceType, param);
-      builder.whereExpr(buildReferenceSearchFilter(builder.tableName, details, Operator.EQUALS, referenceColumn));
+      const impl = getSearchParameterImplementation(resourceType, param);
+      if (impl.searchStrategy !== 'column') {
+        throw new OperationOutcomeError(
+          badRequest(`Invalid reference search parameter on ${resourceType}: ${referenceField}`)
+        );
+      }
+      builder.whereExpr(buildReferenceSearchFilter(builder.tableName, impl, Operator.EQUALS, referenceColumn));
     },
   });
   const builder = new SelectQuery(
@@ -531,7 +535,7 @@ async function getSearchRevIncludeEntries(
   }
 
   const references =
-    getSearchParameterDetails(resourceType, searchParam).type === SearchParameterType.CANONICAL
+    getSearchParameterImplementation(resourceType, searchParam).type === SearchParameterType.CANONICAL
       ? flatMapFilter(resources, (r) => getCanonicalUrl(r))
       : resources.map(getReferenceString);
   const searchRequest = {
@@ -870,7 +874,7 @@ export function buildSearchExpression(
     for (const filter of searchRequest.filters) {
       let expr: Expression | undefined;
       if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
-        const chain = parseChainedParameter(searchRequest.resourceType, filter.code, filter.value);
+        const chain = parseChainedParameter(searchRequest.resourceType, filter);
         expr = buildChainedSearch(repo, selectQuery, searchRequest.resourceType, chain);
       } else {
         expr = buildSearchFilterExpression(repo, selectQuery, resourceType, resourceType, filter);
@@ -911,7 +915,7 @@ function buildSearchFilterExpression(
   }
 
   if (filter.code.startsWith('_has:') || filter.code.includes('.')) {
-    const chain = parseChainedParameter(resourceType, filter.code, filter.value);
+    const chain = parseChainedParameter(resourceType, filter);
     return buildChainedSearch(repo, selectQuery, resourceType, chain);
   }
 
@@ -934,13 +938,13 @@ function buildSearchFilterExpression(
     };
   }
 
-  const lookupTable = getLookupTable(resourceType, param);
-  if (lookupTable) {
-    return lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
+  const impl = getSearchParameterImplementation(resourceType, param);
+  if (impl.searchStrategy === 'lookup-table') {
+    return impl.lookupTable.buildWhere(selectQuery, resourceType, table, param, filter);
   }
 
   // Not any special cases, just a normal search parameter.
-  return buildNormalSearchFilterExpression(resourceType, table, param, filter);
+  return buildNormalSearchFilterExpression(resourceType, table, param, impl, filter);
 }
 
 /**
@@ -950,6 +954,7 @@ function buildSearchFilterExpression(
  * @param resourceType - The FHIR resource type.
  * @param table - The resource table.
  * @param param - The FHIR search parameter.
+ * @param impl - The search parameter implementation.
  * @param filter - The search filter.
  * @returns A SQL "WHERE" clause expression.
  */
@@ -957,41 +962,37 @@ function buildNormalSearchFilterExpression(
   resourceType: string,
   table: string,
   param: SearchParameter,
+  impl: ColumnSearchParameterImplementation,
   filter: Filter
 ): Expression {
-  const details = getSearchParameterDetails(resourceType, param);
   if (filter.operator === Operator.MISSING) {
-    return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '=' : '!=', null);
+    return new Condition(new Column(table, impl.columnName), filter.value === 'true' ? '=' : '!=', null);
   } else if (filter.operator === Operator.PRESENT) {
-    return new Condition(new Column(table, details.columnName), filter.value === 'true' ? '!=' : '=', null);
+    return new Condition(new Column(table, impl.columnName), filter.value === 'true' ? '!=' : '=', null);
   }
 
   switch (param.type) {
     case 'string':
-      return buildStringSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
+      return buildStringSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
     case 'token':
     case 'uri':
-      if (details.type === SearchParameterType.BOOLEAN) {
-        return buildBooleanSearchFilter(table, details, filter.operator, filter.value);
+      if (impl.type === SearchParameterType.BOOLEAN) {
+        return buildBooleanSearchFilter(table, impl, filter.operator, filter.value);
       } else {
-        return buildTokenSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
+        return buildTokenSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
       }
     case 'reference':
-      return buildReferenceSearchFilter(table, details, filter.operator, splitSearchOnComma(filter.value));
+      return buildReferenceSearchFilter(table, impl, filter.operator, splitSearchOnComma(filter.value));
     case 'date':
-      return buildDateSearchFilter(table, details, filter);
+      return buildDateSearchFilter(table, impl, filter);
     case 'quantity':
-      return new Condition(
-        new Column(table, details.columnName),
-        fhirOperatorToSqlOperator(filter.operator),
-        filter.value
-      );
+      return buildQuantitySearchFilter(table, impl, filter);
     default: {
       const values = splitSearchOnComma(filter.value).map(
-        (v) => new Condition(new Column(undefined, details.columnName), fhirOperatorToSqlOperator(filter.operator), v)
+        (v) => new Condition(new Column(undefined, impl.columnName), fhirOperatorToSqlOperator(filter.operator), v)
       );
       const expr = new Disjunction(values);
-      return details.array ? new ArraySubquery(new Column(undefined, details.columnName), expr) : expr;
+      return impl.array ? new ArraySubquery(new Column(undefined, impl.columnName), expr) : expr;
     }
   }
 }
@@ -1018,17 +1019,21 @@ function trySpecialSearchParameter(
     case '_id':
       return buildIdSearchFilter(
         table,
-        { columnName: 'id', type: SearchParameterType.UUID },
+        { columnName: 'id', type: SearchParameterType.UUID, searchStrategy: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
     case '_lastUpdated':
-      return buildDateSearchFilter(table, { type: SearchParameterType.DATETIME, columnName: 'lastUpdated' }, filter);
+      return buildDateSearchFilter(
+        table,
+        { type: SearchParameterType.DATETIME, columnName: 'lastUpdated', searchStrategy: 'column' },
+        filter
+      );
     case '_compartment':
     case '_project':
       return buildIdSearchFilter(
         table,
-        { columnName: 'compartments', type: SearchParameterType.UUID, array: true },
+        { columnName: 'compartments', type: SearchParameterType.UUID, array: true, searchStrategy: 'column' },
         filter.operator,
         splitSearchOnComma(filter.value)
       );
@@ -1088,34 +1093,37 @@ function buildFilterParameterComparison(
 /**
  * Adds a string search filter as "WHERE" clause to the query builder.
  * @param table - The table in which to search.
- * @param details - The search parameter details.
+ * @param impl - The search parameter implementation info.
  * @param operator - The search operator.
  * @param values - The string values to search against.
  * @returns The select query condition.
  */
 function buildStringSearchFilter(
   table: string,
-  details: SearchParameterDetails,
+  impl: ColumnSearchParameterImplementation,
   operator: Operator,
   values: string[]
 ): Expression {
-  const column = new Column(details.array ? undefined : table, details.columnName);
+  const column = new Column(impl.array ? undefined : table, impl.columnName);
 
   const expression = buildStringFilterExpression(column, operator, values);
-  if (details.array) {
-    return new ArraySubquery(new Column(table, details.columnName), expression);
+  if (impl.array) {
+    return new ArraySubquery(new Column(table, impl.columnName), expression);
   }
   return expression;
 }
 
+const prefixMatchOperators = [Operator.EQUALS, Operator.STARTS_WITH];
 function buildStringFilterExpression(column: Column, operator: Operator, values: string[]): Expression {
   const conditions = values.map((v) => {
     if (operator === Operator.EXACT) {
       return new Condition(column, '=', v);
     } else if (operator === Operator.CONTAINS) {
       return new Condition(column, 'LIKE', `%${escapeLikeString(v)}%`);
-    } else {
+    } else if (prefixMatchOperators.includes(operator)) {
       return new Condition(column, 'LIKE', `${escapeLikeString(v)}%`);
+    } else {
+      throw new OperationOutcomeError(badRequest('Unsupported string search operator: ' + operator));
     }
   });
   return new Disjunction(conditions);
@@ -1124,18 +1132,18 @@ function buildStringFilterExpression(column: Column, operator: Operator, values:
 /**
  * Adds an ID search filter as "WHERE" clause to the query builder.
  * @param table - The resource table name or alias.
- * @param details - The search parameter details.
+ * @param impl - The search parameter implementation info.
  * @param operator - The search operator.
  * @param values - The string values to search against.
  * @returns The select query condition.
  */
 function buildIdSearchFilter(
   table: string,
-  details: SearchParameterDetails,
+  impl: ColumnSearchParameterImplementation,
   operator: Operator,
   values: string[]
 ): Expression {
-  const column = new Column(table, details.columnName);
+  const column = new Column(table, impl.columnName);
 
   for (let i = 0; i < values.length; i++) {
     if (values[i].includes('/')) {
@@ -1146,7 +1154,7 @@ function buildIdSearchFilter(
     }
   }
 
-  const condition = buildEqualityCondition(details, values, column);
+  const condition = buildEqualityCondition(impl, values, column);
   if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
     return new Negation(condition);
   }
@@ -1156,19 +1164,19 @@ function buildIdSearchFilter(
 /**
  * Adds a token search filter as "WHERE" clause to the query builder.
  * @param table - The resource table.
- * @param details - The search parameter details.
+ * @param impl - The search parameter implementation info.
  * @param operator - The search operator.
  * @param values - The string values to search against.
  * @returns The select query condition.
  */
 function buildTokenSearchFilter(
   table: string,
-  details: SearchParameterDetails,
+  impl: ColumnSearchParameterImplementation,
   operator: Operator,
   values: string[]
 ): Expression {
-  const column = new Column(table, details.columnName);
-  const condition = buildEqualityCondition(details, values, column);
+  const column = new Column(table, impl.columnName);
+  const condition = buildEqualityCondition(impl, values, column);
   if (operator === Operator.NOT_EQUALS || operator === Operator.NOT) {
     return new Negation(condition);
   }
@@ -1178,7 +1186,7 @@ function buildTokenSearchFilter(
 const allowedBooleanValues = ['true', 'false'];
 function buildBooleanSearchFilter(
   table: string,
-  details: SearchParameterDetails,
+  impl: ColumnSearchParameterImplementation,
   operator: Operator,
   value: string
 ): Expression {
@@ -1187,7 +1195,7 @@ function buildBooleanSearchFilter(
   }
 
   return new Condition(
-    new Column(table, details.columnName),
+    new Column(table, impl.columnName),
     operator === Operator.NOT_EQUALS || operator === Operator.NOT ? '!=' : '=',
     value
   );
@@ -1196,25 +1204,25 @@ function buildBooleanSearchFilter(
 /**
  * Adds a reference search filter as "WHERE" clause to the query builder.
  * @param table - The table in which to search.
- * @param details - The search parameter details.
+ * @param impl - The search parameter implementation info.
  * @param operator - The search operator.
  * @param values - The string values to search against or a Column
  * @returns The select query condition.
  */
 function buildReferenceSearchFilter(
   table: string,
-  details: SearchParameterDetails,
+  impl: ColumnSearchParameterImplementation,
   operator: Operator,
   values: string[] | Column
 ): Expression {
-  const column = new Column(table, details.columnName);
+  const column = new Column(table, impl.columnName);
   if (Array.isArray(values)) {
     values = values.map((v) =>
-      !v.includes('/') && (details.columnName === 'subject' || details.columnName === 'patient') ? `Patient/${v}` : v
+      !v.includes('/') && (impl.columnName === 'subject' || impl.columnName === 'patient') ? `Patient/${v}` : v
     );
   }
   let condition: Condition;
-  if (details.array) {
+  if (impl.array) {
     condition = new Condition(column, 'ARRAY_CONTAINS', values, 'TEXT[]');
   } else if (values instanceof Column) {
     condition = new Condition(column, '=', values);
@@ -1229,17 +1237,17 @@ function buildReferenceSearchFilter(
 /**
  * Adds a date or date/time search filter.
  * @param table - The resource table name.
- * @param details - The search parameter details.
+ * @param impl - The search parameter implementation info.
  * @param filter - The search filter.
  * @returns The select query condition.
  */
-function buildDateSearchFilter(table: string, details: SearchParameterDetails, filter: Filter): Expression {
+function buildDateSearchFilter(table: string, impl: ColumnSearchParameterImplementation, filter: Filter): Expression {
   const dateValue = new Date(filter.value);
   if (isNaN(dateValue.getTime())) {
     throw new OperationOutcomeError(badRequest(`Invalid date value: ${filter.value}`));
   }
 
-  if (table === 'MeasureReport' && details.columnName === 'period') {
+  if (table === 'MeasureReport' && impl.columnName === 'period') {
     // Handle special case for "MeasureReport.period"
     // This is a trial for using "tstzrange" columns for date/time ranges.
     // Eventually, this special case will go away, and this will become the default behavior for all "date" search parameters.
@@ -1277,7 +1285,40 @@ function buildDateSearchFilter(table: string, details: SearchParameterDetails, f
     }
   }
 
-  return new Condition(new Column(table, details.columnName), fhirOperatorToSqlOperator(filter.operator), filter.value);
+  return new Condition(new Column(table, impl.columnName), fhirOperatorToSqlOperator(filter.operator), filter.value);
+}
+
+/**
+ * Builds a quantity search filter.
+ * @param table - The resource table name.
+ * @param impl - The search parameter implementation info.
+ * @param filter - The search filter.
+ * @returns The select query condition.
+ */
+function buildQuantitySearchFilter(
+  table: string,
+  impl: ColumnSearchParameterImplementation,
+  filter: Filter
+): Expression {
+  const [number, _system, _code] = splitN(filter.value, '|', 3);
+  if (!number) {
+    throw new OperationOutcomeError(badRequest('Invalid quantity value: ' + filter.value));
+  }
+
+  if (filter.operator === Operator.APPROXIMATELY) {
+    // Search for operators within 10% of the value
+    // See: https://hl7.org/fhir/R4/search.html#prefix
+    // 	 The value for the parameter in the resource is approximately the same to the provided value.
+    //   Note that the recommended value for the approximation is 10% of the stated value
+    //   (or for a date, 10% of the gap between now and the date), but systems may choose other values where appropriate
+    const numberValue = parseFloat(number);
+    return new Conjunction([
+      new Condition(new Column(table, impl.columnName), '>=', numberValue * 0.9),
+      new Condition(new Column(table, impl.columnName), '<=', numberValue * 1.1),
+    ]);
+  }
+
+  return new Condition(new Column(table, impl.columnName), fhirOperatorToSqlOperator(filter.operator), number);
 }
 
 /**
@@ -1312,14 +1353,13 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
     throw new OperationOutcomeError(badRequest('Unknown search parameter: ' + sortRule.code));
   }
 
-  const lookupTable = getLookupTable(resourceType, param);
-  if (lookupTable) {
-    lookupTable.addOrderBy(builder, resourceType, sortRule);
+  const impl = getSearchParameterImplementation(resourceType, param);
+  if (impl.searchStrategy === 'lookup-table') {
+    impl.lookupTable.addOrderBy(builder, resourceType, sortRule);
     return;
   }
 
-  const details = getSearchParameterDetails(resourceType, param);
-  builder.orderBy(details.columnName, !!sortRule.descending);
+  builder.orderBy(impl.columnName, !!sortRule.descending);
 }
 
 /**
@@ -1352,17 +1392,17 @@ function fhirOperatorToSqlOperator(fhirOperator: Operator): keyof typeof SQL {
 }
 
 function buildEqualityCondition(
-  details: SearchParameterDetails,
+  impl: ColumnSearchParameterImplementation,
   values: string[],
   column?: Column | string
 ): Condition {
-  column = column ?? details.columnName;
-  if (details.array) {
-    return new Condition(column, 'ARRAY_CONTAINS', values, details.type + '[]');
+  column = column ?? impl.columnName;
+  if (impl.array) {
+    return new Condition(column, 'ARRAY_CONTAINS', values, impl.type + '[]');
   } else if (values.length > 1) {
-    return new Condition(column, 'IN', values, details.type);
+    return new Condition(column, 'IN', values, impl.type);
   } else {
-    return new Condition(column, '=', values[0], details.type);
+    return new Condition(column, '=', values[0], impl.type);
   }
 }
 
@@ -1422,7 +1462,7 @@ function buildChainedSearchUsingReferenceTable(
 
   // Set up subquery for EXISTS(), starting on the first link of the chain
   let innerQuery: SelectQuery;
-  if (link.details.type === SearchParameterType.CANONICAL) {
+  if (link.implementation.type === SearchParameterType.CANONICAL) {
     innerQuery = new SelectQuery(currentTable).whereExpr(
       getCanonicalJoinCondition(selectQuery.tableName, link, currentTable)
     );
@@ -1436,7 +1476,7 @@ function buildChainedSearchUsingReferenceTable(
   // Add joins to inner query for all subsequent chain links
   for (let i = 1; i < param.chain.length; i++) {
     link = param.chain[i];
-    if (link.details.type === SearchParameterType.CANONICAL) {
+    if (link.implementation.type === SearchParameterType.CANONICAL) {
       currentTable = linkCanonicalReference(innerQuery, currentTable, link);
     } else {
       const lookupTable = linkReferenceLookupTable(innerQuery, currentTable, link);
@@ -1506,16 +1546,16 @@ function linkLiteralReference(selectQuery: SelectQuery, lookupTable: string, lin
 }
 
 function getCanonicalJoinCondition(currentTable: string, link: ChainedSearchLink, nextTable: string): Expression {
-  const eq = link.details.array ? 'IN_SUBQUERY' : '=';
+  const eq = link.implementation.array ? 'IN_SUBQUERY' : '=';
   if (link.direction === Direction.FORWARD) {
-    return new Condition(new Column(nextTable, 'url'), eq, new Column(currentTable, link.details.columnName));
+    return new Condition(new Column(nextTable, 'url'), eq, new Column(currentTable, link.implementation.columnName));
   } else {
-    return new Condition(new Column(currentTable, 'url'), eq, new Column(nextTable, link.details.columnName));
+    return new Condition(new Column(currentTable, 'url'), eq, new Column(nextTable, link.implementation.columnName));
   }
 }
 
 function nextChainedTable(link: ChainedSearchLink): string {
-  if (link.details.type === SearchParameterType.CANONICAL) {
+  if (link.implementation.type === SearchParameterType.CANONICAL) {
     return link.targetType;
   } else if (link.direction === Direction.FORWARD) {
     return `${link.originType}_References`;
@@ -1560,7 +1600,7 @@ function buildChainedSearchUsingReferenceStrings(
   let currentResourceType = resourceType;
   let currentTable = resourceType;
   for (const link of param.chain) {
-    if (link.details.type === SearchParameterType.CANONICAL) {
+    if (link.implementation.type === SearchParameterType.CANONICAL) {
       currentTable = linkCanonicalReference(selectQuery, currentTable, link);
     } else {
       const nextTable = selectQuery.getNextJoinAlias();
@@ -1587,32 +1627,33 @@ function buildSearchLinkCondition(
   currentTable: string,
   nextTable: string
 ): Expression {
-  const linkColumn = new Column(currentTable, link.details.columnName);
+  const impl = link.implementation;
+  const linkColumn = new Column(currentTable, impl.columnName);
   if (link.direction === Direction.REVERSE) {
-    const nextColumn = new Column(nextTable, link.details.columnName);
+    const nextColumn = new Column(nextTable, impl.columnName);
     const currentColumn = new Column(currentTable, 'id');
 
-    if (link.details.array) {
+    if (impl.array) {
       return new ArraySubquery(
         nextColumn,
-        new Condition(new Column(undefined, link.details.columnName), 'REVERSE_LINK', currentColumn, resourceType)
+        new Condition(new Column(undefined, impl.columnName), 'REVERSE_LINK', currentColumn, resourceType)
       );
     } else {
       return new Condition(nextColumn, 'REVERSE_LINK', currentColumn, resourceType);
     }
-  } else if (link.details.array) {
+  } else if (impl.array) {
     return new ArraySubquery(
       linkColumn,
-      new Condition(new Column(nextTable, 'id'), 'LINK', new Column(undefined, link.details.columnName))
+      new Condition(new Column(nextTable, 'id'), 'LINK', new Column(undefined, impl.columnName))
     );
   } else {
     return new Condition(new Column(nextTable, 'id'), 'LINK', linkColumn);
   }
 }
 
-function parseChainedParameter(resourceType: string, key: string, value: string): ChainedSearchParameter {
+function parseChainedParameter(resourceType: string, searchFilter: Filter): ChainedSearchParameter {
   let currentResourceType = resourceType;
-  const parts = splitChainedSearch(key);
+  const parts = splitChainedSearch(searchFilter.code);
 
   const chain: ChainedSearchLink[] = [];
   let filter: Filter | undefined;
@@ -1628,7 +1669,7 @@ function parseChainedParameter(resourceType: string, key: string, value: string)
       if (!searchParam) {
         throw new Error(`Invalid search parameter at end of chain: ${currentResourceType}?${code}`);
       }
-      filter = parseParameter(searchParam, modifier, value);
+      filter = parseParameter(searchParam, modifier ?? searchFilter.operator, searchFilter.value);
     } else {
       const link = parseChainLink(part, currentResourceType);
       chain.push(link);
@@ -1657,8 +1698,11 @@ function parseChainLink(param: string, currentResourceType: string): ChainedSear
   } else {
     throw new Error(`Unable to identify next resource type for search parameter: ${currentResourceType}?${code}`);
   }
-  const details = getSearchParameterDetails(currentResourceType, searchParam);
-  return { originType: currentResourceType, targetType, code, details, direction: Direction.FORWARD };
+  const implementation = getSearchParameterImplementation(currentResourceType, searchParam);
+  if (implementation.searchStrategy !== 'column') {
+    throw new Error(`Invalid search parameter in chain: ${currentResourceType}?${code}`);
+  }
+  return { originType: currentResourceType, targetType, code, implementation, direction: Direction.FORWARD };
 }
 
 function parseReverseChainLink(param: string, targetResourceType: string): ChainedSearchLink {
@@ -1671,8 +1715,17 @@ function parseReverseChainLink(param: string, targetResourceType: string): Chain
       `Invalid reverse chain link: search parameter ${resourceType}?${code} does not refer to ${targetResourceType}`
     );
   }
-  const details = getSearchParameterDetails(resourceType, searchParam);
-  return { originType: targetResourceType, targetType: resourceType, code, details, direction: Direction.REVERSE };
+  const implementation = getSearchParameterImplementation(resourceType, searchParam);
+  if (implementation.searchStrategy !== 'column') {
+    throw new Error(`Invalid search parameter in chain: ${resourceType}?${code}`);
+  }
+  return {
+    originType: targetResourceType,
+    targetType: resourceType,
+    code,
+    implementation,
+    direction: Direction.REVERSE,
+  };
 }
 
 function splitChainedSearch(chain: string): string[] {

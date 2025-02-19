@@ -3,7 +3,7 @@ import { BulkDataExportOutput, Observation } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, waitForAsyncJob, withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
 import { exportResourceType } from './export';
@@ -145,7 +145,7 @@ describe('Export', () => {
         },
       });
 
-      const exporter = new BulkExporter(systemRepo, undefined);
+      const exporter = new BulkExporter(systemRepo);
       const exportWriteResourceSpy = jest.spyOn(exporter, 'writeResource');
       await exporter.start('http://example.com');
 

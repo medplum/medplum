@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto';
 import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import { initAppServices, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { Repository } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { closeDownloadWorker, execDownloadJob, getDownloadQueue } from './download';

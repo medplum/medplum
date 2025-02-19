@@ -1,6 +1,6 @@
 {
   "name": "@medplum/health-gorilla-react",
-  "version": "3.2.24",
+  "version": "3.2.32",
   "description": "Medplum Health Gorilla React SDK",
   "keywords": [
     "medplum",
@@ -58,30 +58,30 @@
     "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@medplum/core": "3.2.24",
-    "@medplum/definitions": "3.2.24",
-    "@medplum/fhirtypes": "3.2.24",
-    "@medplum/health-gorilla-core": "3.2.24",
-    "@medplum/mock": "3.2.24",
-    "@medplum/react": "3.2.24",
+    "@medplum/core": "3.2.32",
+    "@medplum/definitions": "3.2.32",
+    "@medplum/fhirtypes": "3.2.32",
+    "@medplum/health-gorilla-core": "3.2.32",
+    "@medplum/mock": "3.2.32",
+    "@medplum/react": "3.2.32",
     "@testing-library/jest-dom": "6.6.3",
-    "@testing-library/react": "16.1.0",
-    "@types/node": "22.10.1",
+    "@testing-library/react": "16.2.0",
+    "@types/node": "20.17.17",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
-    "jsdom": "25.0.1",
+    "jsdom": "26.0.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.28.0",
     "rimraf": "5.0.9",
-    "vitest": "2.1.8"
+    "vitest": "3.0.5"
   },
   "peerDependencies": {
-    "@medplum/core": "3.2.24",
-    "@medplum/fhirtypes": "3.2.24",
-    "@medplum/health-gorilla-core": "3.2.24",
-    "@medplum/react": "3.2.24",
+    "@medplum/core": "3.2.32",
+    "@medplum/fhirtypes": "3.2.32",
+    "@medplum/health-gorilla-core": "3.2.32",
+    "@medplum/react": "3.2.32",
     "react": "^18.0.0"
   },
   "engines": {

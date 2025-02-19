@@ -17,9 +17,11 @@ Medplum uses AWS CloudWatch to store server logs.
 
 The Medplum server logs:
 
-- All RESTful interactions with FHIR resources
+- All RESTful interactions with FHIR resources, which are recorded as [FHIR AuditEvent resources](/docs/api/fhir/resources/auditevent)
 - Login Attempts
 - Other troubleshooting information
+
+For [batch requests](/docs/fhir-datastore/fhir-batch-requests) and [GraphQL queries](/docs/graphql/basic-queries), each individual read/search operation executed by the query generates its own log line. While these operations are logged separately, they all share the same [request ID / trace ID](/docs/integration/log-streaming#log-correlation) for easy correlation and tracing.
 
 ## Forwarding Logs via AWS Lambda
 

@@ -5,7 +5,8 @@ import { AddressInfo } from 'net';
 import request from 'superwstest';
 import WebSocket from 'ws';
 import { initApp, shutdownApp } from './app';
-import { MedplumServerConfig, loadTestConfig } from './config';
+import { loadTestConfig } from './config/loader';
+import { MedplumServerConfig } from './config/types';
 import { withTestContext } from './test.setup';
 
 describe('WebSockets', () => {

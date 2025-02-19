@@ -13,7 +13,8 @@ import { randomUUID } from 'node:crypto';
 import { Server } from 'node:http';
 import request from 'superwstest';
 import { initApp, shutdownApp } from '../app';
-import { MedplumServerConfig, loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { Repository } from '../fhir/repo';
 import { getRedis } from '../redis';
 import { createTestProject, withTestContext } from '../test.setup';
@@ -34,6 +35,7 @@ describe('WebSockets Subscriptions', () => {
     app = express();
     config = await loadTestConfig();
     config.heartbeatEnabled = false;
+    config.logLevel = 'warn';
     server = await initApp(app, config);
 
     const result = await withTestContext(() =>
@@ -398,6 +400,7 @@ describe('Subscription Heartbeat', () => {
     app = express();
     config = await loadTestConfig();
     config.heartbeatMilliseconds = 25;
+    config.logLevel = 'warn';
     server = await initApp(app, config);
 
     const result = await withTestContext(() =>

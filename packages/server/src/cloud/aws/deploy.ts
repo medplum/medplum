@@ -15,8 +15,8 @@ import { sleep } from '@medplum/core';
 import { Bot } from '@medplum/fhirtypes';
 import { ConfiguredRetryStrategy } from '@smithy/util-retry';
 import JSZip from 'jszip';
-import { getConfig } from '../../config';
-import { getLogger } from '../../context';
+import { getConfig } from '../../config/loader';
+import { getLogger } from '../../logger';
 
 export const LAMBDA_RUNTIME = 'nodejs18.x';
 export const LAMBDA_HANDLER = 'index.handler';

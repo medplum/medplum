@@ -1,16 +1,16 @@
 import {
   HTTP_HL7_ORG,
+  PropertyType,
   TypedValue,
   deepClone,
   evalFhirPathTyped,
-  formatCoding,
   getExtension,
   getReferenceString,
   getTypedPropertyValueWithoutSchema,
   splitN,
-  stringify,
   toJsBoolean,
   toTypedValue,
+  typedValueToString,
 } from '@medplum/core';
 import {
   Encounter,
@@ -95,19 +95,142 @@ export function isQuestionEnabled(
   return enableBehavior !== 'any';
 }
 
+export function evaluateCalculatedExpressionsInQuestionnaire(
+  items: QuestionnaireItem[],
+  response: QuestionnaireResponse | undefined
+): QuestionnaireResponseItem[] {
+  return items
+    .map((item): QuestionnaireResponseItem | null => {
+      if (item.item) {
+        return {
+          ...item,
+          item: evaluateCalculatedExpressionsInQuestionnaire(item.item, response),
+        };
+      } else {
+        const calculatedValue = evaluateCalculatedExpression(item, response);
+        if (!calculatedValue) {
+          return null;
+        }
+
+        const answer = typedValueToResponseItem(item, calculatedValue);
+
+        if (!answer) {
+          return null;
+        }
+
+        return {
+          id: item?.id,
+          linkId: item?.linkId,
+          text: item.text,
+          answer: [answer],
+        };
+      }
+    })
+    .filter((item): item is QuestionnaireResponseItem => item !== null);
+}
+
+export function typedValueToResponseItem(
+  item: QuestionnaireItem,
+  value: TypedValue
+): QuestionnaireResponseItemAnswer | undefined {
+  if (!item.type) {
+    return undefined;
+  }
+
+  switch (item.type) {
+    case QuestionnaireItemType.boolean:
+      return value.type === PropertyType.boolean ? { valueBoolean: value.value } : undefined;
+    case QuestionnaireItemType.date:
+      return value.type === PropertyType.date ? { valueDate: value.value } : undefined;
+    case QuestionnaireItemType.dateTime:
+      return value.type === PropertyType.dateTime ? { valueDateTime: value.value } : undefined;
+    case QuestionnaireItemType.time:
+      return value.type === PropertyType.time ? { valueTime: value.value } : undefined;
+    case QuestionnaireItemType.url:
+      return value.type === PropertyType.url ? { valueString: value.value } : undefined;
+    case QuestionnaireItemType.text:
+      return value.type === PropertyType.string ? { valueString: value.value } : undefined;
+    case QuestionnaireItemType.attachment:
+      return value.type === PropertyType.Attachment ? { valueAttachment: value.value } : undefined;
+    case QuestionnaireItemType.reference:
+      return value.type === PropertyType.Reference ? { valueReference: value.value } : undefined;
+    case QuestionnaireItemType.quantity:
+      return { valueQuantity: value.value };
+    case QuestionnaireItemType.decimal:
+      return { valueDecimal: value.value };
+    case QuestionnaireItemType.integer:
+      return { valueInteger: value.value };
+    case QuestionnaireItemType.string:
+      return { valueString: value.value };
+    default:
+      return undefined;
+  }
+}
+
+function evaluateCalculatedExpression(
+  item: QuestionnaireItem,
+  response: QuestionnaireResponse | undefined
+): TypedValue | undefined {
+  if (!response) {
+    return undefined;
+  }
+
+  const extension = getExtension(
+    item,
+    HTTP_HL7_ORG + '/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression'
+  );
+
+  if (extension) {
+    const expression = extension.valueExpression?.expression;
+    if (expression) {
+      const value = toTypedValue(response);
+      const result = evalFhirPathTyped(expression, [value], { '%resource': value });
+      return result.length !== 0 ? result[0] : undefined;
+    }
+  }
+  return undefined;
+}
+
+export function mergeUpdatedItems(
+  mergedItems: QuestionnaireResponseItem[],
+  updatedItems: QuestionnaireResponseItem[]
+): QuestionnaireResponseItem[] {
+  return mergedItems.map((mergedItem) => {
+    const updatedItem = updatedItems.find((updated) => updated.linkId === mergedItem.linkId);
+
+    // Usually fields with calculated expressions would be readOnly in the case where it allows foe manual updates.
+    // It would get replaced with content from calcultaed expresion.
+    if (updatedItem) {
+      return {
+        ...mergedItem,
+        item: updatedItem.item ? mergeUpdatedItems(mergedItem.item || [], updatedItem.item) : mergedItem.item,
+        answer: updatedItem.answer || mergedItem.answer,
+      };
+    }
+    return mergedItem;
+  });
+}
+
 export function getNewMultiSelectValues(
   selected: string[],
   propertyName: string,
   item: QuestionnaireItem
 ): QuestionnaireResponseItemAnswer[] {
-  return selected.map((o) => {
+  const result: QuestionnaireResponseItemAnswer[] = [];
+
+  for (const selectedStr of selected) {
     const option = item.answerOption?.find(
-      (option) =>
-        formatCoding(option.valueCoding) === o || option[propertyName as keyof QuestionnaireItemAnswerOption] === o
+      (candidate) => typedValueToString(getItemAnswerOptionValue(candidate)) === selectedStr
     );
-    const optionValue = getItemAnswerOptionValue(option ?? {});
-    return { [propertyName]: optionValue?.value };
-  });
+    if (option) {
+      const optionValue = getItemAnswerOptionValue(option);
+      if (optionValue) {
+        result.push({ [propertyName]: optionValue.value });
+      }
+    }
+  }
+
+  return result;
 }
 
 function getByLinkId(
@@ -300,10 +423,6 @@ function buildInitialResponseAnswer(answer: QuestionnaireItemInitial): Questionn
   // This works because QuestionnaireItemInitial and QuestionnaireResponseItemAnswer
   // have the same properties.
   return { ...answer };
-}
-
-export function formatReferenceString(typedValue: TypedValue): string {
-  return typedValue.value.display || typedValue.value.reference || stringify(typedValue.value);
 }
 
 /**

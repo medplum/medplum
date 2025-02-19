@@ -1,6 +1,6 @@
 import { OperationOutcomeError, generateId } from '@medplum/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { closeRedis, getRedis, initRedis } from '../redis';
 import { getTopicForUser } from './utils';
 

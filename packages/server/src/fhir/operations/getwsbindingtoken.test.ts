@@ -3,7 +3,7 @@ import { OperationOutcome, Parameters, Subscription } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { verifyJwt } from '../../oauth/keys';
 import { initTestAuth, withTestContext } from '../../test.setup';
 

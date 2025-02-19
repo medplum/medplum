@@ -91,3 +91,8 @@ override.tf.json
 .terraformrc
 terraform.rc
 *.bak
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
