@@ -1,3 +1,4 @@
+import cx from 'clsx';
 import { Input } from '@mantine/core';
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { ReactNode, useContext } from 'react';
@@ -33,7 +34,9 @@ export function FormSection(props: FormSectionProps): JSX.Element {
     <Input.Wrapper
       id={props.htmlFor}
       label={label}
-      classNames={{ label: props?.readonly ? classes.dimmed : undefined }}
+      classNames={{
+        label: cx({ [classes.dimmed]: props?.readonly }, classes.preserveBreaks),
+      }}
       description={props.description}
       withAsterisk={props.withAsterisk}
       error={getErrorsForInput(props.outcome, props.errorExpression ?? props.htmlFor)}

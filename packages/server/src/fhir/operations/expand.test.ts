@@ -11,7 +11,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
 describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }])('Expand with %j', (projectProps) => {
@@ -970,6 +970,23 @@ describe('Updated implementation', () => {
   test('Exact code match', async () => {
     const res = await request(app)
       .get(`/fhir/R4/ValueSet/$expand?url=http://terminology.hl7.org/ValueSet/v3-RoleCode&filter=MT`)
+      .set('Authorization', 'Bearer ' + accessToken);
+
+    expect(res.status).toStrictEqual(200);
+    const expansion = res.body.expansion as ValueSetExpansion;
+    expect(expansion.contains).toHaveLength(1);
+    expect(expansion.contains).toContainEqual<ValueSetExpansionContains>({
+      system: 'http://terminology.hl7.org/CodeSystem/v3-RoleCode',
+      code: 'MT',
+      display: 'Meat',
+    });
+  });
+
+  test('Exact code match with abstract filter', async () => {
+    const res = await request(app)
+      .get(
+        `/fhir/R4/ValueSet/$expand?url=http://terminology.hl7.org/ValueSet/v3-RoleCode&filter=MT&excludeNotForUI=true`
+      )
       .set('Authorization', 'Bearer ' + accessToken);
 
     expect(res.status).toStrictEqual(200);

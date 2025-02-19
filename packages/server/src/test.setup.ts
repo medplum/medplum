@@ -15,10 +15,11 @@ import { Express } from 'express';
 import internal from 'stream';
 import request from 'supertest';
 import { ServerInviteResponse, inviteUser } from './admin/invite';
-import { AuthenticatedRequestContext, requestContextStore } from './context';
+import { AuthenticatedRequestContext } from './context';
 import { Repository, RepositoryContext, getSystemRepo } from './fhir/repo';
 import { generateAccessToken } from './oauth/keys';
 import { tryLogin } from './oauth/utils';
+import { requestContextStore } from './request-context-store';
 
 export interface TestProjectOptions {
   project?: Partial<Project>;

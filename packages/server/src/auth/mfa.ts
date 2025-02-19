@@ -100,3 +100,45 @@ mfaRouter.post(
     return sendLoginResult(res, result);
   })
 );
+
+mfaRouter.post(
+  '/disable',
+  [body('token').notEmpty().withMessage('Missing token')],
+  asyncWrap(async (req: Request, res: Response) => {
+    const systemRepo = getSystemRepo();
+    const ctx = getAuthenticatedContext();
+    const user = await systemRepo.readReference<User>(ctx.membership.user as Reference<User>);
+
+    if (!user.mfaSecret) {
+      sendOutcome(res, badRequest('Secret not found'));
+      return;
+    }
+
+    if (!user.mfaEnrolled) {
+      sendOutcome(res, badRequest('User not enrolled in MFA'));
+      return;
+    }
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const secret = user.mfaSecret as string;
+    const token = req.body.token as string;
+    if (!authenticator.check(token, secret)) {
+      sendOutcome(res, badRequest('Invalid token'));
+      return;
+    }
+
+    await systemRepo.updateResource({
+      ...user,
+      mfaEnrolled: false,
+      // We generate a new secret so that next time the user enrolls that they don't get the same secret
+      // This allows for new secrets in the case of lost / stolen two-factor devices
+      mfaSecret: authenticator.generateSecret(),
+    });
+    sendOutcome(res, allOk);
+  })
+);

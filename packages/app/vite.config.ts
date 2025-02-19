@@ -6,8 +6,8 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import packageJson from './package.json' with { type: 'json' };
 
-if (!existsSync('.env')) {
-  copyFileSync('.env.defaults', '.env');
+if (!existsSync(path.join(__dirname, '.env'))) {
+  copyFileSync(path.join(__dirname, '.env.defaults'), path.join(__dirname, '.env'));
 }
 
 let gitHash;

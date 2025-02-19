@@ -12,7 +12,7 @@ import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
 import { registerNew } from '../auth/register';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { addTestUser, initTestAuth, setupPwnedPasswordMock, setupRecaptchaMock, withTestContext } from '../test.setup';
 import { SelectQuery } from '../fhir/sql';
 import { DatabaseMode, getDatabasePool } from '../database';

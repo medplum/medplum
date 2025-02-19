@@ -598,7 +598,7 @@ export class App {
     let child: ChildProcess;
 
     // If there is an explicit version, check if it's valid
-    if (message.version && !(await checkIfValidMedplumVersion(message.version))) {
+    if (message.version && !(await checkIfValidMedplumVersion('agent-upgrader', message.version))) {
       const versionTag = message.version ? `v${message.version}` : 'latest';
       const errMsg = `Error during upgrading to version '${versionTag}'. '${message.version}' is not a valid version`;
       this.log.error(errMsg);
@@ -653,7 +653,7 @@ export class App {
       this.log.info('Successfully stopped agent network services');
 
       // Write a manifest file
-      const targetVersion = message.version ?? (await fetchLatestVersionString());
+      const targetVersion = message.version ?? (await fetchLatestVersionString('agent-upgrader'));
 
       this.log.info('Writing upgrade manifest...', { previousVersion: MEDPLUM_VERSION, targetVersion });
       writeFileSync(

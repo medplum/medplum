@@ -2,9 +2,11 @@ import { Operator } from '@medplum/core';
 import { InsurancePlan, Patient, Location, ResourceType, Resource } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { initAppServices, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { withTestContext } from '../../test.setup';
 import { getSystemRepo } from '../repo';
+import { PoolClient } from 'pg';
+import { AddressTable } from './address';
 
 describe('Address Lookup Table', () => {
   const systemRepo = getSystemRepo();
@@ -207,4 +209,22 @@ describe('Address Lookup Table', () => {
       expect(bundle6.entry?.[0]?.resource?.id).toStrictEqual(resource1.id);
     })
   );
+
+  test('Purges related resource type', async () => {
+    const db = { query: jest.fn().mockReturnValue({ rowCount: 0, rows: [] }) } as unknown as PoolClient;
+
+    const table = new AddressTable();
+    await table.purgeValuesBefore(db, 'Patient', '2024-01-01T00:00:00Z');
+
+    expect(db.query).toHaveBeenCalled();
+  });
+
+  test('Does not purge unrelated resource type', async () => {
+    const db = { query: jest.fn() } as unknown as PoolClient;
+
+    const table = new AddressTable();
+    await table.purgeValuesBefore(db, 'AuditEvent', '2024-01-01T00:00:00Z');
+
+    expect(db.query).not.toHaveBeenCalled();
+  });
 });

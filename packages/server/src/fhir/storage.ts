@@ -1,11 +1,11 @@
-import { concatUrls } from '@medplum/core';
+import { badRequest, concatUrls, OperationOutcomeError } from '@medplum/core';
 import { Binary } from '@medplum/fhirtypes';
 import { createSign } from 'crypto';
 import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSync } from 'fs';
 import { resolve, sep } from 'path';
 import { Readable, pipeline } from 'stream';
 import { S3Storage } from '../cloud/aws/storage';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 
 /**
  * Binary input type.
@@ -61,7 +61,7 @@ export interface BinaryStorage {
 
   copyFile(sourceKey: string, destinationKey: string): Promise<void>;
 
-  getPresignedUrl(binary: Binary): string;
+  getPresignedUrl(binary: Binary): Promise<string>;
 }
 
 /**
@@ -127,7 +127,7 @@ class FileSystemStorage implements BinaryStorage {
     copyFileSync(resolve(this.baseDir, sourceKey), resolve(this.baseDir, destinationKey));
   }
 
-  getPresignedUrl(binary: Binary): string {
+  async getPresignedUrl(binary: Binary): Promise<string> {
     const config = getConfig();
     const storageBaseUrl = config.storageBaseUrl;
     const result = new URL(concatUrls(storageBaseUrl, `${binary.id}/${binary.meta?.versionId}`));
@@ -136,9 +136,11 @@ class FileSystemStorage implements BinaryStorage {
     dateLessThan.setHours(dateLessThan.getHours() + 1);
     result.searchParams.set('Expires', dateLessThan.getTime().toString());
 
-    const privateKey = { key: config.signingKey, passphrase: config.signingKeyPassphrase };
-    const signature = createSign('sha256').update(result.toString()).sign(privateKey, 'base64');
-    result.searchParams.set('Signature', signature);
+    if (config.signingKey) {
+      const privateKey = { key: config.signingKey, passphrase: config.signingKeyPassphrase };
+      const signature = createSign('sha256').update(result.toString()).sign(privateKey, 'base64');
+      result.searchParams.set('Signature', signature);
+    }
 
     return result.toString();
   }
@@ -158,7 +160,6 @@ class FileSystemStorage implements BinaryStorage {
  * https://support.google.com/mail/answer/6590?hl=en#zippy=%2Cmessages-that-have-attachments
  */
 const BLOCKED_FILE_EXTENSIONS = [
-  '.7z',
   '.ade',
   '.adp',
   '.apk',
@@ -213,16 +214,10 @@ const BLOCKED_FILE_EXTENSIONS = [
  */
 const BLOCKED_CONTENT_TYPES = [
   'application/java-archive',
-  'application/x-7z-compressed',
-  'application/x-bzip',
-  'application/x-bzip2',
   'application/x-msdownload',
   'application/x-sh',
-  'application/x-tar',
   'application/vnd.apple.installer+xml',
   'application/vnd.microsoft.portable-executable',
-  'application/vnd.rar',
-  'application/zip',
 ];
 
 /**
@@ -233,10 +228,10 @@ const BLOCKED_CONTENT_TYPES = [
  */
 export function checkFileMetadata(filename: string | undefined, contentType: string | undefined): void {
   if (checkFileExtension(filename)) {
-    throw new Error('Invalid file extension');
+    throw new OperationOutcomeError(badRequest('Invalid file extension'));
   }
   if (checkContentType(contentType)) {
-    throw new Error('Invalid content type');
+    throw new OperationOutcomeError(badRequest('Invalid content type'));
   }
 }
 

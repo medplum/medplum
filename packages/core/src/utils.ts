@@ -479,7 +479,7 @@ export function getExtension(resource: any, ...urls: string[]): Extension | unde
  * @returns The resulting JSON string.
  */
 export function stringify(value: any, pretty?: boolean): string {
-  return JSON.stringify(value, stringifyReplacer, pretty ? 2 : undefined);
+  return JSON.stringify(value, stringifyReplacer, pretty ? 2 : undefined) ?? '';
 }
 
 /**

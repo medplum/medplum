@@ -10,6 +10,7 @@ import {
   OperationOutcomeError,
   SubscriptionEmitter,
   allOk,
+  badRequest,
   getReferenceString,
   indexSearchParameterBundle,
   indexStructureDefinitionBundle,
@@ -200,6 +201,23 @@ describe('MockClient', () => {
   test('MFA enroll', async () => {
     const client = new MockClient();
     expect(await client.post('auth/mfa/enroll', { token: 'foo' })).toMatchObject(allOk);
+  });
+
+  test('MFA verify', async () => {
+    const client = new MockClient();
+    expect(await client.post('auth/mfa/verify', { token: 'foo' })).toMatchObject({ login: '123', code: 'xyz' });
+  });
+
+  test('MFA disable -- success', async () => {
+    const client = new MockClient();
+    expect(await client.post('auth/mfa/disable', { token: 'foo' })).toMatchObject(allOk);
+  });
+
+  test('MFA disable -- invalid token', async () => {
+    const client = new MockClient();
+    await expect(client.post('auth/mfa/disable', { token: 'INVALID_TOKEN' })).rejects.toThrow(
+      new OperationOutcomeError(badRequest('Invalid token'))
+    );
   });
 
   test('Batch request', async () => {

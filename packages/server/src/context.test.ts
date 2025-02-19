@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { loadTestConfig } from './config';
+import { loadTestConfig } from './config/loader';
 import {
   RequestContext,
   buildTracingExtension,
@@ -7,10 +7,10 @@ import {
   getAuthenticatedContext,
   getRequestContext,
   getTraceId,
-  requestContextStore,
   tryGetRequestContext,
   tryRunInRequestContext,
 } from './context';
+import { requestContextStore } from './request-context-store';
 import { withTestContext } from './test.setup';
 
 describe('RequestContext', () => {

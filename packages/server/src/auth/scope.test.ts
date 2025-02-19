@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../app';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { withTestContext } from '../test.setup';
 import { registerNew } from './register';
@@ -143,7 +143,44 @@ describe('Scope', () => {
 
     const res2 = await request(app).post('/auth/scope').type('json').send({
       login: res1.body.login,
-      scope: 'openid profile extra-invalid-scope',
+      scope: 'openid profile patient/Condition.rs?category=health-concern',
+    });
+    expect(res2.status).toBe(400);
+    expect(res2.body.issue).toBeDefined();
+    expect(res2.body.issue[0].details.text).toBe('Invalid scope');
+  });
+
+  test('Allow selection of more granular scope', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid profile patient/Condition.rs',
+      email,
+      password,
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.login).toBeDefined();
+    expect(res1.body.code).toBeDefined();
+
+    const res2 = await request(app).post('/auth/scope').type('json').send({
+      login: res1.body.login,
+      scope: 'openid profile patient/Condition.rs?category=health-concern',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.code).toBeDefined();
+  });
+
+  test('Disallow selection of conflicting granular scope', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      scope: 'openid profile patient/Condition.rs?encounter=Encounter/1',
+      email,
+      password,
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.login).toBeDefined();
+    expect(res1.body.code).toBeDefined();
+
+    const res2 = await request(app).post('/auth/scope').type('json').send({
+      login: res1.body.login,
+      scope: 'openid profile patient/Condition.rs?category=health-concern',
     });
     expect(res2.status).toBe(400);
     expect(res2.body.issue).toBeDefined();

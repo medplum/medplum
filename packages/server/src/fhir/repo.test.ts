@@ -24,17 +24,18 @@ import {
   Project,
   ProjectMembership,
   Questionnaire,
+  ResearchDefinition,
   ResourceType,
   ServiceRequest,
   StructureDefinition,
   User,
 } from '@medplum/fhirtypes';
-import { randomUUID } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { initAppServices, shutdownApp } from '../app';
 import { registerNew, RegisterRequest } from '../auth/register';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { DatabaseMode, getDatabasePool } from '../database';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getRepoForLogin } from './accesspolicy';
@@ -384,6 +385,31 @@ describe('FHIR Repo', () => {
       expect(patient.meta?.lastUpdated).toStrictEqual(lastUpdated);
     }));
 
+  const fourByteChars = '𓃒𓃔𓃕𓃖𓃗𓃘𓃙𓃚𓃛𓃜𓃝𓃞𓃟𓃠𓃡𓃢𓃥𓃦𓃧𓃩𓃪𓃭𓃮𓃯𓃰𓃱𓃲𓄁𓅂𓅃𓅠𓅚';
+  test.each([
+    ['2736 chars, 2736 random bytes', randomBytes(2050).toString('base64')],
+    ['6668 chars, 6668 random bytes', randomBytes(5000).toString('base64')],
+    ['6400 chars, 12800 bytes', shuffleString(fourByteChars.repeat(100))],
+  ])('Create ResearchDefinition with long description (%s)', (_testTitle, description) =>
+    withTestContext(async () => {
+      const author = 'Practitioner/' + randomUUID();
+
+      const repo = new Repository({
+        extendedMode: true,
+        author: {
+          reference: author,
+        },
+      });
+
+      await repo.createResource<ResearchDefinition>({
+        resourceType: 'ResearchDefinition',
+        status: 'active',
+        population: { reference: '123' },
+        description,
+      });
+    })
+  );
+
   test('Update resource with lastUpdated', () =>
     withTestContext(async () => {
       const lastUpdated = '2020-01-01T12:00:00Z';
@@ -435,25 +461,56 @@ describe('FHIR Repo', () => {
         name: [{ family: 'Test' }],
       });
 
-      (patient as Patient).name = [{ family: 'TestUpdated' }];
-
+      patient.name = [{ family: 'TestUpdated' }];
       await systemRepo.updateResource<Patient>(patient, { ifMatch: patient.meta?.versionId });
       expect(patient.name?.at(0)?.family).toStrictEqual('TestUpdated');
     }));
 
   test('Update resource with different versionId', () =>
     withTestContext(async () => {
-      const patient1 = await systemRepo.createResource<Patient>({
+      const patient = await systemRepo.createResource<Patient>({
         resourceType: 'Patient',
         name: [{ family: 'Test' }],
       });
 
-      try {
-        await systemRepo.updateResource<Patient>(patient1, { ifMatch: 'bad-id' });
-        fail('Should have thrown');
-      } catch (err) {
-        expect((err as OperationOutcomeError).outcome).toMatchObject(preconditionFailed);
-      }
+      await expect(systemRepo.updateResource(patient, { ifMatch: 'bad-id' })).rejects.toThrow(
+        new OperationOutcomeError(preconditionFailed)
+      );
+    }));
+
+  test('Patch resource with matching versionId', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      const patched = await systemRepo.patchResource<Patient>(
+        patient.resourceType,
+        patient.id as string,
+        [{ op: 'replace', path: '/name/0/family', value: 'TestUpdated' }],
+        {
+          ifMatch: patient.meta?.versionId,
+        }
+      );
+      expect(patched.name?.at(0)?.family).toStrictEqual('TestUpdated');
+    }));
+
+  test('Patch resource with different versionId', () =>
+    withTestContext(async () => {
+      const patient = await systemRepo.createResource<Patient>({
+        resourceType: 'Patient',
+        name: [{ family: 'Test' }],
+      });
+
+      await expect(
+        systemRepo.patchResource<Patient>(
+          patient.resourceType,
+          patient.id as string,
+          [{ op: 'add', path: '/birthDate', value: '1993-09-14' }],
+          { ifMatch: 'bad-id' }
+        )
+      ).rejects.toThrow(new OperationOutcomeError(preconditionFailed));
     }));
 
   test('Compartment permissions', () =>
@@ -1272,3 +1329,15 @@ describe('FHIR Repo', () => {
       await expect(repo.createResource<Patient>(patient)).resolves.toBeDefined();
     }));
 });
+
+function shuffleString(s: string): string {
+  const arr = Array.from(s);
+  const len = arr.length;
+  for (let i = 0; i < len - 1; ++i) {
+    const j = Math.floor(Math.random() * len);
+    const temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+  }
+  return arr.join('');
+}

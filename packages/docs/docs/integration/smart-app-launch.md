@@ -43,6 +43,7 @@ In addition to supporting Smart app launch from the [Medplum app](/docs/app), im
 ## Related Reading
 
 - [SMART Scopes](/docs/access/smart-scopes) access control guide
+- [SMART-on-FHIR sample application](https://github.com/medplum/medplum/tree/main/examples/medplum-smart-on-fhir-demo) on GitHub
 - [Inferno](https://inferno.healthit.gov/) reference application with [source](https://github.com/onc-healthit/inferno-program)
 - [ONC Compliance Documentation](/docs/compliance/onc)
 - [Smart App Launch Link](https://storybook.medplum.com/?path=/story/medplum-smartapplaunchlink--basic) on Storybook

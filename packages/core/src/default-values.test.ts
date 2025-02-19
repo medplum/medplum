@@ -1,9 +1,8 @@
 import { readJson } from '@medplum/definitions';
-import { Bundle, Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
+import { Bundle, MedicationRequest, Observation, Patient, StructureDefinition } from '@medplum/fhirtypes';
 import { HTTP_HL7_ORG } from './constants';
 import {
   applyDefaultValuesToElement,
-  applyDefaultValuesToElementWithVisitor,
   applyDefaultValuesToResource,
   applyFixedOrPatternValue,
   getDefaultValuesForNewSliceEntry,
@@ -144,18 +143,6 @@ describe('apply default values', () => {
         expect(slice.elements['value[x]'].min).toStrictEqual(0);
 
         const result = applyDefaultValuesToElement(Object.create(null), slice.elements, 'value[x]');
-        expect(result).toEqual({ code: 'mm[Hg]', system: 'http://unitsofmeasure.org' });
-      });
-
-      test('value for Observation.component.value[x] in systolic slice with visitor', () => {
-        const slice = getSlice(schema, 'component', 'systolic');
-        const result = applyDefaultValuesToElementWithVisitor(
-          undefined,
-          'Observation.component.value[x]',
-          slice.elements['value[x]'],
-          slice.elements,
-          schema
-        );
         expect(result).toEqual({ code: 'mm[Hg]', system: 'http://unitsofmeasure.org' });
       });
     });
@@ -327,6 +314,64 @@ describe('apply default values', () => {
 
       delete elem.pattern;
       expect(elem.pattern).toBeUndefined();
+    });
+  });
+
+  describe('US Core Smoking Status', () => {
+    const profileUrl = 'http://hl7.org/fhir/us/core/StructureDefinition/us-core-smokingstatus';
+
+    beforeAll(() => {
+      const smokingStatusProfile: StructureDefinition = readJson('fhir/r4/testing/uscore-v7.0.0-smoking-status.json');
+      indexStructureDefinitionBundle([smokingStatusProfile]);
+    });
+
+    test('Slice on singleton element does not error', () => {
+      const schema = tryGetProfile(profileUrl);
+      expect(schema).toBeDefined();
+
+      const resource: Observation = {
+        resourceType: 'Observation',
+        status: 'final',
+        code: { coding: [{ system: 'http://loinc.org', code: '72166-2' }] },
+      };
+      const withDefaults = applyDefaultValuesToResource(resource, schema as InternalTypeSchema);
+      expect(withDefaults).toEqual(resource);
+    });
+  });
+
+  describe('US Core MedicationRequest', () => {
+    const profileUrl = `${HTTP_HL7_ORG}/fhir/us/core/StructureDefinition/us-core-medicationrequest`;
+    let schema: InternalTypeSchema;
+
+    beforeAll(() => {
+      loadProfiles([profileUrl]);
+      schema = tryGetProfile(profileUrl) as InternalTypeSchema;
+      if (!schema) {
+        fail(`Failed to load schema for ${profileUrl}`);
+      }
+    });
+
+    test('apply defaults to dosageInstruction handled correctly', () => {
+      const resource: MedicationRequest = {
+        resourceType: 'MedicationRequest',
+        status: 'cancelled',
+        intent: 'proposal',
+        subject: {
+          reference: 'Patient/123',
+        },
+        dosageInstruction: [
+          {
+            timing: {
+              repeat: {
+                period: 1,
+                periodUnit: 'd',
+              },
+            },
+          },
+        ],
+      };
+      const withDefaults = applyDefaultValuesToResource(resource, schema);
+      expect(withDefaults).toEqual(resource);
     });
   });
 });

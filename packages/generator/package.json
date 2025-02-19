@@ -1,6 +1,6 @@
 {
   "name": "@medplum/generator",
-  "version": "3.2.24",
+  "version": "3.2.32",
   "description": "Medplum Code Generator",
   "homepage": "https://www.medplum.com/",
   "repository": {
@@ -21,25 +21,24 @@
     "generate": "npm run valuesets && npm run fhirtypes && npm run jsonschema && npm run baseschema && npm run mockclient && npm run docs",
     "jsonschema": "ts-node src/jsonschema.ts && npx prettier ../definitions/dist/fhir/r4/fhir.schema.json --write",
     "lint": "eslint .",
-    "migrate": "ts-node src/migrate.ts",
     "mockclient": "ts-node src/mockclient.ts && npx prettier ../mock/src/mocks/*.json --write",
     "test": "jest",
     "valuesets": "ts-node src/valuesets.ts"
   },
   "devDependencies": {
-    "@medplum/core": "3.2.24",
-    "@medplum/definitions": "3.2.24",
-    "@medplum/fhirtypes": "3.2.24",
+    "@medplum/core": "3.2.32",
+    "@medplum/definitions": "3.2.32",
+    "@medplum/fhirtypes": "3.2.32",
     "@types/json-schema": "7.0.15",
-    "@types/pg": "8.11.10",
+    "@types/pg": "8.11.11",
     "@types/unzipper": "0.10.10",
-    "csv-parser": "3.0.0",
-    "fast-xml-parser": "4.5.0",
-    "fhirpath": "3.15.2",
+    "csv-parser": "3.2.0",
+    "fast-xml-parser": "4.5.1",
+    "fhirpath": "3.17.0",
     "mkdirp": "3.0.1",
     "node-stream-zip": "1.15.0",
     "pg": "8.13.1",
-    "tinybench": "3.0.6",
+    "tinybench": "3.1.1",
     "unzipper": "0.12.3"
   },
   "engines": {

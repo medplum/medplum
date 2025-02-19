@@ -1,5 +1,5 @@
 import { getReferenceString, WithId } from '@medplum/core';
-import { Binary, BulkDataExport, Bundle, Project, Resource, ResourceType } from '@medplum/fhirtypes';
+import { AsyncJob, Binary, Bundle, Parameters, Project, Resource } from '@medplum/fhirtypes';
 import { PassThrough } from 'node:stream';
 import { Repository, getSystemRepo } from '../../repo';
 import { getBinaryStorage } from '../../storage';
@@ -31,21 +31,17 @@ class BulkFileWriter {
 
 export class BulkExporter {
   readonly repo: Repository;
-  readonly since: string | undefined;
-  readonly types: string[];
-  private resource: BulkDataExport | undefined;
+  private resource: WithId<AsyncJob> | undefined;
   readonly writers: Record<string, BulkFileWriter> = {};
   readonly resourceSet = new Set<string>();
 
-  constructor(repo: Repository, since: string | undefined, types: string[] = []) {
+  constructor(repo: Repository) {
     this.repo = repo;
-    this.since = since;
-    this.types = types;
   }
 
-  async start(url: string): Promise<BulkDataExport> {
-    this.resource = await this.repo.createResource<BulkDataExport>({
-      resourceType: 'BulkDataExport',
+  async start(url: string): Promise<WithId<AsyncJob>> {
+    this.resource = await this.repo.createResource<AsyncJob>({
+      resourceType: 'AsyncJob',
       status: 'active',
       request: url,
       requestTime: new Date().toISOString(),
@@ -77,15 +73,6 @@ export class BulkExporter {
   }
 
   async writeResource(resource: WithId<Resource>): Promise<void> {
-    if (this.types.length > 0 && !this.types.includes(resource.resourceType)) {
-      return;
-    }
-    if (resource.resourceType === 'AuditEvent') {
-      return;
-    }
-    if (this.since !== undefined && (resource.meta?.lastUpdated as string) < this.since) {
-      return;
-    }
     const ref = getReferenceString(resource);
     if (!this.resourceSet.has(ref)) {
       const writer = await this.getWriter(resource.resourceType);
@@ -94,7 +81,7 @@ export class BulkExporter {
     }
   }
 
-  async close(project: Project): Promise<BulkDataExport> {
+  async close(project: Project): Promise<AsyncJob> {
     if (!this.resource) {
       throw new Error('Export muse be started before calling close()');
     }
@@ -103,19 +90,33 @@ export class BulkExporter {
       await writer.close();
     }
 
-    // Update the BulkDataExport
+    // Update the AsyncJob
     const systemRepo = getSystemRepo();
-    return systemRepo.updateResource<BulkDataExport>({
-      ...this.resource,
-      meta: {
-        project: project.id,
-      },
-      status: 'completed',
-      transactionTime: new Date().toISOString(),
-      output: Object.entries(this.writers).map(([resourceType, writer]) => ({
-        type: resourceType as ResourceType,
-        url: getReferenceString(writer.binary),
+    const asyncJob = await systemRepo.readResource<AsyncJob>('AsyncJob', this.resource.id as string);
+    if (asyncJob.status !== 'cancelled') {
+      return systemRepo.updateResource<AsyncJob>({
+        ...this.resource,
+        meta: {
+          project: project.id,
+        },
+        status: 'completed',
+        transactionTime: new Date().toISOString(),
+        output: this.formatOutput(),
+      });
+    }
+    return this.resource;
+  }
+
+  formatOutput(): Parameters {
+    return {
+      resourceType: 'Parameters',
+      parameter: Object.entries(this.writers).map(([resourceType, writer]) => ({
+        name: 'output',
+        part: [
+          { name: 'type', valueCode: resourceType },
+          { name: 'url', valueUri: getReferenceString(writer.binary) },
+        ],
       })),
-    });
+    };
   }
 }
