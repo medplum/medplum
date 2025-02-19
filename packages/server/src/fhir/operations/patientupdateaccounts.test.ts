@@ -40,7 +40,7 @@ describe('Patient Update Accounts Operation', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({
         resourceType: 'Patient',
-        name: [{ given: ['Alice'], family: 'Smith' }]
+        name: [{ given: ['Alice'], family: 'Smith' }],
       } satisfies Patient);
     expect(res1.status).toBe(201);
     patient = res1.body as Patient;
@@ -54,10 +54,12 @@ describe('Patient Update Accounts Operation', () => {
         resourceType: 'Observation',
         status: 'final',
         code: {
-          coding: [{
-            system: 'http://loinc.org',
-            code: 'test-code'
-          }]
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: 'test-code',
+            },
+          ],
         },
         subject: createReference(patient),
         performer: [createReference(organization)],
@@ -76,12 +78,8 @@ describe('Patient Update Accounts Operation', () => {
         ...patient, // Include all existing patient data
         meta: {
           ...patient.meta, // Preserve existing meta data if any
-          compartment: [
-            { reference: createReference(organization).reference },
-          ],
-          accounts: [
-            { reference: createReference(organization).reference },
-          ],
+          compartment: [{ reference: createReference(organization).reference }],
+          accounts: [{ reference: createReference(organization).reference }],
         },
       });
 
@@ -107,7 +105,7 @@ describe('Patient Update Accounts Operation', () => {
     const updatedObservation = res5.body as Observation;
 
     //Finally, check if the observation meta.accounts contains the organization
-    expect(updatedObservation.meta?.accounts).toEqual([{reference: createReference(organization).reference}]);
+    expect(updatedObservation.meta?.accounts).toEqual([{ reference: createReference(organization).reference }]);
   });
 
   test('Patient not found', async () => {
@@ -116,5 +114,4 @@ describe('Patient Update Accounts Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(404);
   });
-
 });
