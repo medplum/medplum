@@ -76,8 +76,16 @@ export function BotEditor(): JSX.Element | null {
       try {
         const code = await getCode();
         const codeOutput = await getCodeOutput();
-        const sourceCode = await medplum.createAttachment(code, 'index.ts', 'text/typescript');
-        const executableCode = await medplum.createAttachment(codeOutput, 'index.js', 'text/typescript');
+        const sourceCode = await medplum.createAttachment({
+          data: code,
+          filename: 'index.ts',
+          contentType: 'text/typescript',
+        });
+        const executableCode = await medplum.createAttachment({
+          data: codeOutput,
+          filename: 'index.js',
+          contentType: 'text/typescript',
+        });
         const operations: PatchOperation[] = [
           {
             op: 'add',
