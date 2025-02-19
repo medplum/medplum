@@ -128,6 +128,7 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
       codeChallenge: params.code_challenge ?? existingLogin.codeChallenge,
       codeChallengeMethod: params.code_challenge_method ?? existingLogin.codeChallengeMethod,
       code: generateSecret(16),
+      launch: params.launch ? { reference: `SmartAppLaunch/${params.launch}` } : existingLogin.launch,
       granted: false,
     });
 

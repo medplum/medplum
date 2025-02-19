@@ -373,8 +373,9 @@ describe('OAuth Authorize', () => {
       code_challenge_method: 'plain',
     });
 
+    const launch = randomUUID();
     const res3 = await request(app)
-      .get('/oauth2/authorize?' + params.toString())
+      .get(`/oauth2/authorize?launch=${launch}&${params.toString()}`)
       .set('Cookie', cookie.name + '=' + cookie.value);
     expect(res3.status).toBe(302);
     expect(res3.headers.location).toBeDefined();
@@ -386,6 +387,7 @@ describe('OAuth Authorize', () => {
 
     const updatedLogin = await systemRepo.readResource<Login>('Login', res1.body.login);
     expect(updatedLogin.codeChallenge).toEqual('abc');
+    expect(updatedLogin.launch?.reference).toEqual(`SmartAppLaunch/${launch}`);
   });
 
   test('Using id_token_hint', async () => {
