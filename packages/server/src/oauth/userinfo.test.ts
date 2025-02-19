@@ -1,4 +1,4 @@
-import { ContentType, parseJWTPayload } from '@medplum/core';
+import { ContentType } from '@medplum/core';
 import { ContactPoint } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import express from 'express';
