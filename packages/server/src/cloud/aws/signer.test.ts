@@ -1,6 +1,6 @@
 import { Binary } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import { getPresignedUrl } from './signer';
 
 describe('Signer', () => {

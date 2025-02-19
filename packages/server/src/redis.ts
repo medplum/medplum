@@ -1,6 +1,6 @@
 import { sleep } from '@medplum/core';
 import Redis from 'ioredis';
-import { MedplumRedisConfig } from './config';
+import { MedplumRedisConfig } from './config/types';
 
 let redis: Redis | undefined = undefined;
 let redisSubscribers: Set<Redis> | undefined = undefined;

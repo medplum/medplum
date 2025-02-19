@@ -1,5 +1,5 @@
 import { Binary, Resource } from '@medplum/fhirtypes';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { getLogger } from '../logger';
 import { Repository } from './repo';
 import { getBinaryStorage } from './storage';

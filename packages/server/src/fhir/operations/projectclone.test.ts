@@ -19,7 +19,7 @@ import fetch from 'node-fetch';
 import { Readable } from 'stream';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { loadTestConfig } from '../../config';
+import { loadTestConfig } from '../../config/loader';
 import {
   createTestProject,
   initTestAuth,

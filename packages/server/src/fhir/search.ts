@@ -42,7 +42,7 @@ import {
   SearchParameter,
 } from '@medplum/fhirtypes';
 import validator from 'validator';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 import { DatabaseMode } from '../database';
 import { deriveIdentifierSearchParameter } from './lookups/util';
 import { Repository } from './repo';

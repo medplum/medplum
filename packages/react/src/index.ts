@@ -59,6 +59,7 @@ export * from './NoteDisplay/NoteDisplay';
 export * from './NotificationIcon/NotificationIcon';
 export * from './OperationOutcomeAlert/OperationOutcomeAlert';
 export * from './Panel/Panel';
+export * from './PatientExportForm/PatientExportForm';
 export * from './PatientSummary/PatientSummary';
 export * from './PatientTimeline/PatientTimeline';
 export * from './PlanDefinitionBuilder/PlanDefinitionBuilder';

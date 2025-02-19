@@ -9,9 +9,10 @@ import {
   Reference,
   Resource,
 } from '@medplum/fhirtypes';
-import { MedplumServerConfig, getConfig } from '../config';
-import { CloudWatchLogger } from './cloudwatch';
+import { getConfig } from '../config/loader';
+import { MedplumServerConfig } from '../config/types';
 import { buildTracingExtension } from '../context';
+import { CloudWatchLogger } from './cloudwatch';
 
 /*
  * This file includes a collection of utility functions for working with AuditEvents.

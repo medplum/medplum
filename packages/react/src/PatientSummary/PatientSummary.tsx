@@ -10,10 +10,12 @@ import {
   Observation,
   Patient,
   Reference,
+  Resource,
 } from '@medplum/fhirtypes';
 import { useMedplum, useResource } from '@medplum/react-hooks';
 import { IconGenderFemale, IconGenderMale, IconStethoscope, IconUserSquare } from '@tabler/icons-react';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { MedplumLink } from '../MedplumLink/MedplumLink';
 import { ResourceAvatar } from '../ResourceAvatar/ResourceAvatar';
 import { Allergies } from './Allergies';
 import { Medications } from './Medications';
@@ -21,7 +23,6 @@ import { ProblemList } from './ProblemList';
 import { SexualOrientation } from './SexualOrientation';
 import { SmokingStatus } from './SmokingStatus';
 import { Vitals } from './Vitals';
-import { MedplumLink } from '../MedplumLink/MedplumLink';
 
 export interface PatientSummaryProps extends Omit<CardProps, 'children'> {
   readonly patient: Patient | Reference<Patient>;
@@ -30,6 +31,8 @@ export interface PatientSummaryProps extends Omit<CardProps, 'children'> {
   readonly appointmentsUrl?: string | undefined;
   /** The URL that the documented visits (encounters) link should navigate to or `undefined` to not show the link. */
   readonly encountersUrl?: string | undefined;
+  /** Callback when a resource is clicked in the list */
+  readonly onClickResource?: (resource: Resource) => void;
 }
 
 interface PatientMedicalData {
@@ -73,6 +76,7 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
     background,
     appointmentsUrl: propsAppointmentsUrl,
     encountersUrl: propsEncountersUrl,
+    onClickResource,
     ...cardProps
   } = props;
   const patient = useResource(propsPatient);
@@ -186,17 +190,29 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         )}
         {medicalData && (
           <>
-            <Allergies patient={patient} allergies={medicalData.allergies} />
+            <Allergies patient={patient} allergies={medicalData.allergies} onClickResource={onClickResource} />
             <Divider />
-            <ProblemList patient={patient} problems={medicalData.problems} />
+            <ProblemList patient={patient} problems={medicalData.problems} onClickResource={onClickResource} />
             <Divider />
-            <Medications patient={patient} medicationRequests={medicalData.medicationRequests} />
+            <Medications
+              patient={patient}
+              medicationRequests={medicalData.medicationRequests}
+              onClickResource={onClickResource}
+            />
             <Divider />
-            <SexualOrientation patient={patient} sexualOrientation={medicalData.sexualOrientation} />
+            <SexualOrientation
+              patient={patient}
+              sexualOrientation={medicalData.sexualOrientation}
+              onClickResource={onClickResource}
+            />
             <Divider />
-            <SmokingStatus patient={patient} smokingStatus={medicalData.smokingStatus} />
+            <SmokingStatus
+              patient={patient}
+              smokingStatus={medicalData.smokingStatus}
+              onClickResource={onClickResource}
+            />
             <Divider />
-            <Vitals patient={patient} vitals={medicalData.vitals} />
+            <Vitals patient={patient} vitals={medicalData.vitals} onClickResource={onClickResource} />
           </>
         )}
       </Stack>

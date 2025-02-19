@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
-import { getConfig, loadTestConfig } from '../../config';
+import { getConfig, loadTestConfig } from '../../config/loader';
 import { getBinaryStorage } from '../../fhir/storage';
 import { initTestAuth } from '../../test.setup';
 import { getLambdaFunctionName } from './execute';

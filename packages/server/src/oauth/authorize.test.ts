@@ -8,7 +8,7 @@ import { URL, URLSearchParams } from 'url';
 import { inviteUser } from '../admin/invite';
 import { initApp, shutdownApp } from '../app';
 import { setPassword } from '../auth/setpassword';
-import { loadTestConfig } from '../config';
+import { loadTestConfig } from '../config/loader';
 import { getSystemRepo } from '../fhir/repo';
 import { createTestProject, withTestContext } from '../test.setup';
 import { revokeLogin } from './utils';
@@ -333,6 +333,59 @@ describe('OAuth Authorize', () => {
     const location = new URL(res3.headers.location);
     expect(location.host).toBe('example.com');
     expect(location.searchParams.get('error')).toBe('login_required');
+  });
+
+  test('Multiple authorizations reusing same login', async () => {
+    const res1 = await request(app).post('/auth/login').type('json').send({
+      clientId: client.id,
+      email,
+      password,
+      scope: 'openid',
+      codeChallenge: 'xyz',
+      codeChallengeMethod: 'plain',
+    });
+    expect(res1.status).toBe(200);
+    expect(res1.body.code).toBeDefined();
+    expect(res1.headers['set-cookie']).toBeDefined();
+
+    const login = await systemRepo.readResource<Login>('Login', res1.body.login);
+    expect(login.codeChallenge).toEqual('xyz');
+
+    const res2 = await request(app).post('/oauth2/token').type('form').send({
+      grant_type: 'authorization_code',
+      code: res1.body.code,
+      code_verifier: 'xyz',
+    });
+    expect(res2.status).toBe(200);
+    expect(res2.body.id_token).toBeDefined();
+
+    const cookies = setCookieParser.parse(res1.headers['set-cookie']);
+    expect(cookies.length).toBe(1);
+
+    const cookie = cookies[0];
+
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: client.id as string,
+      redirect_uri: client.redirectUri as string,
+      scope: 'openid',
+      code_challenge: 'abc',
+      code_challenge_method: 'plain',
+    });
+
+    const res3 = await request(app)
+      .get('/oauth2/authorize?' + params.toString())
+      .set('Cookie', cookie.name + '=' + cookie.value);
+    expect(res3.status).toBe(302);
+    expect(res3.headers.location).toBeDefined();
+
+    const location = new URL(res3.headers.location);
+    expect(location.host).toBe('example.com');
+    expect(location.searchParams.get('error')).toBeNull();
+    expect(location.searchParams.get('code')).not.toEqual(res1.body.code);
+
+    const updatedLogin = await systemRepo.readResource<Login>('Login', res1.body.login);
+    expect(updatedLogin.codeChallenge).toEqual('abc');
   });
 
   test('Using id_token_hint', async () => {

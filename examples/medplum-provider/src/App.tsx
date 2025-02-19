@@ -25,9 +25,12 @@ import { HomePage } from './pages/HomePage';
 import { OnboardingPage } from './pages/OnboardingPage';
 import { SearchPage } from './pages/SearchPage';
 import { SignInPage } from './pages/SignInPage';
+import { EncounterChart } from './pages/encounter/EncounterChart';
+import { EncounterModal } from './pages/encounter/EncounterModal';
 import { CommunicationTab } from './pages/patient/CommunicationTab';
 import { DoseSpotTab } from './pages/patient/DoseSpotTab';
 import { EditTab } from './pages/patient/EditTab';
+import { ExportTab } from './pages/patient/ExportTab';
 import { PatientPage } from './pages/patient/PatientPage';
 import { PatientSearchPage } from './pages/patient/PatientSearchPage';
 import { TaskTab } from './pages/patient/TaskTab';
@@ -37,8 +40,6 @@ import { ResourceDetailPage } from './pages/resource/ResourceDetailPage';
 import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
-import { EncounterModal } from './pages/encounter/EncounterModal';
-import { EncounterChart } from './pages/encounter/EncounterChart';
 import { TaskDetails } from './pages/tasks/TaskDetails';
 
 export function App(): JSX.Element | null {
@@ -131,6 +132,7 @@ export function App(): JSX.Element | null {
                 {hasDoseSpot && <Route path="dosespot" element={<DoseSpotTab />} />}
                 <Route path="task/:id/*" element={<TaskTab />} />
                 <Route path="timeline" element={<TimelineTab />} />
+                <Route path="export" element={<ExportTab />} />
                 <Route path=":resourceType" element={<PatientSearchPage />} />
                 <Route path=":resourceType/new" element={<ResourceCreatePage />} />
                 <Route path=":resourceType/:id" element={<ResourcePage />}>

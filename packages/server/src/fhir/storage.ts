@@ -5,7 +5,7 @@ import { copyFileSync, createReadStream, createWriteStream, existsSync, mkdirSyn
 import { resolve, sep } from 'path';
 import { Readable, pipeline } from 'stream';
 import { S3Storage } from '../cloud/aws/storage';
-import { getConfig } from '../config';
+import { getConfig } from '../config/loader';
 
 /**
  * Binary input type.
