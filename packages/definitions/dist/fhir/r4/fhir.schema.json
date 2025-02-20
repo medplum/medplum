@@ -59509,7 +59509,6 @@
               "google-auth-required",
               "graphql-introspection",
               "websocket-subscriptions",
-              "reference-lookups",
               "transaction-bundles"
             ]
           },
