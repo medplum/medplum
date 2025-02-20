@@ -31,6 +31,7 @@ import {
   toPeriod,
   toTypedValue,
   validateResourceType,
+  WithId,
 } from '@medplum/core';
 import {
   Bundle,
@@ -107,7 +108,7 @@ interface ChainedSearchParameter {
 export async function searchImpl<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequest<T>
-): Promise<Bundle<T>> {
+): Promise<Bundle<WithId<T>>> {
   validateSearchResourceTypes(repo, searchRequest);
   applyCountAndOffsetLimits(searchRequest);
 
@@ -138,7 +139,7 @@ export async function searchByReferenceImpl<T extends Resource>(
   searchRequest: SearchRequest<T>,
   referenceField: string,
   referenceValues: string[]
-): Promise<Record<string, T[]>> {
+): Promise<Record<string, WithId<T>[]>> {
   validateSearchResourceTypes(repo, searchRequest);
   applyCountAndOffsetLimits(searchRequest);
 
@@ -181,12 +182,12 @@ export async function searchByReferenceImpl<T extends Resource>(
     ref: string;
   }[] = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
 
-  const results: Record<string, T[]> = {};
+  const results: Record<string, WithId<T>[]> = Object.create(null);
   for (const ref of referenceValues) {
     results[ref] = [];
   }
   for (const row of rows) {
-    const resource = JSON.parse(row.content) as T;
+    const resource = JSON.parse(row.content) as WithId<T>;
     removeResourceFields(resource, repo, searchRequest);
     results[row.ref].push(resource);
   }
@@ -290,17 +291,17 @@ async function getSearchEntries<T extends Resource>(
   repo: Repository,
   searchRequest: SearchRequestWithCountAndOffset<T>,
   builder: SelectQuery
-): Promise<{ entry: BundleEntry<T>[]; rowCount: number; nextResource?: T }> {
+): Promise<{ entry: BundleEntry<WithId<T>>[]; rowCount: number; nextResource?: T }> {
   const rows = await builder.execute(repo.getDatabaseClient(DatabaseMode.READER));
   const rowCount = rows.length;
-  const resources = rows.map((row) => JSON.parse(row.content as string)) as T[];
+  const resources = rows.map((row) => JSON.parse(row.content)) as WithId<T>[];
   let nextResource: T | undefined;
   if (resources.length > searchRequest.count) {
     nextResource = resources.pop();
   }
   const entries = resources.map(
-    (resource): BundleEntry<T> => ({
-      fullUrl: getFullUrl(resource.resourceType, resource.id as string),
+    (resource): BundleEntry<WithId<T>> => ({
+      fullUrl: getFullUrl(resource.resourceType, resource.id),
       search: { mode: 'match' },
       resource,
     })
@@ -480,7 +481,7 @@ async function getSearchIncludeEntries(
     }
   }
 
-  const includedResources = (await repo.readReferences(references)).filter(isResource);
+  const includedResources = (await repo.readReferences(references)).filter((v) => isResource(v));
   if (searchParam.target && canonicalReferences.length > 0) {
     const canonicalSearches = searchParam.target.map((resourceType) => {
       const searchRequest = {

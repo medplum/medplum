@@ -41,7 +41,7 @@ import {
 } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
-import { ProfileResource, createReference, sleep } from './utils';
+import { ProfileResource, WithId, createReference, sleep } from './utils';
 
 const EXAMPLE_XML = `
 <note>
@@ -1603,13 +1603,13 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
     try {
-      await client.updateResource({} as Patient);
+      await client.updateResource({} as unknown as WithId<Patient>);
       fail('Expected error');
     } catch (err) {
       expect((err as Error).message).toStrictEqual('Missing resourceType');
     }
     try {
-      await client.updateResource({ resourceType: 'Patient' });
+      await client.updateResource({ resourceType: 'Patient' } as unknown as WithId<Patient>);
       fail('Expected error');
     } catch (err) {
       expect((err as Error).message).toStrictEqual('Missing id');

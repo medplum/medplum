@@ -1,5 +1,5 @@
 import { Title } from '@mantine/core';
-import { createReference, getReferenceString } from '@medplum/core';
+import { createReference } from '@medplum/core';
 import {
   Encounter,
   Questionnaire,
@@ -109,7 +109,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }
       onSubmit({
         ...response,
-        questionnaire: getReferenceString(questionnaire as Questionnaire),
+        questionnaire: questionnaire?.url,
         subject,
         source,
         authored: new Date().toISOString(),

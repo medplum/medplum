@@ -104,7 +104,12 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         status: 'proposed,pending,booked',
         ...searchMeta,
       }),
-      medplum.searchResources('Encounter', { subject: ref, date: `le${today}`, status: 'finished', ...searchMeta }),
+      medplum.searchResources('Encounter', {
+        subject: ref,
+        date: `le${today}`,
+        status: 'finished',
+        ...searchMeta,
+      }),
     ])
       .then((results) => {
         const observations = results[3];

@@ -84,10 +84,10 @@ describe('Obstetric Encounter Note', async () => {
     const responseBundle = await handler(medplum, { bot, input: onlyCondition, contentType, secrets: {} });
 
     const observations = await medplum.searchResources('Observation', {
-      encounter: getReferenceString(encounter),
+      encounter: getReferenceString(testEncounter),
     });
     const clinicalImpressions = await medplum.searchResources('ClinicalImpression', {
-      encounter: getReferenceString(encounter),
+      encounter: getReferenceString(testEncounter),
     });
 
     expect(responseBundle.entry?.length).toBe(1);

@@ -1,4 +1,4 @@
-import { allOk, createReference, HTTP_TERMINOLOGY_HL7_ORG, LOINC, resolveId } from '@medplum/core';
+import { allOk, createReference, HTTP_TERMINOLOGY_HL7_ORG, LOINC, resolveId, WithId } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import {
   Bundle,
@@ -107,7 +107,7 @@ export async function patientSummaryHandler(req: FhirRequest): Promise<FhirRespo
  */
 export async function getPatientSummary(
   repo: Repository,
-  patient: Patient,
+  patient: WithId<Patient>,
   params: PatientSummaryParameters = {}
 ): Promise<Bundle> {
   params._type = resourceTypes;
