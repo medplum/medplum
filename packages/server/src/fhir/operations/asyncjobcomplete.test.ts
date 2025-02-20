@@ -1,4 +1,4 @@
-import { allOk, badRequest, ContentType, forbidden } from '@medplum/core';
+import { badRequest, ContentType, forbidden } from '@medplum/core';
 import { FhirRequest } from '@medplum/fhir-router';
 import { AsyncJob, OperationOutcome } from '@medplum/fhirtypes';
 import express from 'express';
@@ -49,7 +49,13 @@ describe('AsyncJob/$complete', () => {
       .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$complete`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toStrictEqual(200);
-    expect(res2.body).toMatchObject<OperationOutcome>(allOk);
+    expect(res2.body).toMatchObject<AsyncJob>({
+      id: asyncJob.id,
+      resourceType: 'AsyncJob',
+      status: 'completed',
+      requestTime: asyncJob.requestTime,
+      request: 'random-request',
+    });
 
     const res3 = await request(app)
       .get(`/fhir/R4/AsyncJob/${asyncJob.id as string}`)
@@ -91,7 +97,13 @@ describe('AsyncJob/$complete', () => {
       .post(`/fhir/R4/AsyncJob/${asyncJob.id as string}/$complete`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res2.status).toStrictEqual(200);
-    expect(res2.body).toMatchObject<OperationOutcome>(allOk);
+    expect(res2.body).toMatchObject<AsyncJob>({
+      id: asyncJob.id,
+      resourceType: 'AsyncJob',
+      status: 'completed',
+      requestTime: asyncJob.requestTime,
+      request: 'random-request',
+    });
 
     const res3 = await request(app)
       .get(`/fhir/R4/AsyncJob/${asyncJob.id as string}`)
@@ -191,7 +203,13 @@ describe('AsyncJob/$complete', () => {
         .set('Authorization', 'Bearer ' + accessToken)
         .set('X-Medplum', 'extended');
       expect(res2.status).toStrictEqual(200);
-      expect(res2.body).toMatchObject(allOk);
+      expect(res2.body).toMatchObject({
+        id: asyncJob.id,
+        resourceType: 'AsyncJob',
+        status: 'completed',
+        requestTime: asyncJob.requestTime,
+        request: 'random-request',
+      });
 
       const res3 = await request(app)
         .get(`/fhir/R4/AsyncJob/${asyncJob.id}`)

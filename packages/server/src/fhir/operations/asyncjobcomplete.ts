@@ -18,7 +18,7 @@ export const operation: OperationDefinition = {
   system: false,
   type: false,
   instance: true,
-  parameter: [{ use: 'out', name: 'return', type: 'OperationOutcome', min: 1, max: '1' }],
+  parameter: [{ use: 'out', name: 'return', type: 'AsyncJob', min: 1, max: '1' }],
 };
 
 /**
@@ -39,6 +39,6 @@ export async function asyncJobCompleteHandler(req: FhirRequest): Promise<FhirRes
   }
   // We update with system repo so that system is the author
   const systemRepo = getSystemRepo();
-  await new AsyncJobExecutor(systemRepo, job).completeJob(systemRepo);
-  return [allOk];
+  const completedJob = (await new AsyncJobExecutor(systemRepo, job).completeJob(systemRepo)) as AsyncJob;
+  return [allOk, completedJob];
 }
