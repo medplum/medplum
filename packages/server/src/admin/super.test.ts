@@ -680,9 +680,9 @@ describe('Super Admin routes', () => {
         expect(res1.body).toMatchObject(allOk);
 
         // Check that data version actually gets set
-        const results = await outOfBandPool.query<{ dataVersion: number }>(
-          'SELECT "dataVersion" FROM "DatabaseMigration";'
-        );
+        const results = await database
+          .getDatabasePool(database.DatabaseMode.WRITER)
+          .query<{ dataVersion: number }>('SELECT "dataVersion" FROM "DatabaseMigration";');
         expect(results.rows[0].dataVersion).toEqual(1337);
       });
 
