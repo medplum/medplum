@@ -8,7 +8,7 @@ import { MedplumServerConfig } from './config/types';
 import { getPendingDataMigration, markPendingDataMigrationCompleted, maybeStartDataMigration } from './database';
 import { getSystemRepo, Repository } from './fhir/repo';
 import { globalLogger } from './logger';
-import { withTestContext } from './test.setup';
+import { createTestProject, withTestContext } from './test.setup';
 import * as versionModule from './util/version';
 
 const MAX_POLL_TRIES = 5;
@@ -210,7 +210,6 @@ describe('Database migrations', () => {
           }
           try {
             updated = await getSystemRepo().readResource<AsyncJob>('AsyncJob', (asyncJob as AsyncJob).id as string);
-            console.log(updated);
             expect(updated).toMatchObject<Partial<AsyncJob>>({
               resourceType: 'AsyncJob',
               status: 'completed',
@@ -247,12 +246,33 @@ describe('Database migrations', () => {
           dataVersion: 1,
           minServerVersion: '3.3.0',
         });
-        console.log(asyncJob);
         await expect(maybeStartDataMigration()).resolves.toMatchObject({
           id: asyncJob.id,
           type: 'data-migration',
           status: 'accepted',
         });
+      }));
+
+    test('Existing data migration job in a project', () =>
+      withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true });
+
+        // Not using system repo to create the job so that AsyncJob has a compartment
+        const asyncJob = await repo.createResource<AsyncJob>({
+          resourceType: 'AsyncJob',
+          type: 'data-migration',
+          status: 'accepted',
+          requestTime: new Date().toISOString(),
+          request: 'mock-job',
+          dataVersion: 1,
+          minServerVersion: '3.3.0',
+        });
+
+        expect(asyncJob.meta?.compartment).toBeDefined();
+
+        await expect(maybeStartDataMigration()).rejects.toThrow(
+          'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project.'
+        );
       }));
 
     test('Asserted version is less than or equal to current version', () =>

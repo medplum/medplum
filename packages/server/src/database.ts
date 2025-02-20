@@ -1,4 +1,4 @@
-import { OperationOutcomeError, badRequest, created, parseSearchRequest, sleep } from '@medplum/core';
+import { OperationOutcomeError, badRequest, parseSearchRequest, sleep } from '@medplum/core';
 import { AsyncJob } from '@medplum/fhirtypes';
 import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
@@ -315,10 +315,27 @@ export async function maybeStartDataMigration(assertedDataVersion?: number): Pro
   }
 
   const systemRepo = getSystemRepo();
-  // Check if there is already a migration job in progress
-  // If there isn't, create a new one
-  const { resource: dataMigrationJob, outcome } = await systemRepo.conditionalCreate<AsyncJob>(
-    {
+  let dataMigrationJob: AsyncJob | undefined;
+
+  await systemRepo.withTransaction(async () => {
+    // Check if there is already a migration job in progress
+    const existingJob = await systemRepo.searchOne<AsyncJob>(
+      parseSearchRequest('AsyncJob', { status: 'accepted', type: 'data-migration' })
+    );
+    // If there is an existing job and it has any compartments, we should always throw (someone has created a data-migration job in their project)
+    if (existingJob?.meta?.compartment) {
+      throw new OperationOutcomeError(
+        badRequest(
+          'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project.'
+        )
+      );
+    }
+    if (existingJob) {
+      dataMigrationJob = existingJob;
+      return;
+    }
+    // If there isn't an existing job, create a new one and start data migration
+    dataMigrationJob = await systemRepo.createResource({
       resourceType: 'AsyncJob',
       type: 'data-migration',
       status: 'accepted',
@@ -328,16 +345,14 @@ export async function maybeStartDataMigration(assertedDataVersion?: number): Pro
       // We know that because we were able to start the migration on this server instance,
       // That we must be on the right version to run this migration
       minServerVersion: getServerVersion(),
-    },
-    parseSearchRequest('AsyncJob', { status: 'accepted', type: 'data-migration' })
-  );
-  // If the job was just created, then run the pending migration
-  if (outcome === created) {
+    });
     const dataMigration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
     // Don't await the migration, since it could be blocking
     dataMigration
-      .run(systemRepo, dataMigrationJob)
+      // We get a new system repo here so that we are not trying messing with the system repo doing the transaction
+      .run(getSystemRepo(), dataMigrationJob)
       .catch((err) => globalLogger.error('Error while running data migration', { err }));
-  }
+  });
+
   return dataMigrationJob;
 }
