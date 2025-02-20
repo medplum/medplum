@@ -1,3 +1,9 @@
+/** 
+ * This bot listens for DFT messages and finds/creates a Medplum Patient from PID, 
+ * Coverage from IN1, and Claim from PR1.
+ * 
+ * The bot will return an ACK message to the sender of the DFT message.
+ */
 import { BotEvent, createReference, Hl7Message, MedplumClient } from '@medplum/core';
 import { Claim, Coverage, Patient } from '@medplum/fhirtypes';
 

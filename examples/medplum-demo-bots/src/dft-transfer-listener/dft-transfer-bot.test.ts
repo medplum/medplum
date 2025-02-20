@@ -27,8 +27,6 @@ IN1|1|MEDICARE|12345|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     const contentType = 'x-application/hl7-v2+er7';
     const secrets = {};
     const result = await handler(medplum, { bot, input, contentType, secrets });
-
-    // Verify ACK message
     expect(result.get('MSA')).toBeDefined();
 
     // Verify Patient creation
@@ -64,6 +62,7 @@ IN1|1|BCBS|67890|Blue Cross Blue Shield||||||||||||||||||||||||||||||||XYZ789`);
     const contentType = 'x-application/hl7-v2+er7';
     const secrets = {};
     const result = await handler(medplum, { bot, input, contentType, secrets });
+    expect(result.get('MSA')).toBeDefined();
 
     // Verify Patient creation
     const patient = await medplum.searchOne('Patient', 'identifier=12345');
