@@ -61,9 +61,9 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Hl7Message
   let coverage: Coverage | undefined;
 
   if (in1Segment) {
-    const insurerId = in1Segment.getField(3) as string;
-    const insurerName = in1Segment.getField(4) as string;
-    const subscriberId = in1Segment.getField(36) as string;
+    const insurerId = in1Segment.getField(3)?.getComponent(1) as string;
+    const insurerName = in1Segment.getField(4)?.getComponent(1) as string;
+    const subscriberId = in1Segment.getField(36)?.getComponent(1) as string;
 
     coverage = await medplum.createResource<Coverage>({
       resourceType: 'Coverage',

@@ -38,8 +38,9 @@ IN1|1|MEDICARE|12345|MEDICARE||||||||||||||||||||||||||||||||123456789A`);
     // Verify Coverage creation
     const coverage = await medplum.searchOne('Coverage', 'subscriber=Patient/' + patient?.id);
     expect(coverage).toBeDefined();
-    expect(coverage?.subscriberId?.components?.[0][0]).toBe('123456789A');
-    expect(coverage?.payor?.[0].display?.components?.[0][0]).toBe('MEDICARE');
+    expect(coverage?.subscriberId).toBe('123456789A');
+    expect(coverage?.payor?.[0].display).toBe('MEDICARE');
+    expect(coverage?.beneficiary?.reference).toBe('Patient/' + patient?.id);
 
     // Verify Claim creation
     const claim = await medplum.searchOne('Claim', 'patient=Patient/' + patient?.id);
