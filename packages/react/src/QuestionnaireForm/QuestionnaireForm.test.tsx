@@ -2110,40 +2110,40 @@ describe('QuestionnaireForm', () => {
         ],
       },
       questionnaireResponse: {
-        "resourceType": "QuestionnaireResponse",
-        "status": "in-progress",
-        "item": [
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: [
           {
-            "id": "id-76",
-            "linkId": "g6",
-            "text": "Temperature Group",
-            "item": [
+            id: 'id-76',
+            linkId: 'g6',
+            text: 'Temperature Group',
+            item: [
               {
-                "id": "id-77",
-                "linkId": "q1",
-                "text": "Fahrenheit",
-                "answer": [
+                id: 'id-77',
+                linkId: 'q1',
+                text: 'Fahrenheit',
+                answer: [
                   {
-                    "valueDecimal": 100
-                  }
-                ]
+                    valueDecimal: 100,
+                  },
+                ],
               },
               {
-                "id": "id-78",
-                "linkId": "q2",
-                "text": "Celsius",
-                "answer": []
+                id: 'id-78',
+                linkId: 'q2',
+                text: 'Celsius',
+                answer: [],
               },
               {
-                "id": "id-79",
-                "linkId": "q3",
-                "text": "Kelvin",
-                "answer": []
-              }
+                id: 'id-79',
+                linkId: 'q3',
+                text: 'Kelvin',
+                answer: [],
+              },
             ],
-            "answer": []
-          }
-        ]
+            answer: [],
+          },
+        ],
       },
       onSubmit,
     });
