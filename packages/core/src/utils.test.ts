@@ -646,13 +646,20 @@ describe('Core Utils', () => {
     expect(stringify('foo')).toStrictEqual('"foo"');
     expect(stringify({ x: 'y' })).toStrictEqual('{"x":"y"}');
     expect(stringify({ x: 123 })).toStrictEqual('{"x":123}');
-    expect(stringify({ x: undefined })).toStrictEqual('{}');
-    expect(stringify({ x: null })).toStrictEqual('{}');
-    expect(stringify({ x: {} })).toStrictEqual('{}');
+    expect(stringify({ x: undefined })).toStrictEqual('');
+    expect(stringify({ x: null })).toStrictEqual('');
+    expect(stringify({ x: {} })).toStrictEqual('');
     expect(stringify({ x: { y: 'z' } })).toStrictEqual('{"x":{"y":"z"}}');
     expect(stringify({ x: 2 }, true)).toStrictEqual('{\n  "x": 2\n}');
+
+    // Arrays with all empty values can be stripped
     expect(stringify({ resourceType: 'Patient', address: [{ line: [''] }] })).toStrictEqual(
-      '{"resourceType":"Patient","address":[{"line":[""]}]}'
+      '{"resourceType":"Patient"}'
+    );
+
+    // Arrays with some empty values should not be stripped, but empty values should be replaced with "null"
+    expect(stringify({ resourceType: 'Patient', address: [{ line: ['', 'x'] }] })).toStrictEqual(
+      '{"resourceType":"Patient","address":[{"line":[null,"x"]}]}'
     );
   });
 
