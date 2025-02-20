@@ -1,6 +1,6 @@
 /**
  * This bot listens for ADT messages and creates a Medplum Patient and Encounter.
- * 
+ *
  * The bot will return an ACK message to the sender of the ADT message.
  */
 import { BotEvent, createReference, Hl7Message, MedplumClient } from '@medplum/core';
