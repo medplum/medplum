@@ -214,6 +214,5 @@ function updateResponseItems(
     item: mergedItemsWithUpdates,
   };
 
-  console.log(newResponse);
   return newResponse;
 }
