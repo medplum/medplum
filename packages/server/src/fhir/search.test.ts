@@ -3287,20 +3287,17 @@ describe('FHIR Search', () => {
           name: [{ given: ['Evelyn', 'Dierdre'], family: 'Arachnae' }],
         });
 
-        // NOTE: This incorrect behavior is currently kept for backwards compatibility,
-        // and should be changed to exact matching in Medplum v4
         const result = await repo.search({
           resourceType: 'Patient',
           filters: [
             {
               code: '_filter',
               operator: Operator.EQUALS,
-              value: 'name eq Evel',
+              value: 'name eq Dier',
             },
           ],
         });
-        expect(result.entry).toHaveLength(1);
-        expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+        expect(result.entry).toHaveLength(0);
 
         const result2 = await repo.search({
           resourceType: 'Patient',
@@ -3308,7 +3305,7 @@ describe('FHIR Search', () => {
             {
               code: '_filter',
               operator: Operator.EQUALS,
-              value: 'name sw Evel',
+              value: 'name sw Dier',
             },
           ],
         });
