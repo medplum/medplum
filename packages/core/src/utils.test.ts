@@ -661,6 +661,12 @@ describe('Core Utils', () => {
     expect(stringify({ resourceType: 'Patient', address: [{ line: ['', 'x'] }] })).toStrictEqual(
       '{"resourceType":"Patient","address":[{"line":[null,"x"]}]}'
     );
+
+    // Make sure we preserve "0", even though falsy
+    expect(stringify({ low: 0, high: 100 })).toStrictEqual('{"low":0,"high":100}');
+
+    // Make sure we preserve "false", even though falsy
+    expect(stringify({ low: false, high: true })).toStrictEqual('{"low":false,"high":true}');
   });
 
   test('Deep equals', () => {

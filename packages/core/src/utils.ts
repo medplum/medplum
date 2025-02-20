@@ -487,7 +487,7 @@ export function stringify(value: any, pretty?: boolean): string {
  * @returns The value with empty properties removed.
  */
 function removeEmptyFromUnknown(value: unknown): any {
-  if (!value) {
+  if (value === undefined || value === null || value === '') {
     // For null, undefined, and empty strings, return undefined
     return undefined;
   }
