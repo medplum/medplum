@@ -178,7 +178,6 @@ describe('QuestionnaireForm', () => {
     expect(answers['question5']).toMatchObject({ valueBoolean: true });
   });
 
-
   test('Groups with QuestionnaireResponse', async () => {
     const onSubmit = jest.fn();
 
@@ -229,76 +228,76 @@ describe('QuestionnaireForm', () => {
         ],
       },
       questionnaireResponse: {
-        "resourceType": "QuestionnaireResponse",
-        "status": "in-progress",
-        "item": [
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: [
           {
-            "id": "id-2",
-            "linkId": "group1",
-            "text": "Group 1",
-            "item": [
+            id: 'id-2',
+            linkId: 'group1',
+            text: 'Group 1',
+            item: [
               {
-                "id": "id-3",
-                "linkId": "question1",
-                "text": "Question 1",
-                "answer": [
+                id: 'id-3',
+                linkId: 'question1',
+                text: 'Question 1',
+                answer: [
                   {
-                    "valueString": "a1"
-                  }
-                ]
+                    valueString: 'a1',
+                  },
+                ],
               },
               {
-                "id": "id-4",
-                "linkId": "question2",
-                "text": "Question 2",
-                "answer": [
+                id: 'id-4',
+                linkId: 'question2',
+                text: 'Question 2',
+                answer: [
                   {
-                    "valueString": "a2"
-                  }
-                ]
-              }
+                    valueString: 'a2',
+                  },
+                ],
+              },
             ],
-            "answer": []
+            answer: [],
           },
           {
-            "id": "id-5",
-            "linkId": "group2",
-            "text": "Group 2",
-            "item": [
+            id: 'id-5',
+            linkId: 'group2',
+            text: 'Group 2',
+            item: [
               {
-                "id": "id-6",
-                "linkId": "question3",
-                "text": "Question 3",
-                "answer": [
+                id: 'id-6',
+                linkId: 'question3',
+                text: 'Question 3',
+                answer: [
                   {
-                    "valueString": "a3"
-                  }
-                ]
+                    valueString: 'a3',
+                  },
+                ],
               },
               {
-                "id": "id-7",
-                "linkId": "question4",
-                "text": "Question 4",
-                "answer": [
+                id: 'id-7',
+                linkId: 'question4',
+                text: 'Question 4',
+                answer: [
                   {
-                    "valueString": "a4"
-                  }
-                ]
+                    valueString: 'a4',
+                  },
+                ],
               },
               {
-                "id": "id-8",
-                "linkId": "question5",
-                "text": "Question 5",
-                "answer": [
+                id: 'id-8',
+                linkId: 'question5',
+                text: 'Question 5',
+                answer: [
                   {
-                    "valueBoolean": true
-                  }
-                ]
-              }
+                    valueBoolean: true,
+                  },
+                ],
+              },
             ],
-            "answer": []
-          }
-        ]
+            answer: [],
+          },
+        ],
       },
       onSubmit,
     });

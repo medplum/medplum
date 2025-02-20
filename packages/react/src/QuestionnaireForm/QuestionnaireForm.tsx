@@ -184,20 +184,15 @@ function updateResponseItems(
   newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[] | undefined,
   questionnaire: Questionnaire | undefined
 ): QuestionnaireResponse {
-
   if (!newResponseItems) {
     return {
       resourceType: 'QuestionnaireResponse',
-      status: 'in-progress'
-    }
+      status: 'in-progress',
+    };
   }
 
-
   const currentItems = prevResponse?.item ?? [];
-  const mergedItems = mergeItems(
-    currentItems,
-    Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
-  );
+  const mergedItems = mergeItems(currentItems, Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]);
 
   const tempResponse: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
