@@ -454,37 +454,142 @@ export function getExtension(resource: any, ...urls: string[]): Extension | unde
 }
 
 /**
- * FHIR JSON stringify.
+ * Returns the FHIR JSON string representation of the input value.
+ *
  * Removes properties with empty string values.
  * Removes objects with zero properties.
+ *
+ * Does not modify the input value.
+ * If the input value does not contain any empty properties, then the original value is returned.
+ * Otherwise, a new value is returned with the empty properties removed.
+ *
  * See: https://www.hl7.org/fhir/json.html
+ *
  * @param value - The input value.
  * @param pretty - Optional flag to pretty-print the JSON.
  * @returns The resulting JSON string.
  */
 export function stringify(value: any, pretty?: boolean): string {
-  return JSON.stringify(value, stringifyReplacer, pretty ? 2 : undefined) ?? '';
+  const processedValue = removeEmptyFromUnknown(value);
+  return JSON.stringify(processedValue, null, pretty ? 2 : undefined) ?? '';
 }
 
 /**
- * Evaluates JSON key/value pairs for FHIR JSON stringify.
- * Removes properties with empty string values.
- * Removes objects with zero properties.
- * @param k - Property key.
- * @param v - Property value.
- * @returns The replaced value.
+ * Removes empty properties from an unknown value.
+ *
+ * Does not modify the input value.
+ *
+ * If the input value does not contain any empty properties, then the original value is returned.
+ *
+ * Otherwise, a new value is returned with the empty properties removed.
+ *
+ * @param value - The unknown input value.
+ * @returns The value with empty properties removed.
  */
-function stringifyReplacer(k: string, v: any): any {
-  return !isArrayKey(k) && isEmpty(v) ? undefined : v;
+function removeEmptyFromUnknown(value: unknown): any {
+  if (value === undefined || value === null || value === '') {
+    // For null, undefined, and empty strings, return undefined
+    return undefined;
+  }
+
+  if (typeof value === 'object') {
+    if (Array.isArray(value)) {
+      return removeEmptyFromArray(value);
+    }
+    return removeEmptyFromObject(value);
+  }
+
+  // Otherwise, return the primitive value
+  return value;
 }
 
 /**
- * Returns true if the key is an array key.
- * @param k - The property key.
- * @returns True if the key is an array key.
+ * Removes empty elements from an array.
+ *
+ * If the input array is empty, then undefined is returned.
+ * Otherwise, a new array is returned with the empty values replaced with null.
+ *
+ * FHIR arrays must maintain the same length, so null is used to replace empty values.
+ *
+ * @param inputArray - The input array value.
+ * @returns The array with empty values removed.
  */
-function isArrayKey(k: string): boolean {
-  return !!/\d+$/.exec(k);
+function removeEmptyFromArray(inputArray: unknown[]): any[] | undefined {
+  const len = inputArray.length;
+  if (len === 0) {
+    return undefined;
+  }
+  let newArray = undefined; // Only create a new array if needed
+  let count = 0;
+  for (let i = 0; i < len; i++) {
+    const inputElement = inputArray[i];
+    const processedElement = removeEmptyFromUnknown(inputElement);
+
+    if (processedElement !== inputElement && !newArray) {
+      newArray = Array.from(inputArray); // Clone only when a change is needed
+    }
+
+    if (processedElement === undefined) {
+      if (newArray) {
+        newArray[i] = null;
+      }
+    } else {
+      if (newArray) {
+        newArray[i] = processedElement; // Propagate changed element
+      }
+      count++;
+    }
+  }
+  if (count === 0) {
+    return undefined;
+  }
+  return newArray ?? inputArray;
+}
+
+/**
+ * Removes empty properties from an object.
+ *
+ * If the input object is empty, then undefined is returned.
+ *
+ * @param inputObject - The input object value.
+ * @returns The object with empty properties removed.
+ */
+function removeEmptyFromObject(inputObject: Record<string, any>): Record<string, any> | undefined {
+  let newObject = undefined;
+  let count = 0;
+
+  // Use 'in' for faster key iteration
+  // Using `Object.keys()` and `Object.entries()` is 2x+ slower
+  // Using `Object.hasOwn` guard is about 50% slower
+  // We can safely skip the hasOwn check, because this value will be passed to JSON.stringify,
+  // which has its own property checking.
+  // eslint-disable-next-line guard-for-in
+  for (const key in inputObject) {
+    const inputValue = inputObject[key];
+    const processedValue = removeEmptyFromUnknown(inputValue);
+
+    // If the processed value is different than the input value, then we need to clone the object
+    if (processedValue !== inputValue && !newObject) {
+      newObject = { ...inputObject }; // Shallow clone only when a change is needed
+    }
+
+    if (processedValue === undefined) {
+      if (newObject) {
+        delete newObject[key];
+      }
+    } else {
+      if (newObject) {
+        newObject[key] = processedValue;
+      }
+      count++;
+    }
+  }
+
+  if (count === 0) {
+    return undefined;
+  }
+
+  return newObject ?? inputObject;
 }
 
 /**

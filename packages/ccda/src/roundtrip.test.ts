@@ -60,21 +60,7 @@ describe('convertFhirToCcda', () => {
 function normalizeFhir<T extends Resource>(resource: T): T {
   // We need to remove all "empty" elements, such as empty strings and empty objects
   // This is because FHIR is very strict about what is allowed in the JSON
-  // Medplum "stringify" function does this, althought it is not perfect
-  // So, we need to use a hack and iteratively do this until we get no more changes
-  let currResource = resource;
-  let currString = stringify(currResource);
-
-  for (let i = 0; i < 100; i++) {
-    currResource = JSON.parse(stringify(currResource)) as T;
-    const nextString = stringify(currResource);
-    if (nextString === currString) {
-      break;
-    }
-    currString = nextString;
-  }
-
-  return currResource;
+  return JSON.parse(stringify(resource)) as T;
 }
 
 function normalizeCcda(ccda: Ccda): Ccda {
