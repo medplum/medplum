@@ -1256,92 +1256,92 @@ export const EnableWhenWithQuestionnaireResponse = (): JSX.Element => (
         ],
       }}
       questionnaireResponse={{
-        resourceType: "QuestionnaireResponse",
-        status: "in-progress",
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
         item: [
           {
-            id: "id-1",
-            linkId: "q1",
+            id: 'id-1',
+            linkId: 'q1',
             text: 'Enabled when the answer is "Yes"',
             answer: [
               {
-                valueString: "Yes"
-              }
-            ]
+                valueString: 'Yes',
+              },
+            ],
           },
           {
-            id: "id-2",
-            linkId: "q2",
+            id: 'id-2',
+            linkId: 'q2',
             text: 'Displayed because the answer is "Yes"!',
             item: [],
-            answer: []
+            answer: [],
           },
           {
-            id: "id-3",
-            linkId: "q3",
-            text: "Enabled when there is an answer",
+            id: 'id-3',
+            linkId: 'q3',
+            text: 'Enabled when there is an answer',
             answer: [
               {
-                valueString: "Yes"
-              }
-            ]
+                valueString: 'Yes',
+              },
+            ],
           },
           {
-            id: "id-4",
-            linkId: "q4",
-            text: "Displayed because there is an answer!",
+            id: 'id-4',
+            linkId: 'q4',
+            text: 'Displayed because there is an answer!',
             item: [],
-            answer: []
+            answer: [],
           },
           {
-            id: "id-5",
-            linkId: "q5",
+            id: 'id-5',
+            linkId: 'q5',
             text: "Enabled when there isn't an answer",
             item: [],
-            answer: []
+            answer: [],
           },
           {
-            id: "id-6",
-            linkId: "q6",
+            id: 'id-6',
+            linkId: 'q6',
             text: "Displayed because there isn't an answer!",
             item: [],
-            answer: []
+            answer: [],
           },
           {
-            id: "id-7",
-            linkId: "q7",
-            text: "Enabled when greater than 2",
+            id: 'id-7',
+            linkId: 'q7',
+            text: 'Enabled when greater than 2',
             answer: [
               {
-                valueInteger: 5
-              }
-            ]
+                valueInteger: 5,
+              },
+            ],
           },
           {
-            id: "id-8",
-            linkId: "q8",
-            text: "Displayed because answer is greater than 2!",
+            id: 'id-8',
+            linkId: 'q8',
+            text: 'Displayed because answer is greater than 2!',
             item: [],
-            answer: []
+            answer: [],
           },
           {
-            id: "id-9",
-            linkId: "q9",
-            text: "Enabled when greater than or equal to 2",
+            id: 'id-9',
+            linkId: 'q9',
+            text: 'Enabled when greater than or equal to 2',
             answer: [
               {
-                valueInteger: 2
-              }
-            ]
+                valueInteger: 2,
+              },
+            ],
           },
           {
-            id: "id-10",
-            linkId: "q10",
-            text: "Displayed because answer is greater than or equal to 2!",
+            id: 'id-10',
+            linkId: 'q10',
+            text: 'Displayed because answer is greater than or equal to 2!',
             item: [],
-            answer: []
-          }
-        ]
+            answer: [],
+          },
+        ],
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
@@ -1806,7 +1806,6 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
   </Document>
 );
 
-
 export const KitchenSinkWithQuestionnaireResponse = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
@@ -1921,159 +1920,161 @@ export const KitchenSinkWithQuestionnaireResponse = (): JSX.Element => (
         ],
       }}
       questionnaireResponse={{
-        resourceType: "QuestionnaireResponse",
-        status: "completed",
+        resourceType: 'QuestionnaireResponse',
+        status: 'completed',
         item: [
           {
-            id: "id-14",
-            linkId: "boolean",
-            text: "Boolean",
+            id: 'id-14',
+            linkId: 'boolean',
+            text: 'Boolean',
             answer: [
               {
-                valueBoolean: true
-              }
-            ]
+                valueBoolean: true,
+              },
+            ],
           },
           {
-            id: "id-15",
-            linkId: "decimal",
-            text: "Decimal",
+            id: 'id-15',
+            linkId: 'decimal',
+            text: 'Decimal',
             answer: [
               {
-                valueDecimal: 3.14
-              }
-            ]
+                valueDecimal: 3.14,
+              },
+            ],
           },
           {
-            id: "id-16",
-            linkId: "integer",
-            text: "Integer",
+            id: 'id-16',
+            linkId: 'integer',
+            text: 'Integer',
             answer: [
               {
-                valueInteger: 123
-              }
-            ]
+                valueInteger: 123,
+              },
+            ],
           },
           {
-            id: "id-17",
-            linkId: "date",
-            text: "Date",
+            id: 'id-17',
+            linkId: 'date',
+            text: 'Date',
             answer: [
               {
-                valueDate: "2015-10-21"
-              }
-            ]
+                valueDate: '2015-10-21',
+              },
+            ],
           },
           {
-            id: "id-18",
-            linkId: "dateTime",
-            text: "Date Time",
+            id: 'id-18',
+            linkId: 'dateTime',
+            text: 'Date Time',
             answer: [
               {
-                valueDateTime: "2015-10-21T01:27:00.000Z"
-              }
-            ]
+                valueDateTime: '2015-10-21T01:27:00.000Z',
+              },
+            ],
           },
           {
-            id: "id-19",
-            linkId: "time",
-            text: "Time",
+            id: 'id-19',
+            linkId: 'time',
+            text: 'Time',
             answer: [
               {
-                valueTime: "11:11"
-              }
-            ]
+                valueTime: '11:11',
+              },
+            ],
           },
           {
-            id: "id-20",
-            linkId: "string",
-            text: "String",
+            id: 'id-20',
+            linkId: 'string',
+            text: 'String',
             answer: [
               {
-                valueString: "foo"
-              }
-            ]
+                valueString: 'foo',
+              },
+            ],
           },
           {
-            id: "id-21",
-            linkId: "text",
-            text: "Text",
+            id: 'id-21',
+            linkId: 'text',
+            text: 'Text',
             answer: [
               {
-                valueString: "lorem ipsum"
-              }
-            ]
+                valueString: 'lorem ipsum',
+              },
+            ],
           },
           {
-            id: "id-22",
-            linkId: "url",
-            text: "URL",
+            id: 'id-22',
+            linkId: 'url',
+            text: 'URL',
             answer: [
               {
-                valueString: "https://example.com"
-              }
-            ]
+                valueString: 'https://example.com',
+              },
+            ],
           },
           {
-            id: "id-23",
-            linkId: "choice",
-            text: "Choice",
+            id: 'id-23',
+            linkId: 'choice',
+            text: 'Choice',
             answer: [
               {
-                valueDate: "2020-01-01"
-              }
-            ]
+                valueDate: '2020-01-01',
+              },
+            ],
           },
           {
-            id: "id-24",
-            linkId: "value-set-choice",
-            text: "Value Set Choice",
+            id: 'id-24',
+            linkId: 'value-set-choice',
+            text: 'Value Set Choice',
             answer: [
               {
                 valueCoding: {
-                  system: "x",
-                  code: "test-code-3",
-                  display: "Test Display 3"
-                }
-              }
-            ]
+                  system: 'x',
+                  code: 'test-code-3',
+                  display: 'Test Display 3',
+                },
+              },
+            ],
           },
           {
-            id: "id-26",
-            linkId: "attachment",
-            text: "Attachment",
+            id: 'id-26',
+            linkId: 'attachment',
+            text: 'Attachment',
             item: [],
-            answer: [{
-              valueAttachment: {
-                contentType: "image/png",
-                url: "https://example.com/binary/123",
-                title: "Image.png"
-              }
-            }]
+            answer: [
+              {
+                valueAttachment: {
+                  contentType: 'image/png',
+                  url: 'https://example.com/binary/123',
+                  title: 'Image.png',
+                },
+              },
+            ],
           },
           {
-            id: "id-27",
-            linkId: "reference",
-            text: "Reference",
+            id: 'id-27',
+            linkId: 'reference',
+            text: 'Reference',
             item: [],
-            answer: []
+            answer: [],
           },
           {
-            id: "id-28",
-            linkId: "quantity",
-            text: "Quantity",
+            id: 'id-28',
+            linkId: 'quantity',
+            text: 'Quantity',
             answer: [
               {
                 valueQuantity: {
-                  comparator: "<",
+                  comparator: '<',
                   value: 1,
-                  unit: "2"
-                }
-              }
-            ]
-          }
+                  unit: '2',
+                },
+              },
+            ],
+          },
         ],
-        questionnaire: "Questionnaire/kitchen-sink",
+        questionnaire: 'Questionnaire/kitchen-sink',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);
