@@ -317,42 +317,45 @@ export async function maybeStartDataMigration(assertedDataVersion?: number): Pro
   const systemRepo = getSystemRepo();
   let dataMigrationJob: AsyncJob | undefined;
 
-  await systemRepo.withTransaction(async () => {
-    // Check if there is already a migration job in progress
-    const existingJob = await systemRepo.searchOne<AsyncJob>(
-      parseSearchRequest('AsyncJob', { status: 'accepted', type: 'data-migration' })
-    );
-    // If there is an existing job and it has any compartments, we should always throw (someone has created a data-migration job in their project)
-    if (existingJob?.meta?.compartment) {
-      throw new OperationOutcomeError(
-        badRequest(
-          'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project.'
-        )
+  await systemRepo.withTransaction(
+    async () => {
+      // Check if there is already a migration job in progress
+      const existingJob = await systemRepo.searchOne<AsyncJob>(
+        parseSearchRequest('AsyncJob', { status: 'accepted', type: 'data-migration' })
       );
-    }
-    if (existingJob) {
-      dataMigrationJob = existingJob;
-      return;
-    }
-    // If there isn't an existing job, create a new one and start data migration
-    dataMigrationJob = await systemRepo.createResource({
-      resourceType: 'AsyncJob',
-      type: 'data-migration',
-      status: 'accepted',
-      request: `data-migration-v${pendingDataMigration}`,
-      requestTime: new Date().toISOString(),
-      dataVersion: pendingDataMigration,
-      // We know that because we were able to start the migration on this server instance,
-      // That we must be on the right version to run this migration
-      minServerVersion: getServerVersion(),
-    });
-    const dataMigration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
-    // Don't await the migration, since it could be blocking
-    dataMigration
-      // We get a new system repo here so that we are not trying messing with the system repo doing the transaction
-      .run(getSystemRepo(), dataMigrationJob)
-      .catch((err) => globalLogger.error('Error while running data migration', { err }));
-  });
+      // If there is an existing job and it has any compartments, we should always throw (someone has created a data-migration job in their project)
+      if (existingJob?.meta?.compartment) {
+        throw new OperationOutcomeError(
+          badRequest(
+            'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project.'
+          )
+        );
+      }
+      if (existingJob) {
+        dataMigrationJob = existingJob;
+        return;
+      }
+      // If there isn't an existing job, create a new one and start data migration
+      dataMigrationJob = await systemRepo.createResource({
+        resourceType: 'AsyncJob',
+        type: 'data-migration',
+        status: 'accepted',
+        request: `data-migration-v${pendingDataMigration}`,
+        requestTime: new Date().toISOString(),
+        dataVersion: pendingDataMigration,
+        // We know that because we were able to start the migration on this server instance,
+        // That we must be on the right version to run this migration
+        minServerVersion: getServerVersion(),
+      });
+      const dataMigration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
+      // Don't await the migration, since it could be blocking
+      dataMigration
+        // We get a new system repo here so that we are not trying messing with the system repo doing the transaction
+        .run(getSystemRepo(), dataMigrationJob)
+        .catch((err) => globalLogger.error('Error while running data migration', { err }));
+    },
+    { serializable: true }
+  );
 
   return dataMigrationJob;
 }
