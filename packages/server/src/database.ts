@@ -359,7 +359,7 @@ export async function maybeStartDataMigration(assertedDataVersion?: number): Pro
       const dataMigration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + pendingDataMigration];
       // Don't await the migration, since it could be blocking
       dataMigration
-        // We get a new system repo here so that we are not trying messing with the system repo doing the transaction
+        // We get a new system repo here so that we are not reusing with the system repo doing the transaction
         .run(getSystemRepo(), dataMigrationJob)
         .catch((err) => globalLogger.error('Error while running data migration', { err }));
     },
