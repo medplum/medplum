@@ -174,11 +174,9 @@ describe('Database migrations', () => {
       // Delete all data migration jobs
       const systemRepo = getSystemRepo();
       const jobs = await systemRepo.searchResources<AsyncJob>(parseSearchRequest('AsyncJob?type=data-migration'));
-      const promises = [] as Promise<void>[];
       for (const job of jobs) {
-        promises.push(systemRepo.deleteResource('AsyncJob', job.id as string));
+        await systemRepo.deleteResource('AsyncJob', job.id as string);
       }
-      await Promise.allSettled(promises);
     });
 
     afterEach(async () => {
@@ -271,7 +269,36 @@ describe('Database migrations', () => {
         expect(asyncJob.meta?.compartment).toBeDefined();
 
         await expect(maybeStartDataMigration()).rejects.toThrow(
-          'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project.'
+          'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project'
+        );
+      }));
+
+    test('Multiple data migration jobs with accepted status', () =>
+      withTestContext(async () => {
+        const { repo } = await createTestProject({ withRepo: true });
+
+        await repo.createResource<AsyncJob>({
+          resourceType: 'AsyncJob',
+          type: 'data-migration',
+          status: 'accepted',
+          requestTime: new Date().toISOString(),
+          request: 'mock-job',
+          dataVersion: 1,
+          minServerVersion: '3.3.0',
+        });
+
+        await getSystemRepo().createResource<AsyncJob>({
+          resourceType: 'AsyncJob',
+          type: 'data-migration',
+          status: 'accepted',
+          requestTime: new Date().toISOString(),
+          request: 'mock-job',
+          dataVersion: 1,
+          minServerVersion: '3.3.0',
+        });
+
+        await expect(maybeStartDataMigration()).rejects.toThrow(
+          'Data migration unable to start due to more than one existing data-migration AsyncJob with accepted status'
         );
       }));
 

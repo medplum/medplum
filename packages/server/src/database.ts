@@ -320,14 +320,23 @@ export async function maybeStartDataMigration(assertedDataVersion?: number): Pro
   await systemRepo.withTransaction(
     async () => {
       // Check if there is already a migration job in progress
-      const existingJob = await systemRepo.searchOne<AsyncJob>(
-        parseSearchRequest('AsyncJob', { status: 'accepted', type: 'data-migration' })
+      const existingJobs = await systemRepo.searchResources<AsyncJob>(
+        parseSearchRequest('AsyncJob?status=accepted&type=data-migration&_count=2')
       );
+      // If there is more than one existing job, we should throw
+      if (existingJobs.length > 1) {
+        throw new OperationOutcomeError(
+          badRequest(
+            'Data migration unable to start due to more than one existing data-migration AsyncJob with accepted status'
+          )
+        );
+      }
+      const existingJob = existingJobs[0];
       // If there is an existing job and it has any compartments, we should always throw (someone has created a data-migration job in their project)
       if (existingJob?.meta?.compartment) {
         throw new OperationOutcomeError(
           badRequest(
-            'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project.'
+            'Data migration unable to start due to existing data-migration AsyncJob with accepted status in a project'
           )
         );
       }
