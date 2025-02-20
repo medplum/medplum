@@ -236,7 +236,7 @@ describe('Database migrations', () => {
         await expect(maybeStartDataMigration()).resolves.toBeUndefined();
       }));
 
-    test.only('Data migration already in progress', () =>
+    test('Data migration already in progress', () =>
       withTestContext(async () => {
         const asyncJob = await getSystemRepo().createResource<AsyncJob>({
           resourceType: 'AsyncJob',
