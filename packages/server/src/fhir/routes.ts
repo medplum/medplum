@@ -17,6 +17,7 @@ import { agentReloadConfigHandler } from './operations/agentreloadconfig';
 import { agentStatusHandler } from './operations/agentstatus';
 import { agentUpgradeHandler } from './operations/agentupgrade';
 import { asyncJobCancelHandler } from './operations/asyncjobcancel';
+import { asyncJobCompleteHandler } from './operations/asyncjobcomplete';
 import { ccdaExportHandler } from './operations/ccdaexport';
 import { codeSystemImportHandler } from './operations/codesystemimport';
 import { codeSystemLookupHandler } from './operations/codesystemlookup';
@@ -230,6 +231,9 @@ function initInternalFhirRouter(): FhirRouter {
 
   // AsyncJob $cancel operation
   router.add('POST', '/AsyncJob/:id/$cancel', asyncJobCancelHandler);
+
+  // AsyncJob $complete operation
+  router.add('POST', '/AsyncJob/:id/$complete', asyncJobCompleteHandler);
 
   // Bot $deploy operation
   router.add('POST', '/Bot/:id/$deploy', deployHandler);
