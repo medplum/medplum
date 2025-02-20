@@ -2051,4 +2051,115 @@ describe('QuestionnaireForm', () => {
     expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
     expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
   });
+
+  test('Questionnaire CalculatedExpression with nested groups and QuestionnaireResponse', async () => {
+    const onSubmit = jest.fn();
+
+    await setup({
+      questionnaire: {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        id: 'temperature-conversion',
+        title: 'Temperature Conversion',
+        item: [
+          {
+            id: 'id-6',
+            linkId: 'g6',
+            type: 'group',
+            text: 'Temperature Group',
+            item: [
+              {
+                id: 'id-1',
+                linkId: 'q1',
+                type: 'decimal',
+                text: 'Fahrenheit',
+              },
+              {
+                id: 'id-2',
+                linkId: 'q2',
+                type: 'decimal',
+                text: 'Celsius',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                    valueExpression: {
+                      language: 'text/fhirpath',
+                      expression:
+                        "iif(%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value.empty(), '', ((%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value - 32) * 5 / 9).round(2))",
+                    },
+                  },
+                ],
+              },
+              {
+                id: 'id-3',
+                linkId: 'q3',
+                type: 'decimal',
+                text: 'Kelvin',
+                extension: [
+                  {
+                    url: 'http://hl7.org/fhir/uv/sdc/StructureDefinition/sdc-questionnaire-calculatedExpression',
+                    valueExpression: {
+                      language: 'text/fhirpath',
+                      expression:
+                        "iif(%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value.empty(), '', (((%resource.item.where(linkId='g6').item.where(linkId='q1').answer.value - 32) * 5 / 9) + 273.15).round(2))",
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      questionnaireResponse: {
+        "resourceType": "QuestionnaireResponse",
+        "status": "in-progress",
+        "item": [
+          {
+            "id": "id-76",
+            "linkId": "g6",
+            "text": "Temperature Group",
+            "item": [
+              {
+                "id": "id-77",
+                "linkId": "q1",
+                "text": "Fahrenheit",
+                "answer": [
+                  {
+                    "valueDecimal": 100
+                  }
+                ]
+              },
+              {
+                "id": "id-78",
+                "linkId": "q2",
+                "text": "Celsius",
+                "answer": []
+              },
+              {
+                "id": "id-79",
+                "linkId": "q3",
+                "text": "Kelvin",
+                "answer": []
+              }
+            ],
+            "answer": []
+          }
+        ]
+      },
+      onSubmit,
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    expect(onSubmit).toHaveBeenCalled();
+
+    const response = onSubmit.mock.calls[0][0];
+    const answers = getQuestionnaireAnswers(response);
+
+    expect(answers['q1']).toMatchObject({ valueDecimal: 100 }); // Original Fahrenheit value
+    expect(answers['q2']).toMatchObject({ valueDecimal: 38 }); // Calculated Celsius
+    expect(answers['q3']).toMatchObject({ valueDecimal: 311 }); // Calculated Kelvin
+  });
 });
