@@ -12,7 +12,7 @@ export interface CodingInputProps
 export function CodingInput(props: CodingInputProps): JSX.Element {
   const { defaultValue, onChange, withHelpText, response, ...rest } = props;
   const [value, setValue] = useState<Coding | undefined>(
-    response?.answer && response.answer.length > 0 ? response.answer[0].valueCoding : defaultValue
+    response?.answer?.[0]?.valueCoding ?? defaultValue
   );
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
