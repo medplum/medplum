@@ -23,9 +23,9 @@ import { QuestionnairePageSequence } from './QuestionnaireFormComponents/Questio
 
 export interface QuestionnaireFormProps {
   readonly questionnaire: Questionnaire | Reference<Questionnaire>;
+  readonly questionnaireResponse?: QuestionnaireResponse | Reference<QuestionnaireResponse>;
   readonly subject?: Reference;
   readonly encounter?: Reference<Encounter>;
-  readonly questionnaireResponse?: QuestionnaireResponse;
   readonly source?: QuestionnaireResponse['source'];
   readonly disablePagination?: boolean;
   readonly excludeButtons?: boolean;
@@ -39,7 +39,8 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const { subject, source: sourceFromProps } = props;
   const questionnaire = useResource(props.questionnaire);
   const prevQuestionnaire = usePrevious(questionnaire);
-  const [response, setResponse] = useState<QuestionnaireResponse | undefined>(props.questionnaireResponse);
+  const questionnaireResponse = useResource(props.questionnaireResponse);
+  const [response, setResponse] = useState<QuestionnaireResponse | undefined>(questionnaireResponse);
   const [activePage, setActivePage] = useState(0);
   const onChangeRef = useRef(props.onChange);
   onChangeRef.current = props.onChange;
@@ -48,8 +49,8 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   onSubmitRef.current = props.onSubmit;
 
   useEffect(() => {
-    if (props.questionnaireResponse?.item) {
-      setResponse((prevResponse) => updateResponseItems(prevResponse, props.questionnaireResponse?.item, questionnaire));
+    if (questionnaireResponse?.item) {
+      setResponse((prevResponse) => updateResponseItems(prevResponse, questionnaireResponse.item, questionnaire));
     } else {
       if (questionnaire && getQuestionnaireIdentity(prevQuestionnaire) === getQuestionnaireIdentity(questionnaire)) {
         return;
@@ -57,7 +58,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       // throw out the existing response and start over
       setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
     }
-  }, [props.questionnaireResponse, questionnaire, prevQuestionnaire]);
+  }, [questionnaireResponse, questionnaire, prevQuestionnaire]);
 
   useEffect(() => {
     if (response && onChangeRef.current) {
