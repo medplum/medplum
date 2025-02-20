@@ -4,6 +4,7 @@ PACKAGES=(
   "agent"
   "app"
   "bot-layer"
+  "ccda"
   "cdk"
   "cli"
   "core"
