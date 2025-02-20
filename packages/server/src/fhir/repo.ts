@@ -1778,7 +1778,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       return resolveId(updated.project);
     }
 
-    if (updated.resourceType === 'User' && this.isSuperAdmin()) {
+    if ((updated.resourceType === 'User' || updated.resourceType === 'AsyncJob') && this.isSuperAdmin()) {
       // Super admins can add, remove, and the project compartment of users.
       return updated?.meta?.project;
     }
