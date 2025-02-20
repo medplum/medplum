@@ -1,5 +1,5 @@
 import { Coding, ValueSetExpansionContains, QuestionnaireResponseItem } from '@medplum/fhirtypes';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
