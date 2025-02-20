@@ -1,7 +1,7 @@
 import { convertCcdaToXml, convertFhirToCcda } from '@medplum/ccda';
-import { allOk, ContentType } from '@medplum/core';
+import { allOk, ContentType, ProfileResource } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
-import { Binary, Patient } from '@medplum/fhirtypes';
+import { Binary, Patient, Reference } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
 import { getPatientSummary, operation, PatientSummaryParameters } from './patientsummary';
 import { parseInputParameters } from './utils/parameters';
@@ -24,11 +24,13 @@ export async function ccdaExportHandler(req: FhirRequest): Promise<FhirResponse>
   const { id } = req.params;
   const params = parseInputParameters<CcdaExportParameters>(operation, req);
 
+  const author = await ctx.repo.readReference(ctx.profile as Reference<ProfileResource>);
+
   // First read the patient to verify access
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
 
   // Then read all of the patient data
-  const summaryBundle = await getPatientSummary(ctx.repo, patient, params);
+  const summaryBundle = await getPatientSummary(ctx.repo, author, patient, params);
 
   // Convert the summary bundle to C-CDA
   const ccda = convertFhirToCcda(summaryBundle);
