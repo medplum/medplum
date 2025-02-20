@@ -214,11 +214,5 @@ function updateResponseItems(
     item: mergedItemsWithUpdates,
   };
 
-  console.log(JSON.stringify(newResponse, (key, value) => {
-    if (key === 'answer') {
-      return JSON.stringify(value, null, 2);
-    }
-    return value;
-  }, 2));
   return newResponse;
 }
