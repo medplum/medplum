@@ -589,7 +589,7 @@ describe('Reindex Worker', () => {
         requestTime: new Date().toISOString(),
         request: '/admin/super/migrate',
         dataVersion: 1,
-        minServerVersion: '3.2.31',
+        minServerVersion: '3.3.0',
       });
 
       await addReindexJob(['ImmunizationEvaluation'], asyncJob);
@@ -613,7 +613,7 @@ describe('Reindex Worker', () => {
       expect(checkJobStatusSpy).not.toHaveBeenCalled();
     }));
 
-  test.each(['3.2.31', '4.0.0'])('Data migration reindex -- Sufficient version - %s', (serverVersion) =>
+  test.each(['3.3.0', '4.0.0'])('Data migration reindex -- Sufficient version - %s', (serverVersion) =>
     withTestContext(async () => {
       const markDataMigrateCompleteSpy = jest.spyOn(databaseModule, 'markPendingDataMigrationCompleted');
       jest.spyOn(versionUtils, 'getServerVersion').mockImplementation(() => serverVersion);
@@ -627,7 +627,7 @@ describe('Reindex Worker', () => {
         requestTime: new Date().toISOString(),
         request: '/admin/super/migrate',
         dataVersion: 1,
-        minServerVersion: '3.2.31',
+        minServerVersion: '3.3.0',
       });
 
       await addReindexJob(['ImmunizationEvaluation'], asyncJob);

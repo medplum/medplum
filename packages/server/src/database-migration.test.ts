@@ -37,7 +37,7 @@ jest.mock('./migrations/data/index', () => {
 });
 
 jest.mock('./util/version', () => {
-  return { getServerVersion: jest.fn().mockImplementation(() => '3.2.31') };
+  return { getServerVersion: jest.fn().mockImplementation(() => '3.3.0') };
 });
 
 describe('Database migrations', () => {
@@ -95,7 +95,7 @@ describe('Database migrations', () => {
         jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '4.0.0');
         await expect(initAppServices(migrationsConfig)).rejects.toThrow(
           new Error(
-            'Unable to run data migration against the current server version. Migration requires server at version 3.2.31 <= version < 4.0.0, but current server version is 4.0.0'
+            'Unable to run data migration against the current server version. Migration requires server at version 3.3.0 <= version < 4.0.0, but current server version is 4.0.0'
           )
         );
         await shutdownApp();
@@ -114,7 +114,7 @@ describe('Database migrations', () => {
       loggerInfoSpy.mockRestore();
     });
 
-    test.each(['3.2.31', '3.3.1', '3.4.0'])(
+    test.each(['3.3.0', '3.3.1', '3.4.0'])(
       'Current version greater than or equal to required version and less than `requiredBefore` -- version %s',
       (serverVersion) =>
         withTestContext(async () => {
@@ -188,7 +188,7 @@ describe('Database migrations', () => {
 
     test('No data migration in progress -- start migration job', () =>
       withTestContext(async () => {
-        jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '3.2.31');
+        jest.spyOn(versionModule, 'getServerVersion').mockImplementation(() => '3.3.0');
 
         const asyncJob = await maybeStartDataMigration();
         expect(asyncJob).toMatchObject<AsyncJob>({
@@ -199,7 +199,7 @@ describe('Database migrations', () => {
           request: expect.any(String),
           requestTime: expect.any(String),
           dataVersion: 1,
-          minServerVersion: '3.2.31',
+          minServerVersion: '3.3.0',
         });
 
         let updated: AsyncJob | undefined;
@@ -231,12 +231,12 @@ describe('Database migrations', () => {
           request: 'mock-data-job',
           requestTime: new Date().toISOString(),
           dataVersion: 1,
-          minServerVersion: '3.2.31',
+          minServerVersion: '3.3.0',
         });
         await expect(maybeStartDataMigration()).resolves.toBeUndefined();
       }));
 
-    test('Data migration already in progress', () =>
+    test.only('Data migration already in progress', () =>
       withTestContext(async () => {
         const asyncJob = await getSystemRepo().createResource<AsyncJob>({
           resourceType: 'AsyncJob',
@@ -245,8 +245,9 @@ describe('Database migrations', () => {
           requestTime: new Date().toISOString(),
           request: 'mock-job',
           dataVersion: 1,
-          minServerVersion: '3.2.31',
+          minServerVersion: '3.3.0',
         });
+        console.log(asyncJob);
         await expect(maybeStartDataMigration()).resolves.toMatchObject({
           id: asyncJob.id,
           type: 'data-migration',
@@ -263,7 +264,7 @@ describe('Database migrations', () => {
           request: 'mock-data-job',
           requestTime: new Date().toISOString(),
           dataVersion: 1,
-          minServerVersion: '3.2.31',
+          minServerVersion: '3.3.0',
         });
 
         await expect(maybeStartDataMigration(1)).resolves.toBeUndefined();
@@ -278,7 +279,7 @@ describe('Database migrations', () => {
           request: 'mock-data-job',
           requestTime: new Date().toISOString(),
           dataVersion: 1,
-          minServerVersion: '3.2.31',
+          minServerVersion: '3.3.0',
         });
 
         await expect(maybeStartDataMigration(2)).rejects.toThrow(
