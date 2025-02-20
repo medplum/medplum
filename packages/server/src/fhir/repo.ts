@@ -2321,6 +2321,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     if (this.transactionDepth === 1) {
       await conn.query('ROLLBACK');
       this.transactionDepth--;
+      console.log('rolled back / releasing');
       this.releaseConnection(error);
     } else {
       await conn.query('ROLLBACK TO SAVEPOINT sp' + this.transactionDepth);
