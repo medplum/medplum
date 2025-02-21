@@ -174,13 +174,22 @@ class FhirToCcdaConverter {
       },
       templateId: CCDA_TEMPLATE_IDS,
       id: this.mapIdentifiers(this.composition.id, undefined),
-      code: this.composition.type ? mapCodeableConceptToCcdaCode(this.composition.type) : undefined,
+      // Consol Continuity of Care Document (CCD) (V3) SHALL contain exactly one [1..1] code (CONF:1198-17180)
+      // @code="34133-9" Summarization of Episode Note (CodeSystem: 2.16.840.1.113883.6.1 LOINC) (CONF:1198-17181, CONF:1198-32138)
+      code: {
+        '@_code': '34133-9',
+        '@_displayName': 'Summarization of Episode Note',
+        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+        '@_codeSystemName': 'LOINC',
+      },
       title: this.composition.title,
       effectiveTime: this.mapEffectiveTime(this.composition.date, undefined),
       confidentialityCode: this.composition.confidentiality
         ? CONFIDENTIALITY_MAPPER.mapFhirToCcdaCode(this.composition.confidentiality)
         : undefined,
-      languageCode: this.composition.language ? { '@_code': this.composition.language } : undefined,
+      // Consol US Realm Header SHALL contain exactly one [1..1] languageCode,
+      // which SHALL be selected from ValueSet Language 2.16.840.1.113883.1.11.11526 DYNAMIC (CONF:5372, R2.1=CONF:1198-5372, DSTU:806)
+      languageCode: { '@_code': this.composition.language ?? 'en-US' },
       recordTarget: this.createRecordTarget(),
       author: this.mapAuthor(this.composition.author?.[0], this.composition.date),
       custodian: this.mapCustodian(this.composition.custodian),
@@ -807,7 +816,10 @@ class FhirToCcdaConverter {
                 manufacturerOrganization: manufacturer
                   ? [
                       {
-                        id: this.mapIdentifiers(manufacturer.id, [manufacturer.identifier]),
+                        id: this.mapIdentifiers(
+                          manufacturer.id,
+                          manufacturer.identifier ? [manufacturer.identifier] : undefined
+                        ),
                         name: [manufacturer.display as string],
                       },
                     ]
@@ -918,26 +930,20 @@ class FhirToCcdaConverter {
    * @param identifiers - The FHIR identifiers to map.
    * @returns The C-CDA identifiers.
    */
-  private mapIdentifiers(
-    id: string | undefined,
-    identifiers: (Identifier | undefined)[] | undefined
-  ): CcdaId[] | undefined {
+  private mapIdentifiers(id: string | undefined, identifiers: Identifier[] | undefined): CcdaId[] | undefined {
     const result: CcdaId[] = [];
 
     if (id) {
-      result.push({
-        '@_root': id,
-      });
+      result.push({ '@_root': id });
     }
 
     if (identifiers) {
       for (const id of identifiers) {
-        if (id) {
-          result.push({
-            '@_root': mapFhirSystemToCcda(id.system),
-            '@_extension': id.value,
-          });
+        const root = mapFhirSystemToCcda(id.system);
+        if (!root) {
+          continue;
         }
+        result.push({ '@_root': root, '@_extension': id.value });
       }
     }
 
@@ -1057,7 +1063,10 @@ class FhirToCcdaConverter {
                 manufacturerOrganization: manufacturer
                   ? [
                       {
-                        id: this.mapIdentifiers(manufacturer.id, [manufacturer.identifier]),
+                        id: this.mapIdentifiers(
+                          manufacturer.id,
+                          manufacturer.identifier ? [manufacturer.identifier] : undefined
+                        ),
                         name: [manufacturer.display as string],
                       },
                     ]
@@ -1248,8 +1257,8 @@ class FhirToCcdaConverter {
       id: this.mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
       code: mapCodeableConceptToCcdaCode(observation.code),
       statusCode: { '@_code': 'completed' },
-      value: this.mapObservationValue(observation),
       effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(observation.effectiveDateTime) }],
+      value: this.mapObservationValue(observation),
       referenceRange: this.mapReferenceRangeArray(observation.referenceRange),
       text: this.createTextFromExtensions(observation.extension),
       author: this.mapAuthor(observation.performer?.[0], observation.effectiveDateTime),

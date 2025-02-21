@@ -62,6 +62,16 @@ describe('SuperAdminPage', () => {
     expect(screen.getByText('Done')).toBeInTheDocument();
   });
 
+  test('Start data migration', async () => {
+    setup();
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Start Migration'));
+    });
+
+    expect(screen.getByText('Done')).toBeInTheDocument();
+  });
+
   test('Reindex resource type', async () => {
     setup();
 

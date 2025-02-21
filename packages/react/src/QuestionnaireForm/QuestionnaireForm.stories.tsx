@@ -1120,6 +1120,236 @@ export const EnableWhen = (): JSX.Element => (
   </Document>
 );
 
+export const EnableWhenWithQuestionnaireResponse = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'enable-when',
+        title: 'Enable When',
+        item: [
+          {
+            linkId: 'q1',
+            text: 'Enabled when the answer is "Yes"',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q2',
+            type: 'display',
+            text: 'Displayed because the answer is "Yes"!',
+            enableWhen: [
+              {
+                question: 'q1',
+                operator: '=',
+                answerString: 'Yes',
+              },
+            ],
+          },
+          {
+            linkId: 'q3',
+            text: 'Enabled when there is an answer',
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q4',
+            type: 'display',
+            text: 'Displayed because there is an answer!',
+            enableWhen: [
+              {
+                question: 'q3',
+                operator: 'exists', // `exists` signals if a given answer has a value
+                answerBoolean: true,
+              },
+            ],
+          },
+          {
+            linkId: 'q5',
+            text: "Enabled when there isn't an answer",
+            type: 'choice',
+            answerOption: [
+              {
+                valueString: 'Yes',
+              },
+              {
+                valueString: 'No',
+              },
+            ],
+          },
+          {
+            linkId: 'q6',
+            type: 'display',
+            text: "Displayed because there isn't an answer!",
+            enableWhen: [
+              {
+                question: 'q5',
+                operator: 'exists',
+                answerBoolean: false,
+              },
+            ],
+          },
+          {
+            linkId: 'q7',
+            text: 'Enabled when greater than 2',
+            type: 'choice',
+            answerOption: [
+              {
+                valueInteger: 2,
+              },
+              {
+                valueInteger: 5,
+              },
+            ],
+          },
+          {
+            linkId: 'q8',
+            type: 'display',
+            text: 'Displayed because answer is greater than 2!',
+            enableWhen: [
+              {
+                question: 'q7',
+                operator: '>',
+                answerInteger: 2,
+              },
+            ],
+          },
+          {
+            linkId: 'q9',
+            text: 'Enabled when greater than or equal to 2',
+            type: 'choice',
+            answerOption: [
+              {
+                valueInteger: 2,
+              },
+              {
+                valueInteger: 5,
+              },
+            ],
+          },
+          {
+            linkId: 'q10',
+            type: 'display',
+            text: 'Displayed because answer is greater than or equal to 2!',
+            enableWhen: [
+              {
+                question: 'q9',
+                operator: '>=',
+                answerInteger: 2,
+              },
+            ],
+          },
+        ],
+      }}
+      questionnaireResponse={{
+        resourceType: 'QuestionnaireResponse',
+        status: 'in-progress',
+        item: [
+          {
+            id: 'id-1',
+            linkId: 'q1',
+            text: 'Enabled when the answer is "Yes"',
+            answer: [
+              {
+                valueString: 'Yes',
+              },
+            ],
+          },
+          {
+            id: 'id-2',
+            linkId: 'q2',
+            text: 'Displayed because the answer is "Yes"!',
+            item: [],
+            answer: [],
+          },
+          {
+            id: 'id-3',
+            linkId: 'q3',
+            text: 'Enabled when there is an answer',
+            answer: [
+              {
+                valueString: 'Yes',
+              },
+            ],
+          },
+          {
+            id: 'id-4',
+            linkId: 'q4',
+            text: 'Displayed because there is an answer!',
+            item: [],
+            answer: [],
+          },
+          {
+            id: 'id-5',
+            linkId: 'q5',
+            text: "Enabled when there isn't an answer",
+            item: [],
+            answer: [],
+          },
+          {
+            id: 'id-6',
+            linkId: 'q6',
+            text: "Displayed because there isn't an answer!",
+            item: [],
+            answer: [],
+          },
+          {
+            id: 'id-7',
+            linkId: 'q7',
+            text: 'Enabled when greater than 2',
+            answer: [
+              {
+                valueInteger: 5,
+              },
+            ],
+          },
+          {
+            id: 'id-8',
+            linkId: 'q8',
+            text: 'Displayed because answer is greater than 2!',
+            item: [],
+            answer: [],
+          },
+          {
+            id: 'id-9',
+            linkId: 'q9',
+            text: 'Enabled when greater than or equal to 2',
+            answer: [
+              {
+                valueInteger: 2,
+              },
+            ],
+          },
+          {
+            id: 'id-10',
+            linkId: 'q10',
+            text: 'Displayed because answer is greater than or equal to 2!',
+            item: [],
+            answer: [],
+          },
+        ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
 export const ExcludeButtonsWithOnChange = (): JSX.Element => (
   <Document>
     <QuestionnaireForm
@@ -1243,7 +1473,7 @@ export const KitchenSink = (): JSX.Element => (
       questionnaire={{
         resourceType: 'Questionnaire',
         id: 'kitchen-sink',
-        title: 'Kitchen Sink Exmple',
+        title: 'Kitchen Sink Example',
         item: [
           {
             linkId: 'i1',
@@ -1363,7 +1593,7 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
       questionnaire={{
         resourceType: 'Questionnaire',
         id: 'kitchen-sink',
-        title: 'Kitchen Sink Exmple',
+        title: 'Kitchen Sink Example',
         item: [
           {
             linkId: 'i1',
@@ -1568,6 +1798,283 @@ export const KitchenSinkWithInitialValues = (): JSX.Element => (
             ],
           },
         ],
+      }}
+      onSubmit={(formData: any) => {
+        console.log('submit', formData);
+      }}
+    />
+  </Document>
+);
+
+export const KitchenSinkWithQuestionnaireResponse = (): JSX.Element => (
+  <Document>
+    <QuestionnaireForm
+      questionnaire={{
+        resourceType: 'Questionnaire',
+        id: 'kitchen-sink',
+        title: 'Kitchen Sink Example',
+        item: [
+          {
+            linkId: 'i1',
+            type: 'display',
+            text: 'This is an example of all question types.  See: https://www.hl7.org/fhir/valueset-item-type.html',
+          },
+          {
+            linkId: 'boolean',
+            type: 'boolean',
+            text: 'Boolean',
+          },
+          {
+            linkId: 'decimal',
+            type: 'decimal',
+            text: 'Decimal',
+          },
+          {
+            linkId: 'integer',
+            type: 'integer',
+            text: 'Integer',
+          },
+          {
+            linkId: 'date',
+            type: 'date',
+            text: 'Date',
+          },
+          {
+            linkId: 'dateTime',
+            type: 'dateTime',
+            text: 'Date Time',
+          },
+          {
+            linkId: 'time',
+            type: 'time',
+            text: 'Time',
+          },
+          {
+            linkId: 'string',
+            type: 'string',
+            text: 'String',
+          },
+          {
+            linkId: 'text',
+            type: 'text',
+            text: 'Text',
+          },
+          {
+            linkId: 'url',
+            type: 'url',
+            text: 'URL',
+          },
+          {
+            linkId: 'choice',
+            type: 'choice',
+            text: 'Choice',
+            answerOption: [
+              {
+                valueCoding: {
+                  code: 'code1',
+                },
+              },
+              {
+                valueDate: '2020-01-01',
+              },
+              {
+                valueInteger: 123,
+              },
+              {
+                valueString: 'string',
+              },
+              {
+                valueReference: {
+                  reference: 'Organization/123',
+                  display: 'Test Organization',
+                },
+              },
+            ],
+          },
+          {
+            linkId: 'value-set-choice',
+            type: 'choice',
+            text: 'Value Set Choice',
+            answerValueSet: 'http://loinc.org/vs/LL4436-3',
+          },
+          {
+            linkId: 'open-choice',
+            type: 'open-choice',
+            text: 'Open Choice',
+          },
+          {
+            linkId: 'attachment',
+            type: 'attachment',
+            text: 'Attachment',
+          },
+          {
+            linkId: 'reference',
+            type: 'reference',
+            text: 'Reference',
+          },
+          {
+            linkId: 'quantity',
+            type: 'quantity',
+            text: 'Quantity',
+          },
+        ],
+      }}
+      questionnaireResponse={{
+        resourceType: 'QuestionnaireResponse',
+        status: 'completed',
+        item: [
+          {
+            id: 'id-14',
+            linkId: 'boolean',
+            text: 'Boolean',
+            answer: [
+              {
+                valueBoolean: true,
+              },
+            ],
+          },
+          {
+            id: 'id-15',
+            linkId: 'decimal',
+            text: 'Decimal',
+            answer: [
+              {
+                valueDecimal: 3.14,
+              },
+            ],
+          },
+          {
+            id: 'id-16',
+            linkId: 'integer',
+            text: 'Integer',
+            answer: [
+              {
+                valueInteger: 123,
+              },
+            ],
+          },
+          {
+            id: 'id-17',
+            linkId: 'date',
+            text: 'Date',
+            answer: [
+              {
+                valueDate: '2015-10-21',
+              },
+            ],
+          },
+          {
+            id: 'id-18',
+            linkId: 'dateTime',
+            text: 'Date Time',
+            answer: [
+              {
+                valueDateTime: '2015-10-21T01:27:00.000Z',
+              },
+            ],
+          },
+          {
+            id: 'id-19',
+            linkId: 'time',
+            text: 'Time',
+            answer: [
+              {
+                valueTime: '11:11',
+              },
+            ],
+          },
+          {
+            id: 'id-20',
+            linkId: 'string',
+            text: 'String',
+            answer: [
+              {
+                valueString: 'foo',
+              },
+            ],
+          },
+          {
+            id: 'id-21',
+            linkId: 'text',
+            text: 'Text',
+            answer: [
+              {
+                valueString: 'lorem ipsum',
+              },
+            ],
+          },
+          {
+            id: 'id-22',
+            linkId: 'url',
+            text: 'URL',
+            answer: [
+              {
+                valueString: 'https://example.com',
+              },
+            ],
+          },
+          {
+            id: 'id-23',
+            linkId: 'choice',
+            text: 'Choice',
+            answer: [
+              {
+                valueDate: '2020-01-01',
+              },
+            ],
+          },
+          {
+            id: 'id-24',
+            linkId: 'value-set-choice',
+            text: 'Value Set Choice',
+            answer: [
+              {
+                valueCoding: {
+                  system: 'x',
+                  code: 'test-code-3',
+                  display: 'Test Display 3',
+                },
+              },
+            ],
+          },
+          {
+            id: 'id-26',
+            linkId: 'attachment',
+            text: 'Attachment',
+            item: [],
+            answer: [
+              {
+                valueAttachment: {
+                  contentType: 'image/png',
+                  url: 'https://example.com/binary/123',
+                  title: 'Image.png',
+                },
+              },
+            ],
+          },
+          {
+            id: 'id-27',
+            linkId: 'reference',
+            text: 'Reference',
+            item: [],
+            answer: [],
+          },
+          {
+            id: 'id-28',
+            linkId: 'quantity',
+            text: 'Quantity',
+            answer: [
+              {
+                valueQuantity: {
+                  comparator: '<',
+                  value: 1,
+                  unit: '2',
+                },
+              },
+            ],
+          },
+        ],
+        questionnaire: 'Questionnaire/kitchen-sink',
       }}
       onSubmit={(formData: any) => {
         console.log('submit', formData);

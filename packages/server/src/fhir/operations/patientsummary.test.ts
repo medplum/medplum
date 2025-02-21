@@ -131,6 +131,7 @@ describe('Patient Summary Operation', () => {
 
   describe('PatientSummaryBuilder', () => {
     test('Simple categories', () => {
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const patientRef = createReference(patient);
 
@@ -163,9 +164,9 @@ describe('Patient Summary Operation', () => {
         { resourceType: 'Task', id: 'task1', for: patientRef, status: 'completed', intent: 'order' },
       ];
 
-      const builder = new PatientSummaryBuilder(patient, everything);
+      const builder = new PatientSummaryBuilder(author, patient, everything);
       const result = builder.build();
-      expect(result.entry?.length).toBe(2 + everything.length); // 1 for patient, 1 for composition
+      expect(result.entry?.length).toBe(3 + everything.length); // 1 for author, 1 for patient, 1 for composition
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
@@ -181,6 +182,7 @@ describe('Patient Summary Operation', () => {
     });
 
     test('Observations', () => {
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const subject = createReference(patient);
 
@@ -208,9 +210,9 @@ describe('Patient Summary Operation', () => {
           }) as Observation
       );
 
-      const builder = new PatientSummaryBuilder(patient, everything);
+      const builder = new PatientSummaryBuilder(author, patient, everything);
       const result = builder.build();
-      expect(result.entry?.length).toBe(2 + everything.length); // 1 for patient, 1 for composition
+      expect(result.entry?.length).toBe(3 + everything.length); // 1 for author, 1 for patient, 1 for composition
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
@@ -225,6 +227,7 @@ describe('Patient Summary Operation', () => {
       // If an Observation is a member of another Observation,
       // then it should not be referenced directly by the Composition entries list.
 
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const subject = createReference(patient);
 
@@ -249,9 +252,9 @@ describe('Patient Summary Operation', () => {
 
       const everything = [parentObs, childObs];
 
-      const builder = new PatientSummaryBuilder(patient, everything);
+      const builder = new PatientSummaryBuilder(author, patient, everything);
       const result = builder.build();
-      expect(result.entry?.length).toBe(2 + everything.length);
+      expect(result.entry?.length).toBe(3 + everything.length);
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
@@ -267,6 +270,7 @@ describe('Patient Summary Operation', () => {
       // If an Observation is a member of a DiagnosticReport,
       // then it should not be referenced directly by the Composition entries list.
 
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const subject = createReference(patient);
 
@@ -289,9 +293,9 @@ describe('Patient Summary Operation', () => {
 
       const everything = [parentReport, childObs];
 
-      const builder = new PatientSummaryBuilder(patient, everything);
+      const builder = new PatientSummaryBuilder(author, patient, everything);
       const result = builder.build();
-      expect(result.entry?.length).toBe(2 + everything.length);
+      expect(result.entry?.length).toBe(3 + everything.length);
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
