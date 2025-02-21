@@ -15,7 +15,7 @@ jobs:
       NODE_VERSION: '20'
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
-      TURBO_REMOTE_ONLY: ${{ secrets.TURBO_REMOTE_ONLY }}
+      TURBO_CACHE: 'remote:rw'
     steps:
       - uses: actions/checkout@v4
         with:

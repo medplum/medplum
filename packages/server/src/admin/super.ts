@@ -10,18 +10,18 @@ import {
   validateResourceType,
 } from '@medplum/core';
 import { ResourceType } from '@medplum/fhirtypes';
+import { assert } from 'console';
 import { Request, Response, Router } from 'express';
 import { body, checkExact, validationResult } from 'express-validator';
 import { asyncWrap } from '../async';
 import { setPassword } from '../auth/setpassword';
 import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context';
-import { DatabaseMode, getDatabasePool } from '../database';
+import { DatabaseMode, getDatabasePool, maybeStartDataMigration } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
 import { getSystemRepo } from '../fhir/repo';
 import { globalLogger } from '../logger';
-import * as dataMigrations from '../migrations/data';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
 import { rebuildR4SearchParameters } from '../seeds/searchparameters';
@@ -217,24 +217,51 @@ superAdminRouter.post(
 // because it will be run automatically by the server upgrade process.
 superAdminRouter.post(
   '/migrate',
+  [body('dataVersion').isInt().withMessage('dataVersion must be an integer').optional()],
   asyncWrap(async (req: Request, res: Response) => {
     const ctx = requireSuperAdmin();
     requireAsync(req);
 
-    await sendAsyncResponse(req, res, async () => {
-      const systemRepo = getSystemRepo();
-      const client = getDatabasePool(DatabaseMode.WRITER);
-      const result = await client.query('SELECT "dataVersion" FROM "DatabaseMigration"');
-      const version = result.rows[0]?.dataVersion as number;
-      const migrationKeys = Object.keys(dataMigrations);
-      for (let i = version + 1; i <= migrationKeys.length; i++) {
-        const migration = (dataMigrations as Record<string, dataMigrations.Migration>)['v' + i];
-        const start = Date.now();
-        await migration.run(systemRepo);
-        ctx.logger.info('Data migration', { version: `v${i}`, duration: `${Date.now() - start} ms` });
-        await client.query('UPDATE "DatabaseMigration" SET "dataVersion"=$1', [i]);
-      }
-    });
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    const { baseUrl } = getConfig();
+    const dataMigrationJob = await maybeStartDataMigration(req?.body?.dataVersion as number | undefined);
+    // If there is no migration job to run, return allOk
+    if (!dataMigrationJob) {
+      sendOutcome(res, allOk);
+      return;
+    }
+    const exec = new AsyncJobExecutor(ctx.repo, dataMigrationJob);
+    sendOutcome(res, accepted(exec.getContentLocation(baseUrl)));
+  })
+);
+
+// POST to /admin/super/setdataversion
+// to set the data version of the database.
+// This is intended to allow you to set the data version and skip over a data migration YOUR ARE SURE you do not need to apply.
+// WARNING: This is unsafe and may break everything if you are not careful.
+superAdminRouter.post(
+  '/setdataversion',
+  [body('dataVersion').isInt().withMessage('dataVersion must be an integer')],
+  asyncWrap(async (req: Request, res: Response) => {
+    requireSuperAdmin();
+
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      sendOutcome(res, invalidRequest(errors));
+      return;
+    }
+
+    assert(req.body.dataVersion !== undefined);
+    await getDatabasePool(DatabaseMode.WRITER).query('UPDATE "DatabaseMigration" SET "dataVersion" = $1', [
+      req.body.dataVersion,
+    ]);
+
+    sendOutcome(res, allOk);
   })
 );
 
