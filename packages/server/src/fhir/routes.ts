@@ -47,7 +47,7 @@ import { sendOutcome } from './outcomes';
 import { ResendSubscriptionsOptions } from './repo';
 import { sendFhirResponse } from './response';
 import { smartConfigurationHandler, smartStylingHandler } from './smart';
-import { patientUpdateAccountHandler } from './operations/patientupdateaccounts';
+import { patientSetAccountsHandler } from './operations/patientsetaccounts';
 
 export const fhirRouter = Router();
 
@@ -257,8 +257,8 @@ function initInternalFhirRouter(): FhirRouter {
   router.add('GET', '/Patient/:id/$summary', patientSummaryHandler);
   router.add('POST', '/Patient/:id/$summary', patientSummaryHandler);
 
-  // Patient $update-account operation
-  router.add('POST', '/Patient/:id/$update-accounts', patientUpdateAccountHandler);
+  // Patient $set-accounts operation
+  router.add('POST', '/Patient/:id/$set-accounts', patientSetAccountsHandler);
 
   // Patient $ccda-export operation
   router.add('GET', '/Patient/:id/$ccda-export', ccdaExportHandler);
