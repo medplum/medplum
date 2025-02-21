@@ -1,11 +1,11 @@
 /**
- * This example shows how you might listen for DFT (Detailed Financial Transaction) HL7 
+ * This example shows how you might listen for DFT (Detailed Financial Transaction) HL7
  * messages. DFT messages are commonly used to transmit services rendered and patient insurance
- * information for the purpose of claim generation. 
- * 
+ * information for the purpose of claim generation.
+ *
  * This bot listens for DFT messages and finds/creates a FHIR Patient from PID, adds
  * a FHIR Coverage attached to that patient from IN1, and a FHIR Claim from PR1.
- * 
+ *
  * More information about the sections of DFT messages can be found here: https://rhapsody.health/resources/hl7-dft-message/
  */
 import { BotEvent, createReference, Hl7Message, MedplumClient } from '@medplum/core';
