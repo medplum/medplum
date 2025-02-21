@@ -1,4 +1,4 @@
-import { Logger, ProfileResource, isUUID, parseLogLevel } from '@medplum/core';
+import { Logger, ProfileResource, isUUID, parseLogLevel, WithId } from '@medplum/core';
 import { Bot, ClientApplication, Extension, Login, Project, ProjectMembership, Reference } from '@medplum/fhirtypes';
 import { randomUUID } from 'crypto';
 import { NextFunction, Request, Response } from 'express';
@@ -47,11 +47,11 @@ export class AuthenticatedRequestContext extends RequestContext {
     super(requestId, traceId, logger, loggerMetadata);
   }
 
-  get project(): Project {
+  get project(): WithId<Project> {
     return this.authState.project;
   }
 
-  get membership(): ProjectMembership {
+  get membership(): WithId<ProjectMembership> {
     return this.authState.onBehalfOfMembership ?? this.authState.membership;
   }
 

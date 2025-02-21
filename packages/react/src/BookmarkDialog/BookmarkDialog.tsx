@@ -1,6 +1,6 @@
 import { Button, Group, Modal, NativeSelect, Stack, TextInput } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
-import { deepClone, normalizeErrorString } from '@medplum/core';
+import { deepClone, normalizeErrorString, WithId } from '@medplum/core';
 import { UserConfiguration } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react-hooks';
 import { Form } from '../Form/Form';
@@ -15,12 +15,12 @@ interface BookmarkDialogProps {
 }
 export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
   const medplum = useMedplum();
-  const config = medplum.getUserConfiguration() as UserConfiguration;
+  const config = medplum.getUserConfiguration() as WithId<UserConfiguration>;
 
   function submitHandler(formData: Record<string, string>): void {
     const { menuname, bookmarkname: name } = formData;
     const target = `${props.pathname}?${props.searchParams.toString()}`;
-    const newConfig = deepClone(config) as UserConfiguration;
+    const newConfig = deepClone(config);
     const menu = newConfig.menu?.find(({ title }) => title === menuname);
 
     menu?.link?.push({ name, target });
