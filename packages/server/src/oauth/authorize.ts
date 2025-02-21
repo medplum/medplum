@@ -97,6 +97,10 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
     sendErrorRedirect(res, redirectUri, 'invalid_request', state);
     return false;
   }
+  if (params.launch && !(await isValidLaunch(params.launch))) {
+    sendErrorRedirect(res, redirectUri, 'invalid_request', state);
+    return false;
+  }
 
   const existingLogin = await getExistingLogin(req, client);
 
@@ -145,6 +149,21 @@ function isValidAudience(aud: string | undefined): boolean {
     const audUrl = new URL(aud);
     const serverUrl = new URL(getConfig().baseUrl);
     return audUrl.protocol === serverUrl.protocol && audUrl.host === serverUrl.host;
+  } catch (_err) {
+    return false;
+  }
+}
+
+/**
+ * Returns true if the launch parameter is valid.
+ * @param launch - The launch parameter (which is a SmartAppLaunch ID).
+ * @returns True if the launch is valid; false otherwise.
+ */
+async function isValidLaunch(launch: string): Promise<boolean> {
+  const systemRepo = getSystemRepo();
+  try {
+    await systemRepo.readResource('SmartAppLaunch', launch);
+    return true;
   } catch (_err) {
     return false;
   }
