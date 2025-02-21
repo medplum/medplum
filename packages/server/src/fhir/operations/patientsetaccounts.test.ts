@@ -55,12 +55,14 @@ describe('Patient Set Accounts Operation', () => {
         resourceType: 'Observation',
         status: 'final',
         code: {
-          coding: [{
-            system: 'http://loinc.org',
-            code: 'test-code'
-          }]
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: 'test-code',
+            },
+          ],
         },
-        subject: createReference(patient)
+        subject: createReference(patient),
       } satisfies Observation);
     expect(res2.status).toBe(201);
     observation = res2.body as Observation;
@@ -69,18 +71,21 @@ describe('Patient Set Accounts Operation', () => {
     const res3 = await request(app)
       .post('/fhir/R4/DiagnosticReport')
       .set('Authorization', 'Bearer ' + accessToken)
-      .send({ resourceType: 'DiagnosticReport',
+      .send({
+        resourceType: 'DiagnosticReport',
         subject: createReference(patient),
         status: 'final',
         code: {
-          coding: [{
-            system: 'http://loinc.org',
-            code: 'test-code'
-          }]
-        }
-        } satisfies DiagnosticReport);
-      expect(res3.status).toBe(201);
-      diagnosticReport = res3.body as DiagnosticReport;
+          coding: [
+            {
+              system: 'http://loinc.org',
+              code: 'test-code',
+            },
+          ],
+        },
+      } satisfies DiagnosticReport);
+    expect(res3.status).toBe(201);
+    diagnosticReport = res3.body as DiagnosticReport;
   });
 
   afterAll(async () => {
@@ -97,13 +102,13 @@ describe('Patient Set Accounts Operation', () => {
         parameter: [
           {
             name: 'accounts',
-            valueReference: createReference(organization1)
+            valueReference: createReference(organization1),
           },
           {
             name: 'accounts',
-            valueReference: createReference(organization2)
-          }
-        ]
+            valueReference: createReference(organization2),
+          },
+        ],
       });
     expect(res3.status).toBe(200);
     const result = res3.body;
@@ -150,9 +155,9 @@ describe('Patient Set Accounts Operation', () => {
         parameter: [
           {
             name: 'accounts',
-            valueReference: createReference(organization1)
-          }
-        ]
+            valueReference: createReference(organization1),
+          },
+        ],
       });
     expect(res.status).toBe(404);
   });

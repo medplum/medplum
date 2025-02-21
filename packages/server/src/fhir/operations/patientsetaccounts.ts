@@ -12,7 +12,7 @@ const operation: OperationDefinition = {
   status: 'active',
   kind: 'operation',
   code: 'set-accounts',
-  description: 'Updates account references for all resources in the patient\'s compartment',
+  description: "Updates account references for all resources in the patient's compartment",
   resource: ['Patient'],
   system: false,
   type: false,
@@ -25,7 +25,7 @@ const operation: OperationDefinition = {
       type: 'Reference',
       min: 0,
       max: '*',
-      documentation: 'List of account references to set'
+      documentation: 'List of account references to set',
     },
     {
       // Output parameter for number of resources updated
@@ -34,9 +34,9 @@ const operation: OperationDefinition = {
       type: 'integer',
       min: 1,
       max: '1',
-      documentation: 'Number of resources that were updated'
-    }
-  ]
+      documentation: 'Number of resources that were updated',
+    },
+  ],
 };
 
 export interface PatientSetAccountsParameters {
@@ -72,7 +72,7 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
     accounts: accounts,
     account: accounts[0] ?? undefined,
   };
- 
+
   await ctx.repo.updateResource(patient);
 
   // step 2: update the resources in the patient compartment to trigger meta.accounts refresh
