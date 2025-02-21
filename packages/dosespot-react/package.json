@@ -1,6 +1,6 @@
 {
   "name": "@medplum/dosespot-react",
-  "version": "3.2.33",
+  "version": "4.0.0",
   "description": "Medplum DoseSpot React SDK",
   "keywords": [
     "medplum",
@@ -59,10 +59,10 @@
     "test:watch": "vitest watch"
   },
   "devDependencies": {
-    "@medplum/core": "3.2.33",
-    "@medplum/fhirtypes": "3.2.33",
-    "@medplum/mock": "3.2.33",
-    "@medplum/react": "3.2.33",
+    "@medplum/core": "4.0.0",
+    "@medplum/fhirtypes": "4.0.0",
+    "@medplum/mock": "4.0.0",
+    "@medplum/react": "4.0.0",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.2.0",
     "@types/node": "20.17.17",
@@ -76,9 +76,9 @@
     "vitest": "3.0.5"
   },
   "peerDependencies": {
-    "@medplum/core": "3.2.33",
-    "@medplum/fhirtypes": "3.2.33",
-    "@medplum/react-hooks": "3.2.33",
+    "@medplum/core": "4.0.0",
+    "@medplum/fhirtypes": "4.0.0",
+    "@medplum/react-hooks": "4.0.0",
     "react": "^18.0.0"
   },
   "engines": {
