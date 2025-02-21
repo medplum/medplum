@@ -1,6 +1,6 @@
 {
   "name": "@medplum/hl7",
-  "version": "3.2.33",
+  "version": "3.3.0",
   "description": "Medplum HL7 Utilities",
   "keywords": [
     "medplum",
@@ -54,11 +54,11 @@
     "test": "jest"
   },
   "dependencies": {
-    "@medplum/core": "3.2.33",
+    "@medplum/core": "3.3.0",
     "iconv-lite": "0.6.3"
   },
   "devDependencies": {
-    "@medplum/fhirtypes": "3.2.33"
+    "@medplum/fhirtypes": "3.3.0"
   },
   "engines": {
     "node": ">=18.0.0"
