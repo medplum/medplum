@@ -1325,6 +1325,13 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
     }
   }
 
+  /**
+   * The version to be set on resources when they are inserted/updated into the database.
+   * The value should be incremented each time there is a change in the schema (really just columns)
+   * of the resource tables or when there are code changes to `buildResourceRow`.
+   */
+  readonly VERSION: number = 1;
+
   private buildResourceRow(resource: Resource): Record<string, any> {
     const resourceType = resource.resourceType;
     const meta = resource.meta as Meta;
@@ -1338,6 +1345,7 @@ export class Repository extends FhirRepository<PoolClient> implements Disposable
       projectId: meta.project,
       compartments,
       content,
+      __version: this.VERSION,
     };
 
     const searchParams = getSearchParameters(resourceType);
