@@ -12,8 +12,8 @@ import {
   ProfileResource,
   resolveId,
   tooManyRequests,
-  WithId,
   unauthorized,
+  WithId,
 } from '@medplum/core';
 import {
   AccessPolicy,
@@ -134,7 +134,7 @@ export async function getClientApplication(clientId: string): Promise<ClientAppl
   return systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
 }
 
-export async function tryLogin(request: LoginRequest): Promise<Login> {
+export async function tryLogin(request: LoginRequest): Promise<WithId<Login>> {
   validateLoginRequest(request);
 
   let client: ClientApplication | undefined;
@@ -384,7 +384,7 @@ export function getClientApplicationMembership(
  * @param membershipId - The membership to set.
  * @returns The updated login.
  */
-export async function setLoginMembership(login: Login, membershipId: string): Promise<Login> {
+export async function setLoginMembership(login: Login, membershipId: string): Promise<WithId<Login>> {
   if (login.revoked) {
     throw new OperationOutcomeError(badRequest('Login revoked'));
   }
@@ -922,7 +922,7 @@ export async function getLoginForBasicAuth(req: IncomingMessage, token: string):
     authTime: new Date().toISOString(),
   };
 
-  const authState = { login, project, membership };
+  const authState: AuthState = { login, project, membership };
   await tryAddOnBehalfOf(req, authState);
   return authState;
 }

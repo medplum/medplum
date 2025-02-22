@@ -111,7 +111,7 @@ describe('Super Admin routes', () => {
       login_id: login1.id as string,
       sub: user1.id as string,
       username: user1.id as string,
-      profile: getReferenceString(practitioner1 as Practitioner),
+      profile: getReferenceString(practitioner1),
       scope: 'openid',
     });
 
@@ -119,7 +119,7 @@ describe('Super Admin routes', () => {
       login_id: login2.id as string,
       sub: user2.id as string,
       username: user2.id as string,
-      profile: getReferenceString(practitioner2 as Practitioner),
+      profile: getReferenceString(practitioner2),
       scope: 'openid',
     });
   });

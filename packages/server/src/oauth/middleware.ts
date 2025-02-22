@@ -2,9 +2,9 @@ import { OperationOutcomeError, ProfileResource, unauthorized, WithId } from '@m
 import { Login, Project, ProjectMembership } from '@medplum/fhirtypes';
 import { NextFunction, Request, Response } from 'express';
 import { IncomingMessage } from 'http';
+import { getConfig } from '../config/loader';
 import { AuthenticatedRequestContext, getRequestContext } from '../context';
 import { getLoginForAccessToken, getLoginForBasicAuth } from './utils';
-import { getConfig } from '../config/loader';
 
 export interface AuthState {
   login: Login;

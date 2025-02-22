@@ -1,4 +1,12 @@
-import { ContentType, Operator, badRequest, createReference, getReferenceString, parseJWTPayload } from '@medplum/core';
+import {
+  ContentType,
+  Operator,
+  WithId,
+  badRequest,
+  createReference,
+  getReferenceString,
+  parseJWTPayload,
+} from '@medplum/core';
 import {
   AsyncJob,
   AuditEvent,
@@ -96,7 +104,7 @@ describe('Execute', () => {
   let app: express.Express;
   let project1: Project;
   let accessToken1: string;
-  const bots: Record<BotName, Bot> = {} as Record<BotName, Bot>;
+  const bots = {} as Record<BotName, WithId<Bot>>;
 
   beforeAll(async () => {
     app = express();
@@ -121,7 +129,7 @@ describe('Execute', () => {
     project1 = testSetup.project;
     accessToken1 = testSetup.accessToken;
 
-    async function setupBot(name: string, system: boolean, esmCode: string, cjsCode: string): Promise<Bot> {
+    async function setupBot(name: string, system: boolean, esmCode: string, cjsCode: string): Promise<WithId<Bot>> {
       const res1 = await request(app)
         .post('/fhir/R4/Bot')
         .set('Content-Type', ContentType.FHIR_JSON)
@@ -136,7 +144,7 @@ describe('Execute', () => {
         });
 
       expect(res1.status).toBe(201);
-      const bot = res1.body as Bot;
+      const bot = res1.body as WithId<Bot>;
 
       const res2 = await request(app)
         .post(`/fhir/R4/Bot/${bot.id}/$deploy`)
