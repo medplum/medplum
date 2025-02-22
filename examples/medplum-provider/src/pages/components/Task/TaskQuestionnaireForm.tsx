@@ -45,7 +45,11 @@ export const TaskQuestionnaireForm = ({ task, onChangeResponse }: TaskQuestionna
   return (
     <Stack gap="xs">
       <Box p="md">
-        <QuestionnaireForm questionnaire={questionnaire} questionnaireResponse={questionnaireResponse} excludeButtons={true} onChange={onChangeResponse}
+        <QuestionnaireForm
+          questionnaire={questionnaire}
+          questionnaireResponse={questionnaireResponse}
+          excludeButtons={true}
+          onChange={onChangeResponse}
         />
       </Box>
     </Stack>
