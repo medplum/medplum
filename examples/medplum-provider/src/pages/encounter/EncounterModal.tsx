@@ -21,7 +21,12 @@ export const EncounterModal = (): JSX.Element => {
 
   const handleCreateEncounter = async (): Promise<void> => {
     if (!patient || !encounterClass || !serviceType || !status) {
-      showNotification({ color: 'yellow', icon: <IconAlertSquareRounded />, title: 'Error', message: 'Fill up mandatory fields.' });
+      showNotification({
+        color: 'yellow',
+        icon: <IconAlertSquareRounded />,
+        title: 'Error',
+        message: 'Fill up mandatory fields.',
+      });
       return;
     }
 
