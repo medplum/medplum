@@ -35,7 +35,9 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
   const medplum = useMedplum();
   const author = useMedplumProfile();
   const [questionnaireResponse, setQuestionnaireResponse] = useState<QuestionnaireResponse | undefined>(undefined);
-  const [isQuestionnaire, setIsQuestionnaire] = useState<boolean>(!!task.input?.[0]?.valueReference && task.status !== 'completed');
+  const [isQuestionnaire, setIsQuestionnaire] = useState<boolean>(
+    !!task.input?.[0]?.valueReference && task.status !== 'completed'
+  );
 
   const onActionButtonClicked = async (): Promise<void> => {
     if (questionnaireResponse && isQuestionnaire) {
@@ -51,7 +53,7 @@ export const TaskPanel = ({ task, onCompleteTask, onSaveQuestionnaire }: TaskPan
   };
 
   const onChangeResponse = (response: QuestionnaireResponse): void => {
-    setIsQuestionnaire(true)
+    setIsQuestionnaire(true);
     setQuestionnaireResponse(response);
   };
 

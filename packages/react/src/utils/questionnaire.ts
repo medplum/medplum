@@ -389,7 +389,10 @@ export function getQuestionnaireItemReferenceFilter(
   return result;
 }
 
-export function buildInitialResponse(questionnaire: Questionnaire, questionnaireResponse: QuestionnaireResponse | undefined): QuestionnaireResponse {
+export function buildInitialResponse(
+  questionnaire: Questionnaire,
+  questionnaireResponse: QuestionnaireResponse | undefined
+): QuestionnaireResponse {
   const response: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
     questionnaire: getReferenceString(questionnaire),
@@ -400,20 +403,25 @@ export function buildInitialResponse(questionnaire: Questionnaire, questionnaire
   return response;
 }
 
-function buildInitialResponseItems(items: QuestionnaireItem[] | undefined, questionnaireResponseItems: QuestionnaireResponseItem[] | undefined): QuestionnaireResponseItem[] {
+function buildInitialResponseItems(
+  items: QuestionnaireItem[] | undefined,
+  questionnaireResponseItems: QuestionnaireResponseItem[] | undefined
+): QuestionnaireResponseItem[] {
   return items?.map((item) => buildInitialResponseItem(item, questionnaireResponseItems)) ?? [];
 }
 
-export function buildInitialResponseItem(item: QuestionnaireItem, questionnaireResponseItem: QuestionnaireResponseItem[] | undefined): QuestionnaireResponseItem {
-  
+export function buildInitialResponseItem(
+  item: QuestionnaireItem,
+  questionnaireResponseItem: QuestionnaireResponseItem[] | undefined
+): QuestionnaireResponseItem {
   const existingResponseItem = questionnaireResponseItem?.find((responseItem) => responseItem.linkId === item.linkId);
-  
+
   return {
     id: existingResponseItem ? existingResponseItem.id : generateId(),
     linkId: item.linkId,
     text: item.text,
     item: buildInitialResponseItems(item.item, existingResponseItem?.item),
-    answer: existingResponseItem ? existingResponseItem.answer : item.initial?.map(buildInitialResponseAnswer) ?? [],
+    answer: existingResponseItem ? existingResponseItem.answer : (item.initial?.map(buildInitialResponseAnswer) ?? []),
   };
 }
 

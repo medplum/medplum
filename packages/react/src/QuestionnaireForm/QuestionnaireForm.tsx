@@ -50,9 +50,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   useEffect(() => {
     if (questionnaireResponse?.item && questionnaire) {
-      const response = buildInitialResponse(questionnaire, questionnaireResponse)
+      const response = buildInitialResponse(questionnaire, questionnaireResponse);
       const evaluatedResponse = evaluateAndMergeResponseItems(response, questionnaire);
-      setResponse(evaluatedResponse)
+      setResponse(evaluatedResponse);
     } else {
       if (questionnaire && getQuestionnaireIdentity(prevQuestionnaire) === getQuestionnaireIdentity(questionnaire)) {
         return;
@@ -218,5 +218,5 @@ function evaluateAndMergeResponseItems(
     resourceType: 'QuestionnaireResponse',
     status: 'in-progress',
     item: mergedItemsWithUpdates,
-  }
+  };
 }

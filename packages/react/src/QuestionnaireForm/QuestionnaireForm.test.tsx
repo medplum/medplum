@@ -354,7 +354,6 @@ describe('QuestionnaireForm', () => {
     expect(answersManual['question3']).toMatchObject({ valueString: 'a33' });
     expect(answersManual['question4']).toMatchObject({ valueString: 'a44' });
     expect(answersManual['question5']).toMatchObject({ valueBoolean: false });
-
   });
 
   test('Handles submit', async () => {
@@ -2160,7 +2159,7 @@ describe('QuestionnaireForm', () => {
                     valueDecimal: 100,
                   },
                 ],
-              }
+              },
             ],
             answer: [],
           },
