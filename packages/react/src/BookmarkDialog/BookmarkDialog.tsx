@@ -11,7 +11,6 @@ interface BookmarkDialogProps {
   readonly visible: boolean;
   readonly onOk: () => void;
   readonly onCancel: () => void;
-  readonly defaultValue?: string;
 }
 export function BookmarkDialog(props: BookmarkDialogProps): JSX.Element | null {
   const medplum = useMedplum();

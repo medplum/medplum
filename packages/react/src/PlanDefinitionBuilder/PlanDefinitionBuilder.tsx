@@ -1,16 +1,16 @@
 import {
+  ActionIcon,
   Anchor,
   Box,
   Button,
   CloseButton,
+  Flex,
   Group,
   Paper,
-  Stack,
-  TextInput,
-  Text,
   Radio,
-  ActionIcon,
-  Flex,
+  Stack,
+  Text,
+  TextInput,
 } from '@mantine/core';
 import { getReferenceString } from '@medplum/core';
 import { PlanDefinition, PlanDefinitionAction, Reference, ResourceType } from '@medplum/fhirtypes';
@@ -185,9 +185,7 @@ function ActionBuilder(props: ActionBuilderProps): JSX.Element {
         actionType={actionType}
         onChange={props.onChange}
         selectedKey={props.selectedKey}
-        setSelectedKey={props.setSelectedKey}
         hoverKey={props.hoverKey}
-        setHoverKey={props.setHoverKey}
         onRemove={props.onRemove}
       />
     </div>
@@ -198,9 +196,7 @@ interface ActionEditorProps {
   readonly action: PlanDefinitionAction;
   readonly actionType: string | undefined;
   readonly selectedKey: string | undefined;
-  readonly setSelectedKey: (key: string | undefined) => void;
   readonly hoverKey: string | undefined;
-  readonly setHoverKey: (key: string | undefined) => void;
   readonly onChange: (action: PlanDefinitionAction) => void;
   readonly onRemove: () => void;
 }
@@ -280,13 +276,7 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
                   questionnaires list
                 </Anchor>
               </Text>
-              <ActionResourceTypeBuilder
-                title="Questionnaire"
-                description="The subject must complete the selected questionnaire."
-                resourceType="Questionnaire"
-                action={action}
-                onChange={props.onChange}
-              />
+              <ActionResourceTypeBuilder resourceType="Questionnaire" action={action} onChange={props.onChange} />
             </Box>
           )}
         </Stack>
@@ -297,8 +287,6 @@ function ActionEditor(props: ActionEditorProps): JSX.Element {
 
 interface ActionResourceTypeBuilderProps {
   readonly action: PlanDefinitionAction;
-  readonly title: string;
-  readonly description: string;
   readonly resourceType: ResourceType;
   readonly onChange: (action: PlanDefinitionAction) => void;
 }
@@ -313,7 +301,6 @@ function ActionResourceTypeBuilder(props: ActionResourceTypeBuilderProps): JSX.E
       name={id as string}
       resourceType={props.resourceType}
       defaultValue={reference}
-      loadOnFocus={true}
       onChange={(newValue) => {
         if (newValue) {
           props.onChange({ ...props.action, definitionCanonical: getReferenceString(newValue) });

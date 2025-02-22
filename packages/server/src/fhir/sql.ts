@@ -703,8 +703,8 @@ export class SelectQuery extends BaseQuery implements Expression {
 }
 
 export class ArraySubquery implements Expression {
-  private filter: Expression;
-  private column: Column;
+  private readonly filter: Expression;
+  private readonly column: Column;
 
   constructor(column: Column, filter: Expression) {
     this.filter = filter;

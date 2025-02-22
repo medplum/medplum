@@ -1,9 +1,9 @@
 import { Resource } from '@medplum/fhirtypes';
+import { ElementsContextType } from './elements-context';
 import { SchemaCrawler, SchemaVisitor, VisitorSlicingRules } from './schema-crawler';
 import { SliceDefinitionWithTypes, getValueSliceName } from './typeschema/slices';
 import { InternalSchemaElement, InternalTypeSchema, SliceDefinition, SlicingRules } from './typeschema/types';
 import { capitalize, deepClone, getPathDifference, isComplexTypeCode, isEmpty, isObject, isPopulated } from './utils';
-import { ElementsContextType } from './elements-context';
 
 /**
  * Used when an array entry, typically an empty one, needs to be assigned
@@ -76,8 +76,7 @@ type ValueContext = {
 };
 
 class DefaultValueVisitor implements SchemaVisitor {
-  private rootValue: any;
-
+  private readonly rootValue: any;
   private readonly schemaStack: InternalTypeSchema[];
   private readonly valueStack: ValueContext[];
 

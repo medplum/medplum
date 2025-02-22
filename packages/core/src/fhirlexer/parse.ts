@@ -91,8 +91,8 @@ export class ParserBuilder {
 
 export class Parser {
   private tokens: Token[];
-  private prefixParselets: Record<string, PrefixParselet>;
-  private infixParselets: Record<string, InfixParselet>;
+  private readonly prefixParselets: Record<string, PrefixParselet>;
+  private readonly infixParselets: Record<string, InfixParselet>;
 
   constructor(
     tokens: Token[],

@@ -227,9 +227,7 @@ export function safeTarExtractor(destinationDir: string): NodeJS.WritableStream 
 
       return true;
     },
-
-    // Temporary cast for tar issue: https://github.com/isaacs/node-tar/issues/409
-  }) as ReturnType<typeof extract> & NodeJS.WritableStream;
+  });
 }
 
 export function getUnsupportedExtension(): Extension {

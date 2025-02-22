@@ -488,7 +488,7 @@ function validateFhircastContexts<EventName extends FhircastEventName>(
       );
     }
     // If not multiple allowed and keySeen.get(key) > 1, throw
-    if (!details.manyAllowed && (keysSeen.get(key) || 0) > 1) {
+    if (!details.manyAllowed && (keysSeen.get(key) ?? 0) > 1) {
       throw new OperationOutcomeError(
         validationError(
           `${keysSeen.get(
@@ -583,8 +583,8 @@ export type FhircastSubscriptionEventMap = {
  * To close the connection, call `connection.disconnect()` and listen to the `disconnect` event to know when the connection has been disconnected.
  */
 export class FhircastConnection extends TypedEventTarget<FhircastSubscriptionEventMap> {
-  subRequest: SubscriptionRequest;
-  private websocket: WebSocket;
+  readonly subRequest: SubscriptionRequest;
+  private readonly websocket: WebSocket;
 
   /**
    * Creates a new `FhircastConnection`.

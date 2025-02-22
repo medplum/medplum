@@ -200,7 +200,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
   private _closeCalled = false;
   private _messageQueue: Message[] = [];
 
-  private _debugLogger = console.log.bind(console);
+  private readonly _debugLogger = console.log.bind(console);
 
   protected _url: string;
   protected _protocols?: ProtocolsProvider;
@@ -515,7 +515,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
     this._retryCount = 0;
   }
 
-  private _handleOpen = (event: Event): void => {
+  private _handleOpen(event: Event): void {
     this._debug('open event');
     const { minUptime = DEFAULT.minUptime } = this._options;
 
@@ -534,18 +534,18 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
       this.onopen(event);
     }
     this.dispatchEvent(cloneEvent(event));
-  };
+  }
 
-  private _handleMessage = (event: MessageEvent): void => {
+  private _handleMessage(event: MessageEvent): void {
     this._debug('message event');
 
     if (this.onmessage) {
       this.onmessage(event);
     }
     this.dispatchEvent(cloneEvent(event));
-  };
+  }
 
-  private _handleError = (event: ErrorEvent): void => {
+  private _handleError(event: ErrorEvent): void {
     this._debug('error event', event.message);
     this._disconnect(undefined, event.message === 'TIMEOUT' ? 'timeout' : undefined);
 
@@ -556,9 +556,9 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
     this.dispatchEvent(cloneEvent(event));
 
     this._connect();
-  };
+  }
 
-  private _handleClose = (event: CloseEvent): void => {
+  private _handleClose(event: CloseEvent): void {
     this._debug('close event');
     this._clearTimeouts();
 
@@ -570,7 +570,7 @@ export class ReconnectingWebSocket<WS extends IWebSocket = WebSocket>
       this.onclose(event);
     }
     this.dispatchEvent(cloneEvent(event));
-  };
+  }
 
   private _removeListeners(): void {
     if (!this._ws) {

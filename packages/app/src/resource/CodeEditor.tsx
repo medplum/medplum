@@ -19,6 +19,7 @@ export function CodeEditor(props: CodeEditorProps): JSX.Element {
 
   return (
     <iframe
+      title="Code Editor"
       frameBorder="0"
       src={url.toString()}
       style={{ width: '100%', height: '100%', minHeight: props.minHeight }}
