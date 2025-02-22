@@ -29,7 +29,7 @@ export function QuestionnaireRepeatedGroup(props: QuestionnaireRepeatableGroupPr
   }
 
   function insertNewGroup(): void {
-    const newResponse = buildInitialResponseItem(props.item);
+    const newResponse = buildInitialResponseItem(props.item, undefined);
     setResponses([...responses, newResponse]);
   }
 
