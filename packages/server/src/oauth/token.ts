@@ -607,8 +607,7 @@ async function sendTokenResponse(res: Response, login: Login, client?: ClientApp
     fhircastProps['hub.topic'] = topic;
   }
 
-  const decodedAccessToken = await verifyJwt(tokens.accessToken);
-  const { exp, iat } = decodedAccessToken.payload;
+  const { exp, iat } = parseJWTPayload(tokens.accessToken);
 
   res.status(200).json({
     token_type: 'Bearer',
