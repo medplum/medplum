@@ -58,7 +58,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
         return;
       }
       // throw out the existing response and start over
-      setResponse(questionnaire ? buildInitialResponse(questionnaire, undefined) : undefined);
+      setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
     }
   }, [questionnaireResponse, questionnaire, prevQuestionnaire]);
 
