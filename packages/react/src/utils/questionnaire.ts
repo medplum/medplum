@@ -391,7 +391,7 @@ export function getQuestionnaireItemReferenceFilter(
 
 export function buildInitialResponse(
   questionnaire: Questionnaire,
-  questionnaireResponse: QuestionnaireResponse | undefined
+  questionnaireResponse?: QuestionnaireResponse
 ): QuestionnaireResponse {
   const response: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
