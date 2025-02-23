@@ -7,7 +7,7 @@ ENV GIT_SHA ${GIT_SHA}
 ENV MEDPLUM_VERSION ${MEDPLUM_VERSION}
 ENV MEDPLUM_LOG_LEVEL=${MEDPLUM_LOG_LEVEL:-"INFO"}
 
-COPY bin/medplum-agent-${MEDPLUM_VERSION}-linux /srv/medplum-agent
+COPY medplum-agent-${MEDPLUM_VERSION}-linux /srv/medplum-agent
 
 RUN apt-get update && \
     apt-get install -y iputils-ping && \
