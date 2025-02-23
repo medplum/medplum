@@ -15,6 +15,7 @@ import { LongJob } from './long-job';
 export type ReindexJobData = {
   readonly asyncJob: AsyncJob;
   readonly resourceTypes: ResourceType[];
+  readonly maxResourceVersion?: number;
   readonly cursor?: string;
   readonly endTimestamp: string;
   readonly startTime: number;
@@ -310,7 +311,8 @@ async function addReindexJobData(job: ReindexJobData): Promise<Job<ReindexJobDat
 export async function addReindexJob(
   resourceTypes: ResourceType[],
   job: AsyncJob,
-  searchFilter?: SearchRequest
+  searchFilter?: SearchRequest,
+  maxResourceVersion?: number
 ): Promise<Job<ReindexJobData>> {
   const { requestId, traceId } = getRequestContext();
   const endTimestamp = new Date(Date.now() + 1000 * 60 * 5).toISOString(); // Five minutes in the future
@@ -321,6 +323,7 @@ export async function addReindexJob(
     asyncJob: job,
     startTime: Date.now(),
     searchFilter,
+    maxResourceVersion,
     results: Object.create(null),
     requestId,
     traceId,

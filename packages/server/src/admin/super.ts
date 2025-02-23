@@ -20,7 +20,7 @@ import { AuthenticatedRequestContext, getAuthenticatedContext } from '../context
 import { DatabaseMode, getDatabasePool, maybeStartDataMigration } from '../database';
 import { AsyncJobExecutor, sendAsyncResponse } from '../fhir/operations/utils/asyncjobexecutor';
 import { invalidRequest, sendOutcome } from '../fhir/outcomes';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { authenticateRequest } from '../oauth/middleware';
 import { getUserByEmail } from '../oauth/utils';
@@ -111,10 +111,36 @@ superAdminRouter.post(
     }
 
     const systemRepo = getSystemRepo();
+
+    const reindexType = req.body.reindexType as 'outdated' | 'all' | 'specific';
+    let maxResourceVersion: number | undefined;
+    switch (reindexType) {
+      case 'all':
+        maxResourceVersion = undefined;
+        break;
+      case 'specific':
+        maxResourceVersion = parseInt(req.body.maxResourceVersion, 10);
+
+        if (!Number.isInteger(maxResourceVersion)) {
+          sendOutcome(res, badRequest('maxResourceVersion must be an integer'));
+          return;
+        }
+
+        if (maxResourceVersion < 0 || maxResourceVersion > Repository.VERSION) {
+          sendOutcome(res, badRequest(`maxResourceVersion must be between 0 and ${Repository.VERSION}`));
+          return;
+        }
+        break;
+      case 'outdated':
+      default:
+        maxResourceVersion = Repository.VERSION - 1;
+        break;
+    }
+
     const exec = new AsyncJobExecutor(systemRepo);
     await exec.init(`${req.protocol}://${req.get('host') + req.originalUrl}`);
     await exec.run(async (asyncJob) => {
-      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter);
+      await addReindexJob(resourceTypes as ResourceType[], asyncJob, searchFilter, maxResourceVersion);
     });
 
     const { baseUrl } = getConfig();

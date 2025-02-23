@@ -12,7 +12,7 @@ import { MedplumServerConfig } from '../config/types';
 import { AuthenticatedRequestContext } from '../context';
 import * as database from '../database';
 import { AsyncJobExecutor } from '../fhir/operations/utils/asyncjobexecutor';
-import { getSystemRepo } from '../fhir/repo';
+import { getSystemRepo, Repository } from '../fhir/repo';
 import { globalLogger } from '../logger';
 import { generateAccessToken } from '../oauth/keys';
 import { requestContextStore } from '../request-context-store';
@@ -315,7 +315,11 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test('Reindex with respond-async', async () => {
+  test.only.each([
+    ['outdated', undefined, Repository.VERSION - 1],
+    ['specific', 0, 0],
+    ['all', undefined, undefined],
+  ])('Reindex with respond-async %s', async (reindexType, maxResourceVersion, expectedMaxResourceVersion) => {
     const queue = getReindexQueue() as any;
     queue.add.mockClear();
 
@@ -326,6 +330,8 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({
         resourceType: 'PaymentNotice',
+        reindexType,
+        maxResourceVersion,
       });
 
     expect(res.status).toStrictEqual(202);
@@ -336,6 +342,7 @@ describe('Super Admin routes', () => {
         resourceTypes: ['PaymentNotice'],
       })
     );
+    expect(queue.add.mock.calls[0][1].maxResourceVersion).toStrictEqual(expectedMaxResourceVersion);
     await withTestContext(() => new ReindexJob().execute({ data: queue.add.mock.calls[0][1] } as Job));
     await waitForAsyncJob(res.headers['content-location'], app, adminAccessToken);
   });

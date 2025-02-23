@@ -1343,10 +1343,10 @@ describe('FHIR Repo', () => {
       const versionQuery = new SelectQuery('Patient').column('__version').where('id', '=', patient.id);
 
       const client = repo.getDatabaseClient(DatabaseMode.WRITER);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(repo.VERSION);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
 
       // Simulate the resource being at an older version
-      const OLDER_VERSION = repo.VERSION - 1;
+      const OLDER_VERSION = Repository.VERSION - 1;
       await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient.id]);
       expect((await versionQuery.execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
 
@@ -1359,7 +1359,7 @@ describe('FHIR Repo', () => {
         ...patient,
         name: [{ given: ['Bob'], family: 'Smith' }],
       });
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(repo.VERSION);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
 
       // Simulate the resource being at an older version
       await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient.id]);
@@ -1367,7 +1367,7 @@ describe('FHIR Repo', () => {
 
       // reindex SHOULD change the version
       await repo.reindexResource('Patient', patient.id);
-      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(repo.VERSION);
+      expect((await versionQuery.execute(client))[0].__version).toStrictEqual(Repository.VERSION);
     });
   });
 });

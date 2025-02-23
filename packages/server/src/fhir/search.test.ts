@@ -55,6 +55,8 @@ import { MedplumServerConfig } from '../config/types';
 import { bundleContains, createTestProject, withTestContext } from '../test.setup';
 import { getSystemRepo, Repository } from './repo';
 import { clampEstimateCount } from './search';
+import { DatabaseMode } from '../database';
+import { SelectQuery } from './sql';
 
 jest.mock('hibp');
 
@@ -4876,6 +4878,67 @@ describe('FHIR Search', () => {
           type: 'searchset',
           total: 0,
         });
+      }));
+
+    test.only('maxResourceVersion', () =>
+      withTestContext(async () => {
+        const project: string = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
+
+        const patient1 = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Alice'], family: 'Smith' }],
+          meta: {
+            project,
+          },
+        });
+
+        const patient2 = await systemRepo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Bob'], family: 'Smith' }],
+          meta: {
+            project,
+          },
+        });
+
+        const getVersionQuery = (id: string): SelectQuery =>
+          new SelectQuery('Patient').column('__version').where('id', '=', id);
+
+        const client = systemRepo.getDatabaseClient(DatabaseMode.WRITER);
+        const OLDER_VERSION = Repository.VERSION - 1;
+        await client.query('UPDATE "Patient" SET __version = $1 WHERE id = $2', [OLDER_VERSION, patient1.id]);
+        expect((await getVersionQuery(patient1.id).execute(client))[0].__version).toStrictEqual(OLDER_VERSION);
+        expect((await getVersionQuery(patient2.id).execute(client))[0].__version).toStrictEqual(Repository.VERSION);
+
+        const bundle1 = await systemRepo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: '_project',
+              operator: Operator.EQUALS,
+              value: project,
+            },
+          ],
+        });
+        expect(bundle1.entry?.length).toStrictEqual(2);
+        const ids = bundle1.entry?.map((e) => e.resource?.id);
+        expect(ids).toContain(patient1.id);
+        expect(ids).toContain(patient2.id);
+
+        const bundle2 = await systemRepo.search(
+          {
+            resourceType: 'Patient',
+            filters: [
+              {
+                code: '_project',
+                operator: Operator.EQUALS,
+                value: project,
+              },
+            ],
+          },
+          { maxResourceVersion: OLDER_VERSION }
+        );
+        expect(bundle2.entry?.length).toStrictEqual(1);
+        expect(bundle2.entry?.[0]?.resource?.id).toStrictEqual(patient1.id);
       }));
   });
 });
