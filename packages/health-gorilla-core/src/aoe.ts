@@ -62,6 +62,7 @@ export function getMissingRequiredQuestionnaireItems(
             continue;
           }
         }
+
         if (hasValue) {
           continue;
         }
