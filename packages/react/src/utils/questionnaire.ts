@@ -405,7 +405,7 @@ export function buildInitialResponse(
 
 function buildInitialResponseItems(
   items: QuestionnaireItem[] | undefined,
-  questionnaireResponseItems: QuestionnaireResponseItem[] | undefined
+  questionnaireResponseItems?: QuestionnaireResponseItem[]
 ): QuestionnaireResponseItem[] {
   return items?.map((item) => buildInitialResponseItem(item, questionnaireResponseItems)) ?? [];
 }
