@@ -236,7 +236,7 @@ export class MockClient extends MedplumClient {
     const { filename, contentType, onProgress } = createBinaryOptions;
 
     if (filename?.endsWith('.exe')) {
-      return Promise.reject(badRequest('Invalid file type'));
+      throw new OperationOutcomeError(badRequest('Invalid file type'));
     }
 
     if (onProgress) {

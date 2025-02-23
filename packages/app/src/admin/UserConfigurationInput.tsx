@@ -12,7 +12,7 @@ export function UserConfigurationInput(props: UserConfigurationInputProps): JSX.
   return (
     <ResourceInput
       resourceType="UserConfiguration"
-      name="userConfiguration"
+      name={props.name}
       defaultValue={props.defaultValue}
       placeholder="User Configuration"
       onChange={(newValue) => {
