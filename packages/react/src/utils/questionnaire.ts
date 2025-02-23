@@ -412,7 +412,7 @@ function buildInitialResponseItems(
 
 export function buildInitialResponseItem(
   item: QuestionnaireItem,
-  questionnaireResponseItem: QuestionnaireResponseItem[] | undefined
+  questionnaireResponseItem?: QuestionnaireResponseItem[]
 ): QuestionnaireResponseItem {
   const existingResponseItem = questionnaireResponseItem?.find((responseItem) => responseItem.linkId === item.linkId);
 
