@@ -315,7 +315,7 @@ describe('Super Admin routes', () => {
     expect(res.status).toBe(400);
   });
 
-  test.only.each([
+  test.each([
     ['outdated', undefined, Repository.VERSION - 1],
     ['specific', 0, 0],
     ['all', undefined, undefined],

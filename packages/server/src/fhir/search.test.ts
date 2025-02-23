@@ -4880,7 +4880,7 @@ describe('FHIR Search', () => {
         });
       }));
 
-    test.only('maxResourceVersion', () =>
+    test('maxResourceVersion', () =>
       withTestContext(async () => {
         const project: string = (await systemRepo.createResource<Project>({ resourceType: 'Project' })).id;
 
