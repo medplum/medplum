@@ -52,13 +52,18 @@ export function getMissingRequiredQuestionnaireItems(
     ) {
       const answers = answersByLinkId?.[item.linkId];
       if (answers && answers.length > 0) {
+        let hasValue = false;
         for (const answer of answers) {
           const values = arrayify(
             getTypedPropertyValue({ type: 'QuestionnaireResponseItemAnswer', value: answer }, 'value[x]')
           );
           if (values?.some((v) => v.value)) {
+            hasValue = true;
             continue;
           }
+        }
+        if (hasValue) {
+          continue;
         }
       }
 
