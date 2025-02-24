@@ -38,7 +38,9 @@ export async function run(client: PoolClient): Promise<void> {
   await client.query('ALTER TABLE IF EXISTS "Contract" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "Coverage" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "CoverageEligibilityRequest" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
-  await client.query('ALTER TABLE IF EXISTS "CoverageEligibilityResponse" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
+  await client.query(
+    'ALTER TABLE IF EXISTS "CoverageEligibilityResponse" ADD COLUMN IF NOT EXISTS "__version" INTEGER'
+  );
   await client.query('ALTER TABLE IF EXISTS "DetectedIssue" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "Device" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "DeviceDefinition" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
@@ -87,15 +89,27 @@ export async function run(client: PoolClient): Promise<void> {
   await client.query('ALTER TABLE IF EXISTS "MedicationRequest" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "MedicationStatement" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "MedicinalProduct" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
-  await client.query('ALTER TABLE IF EXISTS "MedicinalProductAuthorization" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
-  await client.query('ALTER TABLE IF EXISTS "MedicinalProductContraindication" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
+  await client.query(
+    'ALTER TABLE IF EXISTS "MedicinalProductAuthorization" ADD COLUMN IF NOT EXISTS "__version" INTEGER'
+  );
+  await client.query(
+    'ALTER TABLE IF EXISTS "MedicinalProductContraindication" ADD COLUMN IF NOT EXISTS "__version" INTEGER'
+  );
   await client.query('ALTER TABLE IF EXISTS "MedicinalProductIndication" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "MedicinalProductIngredient" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
-  await client.query('ALTER TABLE IF EXISTS "MedicinalProductInteraction" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
-  await client.query('ALTER TABLE IF EXISTS "MedicinalProductManufactured" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
+  await client.query(
+    'ALTER TABLE IF EXISTS "MedicinalProductInteraction" ADD COLUMN IF NOT EXISTS "__version" INTEGER'
+  );
+  await client.query(
+    'ALTER TABLE IF EXISTS "MedicinalProductManufactured" ADD COLUMN IF NOT EXISTS "__version" INTEGER'
+  );
   await client.query('ALTER TABLE IF EXISTS "MedicinalProductPackaged" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
-  await client.query('ALTER TABLE IF EXISTS "MedicinalProductPharmaceutical" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
-  await client.query('ALTER TABLE IF EXISTS "MedicinalProductUndesirableEffect" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
+  await client.query(
+    'ALTER TABLE IF EXISTS "MedicinalProductPharmaceutical" ADD COLUMN IF NOT EXISTS "__version" INTEGER'
+  );
+  await client.query(
+    'ALTER TABLE IF EXISTS "MedicinalProductUndesirableEffect" ADD COLUMN IF NOT EXISTS "__version" INTEGER'
+  );
   await client.query('ALTER TABLE IF EXISTS "MessageDefinition" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "MessageHeader" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "MolecularSequence" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
@@ -141,7 +155,9 @@ export async function run(client: PoolClient): Promise<void> {
   await client.query('ALTER TABLE IF EXISTS "SubstanceNucleicAcid" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "SubstancePolymer" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "SubstanceProtein" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
-  await client.query('ALTER TABLE IF EXISTS "SubstanceReferenceInformation" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
+  await client.query(
+    'ALTER TABLE IF EXISTS "SubstanceReferenceInformation" ADD COLUMN IF NOT EXISTS "__version" INTEGER'
+  );
   await client.query('ALTER TABLE IF EXISTS "SubstanceSourceMaterial" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "SubstanceSpecification" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
   await client.query('ALTER TABLE IF EXISTS "SupplyDelivery" ADD COLUMN IF NOT EXISTS "__version" INTEGER');
