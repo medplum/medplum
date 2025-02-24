@@ -386,6 +386,7 @@ describe('Super Admin routes', () => {
       .type('json')
       .send({
         resourceType: 'PaymentNotice,MedicinalProductManufactured,BiologicallyDerivedProduct',
+        reindexType: 'outdated',
       });
 
     expect(res.status).toStrictEqual(202);
