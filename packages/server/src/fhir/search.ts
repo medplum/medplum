@@ -1373,6 +1373,7 @@ function addOrderByClause(builder: SelectQuery, searchRequest: SearchRequest, so
 function fhirOperatorToSqlOperator(fhirOperator: Operator): keyof typeof SQL {
   switch (fhirOperator) {
     case Operator.EQUALS:
+    case Operator.EXACT:
       return '=';
     case Operator.NOT:
     case Operator.NOT_EQUALS:
