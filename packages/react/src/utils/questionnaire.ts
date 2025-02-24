@@ -389,28 +389,39 @@ export function getQuestionnaireItemReferenceFilter(
   return result;
 }
 
-export function buildInitialResponse(questionnaire: Questionnaire): QuestionnaireResponse {
+export function buildInitialResponse(
+  questionnaire: Questionnaire,
+  questionnaireResponse?: QuestionnaireResponse
+): QuestionnaireResponse {
   const response: QuestionnaireResponse = {
     resourceType: 'QuestionnaireResponse',
     questionnaire: getReferenceString(questionnaire),
-    item: buildInitialResponseItems(questionnaire.item),
+    item: buildInitialResponseItems(questionnaire.item, questionnaireResponse?.item),
     status: 'in-progress',
   };
 
   return response;
 }
 
-function buildInitialResponseItems(items: QuestionnaireItem[] | undefined): QuestionnaireResponseItem[] {
-  return items?.map(buildInitialResponseItem) ?? [];
+function buildInitialResponseItems(
+  items: QuestionnaireItem[] | undefined,
+  questionnaireResponseItems?: QuestionnaireResponseItem[]
+): QuestionnaireResponseItem[] {
+  return items?.map((item) => buildInitialResponseItem(item, questionnaireResponseItems)) ?? [];
 }
 
-export function buildInitialResponseItem(item: QuestionnaireItem): QuestionnaireResponseItem {
+export function buildInitialResponseItem(
+  item: QuestionnaireItem,
+  questionnaireResponseItem?: QuestionnaireResponseItem[]
+): QuestionnaireResponseItem {
+  const existingResponseItem = questionnaireResponseItem?.find((responseItem) => responseItem.linkId === item.linkId);
+
   return {
-    id: generateId(),
+    id: existingResponseItem ? existingResponseItem.id : generateId(),
     linkId: item.linkId,
     text: item.text,
-    item: buildInitialResponseItems(item.item),
-    answer: item.initial?.map(buildInitialResponseAnswer) ?? [],
+    item: buildInitialResponseItems(item.item, existingResponseItem?.item),
+    answer: existingResponseItem ? existingResponseItem.answer : (item.initial?.map(buildInitialResponseAnswer) ?? []),
   };
 }
 
