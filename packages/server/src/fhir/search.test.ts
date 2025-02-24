@@ -3199,6 +3199,34 @@ describe('FHIR Search', () => {
         expect(result2.entry).toHaveLength(1);
       }));
 
+    test('_filter birthdate eq', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Evelyn'] }],
+          birthDate: '2000-01-01',
+          managingOrganization: { reference: 'Organization/' + randomUUID() },
+        });
+
+        const result1 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'organization',
+              operator: Operator.EQUALS,
+              value: patient.managingOrganization?.reference as string,
+            },
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'birthdate eq "2000-01-01"',
+            },
+          ],
+        });
+
+        expect(result1.entry).toHaveLength(1);
+      }));
+
     test('_filter ne', () =>
       withTestContext(async () => {
         const patient = await repo.createResource<Patient>({
