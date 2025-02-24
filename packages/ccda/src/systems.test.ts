@@ -1,7 +1,9 @@
+import { SNOMED } from '@medplum/core';
+import { OID_SNOMED_CT_CODE_SYSTEM } from './oids';
 import { EnumMapper } from './systems';
 
 describe('EnumMapper', () => {
-  const mapper = new EnumMapper<string, string>('systemName', 'ccdaSystemOid', 'fhirSystemUrl', [
+  const mapper = new EnumMapper<string, string>('SNOMED CT', OID_SNOMED_CT_CODE_SYSTEM, SNOMED, [
     { ccdaValue: 'c0', fhirValue: 'f0', displayName: 'd0' },
     { ccdaValue: 'c1', fhirValue: 'f1', displayName: 'd1' },
     { ccdaValue: 'c2', fhirValue: 'f2', displayName: 'd2' },
@@ -31,7 +33,7 @@ describe('EnumMapper', () => {
   test('mapCcdaToFhirCodeableConcept', () => {
     const r1 = mapper.mapCcdaToFhirCodeableConcept('c0');
     expect(r1?.coding?.[0]?.code).toBe('f0');
-    expect(r1?.coding?.[0]?.system).toBe('fhirSystemUrl');
+    expect(r1?.coding?.[0]?.system).toBe(SNOMED);
     expect(r1?.text).toBe('d0');
 
     const r2 = mapper.mapCcdaToFhirCodeableConcept('c3');
@@ -47,8 +49,8 @@ describe('EnumMapper', () => {
   test('mapFhirToCcdaCode', () => {
     const r1 = mapper.mapFhirToCcdaCode('f0');
     expect(r1?.['@_code']).toBe('c0');
-    expect(r1?.['@_codeSystem']).toBe('ccdaSystemOid');
-    expect(r1?.['@_codeSystemName']).toBe('systemName');
+    expect(r1?.['@_codeSystem']).toBe(OID_SNOMED_CT_CODE_SYSTEM);
+    expect(r1?.['@_codeSystemName']).toBe('SNOMED CT');
     expect(r1?.['@_displayName']).toBe('d0');
 
     const r2 = mapper.mapFhirToCcdaCode('c3');

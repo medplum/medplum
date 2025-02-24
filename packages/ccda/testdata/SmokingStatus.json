@@ -6,6 +6,7 @@
       "resource": {
         "resourceType": "Composition",
         "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
         "status": "final",
         "type": {
           "coding": [
@@ -165,7 +166,8 @@
                 "code": "social-history",
                 "display": "Smoking Status"
               }
-            ]
+            ],
+            "text": "Smoking Status"
           },
           {
             "coding": [
@@ -237,7 +239,8 @@
                 "code": "social-history",
                 "display": "Tobacco Use"
               }
-            ]
+            ],
+            "text": "Tobacco Use"
           },
           {
             "coding": [

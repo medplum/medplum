@@ -15,7 +15,8 @@
     <code code="34133-9" displayName="Summarization of Episode Note"
         codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
     <title>Medical Summary</title>
-    <effectiveTime xsi:type="TS" value="20250101000000-0500" />
+    <effectiveTime value="20250101000000-0500" />
+    <languageCode code="en-US" />
     <recordTarget>
     <patientRole>
       <id root="5adfedd2-3aaf-4a4f-aa35-5f6600b60c99" />
@@ -79,7 +80,7 @@
               <statusCode code="active" />
               <!-- This first effectiveTime shows that medication was added on January 9, 2009 (not
               known to have stopped)-->
-              <effectiveTime xsi:type="IVL_TS">
+              <effectiveTime>
                 <low value="20090109" />
               </effectiveTime>
               <!-- The second effectiveTime specifies dose frequency, which can be either a period
@@ -100,7 +101,7 @@
               UCUM. [IU] is international units -->
               <!-- Note that this basal insulin is not administered on a sliding scale and a
               specific dose is administered-->
-              <doseQuantity value="40" unit="[IU]" />
+              <doseQuantity xsi:type="PQ" value="40" unit="[IU]" />
               <consumable typeCode="CSM">
                 <manufacturedProduct classCode="MANU">
                   <!-- ** Medication information ** -->

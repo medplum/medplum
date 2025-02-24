@@ -104,6 +104,10 @@ export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
     return this.fhirToCcdaMap[fhir];
   }
 
+  getEntryByCcda(ccda: TCcdaValue): EnumEntry<TFhirValue, TCcdaValue> | undefined {
+    return this.ccdaToFhirMap[ccda];
+  }
+
   mapCcdaToFhir(ccda: TCcdaValue): TFhirValue | undefined {
     return this.ccdaToFhirMap[ccda]?.fhirValue;
   }
@@ -152,7 +156,7 @@ export class EnumMapper<TFhirValue extends string, TCcdaValue extends string> {
       '@_code': entry.ccdaValue,
       '@_displayName': entry.displayName,
       '@_codeSystem': this.ccdaSystemOid,
-      '@_codeSystemName': this.systemName,
+      '@_codeSystemName': SYSTEM_MAPPER.getEntryByCcda(this.ccdaSystemOid)?.displayName,
     };
   }
 }
@@ -286,6 +290,11 @@ export const SYSTEM_MAPPER = new EnumMapper<string, string>('System', '', '', [
     displayName: 'National Drug File Reference Terminology (NDF-RT)',
   },
   { ccdaValue: OID_CVX_CODE_SYSTEM, fhirValue: CVX_URL, displayName: 'CVX' },
+  {
+    ccdaValue: OID_CONFIDENTIALITY_VALUE_SET,
+    fhirValue: 'Confidentiality',
+    displayName: 'Confidentiality',
+  },
 
   // Alternate FHIR System:
   {
@@ -376,14 +385,18 @@ export const CONFIDENTIALITY_MAPPER = new EnumMapper(
   ]
 );
 
+// FHIR Name Use: https://hl7.org/fhir/R4/valueset-name-use.html
+// CDA Entity Name Use: https://hl7.org/cda/stds/core/2.0.0-sd/ValueSet-CDAEntityNameUse.html
+// CDA does not have any representation of "old" or "maiden" names
+// Instead, it should use "L" for legal with a "validTime" element to indicate the time range of the name
 export const HUMAN_NAME_USE_MAPPER = new EnumMapper('HumanNameUse', '', NAME_USE_VALUE_SET, [
   { ccdaValue: 'C', fhirValue: 'usual', displayName: 'Common/Called by' },
   { ccdaValue: 'L', fhirValue: 'official', displayName: 'Legal' },
   { ccdaValue: 'TEMP', fhirValue: 'temp', displayName: 'Temporary' },
-  { ccdaValue: 'N', fhirValue: 'nickname', displayName: 'Nickname' },
+  { ccdaValue: 'P', fhirValue: 'nickname', displayName: 'Nickname' },
   { ccdaValue: 'ANON', fhirValue: 'anonymous', displayName: 'Anonymous' },
-  { ccdaValue: 'M', fhirValue: 'maiden', displayName: 'Maiden' },
-  { ccdaValue: 'M', fhirValue: 'old', displayName: 'Old' },
+  { ccdaValue: 'L', fhirValue: 'maiden', displayName: 'Maiden' },
+  { ccdaValue: 'L', fhirValue: 'old', displayName: 'Old' },
 ]);
 
 export const GENDER_MAPPER = new EnumMapper('Gender', '', ADMINISTRATIVE_GENDER_VALUE_SET, [
@@ -415,6 +428,26 @@ export const ALLERGY_STATUS_MAPPER = new EnumMapper<string, string>(
     { ccdaValue: 'refuted', fhirValue: 'refuted', displayName: 'Refuted' },
     { ccdaValue: 'entered-in-error', fhirValue: 'entered-in-error', displayName: 'Entered in Error' },
     { ccdaValue: 'unknown', fhirValue: 'unknown', displayName: 'Unknown' },
+  ]
+);
+
+export const ALLERGY_CATEGORY_MAPPER = new EnumMapper<string, string>(
+  'AllergyCategory',
+  OID_SNOMED_CT_CODE_SYSTEM,
+  ALLERGY_CLINICAL_CODE_SYSTEM,
+  [
+    { ccdaValue: '414285001', fhirValue: 'food', displayName: 'Allergy to food (finding)' },
+    {
+      ccdaValue: '419511003',
+      fhirValue: 'medication',
+      displayName: 'Propensity to adverse reactions to drug (finding)',
+    },
+    { ccdaValue: '426232007', fhirValue: 'environment', displayName: 'Environmental allergy (finding)' },
+    {
+      ccdaValue: '418038007',
+      fhirValue: 'biologic',
+      displayName: 'Propensity to adverse reactions to substance (finding)',
+    },
   ]
 );
 

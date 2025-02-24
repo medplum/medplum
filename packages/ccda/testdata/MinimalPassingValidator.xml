@@ -12,7 +12,7 @@
     <code code="34133-9" displayName="Summarization of Episode Note"
         codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC" />
     <title>Alicia Newman Summary Record</title>
-    <effectiveTime xsi:type="TS" value="20150622120000-0500" />
+    <effectiveTime value="20150622120000-0500" />
     <confidentialityCode code="N" displayName="normal" codeSystem="2.16.840.1.113883.5.25"
         codeSystemName="Confidentiality" />
     <languageCode code="en-US" />
@@ -28,7 +28,7 @@
                     <given>Alice</given>
                     <given>Jones</given>
                 </name>
-                <administrativeGenderCode xsi:type="CE" code="F" displayName="Female"
+                <administrativeGenderCode code="F" displayName="Female"
                     codeSystem="2.16.840.1.113883.5.1" codeSystemName="AdministrativeGender" />
                 <birthTime value="19700501" />
                 <raceCode code="2106-3" displayName="White" codeSystem="2.16.840.1.113883.6.238"
@@ -80,7 +80,7 @@
     </custodian>
     <documentationOf>
         <serviceEvent classCode="PCPR">
-            <effectiveTime xsi:type="IVL_TS">
+            <effectiveTime>
                 <low value="20130720" />
                 <high value="20130815" />
             </effectiveTime>

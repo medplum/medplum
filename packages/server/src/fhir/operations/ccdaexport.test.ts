@@ -70,6 +70,7 @@ describe('C-CDA Export', () => {
         code: { coding: [{ system: LOINC, code: '12345-6' }] },
         subject: createReference(patient),
         performer: [createReference(practitioner), createReference(organization)],
+        effectiveDateTime: new Date().toISOString(),
       } satisfies Observation);
     expect(res2.status).toBe(201);
     const observation = res2.body as Observation;
@@ -87,6 +88,7 @@ describe('C-CDA Export', () => {
         asserter: createReference(patient),
         subject: createReference(patient),
         recorder: createReference(practitioner),
+        recordedDate: new Date().toISOString(),
       } satisfies Condition);
     expect(res3.status).toBe(201);
     const condition = res3.body as Condition;

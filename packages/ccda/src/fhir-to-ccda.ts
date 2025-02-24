@@ -67,6 +67,7 @@ import {
 } from './oids';
 import {
   ADDRESS_USE_MAPPER,
+  ALLERGY_CATEGORY_MAPPER,
   ALLERGY_SEVERITY_MAPPER,
   ALLERGY_STATUS_MAPPER,
   CCDA_NARRATIVE_REFERENCE_URL,
@@ -308,7 +309,6 @@ class FhirToCcdaConverter {
       return undefined;
     }
     return {
-      '@_xsi:type': 'CE',
       '@_code': GENDER_MAPPER.mapFhirToCcda(gender),
       '@_displayName': gender ? capitalize(gender) : 'Unknown',
       '@_codeSystem': OID_ADMINISTRATIVE_GENDER_CODE_SYSTEM,
@@ -534,7 +534,7 @@ class FhirToCcdaConverter {
               'active'
             ),
           },
-          effectiveTime: this.mapEffectiveTime(allergy.recordedDate, undefined),
+          effectiveTime: this.mapEffectivePeriod(allergy.recordedDate, undefined),
           author: this.mapAuthor(allergy.recorder, allergy.recordedDate),
           text: this.createTextFromExtensions(allergy.extension),
           entryRelationship: [
@@ -562,7 +562,11 @@ class FhirToCcdaConverter {
                     '@_code': 'completed',
                   },
                   author: this.mapAuthor(allergy.asserter, allergy.recordedDate),
-                  effectiveTime: this.mapEffectiveDate(allergy.onsetDateTime, undefined),
+                  effectiveTime: this.mapEffectivePeriod(
+                    allergy.onsetPeriod?.start ?? allergy.onsetDateTime,
+                    allergy.onsetPeriod?.end,
+                    true
+                  ),
                   value: this.mapAllergyCategory(allergy.category),
                   text: this.createTextFromExtensions(allergy.extension),
                   participant: [
@@ -574,9 +578,11 @@ class FhirToCcdaConverter {
                           '@_classCode': 'MMAT',
                           code: {
                             ...mapCodeableConceptToCcdaCode(allergy.code),
-                            originalText: {
-                              reference: this.getNarrativeReference(allergy.code?.extension),
-                            },
+                            originalText: allergy.code?.extension
+                              ? {
+                                  reference: this.getNarrativeReference(allergy.code?.extension),
+                                }
+                              : undefined,
                           },
                         },
                       },
@@ -671,21 +677,16 @@ class FhirToCcdaConverter {
    * @returns The C-CDA allergy category.
    */
   private mapAllergyCategory(category: AllergyIntolerance['category']): CcdaValue | undefined {
-    if (!category) {
+    if (!category || category.length === 0) {
       return undefined;
     }
 
-    if (category.length === 1 && category[0] === 'food') {
-      return {
-        '@_xsi:type': 'CD',
-        '@_code': '414285001',
-        '@_displayName': 'Allergy to food (finding)',
-        '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
-        '@_codeSystemName': 'SNOMED CT',
-      };
+    const code = ALLERGY_CATEGORY_MAPPER.mapFhirToCcdaCode(category[0]);
+    if (!code) {
+      return undefined;
     }
 
-    return undefined;
+    return { '@_xsi:type': 'CD', ...code };
   }
 
   /**
@@ -1434,7 +1435,6 @@ class FhirToCcdaConverter {
     if (period) {
       return [
         {
-          '@_xsi:type': 'IVL_TS',
           low: { '@_value': mapFhirToCcdaDateTime(period.start) },
           high: { '@_value': mapFhirToCcdaDateTime(period.end) },
         },
@@ -1443,7 +1443,6 @@ class FhirToCcdaConverter {
     if (dateTime) {
       return [
         {
-          '@_xsi:type': 'TS',
           '@_value': mapFhirToCcdaDateTime(dateTime),
         },
       ];
@@ -1455,7 +1454,6 @@ class FhirToCcdaConverter {
     if (period) {
       return [
         {
-          '@_xsi:type': 'IVL_TS',
           low: period.start ? { '@_value': mapFhirToCcdaDate(period.start) } : undefined,
           high: period.end ? { '@_value': mapFhirToCcdaDate(period.end) } : undefined,
         },
@@ -1464,12 +1462,37 @@ class FhirToCcdaConverter {
     if (dateTime) {
       return [
         {
-          '@_xsi:type': 'TS',
           '@_value': mapFhirToCcdaDate(dateTime),
         },
       ];
     }
     return undefined;
+  }
+
+  private mapEffectivePeriod(
+    start: string | undefined,
+    end: string | undefined,
+    useNullFlavor = false
+  ): CcdaEffectiveTime[] | undefined {
+    if (!start && !end) {
+      return undefined;
+    }
+
+    const result: CcdaEffectiveTime = {};
+
+    if (start) {
+      result['low'] = { '@_value': mapFhirToCcdaDateTime(start) };
+    } else if (useNullFlavor) {
+      result['low'] = { '@_nullFlavor': 'NI' };
+    }
+
+    if (end) {
+      result['high'] = { '@_value': mapFhirToCcdaDateTime(end) };
+    } else if (useNullFlavor) {
+      result['high'] = { '@_nullFlavor': 'NI' };
+    }
+
+    return [result];
   }
 
   private createEncounterEntry(encounter: Encounter): CcdaEntry {

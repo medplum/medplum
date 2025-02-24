@@ -700,6 +700,9 @@ class CcdaToFhirConverter {
     if (effectiveTime?.['@_value']) {
       return mapCcdaToFhirDateTime(effectiveTime['@_value']);
     }
+    if (effectiveTime?.low?.['@_value']) {
+      return mapCcdaToFhirDateTime(effectiveTime.low['@_value']);
+    }
     return undefined;
   }
 
@@ -1296,7 +1299,6 @@ class CcdaToFhirConverter {
       status: PROCEDURE_STATUS_MAPPER.mapCcdaToFhirWithDefault(procedure.statusCode?.['@_code'], 'completed'),
       code: this.mapCode(procedure.code),
       subject: createReference(this.patient as Patient),
-      performedDateTime: this.mapEffectiveTimeToDateTime(procedure.effectiveTime?.[0]),
       performedPeriod: this.mapEffectiveTimeToPeriod(procedure.effectiveTime?.[0]),
       bodySite: procedure.targetSiteCode ? [this.mapCode(procedure.targetSiteCode) as CodeableConcept] : undefined,
       extension: this.mapTextReference(procedure.text),
