@@ -1,14 +1,12 @@
-name: Build
+name: Merge Check
 # Limit a single job to run at a time for a given branch/PR to save resources and speed up CI
 # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#concurrency
 concurrency:
-  group: ci-build-${{ github.ref_name == 'main' && github.sha || github.ref }}
+  group: ci-merge-check-${{ github.ref_name == 'main' && github.sha || github.ref }}
   cancel-in-progress: true
 on:
-  push:
-    branches: [main]
-  pull_request:
-    types: [opened, synchronize, reopened]
+  merge_group:
+    types: [checks_requested]
 jobs:
   build:
     name: Build
@@ -16,12 +14,9 @@ jobs:
     timeout-minutes: 45
     permissions:
       pull-requests: write
-    strategy:
-      matrix:
-        node-version: [20, 22]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
-      NODE_VERSION: ${{ matrix.node-version }}
+      NODE_VERSION: 20
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
 
     steps:
@@ -30,7 +25,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
         uses: actions/cache@v4
@@ -151,20 +146,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     needs: [build]
-    strategy:
-      matrix:
-        node-version: [20, 22]
-        pg-version: [14, 16]
-        redis-version: [6, 7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
-      NODE_VERSION: ${{ matrix.node-version }}
-      PG_VERSION: ${{ matrix.pg-version }}
-      REDIS_VERSION: ${{ matrix.redis-version }}
+      NODE_VERSION: 20
+      PG_VERSION: 14
+      REDIS_VERSION: 6
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     services:
       postgres:
-        image: postgres:${{ matrix.pg-version }}
+        image: postgres:14
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -177,7 +167,7 @@ jobs:
         ports:
           - 5432:5432
       redis:
-        image: redis:${{ matrix.redis-version }}
+        image: redis:6
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -192,7 +182,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
         uses: actions/cache@v4
@@ -235,7 +225,6 @@ jobs:
           POSTGRES_PORT: 5432
           REDIS_PASSWORD_DISABLED_IN_TESTS: 1
       - name: Upload code coverage
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         uses: actions/upload-artifact@v4
         with:
           name: medplum-code-coverage
@@ -246,20 +235,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     needs: [build]
-    strategy:
-      matrix:
-        node-version: [20, 22]
-        pg-version: [14, 16]
-        redis-version: [6, 7]
     env:
       NODE_OPTIONS: --max-old-space-size=8192
-      NODE_VERSION: ${{ matrix.node-version }}
-      PG_VERSION: ${{ matrix.pg-version }}
-      REDIS_VERSION: ${{ matrix.redis-version }}
+      NODE_VERSION: 20
+      PG_VERSION: 14
+      REDIS_VERSION: 6
       SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
     services:
       postgres:
-        image: postgres:${{ matrix.pg-version }}
+        image: postgres:14
         env:
           POSTGRES_DB: medplum
           POSTGRES_USER: medplum
@@ -272,7 +256,7 @@ jobs:
         ports:
           - 5432:5432
       redis:
-        image: redis:${{ matrix.redis-version }}
+        image: redis:6
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -287,7 +271,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 20
           registry-url: 'https://registry.npmjs.org'
       - name: Cache node modules
         uses: actions/cache@v4
@@ -360,7 +344,6 @@ jobs:
           npm run test:smoke
           popd
       - name: Upload test results
-        if: ${{ matrix.node-version == 20 && matrix.pg-version == 14 && matrix.redis-version == 7 }}
         uses: actions/upload-artifact@v4
         with:
           name: e2e-test-results
@@ -368,52 +351,3 @@ jobs:
             packages/e2e/playwright-report/
             packages/e2e/test-results/
           retention-days: 30
-
-  build-docs:
-    name: Build the docs
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    permissions:
-      pull-requests: write
-    env:
-      NODE_OPTIONS: --max-old-space-size=8192
-      NODE_VERSION: 20
-      SECRETS_TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          registry-url: 'https://registry.npmjs.org'
-      - name: Cache node modules
-        uses: actions/cache@v4
-        env:
-          cache-name: cache-node-modules
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-build-${{ env.cache-name }}-
-            ${{ runner.os }}-build-
-            ${{ runner.os }}-
-      - name: Setup TurboRepo
-        # Conditionally setup turborepo
-        # In the past, turborepo would silently ignore empty environment variables
-        # This is no longer the case, so we need to check if the secret is set
-        # You cannot use `if: ${{ secrets.TURBO_TOKEN != '' }}` because secrets are not available in the `if` condition
-        if: ${{ env.SECRETS_TURBO_TOKEN != '' }}
-        run: |
-          echo "TURBO_TOKEN=${{ secrets.TURBO_TOKEN }}" >> $GITHUB_ENV
-          echo "TURBO_TEAM=${{ secrets.TURBO_TEAM }}" >> $GITHUB_ENV
-          echo "TURBO_CACHE=remote:rw" >> $GITHUB_ENV
-      - name: Build Project
-        run: ./scripts/build-docs.sh
-        env:
-          MEDPLUM_BASE_URL: '__MEDPLUM_BASE_URL__'
-          MEDPLUM_CLIENT_ID: '__MEDPLUM_CLIENT_ID__'
-          MEDPLUM_REGISTER_ENABLED: '__MEDPLUM_REGISTER_ENABLED__'
-          GOOGLE_CLIENT_ID: '__GOOGLE_CLIENT_ID__'
-          RECAPTCHA_SITE_KEY: '__RECAPTCHA_SITE_KEY__'
