@@ -700,10 +700,6 @@ class FhirToCcdaConverter {
       return undefined;
     }
 
-    if (!time) {
-      throw new Error('Author requires time');
-    }
-
     const practitioner = this.findResourceByReference(author);
     if (practitioner?.resourceType !== 'Practitioner') {
       return undefined;
