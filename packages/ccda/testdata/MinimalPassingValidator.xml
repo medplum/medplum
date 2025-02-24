@@ -80,7 +80,7 @@
     </custodian>
     <documentationOf>
         <serviceEvent classCode="PCPR">
-            <effectiveTime>
+            <effectiveTime xsi:type="IVL_TS">
                 <low value="20130720" />
                 <high value="20130815" />
             </effectiveTime>

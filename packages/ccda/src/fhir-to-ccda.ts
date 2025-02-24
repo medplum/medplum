@@ -778,22 +778,40 @@ class FhirToCcdaConverter {
     const medicationCode = medication?.code || med.medicationCodeableConcept;
     const manufacturer = medication?.manufacturer;
 
-    // Get narrative references
-    const medicationRef = '#Medication_6'; // Main reference
-    const medicationNameRef = '#MedicationName_6'; // For manufacturedMaterial
-    const sigRef = '#MedicationSig_6'; // For instructions
+    const effectiveTime: CcdaEffectiveTime[] = [];
+
+    if (med.dispenseRequest?.validityPeriod) {
+      const mapped = this.mapEffectiveDate(undefined, med.dispenseRequest.validityPeriod);
+      if (mapped) {
+        effectiveTime.push(...mapped);
+      }
+    }
+
+    if (med.dosageInstruction?.[0]?.timing?.repeat?.period) {
+      effectiveTime.push({
+        '@_xsi:type': 'PIVL_TS',
+        '@_institutionSpecified': 'true',
+        '@_operator': 'A',
+        period: {
+          '@_value': med.dosageInstruction[0].timing.repeat.period.toString(),
+          '@_unit': med.dosageInstruction[0].timing.repeat.periodUnit,
+        },
+      });
+    }
 
     return {
       substanceAdministration: [
         {
           '@_classCode': 'SBADM',
           '@_moodCode': 'EVN',
-          templateId: [{ '@_root': OID_MEDICATION_ACTIVITY, '@_extension': '2014-06-09' }],
+          templateId: [
+            { '@_root': OID_MEDICATION_ACTIVITY, '@_extension': '2014-06-09' },
+            { '@_root': OID_MEDICATION_ACTIVITY },
+          ],
           id: [{ '@_root': med.id || crypto.randomUUID() }],
-          text: { reference: { '@_value': medicationRef } },
+          text: this.createTextFromExtensions(med.extension),
           statusCode: { '@_code': MEDICATION_STATUS_MAPPER.mapFhirToCcdaWithDefault(med.status, 'active') },
-          // effectiveTime: this.mapEffectiveTime(med.dosageInstruction?.[0]?.timing?.event?.[0], undefined),
-          effectiveTime: this.mapEffectiveDate(undefined, med.dispenseRequest?.validityPeriod),
+          effectiveTime,
           routeCode: this.mapMedicationRoute(med.dosageInstruction?.[0]?.route),
           doseQuantity: this.mapDoseQuantity(med.dosageInstruction?.[0]?.doseAndRate?.[0]),
           consumable: {
@@ -803,13 +821,14 @@ class FhirToCcdaConverter {
                 '@_classCode': 'MANU',
                 templateId: [
                   { '@_root': OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL, '@_extension': '2014-06-09' },
+                  { '@_root': OID_MEDICATION_INFORMATION_MANUFACTURED_MATERIAL },
                 ],
                 manufacturedMaterial: [
                   {
                     code: [
                       {
                         ...(mapCodeableConceptToCcdaCode(medicationCode) as CcdaCode),
-                        originalText: { reference: { '@_value': medicationNameRef } },
+                        originalText: this.createTextFromExtensions(medication?.extension),
                       },
                     ],
                   },
@@ -828,8 +847,9 @@ class FhirToCcdaConverter {
               },
             ],
           },
-          entryRelationship: [
-            {
+          entryRelationship: med.dosageInstruction
+            ?.filter((instr) => !!instr.extension)
+            ?.map((instr) => ({
               '@_typeCode': 'COMP',
               substanceAdministration: [
                 {
@@ -842,7 +862,7 @@ class FhirToCcdaConverter {
                     '@_codeSystemName': 'LOINC',
                     '@_displayName': 'Medication Instructions',
                   },
-                  text: { reference: { '@_value': sigRef } },
+                  text: this.createTextFromExtensions(instr.extension),
                   consumable: {
                     manufacturedProduct: [
                       {
@@ -856,8 +876,7 @@ class FhirToCcdaConverter {
                   },
                 },
               ],
-            },
-          ],
+            })),
         },
       ],
     };
@@ -886,7 +905,6 @@ class FhirToCcdaConverter {
     }
 
     return {
-      '@_xsi:type': 'PQ',
       '@_value': doseAndRate.doseQuantity.value?.toString(),
       '@_unit': doseAndRate.doseQuantity.unit,
     };
@@ -984,7 +1002,6 @@ class FhirToCcdaConverter {
             '@_code': 'CONC',
             '@_codeSystem': OID_ACT_CLASS_CODE_SYSTEM,
           },
-          // statusCode: { '@_code': this.mapStatus(problem.clinicalStatus?.coding?.[0]?.code) },
           statusCode: {
             '@_code': PROBLEM_STATUS_MAPPER.mapFhirToCcdaWithDefault(
               problem.clinicalStatus?.coding?.[0]?.code,
@@ -1454,6 +1471,7 @@ class FhirToCcdaConverter {
     if (period) {
       return [
         {
+          '@_xsi:type': 'IVL_TS',
           low: period.start ? { '@_value': mapFhirToCcdaDate(period.start) } : undefined,
           high: period.end ? { '@_value': mapFhirToCcdaDate(period.end) } : undefined,
         },

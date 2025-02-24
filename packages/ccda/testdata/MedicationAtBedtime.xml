@@ -71,6 +71,7 @@
           <entry>
             <substanceAdministration classCode="SBADM" moodCode="EVN">
               <templateId root="2.16.840.1.113883.10.20.22.4.16" extension="2014-06-09" />
+              <templateId root="2.16.840.1.113883.10.20.22.4.16" />
               <id root="1310a2d3-f888-4722-b4c4-a3c5911ac7f9" />
               <text>
                 <!-- This reference refers to medication information in unstructured portion of
@@ -80,7 +81,7 @@
               <statusCode code="active" />
               <!-- This first effectiveTime shows that medication was added on January 9, 2009 (not
               known to have stopped)-->
-              <effectiveTime>
+              <effectiveTime xsi:type="IVL_TS">
                 <low value="20090109" />
               </effectiveTime>
               <!-- The second effectiveTime specifies dose frequency, which can be either a period
@@ -92,6 +93,12 @@
                 <event code="HS" />
               </effectiveTime>
               -->
+              <effectiveTime
+                  xsi:type = "PIVL_TS"
+                  institutionSpecified = "true"
+                  operator = "A">
+                  <period value = "12" unit = "h"/>
+              </effectiveTime>
               <!-- This route uses the NCI (National Cancer Institute) Thesauraus code system, which
               is constrained to the value set of 2.16.840.1.113883.3.88.12.3221.8.7 (FDA Medication
               Route) -->
@@ -101,11 +108,12 @@
               UCUM. [IU] is international units -->
               <!-- Note that this basal insulin is not administered on a sliding scale and a
               specific dose is administered-->
-              <doseQuantity xsi:type="PQ" value="40" unit="[IU]" />
+              <doseQuantity value="40" unit="[IU]" />
               <consumable typeCode="CSM">
                 <manufacturedProduct classCode="MANU">
                   <!-- ** Medication information ** -->
                   <templateId root="2.16.840.1.113883.10.20.22.4.23" extension="2014-06-09" />
+                  <templateId root="2.16.840.1.113883.10.20.22.4.23" />
                   <manufacturedMaterial>
                     <!-- Medications should be specified at a level corresponding to prescription
                     when possible (branded medication below)-->
