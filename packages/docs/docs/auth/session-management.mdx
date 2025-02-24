@@ -3,6 +3,9 @@ sidebar_position: 7
 tags: [auth]
 ---
 
+import ExampleCode from '!!raw-loader!@site/../examples/src/auth/session-management.ts';
+import MedplumCodeBlock from '@site/src/components/MedplumCodeBlock';
+
 # Access Token Management
 
 This guide explains how Medplum manages authentication tokens and how to implement secure token handling in your applications.
@@ -14,6 +17,23 @@ Medplum uses two types of tokens to manage authentication securely:
 **Access Tokens** are short-lived JSON Web Tokens (JWTs) that grant access to Medplum APIs. Each access token contains essential information about the user's permissions and session details. Every API request must include a valid access token.
 
 **Refresh Tokens** are long-lived credentials used to obtain new access tokens without requiring the user to log in again. These tokens are stored securely by client applications and are only transmitted when requesting a new access token.
+
+### Requesting Refresh Tokens
+
+Refresh tokens are not issued by default. To receive a refresh token, you must include one of the following scopes in your authentication request:
+
+- `offline_access`
+- `offline`
+
+For example:
+
+<MedplumCodeBlock language="ts" selectBlocks="emailPasswordLogin" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
+
+<MedplumCodeBlock language="ts" selectBlocks="oauthLogin" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ## Configuring Token Lifetimes
 
@@ -30,16 +50,9 @@ You can adjust token lifetimes by configuring your [`ClientApplication`](/docs/a
 
 Here's how to modify token lifetimes:
 
-```typescript
-{
-  resourceType: 'ClientApplication',
-  // Set access token lifetime to 2 hours (7200 seconds)
-  accessTokenLifetime: 7200,
-
-  // Set refresh token lifetime to 180 days
-  refreshTokenLifetime: 15552000
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="tokenLifetimes" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
 
 :::warning
 
@@ -87,18 +100,9 @@ To handle this scenario, you should:
 
 You can adjust the grace period when initializing the Medplum client:
 
-```typescript
-// Initialize client with a 10-minute grace period
-const medplum = new MedplumClient({
-  refreshGracePeriod: 600000, // 10 minutes in milliseconds
-});
-
-// You can also check authentication status with a custom grace period
-if (!medplum.isAuthenticated(300000)) {
-  // Token will expire within 5 minutes
-  await medplum.refreshIfExpired();
-}
-```
+<MedplumCodeBlock language="ts" selectBlocks="graceCustomization" showLineNumbers>
+  {ExampleCode}
+</MedplumCodeBlock>
 
 ## Best Practices for Token Management
 
@@ -110,11 +114,9 @@ if (!medplum.isAuthenticated(300000)) {
 
    The Medplum client handles token refresh automatically. Configure the grace period appropriately for your application's needs:
 
-   ```typescript
-   const medplum = new MedplumClient({
-     refreshGracePeriod: 300000, // 5 minute grace period (default)
-   });
-   ```
+   <MedplumCodeBlock language="ts" selectBlocks="bestPractices" showLineNumbers>
+     {ExampleCode}
+   </MedplumCodeBlock>
 
 3. **Token Revocation**
 
