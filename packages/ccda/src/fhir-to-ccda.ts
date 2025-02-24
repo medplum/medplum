@@ -1,4 +1,4 @@
-import { capitalize } from '@medplum/core';
+import { capitalize, generateId } from '@medplum/core';
 import {
   Address,
   AllergyIntolerance,
@@ -75,6 +75,7 @@ import {
   CONFIDENTIALITY_MAPPER,
   GENDER_MAPPER,
   HUMAN_NAME_USE_MAPPER,
+  IMMUNIZATION_STATUS_MAPPER,
   mapCodeableConceptToCcdaCode,
   mapCodeableConceptToCcdaValue,
   mapFhirSystemToCcda,
@@ -1008,7 +1009,7 @@ class FhirToCcdaConverter {
               'active'
             ),
           },
-          effectiveTime: this.mapEffectiveTime(problem.recordedDate, undefined),
+          effectiveTime: this.mapEffectivePeriod(problem.recordedDate, undefined),
           entryRelationship: [
             {
               '@_typeCode': 'SUBJ',
@@ -1020,13 +1021,27 @@ class FhirToCcdaConverter {
                     { '@_root': OID_PROBLEM_OBSERVATION },
                     { '@_root': OID_PROBLEM_OBSERVATION, '@_extension': '2015-08-01' },
                   ],
-                  id: this.mapIdentifiers(undefined, problem.identifier),
+                  id: problem.identifier
+                    ? this.mapIdentifiers(undefined, problem.identifier)
+                    : [
+                        {
+                          '@_root': generateId(),
+                        },
+                      ],
                   text: this.createTextFromExtensions(problem.extension),
                   code: {
                     '@_code': '55607006',
                     '@_codeSystem': OID_SNOMED_CT_CODE_SYSTEM,
                     '@_codeSystemName': 'SNOMED CT',
                     '@_displayName': 'Problem',
+                    translation: [
+                      {
+                        '@_code': '75323-6',
+                        '@_codeSystem': OID_LOINC_CODE_SYSTEM,
+                        '@_codeSystemName': 'LOINC',
+                        '@_displayName': 'Condition',
+                      },
+                    ],
                   },
                   statusCode: { '@_code': 'completed' },
                   effectiveTime: [
@@ -1062,7 +1077,9 @@ class FhirToCcdaConverter {
           ],
           id: this.mapIdentifiers(immunization.id, immunization.identifier),
           text: this.createTextFromExtensions(immunization.extension),
-          statusCode: { '@_code': 'completed' },
+          statusCode: {
+            '@_code': IMMUNIZATION_STATUS_MAPPER.mapFhirToCcdaWithDefault(immunization.status, 'completed'),
+          },
           effectiveTime: [{ '@_value': mapFhirToCcdaDate(immunization.occurrenceDateTime) }],
           consumable: {
             manufacturedProduct: [
