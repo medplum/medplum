@@ -64,9 +64,7 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": [
-              "Katherine"
-            ]
+            "given": ["Katherine"]
           }
         ]
       }
@@ -84,9 +82,7 @@
         "name": [
           {
             "family": "Seven",
-            "given": [
-              "Henry"
-            ]
+            "given": ["Henry"]
           }
         ],
         "telecom": [
@@ -122,9 +118,7 @@
         "name": [
           {
             "family": "Seven",
-            "given": [
-              "Henry"
-            ]
+            "given": ["Henry"]
           }
         ],
         "telecom": [
@@ -168,9 +162,7 @@
           ]
         },
         "type": "allergy",
-        "category": [
-          "food"
-        ],
+        "category": ["food"],
         "patient": {
           "reference": "Patient/d7830f15-e2c8-4cee-aa2d-a24b36080d53",
           "display": "Katherine Madison"
