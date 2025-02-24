@@ -102,6 +102,12 @@
         "meta": {
           "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"]
         },
+        "extension": [
+          {
+            "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
+            "valueString": "#Medication_6"
+          }
+        ],
         "status": "active",
         "intent": "order",
         "medicationReference": {
@@ -118,11 +124,10 @@
         },
         "dosageInstruction": [
           {
-            "text": "#Medication_6",
             "extension": [
               {
                 "url": "https://medplum.com/fhir/StructureDefinition/ccda-narrative-reference",
-                "valueString": "#Medication_6"
+                "valueString": "#MedicationSig_6"
               }
             ],
             "route": {
@@ -137,7 +142,8 @@
             },
             "timing": {
               "repeat": {
-                "when": ["HS"]
+                "period": 12,
+                "periodUnit": "h"
               }
             },
             "doseAndRate": [

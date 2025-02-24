@@ -231,7 +231,7 @@ export interface CcdaSubstanceAdministration {
   '@_negationInd'?: string;
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
-  text?: CcdaText;
+  text?: string | CcdaText;
   statusCode?: CcdaStatusCode<'active' | 'completed' | 'aborted' | 'cancelled'>;
   effectiveTime?: CcdaEffectiveTime[];
   routeCode?: CcdaCode;
@@ -253,8 +253,8 @@ export type CcdaValue = CcdaCode | CcdaText | CcdaQuantity | CcdaReference;
 
 export interface CcdaPeriod {
   '@_xsi:type'?: 'PIVL_TS';
-  '@_value': string;
-  '@_unit': string;
+  '@_value'?: string;
+  '@_unit'?: 's' | 'min' | 'h' | 'd' | 'wk' | 'mo' | 'a';
 }
 
 export interface CcdaEvent {
@@ -262,7 +262,7 @@ export interface CcdaEvent {
 }
 
 export interface CcdaEffectiveTime {
-  '@_xsi:type'?: 'IVL_TS' | 'TS';
+  '@_xsi:type'?: 'IVL_TS' | 'TS' | 'PIVL_TS';
   '@_institutionSpecified'?: string;
   '@_operator'?: string;
   '@_value'?: string;
