@@ -6,6 +6,7 @@
       "resource": {
         "resourceType": "Composition",
         "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
         "status": "final",
         "type": {
           "coding": [
@@ -65,7 +66,9 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine"]
+            "given": [
+              "Katherine"
+            ]
           }
         ]
       }
@@ -83,13 +86,19 @@
         "name": [
           {
             "family": "Sixer",
-            "given": ["Heartly"],
-            "suffix": ["MD"]
+            "given": [
+              "Heartly"
+            ],
+            "suffix": [
+              "MD"
+            ]
           }
         ],
         "address": [
           {
-            "line": ["6666 StreetName St."],
+            "line": [
+              "6666 StreetName St."
+            ],
             "city": "Silver Spring",
             "state": "MD",
             "postalCode": "20901",
@@ -129,13 +138,19 @@
         "name": [
           {
             "family": "Sixer",
-            "given": ["Heartly"],
-            "suffix": ["MD"]
+            "given": [
+              "Heartly"
+            ],
+            "suffix": [
+              "MD"
+            ]
           }
         ],
         "address": [
           {
-            "line": ["6666 StreetName St."],
+            "line": [
+              "6666 StreetName St."
+            ],
             "city": "Silver Spring",
             "state": "MD",
             "postalCode": "20901",
@@ -173,7 +188,9 @@
           }
         ],
         "meta": {
-          "profile": ["http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"]
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition"
+          ]
         },
         "clinicalStatus": {
           "coding": [

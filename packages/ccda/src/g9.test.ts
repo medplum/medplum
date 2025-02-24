@@ -51,7 +51,7 @@ describe('170.315(g)(9)', () => {
       expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.['@_use']).toEqual('L');
       expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.given?.[0]).toEqual('Sarah');
       expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[0]?.family).toEqual('Johnson');
-      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[1]?.['@_use']).toEqual('M');
+      expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[1]?.['@_use']).toEqual('L');
       expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[1]?.given?.[0]).toEqual('Sarah');
       expect(output.recordTarget?.[0]?.patientRole?.patient?.name?.[1]?.family).toEqual('Smith');
     });
@@ -267,7 +267,7 @@ describe('170.315(g)(9)', () => {
 
       // Check act timing (when recorded)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.[
+        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.low?.[
           '@_value'
         ]
       ).toEqual('20240101');
@@ -275,7 +275,7 @@ describe('170.315(g)(9)', () => {
       // Check observation timing (when started)
       expect(
         output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.entryRelationship?.[0]
-          ?.observation?.[0]?.effectiveTime?.[0]?.['@_value']
+          ?.observation?.[0]?.effectiveTime?.[0]?.low?.['@_value']
       ).toEqual('20231225');
 
       // Check status

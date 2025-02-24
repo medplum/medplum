@@ -6,6 +6,7 @@
       "resource": {
         "resourceType": "Composition",
         "id": "978a95c6-248e-49d1-b5dd-7c13282bd938",
+        "language": "en-US",
         "status": "final",
         "type": {
           "coding": [
@@ -65,7 +66,9 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine"]
+            "given": [
+              "Katherine"
+            ]
           }
         ]
       }
@@ -83,7 +86,8 @@
                 "code": "exam",
                 "display": "Procedure Activity Observation"
               }
-            ]
+            ],
+            "text": "Procedure Activity Observation"
           },
           {
             "coding": [

@@ -56,7 +56,7 @@ export interface CcdaTelecom {
 }
 
 export interface CcdaName {
-  '@_use'?: 'ANON' | 'C' | 'L' | 'M' | 'N' | 'TEMP';
+  '@_use'?: 'ANON' | 'C' | 'L' | 'P' | 'TEMP';
   family?: string;
   given?: string[];
   suffix?: string[];
