@@ -65,9 +65,7 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": [
-              "Katherine"
-            ]
+            "given": ["Katherine"]
           }
         ]
       }
@@ -79,16 +77,12 @@
         "name": [
           {
             "family": "Assigned",
-            "given": [
-              "Amanda"
-            ]
+            "given": ["Amanda"]
           }
         ],
         "address": [
           {
-            "line": [
-              "1021 Health Drive"
-            ],
+            "line": ["1021 Health Drive"],
             "city": "Ann Arbor",
             "state": "MI",
             "postalCode": "99099",
