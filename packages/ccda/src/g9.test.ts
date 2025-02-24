@@ -396,7 +396,7 @@ describe('170.315(g)(9)', () => {
 
       // Check act timing (when recorded)
       expect(
-        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.[
+        output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.act?.[0]?.effectiveTime?.[0]?.low?.[
           '@_value'
         ]
       ).toEqual('20240101');

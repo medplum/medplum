@@ -58,6 +58,7 @@ import {
   ADDRESS_USE_MAPPER,
   ALLERGY_CLINICAL_CODE_SYSTEM,
   ALLERGY_SEVERITY_MAPPER,
+  ALLERGY_STATUS_MAPPER,
   ALLERGY_VERIFICATION_CODE_SYSTEM,
   CCDA_NARRATIVE_REFERENCE_URL,
   CCDA_TEMPLATE_CODE_SYSTEM,
@@ -68,10 +69,12 @@ import {
   DIAGNOSIS_ROLE_CODE_SYSTEM,
   ENCOUNTER_STATUS_MAPPER,
   HUMAN_NAME_USE_MAPPER,
+  IMMUNIZATION_STATUS_MAPPER,
   mapCcdaSystemToFhir,
   MEDICATION_STATUS_MAPPER,
   OBSERVATION_CATEGORY_MAPPER,
   PARTICIPATION_CODE_SYSTEM,
+  PROBLEM_STATUS_MAPPER,
   PROCEDURE_STATUS_MAPPER,
   TELECOM_USE_MAPPER,
   US_CORE_CONDITION_URL,
@@ -459,7 +462,7 @@ class CcdaToFhirConverter {
         coding: [
           {
             system: CLINICAL_CONDITION_CODE_SYSTEM,
-            code: this.mapStatus(act.statusCode['@_code']),
+            code: PROBLEM_STATUS_MAPPER.mapCcdaToFhirWithDefault(act.statusCode?.['@_code'], 'active'),
           },
         ],
       },
@@ -649,7 +652,7 @@ class CcdaToFhirConverter {
       resourceType: 'Immunization',
       id: this.mapId(substanceAdmin.id),
       identifier: this.mapIdentifiers(substanceAdmin.id),
-      status: 'completed',
+      status: IMMUNIZATION_STATUS_MAPPER.mapCcdaToFhirWithDefault(substanceAdmin.statusCode?.['@_code'], 'completed'),
       vaccineCode: this.mapCode(
         consumable.manufacturedProduct?.[0]?.manufacturedMaterial?.[0]?.code?.[0]
       ) as CodeableConcept,
@@ -756,22 +759,12 @@ class CcdaToFhirConverter {
     return value.replace(/^(tel:|mailto:)/, '');
   }
 
-  private mapStatus(status: string): string {
-    const map: { [key: string]: string } = {
-      active: 'active',
-      suspended: 'inactive',
-      aborted: 'inactive',
-      completed: 'resolved',
-    };
-    return map[status] ?? 'active';
-  }
-
   private mapCode(code: CcdaCode | undefined): CodeableConcept | undefined {
     if (!code) {
       return undefined;
     }
 
-    return {
+    const result = {
       coding: [
         {
           system: mapCcdaSystemToFhir(code['@_codeSystem']),
@@ -779,9 +772,20 @@ class CcdaToFhirConverter {
           display: code['@_displayName'],
         },
       ],
-
       text: code['@_displayName'],
     };
+
+    if (code.translation) {
+      for (const translation of code.translation) {
+        result.coding.push({
+          system: mapCcdaSystemToFhir(translation['@_codeSystem']),
+          code: translation['@_code'],
+          display: translation['@_displayName'],
+        });
+      }
+    }
+
+    return result;
   }
 
   private mapCodeToCoding(code: CcdaCode | undefined): Coding | undefined {
@@ -801,7 +805,7 @@ class CcdaToFhirConverter {
       coding: [
         {
           system: ALLERGY_CLINICAL_CODE_SYSTEM,
-          code: this.mapStatus(act.statusCode['@_code']),
+          code: ALLERGY_STATUS_MAPPER.mapCcdaToFhirWithDefault(act.statusCode?.['@_code'], 'active'),
         },
       ],
     };
