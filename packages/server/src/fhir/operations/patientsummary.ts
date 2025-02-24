@@ -194,7 +194,7 @@ export class PatientSummaryBuilder {
   private chooseSectionForResources(): void {
     for (const resource of this.everything) {
       if (this.nestedIds.has(resource.id as string)) {
-        break;
+        continue;
       }
       this.chooseSectionForResource(resource);
     }

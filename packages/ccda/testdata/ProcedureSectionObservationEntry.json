@@ -86,23 +86,6 @@
               }
             ],
             "text": "Procedure Activity Observation"
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.13"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.13",
-                "version": "2014-06-09"
-              }
-            ]
           }
         ],
         "code": {

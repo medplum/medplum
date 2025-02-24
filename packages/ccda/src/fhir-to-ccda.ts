@@ -6,7 +6,6 @@ import {
   CarePlan,
   CareTeam,
   CodeableConcept,
-  Coding,
   Composition,
   CompositionEvent,
   CompositionSection,
@@ -24,6 +23,7 @@ import {
   MedicationRequest,
   Narrative,
   Observation,
+  ObservationComponent,
   ObservationReferenceRange,
   Organization,
   Patient,
@@ -61,7 +61,9 @@ import {
   OID_PROCEDURE_ACTIVITY_PROCEDURE,
   OID_REACTION_OBSERVATION,
   OID_SEVERITY_OBSERVATION,
+  OID_SMOKING_STATUS_OBSERVATION,
   OID_SNOMED_CT_CODE_SYSTEM,
+  OID_TOBACCO_USE_OBSERVATION,
   OID_VITAL_SIGNS_OBSERVATION,
   OID_VITAL_SIGNS_ORGANIZER,
 } from './oids';
@@ -71,7 +73,6 @@ import {
   ALLERGY_SEVERITY_MAPPER,
   ALLERGY_STATUS_MAPPER,
   CCDA_NARRATIVE_REFERENCE_URL,
-  CCDA_TEMPLATE_CODE_SYSTEM,
   CONFIDENTIALITY_MAPPER,
   GENDER_MAPPER,
   HUMAN_NAME_USE_MAPPER,
@@ -1259,7 +1260,17 @@ class FhirToCcdaConverter {
     if (observation.hasMember) {
       for (const member of observation.hasMember) {
         const child = this.findResourceByReference(member);
-        if (child) {
+        if (!child || child.resourceType !== 'Observation') {
+          continue;
+        }
+
+        if (child.component) {
+          for (const component of child.component) {
+            components.push({
+              observation: [this.createVitalSignComponentObservation(child as Observation, component)],
+            });
+          }
+        } else {
           components.push({
             observation: [this.createVitalSignObservation(child as Observation)],
           });
@@ -1302,18 +1313,42 @@ class FhirToCcdaConverter {
     return result;
   }
 
-  private mapObservationTemplateId(observation: Observation): CcdaTemplateId[] {
-    // If the Observation.category includes at least one entry with system "http://hl7.org/cda/template",
-    // then use those template IDs directly.
-    const templateIds = observation.category
-      ?.filter((c) => c.coding?.some((coding) => coding.system === CCDA_TEMPLATE_CODE_SYSTEM))
-      .map((c) => c.coding?.find((coding) => coding.system === CCDA_TEMPLATE_CODE_SYSTEM))
-      .filter((c) => c?.code) as (Coding & { code: string })[];
+  private createVitalSignComponentObservation(
+    observation: Observation,
+    component: ObservationComponent
+  ): CcdaObservation {
+    const result: CcdaObservation = {
+      '@_classCode': 'OBS',
+      '@_moodCode': 'EVN',
+      templateId: this.mapObservationTemplateId(observation),
+      id: this.mapIdentifiers(observation.id, observation.identifier) as CcdaId[],
+      code: mapCodeableConceptToCcdaCode(component.code),
+      statusCode: { '@_code': 'completed' },
+      effectiveTime: [{ '@_value': mapFhirToCcdaDateTime(observation.effectiveDateTime) }],
+      value: this.mapObservationValue(component),
+      referenceRange: this.mapReferenceRangeArray(component.referenceRange),
+      text: this.createTextFromExtensions(component.extension),
+      author: this.mapAuthor(observation.performer?.[0], observation.effectiveDateTime),
+    };
 
-    if (templateIds && templateIds.length > 0) {
-      return templateIds.map((id) =>
-        id.version ? { '@_root': id.code, '@_extension': id.version } : { '@_root': id.code }
-      );
+    return result;
+  }
+
+  private mapObservationTemplateId(observation: Observation): CcdaTemplateId[] {
+    if (observation.code?.coding?.[0]?.code === '72166-2') {
+      // Smoking status
+      return [
+        { '@_root': OID_SMOKING_STATUS_OBSERVATION },
+        { '@_root': OID_SMOKING_STATUS_OBSERVATION, '@_extension': '2014-06-09' },
+      ];
+    }
+
+    if (observation.code?.coding?.[0]?.code === '11367-0') {
+      // Tobacco use
+      return [
+        { '@_root': OID_TOBACCO_USE_OBSERVATION },
+        { '@_root': OID_TOBACCO_USE_OBSERVATION, '@_extension': '2014-06-09' },
+      ];
     }
 
     // If the Observation.category includes at least one entry with a mapping in OBSERVATION_CATEGORY_MAPPER,
@@ -1332,7 +1367,7 @@ class FhirToCcdaConverter {
     ];
   }
 
-  private mapObservationValue(observation: Observation): CcdaValue | undefined {
+  private mapObservationValue(observation: Observation | ObservationComponent): CcdaValue | undefined {
     if (observation.valueQuantity) {
       return {
         '@_xsi:type': 'PQ',
