@@ -74,7 +74,7 @@ export function Navbar(props: NavbarProps): JSX.Element {
                     active={link.href === activeLink?.href}
                     onClick={(e) => onLinkClick(e, link.href)}
                   >
-                    <NavLinkIcon to={link.href} icon={link.icon} />
+                    <NavLinkIcon icon={link.icon} />
                     <span>{link.label}</span>
                   </NavbarLink>
                 ))}
@@ -127,7 +127,6 @@ function NavbarLink(props: NavbarLinkProps): JSX.Element {
 }
 
 interface NavLinkIconProps {
-  readonly to: string;
   readonly icon?: JSX.Element;
 }
 

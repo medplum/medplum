@@ -2,7 +2,6 @@ import { ContentType, HTTP_HL7_ORG, HTTP_TERMINOLOGY_HL7_ORG, LOINC, SNOMED, cre
 import {
   CodeSystem,
   OperationOutcome,
-  Project,
   ValueSet,
   ValueSetExpansion,
   ValueSetExpansionContains,
@@ -14,30 +13,19 @@ import { initApp, shutdownApp } from '../../app';
 import { loadTestConfig } from '../../config/loader';
 import { createTestProject, initTestAuth, withTestContext } from '../../test.setup';
 
-describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }])('Expand with %j', (projectProps) => {
+describe('Expand', () => {
   const app = express();
-  let project: Project;
   let accessToken: string;
 
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    const info = await createTestProject({ project: projectProps, withAccessToken: true });
-    project = info.project;
+    const info = await createTestProject({ withAccessToken: true });
     accessToken = info.accessToken;
   });
 
   afterAll(async () => {
     await shutdownApp();
-  });
-
-  test('Using expected features', () => {
-    if (projectProps.features === undefined) {
-      fail('Expected projectProps.features to be defined');
-    }
-    for (const feature of projectProps.features) {
-      expect(project.features).toContain(feature);
-    }
   });
 
   test('No ValueSet URL', async () => {
@@ -440,21 +428,6 @@ describe.each<Partial<Project>>([{ features: [] }, { features: ['terminology'] }
       ])
     );
   });
-});
-
-describe('Updated implementation', () => {
-  const app = express();
-  let accessToken: string;
-
-  beforeAll(async () => {
-    const config = await loadTestConfig();
-    await initApp(app, config);
-    accessToken = await initTestAuth({ project: { features: ['terminology'] } });
-  });
-
-  afterAll(async () => {
-    await shutdownApp();
-  });
 
   test('Returns error for recursive definition', async () => {
     const valueSet: ValueSet = {
@@ -609,7 +582,6 @@ describe('Updated implementation', () => {
 
     accessToken = await initTestAuth({
       project: {
-        features: ['terminology'],
         link: [{ project: createReference(p1) }, { project: createReference(p2) }, { project: createReference(p3) }],
       },
     });

@@ -5,6 +5,7 @@ import {
   OAuthTokenType,
   Operator,
   ProfileResource,
+  WithId,
   createReference,
   getStatus,
   isJwt,
@@ -103,7 +104,7 @@ async function handleClientCredentials(req: Request, res: Response): Promise<voi
   }
 
   const systemRepo = getSystemRepo();
-  let client: ClientApplication;
+  let client: WithId<ClientApplication>;
   try {
     client = await systemRepo.readResource<ClientApplication>('ClientApplication', clientId);
   } catch (_err) {
@@ -618,8 +619,7 @@ async function sendTokenResponse(res: Response, login: Login, client?: ClientApp
     fhircastProps['hub.topic'] = topic;
   }
 
-  const decodedAccessToken = await verifyJwt(tokens.accessToken);
-  const { exp, iat } = decodedAccessToken.payload;
+  const { exp, iat } = parseJWTPayload(tokens.accessToken);
 
   res.status(200).json({
     token_type: 'Bearer',

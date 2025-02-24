@@ -5,7 +5,7 @@
  */
 export class ReadablePromise<T> implements Promise<T> {
   readonly [Symbol.toStringTag]: string = 'ReadablePromise';
-  private suspender: Promise<T>;
+  private readonly suspender: Promise<T>;
   private status: 'pending' | 'error' | 'success' = 'pending';
   private response: T | undefined;
   private error: Error | undefined;

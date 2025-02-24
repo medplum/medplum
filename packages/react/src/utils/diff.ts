@@ -90,7 +90,7 @@ function buildPath(orig: string[], rev: string[]): PathNode | undefined {
       diagonal[kmiddle] = node;
 
       if (i >= N && j >= M) {
-        return diagonal[kmiddle] as PathNode;
+        return diagonal[kmiddle];
       }
     }
     diagonal[middle + d - 1] = undefined;

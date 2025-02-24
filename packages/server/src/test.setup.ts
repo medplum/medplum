@@ -1,4 +1,4 @@
-import { createReference, getReferenceString, sleep } from '@medplum/core';
+import { WithId, createReference, getReferenceString, sleep } from '@medplum/core';
 import {
   AccessPolicy,
   AsyncJob,
@@ -35,11 +35,11 @@ type Exact<T, U extends T> = T & Record<Exclude<keyof U, keyof T>, never>;
 type StrictTestProjectOptions<T extends TestProjectOptions> = Exact<TestProjectOptions, T>;
 
 export type TestProjectResult<T extends TestProjectOptions> = {
-  project: Project;
-  accessPolicy: T['accessPolicy'] extends Partial<AccessPolicy> ? AccessPolicy : undefined;
-  client: T['withClient'] extends true ? ClientApplication : undefined;
-  membership: T['withClient'] extends true ? ProjectMembership : undefined;
-  login: T['withAccessToken'] extends true ? Login : undefined;
+  project: WithId<Project>;
+  accessPolicy: T['accessPolicy'] extends Partial<AccessPolicy> ? WithId<AccessPolicy> : undefined;
+  client: T['withClient'] extends true ? WithId<ClientApplication> : undefined;
+  membership: T['withClient'] extends true ? WithId<ProjectMembership> : undefined;
+  login: T['withAccessToken'] extends true ? WithId<Login> : undefined;
   accessToken: T['withAccessToken'] extends true ? string : undefined;
   repo: T['withRepo'] extends true | Partial<RepositoryContext> ? Repository : undefined;
 };

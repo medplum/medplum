@@ -1,4 +1,4 @@
-import { ContentType, LOINC, createReference, getReferenceString } from '@medplum/core';
+import { ContentType, LOINC, WithId, createReference, getReferenceString } from '@medplum/core';
 import {
   Bundle,
   Composition,
@@ -51,7 +51,7 @@ describe('Patient Summary Operation', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Organization' });
     expect(orgRes.status).toBe(201);
-    const organization = orgRes.body as Organization;
+    const organization = orgRes.body as WithId<Organization>;
 
     // Create practitioner
     const practRes = await request(app)
@@ -60,7 +60,7 @@ describe('Patient Summary Operation', () => {
       .set('Content-Type', ContentType.FHIR_JSON)
       .send({ resourceType: 'Practitioner' });
     expect(practRes.status).toBe(201);
-    const practitioner = practRes.body as Practitioner;
+    const practitioner = practRes.body as WithId<Practitioner>;
 
     // Create patient
     const res1 = await request(app)
@@ -78,7 +78,7 @@ describe('Patient Summary Operation', () => {
         managingOrganization: createReference(organization),
       } satisfies Patient);
     expect(res1.status).toBe(201);
-    const patient = res1.body as Patient;
+    const patient = res1.body as WithId<Patient>;
 
     // Create observation
     const res2 = await request(app)
@@ -94,7 +94,7 @@ describe('Patient Summary Operation', () => {
         performer: [createReference(practitioner), createReference(organization)],
       } satisfies Observation);
     expect(res2.status).toBe(201);
-    const observation = res2.body as Observation;
+    const observation = res2.body as WithId<Observation>;
 
     // Create condition
     // This condition references the patient twice, once as subject and once as asserter
@@ -111,7 +111,7 @@ describe('Patient Summary Operation', () => {
         recorder: createReference(practitioner),
       } satisfies Condition);
     expect(res3.status).toBe(201);
-    const condition = res3.body as Condition;
+    const condition = res3.body as WithId<Condition>;
 
     // Execute the operation
     const res4 = await request(app)
@@ -119,18 +119,19 @@ describe('Patient Summary Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res4.status).toBe(200);
 
-    const result = res4.body as Bundle;
+    const result = res4.body as WithId<Bundle>;
     expect(result.type).toBe('document');
     expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
     expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
-    const composition = result.entry?.[0]?.resource as Composition;
+    const composition = result.entry?.[0]?.resource as WithId<Composition>;
     expectSectionToContain(composition, LOINC_VITAL_SIGNS_SECTION, getReferenceString(observation));
     expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, getReferenceString(condition));
   });
 
   describe('PatientSummaryBuilder', () => {
     test('Simple categories', () => {
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const patientRef = createReference(patient);
 
@@ -163,13 +164,13 @@ describe('Patient Summary Operation', () => {
         { resourceType: 'Task', id: 'task1', for: patientRef, status: 'completed', intent: 'order' },
       ];
 
-      const builder = new PatientSummaryBuilder(patient, everything);
+      const builder = new PatientSummaryBuilder(author, patient, everything);
       const result = builder.build();
-      expect(result.entry?.length).toBe(2 + everything.length); // 1 for patient, 1 for composition
+      expect(result.entry?.length).toBe(3 + everything.length); // 1 for author, 1 for patient, 1 for composition
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
-      const composition = result.entry?.[0]?.resource as Composition;
+      const composition = result.entry?.[0]?.resource as WithId<Composition>;
       expectSectionToContain(composition, LOINC_ALLERGIES_SECTION, 'AllergyIntolerance/allergy1');
       expectSectionToContain(composition, LOINC_PROBLEMS_SECTION, 'Condition/condition1');
       expectSectionToContain(composition, LOINC_RESULTS_SECTION, 'DiagnosticReport/report1');
@@ -181,6 +182,7 @@ describe('Patient Summary Operation', () => {
     });
 
     test('Observations', () => {
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const subject = createReference(patient);
 
@@ -205,16 +207,16 @@ describe('Patient Summary Operation', () => {
             status: 'final',
             category: [{ coding: [{ system: OBSERVATION_CATEGORY_SYSTEM, code: category[0] }] }],
             code: { text: 'test' },
-          }) as Observation
+          }) as WithId<Observation>
       );
 
-      const builder = new PatientSummaryBuilder(patient, everything);
+      const builder = new PatientSummaryBuilder(author, patient, everything);
       const result = builder.build();
-      expect(result.entry?.length).toBe(2 + everything.length); // 1 for patient, 1 for composition
+      expect(result.entry?.length).toBe(3 + everything.length); // 1 for author, 1 for patient, 1 for composition
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
-      const composition = result.entry?.[0]?.resource as Composition;
+      const composition = result.entry?.[0]?.resource as WithId<Composition>;
 
       for (let i = 0; i < categories.length; i++) {
         expectSectionToContain(composition, categories[i][1], `Observation/obs${i}`);
@@ -225,6 +227,7 @@ describe('Patient Summary Operation', () => {
       // If an Observation is a member of another Observation,
       // then it should not be referenced directly by the Composition entries list.
 
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const subject = createReference(patient);
 
@@ -249,13 +252,13 @@ describe('Patient Summary Operation', () => {
 
       const everything = [parentObs, childObs];
 
-      const builder = new PatientSummaryBuilder(patient, everything);
+      const builder = new PatientSummaryBuilder(author, patient, everything);
       const result = builder.build();
-      expect(result.entry?.length).toBe(2 + everything.length);
+      expect(result.entry?.length).toBe(3 + everything.length);
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
-      const composition = result.entry?.[0]?.resource as Composition;
+      const composition = result.entry?.[0]?.resource as WithId<Composition>;
 
       const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === '8716-3');
       expect(section).toBeDefined();
@@ -267,6 +270,7 @@ describe('Patient Summary Operation', () => {
       // If an Observation is a member of a DiagnosticReport,
       // then it should not be referenced directly by the Composition entries list.
 
+      const author: Practitioner = { resourceType: 'Practitioner', id: 'author1' };
       const patient: Patient = { resourceType: 'Patient', id: 'patient1' };
       const subject = createReference(patient);
 
@@ -289,13 +293,13 @@ describe('Patient Summary Operation', () => {
 
       const everything = [parentReport, childObs];
 
-      const builder = new PatientSummaryBuilder(patient, everything);
+      const builder = new PatientSummaryBuilder(author, patient, everything);
       const result = builder.build();
-      expect(result.entry?.length).toBe(2 + everything.length);
+      expect(result.entry?.length).toBe(3 + everything.length);
       expect(result.entry?.[0]?.resource?.resourceType).toBe('Composition');
       expect(result.entry?.[1]?.resource?.resourceType).toBe('Patient');
 
-      const composition = result.entry?.[0]?.resource as Composition;
+      const composition = result.entry?.[0]?.resource as WithId<Composition>;
 
       const section = composition.section?.find((s) => s.code?.coding?.[0]?.code === '30954-2');
       expect(section).toBeDefined();

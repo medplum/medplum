@@ -62,26 +62,6 @@ export class Hl7Message {
 
   /**
    * Returns an HL7 segment by index or by name.
-   * @param index - The HL7 segment index or name.
-   * @returns The HL7 segment if found; otherwise, undefined.
-   * @deprecated Use getSegment() instead. This method will be removed in a future release.
-   */
-  get(index: number | string): Hl7Segment | undefined {
-    return this.getSegment(index);
-  }
-
-  /**
-   * Returns all HL7 segments of a given name.
-   * @param name - The HL7 segment name.
-   * @returns An array of HL7 segments with the specified name.
-   * @deprecated Use getAllSegments() instead. This method will be removed in a future release.
-   */
-  getAll(name: string): Hl7Segment[] {
-    return this.getAllSegments(name);
-  }
-
-  /**
-   * Returns an HL7 segment by index or by name.
    *
    * When using a numeric index, the first segment (usually the MSH header segment) is at index 0.
    *
@@ -222,16 +202,6 @@ export class Hl7Segment {
 
   /**
    * Returns an HL7 field by index.
-   * @param index - The HL7 field index.
-   * @returns The HL7 field.
-   * @deprecated Use getSegment() instead. This method includes the segment name in the index, which leads to confusing behavior. This method will be removed in a future release.
-   */
-  get(index: number): Hl7Field {
-    return this.fields[index];
-  }
-
-  /**
-   * Returns an HL7 field by index.
    *
    * Note that the index is 1-based, not 0-based.
    *
@@ -322,18 +292,6 @@ export class Hl7Field {
   constructor(components: string[][], context = new Hl7Context()) {
     this.context = context;
     this.components = components;
-  }
-
-  /**
-   * Returns an HL7 component by index.
-   * @param component - The component index.
-   * @param subcomponent - Optional subcomponent index.
-   * @param repetition - Optional repetition index.
-   * @returns The string value of the specified component.
-   * @deprecated Use getComponent() instead. This method will be removed in a future release.
-   */
-  get(component: number, subcomponent?: number, repetition = 0): string {
-    return this.getComponent(component + 1, subcomponent, repetition);
   }
 
   /**

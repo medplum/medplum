@@ -193,37 +193,6 @@ export function parseSearchRequest<T extends Resource = Resource>(
   return parseSearchImpl(resourceType, queryArray);
 }
 
-/**
- * Parses a search URL into a search request.
- * @param url - The search URL.
- * @returns A parsed SearchRequest.
- * @deprecated Use parseSearchRequest instead.
- */
-export function parseSearchUrl<T extends Resource = Resource>(url: URL): SearchRequest<T> {
-  return parseSearchRequest<T>(url);
-}
-
-/**
- * Parses a URL string into a SearchRequest.
- * @param url - The URL to parse.
- * @returns Parsed search definition.
- * @deprecated Use parseSearchRequest instead.
- */
-export function parseSearchDefinition<T extends Resource = Resource>(url: string): SearchRequest<T> {
-  return parseSearchRequest<T>(url);
-}
-
-/**
- * Parses a FHIR criteria string into a SearchRequest.
- * FHIR criteria strings are found on resources such as Subscription.
- * @param criteria - The FHIR criteria string.
- * @returns Parsed search definition.
- * @deprecated Use parseSearchRequest instead.
- */
-export function parseCriteriaAsSearchRequest<T extends Resource = Resource>(criteria: string): SearchRequest<T> {
-  return parseSearchRequest<T>(criteria);
-}
-
 function parseSearchImpl<T extends Resource = Resource>(
   resourceType: T['resourceType'],
   query: Iterable<[string, string]>

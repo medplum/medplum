@@ -16,7 +16,7 @@ export type Hl7MessageQueueItem = {
 
 export class Hl7Connection extends Hl7Base {
   private chunks: Buffer[] = [];
-  private messageQueue: Hl7MessageQueueItem[] = [];
+  private readonly messageQueue: Hl7MessageQueueItem[] = [];
 
   constructor(
     readonly socket: net.Socket,

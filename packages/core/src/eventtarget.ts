@@ -53,7 +53,7 @@ export class EventTarget {
 }
 
 export class TypedEventTarget<TEvents extends Record<string, Event>> {
-  private emitter = new EventTarget();
+  private readonly emitter = new EventTarget();
 
   dispatchEvent<TEventType extends keyof TEvents & string>(event: TEvents[TEventType]): void {
     this.emitter.dispatchEvent(event);

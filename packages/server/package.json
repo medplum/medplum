@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "3.2.32",
+  "version": "4.0.0",
   "description": "Medplum Server",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -14,7 +14,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.build.json",
+    "build": "npm run clean && tsc && tsc --project tsconfig.build.json",
     "clean": "rimraf dist",
     "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
     "lint": "eslint .",
@@ -40,10 +40,10 @@
     "@azure/identity": "4.6.0",
     "@azure/keyvault-secrets": "4.9.0",
     "@google-cloud/secret-manager": "5.6.0",
-    "@medplum/ccda": "3.2.32",
-    "@medplum/core": "3.2.32",
-    "@medplum/definitions": "3.2.32",
-    "@medplum/fhir-router": "3.2.32",
+    "@medplum/ccda": "4.0.0",
+    "@medplum/core": "4.0.0",
+    "@medplum/definitions": "4.0.0",
+    "@medplum/fhir-router": "4.0.0",
     "@opentelemetry/exporter-metrics-otlp-proto": "0.57.1",
     "@opentelemetry/exporter-trace-otlp-proto": "0.57.1",
     "@opentelemetry/instrumentation-aws-lambda": "0.50.2",
@@ -90,13 +90,14 @@
     "qrcode": "1.5.4",
     "rate-limit-redis": "4.2.0",
     "rfc6902": "5.1.2",
+    "semver": "7.6.3",
     "uuid": "11.0.5",
     "validator": "13.12.0",
     "ws": "8.18.0"
   },
   "devDependencies": {
     "@jest/test-sequencer": "29.7.0",
-    "@medplum/fhirtypes": "3.2.32",
+    "@medplum/fhirtypes": "4.0.0",
     "@types/bcryptjs": "2.4.6",
     "@types/body-parser": "1.19.5",
     "@types/bytes": "3.1.5",

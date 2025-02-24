@@ -1,4 +1,4 @@
-import { Badge, Button, Group, Paper, ScrollArea, Tabs, Title, useMantineTheme } from '@mantine/core';
+import { Button, Paper, ScrollArea, Tabs, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, isGone, normalizeErrorString } from '@medplum/core';
 import { OperationOutcome, Resource, ResourceType, ServiceRequest } from '@medplum/fhirtypes';
@@ -53,8 +53,6 @@ function getTabs(resourceType: string): string[] {
   return result;
 }
 
-const BETA_TABS: string[] = [];
-
 export function ResourcePage(): JSX.Element | null {
   const medplum = useMedplum();
   const { resourceType, id } = useParams() as { resourceType: ResourceType; id: string };
@@ -67,7 +65,6 @@ export function ResourcePage(): JSX.Element | null {
     const tab = window.location.pathname.split('/').pop();
     return tab && tabs.map((t) => t.toLowerCase()).includes(tab) ? tab : tabs[0].toLowerCase();
   });
-  const theme = useMantineTheme();
 
   async function restoreResource(): Promise<void> {
     const historyBundle = await medplum.readHistory(resourceType, id);
@@ -155,16 +152,7 @@ export function ResourcePage(): JSX.Element | null {
               <Tabs.List style={{ whiteSpace: 'nowrap', flexWrap: 'nowrap' }}>
                 {tabs.map((t) => (
                   <Tabs.Tab key={t} value={t.toLowerCase()}>
-                    {BETA_TABS.includes(t) ? (
-                      <Group gap="xs" wrap="nowrap">
-                        {t}
-                        <Badge color={theme.primaryColor} size="sm">
-                          Beta
-                        </Badge>
-                      </Group>
-                    ) : (
-                      t
-                    )}
+                    {t}
                   </Tabs.Tab>
                 ))}
               </Tabs.List>

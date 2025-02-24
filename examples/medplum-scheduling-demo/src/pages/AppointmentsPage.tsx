@@ -1,12 +1,12 @@
 import { Paper, Tabs } from '@mantine/core';
-import { Filter, getReferenceString, Operator, SearchRequest } from '@medplum/core';
+import { Filter, getReferenceString, Operator, SearchRequest, WithId } from '@medplum/core';
 import { Practitioner } from '@medplum/fhirtypes';
 import { SearchControl, useMedplumProfile } from '@medplum/react';
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 export function AppointmentsPage(): JSX.Element {
-  const profile = useMedplumProfile() as Practitioner;
+  const profile = useMedplumProfile() as WithId<Practitioner>;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -33,7 +33,7 @@ export function AppointmentsPage(): JSX.Element {
     resourceType: 'Appointment',
     fields: ['patient', 'start', 'end', 'status', 'appointmentType', 'serviceType'],
     filters: [
-      { code: 'actor', operator: Operator.EQUALS, value: getReferenceString(profile as Practitioner) },
+      { code: 'actor', operator: Operator.EQUALS, value: getReferenceString(profile) },
       tab === 'upcoming' ? upcomingFilter : pastFilter,
     ],
     sortRules: [

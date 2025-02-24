@@ -11,6 +11,7 @@ import {
   parseSearchRequest,
   preconditionFailed,
   toTypedValue,
+  WithId,
 } from '@medplum/core';
 import {
   BundleEntry,
@@ -44,7 +45,7 @@ import { getSystemRepo, Repository, setTypedPropertyValue } from './repo';
 jest.mock('hibp');
 
 describe('FHIR Repo', () => {
-  const testProject: Project = {
+  const testProject: WithId<Project> = {
     resourceType: 'Project',
     id: randomUUID(),
   };
@@ -68,7 +69,7 @@ describe('FHIR Repo', () => {
     await expect(() =>
       getRepoForLogin({
         login: { resourceType: 'Login' } as Login,
-        membership: { resourceType: 'ProjectMembership' } as ProjectMembership,
+        membership: { resourceType: 'ProjectMembership' } as WithId<ProjectMembership>,
         project: testProject,
       })
     ).rejects.toThrow('Invalid author reference');

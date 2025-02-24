@@ -5,6 +5,7 @@ import {
   isOk,
   OperationOutcomeError,
   serverError,
+  WithId,
 } from '@medplum/core';
 import { FhirRequest, FhirRouter } from '@medplum/fhir-router';
 import { AsyncJob, Bundle, Login, Project, ProjectMembership } from '@medplum/fhirtypes';
@@ -26,8 +27,8 @@ export interface BatchJobData {
   readonly asyncJob: AsyncJob;
   readonly bundle: Bundle;
   readonly login: Login;
-  readonly project: Project;
-  readonly membership: ProjectMembership;
+  readonly project: WithId<Project>;
+  readonly membership: WithId<ProjectMembership>;
   readonly requestId?: string;
   readonly traceId?: string;
 }

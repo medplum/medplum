@@ -28,9 +28,9 @@ export interface PatientSummaryProps extends Omit<CardProps, 'children'> {
   readonly patient: Patient | Reference<Patient>;
   readonly background?: string;
   /** The URL that the upcoming appointments link should navigate to or `undefined` to not show the link. */
-  readonly appointmentsUrl?: string | undefined;
+  readonly appointmentsUrl?: string;
   /** The URL that the documented visits (encounters) link should navigate to or `undefined` to not show the link. */
-  readonly encountersUrl?: string | undefined;
+  readonly encountersUrl?: string;
   /** Callback when a resource is clicked in the list */
   readonly onClickResource?: (resource: Resource) => void;
 }
@@ -104,7 +104,12 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         status: 'proposed,pending,booked',
         ...searchMeta,
       }),
-      medplum.searchResources('Encounter', { subject: ref, date: `le${today}`, status: 'finished', ...searchMeta }),
+      medplum.searchResources('Encounter', {
+        subject: ref,
+        date: `le${today}`,
+        status: 'finished',
+        ...searchMeta,
+      }),
     ])
       .then((results) => {
         const observations = results[3];

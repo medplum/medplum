@@ -379,9 +379,9 @@ function DefaultPillComponent<T>({
   disabled,
   onRemove,
 }: {
-  item: AsyncAutocompleteOption<T>;
-  disabled?: boolean;
-  onRemove: () => void;
+  readonly item: AsyncAutocompleteOption<T>;
+  readonly disabled?: boolean;
+  readonly onRemove: () => void;
 }): JSX.Element {
   return (
     <Pill withRemoveButton={!disabled} onRemove={onRemove}>
