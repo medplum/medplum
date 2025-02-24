@@ -351,7 +351,6 @@ function QuestionnaireChoiceSetInput(props: QuestionnaireChoiceInputProps): JSX.
         path=""
         name={name}
         binding={item.answerValueSet}
-        response={response}
         onChange={(code) => onChangeAnswer({ valueCoding: code })}
         creatable={item.type === QuestionnaireItemType.openChoice}
       />

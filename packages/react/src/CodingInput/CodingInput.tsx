@@ -1,17 +1,15 @@
-import { Coding, ValueSetExpansionContains, QuestionnaireResponseItem } from '@medplum/fhirtypes';
+import { Coding, ValueSetExpansionContains } from '@medplum/fhirtypes';
 import { useState } from 'react';
 import { ValueSetAutocomplete, ValueSetAutocompleteProps } from '../ValueSetAutocomplete/ValueSetAutocomplete';
 import { ComplexTypeInputProps } from '../ResourcePropertyInput/ResourcePropertyInput.utils';
 
 export interface CodingInputProps
   extends Omit<ValueSetAutocompleteProps, 'defaultValue' | 'onChange' | 'disabled' | 'name'>,
-    ComplexTypeInputProps<Coding> {
-  readonly response?: QuestionnaireResponseItem;
-}
+    ComplexTypeInputProps<Coding> {}
 
 export function CodingInput(props: CodingInputProps): JSX.Element {
-  const { defaultValue, onChange, withHelpText, response, ...rest } = props;
-  const [value, setValue] = useState<Coding | undefined>(response?.answer?.[0]?.valueCoding ?? defaultValue);
+  const { defaultValue, onChange, withHelpText, ...rest } = props;
+  const [value, setValue] = useState<Coding | undefined>(defaultValue);
 
   function handleChange(newValues: ValueSetExpansionContains[]): void {
     const newValue = newValues[0];
@@ -24,7 +22,7 @@ export function CodingInput(props: CodingInputProps): JSX.Element {
 
   return (
     <ValueSetAutocomplete
-      defaultValue={value ? codingToValueSetElement(value) : undefined}
+      defaultValue={value && codingToValueSetElement(value)}
       maxValues={1}
       onChange={handleChange}
       withHelpText={withHelpText ?? true}

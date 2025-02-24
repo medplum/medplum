@@ -23,7 +23,6 @@ import { QuestionnairePageSequence } from './QuestionnaireFormComponents/Questio
 
 export interface QuestionnaireFormProps {
   readonly questionnaire: Questionnaire | Reference<Questionnaire>;
-  readonly questionnaireResponse?: QuestionnaireResponse | Reference<QuestionnaireResponse>;
   readonly subject?: Reference;
   readonly encounter?: Reference<Encounter>;
   readonly source?: QuestionnaireResponse['source'];
@@ -39,9 +38,9 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   const { subject, source: sourceFromProps } = props;
   const questionnaire = useResource(props.questionnaire);
   const prevQuestionnaire = usePrevious(questionnaire);
-  const questionnaireResponse = useResource(props.questionnaireResponse);
-  const [response, setResponse] = useState<QuestionnaireResponse | undefined>(questionnaireResponse);
+  const [response, setResponse] = useState<QuestionnaireResponse | undefined>();
   const [activePage, setActivePage] = useState(0);
+
   const onChangeRef = useRef(props.onChange);
   onChangeRef.current = props.onChange;
 
@@ -49,18 +48,14 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
   onSubmitRef.current = props.onSubmit;
 
   useEffect(() => {
-    if (questionnaireResponse?.item && questionnaire) {
-      const response = buildInitialResponse(questionnaire, questionnaireResponse);
-      const evaluatedResponse = evaluateAndMergeResponseItems(response, questionnaire);
-      setResponse(evaluatedResponse);
-    } else {
-      if (questionnaire && getQuestionnaireIdentity(prevQuestionnaire) === getQuestionnaireIdentity(questionnaire)) {
-        return;
-      }
-      // throw out the existing response and start over
-      setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
+    // If the Questionnaire remains "the same", keep the existing response
+    if (questionnaire && getQuestionnaireIdentity(prevQuestionnaire) === getQuestionnaireIdentity(questionnaire)) {
+      return;
     }
-  }, [questionnaireResponse, questionnaire, prevQuestionnaire]);
+
+    // throw out the existing response and start over
+    setResponse(questionnaire ? buildInitialResponse(questionnaire) : undefined);
+  }, [questionnaire, prevQuestionnaire]);
 
   useEffect(() => {
     if (response && onChangeRef.current) {
@@ -74,7 +69,30 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   const setItems = useCallback(
     (newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[]): void => {
-      setResponse((prevResponse) => updateResponseItems(prevResponse, newResponseItems, questionnaire));
+      setResponse((prevResponse) => {
+        const currentItems = prevResponse?.item ?? [];
+        const mergedItems = mergeItems(
+          currentItems,
+          Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]
+        );
+
+        const tempResponse: QuestionnaireResponse = {
+          resourceType: 'QuestionnaireResponse',
+          status: 'in-progress',
+          item: mergedItems,
+        };
+
+        const updatedItems = evaluateCalculatedExpressionsInQuestionnaire(questionnaire?.item ?? [], tempResponse);
+        const mergedItemsWithUpdates = mergeUpdatedItems(mergedItems, updatedItems);
+
+        const newResponse: QuestionnaireResponse = {
+          resourceType: 'QuestionnaireResponse',
+          status: 'in-progress',
+          item: mergedItemsWithUpdates,
+        };
+
+        return newResponse;
+      });
     },
     [questionnaire]
   );
@@ -179,44 +197,4 @@ function mergeItems(
 
 function getQuestionnaireIdentity(questionnaire: Questionnaire | undefined): Questionnaire | string | undefined {
   return questionnaire?.id || questionnaire;
-}
-
-function updateResponseItems(
-  prevResponse: QuestionnaireResponse | undefined,
-  newResponseItems: QuestionnaireResponseItem | QuestionnaireResponseItem[] | undefined,
-  questionnaire: Questionnaire | undefined
-): QuestionnaireResponse {
-  if (!newResponseItems) {
-    return {
-      resourceType: 'QuestionnaireResponse',
-      status: 'in-progress',
-    };
-  }
-
-  const currentItems = prevResponse?.item ?? [];
-  const mergedItems = mergeItems(currentItems, Array.isArray(newResponseItems) ? newResponseItems : [newResponseItems]);
-
-  const tempResponse: QuestionnaireResponse = {
-    resourceType: 'QuestionnaireResponse',
-    status: 'in-progress',
-    item: mergedItems,
-  };
-
-  const updatedItems = evaluateCalculatedExpressionsInQuestionnaire(questionnaire?.item ?? [], tempResponse);
-  tempResponse.item = mergeUpdatedItems(mergedItems, updatedItems);
-
-  return evaluateAndMergeResponseItems(tempResponse, questionnaire);
-}
-
-function evaluateAndMergeResponseItems(
-  tempResponse: QuestionnaireResponse,
-  questionnaire: Questionnaire | undefined
-): QuestionnaireResponse {
-  const updatedItems = evaluateCalculatedExpressionsInQuestionnaire(questionnaire?.item ?? [], tempResponse);
-  const mergedItemsWithUpdates = mergeUpdatedItems(tempResponse.item ?? [], updatedItems);
-  return {
-    resourceType: 'QuestionnaireResponse',
-    status: 'in-progress',
-    item: mergedItemsWithUpdates,
-  };
 }
