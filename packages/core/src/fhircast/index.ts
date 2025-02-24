@@ -110,7 +110,7 @@ export const FHIRCAST_EVENT_RESOURCES = {
     // See: https://build.fhir.org/ig/HL7/fhircast-docs/3-6-4-DiagnosticReport-select.html
     report: { resourceType: 'DiagnosticReport', reference: true },
     patient: { resourceType: 'Patient', optional: true, reference: true },
-    select: { resourceType: '*', array: true, reference: true },
+    select: { resourceType: '*', reference: true, manyAllowed: true },
   },
   'DiagnosticReport-update': {
     // `report` and `patient` are also references for `DiagnosticReport-update`:
@@ -154,7 +154,7 @@ export type FhircastReportContext = { key: 'report'; resource: DiagnosticReport 
 export type FhircastReportReferenceContext = { key: 'report'; reference: Reference<DiagnosticReport> };
 export type FhircastPatientReferenceContext = { key: 'patient'; reference: Reference<Patient> };
 export type FhircastUpdatesContext = { key: 'updates'; resource: Bundle };
-export type FhircastSelectContext = { key: 'select'; reference: Reference[] };
+export type FhircastSelectContext = { key: 'select'; reference: Reference };
 export type FhircastOperationOutcomeContext = { key: 'operationoutcome'; resource: OperationOutcome };
 
 // These are all the contexts that contain a `resource` key
@@ -167,9 +167,10 @@ export type FhircastResourceContext =
   | FhircastOperationOutcomeContext;
 
 // The reference contexts related to `*-select` and `*-update` events, which contain a `reference` key
-export type FhircastSingleReferenceContext = FhircastReportReferenceContext | FhircastPatientReferenceContext;
-// Multi-reference contexts contain a `reference` key with an array of references as the value, currently only the `select` context
-export type FhircastMultiReferenceContext = FhircastSelectContext;
+export type FhircastReferenceContext =
+  | FhircastReportReferenceContext
+  | FhircastPatientReferenceContext
+  | FhircastSelectContext;
 
 export type FhircastPatientOpenContext = FhircastPatientContext | FhircastEncounterContext;
 export type FhircastPatientCloseContext = FhircastPatientOpenContext;
@@ -420,28 +421,7 @@ function validateFhircastContext<EventName extends FhircastEventName = FhircastE
   keysSeen.set(context.key, (keysSeen.get(context.key) ?? 0) + 1);
 
   if (keySchema.reference) {
-    if (keySchema.array) {
-      // Validate multi reference (namely `DiagnosticReport-select`.select)
-      if (
-        !(
-          typeof (context as FhircastMultiReferenceContext).reference === 'object' &&
-          Array.isArray((context as FhircastMultiReferenceContext).reference)
-        )
-      ) {
-        throw new OperationOutcomeError(
-          validationError(`context[${i}] is invalid. Expected key '${context.key}' to be an array of references.`)
-        );
-      }
-      for (const reference of (context as FhircastMultiReferenceContext).reference) {
-        if (!isReference(reference)) {
-          throw new OperationOutcomeError(
-            validationError(
-              `context[${i}] is invalid. Expected key '${context.key}' to be an array of valid references.`
-            )
-          );
-        }
-      }
-    } else if (!isReference((context as FhircastSingleReferenceContext).reference)) {
+    if (!isReference((context as FhircastReferenceContext).reference)) {
       // Validate single reference
       throw new OperationOutcomeError(
         validationError(`context[${i}] is invalid. Expected key '${context.key}' to be a reference.`)
