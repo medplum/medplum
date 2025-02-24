@@ -202,6 +202,13 @@ export interface MedplumClientOptions {
   accessToken?: string;
 
   /**
+   * Specifies through which part of the HTTP request the client credentials should be sent.
+   *
+   * Body is the default for backwards compatibility, but header may be more desirable for applications.
+   */
+  authCredentialsMethod?: 'body' | 'header';
+
+  /**
    * Number of resources to store in the cache.
    *
    * Default value is 1000.
@@ -824,6 +831,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   private medplumServer?: boolean;
   private clientId?: string;
   private clientSecret?: string;
+  private credentialsInHeader: boolean;
   private autoBatchTimerId?: any;
   private accessToken?: string;
   private accessTokenExpires?: number;
@@ -857,6 +865,7 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.fhircastHubUrl = concatUrls(this.baseUrl, options?.fhircastHubUrl ?? 'fhircast/STU3');
     this.clientId = options?.clientId ?? '';
     this.clientSecret = options?.clientSecret ?? '';
+    this.credentialsInHeader = options?.authCredentialsMethod === 'header';
     this.defaultHeaders = options?.defaultHeaders ?? {};
     this.onUnauthenticated = options?.onUnauthenticated;
     this.refreshGracePeriod = options?.refreshGracePeriod ?? DEFAULT_REFRESH_GRACE_PERIOD;
@@ -1383,12 +1392,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
       throw new Error('MedplumClient is missing clientId');
     }
 
-    const formBody = new URLSearchParams();
-    formBody.set('grant_type', OAuthGrantType.TokenExchange);
-    formBody.set('subject_token_type', OAuthTokenType.AccessToken);
-    formBody.set('client_id', clientId);
-    formBody.set('subject_token', token);
-    return this.fetchTokens(formBody);
+    return this.fetchTokens({
+      grant_type: OAuthGrantType.TokenExchange,
+      subject_token_type: OAuthTokenType.AccessToken,
+      client_id: clientId,
+      subject_token: token,
+    });
   }
 
   /**
@@ -3490,20 +3499,21 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @category Authentication
    */
   processCode(code: string, loginParams?: Partial<BaseLoginRequest>): Promise<ProfileResource> {
-    const formBody = new URLSearchParams();
-    formBody.set('grant_type', OAuthGrantType.AuthorizationCode);
-    formBody.set('code', code);
-    formBody.set('client_id', loginParams?.clientId ?? (this.clientId as string));
-    formBody.set('redirect_uri', loginParams?.redirectUri ?? getWindowOrigin());
+    const tokenParams: Record<string, string> = {
+      grant_type: OAuthGrantType.AuthorizationCode,
+      code,
+      client_id: loginParams?.clientId ?? this.clientId ?? '',
+      redirect_uri: loginParams?.redirectUri ?? getWindowOrigin(),
+    };
 
     if (typeof sessionStorage !== 'undefined') {
       const codeVerifier = sessionStorage.getItem('codeVerifier');
       if (codeVerifier) {
-        formBody.set('code_verifier', codeVerifier);
+        tokenParams.code_verifier = codeVerifier;
       }
     }
 
-    return this.fetchTokens(formBody);
+    return this.fetchTokens(tokenParams);
   }
 
   /**
@@ -3534,11 +3544,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     }
 
     if (this.refreshToken) {
-      const formBody = new URLSearchParams();
-      formBody.set('grant_type', OAuthGrantType.RefreshToken);
-      formBody.set('client_id', this.clientId as string);
-      formBody.set('refresh_token', this.refreshToken);
-      this.refreshPromise = this.fetchTokens(formBody);
+      this.refreshPromise = this.fetchTokens({
+        grant_type: OAuthGrantType.RefreshToken,
+        client_id: this.clientId ?? '',
+        refresh_token: this.refreshToken,
+      });
       return this.refreshPromise;
     }
 
@@ -3571,11 +3581,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
     this.clientId = clientId;
     this.clientSecret = clientSecret;
 
-    const formBody = new URLSearchParams();
-    formBody.set('grant_type', OAuthGrantType.ClientCredentials);
-    formBody.set('client_id', clientId);
-    formBody.set('client_secret', clientSecret);
-    return this.fetchTokens(formBody);
+    return this.fetchTokens({
+      grant_type: OAuthGrantType.ClientCredentials,
+      client_id: clientId,
+      client_secret: clientSecret,
+    });
   }
 
   /**
@@ -3599,12 +3609,12 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   async startJwtBearerLogin(clientId: string, assertion: string, scope: string): Promise<ProfileResource> {
     this.clientId = clientId;
 
-    const formBody = new URLSearchParams();
-    formBody.set('grant_type', OAuthGrantType.JwtBearer);
-    formBody.set('client_id', clientId);
-    formBody.set('assertion', assertion);
-    formBody.set('scope', scope);
-    return this.fetchTokens(formBody);
+    return this.fetchTokens({
+      grant_type: OAuthGrantType.JwtBearer,
+      client_id: clientId,
+      assertion,
+      scope,
+    });
   }
 
   /**
@@ -3617,11 +3627,11 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
    * @returns Promise that resolves to the client profile.
    */
   async startJwtAssertionLogin(jwt: string): Promise<ProfileResource> {
-    const formBody = new URLSearchParams();
-    formBody.append('grant_type', OAuthGrantType.ClientCredentials);
-    formBody.append('client_assertion_type', OAuthClientAssertionType.JwtBearer);
-    formBody.append('client_assertion', jwt);
-    return this.fetchTokens(formBody);
+    return this.fetchTokens({
+      grant_type: OAuthGrantType.ClientCredentials,
+      client_assertion_type: OAuthClientAssertionType.JwtBearer,
+      client_assertion: jwt,
+    });
   }
 
   /**
@@ -3798,22 +3808,30 @@ export class MedplumClient extends TypedEventTarget<MedplumClientEventMap> {
   /**
    * Makes a POST request to the tokens endpoint.
    * See: https://openid.net/specs/openid-connect-core-1_0.html#TokenEndpoint
-   * @param formBody - Token parameters in URL encoded format.
+   * @param params - Token parameters.
    * @returns The user profile resource.
    */
-  private async fetchTokens(formBody: URLSearchParams): Promise<ProfileResource> {
-    const options: MedplumRequestOptions = {
-      method: 'POST',
-      headers: { 'Content-Type': ContentType.FORM_URL_ENCODED },
-      body: formBody.toString(),
-      credentials: 'include',
-    };
-    const headers = options.headers as Record<string, string>;
-    Object.assign(headers, this.defaultHeaders);
-
+  private async fetchTokens(params: Record<string, string>): Promise<ProfileResource> {
+    const formBody = new URLSearchParams(params);
+    const headers: HeadersInit = { ...this.defaultHeaders, 'Content-Type': ContentType.FORM_URL_ENCODED };
     if (this.basicAuth) {
       headers['Authorization'] = `Basic ${this.basicAuth}`;
     }
+
+    if (this.credentialsInHeader) {
+      formBody.delete('client_id');
+      formBody.delete('client_secret');
+
+      if (!this.basicAuth && params.client_id && params.client_secret) {
+        headers['Authorization'] = `Basic ${encodeBase64(params.client_id + ':' + params.client_secret)}`;
+      }
+    }
+    const options: MedplumRequestOptions = {
+      method: 'POST',
+      headers,
+      body: formBody.toString(),
+      credentials: 'include',
+    };
 
     let response: Response;
     try {
