@@ -148,6 +148,7 @@ export interface CcdaProcedure {
   methodCode?: CcdaCode;
   targetSiteCode?: CcdaCode;
   text?: CcdaText;
+  participant?: CcdaParticipant[];
 }
 
 export interface CcdaAct {
@@ -217,6 +218,11 @@ export interface CcdaParticipant {
 export interface CcdaParticipantRole {
   '@_classCode'?: string;
   '@_typeCode'?: string;
+  templateId?: CcdaTemplateId[];
+  id?: CcdaId[];
+  code?: CcdaCode;
+  addr?: CcdaAddr[];
+  telecom?: CcdaTelecom[];
   playingEntity?: CcdaPlayingEntity;
 }
 
@@ -224,6 +230,7 @@ export interface CcdaPlayingEntity {
   '@_classCode'?: string;
   '@_typeCode'?: string;
   code?: CcdaCode;
+  name?: string[];
 }
 
 export interface CcdaSubstanceAdministration {

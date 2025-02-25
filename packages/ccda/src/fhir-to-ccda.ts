@@ -20,6 +20,7 @@ import {
   Identifier,
   Immunization,
   ImmunizationPerformer,
+  Location,
   MedicationRequest,
   Narrative,
   Observation,
@@ -104,6 +105,7 @@ import {
   CcdaObservation,
   CcdaOrganizer,
   CcdaOrganizerComponent,
+  CcdaParticipant,
   CcdaPatient,
   CcdaPerformer,
   CcdaQuantity,
@@ -1475,6 +1477,7 @@ class FhirToCcdaConverter {
             effectiveTime: this.mapEffectiveTime(resource.performedDateTime, resource.performedPeriod),
             text: this.createTextFromExtensions(resource.extension),
             targetSiteCode: mapCodeableConceptToCcdaCode(resource.bodySite?.[0]) as CcdaCode,
+            participant: [this.mapLocationToParticipant(resource.location)].filter(Boolean) as CcdaParticipant[],
           },
         ],
       };
@@ -1498,6 +1501,33 @@ class FhirToCcdaConverter {
       };
     }
     throw new Error(`Unknown history of procedures resource type: ${(resource as any).resourceType}`);
+  }
+
+  private mapLocationToParticipant(ref: Reference<Location> | undefined): CcdaParticipant | undefined {
+    if (!ref) {
+      return undefined;
+    }
+
+    const location = this.findResourceByReference(ref);
+    if (!location) {
+      return undefined;
+    }
+
+    return {
+      '@_typeCode': 'LOC',
+      participantRole: {
+        '@_classCode': 'SDLOC',
+        templateId: [{ '@_root': OID_ENCOUNTER_LOCATION }],
+        id: this.mapIdentifiers(location.id, location.identifier),
+        code: mapCodeableConceptToCcdaCode(location.type?.[0]),
+        addr: location.address ? this.mapFhirAddressArrayToCcdaAddressArray([location.address]) : undefined,
+        telecom: this.mapTelecom(location.telecom),
+        playingEntity: {
+          '@_classCode': 'PLC',
+          name: location.name ? [location.name] : undefined,
+        },
+      },
+    };
   }
 
   private mapEffectiveTime(dateTime: string | undefined, period: Period | undefined): CcdaEffectiveTime[] | undefined {

@@ -502,6 +502,37 @@ describe('170.315(g)(9)', () => {
       expect((components?.[1]?.observation?.[0]?.value as CcdaQuantity)['@_value']).toEqual('200');
     });
   });
+
+  describe('Procedures', () => {
+    test('should create location participant', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Location',
+          id: '123',
+          name: 'Test Location',
+          address: { line: ['123 Main St'], city: 'Anytown', state: 'CA', postalCode: '12345' },
+          telecom: [{ system: 'phone', value: '123-456-7890' }],
+        },
+        {
+          resourceType: 'Procedure',
+          id: '456',
+          location: { reference: 'Location/123' },
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      expect(procedure).toBeDefined();
+      const participant = procedure?.participant?.[0];
+      expect(participant).toBeDefined();
+      expect(participant?.participantRole?.addr?.[0]?.streetAddressLine?.[0]).toEqual('123 Main St');
+      expect(participant?.participantRole?.addr?.[0]?.city).toEqual('Anytown');
+      expect(participant?.participantRole?.addr?.[0]?.state).toEqual('CA');
+      expect(participant?.participantRole?.addr?.[0]?.postalCode).toEqual('12345');
+      expect(participant?.participantRole?.telecom?.[0]?.['@_value']).toEqual('tel:123-456-7890');
+      expect(participant?.participantRole?.playingEntity?.name?.[0]).toEqual('Test Location');
+    });
+  });
 });
 
 function createCompositionBundle(patient: Patient, ...resources: Partial<Resource>[]): Bundle {
@@ -511,24 +542,29 @@ function createCompositionBundle(patient: Patient, ...resources: Partial<Resourc
     Condition: '11450-4',
     Immunization: '11369-6',
     Observation: '8716-3',
+    Procedure: '47519-4',
   };
 
   const sections: CompositionSection[] = [];
 
   for (const resource of resources) {
     resource.id = resource.id || generateId();
-    sections.push({
-      title: resource.resourceType,
-      code: {
-        coding: [
-          {
-            code: resourceTypeToCode[resource.resourceType as keyof typeof resourceTypeToCode],
-            display: resource.resourceType,
-          },
-        ],
-      },
-      entry: [createReference(resource as Resource)],
-    });
+
+    const code = resourceTypeToCode[resource.resourceType as keyof typeof resourceTypeToCode];
+    if (code) {
+      sections.push({
+        title: resource.resourceType,
+        code: {
+          coding: [
+            {
+              code,
+              display: resource.resourceType,
+            },
+          ],
+        },
+        entry: [createReference(resource as Resource)],
+      });
+    }
   }
 
   const composition: Composition = {
