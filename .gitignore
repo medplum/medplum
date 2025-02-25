@@ -65,6 +65,7 @@ packages/agent/src/upgrader-logs-*.txt
 
 # Local .terraform directories
 **/.terraform/*
+*.lock.hcl
 
 # .tfstate files
 *.tfstate
