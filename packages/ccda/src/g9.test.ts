@@ -504,6 +504,40 @@ describe('170.315(g)(9)', () => {
   });
 
   describe('Procedures', () => {
+    test('should handle missing location', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Procedure',
+          id: '456',
+          location: { reference: 'Location/123' },
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      expect(procedure).toBeDefined();
+    });
+
+    test('should handle empty location', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Location',
+          id: '123',
+        },
+        {
+          resourceType: 'Procedure',
+          id: '456',
+          location: { reference: 'Location/123' },
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const procedure = output.component?.structuredBody?.component?.[0]?.section?.[0]?.entry?.[0]?.procedure?.[0];
+      expect(procedure).toBeDefined();
+      const participant = procedure?.participant?.[0];
+      expect(participant).toBeDefined();
+    });
+
     test('should create location participant', () => {
       const input = createCompositionBundle(
         { resourceType: 'Patient' },
