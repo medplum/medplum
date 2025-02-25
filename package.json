@@ -72,6 +72,7 @@
     "react": "18.2.0",
     "react-compiler-runtime": "latest",
     "react-dom": "18.2.0",
+    "react-native": "0.75.4",
     "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@1.4.15",
     "trim": "0.0.3",
     "whatwg-url": "14.0.0"
