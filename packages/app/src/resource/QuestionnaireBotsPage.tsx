@@ -1,8 +1,8 @@
 import { Button, Divider, Group, InputLabel, NativeSelect, Stack, Title } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { getReferenceString, normalizeErrorString } from '@medplum/core';
-import { Bot, Subscription } from '@medplum/fhirtypes';
-import { Document, ResourceInput, ResourceName, useMedplum } from '@medplum/react';
+import { Bot, Questionnaire, Subscription } from '@medplum/fhirtypes';
+import { Document, ResourceInput, ResourceName, useMedplum, useResource } from '@medplum/react';
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 
@@ -20,6 +20,7 @@ type SubscriptionInteractionKey = keyof typeof SUBSCRIPTION_INTERACTION_MAP;
 export function QuestionnaireBotsPage(): JSX.Element {
   const medplum = useMedplum();
   const { id } = useParams() as { id: string };
+  const questionnaire = useResource<Questionnaire>({ reference: `Questionnaire/${id}` });
   const [connectBot, setConnectBot] = useState<Bot | undefined>();
   const [supportedInteraction, setSupportedInteraction] = useState<'create' | 'update' | 'delete' | undefined>(
     'create'
@@ -28,16 +29,20 @@ export function QuestionnaireBotsPage(): JSX.Element {
   const subscriptions = medplum
     .searchResources('Subscription', 'status=active&_count=100')
     .read()
-    .filter((s) => isQuestionnaireBotSubscription(s, id));
+    .filter((s) => isQuestionnaireBotSubscription(s, questionnaire));
 
   function connectToBot(): void {
     if (connectBot) {
+      if (!questionnaire?.url) {
+        console.error('Questionnaire specified does not have a canonical URL');
+        return;
+      }
       medplum
         .createResource({
           resourceType: 'Subscription',
           status: 'active',
           reason: `Connect bot ${connectBot.name} to questionnaire responses`,
-          criteria: 'QuestionnaireResponse?questionnaire=Questionnaire/' + id,
+          criteria: `QuestionnaireResponse?questionnaire=${questionnaire?.url}`,
           channel: {
             type: 'rest-hook',
             endpoint: getReferenceString(connectBot),
@@ -82,31 +87,44 @@ export function QuestionnaireBotsPage(): JSX.Element {
         <InputLabel size="lg" htmlFor="bot">
           Connect to bot
         </InputLabel>
-        <Group>
-          <ResourceInput name="bot" resourceType="Bot" onChange={(r) => setConnectBot(r as Bot)} />
-          <Button onClick={connectToBot}>Connect</Button>
-        </Group>
-        <Group>
-          <NativeSelect
-            name="subscription-trigger-event"
-            defaultValue="Create Only"
-            label="Subscription Trigger Event"
-            data={SUBSCRIPTION_INTERACTION_KEYS}
-            onChange={(event) =>
-              setSupportedInteraction(SUBSCRIPTION_INTERACTION_MAP[event.target.value as SubscriptionInteractionKey])
-            }
-          />
-        </Group>
+        {!questionnaire?.url ? (
+          <p>Cannot create new bot subscriptions until a canonical URL is added to the questionnaire.</p>
+        ) : (
+          <>
+            <Group>
+              <ResourceInput name="bot" resourceType="Bot" onChange={(r) => setConnectBot(r as Bot)} />
+              <Button onClick={connectToBot}>Connect</Button>
+            </Group>
+            <Group>
+              <NativeSelect
+                name="subscription-trigger-event"
+                defaultValue="Create Only"
+                label="Subscription Trigger Event"
+                data={SUBSCRIPTION_INTERACTION_KEYS}
+                onChange={(event) =>
+                  setSupportedInteraction(
+                    SUBSCRIPTION_INTERACTION_MAP[event.target.value as SubscriptionInteractionKey]
+                  )
+                }
+              />
+            </Group>
+          </>
+        )}
       </Stack>
       <div style={{ display: 'none' }}>{updated}</div>
     </Document>
   );
 }
 
-function isQuestionnaireBotSubscription(subscription: Subscription, questionnaireId: string): boolean {
+function isQuestionnaireBotSubscription(subscription: Subscription, questionnaire?: Questionnaire): boolean {
+  if (!questionnaire) {
+    return false;
+  }
   const criteria = subscription.criteria || '';
   const endpoint = subscription.channel?.endpoint || '';
   return (
-    criteria.startsWith('QuestionnaireResponse?') && criteria.includes(questionnaireId) && endpoint.startsWith('Bot/')
+    criteria.startsWith('QuestionnaireResponse?') &&
+    criteria.includes(questionnaire?.url ?? 'INVALID') &&
+    endpoint.startsWith('Bot/')
   );
 }

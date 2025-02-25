@@ -156,14 +156,16 @@ describe('ResourcePage', () => {
     });
 
     // Bot subscription should now be listed
-    expect(screen.getByText('Criteria: QuestionnaireResponse?questionnaire=Questionnaire/123')).toBeInTheDocument();
+    expect(
+      screen.getByText('Criteria: QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire')
+    ).toBeInTheDocument();
 
     // Should have created a subscription with the `subscription-supported-interaction` extension value of `create`
     expect(createResourceSpy).toHaveBeenLastCalledWith({
       resourceType: 'Subscription',
       status: 'active',
       reason: 'Connect bot Test Bot to questionnaire responses',
-      criteria: 'QuestionnaireResponse?questionnaire=Questionnaire/123',
+      criteria: 'QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire',
       channel: {
         type: 'rest-hook',
         endpoint: 'Bot/123',
@@ -248,20 +250,24 @@ describe('ResourcePage', () => {
     });
 
     // Bot subscription should now be listed, #2 in the list
-    expect(screen.getByText('Criteria: QuestionnaireResponse?questionnaire=Questionnaire/123')).toBeInTheDocument();
+    expect(
+      screen.getByText('Criteria: QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire')
+    ).toBeInTheDocument();
 
     // Should have created a subscription with the `subscription-supported-interaction` extension value of `create`
     expect(createResourceSpy).toHaveBeenLastCalledWith({
       resourceType: 'Subscription',
       status: 'active',
       reason: 'Connect bot Test Bot to questionnaire responses',
-      criteria: 'QuestionnaireResponse?questionnaire=Questionnaire/123',
+      criteria: 'QuestionnaireResponse?questionnaire=https://example.com/example-questionnaire',
       channel: {
         type: 'rest-hook',
         endpoint: 'Bot/123',
       },
     });
   });
+
+  test('Questionnaire bots -- Questionnaire missing canonical url', async () => {});
 
   test('Bot editor', async () => {
     await setup('/Bot/123/editor');

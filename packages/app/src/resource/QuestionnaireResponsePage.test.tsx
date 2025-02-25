@@ -1,4 +1,3 @@
-import { getReferenceString } from '@medplum/core';
 import { Questionnaire, QuestionnaireResponse } from '@medplum/fhirtypes';
 import { MockClient } from '@medplum/mock';
 import { MedplumProvider } from '@medplum/react';
@@ -22,13 +21,14 @@ describe('QuestionnaireResponsePage', () => {
   test('Renders', async () => {
     const questionnaire = await medplum.createResource<Questionnaire>({
       resourceType: 'Questionnaire',
+      url: 'https://example.com/another-example-questionnaire-1',
       status: 'active',
     });
 
     const response1 = await medplum.createResource<QuestionnaireResponse>({
       resourceType: 'QuestionnaireResponse',
       status: 'completed',
-      questionnaire: getReferenceString(questionnaire),
+      questionnaire: questionnaire.url,
     });
 
     // load questionnaire page
@@ -56,13 +56,14 @@ describe('QuestionnaireResponsePage', () => {
   test('Renders test changes', async () => {
     const questionnaire = await medplum.createResource<Questionnaire>({
       resourceType: 'Questionnaire',
+      url: 'https://example.com/another-example-questionnaire-2',
       status: 'active',
     });
 
     const response1 = await medplum.createResource<QuestionnaireResponse>({
       resourceType: 'QuestionnaireResponse',
       status: 'completed',
-      questionnaire: getReferenceString(questionnaire),
+      questionnaire: questionnaire.url,
     });
 
     // load questionnaire response page
@@ -81,6 +82,6 @@ describe('QuestionnaireResponsePage', () => {
       fireEvent.click(sortButton);
     });
 
-    expect(screen.getByText(`${response1.id}`)).toBeInTheDocument();
+    expect(screen.getByText(response1.id)).toBeInTheDocument();
   });
 });

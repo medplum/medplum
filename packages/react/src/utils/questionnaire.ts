@@ -5,7 +5,6 @@ import {
   deepClone,
   evalFhirPathTyped,
   getExtension,
-  getReferenceString,
   getTypedPropertyValueWithoutSchema,
   splitN,
   toJsBoolean,
