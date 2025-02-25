@@ -304,7 +304,6 @@ function buildTargetDefinition(): SchemaDefinition {
   buildContactPointTable(result);
   buildIdentifierTable(result);
   buildHumanNameTable(result);
-  buildValueSetElementTable(result);
   buildCodingTable(result);
   buildCodingPropertyTable(result);
 
@@ -683,29 +682,6 @@ function buildLookupTable(
   }
 
   result.tables.push(tableDefinition);
-}
-
-function buildValueSetElementTable(result: SchemaDefinition): void {
-  result.tables.push({
-    name: 'ValueSetElement',
-    columns: [
-      { name: 'resourceId', type: 'UUID' }, // For data from previous implementations, resourceId is nullable
-      { name: 'system', type: 'TEXT' },
-      { name: 'code', type: 'TEXT' },
-      { name: 'display', type: 'TEXT' },
-    ],
-    indexes: [
-      { columns: ['resourceId'], indexType: 'btree' },
-      { columns: ['system'], indexType: 'btree' },
-      { columns: ['code'], indexType: 'btree' },
-      { columns: ['display'], indexType: 'btree' },
-      {
-        columns: [{ expression: "to_tsvector('english'::regconfig, display)", name: 'display' }],
-        indexType: 'gin',
-        indexNameSuffix: 'idx_tsv',
-      },
-    ],
-  });
 }
 
 function buildCodingTable(result: SchemaDefinition): void {

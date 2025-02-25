@@ -449,9 +449,9 @@ Optional boolean flag to require SSL when connecting to the database. This can b
 
 **Default:** `false`
 
-### databaseProxyEndpoint
+### databaseProxyEndpoint (deprecated)
 
-Optional database proxy URL, for example to use AWS RDS Proxy. This can be used with `DatabaseSecrets`.
+Optional database proxy URL, for example to use AWS RDS Proxy. This can be used with `DatabaseSecrets`. This setting is deprecated; instead set `database.host` to the RDS Proxy endpoint and `database.ssl.require` to `true`.
 
 **Default:** None
 
@@ -460,6 +460,36 @@ Optional database proxy URL, for example to use AWS RDS Proxy. This can be used 
 The AWS Secret ID containing database connection details (created automatically by CDK). Only available when using AWS Parameter Store config. See [AWS Secrets](#aws-secrets).
 
 **Created by:** `cdk`
+**Default:** None
+
+### readonlyDatabase
+
+Optional database connection details to a read-only database that will be used for certain readonly search & GQL operations.
+
+**Default:** None
+
+### readonlyDatabase.ssl.ca
+
+Optional trusted CA certificates. Default is to trust the well-known CAs curated by Mozilla. This can be used with `DatabaseSecrets`.
+
+**Default:** None
+
+### readonlyDatabase.ssl.rejectUnauthorized
+
+Optional boolean flag to reject any connection which is not authorized with the list of supplied CAs. This can be used with `DatabaseSecrets`.
+
+**Default:** `true`
+
+### readonlyDatabase.ssl.require
+
+Optional boolean flag to require SSL when connecting to the readonly database. This can be used with `DatabaseSecrets`.
+
+**Default:** `false`
+
+### readonlyDatabaseProxyEndpoint (deprecated)
+
+Optional database proxy URL, for example to use AWS RDS Proxy. This can be used with `DatabaseSecrets`. This setting is deprecated; instead set `database.host` to the RDS Proxy endpoint and `database.ssl.require` to `true`.
+
 **Default:** None
 
 ### redis

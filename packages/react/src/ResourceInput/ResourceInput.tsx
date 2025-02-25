@@ -95,7 +95,7 @@ export interface ResourceInputProps<T extends Resource = Resource> {
 
 function toOption<T extends Resource>(resource: T): AsyncAutocompleteOption<T> {
   return {
-    value: getReferenceString(resource),
+    value: getReferenceString(resource) ?? '',
     label: getDisplayString(resource),
     resource,
   };

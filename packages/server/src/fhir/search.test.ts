@@ -957,8 +957,6 @@ describe('FHIR Search', () => {
 
     test('Reverse filter by chained _id', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         // Create Location
         const location = await repo.createResource<Location>({
           resourceType: 'Location',
@@ -1795,8 +1793,6 @@ describe('FHIR Search', () => {
 
     test('Chained search on array columns using reference tables', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         // Create Practitioner
         const pcp = await repo.createResource<Practitioner>({
           resourceType: 'Practitioner',
@@ -1837,8 +1833,6 @@ describe('FHIR Search', () => {
 
     test('Chained search on single columns using reference tables', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         const code = randomUUID();
         // Create linked resources
         const patient = await repo.createResource<Patient>({
@@ -1872,8 +1866,6 @@ describe('FHIR Search', () => {
 
     test('Chained search sort order', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         const identifier = randomUUID();
         // Create linked resources
         const link1 = await repo.createResource<Patient>({
@@ -1917,8 +1909,6 @@ describe('FHIR Search', () => {
 
     test('Chained search with negated filter', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = true;
-
         // Create linked resources
         const link1 = await repo.createResource<Patient>({
           resourceType: 'Patient',
@@ -1963,10 +1953,8 @@ describe('FHIR Search', () => {
         expect(result.entry?.map((e) => e.resource?.id)).toEqual(patientIds);
       }));
 
-    test.each([true, false])('Chained search on canonical reference', (ff) =>
+    test('Chained search on canonical reference', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = ff;
-
         const url = 'http://example.com/' + randomUUID();
         // Create linked resources
         const q = randomUUID();
@@ -1994,87 +1982,7 @@ describe('FHIR Search', () => {
           parseSearchRequest(`EvidenceVariable?derived-from:Questionnaire.identifier=${q}`)
         );
         expect(result2.entry).toHaveLength(1);
-        expect(result2.entry?.[0]?.resource?.id).toStrictEqual(evidenceVariable.id);
-      })
-    );
-
-    // TODO: To be removed when reference table migration is complete
-    test('Chained search on array columns using reference strings', () =>
-      withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = false;
-
-        // Create Practitioner
-        const pcp = await repo.createResource<Practitioner>({
-          resourceType: 'Practitioner',
-        });
-        // Create Patient
-        const patient = await repo.createResource<Patient>({
-          resourceType: 'Patient',
-          generalPractitioner: [createReference(pcp)],
-        });
-
-        // Create CareTeam
-        const code = randomUUID();
-        const categorySystem = 'http://example.com/care-team-category';
-        await repo.createResource<CareTeam>({
-          resourceType: 'CareTeam',
-          category: [
-            {
-              coding: [
-                {
-                  system: categorySystem,
-                  code,
-                  display: 'Public health-focused care team',
-                },
-              ],
-            },
-          ],
-          participant: [{ member: createReference(pcp) }],
-        });
-
-        // Search chain
-        const searchResult = await repo.search(
-          parseSearchRequest(
-            `Patient?general-practitioner:Practitioner._has:CareTeam:participant:category=${categorySystem}|${code}`
-          )
-        );
-        expect(searchResult.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
-      }));
-
-    // TODO: To be removed when reference table migration is complete
-    test('Chained search on single columns using reference strings', () =>
-      withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = false;
-
-        const code = randomUUID();
-        // Create linked resources
-        const patient = await repo.createResource<Patient>({
-          resourceType: 'Patient',
-        });
-        const encounter = await repo.createResource<Encounter>({
-          resourceType: 'Encounter',
-          status: 'finished',
-          class: { system: 'http://example.com/appt-type', code },
-        });
-        const observation = await repo.createResource<Observation>({
-          resourceType: 'Observation',
-          status: 'final',
-          code: { text: 'Throat culture' },
-          subject: createReference(patient),
-          encounter: createReference(encounter),
-        });
-        await repo.createResource<DiagnosticReport>({
-          resourceType: 'DiagnosticReport',
-          status: 'final',
-          code: { text: 'Strep test' },
-          encounter: createReference(encounter),
-          result: [createReference(observation)],
-        });
-
-        const result = await repo.search(
-          parseSearchRequest(`Patient?_has:Observation:subject:encounter:Encounter.class=${code}`)
-        );
-        expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+        expect(result2.entry?.[0]?.resource?.id).toEqual(evidenceVariable.id);
       }));
 
     test('Rejects too long chained search', () =>
@@ -3245,6 +3153,51 @@ describe('FHIR Search', () => {
         expect(result.entry).toHaveLength(2);
       }));
 
+    test('_filter eq', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Evelyn'] }],
+          managingOrganization: { reference: 'Organization/' + randomUUID() },
+        });
+
+        const result1 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'organization',
+              operator: Operator.EQUALS,
+              value: patient.managingOrganization?.reference as string,
+            },
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'given eq Eve', // eq with a prefix should NOT match
+            },
+          ],
+        });
+
+        expect(result1.entry).toHaveLength(0);
+
+        const result2 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'organization',
+              operator: Operator.EQUALS,
+              value: patient.managingOrganization?.reference as string,
+            },
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'given eq Evelyn', // eq with exact value should match
+            },
+          ],
+        });
+
+        expect(result2.entry).toHaveLength(1);
+      }));
+
     test('_filter ne', () =>
       withTestContext(async () => {
         const patient = await repo.createResource<Patient>({
@@ -3295,7 +3248,7 @@ describe('FHIR Search', () => {
         expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
       }));
 
-    test('_filter chained pr', () =>
+    test('_filter with chained search', () =>
       withTestContext(async () => {
         const patient = await repo.createResource<Patient>({
           resourceType: 'Patient',
@@ -3334,20 +3287,17 @@ describe('FHIR Search', () => {
           name: [{ given: ['Evelyn', 'Dierdre'], family: 'Arachnae' }],
         });
 
-        // NOTE: This incorrect behavior is currently kept for backwards compatibility,
-        // and should be changed to exact matching in Medplum v4
         const result = await repo.search({
           resourceType: 'Patient',
           filters: [
             {
               code: '_filter',
               operator: Operator.EQUALS,
-              value: 'name eq Evel',
+              value: 'name eq Dier',
             },
           ],
         });
-        expect(result.entry).toHaveLength(1);
-        expect(result.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
+        expect(result.entry).toHaveLength(0);
 
         const result2 = await repo.search({
           resourceType: 'Patient',
@@ -3355,7 +3305,7 @@ describe('FHIR Search', () => {
             {
               code: '_filter',
               operator: Operator.EQUALS,
-              value: 'name sw Evel',
+              value: 'name sw Dier',
             },
           ],
         });
@@ -3363,10 +3313,8 @@ describe('FHIR Search', () => {
         expect(result2.entry?.[0]?.resource?.id).toStrictEqual(patient.id);
       }));
 
-    test.each([true, false])('_filter with chained search', (ff) =>
+    test('_filter with chained search', () =>
       withTestContext(async () => {
-        config.chainedSearchWithReferenceTables = ff;
-
         const mrn = randomUUID();
         const npi = randomUUID();
         const patient = await repo.createResource<Patient>({
@@ -3414,8 +3362,7 @@ describe('FHIR Search', () => {
         expect(result.entry?.map((e) => e.resource?.id)).toStrictEqual(
           expect.arrayContaining([observation1.id, observation2.id])
         );
-      })
-    );
+      }));
 
     test('Lookup table exact match with comma disjunction', () =>
       withTestContext(async () => {

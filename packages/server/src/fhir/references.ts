@@ -1,12 +1,13 @@
 import {
   badRequest,
-  crawlResource,
+  crawlTypedValueAsync,
   createReference,
   createStructureIssue,
   normalizeErrorString,
   OperationOutcomeError,
   parseSearchRequest,
   PropertyType,
+  toTypedValue,
   TypedValue,
 } from '@medplum/core';
 import { OperationOutcomeIssue, Reference, Resource } from '@medplum/fhirtypes';
@@ -55,8 +56,8 @@ export async function validateResourceReferences<T extends Resource>(repo: Repos
   const references: Record<string, Reference> = Object.create(null);
   const systemReferences: Record<string, Reference> = Object.create(null);
 
-  await crawlResource(
-    resource,
+  await crawlTypedValueAsync(
+    toTypedValue(resource),
     {
       async visitPropertyAsync(parent, _key, path, propertyValue, _schema) {
         if (!isCheckableReference(propertyValue) || parent.type === PropertyType.Meta) {
@@ -128,8 +129,8 @@ async function resolveReplacementReference(
 }
 
 export async function replaceConditionalReferences<T extends Resource>(repo: Repository, resource: T): Promise<T> {
-  await crawlResource(
-    resource,
+  await crawlTypedValueAsync(
+    toTypedValue(resource),
     {
       async visitPropertyAsync(parent, key, path, propertyValue, _schema) {
         if (!isCheckableReference(propertyValue)) {

@@ -1,4 +1,4 @@
-import { Operator, SearchRequest, normalizeErrorString, parseSearchRequest } from '@medplum/core';
+import { Operator, SearchRequest, normalizeErrorString, parseSearchRequest, WithId } from '@medplum/core';
 import { AsyncJob, Parameters, ParametersParameter, Resource, ResourceType } from '@medplum/fhirtypes';
 import { Job, Queue, QueueBaseOptions, Worker } from 'bullmq';
 import { MedplumServerConfig } from '../config/types';
@@ -189,7 +189,7 @@ async function processPage(job: Job<ReindexJobData>): Promise<ReindexResult> {
     await systemRepo.withTransaction(async (conn) => {
       const bundle = await systemRepo.search(searchRequest);
       if (bundle.entry?.length) {
-        const resources = bundle.entry.map((e) => e.resource as Resource);
+        const resources = bundle.entry.map((e) => e.resource as WithId<Resource>);
         await systemRepo.reindexResources(conn, resources);
         newCount += resources.length;
         nextTimestamp = bundle.entry[bundle.entry.length - 1].resource?.meta?.lastUpdated ?? nextTimestamp;

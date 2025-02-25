@@ -12,7 +12,7 @@ import {
 import { formatHumanName } from './format';
 import { SearchParameterDetails } from './search/details';
 import { InternalSchemaElement, InternalTypeSchema, getAllDataTypes, tryGetDataType } from './typeschema/types';
-import { capitalize, createReference } from './utils';
+import { capitalize, getReferenceString, isResourceWithId } from './utils';
 
 export type TypeName<T> = T extends string
   ? 'string'
@@ -418,16 +418,26 @@ export function getElementDefinitionFromElements(
 }
 
 /**
- * Typeguard to validate that an object is a FHIR resource
+ * Type guard to validate that an object is a FHIR resource
  * @param value - The object to check
+ * @param resourceType - Checks that the resource is of the given type
  * @returns True if the input is of type 'object' and contains property 'resourceType'
  */
-export function isResource(value: unknown): value is Resource {
-  return !!(value && typeof value === 'object' && 'resourceType' in value);
+export function isResource<T extends Resource>(value: unknown, resourceType?: T['resourceType']): value is T {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+  if (!('resourceType' in value)) {
+    return false;
+  }
+  if (resourceType && value.resourceType !== resourceType) {
+    return false;
+  }
+  return true;
 }
 
 /**
- * Typeguard to validate that an object is a FHIR resource
+ * Type guard to validate that an object is a FHIR reference
  * @param value - The object to check
  * @returns True if the input is of type 'object' and contains property 'reference'
  */
@@ -493,8 +503,8 @@ export function stringifyTypedValue(v: TypedValue): string {
     case PropertyType.Reference:
       return v.value.reference;
     default:
-      if (isResource(v.value)) {
-        return createReference(v.value).reference;
+      if (isResourceWithId(v.value)) {
+        return getReferenceString(v.value);
       }
       return JSON.stringify(v);
   }

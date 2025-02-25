@@ -1089,6 +1089,15 @@ describe('FHIR resource validation', () => {
 
     acct.name = 'test';
     expect(() => validateResource(acct)).not.toThrow();
+
+    acct.name = 'Invalid controls character \x00 \x01 \x0B \x1F are not allowed';
+    expect(() => validateResource(acct)).toThrow();
+
+    acct.name = 'Valid controls characters \x09 \x0A \x0D \x20 \x21 are allowed';
+    expect(() => validateResource(acct)).not.toThrow();
+
+    acct.name = 'High unicode characters \uFFFF \u1234 are allowed';
+    expect(() => validateResource(acct)).not.toThrow();
   });
 
   test('positiveInt', () => {
