@@ -475,6 +475,32 @@ describe('170.315(g)(9)', () => {
       expect(value?.['@_value']).toEqual('100');
       expect(value?.['@_unit']).toEqual('mg');
     });
+
+    test('should observation components', () => {
+      const input = createCompositionBundle(
+        { resourceType: 'Patient' },
+        {
+          resourceType: 'Observation',
+          id: '123',
+          component: [
+            { code: { coding: [{ code: 'a' }] }, valueQuantity: { value: 100, unit: 'mg' } },
+            { code: { coding: [{ code: 'b' }] }, valueQuantity: { value: 200, unit: 'mg' } },
+          ],
+        },
+        {
+          resourceType: 'Observation',
+          id: '456',
+          hasMember: [{ reference: 'Observation/123' }],
+        }
+      );
+      const output = convertFhirToCcda(input);
+      const organizer = output.component?.structuredBody?.component?.[1]?.section?.[0]?.entry?.[0]?.organizer?.[0];
+      expect(organizer).toBeDefined();
+      const components = organizer?.component;
+      expect(components).toBeDefined();
+      expect((components?.[0]?.observation?.[0]?.value as CcdaQuantity)['@_value']).toEqual('100');
+      expect((components?.[1]?.observation?.[0]?.value as CcdaQuantity)['@_value']).toEqual('200');
+    });
   });
 });
 

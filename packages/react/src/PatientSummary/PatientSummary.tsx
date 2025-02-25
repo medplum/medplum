@@ -187,14 +187,14 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         </Group>
       </Paper>
       <Stack gap="xs">
-        {links.length > 0 && (
-          <>
-            {links}
-            <Divider />
-          </>
-        )}
         {medicalData && (
           <>
+            {links.length > 0 && (
+              <>
+                {links}
+                <Divider />
+              </>
+            )}
             <Allergies patient={patient} allergies={medicalData.allergies} onClickResource={onClickResource} />
             <Divider />
             <ProblemList patient={patient} problems={medicalData.problems} onClickResource={onClickResource} />

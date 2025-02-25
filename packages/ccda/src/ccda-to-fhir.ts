@@ -61,7 +61,6 @@ import {
   ALLERGY_STATUS_MAPPER,
   ALLERGY_VERIFICATION_CODE_SYSTEM,
   CCDA_NARRATIVE_REFERENCE_URL,
-  CCDA_TEMPLATE_CODE_SYSTEM,
   CLINICAL_CONDITION_CODE_SYSTEM,
   CONDITION_CATEGORY_CODE_SYSTEM,
   CONDITION_VER_STATUS_CODE_SYSTEM,
@@ -1160,18 +1159,6 @@ class CcdaToFhirConverter {
         codes.add(category.coding[0].code);
         result.push(category);
       }
-    }
-
-    for (const templateId of templateIds) {
-      result.push({
-        coding: [
-          {
-            system: CCDA_TEMPLATE_CODE_SYSTEM,
-            code: templateId['@_root'],
-            version: templateId['@_extension'],
-          },
-        ],
-      });
     }
 
     return Array.from(result.values());
