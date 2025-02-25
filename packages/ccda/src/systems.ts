@@ -363,10 +363,12 @@ export function mapCodingToCcdaCode(coding: Coding): CcdaCode {
   const system = systemEntry?.ccdaValue;
   const systemName = systemEntry?.displayName;
 
+  const systemOid = coding.system?.startsWith('urn:oid:') ? coding.system.replace('urn:oid:', '') : undefined;
+
   return {
     '@_code': coding.code,
     '@_displayName': coding.display,
-    '@_codeSystem': system,
+    '@_codeSystem': system ?? systemOid,
     '@_codeSystemName': systemName,
   };
 }
