@@ -869,8 +869,22 @@
         "version": "0000",
         "status": "active",
         "hierarchyMeaning": "is-a",
-        "content": "not-present",
-        "description": "Stub version of CPT code system"
+        "content": "example",
+        "description": "Stub version of CPT code system",
+        "concept": [
+          {
+            "code": "99213",
+            "display": "Office visit with established patient, low complexity"
+          },
+          {
+            "code": "93000",
+            "display": "Electrocardiogram, routine ECG with at least 12 leads; with interpretation and report"
+          },
+          {
+            "code": "36415",
+            "display": "Collection of venous blood by venipuncture"
+          }
+        ]
       }
     },
     {
