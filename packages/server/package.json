@@ -64,7 +64,7 @@
     "@opentelemetry/sdk-node": "0.57.2",
     "@smithy/util-retry": "4.0.1",
     "@smithy/util-stream": "4.1.2",
-    "bcryptjs": "2.4.3",
+    "bcryptjs": "3.0.2",
     "body-parser": "1.20.3",
     "bowser": "2.11.0",
     "bullmq": "5.41.6",

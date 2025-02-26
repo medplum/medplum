@@ -35,7 +35,7 @@
     "@types/react-dom": "18.3.5",
     "graphiql": "3.8.3",
     "graphql": "16.10.0",
-    "graphql-ws": "5.16.2",
+    "graphql-ws": "6.0.4",
     "postcss": "8.5.3",
     "postcss-preset-mantine": "1.17.0",
     "react": "18.2.0",
