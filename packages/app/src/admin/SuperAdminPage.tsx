@@ -263,7 +263,7 @@ function MaxResourceVersionInput(): JSX.Element {
         ]}
       />
       {value === 'specific' && (
-        <NumberInput required name="maxResourceVersion" placeholder="Max Resource Version" min={1} />
+        <NumberInput required name="maxResourceVersion" placeholder="Max Resource Version" min={0} />
       )}
     </>
   );
