@@ -392,7 +392,7 @@ describe('OAuth Authorize', () => {
     const launch = await systemRepo.createResource<SmartAppLaunch>({ resourceType: 'SmartAppLaunch' });
 
     const res3 = await request(app)
-      .get(`/oauth2/authorize?launch=${launch.id}&${params.toString()}`)
+      .get(`/oauth2/authorize?launch=${launch.id}&${params.toString()}&prompt=none`)
       .set('Cookie', cookie.name + '=' + cookie.value);
     expect(res3.status).toBe(302);
     expect(res3.headers.location).toBeDefined();
@@ -438,6 +438,7 @@ describe('OAuth Authorize', () => {
       code_challenge: 'xyz',
       code_challenge_method: 'plain',
       id_token_hint: res2.body.id_token,
+      prompt: 'none',
     });
     const res3 = await request(app).get('/oauth2/authorize?' + params2.toString());
     expect(res3.status).toBe(302);

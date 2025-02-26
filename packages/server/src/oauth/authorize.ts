@@ -122,10 +122,18 @@ async function validateAuthorizeRequest(req: Request, res: Response, params: Rec
       granted: false,
     });
 
-    const redirectUrl = new URL(params.redirect_uri as string);
-    redirectUrl.searchParams.append('code', updatedLogin.code as string);
-    redirectUrl.searchParams.append('state', state);
-    res.redirect(redirectUrl.toString());
+    if (prompt === 'none') {
+      // Redirect straight to application without allowing scope changes
+      const redirectUrl = new URL(params.redirect_uri as string);
+      redirectUrl.searchParams.append('code', updatedLogin.code as string);
+      redirectUrl.searchParams.append('state', state);
+      res.redirect(redirectUrl.toString());
+    } else {
+      // Redirect to scope selection page to allow consent to updated scopes
+      params.login = updatedLogin.id;
+      params.scope = updatedLogin.scope;
+      sendSuccessRedirect(req, res, params);
+    }
     return false;
   }
 
