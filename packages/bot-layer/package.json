@@ -24,9 +24,9 @@
   "dependencies": {
     "@medplum/core": "4.0.1",
     "@medplum/definitions": "4.0.1",
-    "fast-xml-parser": "4.5.1",
-    "form-data": "4.0.1",
-    "jose": "5.9.6",
+    "fast-xml-parser": "4.5.3",
+    "form-data": "4.0.2",
+    "jose": "5.10.0",
     "node-fetch": "2.7.0",
     "pdfmake": "0.2.18",
     "ssh2": "1.16.0",
