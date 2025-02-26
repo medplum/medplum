@@ -1,4 +1,4 @@
-import { allOk, badRequest } from '@medplum/core';
+import { allOk, badRequest, forbidden } from '@medplum/core';
 import { FhirRequest, FhirResponse } from '@medplum/fhir-router';
 import { Patient, Reference, OperationDefinition } from '@medplum/fhirtypes';
 import { getAuthenticatedContext } from '../../context';
@@ -60,8 +60,13 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
   }
 
   const params = parseInputParameters<PatientSetAccountsParameters>(operation, req);
-
   const ctx = getAuthenticatedContext();
+
+  const isSuperAdmin = ctx.repo.isSuperAdmin();
+  if (!ctx.repo.isProjectAdmin() && !isSuperAdmin) {
+    return [forbidden];
+  }
+
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
   const bundle = await getPatientEverything(ctx.repo, patient);
   const accounts = params.accounts ?? [];
@@ -70,13 +75,13 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
   patient.meta = {
     ...patient.meta,
     accounts: accounts,
-    account: accounts[0] ?? undefined,
+    account: accounts?.[0],
   };
 
   await ctx.repo.updateResource(patient);
 
   // step 2: update the resources in the patient compartment to trigger meta.accounts refresh
-  let count = 0;
+  let count = 1;
   for (const entry of bundle.entry ?? []) {
     if (entry.search?.mode === 'match') {
       const resource = entry.resource;

@@ -1,5 +1,5 @@
 import { createReference } from '@medplum/core';
-import { Observation, Organization, Patient, DiagnosticReport } from '@medplum/fhirtypes';
+import { Bundle, Observation, Organization, Patient, DiagnosticReport } from '@medplum/fhirtypes';
 import express from 'express';
 import request from 'supertest';
 import { initApp, shutdownApp } from '../../app';
@@ -19,7 +19,7 @@ describe('Patient Set Accounts Operation', () => {
   beforeAll(async () => {
     const config = await loadTestConfig();
     await initApp(app, config);
-    accessToken = await initTestAuth();
+    accessToken = await initTestAuth({ superAdmin: true });
 
     // Create organization
     const orgRes = await request(app)
@@ -113,7 +113,7 @@ describe('Patient Set Accounts Operation', () => {
     expect(res3.status).toBe(200);
     const result = res3.body;
     expect(result.parameter?.[0].name).toBe('resourcesUpdated');
-    expect(result.parameter?.[0].valueInteger).toBe(2); // Observation and DiagnosticReport
+    expect(result.parameter?.[0].valueInteger).toBe(3); // Observation and DiagnosticReport
 
     //check if the accounts are updated on the patient
     const res4 = await request(app)
@@ -146,6 +146,21 @@ describe('Patient Set Accounts Operation', () => {
     expect(updatedDiagnosticReport.meta?.accounts?.[1].reference).toBe(`Organization/${organization2.id}`);
   });
 
+  test("Make sure resources returned in $patient-everything that are NOT in the patient's compartment are not updated", async () => {
+    const res = await request(app)
+      .get(`/fhir/R4/Patient/${patient.id}/$everything`)
+      .set('Authorization', 'Bearer ' + accessToken);
+    expect(res.status).toBe(200);
+    const everything = res.body as Bundle;
+    const resourcesNotInCompartment = everything.entry?.filter(
+      (entry) => entry?.search?.mode !== 'match'
+    );
+    expect(resourcesNotInCompartment?.length).toBeGreaterThan(0);
+    resourcesNotInCompartment?.forEach((entry) => {
+      expect(entry?.resource?.meta?.accounts).toBeUndefined();
+    });
+  });
+
   test('Patient not found', async () => {
     const res = await request(app)
       .post(`/fhir/R4/Patient/not-found/$set-accounts`)
@@ -172,5 +187,17 @@ describe('Patient Set Accounts Operation', () => {
       query: {},
     });
     expect(res[0].issue?.[0]?.details?.text).toBe('Must specify Patient ID');
+  });
+
+  test('Non admin user trying to set accounts', async () => {
+    accessToken = await initTestAuth();
+    const res = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [],
+      });
+    expect(res.status).toBe(403);
   });
 });
