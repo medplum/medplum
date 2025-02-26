@@ -20,7 +20,6 @@ export const EncounterChart = (): JSX.Element => {
   const fetchTasks = useCallback(async (): Promise<void> => {
     const encounterResult = await medplum.readResource('Encounter', encounterId as string);
     setEncounter(encounterResult);
-    console.log(encounterResult);
     setStatus(encounterResult.status as typeof status);
 
     const taskResult = await medplum.searchResources('Task', `encounter=Encounter/${encounterId}`, {
@@ -60,6 +59,7 @@ export const EncounterChart = (): JSX.Element => {
         const response = await medplum.createResource<QuestionnaireResponse>(questionnaireResponse);
         const updatedTask = await medplum.updateResource<Task>({
           ...task,
+          status: 'completed',
           output: [
             {
               type: {

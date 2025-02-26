@@ -10,6 +10,7 @@ import {
   parseSearchRequest,
   SearchRequest,
   SNOMED,
+  WithId,
 } from '@medplum/core';
 import {
   ActivityDefinition,
@@ -485,9 +486,9 @@ describe('FHIR Search', () => {
         const comm2 = await repo.createResource<Communication>({
           resourceType: 'Communication',
           status: 'completed',
-          encounter: createReference(encounter2 as Encounter),
-          subject: createReference(patient2 as Patient),
-          sender: createReference(patient2 as Patient),
+          encounter: createReference(encounter2),
+          subject: createReference(patient2),
+          sender: createReference(patient2),
           payload: [{ contentString: 'This is another test' }],
         });
 
@@ -499,7 +500,7 @@ describe('FHIR Search', () => {
             {
               code: 'encounter',
               operator: Operator.EQUALS,
-              value: getReferenceString(encounter1 as Encounter),
+              value: getReferenceString(encounter1),
             },
           ],
         });
@@ -576,7 +577,7 @@ describe('FHIR Search', () => {
             {
               code: 'based-on',
               operator: Operator.EQUALS,
-              value: getReferenceString(serviceRequest1 as ServiceRequest),
+              value: getReferenceString(serviceRequest1),
             },
           ],
         });
@@ -3198,6 +3199,34 @@ describe('FHIR Search', () => {
         expect(result2.entry).toHaveLength(1);
       }));
 
+    test('_filter birthdate eq', () =>
+      withTestContext(async () => {
+        const patient = await repo.createResource<Patient>({
+          resourceType: 'Patient',
+          name: [{ given: ['Evelyn'] }],
+          birthDate: '2000-01-01',
+          managingOrganization: { reference: 'Organization/' + randomUUID() },
+        });
+
+        const result1 = await repo.search({
+          resourceType: 'Patient',
+          filters: [
+            {
+              code: 'organization',
+              operator: Operator.EQUALS,
+              value: patient.managingOrganization?.reference as string,
+            },
+            {
+              code: '_filter',
+              operator: Operator.EQUALS,
+              value: 'birthdate eq "2000-01-01"',
+            },
+          ],
+        });
+
+        expect(result1.entry).toHaveLength(1);
+      }));
+
     test('_filter ne', () =>
       withTestContext(async () => {
         const patient = await repo.createResource<Patient>({
@@ -4208,7 +4237,7 @@ describe('FHIR Search', () => {
       }));
 
     describe('searchByReference', () => {
-      async function createPatients(repo: Repository, count: number): Promise<Patient[]> {
+      async function createPatients(repo: Repository, count: number): Promise<WithId<Patient>[]> {
         const patients = [];
         for (let i = 0; i < count; i++) {
           patients.push(await repo.createResource<Patient>({ resourceType: 'Patient' }));
@@ -4226,7 +4255,7 @@ describe('FHIR Search', () => {
           subject?: Patient;
           hasMember?: Observation[];
         }
-      ): Promise<Observation[]> {
+      ): Promise<WithId<Observation>[]> {
         const resources = [];
         for (let i = 0; i < count; i++) {
           resources.push(
@@ -4247,7 +4276,7 @@ describe('FHIR Search', () => {
         repo: Repository,
         count: number,
         patient: Patient
-      ): Promise<ServiceRequest[]> {
+      ): Promise<WithId<ServiceRequest>[]> {
         const resources = [];
         for (let i = 0; i < count; i++) {
           resources.push(
@@ -4262,7 +4291,7 @@ describe('FHIR Search', () => {
         return resources;
       }
 
-      function expectResultsContents<Parent extends Resource, Child extends Resource>(
+      function expectResultsContents<Parent extends WithId<Resource>, Child extends WithId<Resource>>(
         parents: Parent[],
         childrenByParent: Child[][],
         count: number,
@@ -4422,7 +4451,7 @@ describe('FHIR Search', () => {
             patients.map((p) => getReferenceString(p))
           );
 
-          const childrenByParent = [];
+          const childrenByParent: WithId<Resource>[][] = [];
           for (let i = 0; i < patients.length; i++) {
             childrenByParent.push([...patientObservations[i], ...patientServiceRequests[i]]);
           }

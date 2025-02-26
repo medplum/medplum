@@ -312,16 +312,48 @@ describe('QuestionnaireForm', () => {
 
     expect(onSubmit).toHaveBeenCalled();
 
-    const response = onSubmit.mock.calls[0][0];
-    expect(response.resourceType).toBe('QuestionnaireResponse');
-    expect(response.status).toBe('completed');
+    const responseAuto = onSubmit.mock.calls[0][0];
+    expect(responseAuto.resourceType).toBe('QuestionnaireResponse');
+    expect(responseAuto.status).toBe('completed');
 
-    const answers = getQuestionnaireAnswers(response);
-    expect(answers['question1']).toMatchObject({ valueString: 'a1' });
-    expect(answers['question2']).toMatchObject({ valueString: 'a2' });
-    expect(answers['question3']).toMatchObject({ valueString: 'a3' });
-    expect(answers['question4']).toMatchObject({ valueString: 'a4' });
-    expect(answers['question5']).toMatchObject({ valueBoolean: true });
+    const answersAuto = getQuestionnaireAnswers(responseAuto);
+    expect(answersAuto['question1']).toMatchObject({ valueString: 'a1' });
+    expect(answersAuto['question2']).toMatchObject({ valueString: 'a2' });
+    expect(answersAuto['question3']).toMatchObject({ valueString: 'a3' });
+    expect(answersAuto['question4']).toMatchObject({ valueString: 'a4' });
+    expect(answersAuto['question5']).toMatchObject({ valueBoolean: true });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 1'), { target: { value: 'a11' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 2'), { target: { value: 'a22' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 3'), { target: { value: 'a33' } });
+    });
+
+    await act(async () => {
+      fireEvent.change(screen.getByLabelText('Question 4'), { target: { value: 'a44' } });
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText('Question 5'));
+    });
+
+    await act(async () => {
+      fireEvent.click(screen.getByText('Submit'));
+    });
+
+    const responseManual = onSubmit.mock.calls[1][0];
+    const answersManual = getQuestionnaireAnswers(responseManual);
+    expect(answersManual['question1']).toMatchObject({ valueString: 'a11' });
+    expect(answersManual['question2']).toMatchObject({ valueString: 'a22' });
+    expect(answersManual['question3']).toMatchObject({ valueString: 'a33' });
+    expect(answersManual['question4']).toMatchObject({ valueString: 'a44' });
+    expect(answersManual['question5']).toMatchObject({ valueBoolean: false });
   });
 
   test('Handles submit', async () => {
@@ -2127,18 +2159,6 @@ describe('QuestionnaireForm', () => {
                     valueDecimal: 100,
                   },
                 ],
-              },
-              {
-                id: 'id-78',
-                linkId: 'q2',
-                text: 'Celsius',
-                answer: [],
-              },
-              {
-                id: 'id-79',
-                linkId: 'q3',
-                text: 'Kelvin',
-                answer: [],
               },
             ],
             answer: [],

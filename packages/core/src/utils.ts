@@ -967,16 +967,34 @@ export function findObservationInterval(
  * Tries to find an observation reference range for the given patient and condition names.
  * @param definition - The observation definition.
  * @param patient - The patient.
- * @param names - The condition names.
+ * @param names - Optional condition names.
  * @returns The observation interval if found; otherwise undefined.
  */
 export function findObservationReferenceRange(
   definition: ObservationDefinition,
   patient: Patient,
-  names: string[]
+  names?: string[]
 ): ObservationDefinitionQualifiedInterval | undefined {
-  return definition.qualifiedInterval?.find(
-    (interval) => observationIntervalMatchesPatient(interval, patient) && names.includes(interval.condition as string)
+  return findObservationReferenceRanges(definition, patient, names)[0];
+}
+
+/**
+ * Returns all matching observation reference range for the given patient and condition names.
+ * @param definition - The observation definition.
+ * @param patient - The patient.
+ * @param names - Optional condition names.
+ * @returns The observation intervals if found; otherwise an empty array.
+ */
+export function findObservationReferenceRanges(
+  definition: ObservationDefinition,
+  patient: Patient,
+  names?: string[]
+): ObservationDefinitionQualifiedInterval[] {
+  return (
+    definition.qualifiedInterval?.filter(
+      (interval) =>
+        observationIntervalMatchesPatient(interval, patient) && (!names || names.includes(interval.condition as string))
+    ) ?? []
   );
 }
 

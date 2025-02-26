@@ -56,7 +56,7 @@ export interface CcdaTelecom {
 }
 
 export interface CcdaName {
-  '@_use'?: 'ANON' | 'C' | 'L' | 'M' | 'N' | 'TEMP';
+  '@_use'?: 'ANON' | 'C' | 'L' | 'P' | 'TEMP';
   family?: string;
   given?: string[];
   suffix?: string[];
@@ -89,13 +89,14 @@ export interface CcdaTemplateId {
   '@_extension'?: string;
 }
 
-export interface CcdaCode {
+export interface CcdaCode<T extends string = string> {
   '@_xsi:type'?: 'CD' | 'CE';
-  '@_code'?: string;
+  '@_code'?: T;
   '@_codeSystem'?: string;
   '@_codeSystemName'?: string;
   '@_displayName'?: string;
   originalText?: CcdaText;
+  translation?: CcdaCode[];
 }
 
 export interface CcdaText {
@@ -128,7 +129,7 @@ export interface CcdaEncounter {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code?: CcdaCode;
-  statusCode?: CcdaStatusCode<'active' | 'completed' | 'aborted' | 'cancelled' | 'unknown'>;
+  statusCode?: CcdaCode<'active' | 'completed' | 'aborted' | 'cancelled' | 'unknown'>;
   effectiveTime?: CcdaEffectiveTime[];
   performer?: CcdaPerformer[];
   participant?: CcdaParticipant[];
@@ -142,11 +143,12 @@ export interface CcdaProcedure {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code: CcdaCode;
-  statusCode: CcdaStatusCode<'completed' | 'aborted' | 'cancelled' | 'new' | 'unknown'>;
+  statusCode: CcdaCode<'completed' | 'aborted' | 'cancelled' | 'new' | 'unknown'>;
   effectiveTime?: CcdaEffectiveTime[];
   methodCode?: CcdaCode;
   targetSiteCode?: CcdaCode;
   text?: CcdaText;
+  participant?: CcdaParticipant[];
 }
 
 export interface CcdaAct {
@@ -155,7 +157,7 @@ export interface CcdaAct {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code: CcdaCode;
-  statusCode: CcdaStatusCode;
+  statusCode: CcdaCode;
   effectiveTime?: CcdaEffectiveTime[];
   entryRelationship?: CcdaEntryRelationship[];
   author?: CcdaAuthor[];
@@ -188,7 +190,7 @@ export interface CcdaObservation {
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
   code?: CcdaCode;
-  statusCode: CcdaStatusCode;
+  statusCode: CcdaCode;
   effectiveTime?: CcdaEffectiveTime[];
   value?: CcdaValue;
   participant?: CcdaParticipant[];
@@ -216,6 +218,11 @@ export interface CcdaParticipant {
 export interface CcdaParticipantRole {
   '@_classCode'?: string;
   '@_typeCode'?: string;
+  templateId?: CcdaTemplateId[];
+  id?: CcdaId[];
+  code?: CcdaCode;
+  addr?: CcdaAddr[];
+  telecom?: CcdaTelecom[];
   playingEntity?: CcdaPlayingEntity;
 }
 
@@ -223,6 +230,7 @@ export interface CcdaPlayingEntity {
   '@_classCode'?: string;
   '@_typeCode'?: string;
   code?: CcdaCode;
+  name?: string[];
 }
 
 export interface CcdaSubstanceAdministration {
@@ -231,8 +239,8 @@ export interface CcdaSubstanceAdministration {
   '@_negationInd'?: string;
   templateId: CcdaTemplateId[];
   id?: CcdaId[];
-  text?: CcdaText;
-  statusCode?: CcdaStatusCode<'active' | 'completed' | 'aborted' | 'cancelled'>;
+  text?: string | CcdaText;
+  statusCode?: CcdaCode<'active' | 'completed' | 'aborted' | 'cancelled' | 'nullified' | 'obsolete'>;
   effectiveTime?: CcdaEffectiveTime[];
   routeCode?: CcdaCode;
   doseQuantity?: CcdaQuantity;
@@ -253,8 +261,8 @@ export type CcdaValue = CcdaCode | CcdaText | CcdaQuantity | CcdaReference;
 
 export interface CcdaPeriod {
   '@_xsi:type'?: 'PIVL_TS';
-  '@_value': string;
-  '@_unit': string;
+  '@_value'?: string;
+  '@_unit'?: 's' | 'min' | 'h' | 'd' | 'wk' | 'mo' | 'a';
 }
 
 export interface CcdaEvent {
@@ -262,7 +270,7 @@ export interface CcdaEvent {
 }
 
 export interface CcdaEffectiveTime {
-  '@_xsi:type'?: 'IVL_TS' | 'TS';
+  '@_xsi:type'?: 'IVL_TS' | 'TS' | 'PIVL_TS';
   '@_institutionSpecified'?: string;
   '@_operator'?: string;
   '@_value'?: string;
@@ -299,10 +307,6 @@ export interface CcdaManufacturedMaterial {
 export interface CcdaId {
   '@_root'?: string;
   '@_extension'?: string;
-}
-
-export interface CcdaStatusCode<T extends string = string> {
-  '@_code': T;
 }
 
 export interface CcdaTimeStamp {
@@ -357,7 +361,7 @@ export interface CcdaOrganizer {
   templateId: CcdaTemplateId[];
   id: CcdaId[];
   code?: CcdaCode;
-  statusCode?: CcdaStatusCode;
+  statusCode?: CcdaCode;
   effectiveTime?: CcdaEffectiveTime[];
   component: CcdaOrganizerComponent[];
 }

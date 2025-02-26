@@ -28,9 +28,9 @@ export interface PatientSummaryProps extends Omit<CardProps, 'children'> {
   readonly patient: Patient | Reference<Patient>;
   readonly background?: string;
   /** The URL that the upcoming appointments link should navigate to or `undefined` to not show the link. */
-  readonly appointmentsUrl?: string | undefined;
+  readonly appointmentsUrl?: string;
   /** The URL that the documented visits (encounters) link should navigate to or `undefined` to not show the link. */
-  readonly encountersUrl?: string | undefined;
+  readonly encountersUrl?: string;
   /** Callback when a resource is clicked in the list */
   readonly onClickResource?: (resource: Resource) => void;
 }
@@ -187,14 +187,14 @@ export function PatientSummary(props: PatientSummaryProps): JSX.Element | null {
         </Group>
       </Paper>
       <Stack gap="xs">
-        {links.length > 0 && (
-          <>
-            {links}
-            <Divider />
-          </>
-        )}
         {medicalData && (
           <>
+            {links.length > 0 && (
+              <>
+                {links}
+                <Divider />
+              </>
+            )}
             <Allergies patient={patient} allergies={medicalData.allergies} onClickResource={onClickResource} />
             <Divider />
             <ProblemList patient={patient} problems={medicalData.problems} onClickResource={onClickResource} />

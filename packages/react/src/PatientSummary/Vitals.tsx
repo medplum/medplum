@@ -211,7 +211,7 @@ export function Vitals(props: VitalsProps): JSX.Element {
                 key={meta.name}
                 name={meta.name}
                 label={meta.short}
-                description={meta.title}
+                description={`${meta.title} (${meta.unit})`}
                 data-autofocus={index === 0}
                 autoFocus={index === 0}
               />

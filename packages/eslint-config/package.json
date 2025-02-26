@@ -1,6 +1,6 @@
 {
   "name": "@medplum/eslint-config",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Shared ESLint configuration for Medplum projects",
   "keywords": [
     "eslint",
@@ -35,6 +35,6 @@
     "eslint-plugin-react-refresh": "^0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

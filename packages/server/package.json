@@ -1,6 +1,6 @@
 {
   "name": "@medplum/server",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Medplum Server",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -14,7 +14,7 @@
   "license": "Apache-2.0",
   "author": "Medplum <hello@medplum.com>",
   "scripts": {
-    "build": "npm run clean && tsc --project tsconfig.build.json",
+    "build": "npm run clean && tsc && tsc --project tsconfig.build.json",
     "clean": "rimraf dist",
     "dev": "ts-node-dev --poll --respawn --transpile-only --require ./src/otel/instrumentation.ts src/index.ts",
     "lint": "eslint .",
@@ -35,15 +35,16 @@
     "@aws-sdk/client-textract": "3.744.0",
     "@aws-sdk/cloudfront-signer": "3.734.0",
     "@aws-sdk/lib-storage": "3.744.0",
-    "@aws-sdk/types": "3.734.0",
     "@aws-sdk/s3-request-presigner": "3.744.0",
+    "@aws-sdk/types": "3.734.0",
     "@azure/identity": "4.6.0",
     "@azure/keyvault-secrets": "4.9.0",
+    "@azure/storage-blob": "12.26.0",
     "@google-cloud/secret-manager": "5.6.0",
-    "@medplum/ccda": "4.0.0",
-    "@medplum/core": "4.0.0",
-    "@medplum/definitions": "4.0.0",
-    "@medplum/fhir-router": "4.0.0",
+    "@medplum/ccda": "4.0.1",
+    "@medplum/core": "4.0.1",
+    "@medplum/definitions": "4.0.1",
+    "@medplum/fhir-router": "4.0.1",
     "@opentelemetry/exporter-metrics-otlp-proto": "0.57.1",
     "@opentelemetry/exporter-trace-otlp-proto": "0.57.1",
     "@opentelemetry/instrumentation-aws-lambda": "0.50.2",
@@ -97,7 +98,7 @@
   },
   "devDependencies": {
     "@jest/test-sequencer": "29.7.0",
-    "@medplum/fhirtypes": "4.0.0",
+    "@medplum/fhirtypes": "4.0.1",
     "@types/bcryptjs": "2.4.6",
     "@types/body-parser": "1.19.5",
     "@types/bytes": "3.1.5",
@@ -127,6 +128,6 @@
     "ts-node-dev": "2.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

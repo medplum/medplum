@@ -467,6 +467,26 @@ The [patient access policy](#patient-access) above can be combined with [policy 
   ]
 }
 ```
+### Streamlined linkage and RBAC Control with AccessPolicy.basedOn
+
+In Medplum, users can attach one or more parameterized AccessPolicy resources to their ProjectMembership. During runtime, the Medplum server consolidates these resources into a single enforceable AccessPolicy.  
+The recent enhancements introduce the **AccessPolicy.basedOn element**, which enhances traceability and linkage of access policies. These improvements are made accessible to the front end via the /auth/me endpoint, enabling seamless role-based access control (RBAC) for users. For more information, see the [PR](https://github.com/medplum/medplum/pull/4925) detailing the changes.
+
+This update allows for more granular control and visibility in RBAC implementations, where users have varying access levels based on their group or policy.
+
+
+- **Endpoint: /auth/me**
+    - This endpoint provides access to the user's AccessPolicy information, including the basedOn element.
+
+- **AccessPolicy.basedOn**
+    - This element is an array containing references to original AccessPolicy resources.
+    - It provides traceability by linking the resolved AccessPolicy back to its source policies.
+    - At runtime, Medplum resolves all nested and parameterized policies to build the basedOn array.
+
+- **Client-Side**
+    - The introduction of AccessPolicy.basedOn allows for client-side changes based on the user's group/policy.
+    - This is especially useful for Role-Based Access Control (RBAC) implementations where different users may have varying access levels.
+
 
 ## Related Resources
 

@@ -41,7 +41,7 @@ import {
 } from './outcomes';
 import { MockAsyncClientStorage } from './storage';
 import { getDataType, isDataTypeLoaded, isProfileLoaded } from './typeschema/types';
-import { ProfileResource, WithId, createReference, sleep } from './utils';
+import { ProfileResource, createReference, sleep } from './utils';
 
 const EXAMPLE_XML = `
 <note>
@@ -1031,6 +1031,54 @@ describe('Client', () => {
     );
   });
 
+  test('startClientLogin send credentials in header with valid token.client_id', async () => {
+    const patientId = randomUUID();
+    const clientId = 'test-client-id';
+    const clientSecret = 'test-client-secret';
+    const accessToken = createFakeJwt({ cid: clientId });
+    const fetch = mockFetch(200, (url) => {
+      if (url.includes(`Patient/${patientId}`)) {
+        return { resourceType: 'Patient', id: patientId };
+      }
+
+      if (url.includes('oauth2/token')) {
+        return {
+          access_token: accessToken,
+        };
+      }
+      return {};
+    });
+
+    const client = new MedplumClient({ fetch, authCredentialsMethod: 'header' });
+    await client.startClientLogin(clientId, clientSecret);
+
+    const result2 = await client.readResource('Patient', patientId);
+    expect(result2).toBeDefined();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(fetch).toHaveBeenCalledWith(
+      `https://api.medplum.com/fhir/R4/Patient/${patientId}`,
+      expect.objectContaining({
+        method: 'GET',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          Authorization: `Bearer ${accessToken}`,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+    expect(fetch).toHaveBeenCalledWith(
+      `https://api.medplum.com/oauth2/token`,
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Authorization: 'Basic ' + encodeBase64(clientId + ':' + clientSecret),
+          'Content-Type': ContentType.FORM_URL_ENCODED,
+        },
+        body: 'grant_type=client_credentials',
+      })
+    );
+  });
+
   test('Basic auth and startClientLogin with fetched token mismatched client id ', async () => {
     const clientId = 'test-client-id';
     const clientSecret = 'test-client-secret';
@@ -1603,13 +1651,13 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
     try {
-      await client.updateResource({} as unknown as WithId<Patient>);
+      await client.updateResource({} as Patient);
       fail('Expected error');
     } catch (err) {
       expect((err as Error).message).toStrictEqual('Missing resourceType');
     }
     try {
-      await client.updateResource({ resourceType: 'Patient' } as unknown as WithId<Patient>);
+      await client.updateResource({ resourceType: 'Patient' });
       fail('Expected error');
     } catch (err) {
       expect((err as Error).message).toStrictEqual('Missing id');
@@ -1746,6 +1794,24 @@ describe('Client', () => {
     });
   });
 
+  test('Create attachment (deprecated legacy version)', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.createAttachment('Hello world', undefined, ContentType.TEXT);
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Binary',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          'Content-Type': ContentType.TEXT,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+  });
+
   test('Create binary', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
@@ -1789,6 +1855,42 @@ describe('Client', () => {
     );
   });
 
+  test('Create binary (deprecated legacy version)', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.createBinary('Hello world', undefined, ContentType.TEXT);
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Binary',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          'Content-Type': ContentType.TEXT,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+  });
+
+  test('Create binary with filename (deprecated legacy version)', async () => {
+    const fetch = mockFetch(200, {});
+    const client = new MedplumClient({ fetch });
+    const result = await client.createBinary('Hello world', 'hello.txt', ContentType.TEXT);
+    expect(result).toBeDefined();
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.medplum.com/fhir/R4/Binary?_filename=hello.txt',
+      expect.objectContaining({
+        method: 'POST',
+        headers: {
+          Accept: DEFAULT_ACCEPT,
+          'Content-Type': ContentType.TEXT,
+          'X-Medplum': 'extended',
+        },
+      })
+    );
+  });
+
   test('Create binary with progress event listener', async () => {
     const xhrMock: Partial<XMLHttpRequest> = {
       open: jest.fn(),
@@ -1808,7 +1910,7 @@ describe('Client', () => {
 
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch });
-    const promise = client.createBinary({ data: 'Hello world', contentType: ContentType.TEXT, onProgress });
+    const promise = client.createBinary('Hello world', undefined, ContentType.TEXT, onProgress);
     expect(xhrMock.open).toHaveBeenCalled();
     expect(xhrMock.setRequestHeader).toHaveBeenCalled();
 
@@ -1837,16 +1939,18 @@ describe('Client', () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch, createPdf });
     const footer = jest.fn(() => 'footer');
-    const result = await client.createPdf({
-      docDefinition: {
+    const result = await client.createPdf(
+      {
         content: ['Hello World'],
         defaultStyle: {
           font: 'Helvetica',
         },
         footer,
       },
-      fonts,
-    });
+      undefined,
+      undefined,
+      fonts
+    );
     expect(result).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Binary',
@@ -1865,11 +1969,12 @@ describe('Client', () => {
   test('Create pdf with filename', async () => {
     const fetch = mockFetch(200, {});
     const client = new MedplumClient({ fetch, createPdf });
-    const result = await client.createPdf({
-      docDefinition: { content: ['Hello world'], defaultStyle: { font: 'Helvetica' } },
-      filename: 'report.pdf',
-      fonts,
-    });
+    const result = await client.createPdf(
+      { content: ['Hello world'], defaultStyle: { font: 'Helvetica' } },
+      'report.pdf',
+      undefined,
+      fonts
+    );
     expect(result).toBeDefined();
     expect(fetch).toHaveBeenCalledWith(
       'https://api.medplum.com/fhir/R4/Binary?_filename=report.pdf',
@@ -3190,7 +3295,7 @@ describe('Client', () => {
       fetch.mockImplementationOnce(async () => mockFetchResponse(200, { resourceType: 'Media', id: '123' }));
 
       const client = new MedplumClient({ fetch });
-      const media = await client.createMedia({ data: 'Hello world', contentType: 'text/plain', filename: 'hello.txt' });
+      const media = await client.uploadMedia('Hello world', 'text/plain', 'hello.txt');
       expect(media).toBeDefined();
       expect(fetch).toHaveBeenCalledTimes(3);
 

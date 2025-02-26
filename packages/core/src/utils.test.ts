@@ -27,6 +27,7 @@ import {
   deepIncludes,
   findObservationInterval,
   findObservationReferenceRange,
+  findObservationReferenceRanges,
   findResourceByCode,
   flatMapFilter,
   getAllQuestionnaireAnswers,
@@ -1079,6 +1080,12 @@ describe('Core Utils', () => {
     expect(findObservationReferenceRange(def, homer, ['N'])?.range?.low?.value).toBe(7);
     expect(findObservationReferenceRange(def, marge, ['N'])?.range?.low?.value).toBe(7);
     expect(findObservationReferenceRange(def, bart, ['N'])?.range?.low?.value).toBe(3);
+
+    expect(findObservationReferenceRanges(def, homer)).toHaveLength(2);
+    expect(findObservationReferenceRanges(def, marge)).toHaveLength(2);
+    expect(findObservationReferenceRanges(def, bart)).toHaveLength(2);
+
+    expect(findObservationReferenceRanges(def, { resourceType: 'Patient' })).toHaveLength(0);
   });
 
   test('preciseRound', () => {

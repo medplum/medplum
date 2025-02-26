@@ -123,7 +123,7 @@ async function processProperties(
   db: PoolClient
 ): Promise<void> {
   const cache: Record<string, { id: number; isRelationship: boolean }> = Object.create(null);
-  const rows = [];
+  const lookupCodes = new Set<string>();
   for (const imported of importedProperties) {
     const propertyCode = imported.property;
     const cacheKey = codeSystem.url + '|' + propertyCode;
@@ -133,18 +133,28 @@ async function processProperties(
       cache[cacheKey] = { id: propId, isRelationship };
     }
 
-    const lookupCodes = isRelationship ? [imported.code, imported.value] : [imported.code];
-    const codingIds = await new SelectQuery('Coding')
-      .column('id')
-      .column('code')
-      .where('system', '=', codeSystem.id)
-      .where('code', 'IN', lookupCodes)
-      .execute(db);
+    lookupCodes.add(imported.code);
+    if (isRelationship) {
+      lookupCodes.add(imported.value);
+    }
+  }
+
+  // Batch lookup all Codings with associated properties
+  const codingIds = await new SelectQuery('Coding')
+    .column('id')
+    .column('code')
+    .where('system', '=', codeSystem.id)
+    .where('code', 'IN', lookupCodes)
+    .execute(db);
+
+  const rows = [];
+  for (const imported of importedProperties) {
     const sourceCodingId = codingIds.find((r) => r.code === imported.code)?.id;
     if (!sourceCodingId) {
       throw new OperationOutcomeError(badRequest(`Unknown code: ${codeSystem.url}|${imported.code}`));
     }
 
+    const { id: propId, isRelationship } = cache[`${codeSystem.url}|${imported.property}`] ?? {};
     const targetCodingId = codingIds.find((r) => r.code === imported.value)?.id;
     const property: Record<string, any> = {
       coding: sourceCodingId,

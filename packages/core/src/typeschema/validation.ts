@@ -116,8 +116,8 @@ export function validateTypedValue(typedValue: TypedValue, options?: ValidatorOp
 }
 
 class ResourceValidator implements CrawlerVisitor {
-  private issues: OperationOutcomeIssue[];
-  private root: TypedValue;
+  private readonly issues: OperationOutcomeIssue[];
+  private readonly root: TypedValue;
   private currentResource: Resource[];
   private readonly schema: InternalTypeSchema;
 

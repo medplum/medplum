@@ -264,7 +264,7 @@ export function createLabOrderBundle(inputs: PartialLabOrderInputs): Bundle {
       performer: [performerReference],
       category: [{ coding: [{ system: SNOMED, code: '103693007', display: 'Diagnostic procedure' }] }],
       code: { coding: [test] },
-      priority: metadata?.priority || 'routine',
+      priority: metadata?.priority ?? 'routine',
       note: metadata?.notes
         ? [{ authorReference: requesterReference, time: new Date().toISOString(), text: metadata.notes }]
         : undefined,

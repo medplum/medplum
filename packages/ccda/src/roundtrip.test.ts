@@ -44,7 +44,7 @@ describe('convertCcdaToFhir', () => {
     }
 
     const expected = JSON.parse(readFileSync(join(testDataFolder, `${name}.json`), 'utf8'));
-    expect(bundle).toMatchObject(expected);
+    expect(bundle).toEqual(expected);
   });
 });
 
@@ -53,7 +53,7 @@ describe('convertFhirToCcda', () => {
     const bundle = JSON.parse(readFileSync(join(testDataFolder, `${name}.json`), 'utf8')) as Bundle;
     const result = normalizeCcda(convertFhirToCcda(bundle));
     const expected = convertXmlToCcda(readFileSync(join(testDataFolder, `${name}.xml`), 'utf8'));
-    expect(result).toMatchObject(expected);
+    expect(result).toEqual(expected);
   });
 });
 

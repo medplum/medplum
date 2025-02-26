@@ -52,10 +52,10 @@ export function getPatientCompartmentParams(resourceType: string): string[] | un
  * @param resource - The resource to inspect.
  * @returns The patient ID if found; undefined otherwise.
  */
-export function getPatients(resource: WithId<Resource>): (Reference<Patient> & { reference: string })[] {
+export function getPatients(resource: Resource): (Reference<Patient> & { reference: string })[] {
   const result = new Set<string>();
   if (resource.resourceType === 'Patient' && resource.id) {
-    result.add(getReferenceString(resource));
+    result.add(getReferenceString(resource as WithId<Patient>));
   }
   const params = getPatientCompartmentParams(resource.resourceType);
   if (params) {

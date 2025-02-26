@@ -42,7 +42,7 @@ export type SubscriptionEventMap = {
  * - `heartbeat` - A `heartbeat` message has been received.
  */
 export class SubscriptionEmitter extends TypedEventTarget<SubscriptionEventMap> {
-  private criteria: Set<string>;
+  private readonly criteria: Set<string>;
   constructor(...criteria: string[]) {
     super();
     this.criteria = new Set(criteria);
@@ -103,13 +103,13 @@ export interface SubManagerOptions {
 
 export class SubscriptionManager {
   private readonly medplum: MedplumClient;
-  private ws: IReconnectingWebSocket;
+  private readonly ws: IReconnectingWebSocket;
   private masterSubEmitter?: SubscriptionEmitter;
-  private criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
-  private criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
+  private readonly criteriaEntries: Map<string, CriteriaMapEntry>; // Map<criteriaStr, CriteriaMapEntry>
+  private readonly criteriaEntriesBySubscriptionId: Map<string, CriteriaEntry>; // Map<subscriptionId, CriteriaEntry>
   private wsClosed: boolean;
   private pingTimer: ReturnType<typeof setInterval> | undefined = undefined;
-  private pingIntervalMs: number;
+  private readonly pingIntervalMs: number;
   private waitingForPong = false;
   private currentProfile: ProfileResource | undefined;
 

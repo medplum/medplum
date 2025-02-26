@@ -11,6 +11,7 @@ export function BotRunner(props: BotRunnerProps): JSX.Element {
   const url = `https://codeeditor.medplum.com/bot-runner.html`;
   return (
     <iframe
+      title="Bot Runner"
       frameBorder="0"
       src={url}
       className={props.className}

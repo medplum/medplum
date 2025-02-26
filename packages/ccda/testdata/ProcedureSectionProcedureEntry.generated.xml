@@ -10,7 +10,8 @@
   <id root="3db70aff-83f5-4caf-91dc-d23fcc5e03bb"/>
   <code code="34133-9" displayName="Summarization of Episode Note" codeSystem="2.16.840.1.113883.6.1" codeSystemName="LOINC"/>
   <title>Medical Summary</title>
-  <effectiveTime xsi:type="TS" value="20250101000000-0500"/>
+  <effectiveTime value="20250101000000-0500"/>
+  <languageCode code="en-US" />
   <recordTarget>
     <patientRole>
       <id root="d7830f15-e2c8-4cee-aa2d-a24b36080d53"/>

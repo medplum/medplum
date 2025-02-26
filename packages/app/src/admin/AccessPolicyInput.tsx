@@ -12,7 +12,7 @@ export function AccessPolicyInput(props: AccessPolicyInputProps): JSX.Element {
   return (
     <ResourceInput
       resourceType="AccessPolicy"
-      name="accessPolicy"
+      name={props.name}
       defaultValue={props.defaultValue}
       placeholder="Access Policy"
       onChange={(newValue) => {

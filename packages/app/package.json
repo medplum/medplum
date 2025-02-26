@@ -1,6 +1,6 @@
 {
   "name": "@medplum/app",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "Medplum App",
   "homepage": "https://www.medplum.com/",
   "bugs": {
@@ -34,11 +34,11 @@
     "@mantine/dropzone": "7.16.3",
     "@mantine/hooks": "7.16.3",
     "@mantine/notifications": "7.16.3",
-    "@medplum/core": "4.0.0",
-    "@medplum/definitions": "4.0.0",
-    "@medplum/fhirtypes": "4.0.0",
-    "@medplum/mock": "4.0.0",
-    "@medplum/react": "4.0.0",
+    "@medplum/core": "4.0.1",
+    "@medplum/definitions": "4.0.1",
+    "@medplum/fhirtypes": "4.0.1",
+    "@medplum/mock": "4.0.1",
+    "@medplum/react": "4.0.1",
     "@tabler/icons-react": "3.17.0",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/react": "16.2.0",
@@ -54,6 +54,6 @@
     "vite": "6.1.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   }
 }

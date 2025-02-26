@@ -6,6 +6,7 @@
       "resource": {
         "resourceType": "Composition",
         "id": "3db70aff-83f5-4caf-91dc-d23fcc5e03bb",
+        "language": "en-US",
         "status": "final",
         "type": {
           "coding": [
@@ -69,7 +70,9 @@
           {
             "use": "official",
             "family": "Madison",
-            "given": ["Katherine"]
+            "given": [
+              "Katherine"
+            ]
           }
         ]
       }
@@ -93,24 +96,8 @@
                 "code": "vital-signs",
                 "display": "Vital Signs Observation"
               }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.27"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.27",
-                "version": "2014-06-09"
-              }
-            ]
+            ],
+            "text": "Vital Signs Observation"
           }
         ],
         "code": {
@@ -171,24 +158,8 @@
                 "code": "vital-signs",
                 "display": "Vital Signs Observation"
               }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.27"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.27",
-                "version": "2014-06-09"
-              }
-            ]
+            ],
+            "text": "Vital Signs Observation"
           }
         ],
         "code": {
@@ -249,24 +220,8 @@
                 "code": "vital-signs",
                 "display": "Vital Signs Observation"
               }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.27"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.27",
-                "version": "2014-06-09"
-              }
-            ]
+            ],
+            "text": "Vital Signs Observation"
           }
         ],
         "code": {
@@ -327,24 +282,8 @@
                 "code": "vital-signs",
                 "display": "Vital Signs Observation"
               }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.27"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.27",
-                "version": "2014-06-09"
-              }
-            ]
+            ],
+            "text": "Vital Signs Observation"
           }
         ],
         "code": {
@@ -405,24 +344,8 @@
                 "code": "vital-signs",
                 "display": "Vital Signs Observation"
               }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.27"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.27",
-                "version": "2014-06-09"
-              }
-            ]
+            ],
+            "text": "Vital Signs Observation"
           }
         ],
         "code": {
@@ -483,24 +406,8 @@
                 "code": "vital-signs",
                 "display": "Vital Signs Organizer"
               }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.26"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.26",
-                "version": "2015-08-01"
-              }
-            ]
+            ],
+            "text": "Vital Signs Organizer"
           }
         ],
         "code": {
@@ -549,24 +456,8 @@
                 "code": "vital-signs",
                 "display": "Vital Signs Organizer"
               }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.26"
-              }
-            ]
-          },
-          {
-            "coding": [
-              {
-                "system": "http://hl7.org/cda/template",
-                "code": "2.16.840.1.113883.10.20.22.4.26",
-                "version": "2015-08-01"
-              }
-            ]
+            ],
+            "text": "Vital Signs Organizer"
           }
         ],
         "code": {

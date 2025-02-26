@@ -42,9 +42,9 @@ import { BaseInputProps, ComplexTypeInputProps, PrimitiveTypeInputProps } from '
 export interface ResourcePropertyInputProps extends BaseInputProps {
   readonly property: ExtendedInternalSchemaElement;
   readonly name: string;
-  readonly defaultPropertyType?: string | undefined;
+  readonly defaultPropertyType?: string;
   readonly defaultValue: any;
-  readonly arrayElement?: boolean | undefined;
+  readonly arrayElement?: boolean;
   readonly onChange?: (value: any, propName?: string) => void;
 }
 
