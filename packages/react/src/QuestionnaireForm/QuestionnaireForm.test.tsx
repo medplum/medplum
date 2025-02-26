@@ -362,6 +362,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        url: 'https://example.com/Questionnaire/123',
         status: 'active',
         item: [
           {
@@ -445,6 +446,9 @@ describe('QuestionnaireForm', () => {
 
     const response = onSubmit.mock.calls[0][0];
     const answers = getQuestionnaireAnswers(response);
+    expect(response.resourceType).toBe('QuestionnaireResponse');
+    expect(response.status).toBe('completed');
+    expect(response.questionnaire).toBe('https://example.com/Questionnaire/123');
     expect(answers['q1']).toMatchObject({ valueString: 'a1' });
     expect(answers['q2']).toMatchObject({ valueInteger: 2 });
     expect(answers['q3']).toMatchObject({ valueDate: '2023-03-03' });
@@ -457,6 +461,7 @@ describe('QuestionnaireForm', () => {
     await setup({
       questionnaire: {
         resourceType: 'Questionnaire',
+        id: '456',
         status: 'active',
       },
       onSubmit,
@@ -473,6 +478,7 @@ describe('QuestionnaireForm', () => {
     const response = onSubmit.mock.calls[0][0];
     expect(response.resourceType).toBe('QuestionnaireResponse');
     expect(response.status).toBe('completed');
+    expect(response.questionnaire).toBe('Questionnaire/456');
     expect(response.authored).toBeDefined();
     expect(response.source).toBeDefined();
   });
