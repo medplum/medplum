@@ -152,9 +152,7 @@ describe('Patient Set Accounts Operation', () => {
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     const everything = res.body as Bundle;
-    const resourcesNotInCompartment = everything.entry?.filter(
-      (entry) => entry?.search?.mode !== 'match'
-    );
+    const resourcesNotInCompartment = everything.entry?.filter((entry) => entry?.search?.mode !== 'match');
     expect(resourcesNotInCompartment?.length).toBeGreaterThan(0);
     resourcesNotInCompartment?.forEach((entry) => {
       expect(entry?.resource?.meta?.accounts).toBeUndefined();
