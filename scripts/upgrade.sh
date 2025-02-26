@@ -67,11 +67,12 @@ EXCLUDE="react react-dom @tabler/icons-react react-native storybook-addon-mantin
 # @types/react - version 19+ incompatible with react 18, waiting for fix
 # commander - v13 has backwards-incompatible changes which require a decent amount of refactoring to get our current code to work. We are considering migrating off of commander but for now we should just freeze it
 # eslint - version 9+ conflicts with Next.js plugins, holding back until fixed
+# jose - version 6+ requires ESM (depending on the precise NodeJS version), holding back until server supports ESM
 # react-router-dom - version 7+ has breaking changes, will fix separately
 # node-fetch - version 3+ requires ESM, holding back until server supports ESM
 # rimraf - version 6+ requires Node 20+, holding back until Medplum v4
 # supertest - version 7+ incompatible with superwstest, waiting for fix
-MAJOR_EXCLUDE="@types/express @types/node @types/react @types/react-dom commander eslint react-router-dom node-fetch rimraf supertest"
+MAJOR_EXCLUDE="@types/express @types/node @types/react @types/react-dom commander eslint jose react-router-dom node-fetch rimraf supertest"
 
 if [ "$LAST_STEP" -lt 1 ]; then
     # First, only upgrade patch and minor versions
