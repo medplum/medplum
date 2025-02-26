@@ -69,7 +69,7 @@ export async function patientSetAccountsHandler(req: FhirRequest): Promise<FhirR
 
   const patient = await ctx.repo.readResource<Patient>('Patient', id);
   const bundle = await getPatientEverything(ctx.repo, patient);
-  const accounts = params.accounts ?? [];
+  const accounts = params.accounts;
 
   // step 1: update the patient resource with the new accounts
   patient.meta = {
