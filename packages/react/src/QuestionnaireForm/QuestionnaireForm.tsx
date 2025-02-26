@@ -1,5 +1,5 @@
 import { Title } from '@mantine/core';
-import { createReference } from '@medplum/core';
+import { createReference, getReferenceString } from '@medplum/core';
 import {
   Encounter,
   Questionnaire,
@@ -13,9 +13,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Form } from '../Form/Form';
 import {
   buildInitialResponse,
+  evaluateCalculatedExpressionsInQuestionnaire,
   getNumberOfPages,
   isQuestionEnabled,
-  evaluateCalculatedExpressionsInQuestionnaire,
   mergeUpdatedItems,
 } from '../utils/questionnaire';
 import { QuestionnaireFormContext } from './QuestionnaireForm.context';
@@ -81,7 +81,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
 
   const handleSubmit = useCallback(() => {
     const onSubmit = onSubmitRef.current;
-    if (onSubmit && response) {
+    if (onSubmit && questionnaire && response) {
       let source = sourceFromProps;
       if (!source) {
         const profile = medplum.getProfile();
@@ -91,7 +91,7 @@ export function QuestionnaireForm(props: QuestionnaireFormProps): JSX.Element | 
       }
       onSubmit({
         ...response,
-        questionnaire: questionnaire?.url,
+        questionnaire: questionnaire.url ?? getReferenceString(questionnaire),
         subject,
         source,
         authored: new Date().toISOString(),
