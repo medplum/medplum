@@ -59,6 +59,9 @@ export function CommunicationTab(): JSX.Element {
         shadow="sm"
         h={600}
         mt="xl"
+        onMessageReceived={(message: Communication) => {
+          console.log('Message received:', message);
+        }}
       />
     </Container>
   );

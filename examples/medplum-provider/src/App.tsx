@@ -17,8 +17,8 @@ import {
   IconTimeDuration15,
   IconUser,
 } from '@tabler/icons-react';
-import { Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Suspense, useEffect } from 'react';
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { DoseSpotIcon } from './components/DoseSpotIcon';
 import { hasDoseSpotIdentifier } from './components/utils';
 import { HomePage } from './pages/HomePage';
@@ -41,6 +41,8 @@ import { ResourceEditPage } from './pages/resource/ResourceEditPage';
 import { ResourceHistoryPage } from './pages/resource/ResourceHistoryPage';
 import { ResourcePage } from './pages/resource/ResourcePage';
 import { TaskDetails } from './pages/tasks/TaskDetails';
+import { EncounterCheckIn } from './pages/encounter/EncounterCheckIn';
+import { EncounterComplete } from './pages/encounter/EncounterComplete';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -123,9 +125,12 @@ export function App(): JSX.Element | null {
               <Route path="/" element={<HomePage />} />
               <Route path="/Patient/:patientId" element={<PatientPage />}>
                 <Route path="Encounter/new" element={<EncounterModal />} />
-                <Route path="Encounter/:encounterId" element={<EncounterChart />}>
+                <Route path="Encounter/:encounterId" element={<EncounterRedirect />} />
+                <Route path="Encounter/:encounterId/checkin" element={<EncounterCheckIn />}></Route>
+                <Route path="Encounter/:encounterId/chart" element={<EncounterChart />}>
                   <Route path="Task/:taskId" element={<TaskDetails />} />
                 </Route>
+                <Route path="Encounter/:encounterId/complete" element={<EncounterComplete />}></Route>
                 <Route path="edit" element={<EditTab />} />
                 <Route path="communication" element={<CommunicationTab />} />
                 <Route path="communication/:id" element={<CommunicationTab />} />
@@ -164,4 +169,14 @@ export function App(): JSX.Element | null {
       </Suspense>
     </AppShell>
   );
+}
+
+function EncounterRedirect(): JSX.Element {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    navigate('checkin', { replace: true });
+  }, [navigate]);
+
+  return <></>
 }

@@ -78,6 +78,7 @@ export function AsyncAutocomplete<T>(props: AsyncAutocompleteProps<T>): JSX.Elem
     minInputLength = 0,
     ...rest
   } = props;
+
   const disabled = rest.disabled; // leave in rest so it also propagates to ComboBox
   const defaultItems = toDefaultItems(defaultValue);
   const [search, setSearch] = useState('');
