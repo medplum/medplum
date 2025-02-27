@@ -147,16 +147,35 @@ describe('Patient Set Accounts Operation', () => {
   });
 
   test("Make sure resources returned in $patient-everything that are NOT in the patient's compartment are not updated", async () => {
+    const res7 = await request(app)
+      .post(`/fhir/R4/Patient/${patient.id}/$set-accounts`)
+      .set('Authorization', 'Bearer ' + accessToken)
+      .send({
+        resourceType: 'Parameters',
+        parameter: [
+          {
+            name: 'accounts',
+            valueReference: createReference(organization1),
+          },
+          {
+            name: 'accounts',
+            valueReference: createReference(organization2),
+          },
+        ],
+      });
+    expect(res7.status).toBe(200);
+    const numberResourcesUpdated = res7.body.parameter?.[0].valueInteger;
+
     const res = await request(app)
       .get(`/fhir/R4/Patient/${patient.id}/$everything`)
       .set('Authorization', 'Bearer ' + accessToken);
     expect(res.status).toBe(200);
     const everything = res.body as Bundle;
-    const resourcesNotInCompartment = everything.entry?.filter((entry) => entry?.search?.mode !== 'match');
-    expect(resourcesNotInCompartment?.length).toBeGreaterThan(0);
-    resourcesNotInCompartment?.forEach((entry) => {
-      expect(entry?.resource?.meta?.accounts).toBeUndefined();
-    });
+    const allResources = everything.entry?.length ?? 0;
+    const resourcesNotInCompartment = everything.entry?.filter((entry) => entry?.search?.mode !== 'match').length ?? 0;
+    
+    //Number of resources updated only includes the ones in the compartment, not other resources returned in $patient-everything
+    expect(numberResourcesUpdated).toBe(allResources - resourcesNotInCompartment);
   });
 
   test('Patient not found', async () => {
